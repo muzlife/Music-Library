@@ -771,6 +771,85 @@
       align-items: end;
     }
 
+    .operator-helper-card {
+      margin-top: 8px;
+      border: 1px solid #99f6e4;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #f0fdfa, #ffffff);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .operator-helper-card.is-empty,
+    .operator-helper-card.is-idle,
+    .operator-helper-card.is-error {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .operator-helper-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .operator-helper-kicker {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #0f766e;
+      text-transform: uppercase;
+    }
+
+    .operator-helper-pill {
+      border-radius: 999px;
+      border: 1px solid #99f6e4;
+      background: #ccfbf1;
+      color: #115e59;
+      padding: 3px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .operator-helper-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .operator-helper-cell {
+      border: 1px solid #dbe4ee;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.92);
+      padding: 7px 8px;
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .operator-helper-cell span {
+      font-size: 0.72rem;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .operator-helper-cell strong {
+      font-size: 0.9rem;
+      color: #0f172a;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .operator-helper-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
     .operator-result-list,
     .operator-request-list {
       display: grid;
@@ -4512,6 +4591,7 @@
     }
 
     @media (max-width: 1080px) {
+      .operator-helper-grid { grid-template-columns: 1fr; }
       .operator-result-item,
       .operator-request-item { grid-template-columns: 60px minmax(0, 1fr); }
       .operator-actions {
@@ -4965,6 +5045,7 @@
               <button id="operatorLookupResetBtn" class="btn ghost" type="button">비우기</button>
             </div>
             <div id="operatorLookupStatus" class="status"></div>
+            <div id="operatorHelperSummary" aria-live="polite"></div>
             <div class="result-head" style="margin-top:8px;">
               <strong>조회 결과</strong>
               <span id="operatorLookupCount" class="mini">0건</span>
@@ -7457,6 +7538,13 @@
     let appShellMode = "ops";
     let pendingOpsCabinetSelection = null;
     let operatorLookupResults = [];
+    let operatorLookupSummary = {
+      normalizedQuery: "",
+      topCandidate: null,
+      locationSummary: null,
+      status: "idle",
+      matchReason: "",
+    };
     let operatorRequestItems = [];
     let dashboardDraggedOwnedItemId = null;
     let dashboardDraggedSlotCode = null;
@@ -9106,26 +9194,231 @@
       $("operatorRequestItemText").value = `${itemTitle}${artist ? ` / ${artist}` : ""}`;
     }
 
+    function normalizeDigits(value) {
+      return String(value || "").replace(/\D+/g, "");
+    }
+
+    function normalizeOpsLookupQuery(input) {
+      return String(input || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .replace(/[\u200B-\u200D\uFEFF]/g, "");
+    }
+
+    function normalizeOpsLookupComparable(input) {
+      return normalizeOpsLookupQuery(input).toLowerCase();
+    }
+
+    function hasOperatorCurrentLocation(row) {
+      const currentSlotCode = String(row?.current_slot_code || "").trim();
+      const currentDisplayName = String(row?.current_slot_display_name || "").trim();
+      const currentCabinetName = String(row?.current_cabinet_name || "").trim();
+      const currentColumnCode = String(row?.current_column_code || "").trim();
+      const currentCellCode = String(row?.current_cell_code || "").trim();
+      return Boolean(
+        currentSlotCode
+        || (currentDisplayName && currentDisplayName !== "미배치")
+        || (currentCabinetName && currentColumnCode && currentCellCode)
+      );
+    }
+
+    function buildOperatorLocationLabel(row) {
+      const currentDisplayName = String(row?.current_slot_display_name || "").trim();
+      if (currentDisplayName) return currentDisplayName;
+      const currentSlotCode = String(row?.current_slot_code || "").trim();
+      if (currentSlotCode) return currentSlotCode;
+      const currentCabinetName = String(row?.current_cabinet_name || "").trim();
+      const currentColumnCode = String(row?.current_column_code || "").trim();
+      const currentCellCode = String(row?.current_cell_code || "").trim();
+      if (currentCabinetName && currentColumnCode && currentCellCode) {
+        return `${currentCabinetName} / ${currentColumnCode} / ${currentCellCode}`;
+      }
+      return "미배치";
+    }
+
+    function exactTitleArtistMatch(row, normalizedQuery) {
+      const comparableQuery = normalizeOpsLookupComparable(normalizedQuery);
+      if (!comparableQuery) return false;
+      const title = String(row?.item_title || row?.item_name_override || "").trim();
+      const artist = String(row?.artist_or_brand || "").trim();
+      return [
+        title,
+        artist,
+        [title, artist].filter(Boolean).join(" "),
+        [artist, title].filter(Boolean).join(" "),
+      ].some((candidate) => normalizeOpsLookupComparable(candidate) === comparableQuery);
+    }
+
+    function emptyOperatorLookupSummary(normalizedQuery = "", status = "idle") {
+      return {
+        normalizedQuery,
+        topCandidate: null,
+        locationSummary: null,
+        status,
+        matchReason: "",
+      };
+    }
+
+    function summarizeOperatorResults(results, normalizedQuery) {
+      const list = Array.isArray(results) ? results : [];
+      const normalizedDigits = normalizeDigits(normalizedQuery);
+      const exactBarcode = normalizedDigits
+        ? list.find((row) => normalizeDigits(row?.barcode) === normalizedDigits)
+        : null;
+      const exactLabel = list.find((row) => normalizeOpsLookupComparable(row?.label_id) === normalizeOpsLookupComparable(normalizedQuery));
+      const exactTitleArtist = list.find((row) => exactTitleArtistMatch(row, normalizedQuery));
+      const assigned = list.find((row) => hasOperatorCurrentLocation(row));
+      const topCandidate = exactBarcode || exactLabel || exactTitleArtist || assigned || list[0] || null;
+      const matchReason = exactBarcode
+        ? "barcode"
+        : exactLabel
+          ? "label"
+          : exactTitleArtist
+            ? "titleArtist"
+            : assigned
+              ? "assigned"
+              : topCandidate
+                ? "first"
+                : "";
+      return {
+        normalizedQuery,
+        topCandidate,
+        locationSummary: topCandidate ? buildOperatorLocationLabel(topCandidate) : null,
+        status: topCandidate ? "match" : "empty",
+        matchReason,
+      };
+    }
+
+    function buildOperatorLookupSummary(results, normalizedQuery, status = "") {
+      const normalized = normalizeOpsLookupQuery(normalizedQuery);
+      if (!normalized) return emptyOperatorLookupSummary();
+      if (status === "error") return emptyOperatorLookupSummary(normalized, "error");
+      if (!Array.isArray(results) || !results.length) return emptyOperatorLookupSummary(normalized, "empty");
+      return summarizeOperatorResults(results, normalized);
+    }
+
+    function setOperatorLookupResults(results, normalizedQuery, status = "") {
+      operatorLookupResults = Array.isArray(results) ? results : [];
+      operatorLookupSummary = buildOperatorLookupSummary(operatorLookupResults, normalizedQuery, status);
+      renderOperatorLookupResults();
+    }
+
+    function operatorSummaryReasonLabel(reason) {
+      if (reason === "barcode") return "바코드 정확 일치";
+      if (reason === "label") return "견출지 ID 정확 일치";
+      if (reason === "titleArtist") return "제목/아티스트 정확 일치";
+      if (reason === "assigned") return "배치된 후보 우선";
+      if (reason === "first") return "첫 결과";
+      return "";
+    }
+
+    function renderOperatorHelperSummary() {
+      const el = $("operatorHelperSummary");
+      if (!el) return;
+      const summary = operatorLookupSummary || emptyOperatorLookupSummary();
+      if (summary.status === "idle") {
+        el.innerHTML = `
+          <div class="operator-helper-card is-idle">
+            <div class="operator-helper-head">
+              <div>
+                <div class="operator-helper-kicker">운영 도우미</div>
+                <strong>조회 결과를 한 줄로 먼저 요약합니다.</strong>
+              </div>
+            </div>
+            <div class="mini muted">검색어를 정규화한 뒤 기존 조회 결과에서만 상단 후보와 위치를 안내합니다.</div>
+          </div>
+        `;
+        return;
+      }
+      if (summary.status === "error") {
+        el.innerHTML = `
+          <div class="operator-helper-card is-error">
+            <div class="operator-helper-head">
+              <div>
+                <div class="operator-helper-kicker">운영 도우미</div>
+                <strong>조회 요약을 만들지 못했습니다.</strong>
+              </div>
+            </div>
+            <div class="operator-helper-grid">
+              <div class="operator-helper-cell">
+                <span>정규화 검색어</span>
+                <strong>${escapeHtml(summary.normalizedQuery || "-")}</strong>
+              </div>
+              <div class="operator-helper-cell">
+                <span>상단 후보</span>
+                <strong>조회 실패</strong>
+              </div>
+              <div class="operator-helper-cell">
+                <span>현재 위치</span>
+                <strong>-</strong>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+      const topCandidate = summary.topCandidate || null;
+      const title = String(topCandidate?.item_title || topCandidate?.item_name_override || "").trim() || "일치 후보 없음";
+      const artist = String(topCandidate?.artist_or_brand || "").trim();
+      const topCandidateLabel = topCandidate ? `${title}${artist ? ` / ${artist}` : ""}` : "일치 후보 없음";
+      const locationLabel = topCandidate ? (summary.locationSummary || "미배치") : "-";
+      const currentCabinetName = String(topCandidate?.current_cabinet_name || "").trim();
+      const currentColumnCode = String(topCandidate?.current_column_code || "").trim();
+      const currentCellCode = String(topCandidate?.current_cell_code || "").trim();
+      const canOpenCabinet = Boolean(topCandidate && currentCabinetName && currentColumnCode && currentCellCode);
+      const reasonLabel = operatorSummaryReasonLabel(summary.matchReason);
+      const ownedItemId = Number(topCandidate?.owned_item_id || topCandidate?.id || 0);
+      el.innerHTML = `
+        <div class="operator-helper-card ${summary.status === "empty" ? "is-empty" : ""}">
+          <div class="operator-helper-head">
+            <div>
+              <div class="operator-helper-kicker">운영 도우미</div>
+              <strong>상단 후보 요약</strong>
+            </div>
+            ${reasonLabel ? `<span class="operator-helper-pill">${escapeHtml(reasonLabel)}</span>` : ""}
+          </div>
+          <div class="operator-helper-grid">
+            <div class="operator-helper-cell">
+              <span>정규화 검색어</span>
+              <strong>${escapeHtml(summary.normalizedQuery || "-")}</strong>
+            </div>
+            <div class="operator-helper-cell">
+              <span>상단 후보</span>
+              <strong>${escapeHtml(topCandidateLabel)}</strong>
+            </div>
+            <div class="operator-helper-cell">
+              <span>현재 위치</span>
+              <strong>${escapeHtml(locationLabel)}</strong>
+            </div>
+          </div>
+          ${canOpenCabinet
+            ? `<div class="operator-helper-actions"><button class="btn secondary tiny" type="button" data-operator-open-cabinet="${ownedItemId}" data-cabinet-name="${escapeHtml(currentCabinetName)}" data-column-code="${escapeHtml(currentColumnCode)}" data-cell-code="${escapeHtml(currentCellCode)}">장식장 열기</button></div>`
+            : topCandidate
+              ? `<div class="mini muted">현재 배치가 없어서 장식장 열기는 숨깁니다.</div>`
+              : `<div class="mini muted">기존 결과 목록을 그대로 유지한 채 상단 후보만 요약합니다.</div>`
+          }
+        </div>
+      `;
+    }
+
     async function loadOperatorLookupResults() {
-      const query = $("operatorLookupQuery").value.trim();
-      if (!query) {
-        operatorLookupResults = [];
+      const normalizedQuery = normalizeOpsLookupQuery($("operatorLookupQuery").value);
+      $("operatorLookupQuery").value = normalizedQuery;
+      if (!normalizedQuery) {
+        setOperatorLookupResults([], "");
         setStatus("operatorLookupStatus", "", "");
-        renderOperatorLookupResults();
         return;
       }
       setStatus("operatorLookupStatus", "", "조회 중...");
       try {
-        const params = new URLSearchParams({ q: query, limit: "30" });
+        const params = new URLSearchParams({ q: normalizedQuery, limit: "30" });
         const res = await fetch(`/operator/catalog-search?${params.toString()}`);
         const data = await safeJson(res);
         if (!res.ok) throw new Error(responseDetailText(data, "운영 조회 실패"));
-        operatorLookupResults = Array.isArray(data.items) ? data.items : [];
-        renderOperatorLookupResults();
+        setOperatorLookupResults(Array.isArray(data.items) ? data.items : [], normalizedQuery);
         setStatus("operatorLookupStatus", "ok", `${formatCount(operatorLookupResults.length)}건 조회`);
       } catch (err) {
-        operatorLookupResults = [];
-        renderOperatorLookupResults();
+        setOperatorLookupResults([], normalizedQuery, "error");
         setStatus("operatorLookupStatus", "err", errorMessageText(err, "운영 조회 실패"));
       }
     }
@@ -9133,6 +9426,7 @@
     function renderOperatorLookupResults() {
       const el = $("operatorLookupResults");
       if (!el) return;
+      renderOperatorHelperSummary();
       $("operatorLookupCount").textContent = `${formatCount(operatorLookupResults.length)}건`;
       if (!operatorLookupResults.length) {
         el.innerHTML = `<div class="mini muted">곡명이나 상품명으로 조회하면 현재 위치와 직전 위치가 함께 표시됩니다.</div>`;
@@ -9205,6 +9499,42 @@
           </div>
         `;
       }).join("");
+    }
+
+    async function handleOperatorLookupAction(e) {
+      const cabinetBtn = e.target.closest("[data-operator-open-cabinet]");
+      if (cabinetBtn) {
+        const cabinetName = String(cabinetBtn.getAttribute("data-cabinet-name") || "").trim();
+        const columnCode = String(cabinetBtn.getAttribute("data-column-code") || "").trim();
+        const cellCode = String(cabinetBtn.getAttribute("data-cell-code") || "").trim();
+        await openOpsCabinetView(cabinetName, columnCode, cellCode);
+        return;
+      }
+      if (isShellReadOnly()) return;
+      const trackBtn = e.target.closest("[data-operator-fill-track]");
+      if (trackBtn) {
+        const ownedItemId = Number(trackBtn.getAttribute("data-operator-fill-track") || 0);
+        const trackTitle = String(trackBtn.getAttribute("data-operator-track-title") || "").trim();
+        const trackNo = String(trackBtn.getAttribute("data-operator-track-no") || "").trim();
+        const row = operatorLookupResults.find((item) => Number(item.owned_item_id || 0) === ownedItemId);
+        if (row) fillOperatorRequestForm(row, trackTitle, trackNo);
+        return;
+      }
+      const itemBtn = e.target.closest("[data-operator-fill-item]");
+      if (itemBtn) {
+        const ownedItemId = Number(itemBtn.getAttribute("data-operator-fill-item") || 0);
+        const row = operatorLookupResults.find((item) => Number(item.owned_item_id || 0) === ownedItemId);
+        if (row) fillOperatorRequestForm(row);
+        return;
+      }
+      const manageBtn = e.target.closest("[data-operator-open-manage]");
+      if (manageBtn) {
+        const ownedItemId = Number(manageBtn.getAttribute("data-operator-open-manage") || 0);
+        if (ownedItemId > 0) {
+          await loadHomeItemForEdit(ownedItemId);
+          switchMainTab("manage");
+        }
+      }
     }
 
     async function loadOperatorRequestList() {
@@ -19338,8 +19668,7 @@
     $("operatorLookupBtn").addEventListener("click", loadOperatorLookupResults);
     $("operatorLookupResetBtn").addEventListener("click", () => {
       $("operatorLookupQuery").value = "";
-      operatorLookupResults = [];
-      renderOperatorLookupResults();
+      setOperatorLookupResults([], "");
       setStatus("operatorLookupStatus", "", "");
     });
     $("operatorLookupQuery").addEventListener("keydown", (e) => {
@@ -19354,41 +19683,8 @@
     });
     $("operatorRequestRefreshBtn").addEventListener("click", loadOperatorRequestList);
     $("operatorRequestFilterStatus").addEventListener("change", loadOperatorRequestList);
-    $("operatorLookupResults").addEventListener("click", async (e) => {
-      const cabinetBtn = e.target.closest("[data-operator-open-cabinet]");
-      if (cabinetBtn) {
-        const cabinetName = String(cabinetBtn.getAttribute("data-cabinet-name") || "").trim();
-        const columnCode = String(cabinetBtn.getAttribute("data-column-code") || "").trim();
-        const cellCode = String(cabinetBtn.getAttribute("data-cell-code") || "").trim();
-        await openOpsCabinetView(cabinetName, columnCode, cellCode);
-        return;
-      }
-      if (isShellReadOnly()) return;
-      const trackBtn = e.target.closest("[data-operator-fill-track]");
-      if (trackBtn) {
-        const ownedItemId = Number(trackBtn.getAttribute("data-operator-fill-track") || 0);
-        const trackTitle = String(trackBtn.getAttribute("data-operator-track-title") || "").trim();
-        const trackNo = String(trackBtn.getAttribute("data-operator-track-no") || "").trim();
-        const row = operatorLookupResults.find((item) => Number(item.owned_item_id || 0) === ownedItemId);
-        if (row) fillOperatorRequestForm(row, trackTitle, trackNo);
-        return;
-      }
-      const itemBtn = e.target.closest("[data-operator-fill-item]");
-      if (itemBtn) {
-        const ownedItemId = Number(itemBtn.getAttribute("data-operator-fill-item") || 0);
-        const row = operatorLookupResults.find((item) => Number(item.owned_item_id || 0) === ownedItemId);
-        if (row) fillOperatorRequestForm(row);
-        return;
-      }
-      const manageBtn = e.target.closest("[data-operator-open-manage]");
-      if (manageBtn) {
-        const ownedItemId = Number(manageBtn.getAttribute("data-operator-open-manage") || 0);
-        if (ownedItemId > 0) {
-          await loadHomeItemForEdit(ownedItemId);
-          switchMainTab("manage");
-        }
-      }
-    });
+    $("operatorHelperSummary").addEventListener("click", handleOperatorLookupAction);
+    $("operatorLookupResults").addEventListener("click", handleOperatorLookupAction);
     $("operatorRequestList").addEventListener("click", async (e) => {
       if (isShellReadOnly()) return;
       const statusBtn = e.target.closest("[data-operator-request-status]");
