@@ -7538,6 +7538,7 @@
     let appShellMode = "ops";
     let pendingOpsCabinetSelection = null;
     let operatorLookupResults = [];
+    let operatorLookupRequestSeq = 0;
     let operatorLookupSummary = {
       normalizedQuery: "",
       topCandidate: null,
@@ -9404,6 +9405,7 @@
 
     async function loadOperatorLookupResults() {
       const normalizedQuery = normalizeOpsLookupQuery($("operatorLookupQuery").value);
+      const requestSeq = ++operatorLookupRequestSeq;
       $("operatorLookupQuery").value = normalizedQuery;
       if (!normalizedQuery) {
         setOperatorLookupResults([], "");
@@ -9416,9 +9418,11 @@
         const res = await fetch(`/operator/catalog-search?${params.toString()}`);
         const data = await safeJson(res);
         if (!res.ok) throw new Error(responseDetailText(data, "운영 조회 실패"));
+        if (requestSeq !== operatorLookupRequestSeq) return;
         setOperatorLookupResults(Array.isArray(data.items) ? data.items : [], normalizedQuery);
         setStatus("operatorLookupStatus", "ok", `${formatCount(operatorLookupResults.length)}건 조회`);
       } catch (err) {
+        if (requestSeq !== operatorLookupRequestSeq) return;
         setOperatorLookupResults([], normalizedQuery, "error");
         setStatus("operatorLookupStatus", "err", errorMessageText(err, "운영 조회 실패"));
       }
@@ -19668,6 +19672,7 @@
     });
     $("operatorLookupBtn").addEventListener("click", loadOperatorLookupResults);
     $("operatorLookupResetBtn").addEventListener("click", () => {
+      operatorLookupRequestSeq += 1;
       $("operatorLookupQuery").value = "";
       setOperatorLookupResults([], "");
       setStatus("operatorLookupStatus", "", "");

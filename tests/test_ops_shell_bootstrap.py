@@ -157,3 +157,27 @@ def test_index_readonly_shell_reset_rerenders_dashboard_detail_panel():
     assert 'renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));' in block
     assert "renderDashboardCabinetDetail();" in block
     assert "renderDashboardWorkbench();" in block
+
+
+def test_index_operator_lookup_discards_stale_responses_after_reset_or_new_search():
+    html = read_static_html("index.html")
+    assert "let operatorLookupRequestSeq = 0;" in html
+    load_start = "    async function loadOperatorLookupResults() {"
+    render_start = "    function renderOperatorLookupResults() {"
+    assert load_start in html
+    assert render_start in html
+    block = html.split(load_start, 1)[1].split(render_start, 1)[0]
+    assert "const requestSeq = ++operatorLookupRequestSeq;" in block
+    assert block.count("if (requestSeq !== operatorLookupRequestSeq) return;") >= 2
+
+
+def test_index_operator_lookup_reset_invalidates_inflight_request_before_clearing():
+    html = read_static_html("index.html")
+    reset_start = '$("operatorLookupResetBtn").addEventListener("click", () => {'
+    keydown_start = '    $("operatorLookupQuery").addEventListener("keydown", (e) => {'
+    assert reset_start in html
+    assert keydown_start in html
+    block = html.split(reset_start, 1)[1].split(keydown_start, 1)[0]
+    assert "operatorLookupRequestSeq += 1;" in block
+    assert '$("operatorLookupQuery").value = "";' in block
+    assert 'setOperatorLookupResults([], "");' in block
