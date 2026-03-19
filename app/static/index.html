@@ -154,6 +154,11 @@
       flex-wrap: wrap;
     }
 
+    #shellTabs,
+    #adminTabs {
+      display: none;
+    }
+
     .tab-btn {
       width: auto;
       border-radius: 999px;
@@ -186,6 +191,47 @@
     .tab-panel {
       display: none;
       margin-top: 8px;
+    }
+
+    body[data-shell-readonly="true"] #operatorRequestComposerCard,
+    body[data-shell-readonly="true"] [data-operator-fill-track],
+    body[data-shell-readonly="true"] [data-operator-fill-item],
+    body[data-shell-readonly="true"] [data-operator-open-manage],
+    body[data-shell-readonly="true"] [data-operator-request-status],
+    body[data-shell-readonly="true"] #homeOpenManageBtn,
+    body[data-shell-readonly="true"] #homeOpenRegisterBtn,
+    body[data-shell-readonly="true"] #homeDashSlotRestoreBtn,
+    body[data-shell-readonly="true"] #homeDashSlotEditBtn,
+    body[data-shell-readonly="true"] #homeDashSlotMoveFrontBtn,
+    body[data-shell-readonly="true"] #homeDashSlotMoveBackBtn,
+    body[data-shell-readonly="true"] #homeDashSlotSelectAllBtn,
+    body[data-shell-readonly="true"] #homeDashSlotClearBtn,
+    body[data-shell-readonly="true"] #homeDashWorkbenchEditBtn,
+    body[data-shell-readonly="true"] #homeDashWorkbenchRecommendBtn,
+    body[data-shell-readonly="true"] #homeDashWorkbenchSelectAllBtn,
+    body[data-shell-readonly="true"] #homeDashWorkbenchClearBtn,
+    body[data-shell-readonly="true"] #homeDashModeUnassignedBtn,
+    body[data-shell-readonly="true"] #homeDashModeSearchBtn,
+    body[data-shell-readonly="true"] .dashboard-bulk-edit-bar,
+    body[data-shell-readonly="true"] .dashboard-workbench-panel,
+    body[data-shell-readonly="true"] .dashboard-slot-selectbtn,
+    body[data-shell-readonly="true"] .dashboard-slot-editbtn,
+    body[data-shell-readonly="true"] #homeNewBtn,
+    body[data-shell-readonly="true"] #homeNoResultCta,
+    body[data-shell-readonly="true"] #homeMasterDeleteBtn,
+    body[data-shell-readonly="true"] #homeMasterSortArtistRow,
+    body[data-shell-readonly="true"] #homeRestorePreviousSlotBtn,
+    body[data-shell-readonly="true"] #homeOpenDashboardSlotBtn,
+    body[data-shell-readonly="true"] #homeEditDeleteBtn,
+    body[data-shell-readonly="true"] .home-related-dup-btn,
+    body[data-shell-readonly="true"] .home-related-del-btn,
+    body[data-shell-readonly="true"] .home-location-before-btn,
+    body[data-shell-readonly="true"] .home-location-after-btn,
+    body[data-shell-readonly="true"] .order-before-btn,
+    body[data-shell-readonly="true"] .order-after-btn,
+    body[data-shell-readonly="true"] .homeMasterVariantEditBtn,
+    body[data-shell-readonly="true"] .homeMasterVariantRegisterBtn {
+      display: none !important;
     }
 
     .tab-panel.active {
@@ -4548,7 +4594,7 @@
 
   </style>
 </head>
-<body>
+<body data-shell-mode="ops" data-shell-readonly="true">
   <div class="wrap">
     <header class="hero">
       <div class="hero-topbar">
@@ -4573,9 +4619,14 @@
       </details>
     </header>
 
-    <div class="tabs">
-      <button id="tabHomeBtn" class="tab-btn same-as-home active" type="button">대시보드</button>
-      <button id="tabSimpleBtn" class="tab-btn" type="button">현장 운영</button>
+    <div id="shellTabs" class="tabs" style="display:none;">
+      <button id="tabSimpleBtn" class="tab-btn active" type="button">운영 홈</button>
+      <button id="shellCabinetsBtn" class="tab-btn" type="button">장식장</button>
+      <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;">관리</button>
+    </div>
+
+    <div id="adminTabs" class="tabs" style="display:none;">
+      <button id="tabHomeBtn" class="tab-btn same-as-home" type="button">대시보드</button>
       <button id="tabManageBtn" class="tab-btn" type="button">검색/관리</button>
       <button id="tabSourceBtn" class="tab-btn same-as-home" type="button">소스 보강</button>
       <button id="tabRegisterBtn" class="tab-btn same-as-home" type="button">등록/수집</button>
@@ -4872,23 +4923,23 @@
 
     <div id="tabSimple" class="tab-panel">
       <details class="manual-block">
-        <summary>현장 운영 활용 매뉴얼</summary>
+        <summary>운영 홈 활용 매뉴얼</summary>
         <div class="manual-block-body">
           <ol>
-            <li>고객 요청곡을 찾거나 현재 위치를 빠르게 확인해야 할 때 이 화면을 엽니다.</li>
+            <li>상품 보유 여부나 현재 위치를 빠르게 확인해야 할 때 이 화면을 엽니다.</li>
             <li>곡명, 아티스트명, 상품명, 바코드, 견출지 ID로 먼저 상품을 조회합니다.</li>
-            <li>현재 위치와 직전 위치를 확인하고, 필요하면 요청곡 로그를 등록해 상태를 관리합니다.</li>
-            <li>응대가 끝나면 최근 요청곡 목록에서 상태를 갱신하고, 메타 수정이 필요하면 관리자 화면으로 넘깁니다.</li>
+            <li>현재 위치와 직전 위치를 확인해 장식장 동선을 판단합니다.</li>
+            <li>수정이나 재배치가 필요하면 관리자만 상단 `관리`로 이동합니다.</li>
           </ol>
-          <div class="manual-block-note">현장 운영 화면은 조회와 요청 로그 중심입니다. 메타 수정은 관리자 화면에서 처리합니다.</div>
+          <div class="manual-block-note">운영 홈은 조회 전용입니다. 상품 수정, 이동, 등록/삭제는 `관리`에서만 처리합니다.</div>
         </div>
       </details>
       <div class="operator-shell">
         <div class="operator-card-stack">
           <section class="card">
             <div class="result-head">
-              <strong>현장 운영 조회<span class="help-dot" tabindex="0" data-help="현장 운영자는 이 화면에서 곡명, 아티스트, 앨범, 바코드, 견출지 ID로 빠르게 찾고 현재 위치와 직전 위치를 확인합니다. 메타 수정은 하지 않고, 요청곡 등록과 상태 확인 중심으로 사용합니다.">?</span></strong>
-              <span class="mini">곡명 / 아티스트 / 앨범 / 바코드 / 견출지 ID</span>
+              <strong>운영 홈 조회<span class="help-dot" tabindex="0" data-help="운영 홈에서는 곡명, 아티스트, 앨범, 바코드, 견출지 ID로 빠르게 찾고 현재 위치와 직전 위치를 확인합니다. 조회 전용이며 수정이나 이동은 하지 않습니다.">?</span></strong>
+              <span class="mini">곡명 / 아티스트 / 상품 / 바코드 / 견출지 ID</span>
             </div>
             <div class="operator-searchbar">
               <div>
@@ -4908,7 +4959,7 @@
         </div>
 
         <div class="operator-card-stack">
-          <section class="card">
+          <section id="operatorRequestComposerCard" class="card">
             <div class="result-head">
               <strong>요청곡 등록<span class="help-dot" tabindex="0" data-help="고객 요청곡이나 현장 재생 요청을 기록하는 영역입니다. 어떤 곡을 어떤 상품으로 응대한 것인지와 원래 위치를 함께 남겨 두면 재배치와 복귀 확인이 쉬워집니다.">?</span></strong>
               <span class="mini">현장 운영자는 요청 로그만 입력합니다.</span>
@@ -4943,7 +4994,7 @@
             <div id="operatorRequestStatus" class="status"></div>
           </section>
 
-          <section class="card">
+          <section id="operatorRequestHistoryCard" class="card">
             <div class="result-head">
               <strong>최근 요청곡</strong>
               <span id="operatorRequestCount" class="mini">0건</span>
@@ -7387,6 +7438,7 @@
     let opsCameraSelectedId = null;
     let opsCameraDiscoverItems = [];
     let appAuthSession = null;
+    let appShellMode = "ops";
     let operatorLookupResults = [];
     let operatorRequestItems = [];
     let dashboardDraggedOwnedItemId = null;
@@ -8467,6 +8519,122 @@
       return "ops";
     }
 
+    function isAdminSession(session = appAuthSession) {
+      if (!session || !session.authenticated) return false;
+      return String(session.role || "").trim().toUpperCase() === "ADMIN";
+    }
+
+    function normalizeShellMode(mode, session = appAuthSession) {
+      const requested = String(mode || "").trim().toLowerCase();
+      const authenticated = Boolean(session?.authenticated);
+      if (!authenticated) return "ops";
+      if (requested === "admin") return isAdminSession(session) ? "admin" : "ops";
+      if (requested === "cabinets") return "cabinets";
+      return "ops";
+    }
+
+    function currentShellMode() {
+      return normalizeShellMode(appShellMode, appAuthSession);
+    }
+
+    function isShellReadOnly(mode = currentShellMode()) {
+      return String(mode || "").trim().toLowerCase() !== "admin";
+    }
+
+    function shellRoutePath(mode) {
+      if (mode === "admin") return "/admin";
+      if (mode === "cabinets") return "/ops/cabinets";
+      return "/ops";
+    }
+
+    function syncShellReadonlyState() {
+      const mode = currentShellMode();
+      document.body.dataset.shellMode = mode;
+      document.body.dataset.shellReadonly = isShellReadOnly(mode) ? "true" : "false";
+    }
+
+    function syncShellButtons() {
+      const mode = currentShellMode();
+      $("tabSimpleBtn")?.classList.toggle("active", mode === "ops");
+      $("shellCabinetsBtn")?.classList.toggle("active", mode === "cabinets");
+      $("shellAdminBtn")?.classList.toggle("active", mode === "admin");
+    }
+
+    function resetReadOnlyShellState() {
+      resetDashboardSlotSelection();
+      resetDashboardUnassignedSelection();
+      resetDashboardSearchSelection();
+      resetDashboardDragState();
+      renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
+      renderDashboardWorkbench();
+    }
+
+    function focusOpsHomeSearchInput() {
+      const input = $("operatorLookupQuery");
+      if (!input || currentShellMode() !== "ops") return;
+      requestAnimationFrame(() => {
+        if (currentShellMode() !== "ops") return;
+        input.focus();
+        input.select();
+      });
+    }
+
+    function updateShellRoute(mode, options = {}) {
+      if (options.pushHistory === false) return;
+      const nextPath = shellRoutePath(mode);
+      if (currentAppPath() === nextPath) return;
+      window.history.replaceState({}, "", nextPath);
+    }
+
+    // Nav contract:
+    // - operator: 운영 홈, 장식장
+    // - admin: 운영 홈, 장식장, 관리
+    // - non-admin shells stay read-only and must not expose request-write actions
+    function applyShellNavigation(session) {
+      const authenticated = Boolean(session?.authenticated);
+      const isAdmin = isAdminSession(session);
+      const mode = currentShellMode();
+      setTextIfPresent("tabSimpleBtn", "운영 홈");
+      setTextIfPresent("shellCabinetsBtn", "장식장");
+      setTextIfPresent("shellAdminBtn", "관리");
+      setDisplayIfPresent("shellTabs", authenticated ? "flex" : "none");
+      setDisplayIfPresent("tabSimpleBtn", authenticated ? "inline-flex" : "none");
+      setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
+      setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin ? "inline-flex" : "none");
+      setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
+      syncShellButtons();
+      syncShellReadonlyState();
+    }
+
+    function openAdminConsole(tab = "home", options = {}) {
+      if (!isAdminSession()) return;
+      const nextTab = ["home", "manage", "source", "register", "ops"].includes(String(tab || "").trim())
+        ? String(tab || "").trim()
+        : "home";
+      appShellMode = "admin";
+      applyShellNavigation(appAuthSession);
+      switchMainTab(nextTab, { remember: options.remember !== false });
+      renderOperatorLookupResults();
+      renderOperatorRequestList();
+      updateShellRoute("admin", options);
+    }
+
+    function switchShellMode(mode, options = {}) {
+      const nextMode = normalizeShellMode(mode, appAuthSession);
+      appShellMode = nextMode;
+      if (nextMode === "admin") {
+        openAdminConsole(options.adminTab || "home", { remember: false, pushHistory: options.pushHistory });
+        return;
+      }
+      applyShellNavigation(appAuthSession);
+      switchMainTab(nextMode === "cabinets" ? "home" : "simple", { remember: false });
+      resetReadOnlyShellState();
+      renderOperatorLookupResults();
+      renderOperatorRequestList();
+      updateShellRoute(nextMode, options);
+      if (nextMode === "ops") focusOpsHomeSearchInput();
+    }
+
     function switchMainTab(tab, options = {}) {
       const remember = options.remember !== false;
       const tabs = [
@@ -8526,16 +8694,7 @@
     }
 
     function applyRouteSelectedShellMode(mode) {
-      if (mode === "cabinets") {
-        switchMainTab("ops", { remember: false });
-        switchSubTab("ops", "cabinet", { remember: false });
-        return;
-      }
-      if (mode === "admin") {
-        switchMainTab("home", { remember: false });
-        return;
-      }
-      switchMainTab("simple", { remember: false });
+      switchShellMode(mode, { remember: false, pushHistory: false, adminTab: "home" });
     }
 
     async function safeJson(res) {
@@ -8586,36 +8745,8 @@
     }
 
     function applyAuthSessionUi() {
-      const authenticated = Boolean(appAuthSession?.authenticated);
-      const role = authenticated ? String(appAuthSession?.role || "").trim().toUpperCase() : "";
-      const isOperator = role === "OPERATOR";
-      const allowCabinetShell = authenticated && isOperator && shellModeFromPath() === "cabinets";
-      const fullUiButtons = ["tabHomeBtn", "tabManageBtn", "tabSourceBtn", "tabRegisterBtn", "tabOpsBtn"];
-      const fullUiPanels = ["tabHome", "tabManage", "tabSource", "tabRegister", "tabOps"];
-      for (const id of fullUiButtons) {
-        const el = $(id);
-        if (!el) continue;
-        const visible = authenticated && (!isOperator || (allowCabinetShell && id === "tabOpsBtn"));
-        el.style.display = visible ? "inline-flex" : "none";
-      }
-      for (const id of fullUiPanels) {
-        const el = $(id);
-        if (!el) continue;
-        const visible = authenticated && (!isOperator || (allowCabinetShell && id === "tabOps"));
-        if (!visible) {
-          el.classList.remove("active");
-          el.style.display = "none";
-        } else {
-          el.style.display = "";
-        }
-      }
-      const simpleBtn = $("tabSimpleBtn");
-      if (simpleBtn) {
-        simpleBtn.style.display = "inline-flex";
-      }
-      if (isOperator && !allowCabinetShell) {
-        switchMainTab("simple", { remember: false });
-      }
+      appShellMode = normalizeShellMode(appShellMode || shellModeFromPath(), appAuthSession);
+      applyShellNavigation(appAuthSession);
     }
 
     async function loadAuthSession(initialShellMode) {
@@ -8846,7 +8977,7 @@
     }
 
     function operatorCanUseManage() {
-      return String(appAuthSession?.role || "ADMIN").trim().toUpperCase() === "ADMIN";
+      return isAdminSession() && !isShellReadOnly();
     }
 
     function clearOperatorRequestForm() {
@@ -8912,22 +9043,26 @@
         const currentLocation = String(row.current_slot_display_name || "미배치").trim() || "미배치";
         const previousLocation = String(row.previous_slot_display_name || row.previous_slot_code || "-").trim() || "-";
         const trackHits = Array.isArray(row.track_matches) ? row.track_matches : [];
+        const readOnlyShell = isShellReadOnly();
         const coverHtml = String(row.cover_image_url || "").trim()
           ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(String(row.format_name || row.category || "-").trim() || "-");
         const rightButtons = [];
-        if (trackHits.length) {
+        if (!readOnlyShell && trackHits.length) {
           trackHits.slice(0, 5).forEach((track, idx) => {
             rightButtons.push(
               `<button class="btn ghost tiny" type="button" data-operator-fill-track="${ownedItemId}" data-operator-track-title="${escapeHtml(track)}" data-operator-track-no="${idx + 1}">요청 등록</button>`
             );
           });
-        } else {
+        } else if (!readOnlyShell) {
           rightButtons.push(`<button class="btn ghost tiny" type="button" data-operator-fill-item="${ownedItemId}">상품 연결</button>`);
         }
         if (operatorCanUseManage()) {
           rightButtons.push(`<button class="btn ghost tiny" type="button" data-operator-open-manage="${ownedItemId}">관리 화면</button>`);
         }
+        const actionsHtml = rightButtons.length
+          ? rightButtons.join("")
+          : `<div class="mini muted">읽기 전용 운영 홈입니다.</div>`;
         return `
           <div class="operator-result-item">
             <div class="operator-cover">${coverHtml}</div>
@@ -8946,11 +9081,11 @@
               <div class="operator-track-hits">
                 ${trackHits.length
                   ? trackHits.slice(0, 5).map((track) => `<div class="operator-track-hit"><strong>곡</strong>${escapeHtml(track)}</div>`).join("")
-                  : `<div class="mini muted">곡 일치 항목이 없으면 상품 기준으로 요청을 남길 수 있습니다.</div>`
+                  : `<div class="mini muted">${readOnlyShell ? "곡 일치 항목이 없으면 상품 기준으로 현재 위치를 확인하세요." : "곡 일치 항목이 없으면 상품 기준으로 요청을 남길 수 있습니다."}</div>`
                 }
               </div>
             </div>
-            <div class="operator-actions">${rightButtons.join("")}</div>
+            <div class="operator-actions">${actionsHtml}</div>
           </div>
         `;
       }).join("");
@@ -8988,6 +9123,7 @@
         const snapshotLocation = String(row.current_slot_display_snapshot || row.current_slot_code_snapshot || "-").trim() || "-";
         const previousLocation = String(row.previous_slot_display_snapshot || row.previous_slot_code_snapshot || "-").trim() || "-";
         const currentLive = String(row.current_live_slot_display_name || row.current_slot_display_snapshot || row.current_slot_code_snapshot || "-").trim() || "-";
+        const readOnlyShell = isShellReadOnly();
         const coverHtml = String(row.cover_image_url || "").trim()
           ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(String(row.category || "-").trim() || "-");
@@ -9009,9 +9145,11 @@
               <div class="operator-status-badges">
                 <span class="operator-status-pill ${escapeHtml(operatorStatusClass(row.status))}">${escapeHtml(operatorStatusLabel(row.status))}</span>
               </div>
+              ${readOnlyShell ? "" : `
               <button class="btn ghost tiny" type="button" data-operator-request-status="${requestId}" data-status="PLAYING">재생중</button>
               <button class="btn ghost tiny" type="button" data-operator-request-status="${requestId}" data-status="RETURNED">반납</button>
               <button class="btn ghost tiny" type="button" data-operator-request-status="${requestId}" data-status="CANCELLED">취소</button>
+              `}
             </div>
           </div>
         `;
@@ -9019,6 +9157,10 @@
     }
 
     async function createOperatorRequest() {
+      if (isShellReadOnly()) {
+        setStatus("operatorRequestStatus", "err", "운영 홈은 현재 조회 전용입니다.");
+        return;
+      }
       const requestedTrack = $("operatorRequestTrack").value.trim();
       const ownedItemId = Number($("operatorRequestOwnedItemId").value || 0);
       const matchedTrackTitle = $("operatorRequestMatchedTrack").value.trim();
@@ -9052,6 +9194,10 @@
     }
 
     async function updateOperatorRequestStatus(requestId, status) {
+      if (isShellReadOnly()) {
+        setStatus("operatorRequestStatus", "err", "운영 홈은 현재 조회 전용입니다.");
+        return;
+      }
       const requestIdNum = Number(requestId || 0);
       if (!requestIdNum || !status) return;
       try {
@@ -10252,6 +10398,7 @@
     }
 
     function toggleDashboardSlotSelectionById(ownedItemId) {
+      if (isShellReadOnly()) return;
       const nextId = Number(ownedItemId || 0);
       if (!nextId) return;
       resetDashboardUnassignedSelection();
@@ -10265,6 +10412,7 @@
     }
 
     function toggleDashboardWorkbenchSelectionById(ownedItemId, source) {
+      if (isShellReadOnly()) return;
       const nextId = Number(ownedItemId || 0);
       const nextSource = String(source || "").trim().toUpperCase();
       if (!nextId || !nextSource) return;
@@ -10901,6 +11049,7 @@
       const labelCatalogText = dashboardItemLabelCatalogText(row);
       const rightMetaTags = dashboardItemFlagIcons(row);
       const memoryNote = String(row.memory_note || "").trim();
+      const readOnlyShell = isShellReadOnly();
       return `
         <div
           class="result-item home-location-slot-item dashboard-slot-covercard ${checked ? "pick" : ""}"
@@ -10909,11 +11058,11 @@
           data-dashboard-size-group="${escapeHtml(ownedPreferredStorageSizeGroup(row))}"
           data-dashboard-item-title="${escapeHtml(title)}"
           title="${escapeHtml(tooltip)}"
-          draggable="true"
+          draggable="${readOnlyShell ? "false" : "true"}"
         >
           <div class="dashboard-slot-covercard-cover">
-            <button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" aria-label="${checked ? "선택 해제" : "선택"}" data-dashboard-slot-select="${ownedItemId}" title="${checked ? "선택 해제" : "선택"}"></button>
-            <button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-slot-edit="${ownedItemId}" title="상품 수정">✎</button>
+            ${readOnlyShell ? "" : `<button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" aria-label="${checked ? "선택 해제" : "선택"}" data-dashboard-slot-select="${ownedItemId}" title="${checked ? "선택 해제" : "선택"}"></button>`}
+            ${readOnlyShell ? "" : `<button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-slot-edit="${ownedItemId}" title="상품 수정">✎</button>`}
             <div class="dashboard-slot-covercard-index">${index + 1}</div>
             ${rightMetaTags ? `<div class="dashboard-slot-covercard-badges">${rightMetaTags}</div>` : ""}
             ${coverHtml}
@@ -10936,6 +11085,7 @@
       const flagIcons = dashboardItemFlagIcons(row);
       const memoryNote = String(row.memory_note || "").trim();
       const releasedDate = dashboardItemReleasedText(row);
+      const readOnlyShell = isShellReadOnly();
       return `
         <div
           class="result-item home-location-slot-item dashboard-slot-listitem ${checked ? "pick" : ""}"
@@ -10944,9 +11094,9 @@
           data-dashboard-size-group="${escapeHtml(ownedPreferredStorageSizeGroup(row))}"
           data-dashboard-item-title="${escapeHtml(title)}"
           title="${escapeHtml(tooltip)}"
-          draggable="true"
+          draggable="${readOnlyShell ? "false" : "true"}"
         >
-          <button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" data-dashboard-slot-select="${ownedItemId}" title="선택/해제">${checked ? "해제" : "선택"}</button>
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" data-dashboard-slot-select="${ownedItemId}" title="선택/해제">${checked ? "해제" : "선택"}</button>`}
           <div class="dashboard-slot-listitem-order">${index + 1}</div>
           <div class="dashboard-slot-listitem-cover">
             ${dashboardItemCoverHtml(row, title)}
@@ -10959,7 +11109,7 @@
             <div class="dashboard-slot-listitem-sub">${escapeHtml(dashboardItemLabelCatalogText(row))}</div>
             ${memoryNote ? `<div class="dashboard-slot-listitem-note">${escapeHtml(memoryNote)}</div>` : ""}
           </div>
-          <button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-slot-edit="${ownedItemId}" title="상품 수정">✎</button>
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-slot-edit="${ownedItemId}" title="상품 수정">✎</button>`}
           <div class="dashboard-slot-listitem-flags">${flagIcons}</div>
         </div>
       `;
@@ -10972,6 +11122,7 @@
       const tooltip = dashboardSlotTooltipText(row, index);
       const flagIcons = dashboardItemFlagIcons(row);
       const sizeClass = dashboardShelfSizeClass(row);
+      const readOnlyShell = isShellReadOnly();
       return `
         <div
           class="result-item home-location-slot-item dashboard-slot-shelfcard ${sizeClass} ${checked ? "pick" : ""}"
@@ -10980,10 +11131,10 @@
           data-dashboard-size-group="${escapeHtml(ownedPreferredStorageSizeGroup(row))}"
           data-dashboard-item-title="${escapeHtml(title)}"
           title="${escapeHtml(tooltip)}"
-          draggable="true"
+          draggable="${readOnlyShell ? "false" : "true"}"
         >
-          <button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" aria-label="${checked ? "선택 해제" : "선택"}" data-dashboard-slot-select="${ownedItemId}" title="${checked ? "선택 해제" : "선택"}"></button>
-          <button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-slot-edit="${ownedItemId}" title="상품 수정">✎</button>
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" aria-label="${checked ? "선택 해제" : "선택"}" data-dashboard-slot-select="${ownedItemId}" title="${checked ? "선택 해제" : "선택"}"></button>`}
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-slot-edit="${ownedItemId}" title="상품 수정">✎</button>`}
           <div class="dashboard-slot-shelfcover">
             <div class="dashboard-slot-covercard-index">${index + 1}</div>
             ${flagIcons ? `<div class="dashboard-slot-covercard-badges">${flagIcons}</div>` : ""}
@@ -11006,6 +11157,7 @@
       const releasedDate = dashboardItemReleasedText(row);
       const locationAction = getDashboardWorkbenchLocationAction(row, mode);
       const locationText = dashboardWorkbenchLocationText(row, mode);
+      const readOnlyShell = isShellReadOnly();
       return `
         <div
           class="result-item home-location-slot-item dashboard-slot-listitem ${checked ? "pick" : ""}"
@@ -11013,7 +11165,7 @@
           data-dashboard-workbench-source="${mode}"
           title="${escapeHtml(tooltip)}"
         >
-          <button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" data-dashboard-workbench-select="${ownedItemId}" data-dashboard-workbench-source="${mode}" title="선택/해제">${checked ? "해제" : "선택"}</button>
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" data-dashboard-workbench-select="${ownedItemId}" data-dashboard-workbench-source="${mode}" title="선택/해제">${checked ? "해제" : "선택"}</button>`}
           <div class="dashboard-slot-listitem-order">${index + 1}</div>
           <div class="dashboard-slot-listitem-cover">
             ${dashboardItemCoverHtml(row, title)}
@@ -11028,7 +11180,7 @@
             ${memoryNote ? `<div class="dashboard-slot-listitem-note">${escapeHtml(memoryNote)}</div>` : ""}
           </div>
           ${locationAction ? dashboardWorkbenchLocateButtonHtml(locationAction) : ""}
-          <button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-workbench-edit="${ownedItemId}" title="상품 수정">✎</button>
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-workbench-edit="${ownedItemId}" title="상품 수정">✎</button>`}
           <div class="dashboard-slot-listitem-flags">${flagIcons}</div>
         </div>
       `;
@@ -11046,6 +11198,7 @@
       const locationAction = getDashboardWorkbenchLocationAction(row, mode);
       const locationText = dashboardWorkbenchLocationText(row, mode);
       const sizeClass = dashboardShelfSizeClass(row);
+      const readOnlyShell = isShellReadOnly();
       return `
         <div
           class="result-item home-location-slot-item dashboard-slot-shelfcard ${sizeClass} ${checked ? "pick" : ""}"
@@ -11053,8 +11206,8 @@
           data-dashboard-workbench-source="${mode}"
           title="${escapeHtml(tooltip)}"
         >
-          <button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" aria-label="${checked ? "선택 해제" : "선택"}" data-dashboard-workbench-select="${ownedItemId}" data-dashboard-workbench-source="${mode}" title="${checked ? "선택 해제" : "선택"}"></button>
-          <button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-workbench-edit="${ownedItemId}" title="상품 수정">✎</button>
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" aria-label="${checked ? "선택 해제" : "선택"}" data-dashboard-workbench-select="${ownedItemId}" data-dashboard-workbench-source="${mode}" title="${checked ? "선택 해제" : "선택"}"></button>`}
+          ${readOnlyShell ? "" : `<button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-workbench-edit="${ownedItemId}" title="상품 수정">✎</button>`}
           ${locationAction ? dashboardWorkbenchLocateButtonHtml(locationAction) : ""}
           <div class="dashboard-slot-shelfcover">
             <div class="dashboard-slot-covercard-index">${index + 1}</div>
@@ -11172,6 +11325,7 @@
       const memoryNote = String(row?.memory_note || "").trim();
       const locationAction = getDashboardWorkbenchLocationAction(row, mode);
       const locationText = dashboardWorkbenchLocationText(row, mode);
+      const readOnlyShell = isShellReadOnly();
       const tooltipBits = [
         title,
         `owned_item_id: ${ownedItemId}`,
@@ -11189,8 +11343,8 @@
           title="${escapeHtml(tooltipBits.join("\n"))}"
         >
           <div class="dashboard-slot-covercard-cover">
-            <button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" data-dashboard-workbench-select="${ownedItemId}" data-dashboard-workbench-source="${mode}" title="선택/해제">${checked ? "해제" : "선택"}</button>
-            <button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-workbench-edit="${ownedItemId}" title="상품 수정">✎</button>
+            ${readOnlyShell ? "" : `<button class="dashboard-slot-selectbtn ${checked ? "is-selected" : ""}" type="button" data-dashboard-workbench-select="${ownedItemId}" data-dashboard-workbench-source="${mode}" title="선택/해제">${checked ? "해제" : "선택"}</button>`}
+            ${readOnlyShell ? "" : `<button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-workbench-edit="${ownedItemId}" title="상품 수정">✎</button>`}
             ${locationAction ? dashboardWorkbenchLocateButtonHtml(locationAction) : ""}
             ${flagIcons ? `<div class="dashboard-slot-covercard-badges">${flagIcons}</div>` : ""}
             ${dashboardItemCoverHtml(row, title)}
@@ -11719,7 +11873,9 @@
           return;
         }
         titleEl.textContent = "선택 칸";
-        metaEl.textContent = "장식장을 열고 칸을 선택하세요. 클릭은 선택, 더블클릭은 수정 화면입니다.";
+        metaEl.textContent = isShellReadOnly()
+          ? "장식장을 열고 칸을 선택하세요. 이 셸에서는 조회만 가능합니다."
+          : "장식장을 열고 칸을 선택하세요. 클릭은 선택, 더블클릭은 수정 화면입니다.";
         root.innerHTML = "<div class='mini muted'>선택된 칸이 없습니다.</div>";
         updateDashboardSlotPageControls(null);
         renderDashboardSelectionSummary();
@@ -11733,7 +11889,7 @@
         slotRow.cell_code ? `${slotRow.cell_code}칸` : null,
         slotRow.allowed_size_group ? dashboardSizeGroupLabel(slotRow.allowed_size_group) : null,
         `보관 ${formatCount(slotRow.count)}건`,
-        "클릭 선택, 더블클릭 수정, 다른 칸 클릭 이동",
+        isShellReadOnly() ? "조회 전용" : "클릭 선택, 더블클릭 수정, 다른 칸 클릭 이동",
       ].filter(Boolean);
       metaEl.textContent = metaBits.join(" | ") || "선택 칸 정보";
 
@@ -12156,6 +12312,7 @@
 
       root.querySelectorAll("[data-move-item-id]").forEach((node) => {
         node.addEventListener("click", () => {
+          if (isShellReadOnly()) return;
           const ownedItemId = Number(node.getAttribute("data-move-item-id") || 0);
           if (ownedItemId > 0) loadHomeItemForEdit(ownedItemId);
         });
@@ -18912,12 +19069,14 @@
       }
     }
 
-    $("tabHomeBtn").addEventListener("click", () => switchMainTab("home"));
-    $("tabSimpleBtn").addEventListener("click", () => switchMainTab("simple"));
-    $("tabManageBtn").addEventListener("click", () => switchMainTab("manage"));
-    $("tabSourceBtn").addEventListener("click", () => switchMainTab("source"));
-    $("tabRegisterBtn").addEventListener("click", () => switchMainTab("register"));
-    $("tabOpsBtn").addEventListener("click", () => switchMainTab("ops"));
+    $("tabHomeBtn").addEventListener("click", () => openAdminConsole("home"));
+    $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
+    $("shellCabinetsBtn").addEventListener("click", () => switchShellMode("cabinets"));
+    $("shellAdminBtn").addEventListener("click", () => switchShellMode("admin"));
+    $("tabManageBtn").addEventListener("click", () => openAdminConsole("manage"));
+    $("tabSourceBtn").addEventListener("click", () => openAdminConsole("source"));
+    $("tabRegisterBtn").addEventListener("click", () => openAdminConsole("register"));
+    $("tabOpsBtn").addEventListener("click", () => openAdminConsole("ops"));
     $("opsSystemStatusReloadBtn")?.addEventListener("click", loadOpsSystemStatus);
     $("opsExportDbBtn")?.addEventListener("click", async () => {
       try {
@@ -18976,6 +19135,7 @@
     $("operatorRequestRefreshBtn").addEventListener("click", loadOperatorRequestList);
     $("operatorRequestFilterStatus").addEventListener("change", loadOperatorRequestList);
     $("operatorLookupResults").addEventListener("click", async (e) => {
+      if (isShellReadOnly()) return;
       const trackBtn = e.target.closest("[data-operator-fill-track]");
       if (trackBtn) {
         const ownedItemId = Number(trackBtn.getAttribute("data-operator-fill-track") || 0);
@@ -19002,6 +19162,7 @@
       }
     });
     $("operatorRequestList").addEventListener("click", async (e) => {
+      if (isShellReadOnly()) return;
       const statusBtn = e.target.closest("[data-operator-request-status]");
       if (!statusBtn) return;
       const requestId = Number(statusBtn.getAttribute("data-operator-request-status") || 0);
@@ -19462,6 +19623,11 @@
     $("homeDashCabinetFloors").addEventListener("click", async (e) => {
       const btn = e.target.closest("[data-dashboard-slot-code]");
       if (!btn) return;
+      if (isShellReadOnly()) {
+        resetDashboardDragState();
+        await selectDashboardSlot(String(btn.getAttribute("data-dashboard-slot-code") || "").trim());
+        return;
+      }
       const slotCode = String(btn.getAttribute("data-dashboard-slot-code") || "").trim();
       if (!slotCode) return;
       const selectedWorkbenchItems = getDashboardSelectedWorkbenchRows();
@@ -19491,6 +19657,7 @@
       await selectDashboardSlot(slotCode);
     });
     $("homeDashCabinetFloors").addEventListener("dragover", (e) => {
+      if (isShellReadOnly()) return;
       const btn = e.target.closest("[data-dashboard-slot-code]");
       const sourceOwnedItemId = getDashboardDraggedOwnedItemId(e);
       if (!btn || !sourceOwnedItemId) return;
@@ -19500,11 +19667,13 @@
       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
     });
     $("homeDashCabinetFloors").addEventListener("dragleave", (e) => {
+      if (isShellReadOnly()) return;
       const btn = e.target.closest("[data-dashboard-slot-code]");
       if (!btn) return;
       btn.classList.remove("drag-over");
     });
     $("homeDashCabinetFloors").addEventListener("drop", async (e) => {
+      if (isShellReadOnly()) return;
       const btn = e.target.closest("[data-dashboard-slot-code]");
       const sourceOwnedItemId = getDashboardDraggedOwnedItemId(e);
       if (!btn || !sourceOwnedItemId) return;
@@ -19522,6 +19691,7 @@
       await moveDashboardOwnedItemToSlot(sourceOwnedItemId, targetSlotCode);
     });
     $("homeDashSlotItems").addEventListener("click", (e) => {
+      if (isShellReadOnly()) return;
       const check = e.target.closest("[data-dashboard-slot-select]");
       if (check) {
         e.stopPropagation();
@@ -19544,6 +19714,7 @@
       toggleDashboardSlotSelectionById(ownedItemId);
     });
     $("homeDashWorkbenchList").addEventListener("click", (e) => {
+      if (isShellReadOnly()) return;
       const check = e.target.closest("[data-dashboard-workbench-select]");
       if (check) {
         e.stopPropagation();
@@ -20089,6 +20260,7 @@
     });
 
     const initialShellMode = shellModeFromPath();
+    appShellMode = normalizeShellMode(initialShellMode, appAuthSession);
 
     initMediaLabelUi();
     applyFieldHelpTooltips();
@@ -20097,6 +20269,7 @@
     resetPurchaseImportForm();
     switchSubTab("register", "collect", { remember: false });
     switchSubTab("ops", "cabinet", { remember: false });
+    applyShellNavigation(appAuthSession);
     applyRouteSelectedShellMode(initialShellMode);
     syncShelfNavButtons();
     renderShelfTrack();
