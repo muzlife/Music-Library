@@ -107,3 +107,18 @@ def test_index_operator_results_expose_cabinet_open_action_in_readonly_shell():
     assert cabinet_action in block
     assert readonly_guard in block
     assert block.index(cabinet_action) < block.index(readonly_guard)
+
+
+def test_index_workbench_location_action_runs_before_readonly_guard():
+    html = read_static_html("index.html")
+    event_start = '$("homeDashWorkbenchList").addEventListener("click", (e) => {'
+    event_end = '    $("homeDashWorkbenchRecommendBtn").addEventListener("click", loadDashboardWorkbenchRecommendations);'
+    assert event_start in html
+    assert event_end in html
+    block = html.split(event_start, 1)[1].split(event_end, 1)[0]
+    locate_action = 'const locateBtn = e.target.closest("[data-dashboard-workbench-open-slot]");'
+    readonly_guard = 'if (isShellReadOnly()) return;'
+    assert locate_action in block
+    assert 'openCabinetLocationAction(slotId, slotCode, "", "", "");' in block
+    assert readonly_guard in block
+    assert block.index(locate_action) < block.index(readonly_guard)
