@@ -234,6 +234,21 @@
       display: none !important;
     }
 
+    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-topbar,
+    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-hero-grid,
+    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-secondary-grid,
+    body[data-shell-mode="cabinets"] #homeDashCabinetCloseBtn,
+    body[data-shell-mode="cabinets"] #homeDashCameraCard,
+    body[data-shell-mode="cabinets"] .dashboard-selection-toolbar,
+    body[data-shell-mode="cabinets"] .dashboard-bulk-edit-bar,
+    body[data-shell-mode="cabinets"] #homeDashSelectedItemMeta {
+      display: none !important;
+    }
+
+    body[data-shell-mode="cabinets"] #homeDashboardCard .dashboard-main-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .tab-panel.active {
       display: block;
     }
@@ -7440,6 +7455,7 @@
     let appAuthSession = null;
     let appAuthSessionResolved = false;
     let appShellMode = "ops";
+    let pendingOpsCabinetSelection = null;
     let operatorLookupResults = [];
     let operatorRequestItems = [];
     let dashboardDraggedOwnedItemId = null;
@@ -8513,11 +8529,59 @@
       return window.location.pathname || "/";
     }
 
+    function currentAppRouteKey() {
+      return `${currentAppPath()}${window.location.search || ""}`;
+    }
+
     function shellModeFromPath() {
       const path = currentAppPath();
       if (path === "/admin") return "admin";
       if (path === "/ops/cabinets") return "cabinets";
       return "ops";
+    }
+
+    function normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode) {
+      const nextCabinetName = String(cabinetName || "").trim();
+      const nextColumnCode = String(columnCode || "").trim();
+      const nextCellCode = String(cellCode || "").trim();
+      if (!(nextCabinetName && nextColumnCode && nextCellCode)) return null;
+      return {
+        cabinet_name: nextCabinetName,
+        column_code: nextColumnCode,
+        cell_code: nextCellCode,
+      };
+    }
+
+    function cabinetRouteSelectionFromLocation() {
+      const params = new URLSearchParams(window.location.search || "");
+      return normalizeCabinetRouteSelection(
+        params.get("cabinet_name"),
+        params.get("column_code"),
+        params.get("cell_code"),
+      );
+    }
+
+    function cabinetRoutePath(selection = null) {
+      const normalized = normalizeCabinetRouteSelection(
+        selection?.cabinet_name,
+        selection?.column_code,
+        selection?.cell_code,
+      );
+      if (!normalized) return "/ops/cabinets";
+      const params = new URLSearchParams({
+        cabinet_name: normalized.cabinet_name,
+        column_code: normalized.column_code,
+        cell_code: normalized.cell_code,
+      });
+      return `/ops/cabinets?${params.toString()}`;
+    }
+
+    function resolveCabinetRouteSelection(selection = null) {
+      return normalizeCabinetRouteSelection(
+        selection?.cabinet_name,
+        selection?.column_code,
+        selection?.cell_code,
+      );
     }
 
     function isAdminSession(session = appAuthSession) {
@@ -8545,12 +8609,14 @@
     }
 
     function isShellReadOnly(mode = currentShellMode()) {
-      return String(mode || "").trim().toLowerCase() !== "admin";
+      return String(mode || "").trim().toLowerCase() !== "admin" || !isAdminSession(appAuthSession);
     }
 
-    function shellRoutePath(mode) {
+    function shellRoutePath(mode, options = {}) {
       if (mode === "admin") return "/admin";
-      if (mode === "cabinets") return "/ops/cabinets";
+      if (mode === "cabinets") {
+        return cabinetRoutePath(resolveCabinetRouteSelection(options.cabinetSelection) || pendingOpsCabinetSelection);
+      }
       return "/ops";
     }
 
@@ -8587,8 +8653,8 @@
     }
 
     function updateShellRoute(mode, options = {}) {
-      const nextPath = shellRoutePath(mode);
-      if (currentAppPath() === nextPath) return;
+      const nextPath = shellRoutePath(mode, options);
+      if (currentAppRouteKey() === nextPath) return;
       if (options.pushHistory === false && options.replaceHistory !== true) return;
       if (options.replaceHistory === true) {
         window.history.replaceState({}, "", nextPath);
@@ -8633,6 +8699,9 @@
     function switchShellMode(mode, options = {}) {
       const nextMode = normalizeShellMode(mode, appAuthSession);
       appShellMode = nextMode;
+      pendingOpsCabinetSelection = nextMode === "cabinets"
+        ? (resolveCabinetRouteSelection(options.cabinetSelection) || pendingOpsCabinetSelection)
+        : null;
       if (nextMode === "admin") {
         openAdminConsole(options.adminTab || "home", {
           remember: false,
@@ -8647,6 +8716,9 @@
       renderOperatorLookupResults();
       renderOperatorRequestList();
       updateShellRoute(nextMode, options);
+      if (nextMode === "cabinets" && pendingOpsCabinetSelection && homeDashboardBySlot.length) {
+        applyPendingOpsCabinetSelection({ silent: true }).catch(() => {});
+      }
       if (nextMode === "ops") focusOpsHomeSearchInput();
     }
 
@@ -8710,9 +8782,15 @@
 
     function applyRouteSelectedShellMode(mode) {
       const resolvedMode = normalizeShellMode(mode, appAuthSession);
-      switchShellMode(mode, { remember: false, pushHistory: false, adminTab: "home" });
+      const cabinetSelection = resolvedMode === "cabinets" ? cabinetRouteSelectionFromLocation() : null;
+      switchShellMode(mode, {
+        remember: false,
+        pushHistory: false,
+        adminTab: "home",
+        cabinetSelection,
+      });
       if (appAuthSessionResolved) {
-        updateShellRoute(resolvedMode, { replaceHistory: true });
+        updateShellRoute(resolvedMode, { replaceHistory: true, cabinetSelection });
       }
     }
 
@@ -9065,10 +9143,19 @@
         const previousLocation = String(row.previous_slot_display_name || row.previous_slot_code || "-").trim() || "-";
         const trackHits = Array.isArray(row.track_matches) ? row.track_matches : [];
         const readOnlyShell = isShellReadOnly();
+        const currentCabinetName = String(row.current_cabinet_name || "").trim();
+        const currentColumnCode = String(row.current_column_code || "").trim();
+        const currentCellCode = String(row.current_cell_code || "").trim();
+        const hasCurrentTriplet = Boolean(currentCabinetName && currentColumnCode && currentCellCode);
         const coverHtml = String(row.cover_image_url || "").trim()
           ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(String(row.format_name || row.category || "-").trim() || "-");
         const rightButtons = [];
+        if (hasCurrentTriplet) {
+          rightButtons.push(
+            `<button class="btn ghost tiny" type="button" data-operator-open-cabinet="${ownedItemId}" data-cabinet-name="${escapeHtml(currentCabinetName)}" data-column-code="${escapeHtml(currentColumnCode)}" data-cell-code="${escapeHtml(currentCellCode)}">장식장 열기</button>`
+          );
+        }
         if (!readOnlyShell && trackHits.length) {
           trackHits.slice(0, 5).forEach((track, idx) => {
             rightButtons.push(
@@ -9083,7 +9170,7 @@
         }
         const actionsHtml = rightButtons.length
           ? rightButtons.join("")
-          : `<div class="mini muted">읽기 전용 운영 홈입니다.</div>`;
+          : `<div class="mini muted">${readOnlyShell ? "읽기 전용 운영 홈입니다." : "현재 위치가 없는 상품입니다."}</div>`;
         return `
           <div class="operator-result-item">
             <div class="operator-cover">${coverHtml}</div>
@@ -12281,13 +12368,7 @@
       if (!group) return;
       const slotRow = group.rows.find((row) => String(row.slot_code || "").trim() === String(slotCode || "").trim()) || null;
       if (!slotRow) return;
-      homeDashboardSelectedSlotCode = String(slotRow.slot_code || "").trim();
-      homeDashboardSlotItems = [];
-      homeDashboardSlotItemsSlotCode = null;
-      resetDashboardSlotPage();
-      resetDashboardSlotSelection();
-      renderDashboardCabinetDetail();
-      await loadDashboardSlotItems(slotRow);
+      await openDashboardForResolvedSlot(slotRow);
     }
 
     function renderDashboardRecentMoves(rows, windowDays, totalMoves) {
@@ -14151,7 +14232,10 @@
         renderDashboardSlotCards(data.by_slot, data.in_collection_items);
         phase = "unassigned";
         await loadDashboardUnassignedItems({ silent: true });
-        if (homeDashboardSelectedCabinetKey && homeDashboardSelectedSlotCode) {
+        if (currentShellMode() === "cabinets" && pendingOpsCabinetSelection) {
+          phase = "cabinet-route";
+          await applyPendingOpsCabinetSelection({ silent: true });
+        } else if (homeDashboardSelectedCabinetKey && homeDashboardSelectedSlotCode) {
           phase = "selected-slot";
           const groups = buildDashboardCabinetGroups(homeDashboardBySlot);
           const group = groups.find((item) => item.key === homeDashboardSelectedCabinetKey) || null;
@@ -14856,7 +14940,7 @@
             <div class="mini" style="margin-top:4px;">보유 상품: ${escapeHtml(memberPreview.join(" | ") || "-")}</div>
             ${trackPreview.length ? `<div class="mini">일치 곡: ${escapeHtml(trackPreview.join(" | "))}</div>` : ""}
             <div class="mini">위치: ${escapeHtml(locationPreview.join(" | ") || "-")}</div>
-            ${firstSlotId > 0 || firstSlotCode ? `<div class="mini" style="margin-top:4px;"><button class="btn ghost tiny" type="button" data-home-open-dashboard-location="${firstSlotId}" data-home-open-dashboard-slot-code="${escapeHtml(firstSlotCode)}">장식장 보기</button> <span class="muted">${escapeHtml(firstLocationDisplay || firstSlotCode)}</span></div>` : ""}
+            ${firstSlotId > 0 || firstSlotCode ? `<div class="mini" style="margin-top:4px;"><button class="btn ghost tiny" type="button" data-home-open-dashboard-location="${firstSlotId}" data-home-open-dashboard-slot-code="${escapeHtml(firstSlotCode)}" data-home-open-cabinet-name="${escapeHtml(String(row.first_member_cabinet_name || "").trim())}" data-home-open-column-code="${escapeHtml(String(row.first_member_column_code || "").trim())}" data-home-open-cell-code="${escapeHtml(String(row.first_member_cell_code || "").trim())}">장식장 열기</button> <span class="muted">${escapeHtml(firstLocationDisplay || firstSlotCode)}</span></div>` : ""}
             <div class="mini">album_master_id: ${row.id} / master: ${escapeHtml(row.source_master_id || "-")} / updated: ${escapeHtml(row.updated_at || "-")}</div>
           </div>
         </div>
@@ -15466,16 +15550,94 @@
       if (!slotRow) return;
       homeDashboardSelectedCabinetKey = dashboardCabinetKey(slotRow);
       homeDashboardSelectedSlotCode = String(slotRow.slot_code || "").trim();
+      homeDashboardSlotItems = [];
+      homeDashboardSlotItemsSlotCode = null;
       resetDashboardSlotPage();
+      resetDashboardSlotSelection();
       renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
       await loadDashboardSlotItems(slotRow, { silent: true });
       focusDashboardTargetSlot(slotRow.slot_code, { block: "start" });
       const slotLabel = storageSlotDisplayLabel(slotRow);
       const selectedWorkbenchRows = getDashboardSelectedWorkbenchRows();
-      const guideMessage = selectedWorkbenchRows.length
-        ? `${slotLabel} 칸을 열었습니다. 위쪽 칸을 확인한 뒤 다른 칸을 클릭하면 선택한 ${formatCount(selectedWorkbenchRows.length)}건이 바로 이동합니다.`
-        : (opts.message || `${slotLabel} 칸을 열었습니다. 위쪽 칸을 먼저 확인하고 필요하면 다른 칸을 클릭해 이동하세요.`);
+      const cabinetMode = currentShellMode() === "cabinets";
+      if (cabinetMode) {
+        updateShellRoute("cabinets", {
+          replaceHistory: true,
+          cabinetSelection: normalizeCabinetRouteSelection(
+            slotRow.cabinet_name,
+            slotRow.column_code,
+            slotRow.cell_code,
+          ),
+        });
+      }
+      const guideMessage = cabinetMode
+        ? (opts.message || `${slotLabel} 칸을 열었습니다. 이 화면은 조회 전용입니다.`)
+        : (
+            selectedWorkbenchRows.length
+              ? `${slotLabel} 칸을 열었습니다. 위쪽 칸을 확인한 뒤 다른 칸을 클릭하면 선택한 ${formatCount(selectedWorkbenchRows.length)}건이 바로 이동합니다.`
+              : (opts.message || `${slotLabel} 칸을 열었습니다. 위쪽 칸을 먼저 확인하고 필요하면 다른 칸을 클릭해 이동하세요.`)
+          );
       setStatus("homeDashboardStatus", "ok", guideMessage);
+    }
+
+    function findDashboardSlotByTriplet(cabinetName, columnCode, cellCode) {
+      const selection = normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode);
+      if (!selection) return null;
+      return homeDashboardBySlot.find((row) =>
+        String(row?.cabinet_name || "").trim() === selection.cabinet_name
+        && String(row?.column_code || "").trim() === selection.column_code
+        && String(row?.cell_code || "").trim() === selection.cell_code
+      ) || null;
+    }
+
+    async function applyPendingOpsCabinetSelection(opts = {}) {
+      if (currentShellMode() !== "cabinets") return false;
+      const selection = resolveCabinetRouteSelection(opts.selection) || pendingOpsCabinetSelection;
+      if (!selection) return false;
+      const slotRow = findDashboardSlotByTriplet(
+        selection.cabinet_name,
+        selection.column_code,
+        selection.cell_code,
+      );
+      if (!slotRow) {
+        pendingOpsCabinetSelection = null;
+        if (!opts.silent) {
+          setStatus("homeDashboardStatus", "err", "해당 장식장 칸을 찾지 못했습니다.");
+        }
+        return false;
+      }
+      pendingOpsCabinetSelection = null;
+      await openDashboardForResolvedSlot(slotRow, {
+        message: `${storageSlotDisplayLabel(slotRow)} 칸을 열었습니다. 이 화면은 조회 전용입니다.`,
+      });
+      return true;
+    }
+
+    async function openOpsCabinetView(cabinetName, columnCode, cellCode, options = {}) {
+      const selection = normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode);
+      pendingOpsCabinetSelection = selection;
+      switchShellMode("cabinets", {
+        remember: false,
+        pushHistory: options.pushHistory !== false,
+        replaceHistory: options.replaceHistory === true,
+        cabinetSelection: selection,
+      });
+      if (!homeDashboardBySlot.length) {
+        await loadHomeDashboard({ silent: true });
+      }
+      if (!selection) {
+        $("homeDashboardCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      await applyPendingOpsCabinetSelection({ selection, silent: options.silent === true });
+    }
+
+    async function openCabinetLocationAction(slotId, slotCode, cabinetName, columnCode, cellCode) {
+      if (isAdminSession() && currentShellMode() === "admin") {
+        await openDashboardForSlotLocation(slotId, slotCode);
+        return;
+      }
+      await openOpsCabinetView(cabinetName, columnCode, cellCode);
     }
 
     async function openDashboardForCurrentLocation() {
@@ -19156,6 +19318,14 @@
     $("operatorRequestRefreshBtn").addEventListener("click", loadOperatorRequestList);
     $("operatorRequestFilterStatus").addEventListener("change", loadOperatorRequestList);
     $("operatorLookupResults").addEventListener("click", async (e) => {
+      const cabinetBtn = e.target.closest("[data-operator-open-cabinet]");
+      if (cabinetBtn) {
+        const cabinetName = String(cabinetBtn.getAttribute("data-cabinet-name") || "").trim();
+        const columnCode = String(cabinetBtn.getAttribute("data-column-code") || "").trim();
+        const cellCode = String(cabinetBtn.getAttribute("data-cell-code") || "").trim();
+        await openOpsCabinetView(cabinetName, columnCode, cellCode);
+        return;
+      }
       if (isShellReadOnly()) return;
       const trackBtn = e.target.closest("[data-operator-fill-track]");
       if (trackBtn) {
@@ -19625,7 +19795,10 @@
         e.stopPropagation();
         const slotId = Number(openLocationBtn.getAttribute("data-home-open-dashboard-location") || 0);
         const slotCode = String(openLocationBtn.getAttribute("data-home-open-dashboard-slot-code") || "");
-        openDashboardForSlotLocation(slotId, slotCode);
+        const cabinetName = String(openLocationBtn.getAttribute("data-home-open-cabinet-name") || "").trim();
+        const columnCode = String(openLocationBtn.getAttribute("data-home-open-column-code") || "").trim();
+        const cellCode = String(openLocationBtn.getAttribute("data-home-open-cell-code") || "").trim();
+        openCabinetLocationAction(slotId, slotCode, cabinetName, columnCode, cellCode);
         return;
       }
       const row = e.target.closest(".result-item.album-result");

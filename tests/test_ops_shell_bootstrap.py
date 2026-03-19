@@ -80,3 +80,30 @@ def test_index_auth_failure_fallback_hides_full_ui_until_session_loads():
     assert 'setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin ? "inline-flex" : "none");' in html
     assert 'setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");' in html
     assert "appAuthSessionResolved = true;" in html
+
+
+def test_index_defines_ops_cabinet_route_helper_and_query_contract():
+    html = read_static_html("index.html")
+    assert "function openOpsCabinetView(cabinetName, columnCode, cellCode, options = {})" in html
+    assert "function cabinetRouteSelectionFromLocation()" in html
+    assert 'params.get("cabinet_name")' in html
+    assert 'params.get("column_code")' in html
+    assert 'params.get("cell_code")' in html
+    assert 'return `/ops/cabinets?${params.toString()}`;' in html
+    assert 'switchShellMode("cabinets",' in html
+
+
+def test_index_operator_results_expose_cabinet_open_action_in_readonly_shell():
+    html = read_static_html("index.html")
+    assert 'data-operator-open-cabinet="${ownedItemId}"' in html
+    assert 'await openOpsCabinetView(cabinetName, columnCode, cellCode);' in html
+    event_start = '$("operatorLookupResults").addEventListener("click", async (e) => {'
+    event_end = '    $("operatorRequestList").addEventListener("click", async (e) => {'
+    assert event_start in html
+    assert event_end in html
+    block = html.split(event_start, 1)[1].split(event_end, 1)[0]
+    cabinet_action = 'const cabinetBtn = e.target.closest("[data-operator-open-cabinet]");'
+    readonly_guard = 'if (isShellReadOnly()) return;'
+    assert cabinet_action in block
+    assert readonly_guard in block
+    assert block.index(cabinet_action) < block.index(readonly_guard)
