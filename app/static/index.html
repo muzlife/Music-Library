@@ -8586,21 +8586,22 @@
     }
 
     function applyAuthSessionUi() {
-      const role = String(appAuthSession?.role || "ADMIN").trim().toUpperCase();
+      const authenticated = Boolean(appAuthSession?.authenticated);
+      const role = authenticated ? String(appAuthSession?.role || "").trim().toUpperCase() : "";
       const isOperator = role === "OPERATOR";
-      const allowCabinetShell = isOperator && shellModeFromPath() === "cabinets";
+      const allowCabinetShell = authenticated && isOperator && shellModeFromPath() === "cabinets";
       const fullUiButtons = ["tabHomeBtn", "tabManageBtn", "tabSourceBtn", "tabRegisterBtn", "tabOpsBtn"];
       const fullUiPanels = ["tabHome", "tabManage", "tabSource", "tabRegister", "tabOps"];
       for (const id of fullUiButtons) {
         const el = $(id);
         if (!el) continue;
-        const visible = !isOperator || (allowCabinetShell && id === "tabOpsBtn");
+        const visible = authenticated && (!isOperator || (allowCabinetShell && id === "tabOpsBtn"));
         el.style.display = visible ? "inline-flex" : "none";
       }
       for (const id of fullUiPanels) {
         const el = $(id);
         if (!el) continue;
-        const visible = !isOperator || (allowCabinetShell && id === "tabOps");
+        const visible = authenticated && (!isOperator || (allowCabinetShell && id === "tabOps"));
         if (!visible) {
           el.classList.remove("active");
           el.style.display = "none";
