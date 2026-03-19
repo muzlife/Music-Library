@@ -97,11 +97,11 @@ def test_index_operator_results_expose_cabinet_open_action_in_readonly_shell():
     html = read_static_html("index.html")
     assert 'data-operator-open-cabinet="${ownedItemId}"' in html
     assert 'await openOpsCabinetView(cabinetName, columnCode, cellCode);' in html
-    event_start = '$("operatorLookupResults").addEventListener("click", async (e) => {'
-    event_end = '    $("operatorRequestList").addEventListener("click", async (e) => {'
-    assert event_start in html
-    assert event_end in html
-    block = html.split(event_start, 1)[1].split(event_end, 1)[0]
+    handler_start = "async function handleOperatorLookupAction(e) {"
+    handler_end = '    $("operatorRequestList").addEventListener("click", async (e) => {'
+    assert handler_start in html
+    assert handler_end in html
+    block = html.split(handler_start, 1)[1].split(handler_end, 1)[0]
     cabinet_action = 'const cabinetBtn = e.target.closest("[data-operator-open-cabinet]");'
     readonly_guard = 'if (isShellReadOnly()) return;'
     assert cabinet_action in block
@@ -145,3 +145,15 @@ def test_index_invalid_cabinet_route_selection_resets_previous_slot_state():
     assert "homeDashboardSelectedSlotCode = null;" in block
     assert "homeDashboardSlotItems = [];" in block
     assert "homeDashboardSlotItemsSlotCode = null;" in block
+
+
+def test_index_readonly_shell_reset_rerenders_dashboard_detail_panel():
+    html = read_static_html("index.html")
+    reset_start = "function resetReadOnlyShellState() {"
+    focus_start = "    function focusOpsHomeSearchInput() {"
+    assert reset_start in html
+    assert focus_start in html
+    block = html.split(reset_start, 1)[1].split(focus_start, 1)[0]
+    assert 'renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));' in block
+    assert "renderDashboardCabinetDetail();" in block
+    assert "renderDashboardWorkbench();" in block
