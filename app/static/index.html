@@ -8710,6 +8710,14 @@
         });
         return;
       }
+      if (nextMode === "cabinets" && !pendingOpsCabinetSelection) {
+        homeDashboardSelectedCabinetKey = null;
+        homeDashboardSelectedSlotCode = null;
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        homeDashboardSlotItemsLoading = false;
+        resetDashboardSlotPage();
+      }
       applyShellNavigation(appAuthSession);
       switchMainTab(nextMode === "cabinets" ? "home" : "simple", { remember: false });
       resetReadOnlyShellState();
@@ -15601,6 +15609,14 @@
       );
       if (!slotRow) {
         pendingOpsCabinetSelection = null;
+        homeDashboardSelectedCabinetKey = null;
+        homeDashboardSelectedSlotCode = null;
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        homeDashboardSlotItemsLoading = false;
+        resetDashboardSlotPage();
+        resetDashboardSlotSelection();
+        renderDashboardCabinetDetail();
         if (!opts.silent) {
           setStatus("homeDashboardStatus", "err", "해당 장식장 칸을 찾지 못했습니다.");
         }

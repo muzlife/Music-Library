@@ -122,3 +122,26 @@ def test_index_workbench_location_action_runs_before_readonly_guard():
     assert 'openCabinetLocationAction(slotId, slotCode, "", "", "");' in block
     assert readonly_guard in block
     assert block.index(locate_action) < block.index(readonly_guard)
+
+
+def test_index_cabinets_route_without_selection_clears_stale_dashboard_focus():
+    html = read_static_html("index.html")
+    assert 'if (nextMode === "cabinets" && !pendingOpsCabinetSelection) {' in html
+    assert "homeDashboardSelectedCabinetKey = null;" in html
+    assert "homeDashboardSelectedSlotCode = null;" in html
+    assert "homeDashboardSlotItems = [];" in html
+    assert "homeDashboardSlotItemsSlotCode = null;" in html
+
+
+def test_index_invalid_cabinet_route_selection_resets_previous_slot_state():
+    html = read_static_html("index.html")
+    apply_pending_start = "async function applyPendingOpsCabinetSelection(opts = {}) {"
+    open_ops_start = "    async function openOpsCabinetView(cabinetName, columnCode, cellCode, options = {}) {"
+    assert apply_pending_start in html
+    assert open_ops_start in html
+    block = html.split(apply_pending_start, 1)[1].split(open_ops_start, 1)[0]
+    assert "if (!slotRow) {" in block
+    assert "homeDashboardSelectedCabinetKey = null;" in block
+    assert "homeDashboardSelectedSlotCode = null;" in block
+    assert "homeDashboardSlotItems = [];" in block
+    assert "homeDashboardSlotItemsSlotCode = null;" in block
