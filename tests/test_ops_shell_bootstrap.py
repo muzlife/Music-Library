@@ -28,6 +28,22 @@ def test_index_bootstrap_uses_route_selected_shell_mode_first():
     assert 'switchMainTab("ops", { remember: false });' in html
     assert 'switchSubTab("ops", "cabinet", { remember: false });' in html
     assert 'switchMainTab("home", { remember: false });' in html
-    assert "applyRouteSelectedShellMode(shellModeFromPath());" in html
+    assert "const initialShellMode = shellModeFromPath();" in html
+    assert "applyRouteSelectedShellMode(initialShellMode);" in html
     assert "const preferredMainTab = loadRoleScopedValue(APP_MAIN_TAB_MEMORY_KEY);" not in html
     assert "const preferredSubTab = loadRoleScopedValue(APP_SUBTAB_MEMORY_KEY);" not in html
+
+
+def test_index_startup_does_not_force_home_before_route_mode():
+    html = Path("/Volumes/Works/07.hahahoho/app/static/index.html").read_text(encoding="utf-8")
+    assert "const initialShellMode = shellModeFromPath();" in html
+    assert "applyRouteSelectedShellMode(initialShellMode);" in html
+    assert "loadAuthSession(initialShellMode);" in html
+    assert 'resetPurchaseImportForm();\n    switchMainTab("home", { remember: false });' not in html
+    assert "loadAuthSession();" not in html
+
+
+def test_index_failure_path_reapplies_route_mode():
+    html = Path("/Volumes/Works/07.hahahoho/app/static/index.html").read_text(encoding="utf-8")
+    assert "async function loadAuthSession(initialShellMode)" in html
+    assert html.count("applyRouteSelectedShellMode(initialShellMode);") >= 2

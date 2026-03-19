@@ -8617,7 +8617,7 @@
       }
     }
 
-    async function loadAuthSession() {
+    async function loadAuthSession(initialShellMode) {
       try {
         const res = await fetch("/auth/session");
         const data = await safeJson(res);
@@ -8628,13 +8628,14 @@
         clearDashboardSearchAutofill();
         renderOpsExceptionPresetOptions();
         applyDefaultOpsExceptionPreset();
-        applyRouteSelectedShellMode(shellModeFromPath());
+        applyRouteSelectedShellMode(initialShellMode);
       } catch (_) {
         appAuthSession = null;
         renderAuthSession();
         applyAuthSessionUi();
         clearDashboardSearchAutofill();
         renderOpsExceptionPresetOptions();
+        applyRouteSelectedShellMode(initialShellMode);
       }
     }
 
@@ -20086,14 +20087,16 @@
       syncMusicVisibility();
     });
 
+    const initialShellMode = shellModeFromPath();
+
     initMediaLabelUi();
     applyFieldHelpTooltips();
     syncMusicVisibility();
     resetQuickForm();
     resetPurchaseImportForm();
-    switchMainTab("home", { remember: false });
     switchSubTab("register", "collect", { remember: false });
     switchSubTab("ops", "cabinet", { remember: false });
+    applyRouteSelectedShellMode(initialShellMode);
     syncShelfNavButtons();
     renderShelfTrack();
     renderShelfDetail();
@@ -20124,7 +20127,7 @@
     syncDashboardSelectionControls();
     loadStorageSlots();
     loadOpsCameras({ silent: true });
-    loadAuthSession();
+    loadAuthSession(initialShellMode);
     loadOperatorRequestList();
     loadHomeDashboard();
     homeSearchOwnedItems({ resetPage: true });
