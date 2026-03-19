@@ -1,0 +1,8003 @@
+from __future__ import annotations
+
+import csv
+from email import policy as email_policy
+from email.parser import Parser as EmailParser
+from email.utils import parsedate_to_datetime
+import io
+import json
+import logging
+import platform
+import re
+import shutil
+import socket
+from html import unescape as html_unescape
+from html.parser import HTMLParser
+import secrets
+import sqlite3
+import subprocess
+import threading
+import tempfile
+import time
+import base64
+import hashlib
+import hmac
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Annotated, Any
+from urllib.parse import quote, unquote, urlparse
+from uuid import uuid4
+from xml.etree import ElementTree as ET
+
+import httpx
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from bs4 import BeautifulSoup
+
+from . import db
+from .config import get_settings
+from .schemas import (
+    AlbumMasterBindRequest,
+    AlbumMasterBindResponse,
+    AlbumMasterDeleteResponse,
+    AlbumMasterDuplicateCheckResponse,
+    AlbumMasterDuplicateItem,
+    AlbumMasterImportCreatedItem,
+    AlbumMasterImportSkippedItem,
+    AlbumMasterImportVariantsRequest,
+    AlbumMasterImportVariantsResponse,
+    AlbumMasterListItem,
+    AlbumMasterMergeRequest,
+    AlbumMasterMergeResponse,
+    AlbumMasterSearchRequest,
+    AlbumMasterSearchResponse,
+    AlbumMasterSortArtistUpdateRequest,
+    AlbumMasterSortArtistUpdateResponse,
+    AlbumMasterVariantItem,
+    AlbumMasterVariantsResponse,
+    AuthAccountCreateRequest,
+    AuthAccountItem,
+    AuthAccountListResponse,
+    AuthAccountUpdateRequest,
+    BarcodeIngestRequest,
+    BarcodeIngestResponse,
+    CabinetCameraConnectionTestRequest,
+    CabinetCameraConnectionTestResponse,
+    CabinetCameraDiscoveryItem,
+    CabinetCameraDeleteResponse,
+    CabinetCameraItem,
+    CabinetCameraUpsertRequest,
+    ClassificationOptionCreate,
+    ClassificationOptionItem,
+    CollectionDashboardResponse,
+    CustomerTrackRequestCreate,
+    CustomerTrackRequestItem,
+    CustomerTrackRequestListResponse,
+    CustomerTrackRequestUpdate,
+    CsvIngestResponse,
+    DiscogsIdentityResponse,
+    DiscogsOwnedSyncResponse,
+    DirectoryPickerRequest,
+    DirectoryPickerResponse,
+    AudioDirectoryMappingCreateRequest,
+    AudioDirectoryMappingCreateResponse,
+    AudioDirectoryFileItem,
+    AudioDirectoryFileListResponse,
+    AudioDirectoryMappingItem,
+    AudioDirectoryMappingListResponse,
+    DigitalLinkCreate,
+    DigitalLinkCreateResponse,
+    OrderMoveRequest,
+    OrderMoveResponse,
+    MetadataSyncItemResult,
+    MetadataSyncRunRequest,
+    MetadataSyncRunResponse,
+    MetadataSyncStatusResponse,
+    MusicDetailCreate,
+    OwnedAlbumShelfWindowResponse,
+    OwnedItemDeleteResponse,
+    OwnedItemDuplicateRequest,
+    OwnedItemDuplicateResponse,
+    OwnedItemDetailResponse,
+    RelatedAlbumVersionsResponse,
+    OwnedItemCreate,
+    OwnedItemCreateResponse,
+    OwnedItemAutoMasterResponse,
+    OwnedItemBulkUpdateRequest,
+    OwnedItemBulkUpdateResponse,
+    OwnedItemListItem,
+    OwnedItemLocationRecommendationCandidateSlot,
+    OwnedItemLocationRecommendationItem,
+    OwnedItemLocationRecommendationRequest,
+    OwnedItemSourceReplaceBulkRequest,
+    OwnedItemSourceReplaceBulkResponse,
+    OwnedItemSourceReplaceResult,
+    OperatorCatalogSearchItem,
+    OperatorCatalogSearchResponse,
+    PurchaseImportListResponse,
+    PurchaseImportPreviewItem,
+    PurchaseImportPreviewRequest,
+    PurchaseImportPreviewResponse,
+    PurchaseImportCreateResponse,
+    PurchaseImportCandidateCreateRequest,
+    PurchaseImportCandidateSearchResponse,
+    PurchaseImportQueueItem,
+    PurchaseImportSaveRequest,
+    PurchaseImportSaveResponse,
+    PurchaseImportStatus,
+    PurchaseImportVendor,
+    PurchaseImportWebhookRequest,
+    QueryIngestRequest,
+    QueryIngestResponse,
+    ReviewQueueItem,
+    StorageCabinetDeleteResponse,
+    StorageCabinetRegisterRequest,
+    StorageCabinetRegisterResponse,
+    StorageSlotItem,
+    StorageSlotUpsertRequest,
+    SlotUpdateRequest,
+    SlotUpdateResponse,
+    TrackMappedAssetItem,
+    TrackMappingBulkFromDirRequest,
+    TrackMappingBulkFromDirResponse,
+    TrackMappingBulkMappedItem,
+    TrackMappingCreateRequest,
+    TrackMappingCreateResponse,
+    TrackMappingItem,
+    TrackMappingListResponse,
+    TrackMappingManualAssignRequest,
+    TrackMappingManualAssignResponse,
+    UiImageUploadResponse,
+    SourceLinkState,
+)
+from .services.matcher import MatchResult, classify_candidate, compose_query, validate_row_for_ingest
+from .services.providers import (
+    discogs_add_release_to_collection,
+    discogs_identity,
+    infer_domain_code,
+    get_source_release_snapshot,
+    get_album_master_variants,
+    get_album_master_variants_page,
+    resolve_release_master_reference,
+    search_album_master_candidates,
+    search_music_metadata,
+)
+
+app = FastAPI(title="Hahahoho Library API", version="0.1.0")
+logger = logging.getLogger(__name__)
+MUSIC_CATEGORIES = {"LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"}
+DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"}
+LEGACY_DOMAIN_CODE_MAP = {"KOREAN": "KOREA", "JPOP": "JAPAN", "OTHER": "WORLD_OTHER"}
+RELEASE_TYPES = {"ALBUM", "EP", "SINGLE"}
+SIZE_GROUP_CODES = {"STD", "BOOK", "LP", "OVERSIZE", "GOODS"}
+LABEL_PREFIX_BY_CATEGORY = {
+    "LP": "LP",
+    "CD": "CD",
+    "CASSETTE": "CT",
+    "8TRACK": "8T",
+    "DIGITAL": "DG",
+    "REEL_TO_REEL": "RT",
+    "T_SHIRT": "TS",
+    "POSTER": "PO",
+    "LIGHT_STICK": "LS",
+    "HAT": "HT",
+    "BAG": "BG",
+    "CUP": "CP",
+    "OTHER": "OT",
+}
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+IMAGE_UPLOAD_DIR = STATIC_DIR / "uploads"
+LOGIN_PAGE_PATH = STATIC_DIR / "login.html"
+AUTH_COOKIE_NAME = "hahahoho_session"
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 14
+AUTH_ROLE_ADMIN = "ADMIN"
+AUTH_ROLE_OPERATOR = "OPERATOR"
+ALLOWED_IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".gif",
+    ".bmp",
+    ".tif",
+    ".tiff",
+    ".heic",
+    ".heif",
+}
+ALLOWED_IMAGE_CONTENT_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+    "image/bmp": ".bmp",
+    "image/tiff": ".tif",
+    "image/heic": ".heic",
+    "image/heif": ".heif",
+}
+MAX_IMAGE_UPLOAD_BYTES = 20 * 1024 * 1024
+METADATA_SYNC_LOCK = threading.Lock()
+METADATA_SYNC_STOP_EVENT = threading.Event()
+METADATA_SYNC_THREAD: threading.Thread | None = None
+METADATA_SYNC_LAST_RESULT: MetadataSyncRunResponse | None = None
+METADATA_SYNC_LAST_ERROR: str | None = None
+LAUNCHD_LOG_DIR = Path.home() / "Library" / "Logs" / "hahahoho-library"
+LAUNCHD_ERR_LOG_PATH = LAUNCHD_LOG_DIR / "library.err.log"
+PROJECT_LAUNCHD_ERR_LOG_PATH = Path("/Volumes/Works/07.hahahoho/logs/launchd/library.err.log")
+PROJECT_QA_MASTER_SHEET_PATH = Path("/Volumes/Works/07.hahahoho/docs/qa/qa_master_sheet.csv")
+PROJECT_QA_MANUAL_SHEET_PATH = Path("/Volumes/Works/07.hahahoho/docs/qa/qa_manual_remaining.csv")
+PROJECT_ERD_SUMMARY_PATH = Path("/Volumes/Works/07.hahahoho/docs/library_erd_operator.md")
+PROJECT_ERD_DETAIL_PATH = Path("/Volumes/Works/07.hahahoho/docs/library_erd.md")
+PROJECT_TOOL_MANUAL_PATH = Path("/Volumes/Works/07.hahahoho/docs/management_tool_manual.md")
+PROJECT_GO_LIVE_CHECKLIST_PATH = Path("/Volumes/Works/07.hahahoho/docs/go_live_checklist.md")
+PROJECT_CSV_IMPORT_SAMPLE_PATH = Path("/Volumes/Works/07.hahahoho/docs/csv_import_sample.csv")
+HTML_NO_CACHE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+PURCHASE_ITEM_FETCH_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+settings = get_settings()
+app.mount("/ui-static", StaticFiles(directory=STATIC_DIR), name="ui-static")
+
+
+def _auth_enabled() -> bool:
+    accounts = _auth_accounts()
+    return bool(accounts)
+
+
+def _extra_operator_accounts() -> list[tuple[str, str]]:
+    raw = str(settings.auth_operator_accounts_raw or "").strip()
+    if not raw:
+        return []
+    accounts: list[tuple[str, str]] = []
+    for chunk in raw.split(","):
+        text = str(chunk or "").strip()
+        if not text or ":" not in text:
+            continue
+        username, password = text.split(":", 1)
+        username = username.strip()
+        password = password.strip()
+        if username and password:
+            accounts.append((username, password))
+    return accounts
+
+
+def _db_auth_accounts() -> list[dict[str, str]]:
+    rows = db.list_auth_accounts()
+    out: list[dict[str, str]] = []
+    for row in rows:
+        if not bool(row.get("is_active")):
+            continue
+        username = str(row.get("username") or "").strip()
+        password_hash = str(row.get("password_hash") or "").strip()
+        role = str(row.get("role") or "").strip().upper()
+        if username and password_hash and role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
+            out.append({"username": username, "password_hash": password_hash, "role": role})
+    return out
+
+
+def _hash_auth_password(password: str) -> str:
+    iterations = 200_000
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", str(password or "").encode("utf-8"), salt, iterations)
+    return "pbkdf2_sha256${}${}${}".format(
+        iterations,
+        base64.urlsafe_b64encode(salt).decode("ascii").rstrip("="),
+        base64.urlsafe_b64encode(digest).decode("ascii").rstrip("="),
+    )
+
+
+def _verify_auth_password(password: str, encoded: str) -> bool:
+    raw = str(encoded or "").strip()
+    if not raw:
+        return False
+    if not raw.startswith("pbkdf2_sha256$"):
+        return secrets.compare_digest(str(password or ""), raw)
+    try:
+        _, iterations_text, salt_text, digest_text = raw.split("$", 3)
+        iterations = int(iterations_text)
+        salt = base64.urlsafe_b64decode(salt_text + "=" * (-len(salt_text) % 4))
+        expected = base64.urlsafe_b64decode(digest_text + "=" * (-len(digest_text) % 4))
+    except Exception:
+        return False
+    actual = hashlib.pbkdf2_hmac("sha256", str(password or "").encode("utf-8"), salt, iterations)
+    return secrets.compare_digest(actual, expected)
+
+
+def _auth_accounts() -> dict[str, dict[str, str]]:
+    accounts: dict[str, dict[str, str]] = {}
+    admin_username = str(settings.auth_admin_username or "").strip()
+    admin_password = str(settings.auth_admin_password or "")
+    if admin_username and admin_password:
+        accounts[admin_username] = {"password": admin_password, "role": AUTH_ROLE_ADMIN}
+
+    operator_username = str(settings.auth_operator_username or "").strip()
+    operator_password = str(settings.auth_operator_password or "")
+    if operator_username and operator_password:
+        accounts[operator_username] = {"password": operator_password, "role": AUTH_ROLE_OPERATOR}
+    for operator_username, operator_password in _extra_operator_accounts():
+        accounts[operator_username] = {"password": operator_password, "role": AUTH_ROLE_OPERATOR}
+    for account in _db_auth_accounts():
+        accounts[str(account["username"])] = {
+            "password_hash": str(account["password_hash"]),
+            "role": str(account["role"]),
+        }
+    return accounts
+
+
+def _match_auth_account(username: str, password: str) -> dict[str, str] | None:
+    provided_username = str(username or "").strip()
+    provided_password = str(password or "")
+    for account_username, account in _auth_accounts().items():
+        if not secrets.compare_digest(provided_username, account_username):
+            continue
+        account_hash = str(account.get("password_hash") or "").strip()
+        if account_hash:
+            if not _verify_auth_password(provided_password, account_hash):
+                continue
+        elif not secrets.compare_digest(provided_password, str(account.get("password") or "")):
+            continue
+        return {"username": account_username, "role": str(account.get("role") or AUTH_ROLE_ADMIN)}
+    return None
+
+
+def _auth_cookie_signature(payload_text: str) -> str:
+    return hmac.new(
+        settings.auth_session_secret.encode("utf-8"),
+        payload_text.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _auth_cookie_value(username: str, role: str) -> str:
+    payload = json.dumps(
+        {"u": username, "r": role, "ts": int(time.time())},
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
+    payload_text = base64.urlsafe_b64encode(payload.encode("utf-8")).decode("ascii").rstrip("=")
+    return f"{payload_text}.{_auth_cookie_signature(payload_text)}"
+
+
+def _read_auth_session_data(request: Request) -> dict[str, str] | None:
+    raw_value = str(request.cookies.get(AUTH_COOKIE_NAME) or "").strip()
+    if not raw_value or "." not in raw_value:
+        return None
+    payload_text, signature = raw_value.rsplit(".", 1)
+    expected = _auth_cookie_signature(payload_text)
+    if not secrets.compare_digest(signature, expected):
+        return None
+    try:
+        padded = payload_text + "=" * (-len(payload_text) % 4)
+        payload_raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
+        payload = json.loads(payload_raw)
+    except Exception:
+        return None
+    username = str(payload.get("u") or "").strip()
+    role = str(payload.get("r") or "").strip().upper()
+    issued_at = int(payload.get("ts") or 0)
+    if not username or issued_at <= 0:
+        return None
+    if int(time.time()) - issued_at > AUTH_COOKIE_MAX_AGE:
+        return None
+    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
+        matched = _auth_accounts().get(username)
+        role = str((matched or {}).get("role") or "").strip().upper()
+    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
+        return None
+    return {"username": username, "role": role}
+
+
+def _read_auth_username(request: Request) -> str | None:
+    session = _read_auth_session_data(request)
+    if session is None:
+        return None
+    return str(session.get("username") or "").strip() or None
+
+
+def _read_auth_role(request: Request) -> str | None:
+    session = _read_auth_session_data(request)
+    if session is None:
+        return None
+    role = str(session.get("role") or "").strip().upper()
+    return role if role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR} else None
+
+
+def _is_authenticated(request: Request) -> bool:
+    return _read_auth_session_data(request) is not None
+
+
+def _is_admin_role(role: str | None) -> bool:
+    return str(role or "").strip().upper() == AUTH_ROLE_ADMIN
+
+
+def _is_operator_role(role: str | None) -> bool:
+    return str(role or "").strip().upper() == AUTH_ROLE_OPERATOR
+
+
+def _require_admin_request(request: Request) -> None:
+    role = _read_auth_role(request)
+    if not _is_admin_role(role):
+        raise HTTPException(status_code=403, detail="admin access required")
+
+
+def _is_html_request(request: Request) -> bool:
+    accept = str(request.headers.get("accept", "")).lower()
+    return "text/html" in accept
+
+
+@app.middleware("http")
+async def auth_guard(request: Request, call_next):
+    if not _auth_enabled():
+        return await call_next(request)
+
+    path = request.url.path.rstrip("/") or "/"
+    allowed_paths = {
+        "/health",
+        "/login",
+        "/auth/login",
+        "/auth/logout",
+        "/auth/session",
+        "/purchase-imports/webhook/gmail",
+    }
+    if path in allowed_paths:
+        return await call_next(request)
+
+    session = _read_auth_session_data(request)
+    request.state.auth_session = session or {}
+    if session is not None:
+        role = str(session.get("role") or "").strip().upper()
+        if _is_operator_role(role) and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
+            operator_allowed_write = (
+                path.startswith("/operator/customer-requests")
+            )
+            if not operator_allowed_write:
+                return JSONResponse(status_code=403, content={"detail": "operator write access denied"})
+        return await call_next(request)
+
+    if request.method == "GET" and _is_html_request(request):
+        return RedirectResponse(url="/login", status_code=303)
+    return JSONResponse(status_code=401, content={"detail": "authentication required"})
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _tail_text_lines(path: Path, limit: int = 2) -> list[str]:
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return []
+    lines = [str(line).strip() for line in text.splitlines() if str(line).strip()]
+    if limit <= 0:
+        return lines
+    return lines[-limit:]
+
+
+def _read_qa_summary() -> dict[str, Any]:
+    if not PROJECT_QA_MASTER_SHEET_PATH.exists():
+        return {
+            "total_count": 0,
+            "pass_count": 0,
+            "fail_count": 0,
+            "blocked_count": 0,
+            "not_started_count": 0,
+            "remaining_items": [],
+            "qa_master_sheet": str(PROJECT_QA_MASTER_SHEET_PATH),
+            "qa_manual_sheet": str(PROJECT_QA_MANUAL_SHEET_PATH),
+            "updated_at": None,
+        }
+
+    with PROJECT_QA_MASTER_SHEET_PATH.open("r", encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+
+    pass_count = len([row for row in rows if str(row.get("status") or "").strip() == "Pass"])
+    fail_count = len([row for row in rows if str(row.get("status") or "").strip() == "Fail"])
+    blocked_count = len([row for row in rows if str(row.get("status") or "").strip() == "Blocked"])
+    not_started_rows = [row for row in rows if str(row.get("status") or "").strip() == "Not Started"]
+    remaining_items = [
+        {
+            "suite_id": str(row.get("suite_id") or "").strip(),
+            "area": str(row.get("area") or "").strip(),
+            "priority": str(row.get("priority") or "").strip(),
+            "title": str(row.get("title") or "").strip(),
+            "role": str(row.get("role") or "").strip(),
+        }
+        for row in not_started_rows[:6]
+    ]
+    updated_at = datetime.fromtimestamp(PROJECT_QA_MASTER_SHEET_PATH.stat().st_mtime, timezone.utc).isoformat()
+    return {
+        "total_count": len(rows),
+        "pass_count": pass_count,
+        "fail_count": fail_count,
+        "blocked_count": blocked_count,
+        "not_started_count": len(not_started_rows),
+        "remaining_items": remaining_items,
+        "qa_master_sheet": str(PROJECT_QA_MASTER_SHEET_PATH),
+        "qa_manual_sheet": str(PROJECT_QA_MANUAL_SHEET_PATH),
+        "updated_at": updated_at,
+    }
+
+
+def _cleanup_temp_file(path: str) -> None:
+    try:
+        Path(path).unlink(missing_ok=True)
+    except Exception:
+        return
+
+
+def _pick_directory_via_osascript(title: str, initial_path: str | None = None) -> str | None:
+    safe_title = str(title or "폴더 선택").replace('"', '\\"')
+    script_lines: list[str] = []
+
+    init = Path(initial_path).expanduser() if initial_path else None
+    if init and init.exists() and init.is_dir():
+        safe_init = str(init).replace('"', '\\"')
+        script_lines.extend(
+            [
+                f'set _defaultLocation to POSIX file "{safe_init}"',
+                f'set _pickedFolder to choose folder with prompt "{safe_title}" default location _defaultLocation',
+                "POSIX path of _pickedFolder",
+            ]
+        )
+    else:
+        script_lines.extend(
+            [
+                f'set _pickedFolder to choose folder with prompt "{safe_title}"',
+                "POSIX path of _pickedFolder",
+            ]
+        )
+
+    cmd = ["osascript"]
+    for line in script_lines:
+        cmd.extend(["-e", line])
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+    if proc.returncode == 0:
+        picked = str(proc.stdout or "").strip()
+        return picked or None
+
+    err_text = f"{proc.stderr or ''}\n{proc.stdout or ''}".lower()
+    if "user canceled" in err_text or "-128" in err_text:
+        return None
+    raise RuntimeError(f"directory picker failed: {(proc.stderr or proc.stdout or 'unknown error').strip()}")
+
+
+def _pick_directory_via_tk(title: str, initial_path: str | None = None) -> str | None:
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except Exception as exc:
+        raise RuntimeError("directory picker backend not available") from exc
+
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        selected = filedialog.askdirectory(
+            parent=root,
+            title=title or "폴더 선택",
+            initialdir=str(Path(initial_path).expanduser()) if initial_path else None,
+            mustexist=True,
+        )
+    finally:
+        root.destroy()
+    selected = str(selected or "").strip()
+    return selected or None
+
+
+def _pick_directory_interactive(title: str, initial_path: str | None = None) -> str | None:
+    system_name = platform.system().lower()
+    if system_name == "darwin":
+        return _pick_directory_via_osascript(title=title, initial_path=initial_path)
+    return _pick_directory_via_tk(title=title, initial_path=initial_path)
+
+
+def _resolve_image_upload_extension(file_name: str | None, content_type: str | None) -> str | None:
+    ext = Path(str(file_name or "")).suffix.lower().strip()
+    if ext in ALLOWED_IMAGE_EXTENSIONS:
+        return ext
+    normalized_content_type = str(content_type or "").strip().lower()
+    return ALLOWED_IMAGE_CONTENT_TYPES.get(normalized_content_type)
+
+
+def _clean_text(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _parse_price_number(value: Any) -> float | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    normalized = re.sub(r"[^0-9.,-]", "", text)
+    normalized = normalized.replace(",", "")
+    if normalized in {"", "-", ".", "-."}:
+        return None
+    try:
+        return float(normalized)
+    except ValueError:
+        return None
+
+
+def _parse_positive_int(value: Any, default: int = 1) -> int:
+    text = str(value or "").strip()
+    if not text:
+        return default
+    digits = re.sub(r"[^0-9]", "", text)
+    if not digits:
+        return default
+    try:
+        parsed = int(digits)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
+
+
+def _normalize_purchase_date(value: Any) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    compact = text.replace(".", "-").replace("/", "-")
+    if re.fullmatch(r"\d{4}-\d{1,2}-\d{1,2}", compact):
+        y, m, d = compact.split("-")
+        return f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
+    for fmt in ("%B %d, %Y", "%d %B %Y", "%b %d, %Y", "%d %b %Y"):
+        try:
+            parsed = datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+        return parsed.strftime("%Y-%m-%d")
+    return text
+
+
+def _purchase_message_from_raw_content(raw_content: str):
+    raw = str(raw_content or "").strip()
+    if not raw:
+        return None
+    try:
+        return EmailParser(policy=email_policy.default).parsestr(raw)
+    except Exception:
+        return None
+
+
+def _resolve_purchase_import_vendor_code(
+    vendor_code: Any = None,
+    *,
+    raw_content: str | None = None,
+    items: list[Any] | None = None,
+) -> str:
+    explicit = str(vendor_code or "").strip().upper()
+    if explicit and explicit != "OTHER":
+        return explicit
+    for item in items or []:
+        payload = getattr(item, "raw_payload", None)
+        if not isinstance(payload, dict):
+            payload = item.get("raw_payload") if isinstance(item, dict) else None
+        candidate = str((payload or {}).get("vendor_code") or "").strip().upper()
+        if candidate and candidate != "OTHER":
+            return candidate
+    text = str(raw_content or "")
+    upper = text.upper()
+    has_ebay_marker = any(
+        marker in upper
+        for marker in (
+            "EBAY.COM/MYE/MYEBAY/PURCHASE",
+            "MY EBAY",
+            "M-ITEM-CARD",
+            "MODULE_PROVIDER",
+        )
+    )
+    has_amazon_marker = "AMAZON." in upper and any(
+        marker in upper
+        for marker in (
+            "ORDER-CARD",
+            "ORDER PLACED",
+            "YOUR ORDERS",
+        )
+    )
+    if "SAILMUSIC@NAVER.COM" in upper or "세일뮤직" in text:
+        return "SAILMUSIC"
+    if has_ebay_marker:
+        return "EBAY"
+    if has_amazon_marker:
+        return "AMAZON"
+    if "AMAZON." in upper:
+        return "AMAZON"
+    if "EBAY.COM" in upper:
+        return "EBAY"
+    return "OTHER"
+
+
+def _extract_purchase_date_from_raw_content(raw_content: str, purchase_date: Any = None) -> str | None:
+    normalized = _normalize_purchase_date(purchase_date)
+    if normalized:
+        return normalized
+    candidates = [str(raw_content or "").strip()]
+    html_content = _purchase_html_from_raw_content(str(raw_content or ""))
+    if html_content:
+        candidates.append(html_content)
+    for candidate in candidates:
+        parsed = _extract_purchase_date_from_text(candidate)
+        if parsed:
+            return parsed
+        match = re.search(r"\b(20\d{2})[./-]\s*(\d{1,2})[./-]\s*(\d{1,2})\b", candidate)
+        if match:
+            return f"{int(match.group(1)):04d}-{int(match.group(2)):02d}-{int(match.group(3)):02d}"
+    msg = _purchase_message_from_raw_content(str(raw_content or ""))
+    if msg:
+        header_date = str(msg.get("Date") or "").strip()
+        if header_date:
+            try:
+                parsed = parsedate_to_datetime(header_date)
+            except Exception:
+                parsed = None
+            if parsed is not None:
+                return parsed.strftime("%Y-%m-%d")
+    return None
+
+
+def _resolve_purchase_import_purchase_date(purchase_date: Any = None, *, raw_content: str | None = None, items: list[Any] | None = None) -> str | None:
+    normalized = _normalize_purchase_date(purchase_date)
+    if normalized:
+        return normalized
+    for item in items or []:
+        item_purchase_date = getattr(item, "purchase_date", None)
+        if item_purchase_date is None and isinstance(item, dict):
+            item_purchase_date = item.get("purchase_date")
+        normalized_item = _normalize_purchase_date(item_purchase_date)
+        if normalized_item:
+            return normalized_item
+    return _extract_purchase_date_from_raw_content(str(raw_content or ""))
+
+
+def _split_artist_item_text(value: Any) -> tuple[str | None, str | None]:
+    text = re.sub(r"\s+", " ", str(value or "")).strip(" /")
+    if not text:
+        return None, None
+    for separator in (" / ", "／", "/"):
+        if separator in text:
+            left, right = text.split(separator, 1)
+            artist_name = _clean_text(left)
+            item_name = _clean_text(right)
+            if artist_name and item_name:
+                return artist_name, item_name
+    return None, text
+
+
+def _normalize_purchase_media_format(value: Any) -> str | None:
+    text = re.sub(r"\s+", " ", str(value or "")).strip().upper()
+    if not text:
+        return None
+    if (
+        "VINYL" in text
+        or re.search(r"(?<![A-Z0-9])(?:LP|LPS|LP'S)(?![A-Z0-9])", text)
+        or re.search(r"(?<![A-Z0-9])(?:12|10|7)\s*\"", text)
+    ):
+        return "LP"
+    if "COMPACT DISC" in text or re.search(r"(?<![A-Z0-9])CDS?(?![A-Z0-9])", text):
+        return "CD"
+    if "CASSETTE" in text or re.search(r"(?<![A-Z0-9])(?:MC|TAPE|TAPES)(?![A-Z0-9])", text):
+        return "CASSETTE"
+    if "8-TRACK" in text or "8 TRACK" in text or "8TRACK" in text:
+        return "8TRACK"
+    if "DIGITAL" in text or "DOWNLOAD" in text or "FILE" in text:
+        return "DIGITAL"
+    if "REEL" in text:
+        return "REEL_TO_REEL"
+    return None
+
+
+class _PurchaseMailTableParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.rows: list[list[str]] = []
+        self._current_row: list[str] | None = None
+        self._current_cell: list[str] | None = None
+        self._ignore_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        name = str(tag or "").lower()
+        if name in {"script", "style"}:
+            self._ignore_depth += 1
+            return
+        if self._ignore_depth:
+            return
+        if name == "tr":
+            self._current_row = []
+            return
+        if name in {"td", "th"}:
+            self._current_cell = []
+            return
+        if name == "br" and self._current_cell is not None:
+            self._current_cell.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        name = str(tag or "").lower()
+        if name in {"script", "style"} and self._ignore_depth:
+            self._ignore_depth -= 1
+            return
+        if self._ignore_depth:
+            return
+        if name in {"td", "th"} and self._current_cell is not None and self._current_row is not None:
+            cell_text = re.sub(r"\s+", " ", "".join(self._current_cell)).strip()
+            self._current_row.append(cell_text)
+            self._current_cell = None
+            return
+        if name == "tr" and self._current_row is not None:
+            if any(_clean_text(cell) for cell in self._current_row):
+                self.rows.append(self._current_row)
+            self._current_row = None
+
+    def handle_data(self, data: str) -> None:
+        if self._ignore_depth or self._current_cell is None:
+            return
+        self._current_cell.append(str(data or ""))
+
+
+def _purchase_rows_from_html(raw_content: str) -> list[list[str]]:
+    parser = _PurchaseMailTableParser()
+    parser.feed(raw_content)
+    parser.close()
+    return parser.rows
+
+
+def _purchase_rows_from_text(raw_content: str) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for line in str(raw_content or "").splitlines():
+        text = re.sub(r"\s+", " ", line).strip()
+        if not text:
+            continue
+        cells = [part.strip() for part in re.split(r"\t+| {2,}", text) if part.strip()]
+        if cells:
+            rows.append(cells)
+    return rows
+
+
+def _extract_html_from_mhtml(raw_content: str) -> str | None:
+    raw = str(raw_content or "").strip()
+    if not raw:
+        return None
+    msg = _purchase_message_from_raw_content(raw)
+    if msg is None:
+        return None
+    html_parts: list[str] = []
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() != "text/html":
+                continue
+            try:
+                content = part.get_content()
+            except Exception:
+                payload = part.get_payload(decode=True)
+                charset = part.get_content_charset() or "utf-8"
+                content = payload.decode(charset, errors="replace") if isinstance(payload, bytes) else ""
+            text = str(content or "").strip()
+            if text:
+                html_parts.append(text)
+    elif msg.get_content_type() == "text/html":
+        try:
+            content = msg.get_content()
+        except Exception:
+            payload = msg.get_payload(decode=True)
+            charset = msg.get_content_charset() or "utf-8"
+            content = payload.decode(charset, errors="replace") if isinstance(payload, bytes) else ""
+        text = str(content or "").strip()
+        if text:
+            html_parts.append(text)
+    return html_parts[0] if html_parts else None
+
+
+def _purchase_html_from_raw_content(raw_content: str) -> str | None:
+    extracted = _extract_html_from_mhtml(raw_content)
+    if extracted:
+        return extracted
+    text = str(raw_content or "").strip()
+    if "<" in text and ">" in text:
+        return text
+    return None
+
+
+def _purchase_compact_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
+def _purchase_dense_text(value: Any) -> str:
+    return re.sub(r"\s+", "", str(value or ""))
+
+
+def _purchase_normalize_item_url(value: Any, *, base_url: str | None = None) -> str | None:
+    url = _clean_text(value)
+    if not url:
+        return None
+    if base_url and url.startswith("/"):
+        url = f"{base_url.rstrip('/')}{url}"
+    parsed = urlparse(url)
+    if parsed.scheme and parsed.netloc:
+        normalized = parsed._replace(params="", query="", fragment="")
+        return normalized.geturl()
+    return url.split("#", 1)[0].split("?", 1)[0].strip() or None
+
+
+def _purchase_currency_code(value: Any, default: str = "KRW") -> str:
+    text = str(value or "").strip()
+    upper = text.upper()
+    if upper in {"KRW", "USD", "GBP", "EUR", "JPY"}:
+        return upper
+    if "US $" in upper or ("$" in text and "CA$" not in upper and "A$" not in upper):
+        return "USD"
+    if "GBP" in upper or "£" in text:
+        return "GBP"
+    if "EUR" in upper or "€" in text:
+        return "EUR"
+    if "JPY" in upper or "¥" in text or "￥" in text:
+        return "JPY"
+    return default
+
+
+def _purchase_host_from_url(value: Any) -> str:
+    url = _clean_text(value)
+    if not url:
+        return ""
+    try:
+        return str(urlparse(url).hostname or "").strip().lower()
+    except Exception:
+        return ""
+
+
+def _purchase_marketplace_currency(vendor_code: str, marketplace: Any) -> str:
+    vendor = str(vendor_code or "").strip().upper()
+    market = str(marketplace or "").strip().upper()
+    if vendor == "AMAZON":
+        if market == "UK":
+            return "GBP"
+        if market == "JP":
+            return "JPY"
+        return "USD"
+    if vendor == "EBAY":
+        return "USD"
+    return "KRW"
+
+
+def _purchase_amazon_marketplace_from_raw_content(raw_content: str) -> str | None:
+    text = str(raw_content or "")
+    if "amazon.co.jp" in text:
+        return "JP"
+    if "amazon.co.uk" in text:
+        return "UK"
+    if "amazon.com" in text:
+        return "US"
+    return None
+
+
+def _extract_purchase_price_from_text(value: Any, default_currency: str) -> tuple[float | None, str]:
+    text = _purchase_compact_text(value)
+    if not text:
+        return None, default_currency
+    text_variants = [text]
+    dense_text = _purchase_dense_text(text)
+    if dense_text and dense_text != text:
+        text_variants.append(dense_text)
+    patterns = (
+        r"(US\s*\$\s*[0-9,\s]+(?:\.[0-9]{2})?)",
+        r"(\$\s*[0-9,\s]+(?:\.[0-9]{2})?)",
+        r"(£\s*[0-9,\s]+(?:\.[0-9]{2})?)",
+        r"(¥\s*[0-9,\s]+(?:\.[0-9]{2})?)",
+        r"(￥\s*[0-9,\s]+(?:\.[0-9]{2})?)",
+        r"([0-9,\s]+(?:\.[0-9]{2})?\s*(?:USD|GBP|EUR|JPY))",
+    )
+    for candidate_text in text_variants:
+        for pattern in patterns:
+            match = re.search(pattern, candidate_text, re.IGNORECASE)
+            if not match:
+                continue
+            price_text = str(match.group(1) or "").strip()
+            amount = _parse_price_number(price_text)
+            if amount is None:
+                continue
+            return amount, _purchase_currency_code(price_text, default_currency)
+    return None, default_currency
+
+
+def _extract_purchase_date_from_text(value: Any) -> str | None:
+    text = _purchase_compact_text(value)
+    patterns = (
+        r"Order placed\s+([A-Za-z]{3,9}\s+\d{1,2},\s+\d{4})",
+        r"Order placed\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})",
+        r"Placed on\s+([A-Za-z]{3,9}\s+\d{1,2},\s+\d{4})",
+        r"Placed on\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if not match:
+            continue
+        normalized = _normalize_purchase_date(match.group(1))
+        if normalized:
+            return normalized
+    return None
+
+
+def _extract_purchase_total_from_text(value: Any, default_currency: str = "KRW") -> tuple[float | None, str]:
+    text = _purchase_compact_text(value)
+    text_variants = [text]
+    dense_text = _purchase_dense_text(text)
+    if dense_text and dense_text != text:
+        text_variants.append(dense_text)
+    patterns = (
+        r"Total\s+((?:US\s*\$|\$|GBP\s*|EUR\s*|JPY\s*|¥|￥)[0-9,.\s]+)",
+        r"Total\s+([0-9,.\s]+\s*(?:USD|GBP|EUR|JPY))",
+        r"Total((?:US\$|\$|GBP|EUR|JPY|¥|￥)[0-9,.\s]+)",
+        r"Total[^0-9]{0,6}([0-9][0-9,.\s]{0,20})",
+    )
+    for candidate_text in text_variants:
+        for pattern in patterns:
+            match = re.search(pattern, candidate_text, re.IGNORECASE)
+            if not match:
+                continue
+            price_text = str(match.group(1) or "").strip()
+            amount = _parse_price_number(price_text)
+            if amount is None:
+                continue
+            return amount, _purchase_currency_code(price_text, default_currency)
+    return None, default_currency
+
+
+def _build_purchase_preview_item_direct(
+    *,
+    row_no: int,
+    artist_name: str | None,
+    item_name: str,
+    media_format: str | None,
+    quantity: int = 1,
+    unit_price: float | None = None,
+    line_total: float | None = None,
+    currency_code: str = "KRW",
+    purchase_date: str | None = None,
+    raw_line: str | None = None,
+    raw_payload: dict[str, Any] | None = None,
+) -> PurchaseImportPreviewItem | None:
+    item_title = _clean_text(item_name)
+    if not item_title:
+        return None
+    normalized_media = _normalize_purchase_media_format(media_format)
+    if normalized_media is None:
+        return None
+    return PurchaseImportPreviewItem(
+        row_no=row_no,
+        artist_name=_clean_text(artist_name),
+        item_name=item_title,
+        media_format=normalized_media,
+        quantity=max(1, int(quantity or 1)),
+        unit_price=unit_price,
+        line_total=line_total,
+        currency_code=_purchase_currency_code(currency_code),
+        purchase_date=_normalize_purchase_date(purchase_date),
+        raw_line=_clean_text(raw_line),
+        raw_payload=dict(raw_payload or {}),
+    )
+
+
+def _purchase_amazon_asin_from_url(value: Any) -> str | None:
+    url = _clean_text(value)
+    if not url:
+        return None
+    patterns = (
+        r"/dp/([A-Z0-9]{10})(?:[/?]|$)",
+        r"/gp/product/([A-Z0-9]{10})(?:[/?]|$)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, url, re.IGNORECASE)
+        if match:
+            return str(match.group(1) or "").strip().upper() or None
+    return None
+
+
+def _purchase_amazon_marketplace_from_url(value: Any) -> str | None:
+    url = _clean_text(value)
+    if not url:
+        return None
+    try:
+        hostname = str(urlparse(url).hostname or "").strip().lower()
+    except Exception:
+        return None
+    if not hostname:
+        return None
+    if hostname.endswith("amazon.co.jp"):
+        return "JP"
+    if hostname.endswith("amazon.co.uk"):
+        return "UK"
+    if hostname.endswith("amazon.com"):
+        return "US"
+    if hostname.endswith("amazon.de"):
+        return "DE"
+    if hostname.endswith("amazon.fr"):
+        return "FR"
+    return hostname
+
+
+def _purchase_fetch_item_page_html(item_url: str) -> str | None:
+    url = _purchase_normalize_item_url(item_url)
+    if not url:
+        return None
+    try:
+        with httpx.Client(timeout=20.0, follow_redirects=True, headers=PURCHASE_ITEM_FETCH_HEADERS) as client:
+            response = client.get(url)
+            response.raise_for_status()
+    except httpx.HTTPError:
+        return None
+    text = str(response.text or "").strip()
+    return text or None
+
+
+def _purchase_extract_amazon_artist_name(soup: BeautifulSoup) -> str | None:
+    byline = _purchase_compact_text(soup.select_one("#bylineInfo").get_text(" ", strip=True) if soup.select_one("#bylineInfo") else "")
+    if byline:
+        text = re.sub(r"\s+", " ", byline).strip()
+        text = re.sub(r"\s*Visit the .*? Store\s*", " ", text, flags=re.IGNORECASE).strip()
+        text = re.sub(r"\s*Brand:\s*", "", text, flags=re.IGNORECASE).strip()
+        text = re.sub(r"\s*Format:.*$", "", text, flags=re.IGNORECASE).strip(" -|/")
+        if text:
+            return text
+    detail_text = _purchase_compact_text(soup.select_one("#detailBullets_feature_div").get_text(" ", strip=True) if soup.select_one("#detailBullets_feature_div") else "")
+    if detail_text:
+        match = re.search(r"Artist\s*[:\u200f\u200e]*\s*(.+?)(?:Label\s*:|ASIN\s*:|Number of discs|$)", detail_text, re.IGNORECASE)
+        if match:
+            artist_name = _clean_text(match.group(1))
+            if artist_name:
+                return artist_name
+    return None
+
+
+def _purchase_normalize_amazon_detail_key(value: str) -> str:
+    text = _purchase_compact_text(value).replace("\u200f", " ").replace("\u200e", " ")
+    text = re.sub(r"\s+", " ", text).strip().rstrip(":").strip()
+    return text.lower()
+
+
+def _purchase_extract_amazon_detail_map(soup: BeautifulSoup) -> dict[str, str]:
+    out: dict[str, str] = {}
+
+    def _put(label: str | None, value: str | None) -> None:
+        key = _purchase_normalize_amazon_detail_key(label or "")
+        text = _clean_text(value)
+        if not key or not text or key in out:
+            return
+        out[key] = text
+
+    detail_root = soup.select_one("#detailBullets_feature_div") or soup.select_one("#detailBulletsWrapper_feature_div")
+    if detail_root:
+        for li in detail_root.select("li"):
+            label_node = li.select_one(".a-text-bold")
+            label_text = _purchase_compact_text(label_node.get_text(" ", strip=True) if label_node else "")
+            full_text = _purchase_compact_text(li.get_text(" ", strip=True))
+            if label_text and full_text.startswith(label_text):
+                _put(label_text, full_text[len(label_text):])
+            elif ":" in full_text:
+                left, right = full_text.split(":", 1)
+                _put(left, right)
+
+    for selector in ("#productDetails_detailBullets_sections1", "#productDetails_techSpec_section_1"):
+        table = soup.select_one(selector)
+        if not table:
+            continue
+        for tr in table.select("tr"):
+            label_text = _purchase_compact_text(tr.select_one("th").get_text(" ", strip=True) if tr.select_one("th") else "")
+            value_text = _purchase_compact_text(tr.select_one("td").get_text(" ", strip=True) if tr.select_one("td") else "")
+            _put(label_text, value_text)
+
+    return out
+
+
+def _purchase_extract_amazon_detail_enrichment(item_url: str) -> dict[str, Any] | None:
+    html = _purchase_fetch_item_page_html(item_url)
+    if not html:
+        return None
+    soup = BeautifulSoup(html, "html.parser")
+    title = _purchase_compact_text(soup.select_one("#productTitle").get_text(" ", strip=True) if soup.select_one("#productTitle") else "")
+    artist_name = _purchase_extract_amazon_artist_name(soup)
+    image_node = soup.select_one("#landingImage")
+    image_url = _clean_text(image_node.get("data-old-hires") if image_node else None) or _clean_text(image_node.get("src") if image_node else None)
+    track_text = _purchase_compact_text(soup.select_one("#musicTracks_feature_div").get_text(" ", strip=True) if soup.select_one("#musicTracks_feature_div") else "")
+    detail_map = _purchase_extract_amazon_detail_map(soup)
+
+    def _detail_value(*keys: str) -> str | None:
+        for key in keys:
+            text = _clean_text(detail_map.get(_purchase_normalize_amazon_detail_key(key)))
+            if text:
+                return text
+        return None
+
+    label_name = _detail_value("Label", "Manufacturer")
+    released_date = _detail_value("Original Release Date", "Date First Available")
+    track_samples: list[str] = []
+    if track_text:
+        sample_matches = re.findall(r"\d+\s+([^0-9].*?)(?=\s+\d+\s+|$)", track_text)
+        for raw in sample_matches[:10]:
+            cleaned = _clean_text(raw)
+            if cleaned:
+                track_samples.append(cleaned)
+    return {
+        "item_name": title or None,
+        "artist_name": artist_name,
+        "image_url": image_url,
+        "label_name": label_name,
+        "released_date": released_date,
+        "track_samples": track_samples,
+    }
+
+
+def _purchase_extract_ebay_detail_enrichment(item_url: str) -> dict[str, Any] | None:
+    html = _purchase_fetch_item_page_html(item_url)
+    if not html:
+        return None
+    soup = BeautifulSoup(html, "html.parser")
+    title = _clean_text(soup.select_one("meta[property='og:title']").get("content") if soup.select_one("meta[property='og:title']") else None)
+    image_url = _clean_text(soup.select_one("meta[property='og:image']").get("content") if soup.select_one("meta[property='og:image']") else None)
+    seller_name = _purchase_compact_text(soup.select_one("[data-testid='ux-seller-section']").get_text(" ", strip=True) if soup.select_one("[data-testid='ux-seller-section']") else "")
+    return {
+        "item_name": title or None,
+        "image_url": image_url,
+        "seller_name": seller_name or None,
+    }
+
+
+def _purchase_enrich_row_from_item_page(row: dict[str, Any]) -> dict[str, Any]:
+    raw_payload = dict(row.get("raw_payload") or {})
+    item_url = _purchase_normalize_item_url(row.get("item_url") or raw_payload.get("item_url"))
+    if not item_url:
+        raise HTTPException(status_code=400, detail="구매 항목에 상품 상세 URL이 없습니다.")
+    host = _purchase_host_from_url(item_url)
+    enrichment: dict[str, Any] | None = None
+    if "amazon." in host:
+        enrichment = _purchase_extract_amazon_detail_enrichment(item_url)
+    elif "ebay." in host:
+        enrichment = _purchase_extract_ebay_detail_enrichment(item_url)
+    if enrichment is None:
+        raise HTTPException(status_code=400, detail="현재는 Amazon/eBay 상품 상세 페이지만 보강할 수 있습니다.")
+
+    raw_payload["item_url"] = item_url
+    if enrichment.get("image_url"):
+        raw_payload["image_url"] = enrichment["image_url"]
+    if "amazon." in host:
+        raw_payload["detail_page_title"] = enrichment.get("item_name")
+        raw_payload["detail_page_artist_name"] = enrichment.get("artist_name")
+        raw_payload["detail_page_label_name"] = enrichment.get("label_name")
+        raw_payload["detail_page_released_date"] = enrichment.get("released_date")
+        raw_payload["detail_page_track_samples"] = list(enrichment.get("track_samples") or [])
+    updated = db.update_purchase_import_row(
+        int(row["id"]),
+        artist_name=_clean_text(enrichment.get("artist_name")) or _clean_text(row.get("artist_name")),
+        seller_name=_clean_text(enrichment.get("seller_name")) or _clean_text(row.get("seller_name")),
+        item_url=item_url,
+        image_url=_clean_text(enrichment.get("image_url")) or _clean_text(row.get("image_url")),
+        raw_payload=raw_payload,
+    )
+    if updated is None:
+        raise HTTPException(status_code=500, detail="purchase import row update failed")
+    return updated
+
+
+def _purchase_preview_items_from_amazon_html(raw_content: str, *, purchase_date: str | None) -> list[PurchaseImportPreviewItem]:
+    detail_items = _purchase_preview_items_from_amazon_order_details_html(
+        raw_content,
+        purchase_date=purchase_date,
+    )
+    if detail_items:
+        return detail_items
+    soup = BeautifulSoup(raw_content, "html.parser")
+    cards = soup.select(".order-card")
+    preview_items: list[PurchaseImportPreviewItem] = []
+    next_row_no = 1
+    page_marketplace = _purchase_amazon_marketplace_from_raw_content(raw_content)
+    for card in cards:
+        card_text = _purchase_compact_text(card.get_text(" ", strip=True))
+        order_date = _extract_purchase_date_from_text(card_text) or _normalize_purchase_date(purchase_date)
+        order_default_currency = _purchase_marketplace_currency("AMAZON", page_marketplace)
+        order_total, currency_code = _extract_purchase_total_from_text(card_text, order_default_currency)
+        image_candidates = []
+        for img in card.select("img[src]"):
+            image_candidates.append(
+                {
+                    "title": _purchase_compact_text(img.get("alt")),
+                    "image_url": _clean_text(img.get("src")),
+                }
+            )
+        item_rows: list[dict[str, Any]] = []
+        seen_keys: set[tuple[str, str]] = set()
+        for link in card.select("a[href]"):
+            href = _clean_text(link.get("href"))
+            if not href or ("/dp/" not in href and "/gp/product/" not in href):
+                continue
+            title = _purchase_compact_text(link.get_text(" ", strip=True))
+            if not title:
+                continue
+            key = (title.lower(), href)
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            image_url = None
+            for image in image_candidates:
+                image_title = str(image.get("title") or "")
+                if image_title and (image_title in title or title in image_title):
+                    image_url = image.get("image_url")
+                    break
+            item_marketplace = _purchase_amazon_marketplace_from_url(href) or page_marketplace
+            item_default_currency = _purchase_marketplace_currency("AMAZON", item_marketplace)
+            item_price = None
+            item_currency = item_default_currency
+            probe = link
+            probe_depth = 0
+            while probe is not None and probe is not card and probe_depth < 6:
+                probe_text = _purchase_compact_text(probe.get_text(" ", strip=True))
+                if probe_text:
+                    parsed_price, parsed_currency = _extract_purchase_price_from_text(probe_text, item_default_currency)
+                    if parsed_price is not None and not (order_total is not None and len(item_rows) > 1 and abs(parsed_price - order_total) < 0.0001):
+                        item_price = parsed_price
+                        item_currency = parsed_currency
+                        break
+                probe = getattr(probe, "parent", None)
+                probe_depth += 1
+            item_rows.append(
+                {
+                    "title": title,
+                    "item_url": href,
+                    "image_url": image_url,
+                    "marketplace": item_marketplace,
+                    "unit_price": item_price,
+                    "currency_code": item_currency,
+                }
+            )
+        for item_row in item_rows:
+            item_url = item_row.get("item_url")
+            item_marketplace = item_row.get("marketplace") or page_marketplace
+            item_default_currency = _purchase_marketplace_currency("AMAZON", item_marketplace)
+            item_price = item_row.get("unit_price")
+            item_currency = str(item_row.get("currency_code") or item_default_currency).strip().upper() or item_default_currency
+            item = _build_purchase_preview_item_direct(
+                row_no=next_row_no,
+                artist_name=None,
+                item_name=item_row["title"],
+                media_format=item_row["title"],
+                quantity=1,
+                unit_price=item_price if item_price is not None else (order_total if len(item_rows) == 1 else None),
+                line_total=item_price if item_price is not None else (order_total if len(item_rows) == 1 else None),
+                currency_code=item_currency if item_price is not None else currency_code,
+                purchase_date=order_date,
+                raw_line=card_text,
+                raw_payload={
+                    "vendor_code": "AMAZON",
+                    "item_url": item_url,
+                    "image_url": item_row.get("image_url"),
+                    "asin": _purchase_amazon_asin_from_url(item_url),
+                    "marketplace": item_marketplace,
+                },
+            )
+            if item is None:
+                continue
+            preview_items.append(item)
+            next_row_no += 1
+    return preview_items
+
+
+def _purchase_preview_items_from_amazon_order_details_html(raw_content: str, *, purchase_date: str | None) -> list[PurchaseImportPreviewItem]:
+    soup = BeautifulSoup(raw_content, "html.parser")
+    root = soup.select_one("#orderDetails") or soup.select_one("[id*='orderDetails']")
+    if root is None:
+        return []
+    page_marketplace = _purchase_amazon_marketplace_from_raw_content(raw_content)
+    order_text = _purchase_compact_text(root.get_text(" ", strip=True))
+    order_date = _extract_purchase_date_from_text(order_text) or _normalize_purchase_date(purchase_date)
+    order_default_currency = _purchase_marketplace_currency("AMAZON", page_marketplace)
+    summary_node = root.select_one("#od-subtotals")
+    order_total, currency_code = _extract_purchase_total_from_text(
+        _purchase_compact_text(summary_node.get_text(" ", strip=True) if summary_node else order_text),
+        order_default_currency,
+    )
+    blocks: list[Any] = []
+    for block in root.select("div.a-fixed-left-grid"):
+        title_links = [
+            link for link in block.select("a[href]")
+            if (
+                "/dp/" in str(link.get("href") or "")
+                or "/gp/product/" in str(link.get("href") or "")
+            )
+            and "ppx_hzod_" in str(link.get("href") or "")
+        ]
+        if title_links:
+            blocks.append(block)
+    preview_items: list[PurchaseImportPreviewItem] = []
+    seen_keys: set[tuple[str, str]] = set()
+    next_row_no = 1
+    for block in blocks:
+        block_text = _purchase_compact_text(block.get_text(" ", strip=True))
+        if not block_text:
+            continue
+        title_link = None
+        for link in block.select("a[href]"):
+            href = _clean_text(link.get("href"))
+            title = _purchase_compact_text(link.get_text(" ", strip=True))
+            if not href or ("/dp/" not in href and "/gp/product/" not in href):
+                continue
+            if not title:
+                continue
+            title_link = link
+            break
+        if title_link is None:
+            continue
+        item_title = _purchase_compact_text(title_link.get_text(" ", strip=True))
+        item_url = _purchase_normalize_item_url(title_link.get("href"))
+        dedupe_key = (item_title.lower(), item_url or "")
+        if dedupe_key in seen_keys:
+            continue
+        seen_keys.add(dedupe_key)
+        item_marketplace = _purchase_amazon_marketplace_from_url(item_url) or page_marketplace
+        item_default_currency = _purchase_marketplace_currency("AMAZON", item_marketplace)
+        item_price, item_currency = _extract_purchase_price_from_text(block_text, item_default_currency)
+        media_hint = _normalize_purchase_media_format(block_text) or _normalize_purchase_media_format(item_title)
+        if media_hint is None:
+            parent_row = block.find_parent("div", class_=lambda value: isinstance(value, str) and "a-row" in value and "a-spacing-top-base" in value)
+            if parent_row is not None:
+                sibling_has_music = False
+                for sibling in parent_row.select("div.a-fixed-left-grid"):
+                    if sibling is block:
+                        continue
+                    sibling_text = _purchase_compact_text(sibling.get_text(" ", strip=True))
+                    if _normalize_purchase_media_format(sibling_text):
+                        sibling_has_music = True
+                        break
+                if sibling_has_music and item_price is not None:
+                    media_hint = "LP"
+        if media_hint is None:
+            continue
+        image_node = block.select_one("img[src]")
+        seller_text = None
+        seller_match = re.search(r"Sold by:\s*([^$]+?)(?:Buy it again|View your item|Condition:|$)", block_text, re.IGNORECASE)
+        if seller_match:
+            seller_text = _clean_text(seller_match.group(1))
+        item = _build_purchase_preview_item_direct(
+            row_no=next_row_no,
+            artist_name=None,
+            item_name=item_title,
+            media_format=media_hint,
+            quantity=1,
+            unit_price=item_price if item_price is not None else (order_total if len(blocks) == 1 else None),
+            line_total=item_price if item_price is not None else (order_total if len(blocks) == 1 else None),
+            currency_code=item_currency if item_price is not None else currency_code,
+            purchase_date=order_date,
+            raw_line=block_text,
+            raw_payload={
+                "vendor_code": "AMAZON",
+                "item_url": item_url,
+                "image_url": _clean_text(image_node.get("src") if image_node else None),
+                "asin": _purchase_amazon_asin_from_url(item_url),
+                "marketplace": item_marketplace,
+                "seller_name": seller_text,
+                "media_format_inferred": 1 if media_hint == "LP" and _normalize_purchase_media_format(block_text) is None and _normalize_purchase_media_format(item_title) is None else 0,
+            },
+        )
+        if item is None:
+            continue
+        preview_items.append(item)
+        next_row_no += 1
+    return preview_items
+
+
+def _purchase_preview_items_from_ebay_html(raw_content: str, *, purchase_date: str | None) -> list[PurchaseImportPreviewItem]:
+    soup = BeautifulSoup(raw_content, "html.parser")
+    cards = soup.select(".m-item-card")
+    preview_items: list[PurchaseImportPreviewItem] = []
+    next_row_no = 1
+    for card in cards:
+        title_node = card.select_one("h3.title-heading") or card.select_one("h3")
+        title = _purchase_compact_text(title_node.get_text(" ", strip=True) if title_node else "")
+        if not title:
+            continue
+        media_format = _normalize_purchase_media_format(title)
+        if media_format is None:
+            continue
+        price_node = card.select_one(".container-item-col__info-item-info-additionalPrice")
+        price_text = _purchase_compact_text(price_node.get_text(" ", strip=True) if price_node else "")
+        seller_link = card.select_one("a[href*='/usr/']")
+        seller_name = _purchase_compact_text(seller_link.get_text(" ", strip=True) if seller_link else "")
+        item_link = card.select_one("a[href*='/itm/']")
+        item_url = _purchase_normalize_item_url(item_link.get("href") if item_link else None, base_url="https://www.ebay.com")
+        image_node = card.select_one("img[src]")
+        item = _build_purchase_preview_item_direct(
+            row_no=next_row_no,
+            artist_name=None,
+            item_name=title,
+            media_format=media_format,
+            quantity=1,
+            unit_price=_parse_price_number(price_text),
+            line_total=_parse_price_number(price_text),
+            currency_code=_purchase_marketplace_currency("EBAY", None),
+            purchase_date=_normalize_purchase_date(purchase_date),
+            raw_line=_purchase_compact_text(card.get_text(" ", strip=True)),
+            raw_payload={
+                "vendor_code": "EBAY",
+                "seller_name": seller_name or "EBAY",
+                "item_url": item_url,
+                "image_url": _clean_text(image_node.get("src") if image_node else None),
+            },
+        )
+        if item is None:
+            continue
+        preview_items.append(item)
+        next_row_no += 1
+    return preview_items
+
+
+def _purchase_import_empty_reason(vendor_code: str, raw_content: str) -> str | None:
+    vendor = str(vendor_code or "").strip().upper()
+    text = str(raw_content or "")
+    if vendor == "AMAZON":
+        has_order_list = ".order-card" in text or 'class=\"order-card' in text or "order-card" in text
+        has_order_details = "#orderDetails" in text or 'id=\"orderDetails' in text or "/order-details?orderID=" in text or "Order Details" in text
+        if not has_order_list and not has_order_details:
+            return "Amazon 주문 카드(order-card) 또는 주문 상세(orderDetails)를 찾지 못했습니다. 주문목록/주문상세 페이지 MHTML인지 확인하세요."
+        return "Amazon 주문 페이지에서 음악 상품 행을 찾지 못했습니다. 다른 주문 페이지 형식이거나 비음악 상품만 포함됐을 수 있습니다."
+    if vendor == "EBAY":
+        if ".m-item-card" not in text and 'class=\"m-item-card' not in text and "m-item-card" not in text:
+            return "eBay 구매 카드(m-item-card)를 찾지 못했습니다. 구매내역 목록 페이지 MHTML인지 확인하세요."
+        return "eBay 구매 페이지에서 음악 상품 행을 찾지 못했습니다. 현재 파서는 음악 미디어로 보이는 항목만 추출합니다."
+    return None
+
+
+def _build_purchase_preview_item(
+    *,
+    row_no: int,
+    cells: list[str],
+    purchase_date: str | None,
+    vendor_code: str,
+) -> PurchaseImportPreviewItem | None:
+    if not cells:
+        return None
+    first_text = _clean_text(cells[0])
+    if not first_text or "합계" in first_text:
+        return None
+    if any(str(cell or "").strip() in {"합계", "총계"} for cell in cells):
+        return None
+
+    media_idx: int | None = None
+    media_format: str | None = None
+    for idx, cell in enumerate(cells):
+        normalized = _normalize_purchase_media_format(cell)
+        if normalized:
+            media_idx = idx
+            media_format = normalized
+            break
+    if media_idx is None:
+        normalized = _normalize_purchase_media_format(first_text)
+        if normalized:
+            media_idx = 1 if len(cells) > 1 else 0
+            media_format = normalized
+    if media_format is None:
+        return None
+
+    artist_name, item_name = _split_artist_item_text(first_text)
+    if not item_name:
+        return None
+    quantity = _parse_positive_int(cells[media_idx + 1] if len(cells) > media_idx + 1 else None, 1)
+    unit_price = _parse_price_number(cells[media_idx + 2] if len(cells) > media_idx + 2 else None)
+    line_total = _parse_price_number(cells[media_idx + 3] if len(cells) > media_idx + 3 else None)
+    if line_total is None and unit_price is not None:
+        line_total = float(unit_price) * quantity
+    raw_line = " | ".join(str(cell or "").strip() for cell in cells if str(cell or "").strip())
+    return PurchaseImportPreviewItem(
+        row_no=row_no,
+        artist_name=artist_name,
+        item_name=item_name,
+        media_format=media_format,
+        quantity=quantity,
+        unit_price=unit_price,
+        line_total=line_total,
+        currency_code="KRW",
+        purchase_date=_normalize_purchase_date(purchase_date),
+        raw_line=raw_line,
+        raw_payload={
+            "vendor_code": vendor_code,
+            "cells": cells,
+        },
+    )
+
+
+def _parse_purchase_import_preview(payload: PurchaseImportPreviewRequest | PurchaseImportWebhookRequest) -> list[PurchaseImportPreviewItem]:
+    raw_content = str(payload.raw_content or "").strip()
+    if not raw_content:
+        return []
+    vendor_code = _resolve_purchase_import_vendor_code(getattr(payload, "vendor_code", "OTHER"), raw_content=raw_content)
+    resolved_purchase_date = _resolve_purchase_import_purchase_date(
+        getattr(payload, "purchase_date", None),
+        raw_content=raw_content,
+    )
+    html_content = _purchase_html_from_raw_content(raw_content)
+    if html_content:
+        if vendor_code == "AMAZON":
+            preview_items = _purchase_preview_items_from_amazon_html(
+                html_content,
+                purchase_date=resolved_purchase_date,
+            )
+            if preview_items:
+                return preview_items
+        if vendor_code == "EBAY":
+            preview_items = _purchase_preview_items_from_ebay_html(
+                html_content,
+                purchase_date=resolved_purchase_date,
+            )
+            if preview_items:
+                return preview_items
+    rows = _purchase_rows_from_html(html_content or raw_content) if html_content else _purchase_rows_from_text(raw_content)
+    preview_items: list[PurchaseImportPreviewItem] = []
+    next_row_no = 1
+    for cells in rows:
+        item = _build_purchase_preview_item(
+            row_no=next_row_no,
+            cells=cells,
+            purchase_date=resolved_purchase_date,
+            vendor_code=vendor_code,
+        )
+        if item is None:
+            continue
+        preview_items.append(item)
+        next_row_no += 1
+    return preview_items
+
+
+def _purchase_queue_item_from_row(row: dict[str, Any]) -> PurchaseImportQueueItem:
+    return PurchaseImportQueueItem(
+        id=int(row["id"]),
+        vendor_code=str(row.get("vendor_code") or "OTHER"),  # type: ignore[arg-type]
+        source_type=str(row.get("source_type") or "MANUAL"),  # type: ignore[arg-type]
+        source_ref=_clean_text(row.get("source_ref")),
+        email_from=_clean_text(row.get("email_from")),
+        email_subject=_clean_text(row.get("email_subject")),
+        artist_name=_clean_text(row.get("artist_name")),
+        item_name=str(row.get("item_name") or "").strip(),
+        media_format=_clean_text(row.get("media_format")),
+        quantity=max(1, int(row.get("quantity") or 1)),
+        unit_price=float(row["unit_price"]) if row.get("unit_price") is not None else None,
+        line_total=float(row["line_total"]) if row.get("line_total") is not None else None,
+        currency_code=_clean_text(row.get("currency_code")),
+        purchase_date=_normalize_purchase_date(row.get("purchase_date")),
+        seller_name=_clean_text(row.get("seller_name")),
+        item_url=_clean_text(row.get("item_url")),
+        image_url=_clean_text(row.get("image_url")),
+        raw_line=_clean_text(row.get("raw_line")),
+        raw_payload=dict(row.get("raw_payload") or {}),
+        queue_status=str(row.get("queue_status") or "PENDING"),  # type: ignore[arg-type]
+        linked_owned_item_id=int(row["linked_owned_item_id"]) if row.get("linked_owned_item_id") is not None else None,
+        created_at=str(row.get("created_at") or ""),
+        updated_at=str(row.get("updated_at") or ""),
+    )
+
+
+def _purchase_import_webhook_allowed(request: Request) -> bool:
+    expected = str(settings.purchase_import_webhook_token or "").strip()
+    provided = str(request.headers.get("x-purchase-import-token") or "").strip()
+    return bool(expected) and secrets.compare_digest(provided, expected)
+
+def _clean_track_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(v).strip() for v in value if str(v).strip()]
+
+
+def _clean_string_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        values = value
+    elif isinstance(value, str):
+        values = [part.strip() for part in re.split(r"[,\n|]", value)]
+    else:
+        return []
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for v in values:
+        text = str(v or "").strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(text)
+    return out
+
+
+def _clean_dict_list(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for row in value:
+        if isinstance(row, dict):
+            out.append(row)
+    return out
+
+
+def _clean_runout_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    text = _clean_text(value)
+    if not text:
+        return []
+    return [part.strip() for part in re.split(r"[|\n]", text) if part.strip()]
+
+
+def _normalize_has_obi_input(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return True if value else None
+    if value in {0, 1}:
+        return True if int(value) == 1 else None
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"1", "true", "yes", "y"}:
+            return True
+        if lowered in {"0", "false", "no", "n"}:
+            return None
+    return None
+
+
+def _clean_goods_image_urls(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    text = _clean_text(value)
+    if not text:
+        return []
+    return [part.strip() for part in re.split(r"[\n|]", text) if part.strip()]
+
+
+def _normalize_positive_int(value: Any) -> int | None:
+    try:
+        parsed = int(value) if value is not None and str(value).strip() else None
+    except (TypeError, ValueError):
+        parsed = None
+    if parsed is not None and parsed <= 0:
+        parsed = None
+    return parsed
+
+
+def _candidate_collector_base(candidate: dict[str, Any]) -> dict[str, Any]:
+    row = candidate if isinstance(candidate, dict) else {}
+    source_code = str(row.get("source") or "").strip().upper()
+    return {
+        "source_notes": _clean_text(row.get("source_notes")),
+        "credits": _clean_string_list(row.get("credits")),
+        "identifier_items": _clean_dict_list(row.get("identifier_items")),
+        "image_items": _clean_dict_list(row.get("image_items")),
+        "company_items": _clean_dict_list(row.get("company_items")),
+        "series": _clean_string_list(row.get("series")),
+        "format_items": _clean_dict_list(row.get("format_items")),
+        "track_items": _clean_dict_list(row.get("track_items")),
+        "label_items": _clean_dict_list(row.get("label_items")),
+        "runout_matrix": _clean_runout_list(row.get("runout_matrix")),
+        "pressing_country": source_code == "DISCOGS" and _clean_text(row.get("pressing_country")) or None,
+    }
+
+
+def _is_blank_text(value: Any) -> bool:
+    return _clean_text(value) is None
+
+
+def _build_music_detail_for_sync(
+    candidate: dict[str, Any],
+    snapshot: dict[str, Any],
+    only_missing: bool,
+) -> tuple[dict[str, Any], list[str]]:
+    def merge_text(field: str, current: Any, incoming: Any) -> str | None:
+        current_text = _clean_text(current)
+        incoming_text = _clean_text(incoming)
+        if incoming_text is None:
+            return current_text
+        if only_missing and current_text is not None:
+            return current_text
+        if current_text != incoming_text:
+            updated_fields.append(field)
+        return incoming_text
+
+    def merge_int(field: str, current: Any, incoming: Any) -> int | None:
+        current_val = int(current) if isinstance(current, int) else None
+        incoming_val: int | None = None
+        if isinstance(incoming, int):
+            incoming_val = int(incoming)
+        elif isinstance(incoming, str):
+            try:
+                incoming_val = int(incoming.strip())
+            except (TypeError, ValueError):
+                incoming_val = None
+        if incoming_val is None:
+            return current_val
+        if only_missing and current_val is not None:
+            return current_val
+        if current_val != incoming_val:
+            updated_fields.append(field)
+        return incoming_val
+
+    def merge_bool(field: str, current: Any, incoming: Any) -> bool | None:
+        current_val = _normalize_has_obi_input(current)
+        incoming_val = _normalize_has_obi_input(incoming)
+        if incoming_val is None:
+            return current_val
+        if only_missing and current_val is not None:
+            return current_val
+        if current_val != incoming_val:
+            updated_fields.append(field)
+        return incoming_val
+
+    def merge_list(field: str, current: Any, incoming: Any) -> list[str]:
+        current_list = _clean_string_list(current)
+        incoming_list = _clean_string_list(incoming)
+        if not incoming_list:
+            return current_list
+        if only_missing and current_list:
+            return current_list
+        if current_list != incoming_list:
+            updated_fields.append(field)
+        return incoming_list
+
+    def merge_dict_list(field: str, current: Any, incoming: Any) -> list[dict[str, Any]]:
+        current_list = current if isinstance(current, list) else []
+        current_list = [row for row in current_list if isinstance(row, dict)]
+        incoming_list = incoming if isinstance(incoming, list) else []
+        incoming_list = [row for row in incoming_list if isinstance(row, dict)]
+        if not incoming_list:
+            return current_list
+        if only_missing and current_list:
+            return current_list
+        if current_list != incoming_list:
+            updated_fields.append(field)
+        return incoming_list
+
+    def merge_runout_list(field: str, current: Any, incoming: Any) -> list[str]:
+        def normalize(values: Any) -> list[str]:
+            if isinstance(values, list):
+                return [str(v).strip() for v in values if str(v).strip()]
+            text = _clean_text(values)
+            if not text:
+                return []
+            return [p.strip() for p in text.split("|") if p.strip()]
+
+        current_list = normalize(current)
+        incoming_list = normalize(incoming)
+        if not incoming_list:
+            return current_list
+        if only_missing and current_list:
+            return current_list
+        if current_list != incoming_list:
+            updated_fields.append(field)
+        return incoming_list
+
+    updated_fields: list[str] = []
+    category = str(candidate.get("category") or "LP").upper()
+    format_name = str(candidate.get("format_name") or category).upper()
+    if format_name not in MUSIC_CATEGORIES:
+        format_name = category if category in MUSIC_CATEGORIES else "LP"
+
+    existing_tracks = _clean_track_list(candidate.get("track_list"))
+    snapshot_tracks = _clean_track_list(snapshot.get("track_list"))
+    track_list = existing_tracks
+    if snapshot_tracks and ((only_missing and not existing_tracks) or ((not only_missing) and existing_tracks != snapshot_tracks)):
+        track_list = snapshot_tracks
+        updated_fields.append("track_list")
+
+    music_detail = {
+        "format_name": format_name,
+        "is_promotional_not_for_sale": bool(candidate.get("is_promotional_not_for_sale")),
+        "artist_or_brand": merge_text("artist_or_brand", candidate.get("artist_or_brand"), snapshot.get("artist_or_brand")),
+        "release_year": merge_int("release_year", candidate.get("release_year"), snapshot.get("release_year")),
+        "released_date": merge_text("released_date", candidate.get("released_date"), snapshot.get("released_date")),
+        "barcode": merge_text("barcode", candidate.get("barcode"), snapshot.get("barcode")),
+        "label_name": merge_text("label_name", candidate.get("label_name"), snapshot.get("label_name")),
+        "catalog_no": merge_text("catalog_no", candidate.get("catalog_no"), snapshot.get("catalog_no")),
+        "cover_image_url": merge_text("cover_image_url", candidate.get("cover_image_url"), snapshot.get("cover_image_url")),
+        "media_type": merge_text("media_type", candidate.get("media_type"), snapshot.get("media_type")),
+        "genres": merge_list("genres", candidate.get("genres"), snapshot.get("genres")),
+        "styles": merge_list("styles", candidate.get("styles"), snapshot.get("styles")),
+        "disc_count": merge_int("disc_count", candidate.get("disc_count"), snapshot.get("disc_count")),
+        "speed_rpm": merge_int("speed_rpm", candidate.get("speed_rpm"), snapshot.get("speed_rpm")),
+        "has_obi": merge_bool("has_obi", candidate.get("has_obi"), snapshot.get("has_obi")),
+        "runout_matrix": merge_runout_list("runout_matrix", candidate.get("runout_matrix"), snapshot.get("runout_matrix")),
+        "pressing_country": merge_text("pressing_country", candidate.get("pressing_country"), snapshot.get("pressing_country")),
+        "source_notes": merge_text("source_notes", candidate.get("source_notes"), snapshot.get("source_notes")),
+        "credits": merge_list("credits", candidate.get("credits"), snapshot.get("credits")),
+        "identifier_items": merge_dict_list("identifier_items", candidate.get("identifier_items"), snapshot.get("identifier_items")),
+        "image_items": merge_dict_list("image_items", candidate.get("image_items"), snapshot.get("image_items")),
+        "company_items": merge_dict_list("company_items", candidate.get("company_items"), snapshot.get("company_items")),
+        "series": merge_list("series", candidate.get("series"), snapshot.get("series")),
+        "format_items": merge_dict_list("format_items", candidate.get("format_items"), snapshot.get("format_items")),
+        "track_items": merge_dict_list("track_items", candidate.get("track_items"), snapshot.get("track_items")),
+        "label_items": merge_dict_list("label_items", candidate.get("label_items"), snapshot.get("label_items")),
+        "track_list": track_list,
+        "cover_condition": _clean_text(candidate.get("cover_condition")),
+        "disc_condition": _clean_text(candidate.get("disc_condition")),
+    }
+    return music_detail, sorted(set(updated_fields))
+
+
+def _run_metadata_sync(
+    payload: MetadataSyncRunRequest,
+    fail_when_running: bool = True,
+) -> MetadataSyncRunResponse | None:
+    global METADATA_SYNC_LAST_RESULT, METADATA_SYNC_LAST_ERROR
+
+    acquired = METADATA_SYNC_LOCK.acquire(blocking=False)
+    if not acquired:
+        if fail_when_running:
+            raise HTTPException(status_code=409, detail="metadata sync already running")
+        return None
+
+    started_at = _now_iso()
+    try:
+        source_u = str(payload.source or "ALL").upper()
+        source_filter = None if source_u == "ALL" else source_u
+        candidates = db.list_metadata_sync_candidates(
+            source_code=source_filter,
+            only_missing=bool(payload.only_missing),
+            limit=int(payload.limit),
+            offset=0,
+        )
+
+        item_results: list[MetadataSyncItemResult] = []
+        updated_count = 0
+        skipped_count = 0
+        failed_count = 0
+
+        for row in candidates:
+            owned_item_id = int(row.get("id") or 0)
+            source_code = str(row.get("source_code") or "").strip().upper()
+            source_external_id = str(row.get("source_external_id") or "").strip()
+            if owned_item_id <= 0 or not source_code or not source_external_id:
+                failed_count += 1
+                if payload.include_item_results:
+                    item_results.append(
+                        MetadataSyncItemResult(
+                            owned_item_id=owned_item_id,
+                            source_code=source_code or "-",
+                            source_external_id=source_external_id or "-",
+                            status="FAILED",
+                            reason="invalid candidate data",
+                        )
+                    )
+                continue
+
+            if source_code not in {"DISCOGS", "MANIADB"}:
+                skipped_count += 1
+                if payload.include_item_results:
+                    item_results.append(
+                        MetadataSyncItemResult(
+                            owned_item_id=owned_item_id,
+                            source_code=source_code,
+                            source_external_id=source_external_id,
+                            status="SKIPPED",
+                            reason="source not supported for snapshot sync",
+                        )
+                    )
+                continue
+
+            snapshot = get_source_release_snapshot(source=source_code, external_id=source_external_id)
+            if not snapshot:
+                failed_count += 1
+                if payload.include_item_results:
+                    item_results.append(
+                        MetadataSyncItemResult(
+                            owned_item_id=owned_item_id,
+                            source_code=source_code,
+                            source_external_id=source_external_id,
+                            status="FAILED",
+                            reason="source snapshot not found",
+                        )
+                    )
+                continue
+
+            music_detail, updated_fields = _build_music_detail_for_sync(
+                candidate=row,
+                snapshot=snapshot,
+                only_missing=bool(payload.only_missing),
+            )
+            if not updated_fields:
+                skipped_count += 1
+                if payload.include_item_results:
+                    item_results.append(
+                        MetadataSyncItemResult(
+                            owned_item_id=owned_item_id,
+                            source_code=source_code,
+                            source_external_id=source_external_id,
+                            status="SKIPPED",
+                            reason="no missing fields to update",
+                        )
+                    )
+                continue
+
+            db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail)
+            updated_count += 1
+            if payload.include_item_results:
+                item_results.append(
+                    MetadataSyncItemResult(
+                        owned_item_id=owned_item_id,
+                        source_code=source_code,
+                        source_external_id=source_external_id,
+                        status="UPDATED",
+                        updated_fields=updated_fields,
+                    )
+                )
+
+        result = MetadataSyncRunResponse(
+            started_at=started_at,
+            completed_at=_now_iso(),
+            source=source_u,
+            only_missing=bool(payload.only_missing),
+            limit=int(payload.limit),
+            processed_count=len(candidates),
+            updated_count=updated_count,
+            skipped_count=skipped_count,
+            failed_count=failed_count,
+            item_results=item_results if payload.include_item_results else [],
+        )
+        METADATA_SYNC_LAST_RESULT = result
+        METADATA_SYNC_LAST_ERROR = None
+        return result
+    finally:
+        METADATA_SYNC_LOCK.release()
+
+
+def _metadata_sync_worker() -> None:
+    global METADATA_SYNC_LAST_ERROR
+    settings = get_settings()
+    interval = max(0, int(settings.metadata_sync_interval_minutes))
+    batch_limit = max(1, int(settings.metadata_sync_batch_limit))
+    if interval <= 0:
+        return
+
+    while not METADATA_SYNC_STOP_EVENT.wait(interval * 60):
+        try:
+            _run_metadata_sync(
+                MetadataSyncRunRequest(
+                    source="ALL",
+                    only_missing=True,
+                    limit=batch_limit,
+                    include_item_results=False,
+                ),
+                fail_when_running=False,
+            )
+        except Exception as exc:
+            METADATA_SYNC_LAST_ERROR = f"{_now_iso()} | {exc}"
+            logger.exception("metadata sync worker failed")
+            continue
+
+
+def _start_metadata_sync_worker() -> None:
+    global METADATA_SYNC_THREAD
+    settings = get_settings()
+    if int(settings.metadata_sync_interval_minutes) <= 0:
+        return
+    if METADATA_SYNC_THREAD is not None and METADATA_SYNC_THREAD.is_alive():
+        return
+    METADATA_SYNC_STOP_EVENT.clear()
+    METADATA_SYNC_THREAD = threading.Thread(
+        target=_metadata_sync_worker,
+        name="metadata-sync-worker",
+        daemon=True,
+    )
+    METADATA_SYNC_THREAD.start()
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    db.init_db()
+    _start_metadata_sync_worker()
+
+
+@app.on_event("shutdown")
+def on_shutdown() -> None:
+    METADATA_SYNC_STOP_EVENT.set()
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/system/status")
+def system_status(request: Request) -> dict[str, Any]:
+    _require_admin_request(request)
+    sync_running = bool(METADATA_SYNC_LOCK.locked())
+    sync_last_error = str(METADATA_SYNC_LAST_ERROR or "").strip()
+    recent_launchd_lines = _tail_text_lines(LAUNCHD_ERR_LOG_PATH, limit=2)
+    qa_summary = _read_qa_summary()
+    return {
+        "health": "ok",
+        "metadata_sync_running": sync_running,
+        "metadata_sync_last_error": sync_last_error or None,
+        "external_login_url": "https://library.muzlife.com/login",
+        "external_health_url": "https://library.muzlife.com/health",
+        "launchd_err_log": str(PROJECT_LAUNCHD_ERR_LOG_PATH),
+        "recent_launchd_lines": recent_launchd_lines,
+        "qa_summary": qa_summary,
+    }
+
+
+@app.get("/ops/export/db-backup")
+def export_db_backup(request: Request, background_tasks: BackgroundTasks) -> FileResponse:
+    _require_admin_request(request)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-library-", suffix=".db", delete=False)
+    tmp_path = tmp.name
+    tmp.close()
+    with db.get_conn() as source_conn:
+        dest_conn = sqlite3.connect(tmp_path)
+        try:
+            source_conn.backup(dest_conn)
+        finally:
+            dest_conn.close()
+    background_tasks.add_task(_cleanup_temp_file, tmp_path)
+    return FileResponse(
+        tmp_path,
+        media_type="application/octet-stream",
+        filename=f"hahahoho-library-backup-{timestamp}.db",
+    )
+
+
+def _csv_response(filename: str, header: list[str], rows: list[list[Any]]) -> Response:
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(header)
+    writer.writerows(rows)
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/ops/export/owned-items.csv")
+def export_owned_items_csv(request: Request) -> Response:
+    _require_admin_request(request)
+    with db.get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+              oi.id,
+              oi.category,
+              oi.item_name_override,
+              oi.status,
+              oi.signature_type,
+              oi.size_group,
+              oi.preferred_storage_size_group,
+              oi.linked_album_master_id,
+              oi.purchase_source,
+              oi.memory_note,
+              ss.cabinet_name,
+              ss.column_code,
+              ss.cell_code,
+              mid.artist_or_brand,
+              mid.format_name,
+              mid.released_date,
+              mid.label_name,
+              mid.catalog_no,
+              mid.barcode
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+            ORDER BY oi.id ASC
+            """
+        ).fetchall()
+    csv_rows = [
+        [
+            row["id"], _build_label_id(str(row["category"] or ""), int(row["id"] or 0)), row["category"], row["item_name_override"], row["status"], row["signature_type"],
+            row["size_group"], row["preferred_storage_size_group"], row["linked_album_master_id"], row["purchase_source"], row["memory_note"],
+            row["cabinet_name"], row["column_code"], row["cell_code"], row["artist_or_brand"], row["format_name"], row["released_date"],
+            row["label_name"], row["catalog_no"], row["barcode"],
+        ]
+        for row in rows
+    ]
+    return _csv_response(
+        "owned-items-export.csv",
+        [
+            "owned_item_id", "label_id", "category", "item_name", "status", "signature_type",
+            "size_group", "preferred_storage_size_group", "album_master_id", "purchase_source", "memory_note",
+            "cabinet_name", "column_code", "cell_code", "artist", "format_name", "released_date",
+            "label_name", "catalog_no", "barcode",
+        ],
+        csv_rows,
+    )
+
+
+@app.get("/ops/export/album-masters.csv")
+def export_album_masters_csv(request: Request) -> Response:
+    _require_admin_request(request)
+    with db.get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+              am.id,
+              am.source_code,
+              am.source_master_id,
+              am.title,
+              am.artist_or_brand,
+              am.release_year,
+              COUNT(amm.id) AS member_count,
+              am.updated_at
+            FROM album_master am
+            LEFT JOIN album_master_member amm ON amm.album_master_id = am.id
+            GROUP BY am.id, am.source_code, am.source_master_id, am.title, am.artist_or_brand, am.release_year, am.updated_at
+            ORDER BY am.id ASC
+            """
+        ).fetchall()
+    csv_rows = [
+        [row["id"], row["source_code"], row["source_master_id"], row["title"], row["artist_or_brand"], row["release_year"], row["member_count"], row["updated_at"]]
+        for row in rows
+    ]
+    return _csv_response(
+        "album-masters-export.csv",
+        ["album_master_id", "source_code", "source_master_id", "title", "artist", "release_year", "member_count", "updated_at"],
+        csv_rows,
+    )
+
+
+@app.get("/login", include_in_schema=False)
+def login_page(request: Request):
+    if not _auth_enabled():
+        return RedirectResponse(url="/", status_code=303)
+    if _is_authenticated(request):
+        return RedirectResponse(url="/", status_code=303)
+    return FileResponse(LOGIN_PAGE_PATH, headers=HTML_NO_CACHE_HEADERS)
+
+
+@app.post("/auth/login", include_in_schema=False)
+def auth_login(
+    username: str = Form(...),
+    password: str = Form(...),
+) -> dict[str, Any]:
+    if not _auth_enabled():
+        return {"authenticated": True, "username": None, "role": AUTH_ROLE_ADMIN, "enabled": False}
+
+    matched_account = _match_auth_account(username=username, password=password)
+    if matched_account is None:
+        raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
+
+    matched_username = str(matched_account["username"])
+    matched_role = str(matched_account["role"])
+
+    response = JSONResponse(
+        {
+            "authenticated": True,
+            "username": matched_username,
+            "role": matched_role,
+            "enabled": True,
+        }
+    )
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        _auth_cookie_value(matched_username, matched_role),
+        max_age=AUTH_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=bool(settings.auth_cookie_secure),
+        samesite="lax",
+        path="/",
+    )
+    return response
+
+
+@app.post("/auth/logout", include_in_schema=False)
+def auth_logout() -> JSONResponse:
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(AUTH_COOKIE_NAME, path="/")
+    return response
+
+
+@app.get("/auth/session", include_in_schema=False)
+def auth_session(request: Request) -> dict[str, Any]:
+    session = _read_auth_session_data(request)
+    username = str((session or {}).get("username") or "").strip() or None
+    role = str((session or {}).get("role") or "").strip().upper() or None
+    return {
+        "enabled": _auth_enabled(),
+        "authenticated": (not _auth_enabled()) or bool(username),
+        "username": username if _auth_enabled() else None,
+        "role": role if _auth_enabled() else AUTH_ROLE_ADMIN,
+        "admin_available": bool(settings.auth_admin_username and settings.auth_admin_password),
+        "operator_available": bool(
+            (settings.auth_operator_username and settings.auth_operator_password)
+            or _extra_operator_accounts()
+        ),
+    }
+
+
+@app.get("/tool-docs/{doc_key}", include_in_schema=False)
+def tool_docs(doc_key: str) -> FileResponse:
+    key = str(doc_key or "").strip().lower()
+    path_map = {
+        "erd-summary": PROJECT_ERD_SUMMARY_PATH,
+        "erd-detail": PROJECT_ERD_DETAIL_PATH,
+        "manual": PROJECT_TOOL_MANUAL_PATH,
+        "go-live-checklist": PROJECT_GO_LIVE_CHECKLIST_PATH,
+        "csv-import-sample": PROJECT_CSV_IMPORT_SAMPLE_PATH,
+    }
+    doc_path = path_map.get(key)
+    if doc_path is None or not doc_path.exists():
+        raise HTTPException(status_code=404, detail="document not found")
+    media_type = "text/markdown; charset=utf-8"
+    if doc_path.suffix.lower() == ".csv":
+        media_type = "text/csv; charset=utf-8"
+    return FileResponse(doc_path, media_type=media_type, filename=doc_path.name)
+
+
+def _cabinet_camera_item_from_row(row: dict[str, Any]) -> CabinetCameraItem:
+    return CabinetCameraItem(
+        id=int(row["id"]),
+        cabinet_name=str(row.get("cabinet_name") or "").strip(),
+        camera_name=str(row.get("camera_name") or "").strip(),
+        onvif_device_url=str(row.get("onvif_device_url") or "").strip() or None,
+        snapshot_url=str(row.get("snapshot_url") or "").strip() or None,
+        stream_url=str(row.get("stream_url") or "").strip() or None,
+        notes=str(row.get("notes") or "").strip() or None,
+        is_active=bool(row.get("is_active")),
+        has_credentials=bool(str(row.get("username") or "").strip() or str(row.get("password") or "").strip()),
+        created_at=str(row.get("created_at") or "").strip() or None,
+        updated_at=str(row.get("updated_at") or "").strip() or None,
+    )
+
+
+def _camera_http_url_or_none(value: Any) -> str | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        return None
+    if parsed.scheme.lower() not in {"http", "https"}:
+        return None
+    if not parsed.netloc:
+        return None
+    return raw
+
+
+def _camera_rtsp_url_or_none(value: Any) -> str | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        return None
+    if parsed.scheme.lower() not in {"rtsp", "rtsps"}:
+        return None
+    if not parsed.netloc:
+        return None
+    return raw
+
+
+def _camera_stream_url_with_credentials(stream_url: str, *, username: str | None, password: str | None) -> str:
+    parsed = urlparse(str(stream_url or "").strip())
+    if not parsed.scheme or not parsed.netloc:
+        return str(stream_url or "").strip()
+    if parsed.username or not username:
+        return parsed.geturl()
+    safe_username = quote(str(username), safe="")
+    safe_password = quote(str(password or ""), safe="")
+    auth_part = safe_username if safe_password == "" else f"{safe_username}:{safe_password}"
+    host = parsed.hostname or ""
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    netloc = auth_part + "@"
+    if host:
+        netloc += host
+    if parsed.port:
+        netloc += f":{parsed.port}"
+    return parsed._replace(netloc=netloc).geturl()
+
+
+def _camera_snapshot_bytes_from_stream(stream_url: str, *, username: str | None, password: str | None) -> bytes:
+    ffmpeg_bin = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
+    resolved_url = _camera_stream_url_with_credentials(stream_url, username=username, password=password)
+    proc = subprocess.run(
+        [
+            ffmpeg_bin,
+            "-v",
+            "error",
+            "-rtsp_transport",
+            "tcp",
+            "-i",
+            resolved_url,
+            "-frames:v",
+            "1",
+            "-f",
+            "image2pipe",
+            "-vcodec",
+            "mjpeg",
+            "-",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=15,
+        check=False,
+    )
+    if proc.returncode != 0 or not proc.stdout:
+        stderr_text = proc.stderr.decode("utf-8", errors="ignore").strip()
+        raise RuntimeError(stderr_text or "ffmpeg snapshot capture failed")
+    return proc.stdout
+
+
+def _xml_local_name(tag: str) -> str:
+    raw = str(tag or "")
+    return raw.split("}", 1)[-1] if "}" in raw else raw
+
+
+def _onvif_wsse_security_header(username: str, password: str) -> str:
+    nonce_bytes = secrets.token_bytes(16)
+    created = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    digest = base64.b64encode(hashlib.sha1(nonce_bytes + created.encode("utf-8") + password.encode("utf-8")).digest()).decode("ascii")
+    nonce_b64 = base64.b64encode(nonce_bytes).decode("ascii")
+    return f"""
+<wsse:Security soap:mustUnderstand="1"
+ xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+ xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+  <wsse:UsernameToken>
+    <wsse:Username>{username}</wsse:Username>
+    <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">{digest}</wsse:Password>
+    <wsse:Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">{nonce_b64}</wsse:Nonce>
+    <wsu:Created>{created}</wsu:Created>
+  </wsse:UsernameToken>
+</wsse:Security>
+""".strip()
+
+
+def _onvif_soap_request(
+    service_url: str,
+    body_xml: str,
+    *,
+    username: str | None,
+    password: str | None,
+    timeout: float = 8.0,
+) -> ET.Element:
+    service = _camera_http_url_or_none(service_url)
+    if service is None:
+        raise ValueError("유효한 ONVIF 장치 URL이 아닙니다.")
+    header_parts = [f"<wsa:MessageID>uuid:{uuid4()}</wsa:MessageID>"]
+    if username:
+        header_parts.append(_onvif_wsse_security_header(username, password or ""))
+    envelope = f"""<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
+ xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+  <soap:Header>
+    {''.join(header_parts)}
+  </soap:Header>
+  <soap:Body>
+    {body_xml}
+  </soap:Body>
+</soap:Envelope>
+""".strip()
+    auth = (username, password or "") if username else None
+    with httpx.Client(timeout=timeout, follow_redirects=True, verify=False) as client:
+        response = client.post(
+            service,
+            content=envelope.encode("utf-8"),
+            headers={"Content-Type": "application/soap+xml; charset=utf-8"},
+            auth=auth,
+        )
+    response.raise_for_status()
+    return ET.fromstring(response.content)
+
+
+def _find_first_descendant_text(element: ET.Element, local_name: str) -> str | None:
+    target = str(local_name or "").strip()
+    if not target:
+        return None
+    for node in element.iter():
+        if _xml_local_name(node.tag) == target:
+            value = str(node.text or "").strip()
+            if value:
+                return value
+    return None
+
+
+def _find_media_service_xaddr(root: ET.Element) -> str | None:
+    for node in root.iter():
+        if _xml_local_name(node.tag) in {"Media", "Media2"}:
+            xaddr = _find_first_descendant_text(node, "XAddr")
+            if _camera_http_url_or_none(xaddr):
+                return xaddr
+    for service in root.iter():
+        if _xml_local_name(service.tag) != "Service":
+            continue
+        namespace_text = _find_first_descendant_text(service, "Namespace") or ""
+        if "media/wsdl" not in namespace_text.lower():
+            continue
+        xaddr = _find_first_descendant_text(service, "XAddr")
+        if _camera_http_url_or_none(xaddr):
+            return xaddr
+    return None
+
+
+def _test_onvif_camera_connection(
+    device_service_url: str,
+    *,
+    username: str | None,
+    password: str | None,
+) -> dict[str, Any]:
+    device_root = _onvif_soap_request(
+        device_service_url,
+        '<tds:GetCapabilities xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><tds:Category>All</tds:Category></tds:GetCapabilities>',
+        username=username,
+        password=password,
+    )
+    media_service_url = _find_media_service_xaddr(device_root)
+    if not media_service_url:
+        services_root = _onvif_soap_request(
+            device_service_url,
+            '<tds:GetServices xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><tds:IncludeCapability>false</tds:IncludeCapability></tds:GetServices>',
+            username=username,
+            password=password,
+        )
+        media_service_url = _find_media_service_xaddr(services_root)
+
+    info_root = _onvif_soap_request(
+        device_service_url,
+        '<tds:GetDeviceInformation xmlns:tds="http://www.onvif.org/ver10/device/wsdl" />',
+        username=username,
+        password=password,
+    )
+    manufacturer = _find_first_descendant_text(info_root, "Manufacturer")
+    model = _find_first_descendant_text(info_root, "Model")
+    firmware_version = _find_first_descendant_text(info_root, "FirmwareVersion")
+    serial_number = _find_first_descendant_text(info_root, "SerialNumber")
+    hardware_id = _find_first_descendant_text(info_root, "HardwareId")
+
+    profile_token = None
+    snapshot_url = None
+    stream_url = None
+
+    if media_service_url:
+        profiles_root = _onvif_soap_request(
+            media_service_url,
+            '<trt:GetProfiles xmlns:trt="http://www.onvif.org/ver10/media/wsdl" />',
+            username=username,
+            password=password,
+        )
+        for node in profiles_root.iter():
+            if _xml_local_name(node.tag) == "Profiles":
+                profile_token = str(node.attrib.get("token") or node.attrib.get("{http://www.onvif.org/ver10/media/wsdl}token") or "").strip() or None
+                if profile_token:
+                    break
+        if profile_token:
+            try:
+                snapshot_root = _onvif_soap_request(
+                    media_service_url,
+                    f'<trt:GetSnapshotUri xmlns:trt="http://www.onvif.org/ver10/media/wsdl"><trt:ProfileToken>{profile_token}</trt:ProfileToken></trt:GetSnapshotUri>',
+                    username=username,
+                    password=password,
+                )
+                snapshot_url = _find_first_descendant_text(snapshot_root, "Uri")
+            except Exception:
+                snapshot_url = None
+            try:
+                stream_root = _onvif_soap_request(
+                    media_service_url,
+                    (
+                        '<trt:GetStreamUri xmlns:trt="http://www.onvif.org/ver10/media/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema">'
+                        '<trt:StreamSetup><tt:Stream>RTP-Unicast</tt:Stream><tt:Transport><tt:Protocol>RTSP</tt:Protocol></tt:Transport></trt:StreamSetup>'
+                        f'<trt:ProfileToken>{profile_token}</trt:ProfileToken>'
+                        '</trt:GetStreamUri>'
+                    ),
+                    username=username,
+                    password=password,
+                )
+                stream_url = _find_first_descendant_text(stream_root, "Uri")
+            except Exception:
+                stream_url = None
+
+    return {
+        "device_service_url": _camera_http_url_or_none(device_service_url) or str(device_service_url).strip(),
+        "media_service_url": _camera_http_url_or_none(media_service_url),
+        "profile_token": profile_token,
+        "snapshot_url": _camera_http_url_or_none(snapshot_url) or snapshot_url,
+        "stream_url": str(stream_url or "").strip() or None,
+        "manufacturer": manufacturer,
+        "model": model,
+        "firmware_version": firmware_version,
+        "serial_number": serial_number,
+        "hardware_id": hardware_id,
+    }
+
+
+def _discover_onvif_devices(timeout_seconds: float = 2.5) -> list[dict[str, Any]]:
+    timeout = max(0.5, min(10.0, float(timeout_seconds or 2.5)))
+    probe = f"""<?xml version="1.0" encoding="UTF-8"?>
+<e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope"
+            xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+            xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery"
+            xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
+  <e:Header>
+    <w:MessageID>uuid:{uuid4()}</w:MessageID>
+    <w:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To>
+    <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</w:Action>
+  </e:Header>
+  <e:Body>
+    <d:Probe>
+      <d:Types>dn:NetworkVideoTransmitter</d:Types>
+    </d:Probe>
+  </e:Body>
+</e:Envelope>
+""".strip()
+    namespaces = {
+        "a": "http://schemas.xmlsoap.org/ws/2004/08/addressing",
+        "d": "http://schemas.xmlsoap.org/ws/2005/04/discovery",
+    }
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sock.settimeout(0.35)
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    except OSError:
+        pass
+    try:
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+    except OSError:
+        pass
+    try:
+        try:
+            sock.sendto(probe.encode("utf-8"), ("239.255.255.250", 3702))
+        except OSError:
+            return []
+        deadline = time.time() + timeout
+        found: dict[str, dict[str, Any]] = {}
+        while time.time() < deadline:
+            try:
+                packet, addr = sock.recvfrom(65535)
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            try:
+                root = ET.fromstring(packet)
+            except ET.ParseError:
+                continue
+            for match in root.findall(".//d:ProbeMatch", namespaces):
+                endpoint_reference = str(match.findtext("./a:EndpointReference/a:Address", default="", namespaces=namespaces) or "").strip() or None
+                raw_xaddrs = str(match.findtext("./d:XAddrs", default="", namespaces=namespaces) or "").strip()
+                xaddr_candidates = [value.strip() for value in raw_xaddrs.split() if _camera_http_url_or_none(value.strip())]
+                onvif_device_url = xaddr_candidates[0] if xaddr_candidates else None
+                scopes = [value.strip() for value in str(match.findtext("./d:Scopes", default="", namespaces=namespaces) or "").split() if value.strip()]
+                types = [value.strip() for value in str(match.findtext("./d:Types", default="", namespaces=namespaces) or "").split() if value.strip()]
+                host = None
+                if onvif_device_url:
+                    try:
+                        host = urlparse(onvif_device_url).hostname
+                    except Exception:
+                        host = None
+                if not host:
+                    host = str(addr[0] or "").strip() or None
+                camera_name = None
+                for scope in scopes:
+                    if "/name/" in scope:
+                        camera_name = unquote(scope.split("/name/", 1)[1]).replace("_", " ").strip() or None
+                        break
+                key = str(onvif_device_url or endpoint_reference or host or uuid4())
+                found[key] = {
+                    "endpoint_reference": endpoint_reference,
+                    "camera_name": camera_name,
+                    "host": host,
+                    "onvif_device_url": onvif_device_url,
+                    "scopes": scopes,
+                    "types": types,
+                }
+    finally:
+        sock.close()
+    return sorted(
+        found.values(),
+        key=lambda row: (
+            str(row.get("host") or ""),
+            str(row.get("camera_name") or ""),
+            str(row.get("onvif_device_url") or ""),
+        ),
+    )
+
+
+def _purchase_import_rows_for_save(
+    items: list[PurchaseImportPreviewItem],
+    *,
+    vendor_code: str,
+    email_from: str | None,
+) -> list[dict[str, Any]]:
+    seller_name = _clean_text(email_from) or vendor_code
+    rows: list[dict[str, Any]] = []
+    for item in items:
+        raw_payload = dict(item.raw_payload or {})
+        raw_payload["row_no"] = max(1, int(item.row_no or 1))
+        item_url = _purchase_normalize_item_url(raw_payload.get("item_url"))
+        rows.append(
+            {
+                "artist_name": _clean_text(item.artist_name),
+                "item_name": str(item.item_name or "").strip(),
+                "media_format": _normalize_purchase_media_format(item.media_format) or _clean_text(item.media_format),
+                "quantity": max(1, int(item.quantity or 1)),
+                "unit_price": float(item.unit_price) if item.unit_price is not None else None,
+                "line_total": float(item.line_total) if item.line_total is not None else None,
+                "currency_code": str(item.currency_code or "KRW").strip().upper() or "KRW",
+                "purchase_date": _normalize_purchase_date(item.purchase_date),
+                "seller_name": _clean_text(raw_payload.get("seller_name")) or seller_name,
+                "item_url": item_url,
+                "image_url": _clean_text(raw_payload.get("image_url")),
+                "raw_line": _clean_text(item.raw_line),
+                "raw_payload": raw_payload,
+            }
+        )
+    return rows
+
+
+def _purchase_queue_base_context(row: dict[str, Any]) -> tuple[str, str, str, str]:
+    media_format = _normalize_purchase_media_format(row.get("media_format")) or "LP"
+    category = _infer_music_category_from_format(media_format)
+    size_group = _default_size_group_for_category(category)
+    seller_name = _clean_text(row.get("seller_name")) or _clean_text(row.get("vendor_code")) or "PURCHASE_IMPORT"
+    return media_format, category, size_group, seller_name
+
+
+def _purchase_queue_memory_note(row: dict[str, Any], candidate: dict[str, Any] | None = None) -> str:
+    seller_name = _clean_text(row.get("seller_name")) or _clean_text(row.get("vendor_code")) or "PURCHASE_IMPORT"
+    memory_bits = [f"구매 수입 큐 #{int(row['id'])}"]
+    email_subject = _clean_text(row.get("email_subject"))
+    source_ref = _clean_text(row.get("source_ref"))
+    if email_subject:
+        memory_bits.append(f"메일 제목: {email_subject}")
+    if source_ref:
+        memory_bits.append(f"메일 ID: {source_ref}")
+    if isinstance(candidate, dict):
+        source = str(candidate.get("source") or "").strip().upper()
+        external_id = str(candidate.get("external_id") or "").strip()
+        if source and external_id:
+            memory_bits.append(f"메타 후보: {source}#{external_id}")
+    memory_note = " | ".join(memory_bits)
+    return memory_note
+
+
+def _purchase_queue_candidate_query(
+    row: dict[str, Any],
+    *,
+    artist_name: str | None = None,
+    item_name: str | None = None,
+    query: str | None = None,
+) -> str:
+    override_query = _clean_text(query)
+    if override_query:
+        return override_query
+    parts = [
+        _clean_text(artist_name) if artist_name is not None else _clean_text(row.get("artist_name")),
+        _clean_text(item_name) if item_name is not None else _clean_text(row.get("item_name")),
+    ]
+    return " ".join(part for part in parts if part).strip()
+
+
+def _build_owned_item_from_purchase_queue_row(
+    row: dict[str, Any],
+    candidate: dict[str, Any] | None = None,
+) -> OwnedItemCreate:
+    media_format, fallback_category, fallback_size_group, seller_name = _purchase_queue_base_context(row)
+    candidate_source = str((candidate or {}).get("source") or "").strip().upper()
+    candidate_external_id = str((candidate or {}).get("external_id") or "").strip()
+    candidate_format = str((candidate or {}).get("format_name") or "").strip().upper()
+    category = fallback_category
+    if category == "DIGITAL" and candidate_format in MUSIC_CATEGORIES:
+        category = candidate_format
+    size_group = _default_size_group_for_category(category)
+    artist_name = _clean_text((candidate or {}).get("artist_or_brand")) or _clean_text(row.get("artist_name"))
+    item_name = _clean_text((candidate or {}).get("title")) or _clean_text(row.get("item_name")) or category
+    mapped_domain = _normalize_domain_code((candidate or {}).get("domain_code"))
+    release_type = str((candidate or {}).get("release_type") or "").strip().upper() or None
+    if release_type not in RELEASE_TYPES:
+        release_type = None
+    collector = _candidate_collector_base(candidate or {})
+    return OwnedItemCreate(
+        category=category,  # type: ignore[arg-type]
+        size_group=size_group,  # type: ignore[arg-type]
+        preferred_storage_size_group=size_group,  # type: ignore[arg-type]
+        auto_location_recommendation=False,
+        quantity=max(1, int(row.get("quantity") or 1)),
+        status="IN_COLLECTION",
+        source_code=candidate_source or None,
+        source_external_id=candidate_external_id or None,
+        domain_code=mapped_domain,
+        release_type=release_type,  # type: ignore[arg-type]
+        item_name_override=item_name,
+        acquisition_date=_normalize_purchase_date(row.get("purchase_date")),
+        purchase_price=float(row["unit_price"]) if row.get("unit_price") is not None else None,
+        currency_code=str(row.get("currency_code") or "KRW").strip().upper() or "KRW",
+        purchase_source=seller_name,
+        memory_note=_purchase_queue_memory_note(row, candidate),
+        music_detail=(
+            MusicDetailCreate(
+                format_name=category,  # type: ignore[arg-type]
+                artist_or_brand=artist_name,
+                released_date=_clean_text((candidate or {}).get("released_date")),
+                barcode=_clean_text((candidate or {}).get("barcode")),
+                label_name=_clean_text((candidate or {}).get("label_name")),
+                catalog_no=_discogs_catalog_no((candidate or {}).get("catalog_no")),
+                media_type=_clean_text((candidate or {}).get("media_type")),
+                genres=_clean_string_list((candidate or {}).get("genres")),
+                styles=_clean_string_list((candidate or {}).get("styles")),
+                cover_image_url=_clean_text((candidate or {}).get("cover_image_url")),
+                track_list=_clean_track_list((candidate or {}).get("track_list")),
+                disc_count=_normalize_positive_int((candidate or {}).get("disc_count")),
+                speed_rpm=_normalize_positive_int((candidate or {}).get("speed_rpm")),
+                source_notes=collector.get("source_notes"),
+                credits=collector.get("credits"),
+                identifier_items=collector.get("identifier_items"),
+                image_items=collector.get("image_items"),
+                company_items=collector.get("company_items"),
+                series=collector.get("series"),
+                format_items=collector.get("format_items"),
+                track_items=collector.get("track_items"),
+                label_items=collector.get("label_items"),
+                runout_matrix=collector.get("runout_matrix"),
+                pressing_country=collector.get("pressing_country"),
+            )
+            if category in MUSIC_CATEGORIES
+            else None
+        ),
+    )
+
+
+def _purchase_import_duplicate_create_response(
+    *,
+    queue_id: int,
+    row: dict[str, Any],
+    existing_owned_item_id: int,
+) -> PurchaseImportCreateResponse:
+    existing_owned_item = db.get_owned_item(existing_owned_item_id)
+    if existing_owned_item is None:
+        raise HTTPException(status_code=404, detail="linked owned item not found")
+    updated = db.update_purchase_import_row(
+        queue_id,
+        queue_status="CREATED",
+        linked_owned_item_id=existing_owned_item_id,
+    )
+    if updated is None:
+        raise HTTPException(status_code=500, detail="purchase import row update failed")
+    category = str(existing_owned_item.get("category") or row.get("media_format") or "OTHER").strip().upper() or "OTHER"
+    return PurchaseImportCreateResponse(
+        queue_item=_purchase_queue_item_from_row(updated),
+        owned_item_id=existing_owned_item_id,
+        label_id=_build_label_id(category, existing_owned_item_id),
+        linked_album_master_id=(
+            int(existing_owned_item["linked_album_master_id"])
+            if existing_owned_item.get("linked_album_master_id") is not None
+            else None
+        ),
+        notices=["동일한 주문 상품이 이미 등록되어 기존 보유상품에 연결했습니다. 신규 등록은 생략했습니다."],
+    )
+
+
+@app.post("/purchase-imports/preview", response_model=PurchaseImportPreviewResponse)
+def preview_purchase_import(payload: PurchaseImportPreviewRequest, request: Request) -> PurchaseImportPreviewResponse:
+    _require_admin_request(request)
+    resolved_vendor_code = _resolve_purchase_import_vendor_code(payload.vendor_code, raw_content=payload.raw_content)
+    items = _parse_purchase_import_preview(payload)
+    if not items:
+        reason = _purchase_import_empty_reason(resolved_vendor_code, payload.raw_content)
+        if reason:
+            raise HTTPException(status_code=400, detail=reason)
+    return PurchaseImportPreviewResponse(
+        vendor_code=resolved_vendor_code,
+        total_count=len(items),
+        items=items,
+    )
+
+
+@app.post("/purchase-imports", response_model=PurchaseImportSaveResponse)
+def save_purchase_import(payload: PurchaseImportSaveRequest, request: Request) -> PurchaseImportSaveResponse:
+    _require_admin_request(request)
+    resolved_vendor_code = _resolve_purchase_import_vendor_code(payload.vendor_code, items=payload.items)
+    resolved_purchase_date = _resolve_purchase_import_purchase_date(payload.purchase_date, items=payload.items)
+    rows = _purchase_import_rows_for_save(payload.items, vendor_code=resolved_vendor_code, email_from=payload.email_from)
+    created_ids = db.insert_purchase_import_rows(
+        resolved_vendor_code,
+        payload.source_type,
+        rows,
+        source_ref=_clean_text(payload.source_ref),
+        email_from=_clean_text(payload.email_from),
+        email_subject=_clean_text(payload.email_subject),
+        purchase_date=resolved_purchase_date,
+    )
+    return PurchaseImportSaveResponse(created_count=len(created_ids), created_ids=created_ids)
+
+
+@app.post("/purchase-imports/webhook/gmail", response_model=PurchaseImportSaveResponse)
+def purchase_import_webhook_gmail(payload: PurchaseImportWebhookRequest, request: Request) -> PurchaseImportSaveResponse:
+    if not _purchase_import_webhook_allowed(request):
+        raise HTTPException(status_code=403, detail="purchase import webhook token mismatch")
+    items = _parse_purchase_import_preview(payload)
+    resolved_vendor_code = _resolve_purchase_import_vendor_code(payload.vendor_code, raw_content=payload.raw_content, items=items)
+    resolved_purchase_date = _resolve_purchase_import_purchase_date(payload.purchase_date, raw_content=payload.raw_content, items=items)
+    rows = _purchase_import_rows_for_save(items, vendor_code=resolved_vendor_code, email_from=payload.email_from)
+    created_ids = db.insert_purchase_import_rows(
+        resolved_vendor_code,
+        payload.source_type,
+        rows,
+        source_ref=_clean_text(payload.source_ref),
+        email_from=_clean_text(payload.email_from),
+        email_subject=_clean_text(payload.email_subject),
+        purchase_date=resolved_purchase_date,
+    )
+    return PurchaseImportSaveResponse(created_count=len(created_ids), created_ids=created_ids)
+
+
+@app.get("/purchase-imports", response_model=PurchaseImportListResponse)
+def list_purchase_imports(
+    request: Request,
+    queue_status: PurchaseImportStatus | None = Query(default="PENDING"),
+    vendor_code: PurchaseImportVendor | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=300),
+) -> PurchaseImportListResponse:
+    _require_admin_request(request)
+    rows = db.list_purchase_import_rows(queue_status=queue_status, vendor_code=vendor_code, limit=limit)
+    total_count = db.count_purchase_import_rows(queue_status=queue_status, vendor_code=vendor_code)
+    return PurchaseImportListResponse(
+        total_count=total_count,
+        items=[_purchase_queue_item_from_row(row) for row in rows],
+    )
+
+
+@app.get("/purchase-imports/{queue_id}/candidates", response_model=PurchaseImportCandidateSearchResponse)
+def list_purchase_import_candidates(
+    queue_id: int,
+    request: Request,
+    source: str = Query(default="AUTO"),
+    limit: int = Query(default=5, ge=1, le=20),
+    artist_name: str | None = Query(default=None),
+    item_name: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+) -> PurchaseImportCandidateSearchResponse:
+    _require_admin_request(request)
+    row = db.get_purchase_import_row(queue_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="purchase import row not found")
+
+    working_row = row
+    vendor_code = str(row.get("vendor_code") or "").strip().upper()
+    item_url = _clean_text(row.get("item_url"))
+    has_artist_name = bool(_clean_text(row.get("artist_name")))
+    has_image_url = bool(_clean_text(row.get("image_url")))
+    if vendor_code == "AMAZON" and item_url and (not has_artist_name or not has_image_url):
+        try:
+            working_row = _purchase_enrich_row_from_item_page(row)
+        except Exception:
+            working_row = row
+
+    search_query = _purchase_queue_candidate_query(working_row, artist_name=artist_name, item_name=item_name, query=query)
+    if not search_query:
+        raise HTTPException(status_code=400, detail="구매 수입 큐 항목에서 후보 조회용 상품명/아티스트 정보를 찾지 못했습니다.")
+
+    media_format = _normalize_purchase_media_format(working_row.get("media_format")) or "LP"
+    category = _infer_music_category_from_format(media_format)
+    candidates = search_music_metadata(
+        query=search_query,
+        category=category,
+        source=str(source or "AUTO").strip().upper() or "AUTO",
+        limit=limit,
+    )
+    candidates = _annotate_owned_flags(candidates)
+    return PurchaseImportCandidateSearchResponse(
+        queue_item=_purchase_queue_item_from_row(working_row),
+        query=search_query,
+        candidates=candidates,
+    )
+
+
+@app.post("/purchase-imports/{queue_id}/enrich-item-page", response_model=PurchaseImportQueueItem)
+def enrich_purchase_import_from_item_page(queue_id: int, request: Request) -> PurchaseImportQueueItem:
+    _require_admin_request(request)
+    row = db.get_purchase_import_row(queue_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="purchase import row not found")
+    updated = _purchase_enrich_row_from_item_page(row)
+    return _purchase_queue_item_from_row(updated)
+
+
+@app.post("/purchase-imports/{queue_id}/create-owned-item", response_model=PurchaseImportCreateResponse)
+def create_owned_item_from_purchase_import(queue_id: int, request: Request) -> PurchaseImportCreateResponse:
+    _require_admin_request(request)
+    row = db.get_purchase_import_row(queue_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="purchase import row not found")
+    if str(row.get("queue_status") or "").strip().upper() != "PENDING":
+        raise HTTPException(status_code=400, detail="purchase import row is not pending")
+    duplicate_row = db.find_purchase_import_duplicate_row(row, exclude_queue_id=queue_id, require_linked_owned_item=True)
+    if duplicate_row is not None:
+        existing_owned_item_id = int(duplicate_row.get("linked_owned_item_id") or 0)
+        if existing_owned_item_id > 0 and db.get_owned_item(existing_owned_item_id) is not None:
+            return _purchase_import_duplicate_create_response(
+                queue_id=queue_id,
+                row=row,
+                existing_owned_item_id=existing_owned_item_id,
+            )
+    payload = _build_owned_item_from_purchase_queue_row(row)
+    created = create_owned_item(payload)
+    updated = db.update_purchase_import_row(
+        queue_id,
+        queue_status="CREATED",
+        linked_owned_item_id=int(created.owned_item_id),
+    )
+    if updated is None:
+        raise HTTPException(status_code=500, detail="purchase import row update failed")
+    return PurchaseImportCreateResponse(
+        queue_item=_purchase_queue_item_from_row(updated),
+        owned_item_id=int(created.owned_item_id),
+        label_id=str(created.label_id),
+        linked_album_master_id=created.linked_album_master_id,
+        notices=list(created.notices or []),
+    )
+
+
+@app.post("/purchase-imports/{queue_id}/create-owned-item-from-candidate", response_model=PurchaseImportCreateResponse)
+def create_owned_item_from_purchase_import_candidate(
+    queue_id: int,
+    payload: PurchaseImportCandidateCreateRequest,
+    request: Request,
+) -> PurchaseImportCreateResponse:
+    _require_admin_request(request)
+    row = db.get_purchase_import_row(queue_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="purchase import row not found")
+    if str(row.get("queue_status") or "").strip().upper() != "PENDING":
+        raise HTTPException(status_code=400, detail="purchase import row is not pending")
+    duplicate_row = db.find_purchase_import_duplicate_row(row, exclude_queue_id=queue_id, require_linked_owned_item=True)
+    if duplicate_row is not None:
+        existing_owned_item_id = int(duplicate_row.get("linked_owned_item_id") or 0)
+        if existing_owned_item_id > 0 and db.get_owned_item(existing_owned_item_id) is not None:
+            return _purchase_import_duplicate_create_response(
+                queue_id=queue_id,
+                row=row,
+                existing_owned_item_id=existing_owned_item_id,
+            )
+
+    candidate = payload.candidate.model_dump(mode="python")
+    owned_payload = _build_owned_item_from_purchase_queue_row(row, candidate)
+    created = create_owned_item(owned_payload)
+    updated = db.update_purchase_import_row(
+        queue_id,
+        queue_status="CREATED",
+        linked_owned_item_id=int(created.owned_item_id),
+    )
+    if updated is None:
+        raise HTTPException(status_code=500, detail="purchase import row update failed")
+    return PurchaseImportCreateResponse(
+        queue_item=_purchase_queue_item_from_row(updated),
+        owned_item_id=int(created.owned_item_id),
+        label_id=str(created.label_id),
+        linked_album_master_id=created.linked_album_master_id,
+        notices=list(created.notices or []),
+    )
+
+
+@app.post("/purchase-imports/{queue_id}/ignore", response_model=PurchaseImportQueueItem)
+def ignore_purchase_import(queue_id: int, request: Request) -> PurchaseImportQueueItem:
+    _require_admin_request(request)
+    updated = db.update_purchase_import_row(queue_id, queue_status="IGNORED")
+    if updated is None:
+        raise HTTPException(status_code=404, detail="purchase import row not found")
+    return _purchase_queue_item_from_row(updated)
+
+
+def _system_auth_account_items() -> list[AuthAccountItem]:
+    items: list[AuthAccountItem] = []
+    if settings.auth_admin_username and settings.auth_admin_password:
+        items.append(
+            AuthAccountItem(
+                username=str(settings.auth_admin_username),
+                role="ADMIN",
+                source="SYSTEM",
+                editable=False,
+                is_active=True,
+            )
+        )
+    if settings.auth_operator_username and settings.auth_operator_password:
+        items.append(
+            AuthAccountItem(
+                username=str(settings.auth_operator_username),
+                role="OPERATOR",
+                source="SYSTEM",
+                editable=False,
+                is_active=True,
+            )
+        )
+    for username, _password in _extra_operator_accounts():
+        items.append(
+            AuthAccountItem(
+                username=username,
+                role="OPERATOR",
+                source="SYSTEM",
+                editable=False,
+                is_active=True,
+            )
+        )
+    return items
+
+
+def _system_auth_account_lookup(username: str) -> dict[str, str] | None:
+    key = str(username or "").strip()
+    if not key:
+        return None
+    for account_username, account in _auth_accounts().items():
+        if account_username != key:
+            continue
+        if str(account.get("password_hash") or "").strip():
+            continue
+        return {
+            "username": account_username,
+            "password": str(account.get("password") or ""),
+            "role": str(account.get("role") or AUTH_ROLE_OPERATOR).strip().upper(),
+        }
+    return None
+
+
+@app.get("/admin/auth-accounts", response_model=AuthAccountListResponse)
+def list_auth_accounts(request: Request) -> AuthAccountListResponse:
+    _require_admin_request(request)
+    item_map: dict[str, AuthAccountItem] = {
+        item.username: item for item in _system_auth_account_items()
+    }
+    for row in db.list_auth_accounts():
+        username = str(row.get("username") or "").strip()
+        item_map[username] = AuthAccountItem(
+            username=username,
+            role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
+            source="MANAGED",
+            editable=True,
+            is_active=bool(row.get("is_active")),
+            created_at=str(row.get("created_at") or "").strip() or None,
+            updated_at=str(row.get("updated_at") or "").strip() or None,
+        )
+    items = list(item_map.values())
+    items.sort(key=lambda item: (0 if item.role == "ADMIN" else 1, 0 if item.source == "SYSTEM" else 1, item.username.lower()))
+    return AuthAccountListResponse(total_count=len(items), items=items)
+
+
+@app.get("/api/admin-auth-accounts", response_model=AuthAccountListResponse)
+def list_auth_accounts_api(request: Request) -> AuthAccountListResponse:
+    return list_auth_accounts(request)
+
+
+@app.get("/ops-auth-accounts", response_model=AuthAccountListResponse)
+def list_auth_accounts_ops(request: Request) -> AuthAccountListResponse:
+    return list_auth_accounts(request)
+
+
+@app.post("/admin/auth-accounts", response_model=AuthAccountItem)
+def create_auth_account(payload: AuthAccountCreateRequest, request: Request) -> AuthAccountItem:
+    _require_admin_request(request)
+    username = str(payload.username or "").strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="username is required")
+    if db.get_auth_account_by_username(username) is not None:
+        raise HTTPException(status_code=409, detail="이미 존재하는 계정입니다.")
+    row = db.upsert_auth_account(
+        username=username,
+        password_hash=_hash_auth_password(payload.password),
+        role=str(payload.role or "OPERATOR").strip().upper(),
+        is_active=True,
+    )
+    if row is None:
+        raise HTTPException(status_code=500, detail="계정 저장에 실패했습니다.")
+    return AuthAccountItem(
+        username=str(row.get("username") or "").strip(),
+        role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
+        source="MANAGED",
+        editable=True,
+        is_active=bool(row.get("is_active")),
+        created_at=str(row.get("created_at") or "").strip() or None,
+        updated_at=str(row.get("updated_at") or "").strip() or None,
+    )
+
+
+@app.post("/api/admin-auth-accounts", response_model=AuthAccountItem)
+def create_auth_account_api(payload: AuthAccountCreateRequest, request: Request) -> AuthAccountItem:
+    return create_auth_account(payload, request)
+
+
+@app.post("/ops-auth-accounts", response_model=AuthAccountItem)
+def create_auth_account_ops(payload: AuthAccountCreateRequest, request: Request) -> AuthAccountItem:
+    return create_auth_account(payload, request)
+
+
+@app.patch("/admin/auth-accounts/{username}", response_model=AuthAccountItem)
+def update_auth_account(username: str, payload: AuthAccountUpdateRequest, request: Request) -> AuthAccountItem:
+    _require_admin_request(request)
+    existing = db.get_auth_account_by_username(username)
+    system_account = _system_auth_account_lookup(username)
+    if existing is None and system_account is None:
+        raise HTTPException(status_code=404, detail="계정을 찾을 수 없습니다.")
+    next_hash = str(existing.get("password_hash") or "").strip() if existing else ""
+    if not next_hash and system_account is not None:
+        next_hash = _hash_auth_password(system_account["password"])
+    if payload.password is not None:
+        next_hash = _hash_auth_password(payload.password)
+    base_role = str((existing or {}).get("role") or (system_account or {}).get("role") or "OPERATOR").strip().upper()
+    next_role = str(payload.role or base_role).strip().upper()
+    next_active = bool(existing.get("is_active")) if existing is not None else True
+    if payload.is_active is not None:
+        next_active = bool(payload.is_active)
+    row = db.upsert_auth_account(
+        username=username,
+        password_hash=next_hash,
+        role=next_role,
+        is_active=next_active,
+    )
+    if row is None:
+        raise HTTPException(status_code=500, detail="계정 수정에 실패했습니다.")
+    return AuthAccountItem(
+        username=str(row.get("username") or "").strip(),
+        role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
+        source="MANAGED",
+        editable=True,
+        is_active=bool(row.get("is_active")),
+        created_at=str(row.get("created_at") or "").strip() or None,
+        updated_at=str(row.get("updated_at") or "").strip() or None,
+    )
+
+
+@app.patch("/api/admin-auth-accounts/{username}", response_model=AuthAccountItem)
+def update_auth_account_api(username: str, payload: AuthAccountUpdateRequest, request: Request) -> AuthAccountItem:
+    return update_auth_account(username, payload, request)
+
+
+@app.patch("/ops-auth-accounts/{username}", response_model=AuthAccountItem)
+def update_auth_account_ops(username: str, payload: AuthAccountUpdateRequest, request: Request) -> AuthAccountItem:
+    return update_auth_account(username, payload, request)
+
+
+@app.delete("/admin/auth-accounts/{username}")
+def delete_auth_account(username: str, request: Request) -> dict[str, Any]:
+    _require_admin_request(request)
+    existing = db.get_auth_account_by_username(username)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="관리 계정을 찾을 수 없습니다.")
+    ok = db.delete_auth_account(username)
+    if not ok:
+        raise HTTPException(status_code=500, detail="계정 삭제에 실패했습니다.")
+    return {"ok": True, "username": username}
+
+
+@app.delete("/api/admin-auth-accounts/{username}")
+def delete_auth_account_api(username: str, request: Request) -> dict[str, Any]:
+    return delete_auth_account(username, request)
+
+
+@app.delete("/ops-auth-accounts/{username}")
+def delete_auth_account_ops(username: str, request: Request) -> dict[str, Any]:
+    return delete_auth_account(username, request)
+
+
+@app.get("/operator/catalog-search", response_model=OperatorCatalogSearchResponse)
+def operator_catalog_search(
+    q: str = Query(min_length=1, max_length=200),
+    limit: int = Query(default=20, ge=1, le=100),
+) -> OperatorCatalogSearchResponse:
+    rows = db.search_operator_catalog(query_text=q, limit=limit)
+    items: list[OperatorCatalogSearchItem] = []
+    for row in rows:
+        category_code = str(row.get("category") or "")
+        owned_item_id = int(row.get("id") or 0)
+        items.append(
+            OperatorCatalogSearchItem(
+                owned_item_id=owned_item_id,
+                label_id=_build_label_id(category_code, owned_item_id),
+                category=category_code,
+                format_name=row.get("format_name"),
+                item_title=row.get("item_title") or row.get("item_name_override"),
+                artist_or_brand=row.get("artist_or_brand"),
+                released_date=row.get("released_date"),
+                label_name=row.get("label_name"),
+                catalog_no=_discogs_catalog_no(row.get("catalog_no")),
+                barcode=row.get("barcode"),
+                cover_image_url=row.get("cover_image_url"),
+                signature_type=str(row.get("signature_type") or "NONE"),
+                status=str(row.get("status") or "IN_COLLECTION"),
+                current_slot_code=row.get("current_slot_code"),
+                current_slot_display_name=row.get("current_slot_display_name"),
+                previous_slot_code=row.get("previous_slot_code"),
+                previous_slot_display_name=row.get("previous_slot_display_name"),
+                track_matches=row.get("track_matches") or [],
+                matched_track_count=int(row.get("matched_track_count") or 0),
+                track_items=row.get("track_items") or [],
+                track_list=row.get("track_list") or [],
+            )
+        )
+    return OperatorCatalogSearchResponse(query=q, total_count=len(items), items=items)
+
+
+@app.get("/operator/customer-requests", response_model=CustomerTrackRequestListResponse)
+def get_customer_track_requests(
+    status: str | None = Query(default=None, pattern="^(REQUESTED|PLAYING|RETURNED|CANCELLED)$"),
+    limit: int = Query(default=50, ge=1, le=300),
+) -> CustomerTrackRequestListResponse:
+    rows = db.list_customer_track_requests(status=status, limit=limit)
+    items: list[CustomerTrackRequestItem] = []
+    for row in rows:
+        category_raw = str(row.get("category") or "").strip()
+        items.append(
+            CustomerTrackRequestItem(
+                id=int(row["id"]),
+                requested_track=str(row.get("requested_track") or ""),
+                matched_track_title=row.get("matched_track_title"),
+                matched_track_no=row.get("matched_track_no"),
+                owned_item_id=row.get("owned_item_id"),
+                label_id=row.get("label_id"),
+                category=category_raw if category_raw else None,
+                item_title=row.get("item_title"),
+                artist_or_brand=row.get("artist_or_brand"),
+                cover_image_url=row.get("cover_image_url"),
+                status=str(row.get("status") or "REQUESTED"),
+                customer_note=row.get("customer_note"),
+                response_note=row.get("response_note"),
+                requested_by=row.get("requested_by"),
+                handled_by=row.get("handled_by"),
+                created_at=str(row.get("created_at") or ""),
+                updated_at=str(row.get("updated_at") or ""),
+                handled_at=row.get("handled_at"),
+                current_slot_code_snapshot=row.get("current_slot_code_snapshot"),
+                current_slot_display_snapshot=row.get("current_slot_display_snapshot"),
+                previous_slot_code_snapshot=row.get("previous_slot_code_snapshot"),
+                previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
+                current_live_slot_code=row.get("current_live_slot_code"),
+                current_live_slot_display_name=row.get("current_live_slot_display_name"),
+            )
+        )
+    return CustomerTrackRequestListResponse(total_count=db.count_customer_track_requests(status=status), items=items)
+
+
+@app.post("/operator/customer-requests", response_model=CustomerTrackRequestItem)
+def create_customer_track_request(
+    payload: CustomerTrackRequestCreate,
+    request: Request,
+) -> CustomerTrackRequestItem:
+    session = _read_auth_session_data(request) or {}
+    row = db.create_customer_track_request(
+        requested_track=payload.requested_track,
+        requested_by=str(session.get("username") or "").strip() or None,
+        owned_item_id=payload.owned_item_id,
+        matched_track_title=payload.matched_track_title,
+        matched_track_no=payload.matched_track_no,
+        customer_note=payload.customer_note,
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="customer request create failed")
+    category_raw = str(row.get("category") or "").strip()
+    return CustomerTrackRequestItem(
+        id=int(row["id"]),
+        requested_track=str(row.get("requested_track") or ""),
+        matched_track_title=row.get("matched_track_title"),
+        matched_track_no=row.get("matched_track_no"),
+        owned_item_id=row.get("owned_item_id"),
+        label_id=row.get("label_id"),
+        category=category_raw if category_raw else None,
+        item_title=row.get("item_title"),
+        artist_or_brand=row.get("artist_or_brand"),
+        cover_image_url=row.get("cover_image_url"),
+        status=str(row.get("status") or "REQUESTED"),
+        customer_note=row.get("customer_note"),
+        response_note=row.get("response_note"),
+        requested_by=row.get("requested_by"),
+        handled_by=row.get("handled_by"),
+        created_at=str(row.get("created_at") or ""),
+        updated_at=str(row.get("updated_at") or ""),
+        handled_at=row.get("handled_at"),
+        current_slot_code_snapshot=row.get("current_slot_code_snapshot"),
+        current_slot_display_snapshot=row.get("current_slot_display_snapshot"),
+        previous_slot_code_snapshot=row.get("previous_slot_code_snapshot"),
+        previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
+        current_live_slot_code=row.get("current_live_slot_code"),
+        current_live_slot_display_name=row.get("current_live_slot_display_name"),
+    )
+
+
+@app.patch("/operator/customer-requests/{request_id}", response_model=CustomerTrackRequestItem)
+def patch_customer_track_request(
+    request_id: int,
+    payload: CustomerTrackRequestUpdate,
+    request: Request,
+) -> CustomerTrackRequestItem:
+    session = _read_auth_session_data(request) or {}
+    row = db.update_customer_track_request(
+        request_id=request_id,
+        status=payload.status,
+        response_note=payload.response_note,
+        handled_by=str(session.get("username") or "").strip() or None,
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="customer request not found")
+    category_raw = str(row.get("category") or "").strip()
+    return CustomerTrackRequestItem(
+        id=int(row["id"]),
+        requested_track=str(row.get("requested_track") or ""),
+        matched_track_title=row.get("matched_track_title"),
+        matched_track_no=row.get("matched_track_no"),
+        owned_item_id=row.get("owned_item_id"),
+        label_id=row.get("label_id"),
+        category=category_raw if category_raw else None,
+        item_title=row.get("item_title"),
+        artist_or_brand=row.get("artist_or_brand"),
+        cover_image_url=row.get("cover_image_url"),
+        status=str(row.get("status") or "REQUESTED"),
+        customer_note=row.get("customer_note"),
+        response_note=row.get("response_note"),
+        requested_by=row.get("requested_by"),
+        handled_by=row.get("handled_by"),
+        created_at=str(row.get("created_at") or ""),
+        updated_at=str(row.get("updated_at") or ""),
+        handled_at=row.get("handled_at"),
+        current_slot_code_snapshot=row.get("current_slot_code_snapshot"),
+        current_slot_display_snapshot=row.get("current_slot_display_snapshot"),
+        previous_slot_code_snapshot=row.get("previous_slot_code_snapshot"),
+        previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
+        current_live_slot_code=row.get("current_live_slot_code"),
+        current_live_slot_display_name=row.get("current_live_slot_display_name"),
+    )
+
+
+@app.get("/metadata-sync/status", response_model=MetadataSyncStatusResponse)
+def get_metadata_sync_status() -> MetadataSyncStatusResponse:
+    return MetadataSyncStatusResponse(
+        auto_enabled=int(settings.metadata_sync_interval_minutes) > 0,
+        interval_minutes=int(settings.metadata_sync_interval_minutes),
+        batch_limit=int(settings.metadata_sync_batch_limit),
+        running=METADATA_SYNC_LOCK.locked(),
+        last_result=METADATA_SYNC_LAST_RESULT,
+        last_error=METADATA_SYNC_LAST_ERROR,
+    )
+
+
+@app.post("/metadata-sync/run", response_model=MetadataSyncRunResponse)
+def run_metadata_sync(payload: MetadataSyncRunRequest) -> MetadataSyncRunResponse:
+    result = _run_metadata_sync(payload=payload, fail_when_running=True)
+    if result is None:
+        raise HTTPException(status_code=409, detail="metadata sync already running")
+    return result
+
+
+@app.get("/", include_in_schema=False)
+def root_entry(request: Request):
+    if _auth_enabled() and not _is_authenticated(request):
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/ops", status_code=303)
+
+
+@app.get("/ops", include_in_schema=False)
+def ops_shell(request: Request):
+    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+
+
+@app.get("/ops/cabinets", include_in_schema=False)
+def ops_cabinets_shell(request: Request):
+    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+
+
+@app.get("/admin", include_in_schema=False)
+def admin_shell(request: Request):
+    role = _read_auth_role(request)
+    if not _is_admin_role(role):
+        return RedirectResponse("/ops", status_code=303)
+    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+
+
+@app.get("/ui", include_in_schema=False)
+def ui_alias() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+
+
+@app.post("/ui/pick-directory", response_model=DirectoryPickerResponse)
+def ui_pick_directory(payload: DirectoryPickerRequest) -> DirectoryPickerResponse:
+    initial_path = str(payload.initial_path or "").strip() or None
+    title = str(payload.title or "음원 폴더 선택").strip() or "음원 폴더 선택"
+    try:
+        picked = _pick_directory_interactive(title=title, initial_path=initial_path)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if not picked:
+        return DirectoryPickerResponse(directory_path=None, cancelled=True)
+    return DirectoryPickerResponse(directory_path=picked, cancelled=False)
+
+
+@app.post("/ui/upload-image", response_model=UiImageUploadResponse)
+async def ui_upload_image(file: UploadFile = File(...)) -> UiImageUploadResponse:
+    ext = _resolve_image_upload_extension(file.filename, file.content_type)
+    if ext is None:
+        raise HTTPException(status_code=400, detail="image upload only supports common image formats")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty image file")
+    if len(raw) > MAX_IMAGE_UPLOAD_BYTES:
+        raise HTTPException(status_code=400, detail="image file is too large (max 20MB)")
+
+    month_bucket = datetime.now(timezone.utc).strftime("%Y%m")
+    target_dir = IMAGE_UPLOAD_DIR / month_bucket
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    file_name = f"{stamp}_{uuid4().hex[:10]}{ext}"
+    target_path = target_dir / file_name
+    target_path.write_bytes(raw)
+
+    rel_path = target_path.relative_to(STATIC_DIR).as_posix()
+    return UiImageUploadResponse(
+        url=f"/ui-static/{rel_path}",
+        file_name=file_name,
+        file_size_bytes=len(raw),
+        content_type=str(file.content_type or "").strip() or None,
+    )
+
+
+@app.post("/ingest/barcode", response_model=BarcodeIngestResponse)
+def ingest_barcode(payload: BarcodeIngestRequest) -> BarcodeIngestResponse:
+    candidates = search_music_metadata(
+        barcode=payload.barcode,
+        category=payload.category,
+        source=payload.source,
+        limit=payload.limit,
+    )
+    candidates = _annotate_owned_flags(candidates)
+    return BarcodeIngestResponse(query=payload.barcode, candidates=candidates)
+
+
+def _compose_non_barcode_query(payload: QueryIngestRequest) -> str:
+    if payload.query and payload.query.strip():
+        return payload.query.strip()
+
+    parts: list[str] = []
+    for value in [
+        payload.artist_or_brand,
+        payload.title,
+        payload.catalog_no,
+        payload.runout,
+        payload.label_name,
+    ]:
+        if value and value.strip():
+            parts.append(value.strip())
+
+    if payload.release_year:
+        parts.append(str(payload.release_year))
+    if payload.country and payload.country.strip():
+        parts.append(payload.country.strip().upper())
+
+    return " ".join(parts).strip()
+
+
+@app.post("/ingest/search", response_model=QueryIngestResponse)
+def ingest_search(payload: QueryIngestRequest) -> QueryIngestResponse:
+    query = _compose_non_barcode_query(payload)
+    if not query:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide query or at least one of artist_or_brand/title/catalog_no/runout/label_name/release_year/country",
+        )
+
+    candidates = search_music_metadata(
+        query=query,
+        category=payload.category,
+        source=payload.source,
+        limit=payload.limit,
+    )
+    candidates = _annotate_owned_flags(candidates)
+    return QueryIngestResponse(query=query, candidates=candidates)
+
+
+def _decode_upload_bytes(raw: bytes) -> str:
+    for enc in ("utf-8-sig", "cp949", "euc-kr"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    raise HTTPException(status_code=400, detail="CSV decode failed. Use UTF-8/CP949/EUC-KR.")
+
+
+def _csv_first_text(row: dict[str, Any], *keys: str) -> str | None:
+    for key in keys:
+        value = row.get(key)
+        text = str(value or "").strip()
+        if text:
+            return text
+    return None
+
+
+def _normalize_discogs_release_id(value: Any) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    direct = re.fullmatch(r"\d+", text)
+    if direct:
+        return text
+    url_match = re.search(r"/release/(\d+)", text, flags=re.IGNORECASE)
+    if url_match:
+        return str(url_match.group(1))
+    return None
+
+
+def _csv_slot_lookup_maps() -> tuple[dict[str, dict[str, Any]], dict[tuple[str, str, str], dict[str, Any]]]:
+    slot_by_code: dict[str, dict[str, Any]] = {}
+    slot_by_triplet: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for slot in db.list_storage_slots():
+        slot_code = str(slot.get("slot_code") or "").strip()
+        if slot_code:
+            slot_by_code[slot_code.casefold()] = slot
+        cabinet_name = str(slot.get("cabinet_name") or "").strip()
+        column_code = str(slot.get("column_code") or "").strip()
+        cell_code = str(slot.get("cell_code") or "").strip()
+        if cabinet_name and column_code and cell_code:
+            slot_by_triplet[(cabinet_name.casefold(), column_code.casefold(), cell_code.casefold())] = slot
+    return slot_by_code, slot_by_triplet
+
+
+def _build_csv_discogs_candidate(release_id: str) -> dict[str, Any] | None:
+    release_id_s = str(release_id or "").strip()
+    if not release_id_s:
+        return None
+    snapshot = get_source_release_snapshot(source="DISCOGS", external_id=release_id_s)
+    if not snapshot:
+        return None
+
+    raw = snapshot.get("raw") if isinstance(snapshot.get("raw"), dict) else {}
+    title = str(raw.get("title") or "").strip() or f"Discogs Release #{release_id_s}"
+    country = str(raw.get("country") or "").strip() or None
+    return {
+        "source": "DISCOGS",
+        "external_id": release_id_s,
+        "title": title,
+        "artist_or_brand": snapshot.get("artist_or_brand"),
+        "release_year": snapshot.get("release_year"),
+        "released_date": snapshot.get("released_date"),
+        "country": country,
+        "format_name": snapshot.get("format_name"),
+        "barcode": snapshot.get("barcode"),
+        "catalog_no": snapshot.get("catalog_no"),
+        "label_name": snapshot.get("label_name"),
+        "cover_image_url": snapshot.get("cover_image_url"),
+        "track_list": snapshot.get("track_list") or [],
+        "media_type": snapshot.get("media_type"),
+        "release_type": snapshot.get("release_type"),
+        "domain_code": snapshot.get("domain_code"),
+        "genres": snapshot.get("genres") or [],
+        "styles": snapshot.get("styles") or [],
+        "disc_count": snapshot.get("disc_count"),
+        "speed_rpm": snapshot.get("speed_rpm"),
+        "has_obi": snapshot.get("has_obi"),
+        "runout_matrix": snapshot.get("runout_matrix") or [],
+        "pressing_country": snapshot.get("pressing_country"),
+        "source_notes": snapshot.get("source_notes"),
+        "credits": snapshot.get("credits") or [],
+        "identifier_items": snapshot.get("identifier_items") or [],
+        "image_items": snapshot.get("image_items") or [],
+        "company_items": snapshot.get("company_items") or [],
+        "series": snapshot.get("series") or [],
+        "format_items": snapshot.get("format_items") or [],
+        "track_items": snapshot.get("track_items") or [],
+        "label_items": snapshot.get("label_items") or [],
+        "confidence": 1.0,
+        "raw": raw,
+    }
+
+
+def _normalize_csv_ingest_row(
+    row: dict[str, Any],
+    default_category: str | None,
+    slot_by_code: dict[str, dict[str, Any]],
+    slot_by_triplet: dict[tuple[str, str, str], dict[str, Any]],
+) -> tuple[dict[str, Any], str | None, str | None]:
+    normalized: dict[str, Any] = {}
+    for raw_key, raw_value in row.items():
+        key = str(raw_key or "").strip()
+        if not key:
+            continue
+        normalized[key] = str(raw_value or "").strip()
+
+    if not normalized.get("category") and default_category:
+        normalized["category"] = str(default_category).strip().upper()
+    elif normalized.get("category"):
+        normalized["category"] = str(normalized["category"]).strip().upper()
+
+    discogs_release_id_input = _csv_first_text(
+        normalized,
+        "discogs_release_id",
+        "discogs_id",
+        "discogs_release",
+        "디스코그스ID",
+        "디스코그스 아이디",
+        "디스코그스아이디",
+    )
+    discogs_release_id = _normalize_discogs_release_id(discogs_release_id_input)
+    if discogs_release_id_input and not discogs_release_id:
+        return normalized, "invalid discogs_release_id", None
+    if discogs_release_id:
+        normalized["discogs_release_id"] = discogs_release_id
+        normalized["source_code"] = "DISCOGS"
+        normalized["source_external_id"] = discogs_release_id
+
+    cabinet_name = _csv_first_text(normalized, "cabinet_name", "storage_cabinet", "cabinet", "장식장명")
+    column_code = _csv_first_text(normalized, "column_code", "floor", "층")
+    cell_code = _csv_first_text(normalized, "cell_code", "cell", "칸")
+    slot_code = _csv_first_text(normalized, "slot_code", "보관슬롯", "보관 슬롯")
+    if cabinet_name:
+        normalized["cabinet_name"] = cabinet_name
+    if column_code:
+        normalized["column_code"] = column_code
+    if cell_code:
+        normalized["cell_code"] = cell_code
+    if slot_code:
+        normalized["slot_code"] = slot_code
+
+    location_error: str | None = None
+    location_review_note: str | None = None
+    resolved_slot: dict[str, Any] | None = None
+
+    has_triplet_input = any(v is not None for v in (cabinet_name, column_code, cell_code))
+    if has_triplet_input:
+        if not (cabinet_name and column_code and cell_code):
+            location_error = "storage location requires cabinet_name/column_code/cell_code together"
+        else:
+            resolved_triplet = slot_by_triplet.get((cabinet_name.casefold(), column_code.casefold(), cell_code.casefold()))
+            resolved_code = slot_by_code.get(slot_code.casefold()) if slot_code else None
+            if slot_code and resolved_triplet and resolved_code and int(resolved_triplet["id"]) != int(resolved_code["id"]):
+                location_error = "slot_code does not match cabinet_name/column_code/cell_code"
+            elif slot_code and ((resolved_triplet is None) != (resolved_code is None)):
+                location_error = "slot_code does not match cabinet_name/column_code/cell_code"
+            resolved_slot = resolved_triplet or resolved_code
+            if not location_error and resolved_slot is None:
+                location_review_note = "storage slot not found for cabinet_name/column_code/cell_code"
+    elif slot_code:
+        resolved_slot = slot_by_code.get(slot_code.casefold())
+        if resolved_slot is None:
+            location_review_note = "storage slot not found for slot_code"
+
+    if resolved_slot is not None:
+        normalized["storage_slot_id"] = int(resolved_slot["id"])
+        normalized["slot_code"] = str(resolved_slot.get("slot_code") or "")
+        if resolved_slot.get("cabinet_name") is not None:
+            normalized["cabinet_name"] = str(resolved_slot.get("cabinet_name") or "")
+        if resolved_slot.get("column_code") is not None:
+            normalized["column_code"] = str(resolved_slot.get("column_code") or "")
+        if resolved_slot.get("cell_code") is not None:
+            normalized["cell_code"] = str(resolved_slot.get("cell_code") or "")
+
+    return normalized, location_error, location_review_note
+
+
+def _merge_review_note(*parts: str | None) -> str | None:
+    merged = [str(part).strip() for part in parts if str(part or "").strip()]
+    return " / ".join(merged) if merged else None
+
+
+@app.post("/ingest/csv", response_model=CsvIngestResponse)
+async def ingest_csv(
+    file: UploadFile = File(...),
+    default_category: Annotated[str | None, Form()] = None,
+    created_by: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
+) -> CsvIngestResponse:
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="only .csv upload is supported")
+
+    batch_id = db.insert_batch("CSV_IMPORT", created_by, notes)
+
+    raw = await file.read()
+    text = _decode_upload_bytes(raw)
+    reader = csv.DictReader(io.StringIO(text))
+    slot_by_code, slot_by_triplet = _csv_slot_lookup_maps()
+    discogs_candidate_cache: dict[str, dict[str, Any] | None] = {}
+
+    total = 0
+    matched = 0
+    review = 0
+    failed = 0
+
+    for row_no, row in enumerate(reader, start=2):
+        total += 1
+        normalized_row, location_error, location_review_note = _normalize_csv_ingest_row(
+            row,
+            default_category=default_category,
+            slot_by_code=slot_by_code,
+            slot_by_triplet=slot_by_triplet,
+        )
+        discogs_release_id = str(normalized_row.get("discogs_release_id") or "").strip()
+        discogs_candidate: dict[str, Any] | None = None
+        if discogs_release_id:
+            if discogs_release_id not in discogs_candidate_cache:
+                discogs_candidate_cache[discogs_release_id] = _build_csv_discogs_candidate(discogs_release_id)
+            discogs_candidate = discogs_candidate_cache.get(discogs_release_id)
+            if discogs_candidate:
+                candidate_category = str(discogs_candidate.get("format_name") or "").strip().upper()
+                if candidate_category:
+                    normalized_row["category"] = candidate_category
+                for field in ("artist_or_brand", "title", "catalog_no", "label_name", "barcode"):
+                    incoming = str(discogs_candidate.get(field) or "").strip()
+                    if incoming:
+                        normalized_row[field] = incoming
+
+        valid, category, validation_error = validate_row_for_ingest(normalized_row, default_category=default_category)
+
+        if not valid or location_error:
+            failed += 1
+            db.insert_review_queue(
+                batch_id=batch_id,
+                row_no=row_no,
+                category=category,
+                payload=normalized_row,
+                candidate=None,
+                confidence=0.0,
+                review_status="NEEDS_REVIEW",
+                review_note=_merge_review_note(validation_error, location_error),
+            )
+            continue
+
+        if discogs_release_id:
+            if discogs_candidate:
+                result = MatchResult(
+                    confidence=1.0,
+                    review_status="AUTO_APPROVED",
+                    review_note=None,
+                    candidate=discogs_candidate,
+                )
+            else:
+                result = MatchResult(
+                    confidence=0.0,
+                    review_status="NEEDS_REVIEW",
+                    review_note="discogs release snapshot not found",
+                    candidate=None,
+                )
+        else:
+            barcode = (normalized_row.get("barcode") or "").strip()
+            query = compose_query(normalized_row)
+
+            if barcode:
+                candidates = search_music_metadata(barcode=barcode, category=category, limit=5)
+            elif query:
+                candidates = search_music_metadata(query=query, category=category, limit=5)
+            else:
+                candidates = []
+
+            result = classify_candidate(candidates)
+        if location_review_note:
+            result.review_status = "NEEDS_REVIEW"
+            result.review_note = _merge_review_note(result.review_note, location_review_note)
+
+        if result.review_status == "AUTO_APPROVED":
+            matched += 1
+        else:
+            review += 1
+
+        db.insert_review_queue(
+            batch_id=batch_id,
+            row_no=row_no,
+            category=category,
+            payload=normalized_row,
+            candidate=result.candidate,
+            confidence=result.confidence,
+            review_status=result.review_status,
+            review_note=result.review_note,
+        )
+
+    db.finalize_batch(batch_id=batch_id, total=total, matched=matched, review=review, failed=failed)
+
+    return CsvIngestResponse(
+        batch_id=batch_id,
+        total_count=total,
+        matched_count=matched,
+        review_count=review,
+        failed_count=failed,
+    )
+
+
+@app.get("/review-queue", response_model=list[ReviewQueueItem])
+def get_review_queue(
+    review_status: str = Query(default="NEEDS_REVIEW", pattern="^(AUTO_APPROVED|NEEDS_REVIEW|APPROVED|REJECTED)$"),
+    category: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> list[ReviewQueueItem]:
+    rows = db.list_review_queue(review_status=review_status, category=category, limit=limit, offset=offset)
+    return [ReviewQueueItem(**row) for row in rows]
+
+
+@app.get("/storage-slots", response_model=list[StorageSlotItem])
+def get_storage_slots() -> list[StorageSlotItem]:
+    rows = db.list_storage_slots()
+    return [
+        StorageSlotItem(
+            id=row["id"],
+            slot_code=row["slot_code"],
+            cabinet_name=row.get("cabinet_name"),
+            column_code=row.get("column_code"),
+            cell_code=row.get("cell_code"),
+            display_name=row.get("display_name"),
+            allowed_size_group=row["allowed_size_group"],
+            cabinet_sort_policy=str(row.get("cabinet_sort_policy") or "ARTIST_RELEASE_TITLE"),
+            is_overflow_zone=bool(row["is_overflow_zone"]),
+        )
+        for row in rows
+    ]
+
+
+@app.get("/cabinet-cameras", response_model=list[CabinetCameraItem])
+def get_cabinet_cameras(
+    request: Request,
+    cabinet_name: str | None = Query(default=None),
+) -> list[CabinetCameraItem]:
+    _require_admin_request(request)
+    rows = db.list_cabinet_cameras(cabinet_name=cabinet_name)
+    return [_cabinet_camera_item_from_row(row) for row in rows]
+
+
+@app.post("/cabinet-cameras", response_model=CabinetCameraItem)
+def create_or_update_cabinet_camera(
+    payload: CabinetCameraUpsertRequest,
+    request: Request,
+) -> CabinetCameraItem:
+    _require_admin_request(request)
+    try:
+        row = db.upsert_cabinet_camera(
+            camera_id=payload.camera_id,
+            cabinet_name=payload.cabinet_name,
+            camera_name=payload.camera_name,
+            onvif_device_url=payload.onvif_device_url,
+            snapshot_url=payload.snapshot_url,
+            stream_url=payload.stream_url,
+            username=payload.username,
+            password=payload.password,
+            notes=payload.notes,
+            is_active=payload.is_active,
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+    if row is None:
+        raise HTTPException(status_code=500, detail="cabinet camera save failed")
+    return _cabinet_camera_item_from_row(row)
+
+
+@app.get("/cabinet-cameras/discover", response_model=list[CabinetCameraDiscoveryItem])
+def discover_cabinet_cameras(
+    request: Request,
+    timeout_ms: int = Query(default=2500, ge=500, le=10000),
+) -> list[CabinetCameraDiscoveryItem]:
+    _require_admin_request(request)
+    rows = _discover_onvif_devices(timeout_seconds=float(timeout_ms) / 1000.0)
+    return [CabinetCameraDiscoveryItem(**row) for row in rows]
+
+
+@app.post("/cabinet-cameras/test-onvif", response_model=CabinetCameraConnectionTestResponse)
+def test_cabinet_camera_connection(
+    payload: CabinetCameraConnectionTestRequest,
+    request: Request,
+) -> CabinetCameraConnectionTestResponse:
+    _require_admin_request(request)
+    try:
+        result = _test_onvif_camera_connection(
+            payload.onvif_device_url,
+            username=str(payload.username or "").strip() or None,
+            password=payload.password,
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(status_code=502, detail=f"ONVIF 응답 오류: {err.response.status_code}") from err
+    except Exception as err:
+        raise HTTPException(status_code=502, detail=f"ONVIF 연결 테스트 실패: {err}") from err
+    return CabinetCameraConnectionTestResponse(**result)
+
+
+@app.delete("/cabinet-cameras/{camera_id}", response_model=CabinetCameraDeleteResponse)
+def remove_cabinet_camera(camera_id: int, request: Request) -> CabinetCameraDeleteResponse:
+    _require_admin_request(request)
+    existing = db.get_cabinet_camera(camera_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="cabinet camera not found")
+    deleted = db.delete_cabinet_camera(camera_id)
+    return CabinetCameraDeleteResponse(
+        camera_id=int(camera_id),
+        cabinet_name=str(existing.get("cabinet_name") or "").strip(),
+        deleted=bool(deleted),
+    )
+
+
+@app.get("/cabinet-cameras/{camera_id}/snapshot")
+def get_cabinet_camera_snapshot(camera_id: int, request: Request) -> Response:
+    _require_admin_request(request)
+    row = db.get_cabinet_camera(camera_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="cabinet camera not found")
+    if not bool(row.get("is_active")):
+        raise HTTPException(status_code=400, detail="cabinet camera inactive")
+    snapshot_url = _camera_http_url_or_none(row.get("snapshot_url"))
+    stream_url = _camera_rtsp_url_or_none(row.get("stream_url"))
+    username = str(row.get("username") or "").strip()
+    password = str(row.get("password") or "")
+    snapshot_bytes: bytes | None = None
+    last_error: str | None = None
+    if snapshot_url is not None:
+        auth = (username, password) if username else None
+        try:
+            with httpx.Client(timeout=10.0, follow_redirects=True, verify=False) as client:
+                upstream = client.get(snapshot_url, auth=auth)
+            if upstream.status_code < 400:
+                media_type = str(upstream.headers.get("content-type") or "image/jpeg").split(";", 1)[0].strip() or "image/jpeg"
+                return Response(
+                    content=upstream.content,
+                    media_type=media_type,
+                    headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+                )
+            last_error = f"camera snapshot upstream returned {upstream.status_code}"
+        except Exception as err:
+            last_error = f"camera snapshot fetch failed: {err}"
+    if stream_url is not None:
+        try:
+            snapshot_bytes = _camera_snapshot_bytes_from_stream(stream_url, username=username or None, password=password or None)
+        except Exception as err:
+            last_error = f"camera stream snapshot failed: {err}"
+        else:
+            return Response(
+                content=snapshot_bytes,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+            )
+    if snapshot_url is None:
+        raise HTTPException(status_code=400, detail="snapshot_url or rtsp stream not configured")
+    raise HTTPException(status_code=502, detail=last_error or "camera snapshot unavailable")
+
+
+@app.get("/storage-slots/{storage_slot_id}/owned-items", response_model=list[OwnedItemListItem])
+def get_storage_slot_owned_items(
+    storage_slot_id: int,
+    limit: int = Query(default=300, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+) -> list[OwnedItemListItem]:
+    slot = db.get_storage_slot(storage_slot_id)
+    if slot is None:
+        raise HTTPException(status_code=404, detail="storage_slot not found")
+    rows = db.list_owned_items_for_storage_slot(storage_slot_id=storage_slot_id, limit=limit, offset=offset)
+    return [_to_owned_item_list_item(row) for row in rows]
+
+
+@app.post("/storage-slots", response_model=StorageSlotItem)
+def create_or_update_storage_slot(payload: StorageSlotUpsertRequest) -> StorageSlotItem:
+    try:
+        row = db.upsert_storage_slot(
+            slot_id=payload.slot_id,
+            cabinet_name=payload.cabinet_name,
+            column_code=payload.column_code,
+            cell_code=payload.cell_code,
+            allowed_size_group=str(payload.allowed_size_group),
+            cabinet_sort_policy=str(payload.cabinet_sort_policy),
+            is_overflow_zone=bool(payload.is_overflow_zone),
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+
+    return StorageSlotItem(
+        id=row["id"],
+        slot_code=row["slot_code"],
+        cabinet_name=row.get("cabinet_name"),
+        column_code=row.get("column_code"),
+        cell_code=row.get("cell_code"),
+        display_name=row.get("display_name"),
+        allowed_size_group=row["allowed_size_group"],
+        cabinet_sort_policy=str(row.get("cabinet_sort_policy") or "ARTIST_RELEASE_TITLE"),
+        is_overflow_zone=bool(row["is_overflow_zone"]),
+    )
+
+
+@app.post("/storage-cabinets/register", response_model=StorageCabinetRegisterResponse)
+def register_storage_cabinet(payload: StorageCabinetRegisterRequest) -> StorageCabinetRegisterResponse:
+    try:
+        result = db.register_storage_cabinet_slots(
+            cabinet_name=payload.cabinet_name,
+            floor_count=int(payload.floor_count),
+            cell_count=int(payload.cell_count),
+            floor_start=int(payload.floor_start),
+            cell_start=int(payload.cell_start),
+            allowed_size_group=str(payload.allowed_size_group),
+            cabinet_sort_policy=str(payload.cabinet_sort_policy),
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+
+    return StorageCabinetRegisterResponse(**result)
+
+
+@app.delete("/storage-cabinets", response_model=StorageCabinetDeleteResponse)
+def delete_storage_cabinet(cabinet_name: str = Query(min_length=1, max_length=80)) -> StorageCabinetDeleteResponse:
+    try:
+        result = db.delete_storage_cabinet(cabinet_name=cabinet_name)
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+    return StorageCabinetDeleteResponse(**result)
+
+
+@app.get("/classification-options", response_model=list[ClassificationOptionItem])
+def get_classification_options(
+    option_group: str = Query(alias="group", pattern="^(SUBTYPE|SOUNDTRACK)$"),
+    include_inactive: bool = Query(default=False),
+) -> list[ClassificationOptionItem]:
+    rows = db.list_classification_options(option_group=option_group, include_inactive=include_inactive)
+    return [
+        ClassificationOptionItem(
+            id=int(row["id"]),
+            option_group=str(row["option_group"]),
+            label=str(row["label"]),
+            sort_order=int(row.get("sort_order") or 0),
+            is_active=bool(row.get("is_active")),
+        )
+        for row in rows
+    ]
+
+
+@app.post("/classification-options", response_model=ClassificationOptionItem)
+def create_classification_option(payload: ClassificationOptionCreate) -> ClassificationOptionItem:
+    row = db.upsert_classification_option(
+        option_group=str(payload.option_group),
+        label=payload.label.strip(),
+        sort_order=int(payload.sort_order),
+    )
+    return ClassificationOptionItem(
+        id=int(row["id"]),
+        option_group=str(row["option_group"]),
+        label=str(row["label"]),
+        sort_order=int(row.get("sort_order") or 0),
+        is_active=bool(row.get("is_active")),
+    )
+
+
+@app.get("/dashboard/collection", response_model=CollectionDashboardResponse)
+def get_collection_dashboard() -> CollectionDashboardResponse:
+    return CollectionDashboardResponse(**db.get_collection_dashboard())
+
+
+@app.get("/owned-items", response_model=list[OwnedItemListItem])
+def get_owned_items(
+    response: Response,
+    category: str | None = Query(default=None, pattern="^(LP|CD|CASSETTE|8TRACK|DIGITAL|REEL_TO_REEL|T_SHIRT|POSTER|LIGHT_STICK|HAT|BAG|CUP|OTHER)$"),
+    domain_code: str | None = Query(default=None, pattern="^(KOREA|JAPAN|GREATER_CHINA|WESTERN|OTHER_ASIA|WORLD_OTHER|UNKNOWN)$"),
+    release_type: str | None = Query(default=None, pattern="^(ALBUM|EP|SINGLE)$"),
+    status: str | None = Query(default=None, pattern="^(IN_COLLECTION|LOANED|SOLD|LOST|ARCHIVED)$"),
+    q: str | None = Query(default=None),
+    artist_or_brand: str | None = Query(default=None),
+    item_name: str | None = Query(default=None),
+    catalog_no: str | None = Query(default=None),
+    barcode: str | None = Query(default=None),
+    release_year: int | None = Query(default=None, ge=1900, le=2100),
+    source_state: SourceLinkState = Query(default="ANY"),
+    master_state: str = Query(default="ANY", pattern="^(ANY|MISSING|LINKED)$"),
+    cover_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
+    slot_state: str = Query(default="ANY", pattern="^(ANY|SLOTTED|UNSLOTTED)$"),
+    preferred_storage_state: str = Query(default="ANY", pattern="^(ANY|MISMATCH|MATCH)$"),
+    track_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
+    music_only: bool = Query(default=False),
+    sort: str = Query(default="DISPLAY", pattern="^(DISPLAY|RECENT)$"),
+    include_total: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> list[OwnedItemListItem]:
+    rows = db.list_owned_items(
+        category=category,
+        domain_code=domain_code,
+        release_type=release_type,
+        status=status,
+        q=q,
+        artist_or_brand=artist_or_brand,
+        item_name=item_name,
+        catalog_no=catalog_no,
+        barcode=barcode,
+        release_year=release_year,
+        source_state=source_state,
+        master_state=master_state,
+        cover_state=cover_state,
+        slot_state=slot_state,
+        preferred_storage_state=preferred_storage_state,
+        track_state=track_state,
+        music_only=music_only,
+        sort=sort,
+        limit=limit,
+        offset=offset,
+    )
+    if include_total:
+        total = db.count_owned_items(
+            category=category,
+            domain_code=domain_code,
+            release_type=release_type,
+            status=status,
+            q=q,
+            artist_or_brand=artist_or_brand,
+            item_name=item_name,
+            catalog_no=catalog_no,
+            barcode=barcode,
+            release_year=release_year,
+            source_state=source_state,
+            master_state=master_state,
+            cover_state=cover_state,
+            slot_state=slot_state,
+            preferred_storage_state=preferred_storage_state,
+            track_state=track_state,
+            music_only=music_only,
+        )
+        response.headers["X-Total-Count"] = str(total)
+    return [_to_owned_item_list_item(row) for row in rows]
+
+
+@app.post("/owned-items/location-recommendations", response_model=list[OwnedItemLocationRecommendationItem])
+def get_owned_item_location_recommendations(
+    payload: OwnedItemLocationRecommendationRequest,
+) -> list[OwnedItemLocationRecommendationItem]:
+    owned_item_ids = sorted({int(v) for v in (payload.owned_item_ids or []) if int(v) > 0})
+    result: list[OwnedItemLocationRecommendationItem] = []
+    for owned_item_id in owned_item_ids[:500]:
+        row = db.get_owned_item_detail(owned_item_id)
+        if not row:
+            continue
+        preferred_size_group = _preferred_storage_size_group(
+            str(row.get("preferred_storage_size_group") or ""),
+            str(row.get("size_group") or ""),
+        )
+        artist_or_brand = (
+            _clean_text(row.get("linked_artist_name"))
+            or _clean_text(row.get("artist_or_brand"))
+            or _clean_text(row.get("master_artist_or_brand"))
+        )
+        item_title = _clean_text(row.get("item_name_override")) or _clean_text(row.get("master_title"))
+        raw_year = row.get("master_release_year") if row.get("master_release_year") is not None else row.get("release_year")
+        try:
+            release_year = int(raw_year) if raw_year is not None else None
+        except (TypeError, ValueError):
+            release_year = None
+        suggestion = db.recommend_owned_item_location(
+            size_group=preferred_size_group,
+            artist_or_brand=artist_or_brand,
+            release_year=release_year,
+            item_title=item_title,
+            exclude_owned_item_id=owned_item_id,
+        )
+        slot_id = int(suggestion.get("recommended_storage_slot_id") or 0)
+        slot = db.get_storage_slot(slot_id) if slot_id > 0 else None
+        result.append(
+            OwnedItemLocationRecommendationItem(
+                owned_item_id=owned_item_id,
+                recommended_storage_slot_id=slot_id or None,
+                slot_code=str((slot or {}).get("slot_code") or suggestion.get("slot_code") or "").strip() or None,
+                display_name=str((slot or {}).get("display_name") or "").strip() or None,
+                cabinet_name=str((slot or {}).get("cabinet_name") or "").strip() or None,
+                column_code=str((slot or {}).get("column_code") or "").strip() or None,
+                cell_code=str((slot or {}).get("cell_code") or "").strip() or None,
+                candidate_slots=[
+                    OwnedItemLocationRecommendationCandidateSlot(
+                        storage_slot_id=int(candidate.get("storage_slot_id") or 0) or None,
+                        slot_code=str(candidate.get("slot_code") or "").strip() or None,
+                        display_name=str(candidate.get("display_name") or "").strip() or None,
+                        cabinet_name=str(candidate.get("cabinet_name") or "").strip() or None,
+                        column_code=str(candidate.get("column_code") or "").strip() or None,
+                        cell_code=str(candidate.get("cell_code") or "").strip() or None,
+                    )
+                    for candidate in (suggestion.get("candidate_slots") or [])
+                    if isinstance(candidate, dict)
+                ],
+                anchor_owned_item_id=int(suggestion.get("anchor_owned_item_id") or 0) or None,
+                anchor_position=str(suggestion.get("anchor_position") or "").strip().upper() or None,
+                used_fallback_slot=bool(suggestion.get("used_fallback_slot")),
+                reason=str(suggestion.get("reason") or "").strip() or None,
+            )
+        )
+    return result
+
+
+def _build_label_id(category: str, owned_item_id: int) -> str:
+    prefix = LABEL_PREFIX_BY_CATEGORY.get(category, "IT")
+    return f"{prefix}-{owned_item_id:06d}"
+
+
+def _to_owned_item_list_item(row: dict[str, object]) -> OwnedItemListItem:
+    row2 = dict(row)
+    category_code = str(row2.get("category") or "")
+    owned_item_id = int(row2.get("id") or 0)
+    row2["label_id"] = _build_label_id(category_code, owned_item_id)
+    row2["preferred_storage_size_group"] = str(
+        row2.get("preferred_storage_size_group") or row2.get("size_group") or "STD"
+    )
+    return OwnedItemListItem(**row2)
+
+
+@app.get("/owned-items/{owned_item_id}/shelf-window", response_model=OwnedAlbumShelfWindowResponse)
+def get_owned_item_shelf_window(
+    owned_item_id: int,
+    window: int = Query(default=6, ge=1, le=20),
+) -> OwnedAlbumShelfWindowResponse:
+    data = db.get_music_shelf_window(owned_item_id=owned_item_id, window=window)
+    if data is None:
+        raise HTTPException(status_code=404, detail="owned music item not found")
+
+    items = [_to_owned_item_list_item(row) for row in data.get("items", [])]
+    return OwnedAlbumShelfWindowResponse(
+        center_owned_item_id=int(data["center_owned_item_id"]),
+        previous_owned_item_id=data.get("previous_owned_item_id"),
+        next_owned_item_id=data.get("next_owned_item_id"),
+        items=items,
+    )
+
+
+@app.get("/owned-items/{owned_item_id}/related-versions", response_model=RelatedAlbumVersionsResponse)
+def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsResponse:
+    base_row = db.get_owned_item_list_row(owned_item_id)
+    if base_row is None or str(base_row.get("category") or "") not in MUSIC_CATEGORIES:
+        raise HTTPException(status_code=404, detail="owned music item not found")
+
+    def _to_items(rows: list[dict[str, object]]) -> list[OwnedItemListItem]:
+        out: list[OwnedItemListItem] = []
+        seen: set[int] = set()
+        for row in rows:
+            oid = int(row.get("id") or 0)
+            if oid <= 0 or oid in seen:
+                continue
+            seen.add(oid)
+            out.append(_to_owned_item_list_item(row))
+        return out
+
+    bound = db.get_album_master_binding_for_owned_item(owned_item_id)
+    if bound:
+        rows = db.list_owned_items_by_album_master(int(bound["album_master_id"]))
+        if not rows:
+            rows = [base_row]
+        preferred_source = str(bound.get("source_code") or "").strip().upper() or None
+        preferred_master_external_id = str(bound.get("source_master_id") or "").strip() or None
+        if preferred_source not in {"DISCOGS", "MANIADB"} or not preferred_master_external_id:
+            external_refs = db.list_album_master_external_refs(int(bound["album_master_id"]))
+            supported_ref = next(
+                (
+                    row
+                    for row in external_refs
+                    if str(row.get("source_code") or "").strip().upper() in {"DISCOGS", "MANIADB"}
+                    and str(row.get("source_master_id") or "").strip()
+                ),
+                None,
+            )
+            if supported_ref:
+                preferred_source = str(supported_ref.get("source_code") or "").strip().upper() or preferred_source
+                preferred_master_external_id = str(supported_ref.get("source_master_id") or "").strip() or preferred_master_external_id
+            else:
+                supported_row = next(
+                    (
+                        row
+                        for row in rows
+                        if str(row.get("source_code") or "").strip().upper() in {"DISCOGS", "MANIADB"}
+                        and str(row.get("source_external_id") or "").strip()
+                    ),
+                    None,
+                )
+                if supported_row:
+                    preferred_source = str(supported_row.get("source_code") or "").strip().upper() or preferred_source
+                    preferred_master_external_id = (
+                        str(supported_row.get("source_external_id") or "").strip() or preferred_master_external_id
+                    )
+        return RelatedAlbumVersionsResponse(
+            owned_item_id=owned_item_id,
+            relation_type="ALBUM_MASTER_BIND",
+            source=preferred_source,
+            master_external_id=preferred_master_external_id,
+            album_master_id=int(bound["album_master_id"]),
+            title=str(bound.get("title") or "").strip() or None,
+            artist_or_brand=str(bound.get("artist_or_brand") or "").strip() or None,
+            sort_artist_name=str(bound.get("sort_artist_name") or "").strip() or None,
+            items=_to_items(rows),
+        )
+
+    source_code = str(base_row.get("source_code") or "").strip().upper()
+    source_external_id = str(base_row.get("source_external_id") or "").strip()
+    if _source_supports_master_auto_link(source_code) and source_external_id:
+        master_ref = resolve_release_master_reference(source=source_code, external_id=source_external_id)
+        if master_ref:
+            master_source = str(master_ref.get("source") or source_code).strip().upper()
+            master_external_id = str(master_ref.get("master_external_id") or "").strip()
+            external_ids = _source_master_variant_external_ids(
+                source_code=master_source,
+                master_external_id=master_external_id,
+                release_external_id=source_external_id,
+            )
+
+            rows = db.list_owned_items_by_source_external_ids(
+                source_code=source_code,
+                source_external_ids=sorted(external_ids),
+            )
+            if rows:
+                return RelatedAlbumVersionsResponse(
+                    owned_item_id=owned_item_id,
+                    relation_type="SOURCE_MASTER",
+                    source=master_source,
+                    master_external_id=master_external_id or None,
+                    title=str(master_ref.get("title") or "").strip() or None,
+                    artist_or_brand=str(master_ref.get("artist_or_brand") or "").strip() or None,
+                    items=_to_items(rows),
+                )
+
+    return RelatedAlbumVersionsResponse(
+        owned_item_id=owned_item_id,
+        relation_type="NONE",
+        items=_to_items([base_row]),
+    )
+
+
+@app.get("/owned-items/{owned_item_id}/copies", response_model=list[OwnedItemListItem])
+def get_owned_item_copies(owned_item_id: int) -> list[OwnedItemListItem]:
+    base_row = db.get_owned_item_list_row(owned_item_id)
+    if base_row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    copy_group_key = str(base_row.get("copy_group_key") or "").strip()
+    if not copy_group_key:
+        return [_to_owned_item_list_item(base_row)]
+
+    rows = db.list_owned_items_by_copy_group(copy_group_key)
+    if not rows:
+        rows = [base_row]
+    return [_to_owned_item_list_item(row) for row in rows]
+
+
+def _build_duplicate_payload_from_existing_item(
+    base_row: dict[str, Any],
+    detail_row: dict[str, Any] | None,
+    copy_group_key: str,
+    linked_master_id: int | None,
+) -> dict[str, Any]:
+    source_code = str(base_row.get("source_code") or "").strip().upper() or None
+    source_external_id = str(base_row.get("source_external_id") or "").strip() or None
+    if bool(source_code) != bool(source_external_id):
+        source_code = None
+        source_external_id = None
+
+    payload: dict[str, Any] = {
+        "master_item_id": base_row.get("master_item_id"),
+        "linked_album_master_id": linked_master_id,
+        "linked_artist_name": base_row.get("linked_artist_name"),
+        "copy_group_key": copy_group_key,
+        "category": str(base_row.get("category") or "").strip().upper() or "LP",
+        "domain_code": base_row.get("domain_code"),
+        "release_type": base_row.get("release_type"),
+        "item_name_override": base_row.get("item_name_override"),
+        "quantity": 1,
+        "is_second_hand": bool(base_row.get("is_second_hand")),
+        "size_group": base_row.get("size_group") or "STD",
+        "preferred_storage_size_group": base_row.get("preferred_storage_size_group") or base_row.get("size_group") or "STD",
+        "status": base_row.get("status") or "IN_COLLECTION",
+        "condition_grade": base_row.get("condition_grade"),
+        "signature_type": base_row.get("signature_type") or "NONE",
+        "source_code": source_code,
+        "source_external_id": source_external_id,
+        "signed_by": base_row.get("signed_by"),
+        "signed_at": base_row.get("signed_at"),
+        "acquisition_date": base_row.get("acquisition_date"),
+        "purchase_price": base_row.get("purchase_price"),
+        "currency_code": base_row.get("currency_code"),
+        "purchase_source": base_row.get("purchase_source"),
+        "memory_note": base_row.get("memory_note"),
+        "display_rank": None,
+        "order_key": None,
+        "storage_slot_id": None,
+        "thickness_mm": base_row.get("thickness_mm"),
+        "notes": base_row.get("notes"),
+        "subtype_option_ids": (detail_row or {}).get("subtype_option_ids") or [],
+        "soundtrack_option_ids": (detail_row or {}).get("soundtrack_option_ids") or [],
+    }
+
+    category_code = str(payload.get("category") or "").strip().upper()
+    if category_code in MUSIC_CATEGORIES:
+        ref = detail_row or {}
+        payload["music_detail"] = {
+            "format_name": ref.get("format_name") or category_code,
+            "is_promotional_not_for_sale": bool(ref.get("is_promotional_not_for_sale")),
+            "artist_or_brand": ref.get("artist_or_brand"),
+            "release_year": ref.get("release_year"),
+            "barcode": ref.get("barcode"),
+            "label_name": ref.get("label_name"),
+            "catalog_no": _discogs_catalog_no(ref.get("catalog_no")),
+            "cover_image_url": ref.get("cover_image_url"),
+            "track_list": ref.get("track_list") or [],
+            "media_type": ref.get("media_type"),
+            "genres": ref.get("genres") or [],
+            "styles": ref.get("styles") or [],
+            "cover_condition": ref.get("cover_condition"),
+            "disc_condition": ref.get("disc_condition"),
+        }
+    else:
+        ref = detail_row or {}
+        payload["goods_detail"] = {
+            "image_urls": ref.get("goods_image_urls") or [],
+            "primary_image_url": ref.get("goods_primary_image_url"),
+            "poster_storage_spec": ref.get("poster_storage_spec"),
+            "tshirt_size": ref.get("tshirt_size"),
+            "cup_material": ref.get("cup_material"),
+            "hat_size": ref.get("hat_size"),
+        }
+
+    return payload
+
+
+@app.post("/owned-items/{owned_item_id}/duplicate", response_model=OwnedItemDuplicateResponse)
+def duplicate_owned_item(
+    owned_item_id: int,
+    payload: OwnedItemDuplicateRequest,
+) -> OwnedItemDuplicateResponse:
+    base_row = db.get_owned_item(owned_item_id)
+    if base_row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    detail_row = db.get_owned_item_detail(owned_item_id)
+    bound = db.get_album_master_binding_for_owned_item(owned_item_id)
+    linked_master_id = int(bound["album_master_id"]) if bound else int(base_row.get("linked_album_master_id") or 0)
+    if linked_master_id <= 0 or not db.album_master_exists(linked_master_id):
+        linked_master_id = None
+
+    copy_group_key = str(base_row.get("copy_group_key") or "").strip()
+    notices: list[str] = []
+    if not copy_group_key:
+        copy_group_key = f"COPY-{uuid4().hex[:12].upper()}"
+        db.set_owned_item_copy_group(owned_item_id=owned_item_id, copy_group_key=copy_group_key)
+        notices.append(f"원본 상품 copy_group 지정: {copy_group_key}")
+
+    create_payload = _build_duplicate_payload_from_existing_item(
+        base_row=base_row,
+        detail_row=detail_row,
+        copy_group_key=copy_group_key,
+        linked_master_id=linked_master_id,
+    )
+    create_model = OwnedItemCreate(**create_payload)
+    normalized = create_model.model_dump()
+    _normalize_music_detail_payload(normalized)
+    _normalize_goods_detail_payload(normalized)
+
+    created_ids: list[int] = []
+    seen_notices: set[str] = set()
+    resolved_master_id = int(normalized.get("linked_album_master_id") or 0)
+    duplicate_count = max(1, int(payload.count or 1))
+
+    for _ in range(duplicate_count):
+        owned_new_id = db.insert_owned_item(dict(normalized))
+        created_ids.append(owned_new_id)
+        resolved_master_id, link_notices = _apply_post_create_links(
+            payload=create_model,
+            owned_item_id=owned_new_id,
+            preferred_master_id=resolved_master_id,
+        )
+        for msg in link_notices:
+            text = str(msg or "").strip()
+            if text and text not in seen_notices:
+                seen_notices.add(text)
+                notices.append(text)
+
+    shown_ids = ", ".join(str(v) for v in created_ids[:8])
+    tail = f" 외 {len(created_ids) - 8}건" if len(created_ids) > 8 else ""
+    notices.insert(0, f"복제본 {duplicate_count}건 생성 완료 (owned_item_id: {shown_ids}{tail})")
+    return OwnedItemDuplicateResponse(
+        source_owned_item_id=owned_item_id,
+        copy_group_key=copy_group_key,
+        created_ids=created_ids,
+        notices=notices,
+    )
+
+
+def _annotate_owned_flags(candidates: list[dict[str, object]]) -> list[dict[str, object]]:
+    by_source: dict[str, set[str]] = {}
+    for c in candidates:
+        source = str(c.get("source") or "").strip().upper()
+        external_id = str(c.get("external_id") or "").strip()
+        if not source or not external_id:
+            continue
+        by_source.setdefault(source, set()).add(external_id)
+
+    counts_by_source: dict[str, dict[str, int]] = {}
+    for source, external_ids in by_source.items():
+        counts_by_source[source] = db.get_owned_counts_by_source(source, sorted(external_ids))
+
+    out: list[dict[str, object]] = []
+    for c in candidates:
+        source = str(c.get("source") or "").strip().upper()
+        external_id = str(c.get("external_id") or "").strip()
+        cnt = counts_by_source.get(source, {}).get(external_id, 0)
+        c2 = dict(c)
+        c2["owned_count"] = cnt
+        c2["is_owned"] = cnt > 0
+        out.append(c2)
+    return out
+
+
+def _resolve_discogs_master_id_from_album_context(
+    master_external_id: str,
+    album_master_id: int | None = None,
+) -> tuple[str, bool]:
+    master_id = str(master_external_id or "").strip()
+    target_album_master_id = int(album_master_id or 0)
+    if not master_id or target_album_master_id <= 0:
+        return master_id, False
+
+    member_rows = db.list_owned_items_by_album_master(target_album_master_id)
+    hint_release_id = ""
+    for row in member_rows:
+        source_code = str(row.get("source_code") or "").strip().upper()
+        source_external_id = str(row.get("source_external_id") or "").strip()
+        if source_code == "DISCOGS" and source_external_id:
+            hint_release_id = source_external_id
+            break
+    if not hint_release_id:
+        return master_id, False
+
+    master_ref = resolve_release_master_reference(source="DISCOGS", external_id=hint_release_id)
+    resolved_master_id = str(master_ref.get("master_external_id") or "").strip() if isinstance(master_ref, dict) else ""
+    if resolved_master_id and resolved_master_id != master_id:
+        return resolved_master_id, True
+    return master_id, False
+
+
+def _album_master_variant_item_from_owned_row(row: dict[str, Any], source_code: str) -> AlbumMasterVariantItem:
+    return AlbumMasterVariantItem(
+        source=str(source_code or "").strip().upper() or "DISCOGS",
+        external_id=str(row.get("source_external_id") or "").strip(),
+        title=str(row.get("item_name_override") or "").strip() or str(row.get("master_title") or "").strip() or f"{source_code} item",
+        artist_or_brand=str(row.get("artist_or_brand") or row.get("linked_artist_name") or row.get("master_artist_or_brand") or "").strip() or None,
+        release_year=int(row["release_year"]) if row.get("release_year") is not None else None,
+        released_date=str(row.get("released_date") or "").strip() or None,
+        country=str(row.get("pressing_country") or "").strip() or None,
+        format_name=str(row.get("format_name") or "").strip() or None,
+        media_type=str(row.get("media_type") or "").strip() or None,
+        release_type=str(row.get("release_type") or "").strip().upper() or None,
+        domain_code=str(row.get("domain_code") or "").strip().upper() or None,
+        genres=list(row.get("genres") or []),
+        styles=list(row.get("styles") or []),
+        label_name=str(row.get("label_name") or "").strip() or None,
+        catalog_no=str(row.get("catalog_no") or "").strip() or None,
+        barcode=str(row.get("barcode") or "").strip() or None,
+        cover_image_url=str(row.get("cover_image_url") or "").strip() or None,
+        track_list=list(row.get("track_list") or []),
+        disc_count=int(row["disc_count"]) if row.get("disc_count") is not None else None,
+        speed_rpm=int(row["speed_rpm"]) if row.get("speed_rpm") is not None else None,
+        has_obi=bool(row.get("has_obi")) if row.get("has_obi") is not None else None,
+        runout_matrix=list(row.get("runout_matrix") or []),
+        pressing_country=str(row.get("pressing_country") or "").strip() or None,
+        source_notes=str(row.get("source_notes") or "").strip() or None,
+        credits=list(row.get("credits") or []),
+        identifier_items=list(row.get("identifier_items") or []),
+        image_items=list(row.get("image_items") or []),
+        company_items=list(row.get("company_items") or []),
+        series=list(row.get("series") or []),
+        format_items=list(row.get("format_items") or []),
+        track_items=list(row.get("track_items") or []),
+        label_items=list(row.get("label_items") or []),
+        is_owned=True,
+        owned_count=1,
+        raw={},
+    )
+
+
+@app.post("/album-masters/search", response_model=AlbumMasterSearchResponse)
+def search_album_masters(payload: AlbumMasterSearchRequest) -> AlbumMasterSearchResponse:
+    candidates = search_album_master_candidates(query=payload.query, source=payload.source, limit=payload.limit)
+    return AlbumMasterSearchResponse(query=payload.query, candidates=candidates)
+
+
+@app.get("/album-masters/variants", response_model=AlbumMasterVariantsResponse)
+def get_album_master_variants_api(
+    source: str = Query(pattern="^(DISCOGS|MANIADB)$"),
+    master_external_id: str = Query(min_length=1, max_length=128),
+    album_master_id: int | None = Query(default=None, ge=1),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    page: int = Query(default=1, ge=1),
+    page_size: int | None = Query(default=None, ge=1, le=100),
+    catalog_no: str | None = Query(default=None, max_length=120),
+    barcode: str | None = Query(default=None, max_length=120),
+) -> AlbumMasterVariantsResponse:
+    source_u = str(source or "").strip().upper()
+    effective_master_external_id = str(master_external_id or "").strip()
+    page_size_n = int(page_size or min(int(limit or 30), 100))
+    page_n = max(1, int(page))
+    catalog_no_q = str(catalog_no or "").strip() or None
+    barcode_q = str(barcode or "").strip() or None
+    fallback_member_rows: list[dict[str, Any]] = []
+    member_rows_for_source = (
+        [
+            row
+            for row in db.list_owned_items_by_album_master(int(album_master_id or 0))
+            if str(row.get("source_code") or "").strip().upper() == source_u
+        ]
+        if int(album_master_id or 0) > 0
+        else []
+    )
+    source_master_refs = (
+        db.list_album_master_external_refs(int(album_master_id or 0), source_code=source_u)
+        if int(album_master_id or 0) > 0
+        else []
+    )
+    if source_u == "DISCOGS":
+        requested_master_external_id = effective_master_external_id
+        effective_master_external_id, corrected = _resolve_discogs_master_id_from_album_context(
+            master_external_id=effective_master_external_id,
+            album_master_id=album_master_id,
+        )
+        if corrected and int(album_master_id or 0) > 0:
+            db.normalize_album_master_source_id(
+                album_master_id=int(album_master_id or 0),
+                source_code="DISCOGS",
+                source_master_id=effective_master_external_id,
+            )
+        elif member_rows_for_source:
+            if not source_master_refs or any(
+                str(row.get("source_external_id") or "").strip() == requested_master_external_id
+                for row in member_rows_for_source
+            ):
+                fallback_member_rows = member_rows_for_source
+    elif member_rows_for_source:
+        if not source_master_refs or any(
+            str(row.get("source_external_id") or "").strip() == effective_master_external_id
+            for row in member_rows_for_source
+        ):
+            fallback_member_rows = member_rows_for_source
+    if fallback_member_rows:
+        total_count = len(fallback_member_rows)
+        start = max(0, (page_n - 1) * page_size_n)
+        page_rows = fallback_member_rows[start : start + page_size_n]
+        annotated = [_album_master_variant_item_from_owned_row(row, source_u) for row in page_rows]
+        return AlbumMasterVariantsResponse(
+            source=source_u,
+            master_external_id=effective_master_external_id,
+            items=annotated,
+            page=page_n,
+            page_size=page_size_n,
+            total_count=total_count,
+            has_next=(start + page_size_n) < total_count,
+            filtered=False,
+            filter_catalog_no=None,
+            filter_barcode=None,
+            truncated=False,
+        )
+    paged = get_album_master_variants_page(
+        source=source_u,
+        master_external_id=effective_master_external_id,
+        page=page_n,
+        page_size=page_size_n,
+        catalog_no=catalog_no_q,
+        barcode=barcode_q,
+        include_details=bool(barcode_q),
+    )
+    items = [row for row in (paged.get("items") if isinstance(paged, dict) else []) if isinstance(row, dict)]
+    external_ids = sorted({str(row.get("external_id") or "").strip() for row in items if str(row.get("external_id") or "").strip()})
+    owned_counts = db.get_owned_counts_by_source(source_u, external_ids) if external_ids else {}
+    annotated: list[dict[str, Any]] = []
+    for row in items:
+        ext = str(row.get("external_id") or "").strip()
+        cnt = int(owned_counts.get(ext, 0)) if ext else 0
+        row2 = dict(row)
+        row2["is_owned"] = cnt > 0
+        row2["owned_count"] = cnt
+        annotated.append(row2)
+    return AlbumMasterVariantsResponse(
+        source=source_u,
+        master_external_id=effective_master_external_id,
+        items=annotated,
+        page=int(paged.get("page") or page_n),
+        page_size=int(paged.get("page_size") or page_size_n),
+        total_count=(
+            int(paged.get("total_count"))
+            if isinstance(paged.get("total_count"), int) and int(paged.get("total_count")) >= 0
+            else None
+        ),
+        has_next=bool(paged.get("has_next")),
+        filtered=bool(paged.get("filtered")),
+        filter_catalog_no=str(paged.get("filter_catalog_no") or "").strip() or None,
+        filter_barcode=str(paged.get("filter_barcode") or "").strip() or None,
+        truncated=bool(paged.get("truncated")),
+    )
+
+
+@app.post("/album-masters/bind", response_model=AlbumMasterBindResponse)
+def bind_album_master(payload: AlbumMasterBindRequest) -> AlbumMasterBindResponse:
+    master_domain_code = _infer_album_master_domain_code(
+        source_code=payload.source,
+        title=payload.title,
+        artist_or_brand=payload.artist_or_brand,
+        raw=payload.raw,
+    )
+    album_master_id = db.upsert_album_master(
+        source_code=payload.source,
+        source_master_id=payload.master_external_id,
+        title=payload.title,
+        artist_or_brand=payload.artist_or_brand,
+        domain_code=master_domain_code,
+        release_year=payload.release_year,
+        raw=payload.raw,
+    )
+    linked_count = db.bind_album_master_members(
+        album_master_id=album_master_id,
+        owned_item_ids=payload.owned_item_ids,
+        replace_existing=payload.replace_existing,
+    )
+    return AlbumMasterBindResponse(album_master_id=album_master_id, linked_count=linked_count)
+
+
+def _infer_music_category_from_format(format_name: str | None) -> str:
+    text = str(format_name or "").strip().upper()
+    if "REEL" in text:
+        return "REEL_TO_REEL"
+    if "8-TRACK" in text or "8 TRACK" in text or "8TRACK" in text:
+        return "8TRACK"
+    if "DIGITAL" in text or "FILE" in text or "DOWNLOAD" in text:
+        return "DIGITAL"
+    if "CASSETTE" in text or text in {"TAPE", "MC"}:
+        return "CASSETTE"
+    if "CD" in text:
+        return "CD"
+    if "LP" in text or "VINYL" in text or "12" in text or "10" in text or "7" in text:
+        return "LP"
+    return "LP"
+
+
+def _default_size_group_for_category(category: str) -> str:
+    code = str(category).upper()
+    if code == "LP":
+        return "LP"
+    if code in {"T_SHIRT", "POSTER", "LIGHT_STICK", "HAT", "BAG", "CUP", "OTHER"}:
+        return "GOODS"
+    return "STD"
+
+
+def _normalize_size_group_code(value: Any, fallback: Any = "STD") -> str:
+    text = str(value or "").strip().upper()
+    if text in SIZE_GROUP_CODES:
+        return text
+    fallback_text = str(fallback or "").strip().upper()
+    if fallback_text in SIZE_GROUP_CODES:
+        return fallback_text
+    return "STD"
+
+
+def _preferred_storage_size_group(value: Any, fallback: Any) -> str:
+    return _normalize_size_group_code(value, fallback)
+
+
+def _resolve_master_seed_from_variants(
+    payload: AlbumMasterImportVariantsRequest,
+    variant_by_external: dict[str, dict[str, Any]],
+    selected_external_ids: list[str],
+) -> tuple[str, str | None, int | None, dict[str, Any]]:
+    title = str(payload.title or "").strip()
+    artist_or_brand = str(payload.artist_or_brand or "").strip() or None
+    release_year = payload.release_year
+    if title:
+        raw = dict(payload.raw or {})
+        return title, artist_or_brand, release_year, raw
+
+    for ext in selected_external_ids:
+        row = variant_by_external.get(ext)
+        if not row:
+            continue
+        if not title:
+            title = str(row.get("title") or "").strip()
+        if not artist_or_brand:
+            artist_or_brand = str(row.get("artist_or_brand") or "").strip() or None
+        if release_year is None:
+            raw_year = row.get("release_year")
+            try:
+                release_year = int(raw_year) if raw_year is not None else None
+            except (TypeError, ValueError):
+                release_year = None
+        if title and (artist_or_brand is not None or release_year is not None):
+            break
+
+    if not title:
+        title = f"{payload.source} Master {payload.master_external_id}"
+
+    raw = dict(payload.raw or {})
+    raw.setdefault("import_mode", "MASTER_VARIANT_BATCH")
+    raw.setdefault("source", str(payload.source))
+    raw.setdefault("master_external_id", str(payload.master_external_id))
+    raw.setdefault("selected_variant_external_ids", list(selected_external_ids))
+    return title, artist_or_brand, release_year, raw
+
+
+def _merge_variant_with_release_snapshot(
+    variant: dict[str, Any],
+    snapshot: dict[str, Any] | None,
+) -> dict[str, Any]:
+    merged = dict(variant or {})
+    if not isinstance(snapshot, dict):
+        return merged
+
+    for key, value in snapshot.items():
+        if key == "raw":
+            if isinstance(value, dict) and value:
+                merged["raw_detail"] = value
+            continue
+        if value in (None, "", [], {}):
+            continue
+        merged[key] = value
+    return merged
+
+
+@app.post("/album-masters/import-variants", response_model=AlbumMasterImportVariantsResponse)
+def import_album_master_variants(payload: AlbumMasterImportVariantsRequest) -> AlbumMasterImportVariantsResponse:
+    source = str(payload.source or "").strip().upper()
+    target_master_id = int(payload.linked_album_master_id or 0)
+    effective_master_external_id = str(payload.master_external_id or "").strip()
+    if source == "DISCOGS":
+        effective_master_external_id, corrected = _resolve_discogs_master_id_from_album_context(
+            master_external_id=effective_master_external_id,
+            album_master_id=payload.linked_album_master_id,
+        )
+        if corrected and target_master_id > 0:
+            normalized_master_id = db.normalize_album_master_source_id(
+                album_master_id=target_master_id,
+                source_code="DISCOGS",
+                source_master_id=effective_master_external_id,
+            )
+            if normalized_master_id > 0:
+                target_master_id = normalized_master_id
+    selected_external_ids = [
+        str(v).strip()
+        for v in payload.selected_variant_external_ids
+        if str(v).strip()
+    ]
+    selected_external_ids = list(dict.fromkeys(selected_external_ids))
+    variant_by_external: dict[str, dict[str, Any]] = {}
+
+    if selected_external_ids:
+        selected_set = set(selected_external_ids)
+        page = 1
+        page_size = 100
+        scan_guard = 0
+        while selected_set and scan_guard < 200:
+            paged = get_album_master_variants_page(
+                source=source,
+                master_external_id=effective_master_external_id,
+                page=page,
+                page_size=page_size,
+                include_details=False,
+            )
+            items = [row for row in (paged.get("items") if isinstance(paged, dict) else []) if isinstance(row, dict)]
+            if not items:
+                break
+            for row in items:
+                ext = str(row.get("external_id") or "").strip()
+                if not ext:
+                    continue
+                if ext in selected_set and ext not in variant_by_external:
+                    variant_by_external[ext] = row
+            if not bool(paged.get("has_next")):
+                break
+            page += 1
+            scan_guard += 1
+    else:
+        variants = get_album_master_variants(
+            source=source,
+            master_external_id=effective_master_external_id,
+            limit=200,
+            include_details=(source == "DISCOGS"),
+        )
+        for row in variants:
+            ext = str(row.get("external_id") or "").strip()
+            if not ext:
+                continue
+            if ext not in variant_by_external:
+                variant_by_external[ext] = row
+        selected_external_ids = list(variant_by_external.keys())
+
+    if not variant_by_external and not selected_external_ids:
+        raise HTTPException(status_code=404, detail="master variants not found")
+    if not selected_external_ids:
+        raise HTTPException(status_code=400, detail="no variant external ids selected")
+
+    notices: list[str] = []
+    if effective_master_external_id and effective_master_external_id != str(payload.master_external_id or "").strip():
+        notices.append(
+            f"Discogs 마스터 ID 보정: {payload.master_external_id} -> {effective_master_external_id}"
+        )
+    if target_master_id > 0:
+        if not db.album_master_exists(target_master_id):
+            raise HTTPException(status_code=400, detail=f"linked_album_master_id not found: {target_master_id}")
+    else:
+        master_title, master_artist, master_year, master_raw = _resolve_master_seed_from_variants(
+            payload=payload,
+            variant_by_external=variant_by_external,
+            selected_external_ids=selected_external_ids,
+        )
+        target_master_id = db.upsert_album_master(
+            source_code=source,
+            source_master_id=effective_master_external_id,
+            title=master_title,
+            artist_or_brand=master_artist,
+            domain_code=_infer_album_master_domain_code(
+                explicit_domain_code=payload.domain_code,
+                source_code=source,
+                title=master_title,
+                artist_or_brand=master_artist,
+                raw=master_raw,
+                linked_album_master_id=payload.linked_album_master_id,
+            ),
+            release_year=master_year,
+            raw=master_raw,
+        )
+        notices.append(f"마스터 생성/갱신: album_master_id={target_master_id}")
+
+    source_owned_counts = db.get_owned_counts_by_source(source, selected_external_ids)
+    existing_rows = db.list_owned_items_by_source_external_ids(source, selected_external_ids)
+    existing_ids_by_external: dict[str, list[int]] = {}
+    for row in existing_rows:
+        ext = str(row.get("source_external_id") or "").strip()
+        owned_item_id = int(row.get("id") or 0)
+        if not ext or owned_item_id <= 0:
+            continue
+        existing_ids_by_external.setdefault(ext, []).append(owned_item_id)
+
+    created_items: list[AlbumMasterImportCreatedItem] = []
+    skipped_items: list[AlbumMasterImportSkippedItem] = []
+    existing_ids_for_bind: set[int] = set()
+
+    for ext in selected_external_ids:
+        variant_base = variant_by_external.get(ext)
+        if variant_base is None:
+            skipped_items.append(
+                AlbumMasterImportSkippedItem(
+                    external_id=ext,
+                    reason="not_found_in_master_variants",
+                    owned_count=0,
+                )
+            )
+            continue
+        snapshot = get_source_release_snapshot(source=source, external_id=ext)
+        variant = _merge_variant_with_release_snapshot(variant_base, snapshot)
+
+        owned_count = int(source_owned_counts.get(ext, 0))
+        if payload.skip_if_owned and owned_count > 0:
+            for existing_id in existing_ids_by_external.get(ext, []):
+                if existing_id > 0:
+                    existing_ids_for_bind.add(existing_id)
+            skipped_items.append(
+                AlbumMasterImportSkippedItem(
+                    external_id=ext,
+                    reason="already_owned",
+                    owned_count=owned_count,
+                )
+            )
+            continue
+
+        category = _infer_music_category_from_format(str(variant.get("format_name") or ""))
+        artist = str(variant.get("artist_or_brand") or "").strip() or None
+        title = str(variant.get("title") or "").strip() or f"{source}#{ext}"
+        name_bits = [artist, title]
+        item_name_override = " - ".join([v for v in name_bits if v]) or title
+        track_list_raw = variant.get("track_list")
+        track_list = track_list_raw if isinstance(track_list_raw, list) else []
+        mapped_domain = _normalize_domain_code(variant.get("domain_code")) or ""
+        mapped_release_type = str(variant.get("release_type") or "").strip().upper()
+        if mapped_release_type not in RELEASE_TYPES:
+            mapped_release_type = ""
+
+        create_payload = {
+            "category": category,
+            "size_group": _default_size_group_for_category(category),
+            "preferred_storage_size_group": _default_size_group_for_category(category),
+            "quantity": int(payload.quantity or 1),
+            "is_second_hand": bool(payload.is_second_hand),
+            "status": "IN_COLLECTION",
+            "signature_type": "NONE",
+            "source_code": source,
+            "source_external_id": ext,
+            "domain_code": payload.domain_code or (mapped_domain or None),
+            "release_type": payload.release_type or (mapped_release_type or None),
+            "linked_album_master_id": target_master_id,
+            "linked_artist_name": None,
+            "item_name_override": item_name_override,
+            "purchase_source": payload.purchase_source,
+            "memory_note": payload.memory_note,
+            "subtype_option_ids": list(payload.subtype_option_ids or []),
+            "soundtrack_option_ids": list(payload.soundtrack_option_ids or []),
+            "music_detail": {
+                "format_name": category,
+                "is_promotional_not_for_sale": False,
+                "artist_or_brand": artist,
+                "release_year": variant.get("release_year"),
+                "released_date": variant.get("released_date"),
+                "barcode": str(variant.get("barcode") or "").strip() or None,
+                "label_name": str(variant.get("label_name") or "").strip() or None,
+                "catalog_no": _discogs_catalog_no(variant.get("catalog_no")),
+                "cover_image_url": str(variant.get("cover_image_url") or "").strip() or None,
+                "track_list": [str(v).strip() for v in track_list if str(v).strip()],
+                "media_type": str(variant.get("media_type") or "").strip() or None,
+                "genres": _clean_string_list(variant.get("genres")),
+                "styles": _clean_string_list(variant.get("styles")),
+                "disc_count": variant.get("disc_count"),
+                "speed_rpm": variant.get("speed_rpm"),
+                "has_obi": _normalize_has_obi_input(variant.get("has_obi")),
+                "runout_matrix": _clean_runout_list(variant.get("runout_matrix")),
+                "pressing_country": variant.get("pressing_country"),
+                "source_notes": _clean_text(variant.get("source_notes")),
+                "credits": _clean_string_list(variant.get("credits")),
+                "identifier_items": _clean_dict_list(variant.get("identifier_items")),
+                "image_items": _clean_dict_list(variant.get("image_items")),
+                "company_items": _clean_dict_list(variant.get("company_items")),
+                "series": _clean_string_list(variant.get("series")),
+                "format_items": _clean_dict_list(variant.get("format_items")),
+                "track_items": _clean_dict_list(variant.get("track_items")),
+                "label_items": _clean_dict_list(variant.get("label_items")),
+            },
+        }
+
+        try:
+            created = create_owned_item(OwnedItemCreate(**create_payload))
+        except HTTPException as exc:
+            skipped_items.append(
+                AlbumMasterImportSkippedItem(
+                    external_id=ext,
+                    reason=str(exc.detail or f"create_failed_{exc.status_code}"),
+                    owned_count=owned_count,
+                )
+            )
+            continue
+        except Exception as exc:
+            skipped_items.append(
+                AlbumMasterImportSkippedItem(
+                    external_id=ext,
+                    reason=f"create_failed: {exc}",
+                    owned_count=owned_count,
+                )
+            )
+            continue
+
+        created_items.append(
+            AlbumMasterImportCreatedItem(
+                external_id=ext,
+                owned_item_id=int(created.owned_item_id),
+                label_id=str(created.label_id),
+                category=category,
+                format_name=str(variant.get("format_name") or "").strip() or category,
+                title=item_name_override,
+            )
+        )
+
+    if existing_ids_for_bind:
+        db.bind_album_master_members(
+            album_master_id=target_master_id,
+            owned_item_ids=sorted(existing_ids_for_bind),
+            replace_existing=False,
+        )
+        for existing_id in sorted(existing_ids_for_bind):
+            db.set_owned_item_linked_album_master(owned_item_id=existing_id, album_master_id=target_master_id)
+        notices.append(
+            f"이미 보유 중인 상품 {len(existing_ids_for_bind)}건을 선택 마스터에 연결했습니다."
+        )
+
+    linked_count = len(db.list_owned_items_by_album_master(target_master_id))
+    return AlbumMasterImportVariantsResponse(
+        album_master_id=target_master_id,
+        source=source,
+        master_external_id=effective_master_external_id,
+        created_count=len(created_items),
+        skipped_count=len(skipped_items),
+        linked_count=linked_count,
+        created_items=created_items,
+        skipped_items=skipped_items,
+        notices=notices,
+    )
+
+
+def _search_compact_text(value: Any) -> str:
+    compact = re.sub(r"[^0-9a-zA-Z가-힣]+", "", str(value or "").strip().lower())
+    return re.sub(r"제(?=\d+집$)", "", compact)
+
+
+def _track_match_quality(track_values: list[str], query_text: str) -> tuple[int, str]:
+    query_key = _search_compact_text(query_text)
+    if not query_key:
+        return (2, "")
+    best_rank = 2
+    best_value = ""
+    for value in track_values:
+        text = str(value or "").strip()
+        if not text:
+            continue
+        compact = _search_compact_text(text)
+        if not compact:
+            continue
+        rank = 2
+        if compact == query_key or compact.endswith(query_key):
+            rank = 0
+        elif query_key in compact:
+            rank = 1
+        if rank < best_rank:
+            best_rank = rank
+            best_value = text
+            if rank == 0:
+                break
+    return (best_rank, best_value)
+
+
+def _album_master_search_sort_key(row: AlbumMasterListItem, query_text: str) -> tuple[Any, ...]:
+    query_key = _search_compact_text(query_text)
+    title_key = _search_compact_text(row.title)
+    artist_key = _search_compact_text(row.artist_or_brand or "")
+    combined_key = f"{artist_key}{title_key}"
+    track_rank, best_track = _track_match_quality(list(row.matched_track_preview or []), query_text)
+
+    title_rank = 2
+    if query_key:
+        if title_key == query_key or combined_key == query_key:
+            title_rank = 0
+        elif query_key in title_key or query_key in combined_key:
+            title_rank = 1
+
+    updated_epoch = 0.0
+    updated_text = str(row.updated_at or "").strip()
+    if updated_text:
+        try:
+            updated_epoch = datetime.fromisoformat(updated_text).timestamp()
+        except ValueError:
+            updated_epoch = 0.0
+    return (
+        track_rank,
+        title_rank,
+        0 if best_track else 1,
+        -int(row.member_count or 0),
+        -updated_epoch,
+        -int(row.id or 0),
+    )
+
+
+@app.get("/album-masters", response_model=list[AlbumMasterListItem])
+def list_album_masters(
+    response: Response,
+    source: str | None = Query(default=None, pattern="^(DISCOGS|MANIADB|MANUAL)$"),
+    q: str | None = Query(default=None),
+    artist_or_brand: str | None = Query(default=None),
+    item_name: str | None = Query(default=None),
+    catalog_no: str | None = Query(default=None),
+    barcode: str | None = Query(default=None),
+    release_year: int | None = Query(default=None, ge=1900, le=2100),
+    category: str | None = Query(default=None, pattern="^(LP|CD|CASSETTE|8TRACK|DIGITAL|REEL_TO_REEL|T_SHIRT|POSTER|LIGHT_STICK|HAT|BAG|CUP|OTHER)$"),
+    media_only: bool = Query(default=False),
+    domain_code: str | None = Query(default=None, pattern="^(KOREA|JAPAN|GREATER_CHINA|WESTERN|OTHER_ASIA|WORLD_OTHER|UNKNOWN)$"),
+    release_type: str | None = Query(default=None, pattern="^(ALBUM|EP|SINGLE)$"),
+    include_total: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> list[AlbumMasterListItem]:
+    match_query = str(item_name or q or "").strip()
+    fetch_limit = limit
+    fetch_offset = offset
+    if match_query:
+        fetch_limit = min(500, max(limit, offset + (limit * 5)))
+        fetch_offset = 0
+    rows = db.list_album_masters(
+        source_code=source,
+        q=q,
+        artist_or_brand=artist_or_brand,
+        item_name=item_name,
+        catalog_no=catalog_no,
+        barcode=barcode,
+        release_year=release_year,
+        category=category,
+        media_only=media_only,
+        domain_code=domain_code,
+        release_type=release_type,
+        limit=fetch_limit,
+        offset=fetch_offset,
+    )
+    if include_total:
+        total = db.count_album_masters(
+            source_code=source,
+            q=q,
+            artist_or_brand=artist_or_brand,
+            item_name=item_name,
+            catalog_no=catalog_no,
+            barcode=barcode,
+            release_year=release_year,
+            category=category,
+            media_only=media_only,
+            domain_code=domain_code,
+            release_type=release_type,
+        )
+        response.headers["X-Total-Count"] = str(total)
+    result: list[AlbumMasterListItem] = []
+    for row in rows:
+        row2 = dict(row)
+        audio_count = int(row2.get("audio_asset_count") or 0)
+        row2["audio_asset_count"] = audio_count
+        row2["has_audio"] = audio_count > 0
+        preview_text = str(row2.pop("member_preview_text", "") or "").strip()
+        preview_items: list[str] = []
+        if preview_text:
+            seen_preview: set[str] = set()
+            for raw in preview_text.split(" || "):
+                text = str(raw or "").strip()
+                if not text or text in seen_preview:
+                    continue
+                seen_preview.add(text)
+                preview_items.append(text)
+        row2["member_preview"] = preview_items
+        location_preview_text = str(row2.pop("member_location_preview_text", "") or "").strip()
+        location_preview_items: list[str] = []
+        if location_preview_text:
+            seen_locations: set[str] = set()
+            for raw in location_preview_text.split(" || "):
+                text = str(raw or "").strip()
+                if not text or text in seen_locations:
+                    continue
+                seen_locations.add(text)
+                location_preview_items.append(text)
+        row2["member_location_preview"] = location_preview_items
+        row2["matched_track_preview"] = (
+            db.list_album_master_track_matches(int(row2.get("id") or 0), match_query, limit=3)
+            if match_query
+            else []
+        )
+        result.append(AlbumMasterListItem(**row2))
+    if match_query:
+        result.sort(key=lambda row: _album_master_search_sort_key(row, match_query))
+        result = result[offset : offset + limit]
+    return result
+
+
+@app.patch("/album-masters/{album_master_id}/sort-artist-name", response_model=AlbumMasterSortArtistUpdateResponse)
+def update_album_master_sort_artist_name(
+    album_master_id: int,
+    payload: AlbumMasterSortArtistUpdateRequest,
+) -> AlbumMasterSortArtistUpdateResponse:
+    updated = db.update_album_master_sort_artist_name(
+        album_master_id=album_master_id,
+        sort_artist_name=payload.sort_artist_name,
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="album_master not found")
+    return AlbumMasterSortArtistUpdateResponse(
+        album_master_id=int(updated["id"]),
+        sort_artist_name=str(updated.get("sort_artist_name") or "").strip() or None,
+    )
+
+
+@app.get("/album-masters/{album_master_id}/members", response_model=list[OwnedItemListItem])
+def list_album_master_members(album_master_id: int) -> list[OwnedItemListItem]:
+    rows = db.list_owned_items_by_album_master(album_master_id=album_master_id)
+    return [_to_owned_item_list_item(row) for row in rows]
+
+
+@app.delete("/album-masters/{album_master_id}", response_model=AlbumMasterDeleteResponse)
+def delete_album_master(
+    album_master_id: int,
+    cascade_items: bool = Query(default=False),
+) -> AlbumMasterDeleteResponse:
+    result = db.delete_album_master(album_master_id=album_master_id, cascade_items=cascade_items)
+    if result is None:
+        raise HTTPException(status_code=404, detail="album_master not found")
+    return AlbumMasterDeleteResponse(
+        album_master_id=album_master_id,
+        deleted=True,
+        cascade_items=bool(cascade_items),
+        removed_member_links=int(result.get("removed_member_links") or 0),
+        deleted_owned_item_count=int(result.get("deleted_owned_item_count") or 0),
+    )
+
+
+def _album_master_source_priority(source_code: str) -> int:
+    code = str(source_code or "").strip().upper()
+    if code == "DISCOGS":
+        return 0
+    if code == "MANIADB":
+        return 1
+    return 2
+
+
+def _pick_duplicate_merge_target_id(duplicates: list[dict[str, Any]]) -> int | None:
+    if not duplicates:
+        return None
+    ranked = sorted(
+        duplicates,
+        key=lambda row: (
+            _album_master_source_priority(str(row.get("source_code") or "")),
+            -int(row.get("member_count") or 0),
+            -int(row.get("album_master_id") or 0),
+        ),
+    )
+    target_id = int(ranked[0].get("album_master_id") or 0)
+    return target_id if target_id > 0 else None
+
+
+@app.get("/album-masters/{album_master_id}/duplicates", response_model=AlbumMasterDuplicateCheckResponse)
+def get_album_master_duplicates(
+    album_master_id: int,
+    limit: int = Query(default=20, ge=1, le=100),
+) -> AlbumMasterDuplicateCheckResponse:
+    if not db.album_master_exists(album_master_id):
+        raise HTTPException(status_code=404, detail="album_master not found")
+    rows = db.list_duplicate_album_masters(album_master_id=album_master_id, limit=limit)
+    duplicates: list[AlbumMasterDuplicateItem] = []
+    for row in rows:
+        duplicate_master_id = int(row.get("album_master_id") or 0)
+        if duplicate_master_id <= 0:
+            continue
+        source_code = str(row.get("source_code") or "").strip().upper()
+        if source_code not in {"DISCOGS", "MANIADB", "MUSICBRAINZ", "MANUAL"}:
+            source_code = "MANUAL"
+        release_year: int | None = None
+        raw_year = row.get("release_year")
+        try:
+            release_year = int(raw_year) if raw_year is not None and str(raw_year).strip() else None
+        except (TypeError, ValueError):
+            release_year = None
+        duplicates.append(
+            AlbumMasterDuplicateItem(
+                album_master_id=duplicate_master_id,
+                source_code=source_code,
+                source_master_id=str(row.get("source_master_id") or "").strip(),
+                title=str(row.get("title") or "").strip() or f"Master {duplicate_master_id}",
+                artist_or_brand=str(row.get("artist_or_brand") or "").strip() or None,
+                release_year=release_year,
+                member_count=int(row.get("member_count") or 0),
+                updated_at=str(row.get("updated_at") or "").strip() or None,
+            )
+        )
+    suggested_target_album_master_id = _pick_duplicate_merge_target_id(rows)
+    return AlbumMasterDuplicateCheckResponse(
+        album_master_id=album_master_id,
+        duplicate_count=len(duplicates),
+        suggested_target_album_master_id=suggested_target_album_master_id,
+        duplicates=duplicates,
+    )
+
+
+@app.post("/album-masters/{album_master_id}/merge", response_model=AlbumMasterMergeResponse)
+def merge_album_master(
+    album_master_id: int,
+    payload: AlbumMasterMergeRequest,
+) -> AlbumMasterMergeResponse:
+    if not db.album_master_exists(album_master_id):
+        raise HTTPException(status_code=404, detail="album_master not found")
+    source_id = int(album_master_id)
+    target_id = int(payload.target_album_master_id)
+    if source_id == target_id:
+        count_rows = db.list_owned_items_by_album_master(target_id)
+        return AlbumMasterMergeResponse(
+            source_album_master_id=source_id,
+            target_album_master_id=target_id,
+            moved_member_count=0,
+            target_member_count=len(count_rows),
+            merged=False,
+        )
+    try:
+        result = db.merge_album_masters(
+            source_album_master_id=source_id,
+            target_album_master_id=target_id,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return AlbumMasterMergeResponse(
+        source_album_master_id=int(result.get("source_album_master_id") or source_id),
+        target_album_master_id=int(result.get("target_album_master_id") or target_id),
+        moved_member_count=int(result.get("moved_member_count") or 0),
+        target_member_count=int(result.get("target_member_count") or 0),
+        merged=True,
+    )
+
+
+@app.get("/discogs/identity", response_model=DiscogsIdentityResponse)
+def get_discogs_identity() -> DiscogsIdentityResponse:
+    ident = discogs_identity()
+    if ident is None:
+        raise HTTPException(status_code=400, detail="discogs identity unavailable. check DISCOGS_TOKEN.")
+    return DiscogsIdentityResponse(**ident)
+
+
+def _discogs_text(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _discogs_catalog_no(value: Any) -> str | None:
+    text = _discogs_text(value)
+    if not text:
+        return None
+    text = re.sub(r"^(?:cat\s*#?\s*:?)\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^[\s;:,/|]+", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text or text in {"-", "--", "---"}:
+        return None
+    return text
+
+
+def _discogs_string_list(values: Any) -> list[str]:
+    if not isinstance(values, list):
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _discogs_text(value)
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        out.append(text)
+    return out
+
+
+def _discogs_release_year(raw: dict[str, Any]) -> int | None:
+    year_raw = raw.get("year")
+    try:
+        year = int(year_raw) if year_raw is not None else None
+    except (TypeError, ValueError):
+        return None
+    if year is None or year <= 0:
+        return None
+    return year
+
+
+def _discogs_format_values(raw: dict[str, Any]) -> list[str]:
+    out = []
+    for item in _discogs_format_items(raw):
+        out.append(str(item.get("display") or ""))
+    return [v for v in out if v]
+
+
+def _discogs_format_items(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    formats = raw.get("formats")
+    if not isinstance(formats, list):
+        return out
+    for row in formats:
+        if not isinstance(row, dict):
+            continue
+        name = _discogs_text(row.get("name"))
+        descriptions = row.get("descriptions")
+        desc_parts = [str(v).strip() for v in descriptions] if isinstance(descriptions, list) else []
+        desc_parts = [v for v in desc_parts if v]
+        qty = _discogs_text(row.get("qty"))
+        text = _discogs_text(row.get("text"))
+        joined = f"{name} ({', '.join(desc_parts)})" if name and desc_parts else (name or ", ".join(desc_parts))
+        if not joined:
+            continue
+        bits = [joined]
+        if qty:
+            bits.append(f"qty {qty}")
+        if text:
+            bits.append(text)
+        out.append(
+            {
+                "name": name,
+                "descriptions": desc_parts,
+                "qty": qty,
+                "text": text,
+                "display": " / ".join(bits),
+            }
+        )
+    return out
+
+
+def _discogs_primary_format(raw: dict[str, Any]) -> str | None:
+    formats = raw.get("formats")
+    if not isinstance(formats, list) or not formats:
+        return None
+    first = formats[0]
+    if not isinstance(first, dict):
+        return None
+    return _discogs_text(first.get("name"))
+
+
+def _discogs_image_items(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    images = raw.get("images")
+    if not isinstance(images, list):
+        return out
+    for row in images:
+        if not isinstance(row, dict):
+            continue
+        uri = _discogs_text(row.get("uri")) or _discogs_text(row.get("uri150"))
+        if not uri or uri in seen:
+            continue
+        seen.add(uri)
+        out.append(
+            {
+                "type": _discogs_text(row.get("type")) or "unknown",
+                "uri": uri,
+                "uri150": _discogs_text(row.get("uri150")),
+                "resource_url": _discogs_text(row.get("resource_url")),
+                "width": row.get("width"),
+                "height": row.get("height"),
+            }
+        )
+    return out
+
+
+def _discogs_artist_value(raw: dict[str, Any]) -> str | None:
+    artists = raw.get("artists")
+    if not isinstance(artists, list) or not artists:
+        return None
+    first = artists[0]
+    if not isinstance(first, dict):
+        return None
+    return _discogs_text(first.get("anv")) or _discogs_text(first.get("name"))
+
+
+def _discogs_track_items(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    rows = raw.get("tracklist")
+    if not isinstance(rows, list):
+        return out
+
+    for idx, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        position = _discogs_text(row.get("position")) or str(idx + 1)
+        title = _discogs_text(row.get("title"))
+        duration = _discogs_text(row.get("duration"))
+        track_type = _discogs_text(row.get("type_")) or "track"
+        sub_tracks = row.get("sub_tracks")
+        sub_track_titles: list[str] = []
+        if isinstance(sub_tracks, list):
+            for sub in sub_tracks:
+                if not isinstance(sub, dict):
+                    continue
+                sub_title = _discogs_text(sub.get("title"))
+                if sub_title:
+                    sub_track_titles.append(sub_title)
+        if not title and sub_track_titles:
+            title = " / ".join(sub_track_titles)
+        if not title:
+            continue
+
+        extraartists = row.get("extraartists")
+        credit_bits: list[str] = []
+        if isinstance(extraartists, list):
+            for extra in extraartists:
+                if not isinstance(extra, dict):
+                    continue
+                name = _discogs_text(extra.get("anv")) or _discogs_text(extra.get("name"))
+                role = _discogs_text(extra.get("role"))
+                if name and role:
+                    credit_bits.append(f"{name} ({role})")
+                elif name:
+                    credit_bits.append(name)
+
+        out.append(
+            {
+                "position": position,
+                "title": title,
+                "duration": duration,
+                "type": track_type,
+                "sub_tracks": sub_track_titles,
+                "credits": credit_bits,
+                "display": f"{position} {title}".strip(),
+            }
+        )
+    return out
+
+
+def _discogs_identifiers(raw: dict[str, Any]) -> tuple[list[str], list[str], str | None, list[dict[str, Any]]]:
+    runout_values: list[str] = []
+    other_values: list[str] = []
+    barcode: str | None = None
+    identifier_items: list[dict[str, Any]] = []
+    identifiers = raw.get("identifiers")
+    if not isinstance(identifiers, list):
+        return runout_values, other_values, barcode, identifier_items
+
+    for row in identifiers:
+        if not isinstance(row, dict):
+            continue
+        type_text = str(row.get("type") or "").strip()
+        value_text = _discogs_text(row.get("value"))
+        if not value_text:
+            continue
+        description = _discogs_text(row.get("description"))
+        identifier_items.append(
+            {
+                "type": type_text or None,
+                "value": value_text,
+                "description": description,
+            }
+        )
+        lower_type = type_text.lower()
+        if lower_type == "barcode" and not barcode:
+            barcode = re.sub(r"[^0-9Xx]", "", value_text) or value_text
+        if "matrix" in lower_type or "runout" in lower_type:
+            runout_values.append(value_text)
+            continue
+        other_values.append(f"{type_text}: {value_text}" if type_text else value_text)
+    return runout_values, other_values, barcode, identifier_items
+
+
+def _discogs_credit_items(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    rows = raw.get("extraartists")
+    if not isinstance(rows, list):
+        return out
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = _discogs_text(row.get("anv")) or _discogs_text(row.get("name"))
+        role = _discogs_text(row.get("role"))
+        tracks = _discogs_text(row.get("tracks"))
+        if not name and not role and not tracks:
+            continue
+        out.append(
+            {
+                "name": name,
+                "role": role,
+                "tracks": tracks,
+                "join": _discogs_text(row.get("join")),
+            }
+        )
+    return out
+
+
+def _discogs_credits(raw: dict[str, Any]) -> list[str]:
+    out: list[str] = []
+    for item in _discogs_credit_items(raw):
+        name = _discogs_text(item.get("name"))
+        role = _discogs_text(item.get("role"))
+        tracks = _discogs_text(item.get("tracks"))
+        core = f"{name} ({role})" if name and role else (name or role or "")
+        if not core:
+            continue
+        out.append(f"{core} [{tracks}]" if tracks else core)
+    return out
+
+
+def _discogs_company_items(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    rows = raw.get("companies")
+    if not isinstance(rows, list):
+        return out
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = _discogs_text(row.get("name"))
+        entity = _discogs_text(row.get("entity_type_name"))
+        catno = _discogs_catalog_no(row.get("catno"))
+        if not (name or entity or catno):
+            continue
+        out.append(
+            {
+                "entity_type": entity,
+                "name": name,
+                "catno": catno,
+            }
+        )
+    return out
+
+
+def _discogs_companies(raw: dict[str, Any]) -> list[str]:
+    out: list[str] = []
+    for item in _discogs_company_items(raw):
+        bits = [v for v in [item.get("entity_type"), item.get("name"), item.get("catno")] if v]
+        if bits:
+            out.append(" | ".join(bits))
+    return out
+
+
+def _discogs_label_items(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    rows = raw.get("labels")
+    if not isinstance(rows, list):
+        return out
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = _discogs_text(row.get("name"))
+        catno = _discogs_catalog_no(row.get("catno"))
+        if not (name or catno):
+            continue
+        out.append(
+            {
+                "name": name,
+                "catno": catno,
+            }
+        )
+    return out
+
+
+def _discogs_labels(raw: dict[str, Any]) -> list[str]:
+    out: list[str] = []
+    for item in _discogs_label_items(raw):
+        name = _discogs_text(item.get("name"))
+        catno = _discogs_catalog_no(item.get("catno"))
+        if name and catno:
+            out.append(f"{name} / {catno}")
+        elif name:
+            out.append(name)
+    return out
+
+
+def _discogs_compare_variants(
+    release_id: str,
+    master_id: str | None,
+    selected: dict[str, Any],
+    compare_limit: int,
+) -> list[dict[str, Any]]:
+    if not master_id:
+        return []
+    variants = get_album_master_variants(
+        source="DISCOGS",
+        master_external_id=master_id,
+        limit=max(compare_limit * 3, 20),
+        include_details=True,
+    )
+    if not variants:
+        return []
+
+    def normalize_compare(v: Any) -> str:
+        text = _discogs_text(v)
+        return text if text else "-"
+
+    selected_track_count = int(selected.get("track_count") or 0)
+    selected_runout_sample = normalize_compare(selected.get("runout_sample"))
+    selected_release_id = str(release_id).strip()
+    compare_rows: list[dict[str, Any]] = []
+    for row in variants:
+        external_id = str(row.get("external_id") or "").strip()
+        if not external_id or external_id == selected_release_id:
+            continue
+
+        differences: list[str] = []
+        fields: list[tuple[str, str]] = [
+            ("format_name", "포맷"),
+            ("label_name", "레이블"),
+            ("catalog_no", "카탈로그"),
+            ("barcode", "바코드"),
+            ("country", "국가"),
+            ("release_year", "발매년"),
+        ]
+        for key, label in fields:
+            selected_val = normalize_compare(selected.get(key))
+            other_val = normalize_compare(row.get(key))
+            if selected_val != other_val:
+                differences.append(f"{label}: {selected_val} -> {other_val}")
+
+        other_track_count = len(row.get("track_list") or [])
+        if selected_track_count != other_track_count:
+            differences.append(f"트랙 수: {selected_track_count} -> {other_track_count}")
+
+        raw_detail = row.get("raw_detail")
+        if not isinstance(raw_detail, dict):
+            raw_candidate = row.get("raw")
+            if isinstance(raw_candidate, dict):
+                nested = raw_candidate.get("release_detail")
+                raw_detail = nested if isinstance(nested, dict) else None
+        other_runout_values: list[str] = []
+        if isinstance(raw_detail, dict):
+            other_runout_values, _, _, _ = _discogs_identifiers(raw_detail)
+        other_runout_sample = normalize_compare(" | ".join(other_runout_values[:2]) if other_runout_values else None)
+        if selected_runout_sample != "-" or other_runout_sample != "-":
+            if selected_runout_sample != other_runout_sample:
+                differences.append(f"Matrix/Runout: {selected_runout_sample} -> {other_runout_sample}")
+
+        if not differences:
+            continue
+
+        compare_rows.append(
+            {
+                "external_id": external_id,
+                "title": _discogs_text(row.get("title")),
+                "format_name": _discogs_text(row.get("format_name")),
+                "label_name": _discogs_text(row.get("label_name")),
+                "catalog_no": _discogs_catalog_no(row.get("catalog_no")),
+                "barcode": _discogs_text(row.get("barcode")),
+                "country": _discogs_text(row.get("country")),
+                "release_year": row.get("release_year"),
+                "cover_image_url": _discogs_text(row.get("cover_image_url")),
+                "track_count": other_track_count,
+                "runout_sample": None if other_runout_sample == "-" else other_runout_sample,
+                "difference_summary": differences,
+            }
+        )
+
+    compare_rows.sort(key=lambda x: len(x.get("difference_summary") or []), reverse=True)
+    return compare_rows[:compare_limit]
+
+
+@app.get("/discogs/release/{release_id}/collector-info")
+def get_discogs_release_collector_info(
+    release_id: str,
+    compare_limit: int = Query(default=12, ge=1, le=50),
+) -> dict[str, Any]:
+    snapshot = get_source_release_snapshot(source="DISCOGS", external_id=release_id)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="discogs release snapshot not found")
+
+    raw = snapshot.get("raw")
+    raw_detail = raw if isinstance(raw, dict) else {}
+
+    runout_matrix, other_identifiers, barcode_from_ident, identifier_items = _discogs_identifiers(raw_detail)
+    image_items = _discogs_image_items(raw_detail)
+    images = [str(item.get("uri") or "") for item in image_items if str(item.get("uri") or "").strip()]
+    label_items = _discogs_label_items(raw_detail)
+    labels = _discogs_labels(raw_detail)
+    credit_items = _discogs_credit_items(raw_detail)
+    credits = _discogs_credits(raw_detail)
+    company_items = _discogs_company_items(raw_detail)
+    companies = _discogs_companies(raw_detail)
+    formats = _discogs_format_values(raw_detail)
+    format_items = _discogs_format_items(raw_detail)
+    track_items = _discogs_track_items(raw_detail)
+    track_list_snapshot = snapshot.get("track_list")
+    track_list = track_list_snapshot if isinstance(track_list_snapshot, list) else []
+    if not track_list and track_items:
+        track_list = [str(item.get("display") or "").strip() for item in track_items]
+        track_list = [v for v in track_list if v]
+    genres = _discogs_string_list(raw_detail.get("genres"))
+    styles = _discogs_string_list(raw_detail.get("styles"))
+    series: list[str] = []
+    series_rows = raw_detail.get("series")
+    if isinstance(series_rows, list):
+        for row in series_rows:
+            if not isinstance(row, dict):
+                continue
+            name = _discogs_text(row.get("name"))
+            catno = _discogs_catalog_no(row.get("catno"))
+            if name and catno:
+                series.append(f"{name} / {catno}")
+            elif name:
+                series.append(name)
+    master_id = _discogs_text(raw_detail.get("master_id"))
+    disc_count_raw = snapshot.get("disc_count")
+    speed_rpm_raw = snapshot.get("speed_rpm")
+    has_obi_raw = snapshot.get("has_obi")
+    try:
+        disc_count = int(disc_count_raw) if disc_count_raw is not None else None
+    except (TypeError, ValueError):
+        disc_count = None
+    try:
+        speed_rpm = int(speed_rpm_raw) if speed_rpm_raw is not None else None
+    except (TypeError, ValueError):
+        speed_rpm = None
+    has_obi = bool(has_obi_raw) if has_obi_raw is not None else None
+    released_date = _discogs_text(snapshot.get("released_date")) or _discogs_text(raw_detail.get("released")) or _discogs_text(raw_detail.get("released_formatted"))
+    pressing_country = _discogs_text(snapshot.get("pressing_country")) or _discogs_text(raw_detail.get("country"))
+
+    runout_sample = " | ".join(runout_matrix[:2]) if runout_matrix else None
+    selected = {
+        "format_name": _discogs_primary_format(raw_detail),
+        "label_name": _discogs_text(snapshot.get("label_name")) or (labels[0] if labels else None),
+        "catalog_no": _discogs_catalog_no(snapshot.get("catalog_no")),
+        "barcode": _discogs_text(snapshot.get("barcode")) or barcode_from_ident,
+        "country": _discogs_text(raw_detail.get("country")),
+        "release_year": _discogs_release_year(raw_detail),
+        "track_count": len(track_list),
+        "runout_sample": runout_sample,
+    }
+    other_versions = _discogs_compare_variants(
+        release_id=release_id,
+        master_id=master_id,
+        selected=selected,
+        compare_limit=compare_limit,
+    )
+
+    return {
+        "release_id": str(release_id).strip(),
+        "master_id": master_id,
+        "title": _discogs_text(raw_detail.get("title")),
+        "artist_or_brand": _discogs_artist_value(raw_detail),
+        "release_year": _discogs_release_year(raw_detail),
+        "released_date": released_date,
+        "country": _discogs_text(raw_detail.get("country")),
+        "pressing_country": pressing_country,
+        "formats": formats,
+        "format_items": format_items,
+        "labels": labels,
+        "label_items": label_items,
+        "catalog_no": _discogs_catalog_no(snapshot.get("catalog_no")),
+        "barcode": _discogs_text(snapshot.get("barcode")) or barcode_from_ident,
+        "disc_count": disc_count,
+        "speed_rpm": speed_rpm,
+        "has_obi": has_obi,
+        "track_list": track_list,
+        "track_items": track_items,
+        "credits": credits,
+        "credit_items": credit_items,
+        "runout_matrix": runout_matrix,
+        "other_identifiers": other_identifiers,
+        "identifier_items": identifier_items,
+        "images": images,
+        "image_items": image_items,
+        "notes": _discogs_text(raw_detail.get("notes")),
+        "companies": companies,
+        "company_items": company_items,
+        "genres": genres,
+        "styles": styles,
+        "released": _discogs_text(raw_detail.get("released")) or _discogs_text(raw_detail.get("released_formatted")),
+        "series": series,
+        "other_versions": other_versions,
+    }
+
+
+@app.post("/discogs/owned-sync/{owned_item_id}", response_model=DiscogsOwnedSyncResponse)
+def sync_discogs_owned(owned_item_id: int) -> DiscogsOwnedSyncResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    source_code = str(existing.get("source_code") or "").upper()
+    source_external_id = str(existing.get("source_external_id") or "").strip()
+    if source_code != "DISCOGS" or not source_external_id:
+        raise HTTPException(status_code=400, detail="owned_item is not linked to a discogs release")
+
+    if str(existing.get("status") or "") in {"SOLD", "LOST"}:
+        raise HTTPException(status_code=400, detail="cannot sync SOLD/LOST item as owned")
+
+    result = discogs_add_release_to_collection(release_id=source_external_id, folder_id=1)
+    if result is None:
+        raise HTTPException(status_code=400, detail="discogs collection sync failed")
+
+    return DiscogsOwnedSyncResponse(
+        owned_item_id=owned_item_id,
+        source_external_id=source_external_id,
+        username=str(result.get("username") or ""),
+        synced=True,
+    )
+
+
+def _validate_signature(payload: OwnedItemCreate) -> None:
+    if (payload.signed_by or payload.signed_at) and payload.signature_type == "NONE":
+        raise HTTPException(status_code=400, detail="signature_type cannot be NONE when signed_by/signed_at is set")
+
+
+def _validate_collection_rank(payload: OwnedItemCreate) -> None:
+    # 장식장/슬롯 재배치에 대비해 display_rank는 선택값으로 처리.
+    return
+
+
+def _validate_slot(size_group: str, storage_slot_id: int | None) -> None:
+    if storage_slot_id is None:
+        return
+
+    slot = db.get_storage_slot(storage_slot_id)
+    if slot is None:
+        raise HTTPException(status_code=404, detail="storage_slot not found")
+
+
+def _validate_second_hand_music(_payload: OwnedItemCreate) -> None:
+    # 중고 여부와 무관하게 컨디션 값은 선택 입력으로 허용.
+    return
+
+
+def _normalize_domain_code(value: Any) -> str | None:
+    code = str(value or "").strip().upper()
+    if not code:
+        return None
+    code = LEGACY_DOMAIN_CODE_MAP.get(code, code)
+    return code if code in DOMAIN_CODES else None
+
+
+def _master_domain_hint(linked_album_master_id: Any) -> str | None:
+    try:
+        master_id = int(linked_album_master_id or 0)
+    except (TypeError, ValueError):
+        master_id = 0
+    if master_id <= 0:
+        return None
+    return _normalize_domain_code(db.get_album_master_domain_hint(master_id))
+
+
+def _infer_owned_item_domain_code(
+    normalized_payload: dict[str, object],
+    music_detail: dict[str, Any] | None = None,
+    source_snapshot: dict[str, object] | None = None,
+) -> str | None:
+    music = music_detail if isinstance(music_detail, dict) else {}
+    snapshot = source_snapshot if isinstance(source_snapshot, dict) else {}
+    genres = music.get("genres") or snapshot.get("genres") or []
+    styles = music.get("styles") or snapshot.get("styles") or []
+    country = (
+        music.get("pressing_country")
+        or snapshot.get("pressing_country")
+        or snapshot.get("country")
+        or music.get("country")
+    )
+    artist_or_brand = (
+        music.get("artist_or_brand")
+        or snapshot.get("artist_or_brand")
+        or normalized_payload.get("linked_artist_name")
+    )
+    title = normalized_payload.get("item_name_override") or snapshot.get("title")
+    label_name = music.get("label_name") or snapshot.get("label_name")
+    source_code = normalized_payload.get("source_code")
+    inferred = infer_domain_code(
+        genres=genres if isinstance(genres, list) else [],
+        styles=styles if isinstance(styles, list) else [],
+        country=country,
+        artist_or_brand=artist_or_brand,
+        title=title,
+        label_name=label_name,
+        source=str(source_code or "").strip().upper() or None,
+    )
+    return _normalize_domain_code(inferred) or _master_domain_hint(normalized_payload.get("linked_album_master_id"))
+
+
+def _infer_album_master_domain_code(
+    *,
+    explicit_domain_code: Any = None,
+    source_code: Any = None,
+    title: Any = None,
+    artist_or_brand: Any = None,
+    raw: Any = None,
+    linked_album_master_id: Any = None,
+) -> str | None:
+    explicit = _normalize_domain_code(explicit_domain_code)
+    if explicit:
+        return explicit
+
+    raw_dict = raw if isinstance(raw, dict) else {}
+    raw_domain = _normalize_domain_code(raw_dict.get("domain_code"))
+    if raw_domain:
+        return raw_domain
+
+    label_name = raw_dict.get("label_name")
+    if not label_name and isinstance(raw_dict.get("label_items"), list):
+        first = raw_dict["label_items"][0] if raw_dict["label_items"] else None
+        if isinstance(first, dict):
+            label_name = first.get("name")
+
+    inferred = infer_domain_code(
+        genres=raw_dict.get("genres") if isinstance(raw_dict.get("genres"), list) else None,
+        styles=raw_dict.get("styles") if isinstance(raw_dict.get("styles"), list) else None,
+        country=raw_dict.get("country") or raw_dict.get("pressing_country"),
+        artist_or_brand=artist_or_brand,
+        title=title,
+        label_name=label_name,
+        source=str(source_code or "").strip().upper() or None,
+    )
+    return _normalize_domain_code(inferred) or _master_domain_hint(linked_album_master_id)
+
+
+def _normalize_music_detail_payload(normalized_payload: dict[str, object]) -> None:
+    music_detail = normalized_payload.get("music_detail")
+    if not isinstance(music_detail, dict):
+        return
+
+    source_code = str(normalized_payload.get("source_code") or "").strip().upper()
+    source_external_id = str(normalized_payload.get("source_external_id") or "").strip()
+    domain_code_raw = normalized_payload.get("domain_code")
+    release_type_raw = str(normalized_payload.get("release_type") or "").strip().upper()
+    domain_code = _normalize_domain_code(domain_code_raw)
+    release_type = release_type_raw if release_type_raw in RELEASE_TYPES else None
+    source_snapshot: dict[str, object] | None = None
+    if source_code and source_external_id:
+        source_snapshot = get_source_release_snapshot(source_code, source_external_id)
+
+    cover_condition = (music_detail.get("cover_condition") or music_detail.get("sleeve_condition") or "").strip()
+    disc_condition = (music_detail.get("disc_condition") or music_detail.get("media_condition") or "").strip()
+    artist_or_brand = (music_detail.get("artist_or_brand") or "").strip() or None
+    release_year = music_detail.get("release_year")
+    if release_year is not None:
+        try:
+            release_year = int(release_year)
+        except (TypeError, ValueError):
+            release_year = None
+    released_date = (music_detail.get("released_date") or "").strip() or None
+    barcode = (music_detail.get("barcode") or "").strip() or None
+    label_name = (music_detail.get("label_name") or "").strip() or None
+    catalog_no = _discogs_catalog_no(music_detail.get("catalog_no"))
+    cover_image_url = (music_detail.get("cover_image_url") or "").strip() or None
+    media_type = (music_detail.get("media_type") or "").strip() or None
+    track_list_raw = music_detail.get("track_list") or []
+    track_list = [
+        str(v).strip()
+        for v in track_list_raw
+        if str(v).strip()
+    ]
+    genres = _clean_string_list(music_detail.get("genres"))
+    styles = _clean_string_list(music_detail.get("styles"))
+    disc_count_raw = music_detail.get("disc_count")
+    try:
+        disc_count = int(disc_count_raw) if disc_count_raw is not None and str(disc_count_raw).strip() else None
+    except (TypeError, ValueError):
+        disc_count = None
+    if disc_count is not None and disc_count <= 0:
+        disc_count = None
+    speed_rpm_raw = music_detail.get("speed_rpm")
+    try:
+        speed_rpm = int(speed_rpm_raw) if speed_rpm_raw is not None and str(speed_rpm_raw).strip() else None
+    except (TypeError, ValueError):
+        speed_rpm = None
+    if speed_rpm is not None and speed_rpm <= 0:
+        speed_rpm = None
+    has_obi = _normalize_has_obi_input(music_detail.get("has_obi"))
+    runout_matrix = _clean_runout_list(music_detail.get("runout_matrix"))
+    pressing_country = (music_detail.get("pressing_country") or "").strip() or None
+    source_notes = _clean_text(music_detail.get("source_notes"))
+    credits = _clean_string_list(music_detail.get("credits"))
+    identifier_items = _clean_dict_list(music_detail.get("identifier_items"))
+    image_items = _clean_dict_list(music_detail.get("image_items"))
+    company_items = _clean_dict_list(music_detail.get("company_items"))
+    series = _clean_string_list(music_detail.get("series"))
+    format_items = _clean_dict_list(music_detail.get("format_items"))
+    track_items = _clean_dict_list(music_detail.get("track_items"))
+    label_items = _clean_dict_list(music_detail.get("label_items"))
+    if source_snapshot:
+        label_name = label_name or str(source_snapshot.get("label_name") or "").strip() or None
+        catalog_no = catalog_no or _discogs_catalog_no(source_snapshot.get("catalog_no"))
+        cover_image_url = cover_image_url or str(source_snapshot.get("cover_image_url") or "").strip() or None
+        barcode = barcode or str(source_snapshot.get("barcode") or "").strip() or None
+        media_type = media_type or str(source_snapshot.get("media_type") or "").strip() or None
+        snapshot_released_date = str(source_snapshot.get("released_date") or "").strip() or None
+        released_date = released_date or snapshot_released_date
+        if not genres:
+            genres = _clean_string_list(source_snapshot.get("genres"))
+        if not styles:
+            styles = _clean_string_list(source_snapshot.get("styles"))
+        if disc_count is None:
+            snap_disc_count = source_snapshot.get("disc_count")
+            try:
+                disc_count = int(snap_disc_count) if snap_disc_count is not None and str(snap_disc_count).strip() else None
+            except (TypeError, ValueError):
+                disc_count = None
+            if disc_count is not None and disc_count <= 0:
+                disc_count = None
+        if speed_rpm is None:
+            snap_speed = source_snapshot.get("speed_rpm")
+            try:
+                speed_rpm = int(snap_speed) if snap_speed is not None and str(snap_speed).strip() else None
+            except (TypeError, ValueError):
+                speed_rpm = None
+            if speed_rpm is not None and speed_rpm <= 0:
+                speed_rpm = None
+        if not runout_matrix:
+            runout_matrix = _clean_runout_list(source_snapshot.get("runout_matrix"))
+        if source_code == "DISCOGS":
+            pressing_country = pressing_country or str(source_snapshot.get("pressing_country") or "").strip() or None
+        source_notes = source_notes or _clean_text(source_snapshot.get("source_notes"))
+        if not credits:
+            credits = _clean_string_list(source_snapshot.get("credits"))
+        if not identifier_items:
+            identifier_items = _clean_dict_list(source_snapshot.get("identifier_items"))
+        if not image_items:
+            image_items = _clean_dict_list(source_snapshot.get("image_items"))
+        if not company_items:
+            company_items = _clean_dict_list(source_snapshot.get("company_items"))
+        if not series:
+            series = _clean_string_list(source_snapshot.get("series"))
+        if not format_items:
+            format_items = _clean_dict_list(source_snapshot.get("format_items"))
+        if not track_items:
+            track_items = _clean_dict_list(source_snapshot.get("track_items"))
+        if not label_items:
+            label_items = _clean_dict_list(source_snapshot.get("label_items"))
+        if domain_code is None:
+            domain_code = _normalize_domain_code(source_snapshot.get("domain_code"))
+        if release_type is None:
+            snapshot_release_type = str(source_snapshot.get("release_type") or "").strip().upper()
+            release_type = snapshot_release_type if snapshot_release_type in RELEASE_TYPES else None
+        if not track_list:
+            source_tracks = source_snapshot.get("track_list")
+            if isinstance(source_tracks, list):
+                track_list = [str(v).strip() for v in source_tracks if str(v).strip()]
+
+    if release_year is None:
+        date_like = str(released_date or "").strip()
+        m = re.match(r"^(\d{4})", date_like)
+        if m:
+            try:
+                parsed_year = int(m.group(1))
+                if 1900 <= parsed_year <= 2100:
+                    release_year = parsed_year
+            except (TypeError, ValueError):
+                release_year = None
+        elif source_snapshot:
+            snap_year_raw = source_snapshot.get("release_year")
+            try:
+                parsed_year = int(snap_year_raw) if snap_year_raw is not None else None
+            except (TypeError, ValueError):
+                parsed_year = None
+            if parsed_year is not None and 1900 <= parsed_year <= 2100:
+                release_year = parsed_year
+
+    music_detail["sleeve_condition"] = cover_condition or None
+    music_detail["media_condition"] = disc_condition or None
+    music_detail["cover_condition"] = cover_condition or None
+    music_detail["disc_condition"] = disc_condition or None
+    music_detail["artist_or_brand"] = artist_or_brand
+    music_detail["release_year"] = release_year
+    music_detail["released_date"] = released_date
+    music_detail["barcode"] = barcode
+    music_detail["label_name"] = label_name
+    music_detail["catalog_no"] = catalog_no
+    music_detail["cover_image_url"] = cover_image_url
+    music_detail["media_type"] = media_type
+    music_detail["genres"] = genres
+    music_detail["styles"] = styles
+    music_detail["disc_count"] = disc_count
+    music_detail["speed_rpm"] = speed_rpm
+    music_detail["has_obi"] = has_obi
+    music_detail["runout_matrix"] = runout_matrix
+    music_detail["pressing_country"] = pressing_country
+    music_detail["source_notes"] = source_notes
+    music_detail["credits"] = credits
+    music_detail["identifier_items"] = identifier_items
+    music_detail["image_items"] = image_items
+    music_detail["company_items"] = company_items
+    music_detail["series"] = series
+    music_detail["format_items"] = format_items
+    music_detail["track_items"] = track_items
+    music_detail["label_items"] = label_items
+    music_detail["track_list"] = track_list
+    normalized_payload["domain_code"] = domain_code or _infer_owned_item_domain_code(normalized_payload, music_detail, source_snapshot)
+    normalized_payload["release_type"] = release_type
+
+
+def _normalize_goods_detail_payload(normalized_payload: dict[str, object]) -> None:
+    category_code = str(normalized_payload.get("category") or "").strip().upper()
+    if category_code in MUSIC_CATEGORIES:
+        normalized_payload["goods_detail"] = None
+        return
+
+    goods_detail = normalized_payload.get("goods_detail")
+    if not isinstance(goods_detail, dict):
+        normalized_payload["goods_detail"] = None
+        normalized_payload["music_detail"] = None
+        return
+
+    image_urls = _clean_goods_image_urls(goods_detail.get("image_urls"))
+    primary_image_url = _clean_text(goods_detail.get("primary_image_url"))
+    if primary_image_url is None and image_urls:
+        primary_image_url = image_urls[0]
+
+    normalized_payload["goods_detail"] = {
+        "image_urls": image_urls,
+        "primary_image_url": primary_image_url,
+        "poster_storage_spec": _clean_text(goods_detail.get("poster_storage_spec")),
+        "tshirt_size": _clean_text(goods_detail.get("tshirt_size")),
+        "cup_material": _clean_text(goods_detail.get("cup_material")),
+        "hat_size": _clean_text(goods_detail.get("hat_size")),
+    }
+    normalized_payload["music_detail"] = None
+
+
+def _link_discogs_master_for_created_item(
+    source_external_id: str,
+    owned_item_id: int,
+) -> list[str]:
+    return _link_source_master_for_created_item("DISCOGS", source_external_id, owned_item_id)
+
+
+def _source_master_notice_prefix(source_code: str) -> str:
+    source_u = str(source_code or "").strip().upper()
+    if source_u == "DISCOGS":
+        return "Discogs"
+    if source_u == "MANIADB":
+        return "ManiaDB"
+    if source_u == "MUSICBRAINZ":
+        return "MusicBrainz"
+    return source_u or "Source"
+
+
+def _source_supports_master_auto_link(source_code: str) -> bool:
+    return str(source_code or "").strip().upper() in {"DISCOGS", "MANIADB", "MUSICBRAINZ"}
+
+
+def _source_master_variant_external_ids(
+    source_code: str,
+    master_external_id: str,
+    release_external_id: str,
+) -> set[str]:
+    source_u = str(source_code or "").strip().upper()
+    external_ids: set[str] = {str(release_external_id or "").strip()}
+    if source_u == "MANIADB" and master_external_id:
+        external_ids.add(str(master_external_id).strip())
+        external_ids.add(f"album:{str(master_external_id).strip()}")
+    if source_u not in {"DISCOGS", "MANIADB"}:
+        return {ext for ext in external_ids if ext}
+    try:
+        variants = get_album_master_variants(
+            source=source_u,
+            master_external_id=master_external_id,
+            limit=2000 if source_u == "MANIADB" else 200,
+        )
+    except Exception:
+        variants = []
+    for variant in variants:
+        ext = str(variant.get("external_id") or "").strip()
+        if ext:
+            external_ids.add(ext)
+    return {ext for ext in external_ids if ext}
+
+
+def _link_source_master_for_created_item(
+    source_code: str,
+    source_external_id: str,
+    owned_item_id: int,
+) -> list[str]:
+    source_u = str(source_code or "").strip().upper()
+    release_external_id = str(source_external_id or "").strip()
+    if not _source_supports_master_auto_link(source_u) or not release_external_id or owned_item_id <= 0:
+        return []
+    source_label = _source_master_notice_prefix(source_u)
+
+    same_release_rows = [
+        row for row in db.list_owned_items_by_source_external_ids(source_u, [release_external_id])
+        if int(row.get("id") or 0) != owned_item_id
+    ]
+    same_release_ids = sorted({int(row["id"]) for row in same_release_rows if int(row.get("id") or 0) > 0})
+
+    try:
+        master_ref = resolve_release_master_reference(source=source_u, external_id=release_external_id)
+    except Exception:
+        master_ref = None
+    if not master_ref:
+        if not same_release_ids:
+            return []
+        shown = ", ".join(str(v) for v in same_release_ids[:8])
+        tail = f" 외 {len(same_release_ids) - 8}건" if len(same_release_ids) > 8 else ""
+        return [
+            f"{source_label} 연계: release_id={release_external_id}로 등록되었습니다.",
+            f"동일 {source_label} 상품(release_id)으로 이미 등록된 상품이 있습니다 (owned_item_id: {shown}{tail}). 마스터 기준으로 관리하세요.",
+        ]
+
+    master_external_id = str(master_ref.get("master_external_id") or "").strip()
+    if not master_external_id:
+        if not same_release_ids:
+            return []
+        shown = ", ".join(str(v) for v in same_release_ids[:8])
+        tail = f" 외 {len(same_release_ids) - 8}건" if len(same_release_ids) > 8 else ""
+        return [
+            f"{source_label} 연계: release_id={release_external_id}로 등록되었습니다.",
+            f"동일 {source_label} 상품(release_id)으로 이미 등록된 상품이 있습니다 (owned_item_id: {shown}{tail}). 마스터 기준으로 관리하세요.",
+        ]
+
+    external_ids = _source_master_variant_external_ids(source_u, master_external_id, release_external_id)
+
+    existing_rows = [
+        row for row in db.list_owned_items_by_source_external_ids(source_u, sorted(external_ids))
+        if int(row.get("id") or 0) != owned_item_id
+    ]
+    existing_ids = sorted({int(row["id"]) for row in existing_rows if int(row.get("id") or 0) > 0})
+
+    master_title = str(master_ref.get("title") or "").strip() or f"Discogs Master {master_external_id}"
+    master_artist = str(master_ref.get("artist_or_brand") or "").strip() or None
+    master_year_raw = master_ref.get("release_year")
+    master_year: int | None
+    try:
+        master_year = int(master_year_raw) if master_year_raw is not None else None
+    except (TypeError, ValueError):
+        master_year = None
+
+    album_master_id = db.get_album_master_id_by_external_ref(source_u, master_external_id)
+    if album_master_id:
+        db.ensure_album_master_external_ref(
+            album_master_id=album_master_id,
+            source_code=source_u,
+            source_master_id=master_external_id,
+            title_hint=master_title,
+            artist_or_brand_hint=master_artist,
+            release_year=master_year,
+            raw=master_ref if isinstance(master_ref, dict) else {},
+        )
+    else:
+        album_master_id = db.upsert_album_master(
+            source_code=source_u,
+            source_master_id=master_external_id,
+            title=master_title,
+            artist_or_brand=master_artist,
+            domain_code=_infer_album_master_domain_code(
+                source_code=source_u,
+                title=master_title,
+                artist_or_brand=master_artist,
+                raw=master_ref,
+            ),
+            release_year=master_year,
+            raw=master_ref if isinstance(master_ref, dict) else {},
+        )
+    db.bind_album_master_members(
+        album_master_id=album_master_id,
+        owned_item_ids=[owned_item_id, *existing_ids],
+        replace_existing=False,
+    )
+    for target_owned_id in [owned_item_id, *existing_ids]:
+        if target_owned_id > 0:
+            db.set_owned_item_linked_album_master(owned_item_id=target_owned_id, album_master_id=album_master_id)
+
+    notices = [f"{source_label} 연계: release_id={release_external_id}, master_id={master_external_id}로 함께 관리됩니다."]
+    if existing_ids:
+        shown = ", ".join(str(v) for v in existing_ids[:8])
+        tail = f" 외 {len(existing_ids) - 8}건" if len(existing_ids) > 8 else ""
+        notices.append(
+            f"동일 {source_label} 마스터로 이미 등록된 상품이 있습니다 (owned_item_id: {shown}{tail}). 마스터 기준으로 관리하세요."
+        )
+    return notices
+
+
+def _attach_source_master_ref_to_album_master(
+    album_master_id: int,
+    source_code: str,
+    source_external_id: str,
+) -> list[str]:
+    master_id = int(album_master_id or 0)
+    source_u = str(source_code or "").strip().upper()
+    release_external_id = str(source_external_id or "").strip()
+    if master_id <= 0 or not _source_supports_master_auto_link(source_u) or not release_external_id:
+        return []
+
+    try:
+        master_ref = resolve_release_master_reference(source=source_u, external_id=release_external_id)
+    except Exception:
+        master_ref = None
+    if not master_ref:
+        return []
+
+    master_external_id = str(master_ref.get("master_external_id") or "").strip()
+    if not master_external_id:
+        return []
+
+    existing_master_id = db.get_album_master_id_by_external_ref(source_u, master_external_id)
+    if existing_master_id and existing_master_id != master_id:
+        merged = db.merge_album_masters(source_album_master_id=existing_master_id, target_album_master_id=master_id)
+        moved_member_count = int(merged.get("moved_member_count") or 0)
+        db.ensure_album_master_external_ref(
+            album_master_id=master_id,
+            source_code=source_u,
+            source_master_id=master_external_id,
+            title_hint=str(master_ref.get("title") or "").strip() or None,
+            artist_or_brand_hint=str(master_ref.get("artist_or_brand") or "").strip() or None,
+            release_year=master_ref.get("release_year") if isinstance(master_ref.get("release_year"), int) else None,
+            raw=master_ref if isinstance(master_ref, dict) else {},
+        )
+        return [
+            f"{_source_master_notice_prefix(source_u)} 마스터 연계: 선택한 마스터에 외부 마스터 ID를 연결했습니다.",
+            f"기존 {_source_master_notice_prefix(source_u)} 마스터를 병합했습니다. (이동 멤버 수: {moved_member_count})",
+        ]
+
+    db.ensure_album_master_external_ref(
+        album_master_id=master_id,
+        source_code=source_u,
+        source_master_id=master_external_id,
+        title_hint=str(master_ref.get("title") or "").strip() or None,
+        artist_or_brand_hint=str(master_ref.get("artist_or_brand") or "").strip() or None,
+        release_year=master_ref.get("release_year") if isinstance(master_ref.get("release_year"), int) else None,
+        raw=master_ref if isinstance(master_ref, dict) else {},
+    )
+    return [f"{_source_master_notice_prefix(source_u)} 마스터 연계: 선택한 마스터에 외부 마스터 ID를 연결했습니다."]
+
+
+def _promote_album_master_to_discogs(
+    album_master_id: int,
+    source_external_id: str,
+) -> tuple[int, list[str]]:
+    master_id = int(album_master_id or 0)
+    release_external_id = str(source_external_id or "").strip()
+    if master_id <= 0 or not release_external_id:
+        return master_id, []
+
+    try:
+        master_ref = resolve_release_master_reference(source="DISCOGS", external_id=release_external_id)
+    except Exception:
+        master_ref = None
+    if not isinstance(master_ref, dict):
+        return master_id, []
+
+    discogs_master_id = str(master_ref.get("master_external_id") or "").strip()
+    if not discogs_master_id:
+        return master_id, []
+
+    title = str(master_ref.get("title") or "").strip() or f"Discogs Master {discogs_master_id}"
+    artist_or_brand = str(master_ref.get("artist_or_brand") or "").strip() or None
+    release_year_raw = master_ref.get("release_year")
+    try:
+        release_year = int(release_year_raw) if release_year_raw is not None else None
+    except (TypeError, ValueError):
+        release_year = None
+
+    promoted_master_id = db.promote_album_master_source(
+        album_master_id=master_id,
+        source_code="DISCOGS",
+        source_master_id=discogs_master_id,
+        title=title,
+        artist_or_brand=artist_or_brand,
+        domain_code=_infer_album_master_domain_code(
+            source_code="DISCOGS",
+            title=title,
+            artist_or_brand=artist_or_brand,
+            raw=master_ref,
+            linked_album_master_id=master_id,
+        ),
+        release_year=release_year,
+        raw=master_ref,
+    )
+    if promoted_master_id <= 0:
+        return master_id, []
+    if promoted_master_id == master_id:
+        return promoted_master_id, [f"마스터 소스 반영: album_master_id={promoted_master_id} / DISCOGS#{discogs_master_id}"]
+    return promoted_master_id, [f"마스터 소스 반영: album_master_id={master_id} -> {promoted_master_id} / DISCOGS#{discogs_master_id}"]
+
+
+def _promote_owned_item_linked_master_from_discogs_source(owned_item_id: int) -> tuple[int, list[str]]:
+    oid = int(owned_item_id or 0)
+    if oid <= 0:
+        return 0, []
+
+    row = db.get_owned_item(oid)
+    if row is None:
+        return 0, []
+
+    source_code = str(row.get("source_code") or "").strip().upper()
+    source_external_id = str(row.get("source_external_id") or "").strip()
+    if source_code != "DISCOGS" or not source_external_id:
+        return int(row.get("linked_album_master_id") or 0), []
+
+    linked_master_id = int(row.get("linked_album_master_id") or 0)
+    if linked_master_id <= 0:
+        bound = db.get_album_master_binding_for_owned_item(oid)
+        linked_master_id = int(bound.get("album_master_id") or 0) if bound else 0
+    if linked_master_id <= 0:
+        return 0, []
+
+    promoted_master_id, notices = _promote_album_master_to_discogs(
+        album_master_id=linked_master_id,
+        source_external_id=source_external_id,
+    )
+    if promoted_master_id > 0:
+        db.bind_album_master_members(
+            album_master_id=promoted_master_id,
+            owned_item_ids=[oid],
+            replace_existing=False,
+        )
+        db.set_owned_item_linked_album_master(owned_item_id=oid, album_master_id=promoted_master_id)
+    return promoted_master_id, notices
+
+
+def _ensure_owned_item_master_link(owned_item_id: int) -> tuple[int, list[str]]:
+    oid = int(owned_item_id or 0)
+    if oid <= 0:
+        raise HTTPException(status_code=400, detail="owned_item_id must be positive")
+
+    row = db.get_owned_item(oid)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    notices: list[str] = []
+    linked_master_id = int(row.get("linked_album_master_id") or 0)
+    if linked_master_id > 0:
+        if not db.album_master_exists(linked_master_id):
+            raise HTTPException(status_code=400, detail=f"linked_album_master_id not found: {linked_master_id}")
+        db.bind_album_master_members(
+            album_master_id=linked_master_id,
+            owned_item_ids=[oid],
+            replace_existing=False,
+        )
+        db.set_owned_item_linked_album_master(owned_item_id=oid, album_master_id=linked_master_id)
+        return linked_master_id, notices
+
+    bound = db.get_album_master_binding_for_owned_item(oid)
+    if bound is not None:
+        linked_master_id = int(bound.get("album_master_id") or 0)
+        if linked_master_id > 0:
+            db.set_owned_item_linked_album_master(owned_item_id=oid, album_master_id=linked_master_id)
+            return linked_master_id, notices
+
+    auto = create_owned_item_auto_master(oid)
+    linked_master_id = int(auto.album_master_id or 0)
+    if linked_master_id <= 0:
+        raise HTTPException(status_code=500, detail="failed to ensure linked album master")
+    db.set_owned_item_linked_album_master(owned_item_id=oid, album_master_id=linked_master_id)
+    notices.append(
+        f"자동 마스터 연결: album_master_id={auto.album_master_id} ({auto.source_code}#{auto.source_master_id})"
+    )
+    notices.extend([str(v).strip() for v in auto.notices if str(v).strip()])
+    return linked_master_id, notices
+
+
+def _apply_post_create_links(
+    payload: OwnedItemCreate,
+    owned_item_id: int,
+    preferred_master_id: int = 0,
+) -> tuple[int, list[str]]:
+    notices: list[str] = []
+    linked_master_id = int(preferred_master_id or 0)
+    source_code = str(payload.source_code or "").strip().upper()
+    source_external_id = str(payload.source_external_id or "").strip()
+
+    if linked_master_id > 0:
+        linked_count = db.bind_album_master_members(
+            album_master_id=linked_master_id,
+            owned_item_ids=[owned_item_id],
+            replace_existing=False,
+        )
+        db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=linked_master_id)
+        notices.append(f"선택한 마스터(album_master_id={linked_master_id})에 연결되었습니다. (멤버 수: {linked_count})")
+        if source_code == "DISCOGS" and source_external_id:
+            promoted_master_id, promoted_notices = _promote_album_master_to_discogs(
+                album_master_id=linked_master_id,
+                source_external_id=source_external_id,
+            )
+            if promoted_master_id > 0:
+                linked_master_id = promoted_master_id
+                db.bind_album_master_members(
+                    album_master_id=linked_master_id,
+                    owned_item_ids=[owned_item_id],
+                    replace_existing=False,
+                )
+                db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=linked_master_id)
+            for msg in promoted_notices:
+                text = str(msg or "").strip()
+                if text:
+                    notices.append(text)
+        elif _source_supports_master_auto_link(source_code) and source_external_id:
+            for msg in _attach_source_master_ref_to_album_master(
+                album_master_id=linked_master_id,
+                source_code=source_code,
+                source_external_id=source_external_id,
+            ):
+                text = str(msg or "").strip()
+                if text:
+                    notices.append(text)
+        return linked_master_id, notices
+
+    if _source_supports_master_auto_link(source_code) and source_external_id:
+        notices.extend(
+            _link_source_master_for_created_item(
+                source_code=source_code,
+                source_external_id=source_external_id,
+                owned_item_id=owned_item_id,
+            )
+        )
+
+    ensured_master_id, ensured_notices = _ensure_owned_item_master_link(owned_item_id)
+    if ensured_master_id > 0:
+        linked_master_id = ensured_master_id
+    for msg in ensured_notices:
+        text = str(msg or "").strip()
+        if text:
+            notices.append(text)
+    if source_code == "DISCOGS" and source_external_id:
+        promoted_master_id, promoted_notices = _promote_owned_item_linked_master_from_discogs_source(owned_item_id)
+        if promoted_master_id > 0:
+            linked_master_id = promoted_master_id
+        for msg in promoted_notices:
+            text = str(msg or "").strip()
+            if text:
+                notices.append(text)
+    return linked_master_id, notices
+
+
+def _extract_location_recommendation_context(payload: OwnedItemCreate) -> tuple[str | None, int | None, str | None]:
+    artist_or_brand = _clean_text(payload.linked_artist_name)
+    release_year: int | None = None
+    item_title = _clean_text(payload.item_name_override)
+    music_detail = payload.music_detail
+    if music_detail is not None:
+        artist_or_brand = _clean_text(music_detail.artist_or_brand) or artist_or_brand
+        try:
+            release_year = int(music_detail.release_year) if music_detail.release_year is not None else None
+        except (TypeError, ValueError):
+            release_year = None
+    return artist_or_brand, release_year, item_title
+
+
+def _apply_new_item_location_recommendation(payload: OwnedItemCreate, owned_item_id: int) -> list[str]:
+    oid = int(owned_item_id or 0)
+    if oid <= 0:
+        return []
+    if not bool(payload.auto_location_recommendation):
+        return []
+    if str(payload.status or "IN_COLLECTION").strip().upper() != "IN_COLLECTION":
+        return []
+    if str(payload.category or "").strip().upper() not in MUSIC_CATEGORIES:
+        return []
+
+    notices: list[str] = []
+    artist_or_brand, release_year, item_title = _extract_location_recommendation_context(payload)
+    preferred_size_group = _preferred_storage_size_group(payload.preferred_storage_size_group, payload.size_group)
+    suggestion = db.recommend_owned_item_location(
+        size_group=preferred_size_group,
+        artist_or_brand=artist_or_brand,
+        release_year=release_year,
+        item_title=item_title,
+        exclude_owned_item_id=oid,
+    )
+    if not suggestion:
+        return notices
+
+    anchor_owned_item_id = int(suggestion.get("anchor_owned_item_id") or 0)
+    anchor_position = str(suggestion.get("anchor_position") or "").strip().upper()
+    recommended_slot_id = int(suggestion.get("recommended_storage_slot_id") or 0)
+    slot_code = str(suggestion.get("slot_code") or "").strip() or "-"
+    used_fallback_slot = bool(suggestion.get("used_fallback_slot"))
+    reason = str(suggestion.get("reason") or "").strip()
+
+    applied_slot_text = "-"
+    if payload.storage_slot_id is None and recommended_slot_id > 0:
+        try:
+            _validate_slot(preferred_size_group, recommended_slot_id)
+            db.update_owned_item_slot(owned_item_id=oid, storage_slot_id=recommended_slot_id)
+            applied_slot_text = f"{slot_code}(id={recommended_slot_id})"
+        except HTTPException:
+            applied_slot_text = f"미적용(id={recommended_slot_id})"
+
+    applied_order_text = "-"
+    if anchor_owned_item_id > 0 and anchor_position in {"BEFORE", "AFTER"} and anchor_owned_item_id != oid:
+        try:
+            order_key = db.move_owned_item_order(
+                owned_item_id=oid,
+                target_owned_item_id=anchor_owned_item_id,
+                position=anchor_position,
+            )
+            applied_order_text = f"{anchor_position} owned_item_id={anchor_owned_item_id} (order_key={order_key})"
+        except (LookupError, ValueError):
+            applied_order_text = f"미적용(target={anchor_owned_item_id})"
+
+    if applied_slot_text != "-" or applied_order_text != "-":
+        fallback_text = "대체 위치 적용" if used_fallback_slot else "기준 위치 적용"
+        reason_text = f", reason={reason}" if reason else ""
+        notices.append(
+            f"위치 추천: slot={applied_slot_text} | order={applied_order_text} | {fallback_text}{reason_text}"
+        )
+    return notices
+
+
+@app.post("/owned-items", response_model=OwnedItemCreateResponse)
+def create_owned_item(payload: OwnedItemCreate) -> OwnedItemCreateResponse:
+    _validate_signature(payload)
+    _validate_collection_rank(payload)
+    _validate_slot(payload.size_group, payload.storage_slot_id)
+    _validate_second_hand_music(payload)
+    if (payload.source_code and not payload.source_external_id) or (payload.source_external_id and not payload.source_code):
+        raise HTTPException(status_code=400, detail="source_code and source_external_id must be provided together")
+    linked_master_id = int(payload.linked_album_master_id or 0)
+    if linked_master_id > 0 and not db.album_master_exists(linked_master_id):
+        raise HTTPException(status_code=400, detail=f"linked_album_master_id not found: {linked_master_id}")
+
+    normalized_payload = payload.model_dump()
+    normalized_payload["size_group"] = _normalize_size_group_code(
+        normalized_payload.get("size_group"),
+        _default_size_group_for_category(normalized_payload.get("category") or payload.category),
+    )
+    normalized_payload["preferred_storage_size_group"] = _preferred_storage_size_group(
+        normalized_payload.get("preferred_storage_size_group"),
+        normalized_payload.get("size_group"),
+    )
+    _normalize_music_detail_payload(normalized_payload)
+    _normalize_goods_detail_payload(normalized_payload)
+    requested_quantity = max(1, int(normalized_payload.get("quantity") or 1))
+    create_count = requested_quantity if requested_quantity > 1 else 1
+
+    copy_group_key = str(normalized_payload.get("copy_group_key") or "").strip() or None
+    if create_count > 1 and not copy_group_key:
+        copy_group_key = f"COPY-{uuid4().hex[:12].upper()}"
+
+    created_ids: list[int] = []
+    notices: list[str] = []
+    seen_notices: set[str] = set()
+    resolved_master_id = linked_master_id
+
+    for _ in range(create_count):
+        one_payload = dict(normalized_payload)
+        one_payload["quantity"] = 1
+        if copy_group_key:
+            one_payload["copy_group_key"] = copy_group_key
+
+        owned_item_id = db.insert_owned_item(one_payload)
+        created_ids.append(owned_item_id)
+        resolved_master_id, item_notices = _apply_post_create_links(
+            payload=payload,
+            owned_item_id=owned_item_id,
+            preferred_master_id=resolved_master_id,
+        )
+        location_notices = _apply_new_item_location_recommendation(payload=payload, owned_item_id=owned_item_id)
+        for msg in item_notices:
+            text = str(msg or "").strip()
+            if text and text not in seen_notices:
+                seen_notices.add(text)
+                notices.append(text)
+        for msg in location_notices:
+            text = str(msg or "").strip()
+            if text and text not in seen_notices:
+                seen_notices.add(text)
+                notices.append(text)
+
+    if create_count > 1:
+        shown_ids = ", ".join(str(v) for v in created_ids[:8])
+        tail = f" 외 {len(created_ids) - 8}건" if len(created_ids) > 8 else ""
+        notices.insert(0, f"동일 상품 복제본 {create_count}건을 개별 인스턴스로 생성했습니다. (owned_item_id: {shown_ids}{tail})")
+
+    first_id = int(created_ids[0])
+    return OwnedItemCreateResponse(
+        owned_item_id=first_id,
+        label_id=_build_label_id(payload.category, first_id),
+        linked_album_master_id=resolved_master_id if resolved_master_id > 0 else None,
+        notices=notices,
+    )
+
+
+def _build_manual_master_seed_from_owned_row(owned_item_id: int, row: dict[str, Any]) -> tuple[str, str | None, int | None, dict[str, Any]]:
+    category = str(row.get("category") or "LP").strip().upper()
+    title = str(row.get("item_name_override") or "").strip()
+    artist = str(row.get("artist_or_brand") or row.get("linked_artist_name") or "").strip() or None
+    release_year: int | None
+    try:
+        release_year = int(row.get("release_year")) if row.get("release_year") is not None else None
+    except (TypeError, ValueError):
+        release_year = None
+
+    if not title:
+        label_name = str(row.get("label_name") or "").strip()
+        catalog_no = _discogs_catalog_no(row.get("catalog_no")) or ""
+        if artist and label_name:
+            title = f"{artist} - {label_name}"
+        elif artist and catalog_no:
+            title = f"{artist} - {catalog_no}"
+        elif artist:
+            title = artist
+        elif label_name and catalog_no:
+            title = f"{label_name} / {catalog_no}"
+        else:
+            title = f"{category} #{owned_item_id}"
+
+    raw = {
+        "mode": "QUICK_AUTO",
+        "owned_item_id": owned_item_id,
+        "category": category,
+        "item_name_override": row.get("item_name_override"),
+        "artist_or_brand": row.get("artist_or_brand"),
+        "release_year": row.get("release_year"),
+        "label_name": row.get("label_name"),
+        "catalog_no": row.get("catalog_no"),
+        "barcode": row.get("barcode"),
+        "source_code": row.get("source_code"),
+        "source_external_id": row.get("source_external_id"),
+    }
+    return title, artist, release_year, raw
+
+
+@app.post("/owned-items/{owned_item_id}/auto-master", response_model=OwnedItemAutoMasterResponse)
+def create_owned_item_auto_master(owned_item_id: int) -> OwnedItemAutoMasterResponse:
+    row = db.get_owned_item_detail(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    existing_bind = db.get_album_master_binding_for_owned_item(owned_item_id)
+    if existing_bind is not None:
+        album_master_id = int(existing_bind["album_master_id"])
+        source_code = str(existing_bind.get("source_code") or "MANUAL").strip().upper()
+        if source_code not in {"DISCOGS", "MANIADB", "MUSICBRAINZ", "MANUAL"}:
+            source_code = "MANUAL"
+        source_master_id = str(existing_bind.get("source_master_id") or "").strip()
+        title = str(existing_bind.get("title") or "").strip() or f"Master {album_master_id}"
+        linked_count = len(db.list_owned_items_by_album_master(album_master_id))
+        db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
+        return OwnedItemAutoMasterResponse(
+            owned_item_id=owned_item_id,
+            album_master_id=album_master_id,
+            source_code=source_code,
+            source_master_id=source_master_id,
+            title=title,
+            linked_count=linked_count,
+            notices=["이미 연결된 마스터를 사용했습니다."],
+        )
+
+    notices: list[str] = []
+    source_code = str(row.get("source_code") or "").strip().upper()
+    source_external_id = str(row.get("source_external_id") or "").strip()
+    if _source_supports_master_auto_link(source_code) and source_external_id:
+        notices.extend(
+            _link_source_master_for_created_item(
+                source_code=source_code,
+                source_external_id=source_external_id,
+                owned_item_id=owned_item_id,
+            )
+        )
+        discogs_bind = db.get_album_master_binding_for_owned_item(owned_item_id)
+        if discogs_bind is not None:
+            album_master_id = int(discogs_bind["album_master_id"])
+            source_master_id = str(discogs_bind.get("source_master_id") or "").strip()
+            title = str(discogs_bind.get("title") or "").strip() or f"{source_code} Master {source_master_id}"
+            linked_count = len(db.list_owned_items_by_album_master(album_master_id))
+            db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
+            return OwnedItemAutoMasterResponse(
+                owned_item_id=owned_item_id,
+                album_master_id=album_master_id,
+                source_code=source_code,
+                source_master_id=source_master_id,
+                title=title,
+                linked_count=linked_count,
+                notices=notices,
+            )
+
+    master_title, master_artist, master_year, raw = _build_manual_master_seed_from_owned_row(
+        owned_item_id=owned_item_id,
+        row=row,
+    )
+    source_master_id = f"OWNED-{owned_item_id}"
+    album_master_id = db.upsert_album_master(
+        source_code="MANUAL",
+        source_master_id=source_master_id,
+        title=master_title,
+        artist_or_brand=master_artist,
+        domain_code=_infer_album_master_domain_code(
+            explicit_domain_code=row.get("domain_code"),
+            source_code="MANUAL",
+            title=master_title,
+            artist_or_brand=master_artist,
+            raw=raw,
+        ),
+        release_year=master_year,
+        raw=raw,
+    )
+    linked_count = db.bind_album_master_members(
+        album_master_id=album_master_id,
+        owned_item_ids=[owned_item_id],
+        replace_existing=False,
+    )
+    db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
+    notices.append("간편 등록 메타를 기준으로 신규 마스터를 생성했습니다.")
+    return OwnedItemAutoMasterResponse(
+        owned_item_id=owned_item_id,
+        album_master_id=album_master_id,
+        source_code="MANUAL",
+        source_master_id=source_master_id,
+        title=master_title,
+        linked_count=linked_count,
+        notices=notices,
+    )
+
+
+@app.get("/owned-items/{owned_item_id}", response_model=OwnedItemDetailResponse)
+def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
+    row = db.get_owned_item_detail(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    category_code = str(row.get("category") or "")
+    music_detail = None
+    goods_detail = None
+    if category_code in MUSIC_CATEGORIES:
+        music_detail = {
+            "format_name": row.get("format_name") or category_code,
+            "is_promotional_not_for_sale": bool(row.get("is_promotional_not_for_sale")),
+            "artist_or_brand": row.get("artist_or_brand"),
+            "release_year": row.get("release_year"),
+            "released_date": row.get("released_date"),
+            "barcode": row.get("barcode"),
+            "label_name": row.get("label_name"),
+            "catalog_no": _discogs_catalog_no(row.get("catalog_no")),
+            "cover_image_url": row.get("cover_image_url"),
+            "track_list": row.get("track_list") or [],
+            "media_type": row.get("media_type"),
+            "genres": row.get("genres") or [],
+            "styles": row.get("styles") or [],
+            "disc_count": row.get("disc_count"),
+            "speed_rpm": row.get("speed_rpm"),
+            "has_obi": row.get("has_obi"),
+            "runout_matrix": row.get("runout_matrix"),
+            "pressing_country": row.get("pressing_country"),
+            "source_notes": row.get("source_notes"),
+            "credits": row.get("credits") or [],
+            "identifier_items": row.get("identifier_items") or [],
+            "image_items": row.get("image_items") or [],
+            "company_items": row.get("company_items") or [],
+            "series": row.get("series") or [],
+            "format_items": row.get("format_items") or [],
+            "track_items": row.get("track_items") or [],
+            "label_items": row.get("label_items") or [],
+            "cover_condition": row.get("cover_condition"),
+            "disc_condition": row.get("disc_condition"),
+        }
+    else:
+        goods_image_urls = row.get("goods_image_urls") or []
+        goods_primary_image_url = row.get("goods_primary_image_url")
+        poster_storage_spec = row.get("poster_storage_spec")
+        tshirt_size = row.get("tshirt_size")
+        cup_material = row.get("cup_material")
+        hat_size = row.get("hat_size")
+        if goods_image_urls or goods_primary_image_url or poster_storage_spec or tshirt_size or cup_material or hat_size:
+            goods_detail = {
+                "image_urls": goods_image_urls,
+                "primary_image_url": goods_primary_image_url,
+                "poster_storage_spec": poster_storage_spec,
+                "tshirt_size": tshirt_size,
+                "cup_material": cup_material,
+                "hat_size": hat_size,
+            }
+
+    return OwnedItemDetailResponse(
+        id=int(row["id"]),
+        label_id=_build_label_id(category_code, int(row["id"])),
+        master_item_id=row.get("master_item_id"),
+        category=category_code,
+        item_name_override=row.get("item_name_override"),
+        quantity=int(row.get("quantity") or 1),
+        is_second_hand=bool(row.get("is_second_hand")),
+        size_group=str(row.get("size_group") or "STD"),
+        preferred_storage_size_group=str(row.get("preferred_storage_size_group") or row.get("size_group") or "STD"),
+        status=str(row.get("status") or "IN_COLLECTION"),
+        condition_grade=row.get("condition_grade"),
+        signature_type=str(row.get("signature_type") or "NONE"),
+        source_code=row.get("source_code"),
+        source_external_id=row.get("source_external_id"),
+        linked_album_master_id=row.get("linked_album_master_id"),
+        linked_artist_name=row.get("linked_artist_name"),
+        copy_group_key=row.get("copy_group_key"),
+        domain_code=row.get("domain_code"),
+        release_type=row.get("release_type"),
+        purchase_price=row.get("purchase_price"),
+        currency_code=row.get("currency_code"),
+        purchase_source=row.get("purchase_source"),
+        memory_note=row.get("memory_note"),
+        display_rank=row.get("display_rank"),
+        order_key=row.get("order_key"),
+        storage_slot_id=row.get("storage_slot_id"),
+        slot_code=row.get("slot_code"),
+        thickness_mm=row.get("thickness_mm"),
+        notes=row.get("notes"),
+        created_at=str(row.get("created_at") or ""),
+        updated_at=row.get("updated_at"),
+        music_detail=music_detail,
+        goods_detail=goods_detail,
+        has_audio=bool(row.get("has_audio")),
+        audio_asset_count=int(row.get("audio_asset_count") or 0),
+        subtype_option_ids=row.get("subtype_option_ids") or [],
+        subtype_labels=row.get("subtype_labels") or [],
+        soundtrack_option_ids=row.get("soundtrack_option_ids") or [],
+        soundtrack_labels=row.get("soundtrack_labels") or [],
+    )
+
+
+def _merge_replace_text(incoming: Any, current: Any) -> str | None:
+    return _clean_text(incoming) or _clean_text(current)
+
+
+def _merge_replace_int(incoming: Any, current: Any) -> int | None:
+    for value in (incoming, current):
+        if value is None:
+            continue
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            continue
+        return parsed
+    return None
+
+
+def _merge_replace_string_list(incoming: Any, current: Any) -> list[str]:
+    incoming_list = _clean_string_list(incoming)
+    if incoming_list:
+        return incoming_list
+    return _clean_string_list(current)
+
+
+def _merge_replace_dict_list(incoming: Any, current: Any) -> list[dict[str, Any]]:
+    incoming_list = _clean_dict_list(incoming)
+    if incoming_list:
+        return incoming_list
+    return _clean_dict_list(current)
+
+
+def _merge_replace_runout(incoming: Any, current: Any) -> list[str]:
+    incoming_list = _clean_runout_list(incoming)
+    if incoming_list:
+        return incoming_list
+    return _clean_runout_list(current)
+
+
+def _build_owned_item_payload_for_source_replace(owned_item_id: int, candidate: dict[str, Any]) -> OwnedItemCreate:
+    base_row = db.get_owned_item(owned_item_id)
+    detail_row = db.get_owned_item_detail(owned_item_id)
+    if base_row is None or detail_row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    existing_category = str(detail_row.get("category") or "").strip().upper()
+    if existing_category not in MUSIC_CATEGORIES:
+        raise HTTPException(status_code=400, detail="source replace is only supported for music items")
+
+    source_code_raw = str(candidate.get("source") or "").strip().upper()
+    source_external_id = str(candidate.get("external_id") or "").strip()
+    if source_code_raw not in {"DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"} or not source_external_id:
+        raise HTTPException(status_code=400, detail="candidate source/external_id is invalid")
+
+    category = _infer_music_category_from_format(candidate.get("format_name") or detail_row.get("format_name") or existing_category)
+    item_title = _clean_text(candidate.get("title"))
+    artist_name = _merge_replace_text(candidate.get("artist_or_brand"), detail_row.get("artist_or_brand") or base_row.get("linked_artist_name"))
+    if artist_name and item_title:
+        item_name_override = f"{artist_name} - {item_title}"
+    else:
+        item_name_override = item_title or _clean_text(detail_row.get("item_name_override")) or _clean_text(base_row.get("item_name_override"))
+
+    memory_note_parts = []
+    existing_memory_note = _clean_text(base_row.get("memory_note"))
+    if existing_memory_note:
+        memory_note_parts.append(existing_memory_note)
+    marker = f"[META-REPLACE] {source_code_raw}#{source_external_id}"
+    if not existing_memory_note or marker not in existing_memory_note:
+        memory_note_parts.append(marker)
+
+    domain_code = (
+        _normalize_domain_code(candidate.get("domain_code"))
+        or _normalize_domain_code(detail_row.get("domain_code"))
+        or _normalize_domain_code(base_row.get("domain_code"))
+    )
+    release_type_raw = str(candidate.get("release_type") or detail_row.get("release_type") or base_row.get("release_type") or "").strip().upper()
+    release_type = release_type_raw if release_type_raw in RELEASE_TYPES else None
+
+    music_detail = {
+        "format_name": category,
+        "is_promotional_not_for_sale": bool(detail_row.get("is_promotional_not_for_sale")),
+        "artist_or_brand": artist_name,
+        "release_year": _merge_replace_int(candidate.get("release_year"), detail_row.get("release_year")),
+        "released_date": _merge_replace_text(candidate.get("released_date"), detail_row.get("released_date")),
+        "barcode": _merge_replace_text(candidate.get("barcode"), detail_row.get("barcode")),
+        "label_name": _merge_replace_text(candidate.get("label_name"), detail_row.get("label_name")),
+        "catalog_no": _merge_replace_text(candidate.get("catalog_no"), detail_row.get("catalog_no")),
+        "cover_image_url": _merge_replace_text(candidate.get("cover_image_url"), detail_row.get("cover_image_url")),
+        "track_list": _clean_track_list(candidate.get("track_list")) or _clean_track_list(detail_row.get("track_list")),
+        "media_type": _merge_replace_text(candidate.get("media_type"), detail_row.get("media_type")),
+        "genres": _merge_replace_string_list(candidate.get("genres"), detail_row.get("genres")),
+        "styles": _merge_replace_string_list(candidate.get("styles"), detail_row.get("styles")),
+        "cover_condition": _clean_text(detail_row.get("cover_condition")),
+        "disc_condition": _clean_text(detail_row.get("disc_condition")),
+        "disc_count": _merge_replace_int(candidate.get("disc_count"), detail_row.get("disc_count")),
+        "speed_rpm": _merge_replace_int(candidate.get("speed_rpm"), detail_row.get("speed_rpm")),
+        "has_obi": _normalize_has_obi_input(candidate.get("has_obi")) if candidate.get("has_obi") is not None else detail_row.get("has_obi"),
+        "runout_matrix": _merge_replace_runout(candidate.get("runout_matrix"), detail_row.get("runout_matrix")),
+        "pressing_country": _merge_replace_text(candidate.get("pressing_country"), detail_row.get("pressing_country")),
+        "source_notes": _merge_replace_text(candidate.get("source_notes"), detail_row.get("source_notes")),
+        "credits": _merge_replace_string_list(candidate.get("credits"), detail_row.get("credits")),
+        "identifier_items": _merge_replace_dict_list(candidate.get("identifier_items"), detail_row.get("identifier_items")),
+        "image_items": _merge_replace_dict_list(candidate.get("image_items"), detail_row.get("image_items")),
+        "company_items": _merge_replace_dict_list(candidate.get("company_items"), detail_row.get("company_items")),
+        "series": _merge_replace_string_list(candidate.get("series"), detail_row.get("series")),
+        "format_items": _merge_replace_dict_list(candidate.get("format_items"), detail_row.get("format_items")),
+        "track_items": _merge_replace_dict_list(candidate.get("track_items"), detail_row.get("track_items")),
+        "label_items": _merge_replace_dict_list(candidate.get("label_items"), detail_row.get("label_items")),
+    }
+
+    return OwnedItemCreate(
+        category=category,
+        size_group=str(base_row.get("size_group") or "STD"),
+        preferred_storage_size_group=str(base_row.get("preferred_storage_size_group") or base_row.get("size_group") or "STD"),
+        quantity=1,
+        is_second_hand=bool(base_row.get("is_second_hand")),
+        status=str(base_row.get("status") or "IN_COLLECTION"),
+        signature_type=str(base_row.get("signature_type") or "NONE"),
+        source_code=source_code_raw,
+        source_external_id=source_external_id,
+        domain_code=domain_code,
+        release_type=release_type,
+        master_item_id=base_row.get("master_item_id"),
+        linked_album_master_id=base_row.get("linked_album_master_id"),
+        linked_artist_name=artist_name,
+        copy_group_key=base_row.get("copy_group_key"),
+        item_name_override=item_name_override,
+        condition_grade=base_row.get("condition_grade"),
+        signed_by=base_row.get("signed_by"),
+        signed_at=base_row.get("signed_at"),
+        acquisition_date=base_row.get("acquisition_date"),
+        purchase_price=base_row.get("purchase_price"),
+        currency_code=base_row.get("currency_code"),
+        purchase_source=base_row.get("purchase_source"),
+        memory_note="\n".join(memory_note_parts) if memory_note_parts else None,
+        display_rank=base_row.get("display_rank"),
+        storage_slot_id=base_row.get("storage_slot_id"),
+        thickness_mm=base_row.get("thickness_mm"),
+        notes=base_row.get("notes"),
+        subtype_option_ids=detail_row.get("subtype_option_ids") or [],
+        soundtrack_option_ids=detail_row.get("soundtrack_option_ids") or [],
+        music_detail=music_detail,
+        goods_detail=None,
+    )
+
+
+def _save_owned_item_update(
+    owned_item_id: int,
+    payload: OwnedItemCreate,
+    existing: dict[str, Any] | None = None,
+) -> OwnedItemCreateResponse:
+    existing_row = existing or db.get_owned_item(owned_item_id)
+    if existing_row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    _validate_signature(payload)
+    _validate_collection_rank(payload)
+    _validate_slot(payload.size_group, payload.storage_slot_id)
+    _validate_second_hand_music(payload)
+    if (payload.source_code and not payload.source_external_id) or (payload.source_external_id and not payload.source_code):
+        raise HTTPException(status_code=400, detail="source_code and source_external_id must be provided together")
+    linked_master_id = int(payload.linked_album_master_id or 0)
+    if linked_master_id > 0 and not db.album_master_exists(linked_master_id):
+        raise HTTPException(status_code=400, detail=f"linked_album_master_id not found: {linked_master_id}")
+
+    normalized_payload = payload.model_dump()
+    normalized_payload["size_group"] = _normalize_size_group_code(
+        normalized_payload.get("size_group"),
+        existing_row.get("size_group") or _default_size_group_for_category(normalized_payload.get("category") or payload.category),
+    )
+    normalized_payload["preferred_storage_size_group"] = _preferred_storage_size_group(
+        normalized_payload.get("preferred_storage_size_group"),
+        normalized_payload.get("size_group"),
+    )
+    if not str(normalized_payload.get("copy_group_key") or "").strip():
+        normalized_payload["copy_group_key"] = existing_row.get("copy_group_key")
+    notices: list[str] = []
+    quantity = max(1, int(normalized_payload.get("quantity") or 1))
+    if quantity > 1:
+        normalized_payload["quantity"] = 1
+        notices.append("복수 보유는 개별 인스턴스로 관리됩니다. 수량은 1로 저장했습니다.")
+    _normalize_music_detail_payload(normalized_payload)
+    _normalize_goods_detail_payload(normalized_payload)
+    ok = db.update_owned_item(owned_item_id=owned_item_id, payload=normalized_payload)
+    if not ok:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    resolved_master_id, ensured_notices = _ensure_owned_item_master_link(owned_item_id)
+    for msg in ensured_notices:
+        text = str(msg or "").strip()
+        if text and text not in notices:
+            notices.append(text)
+    promoted_master_id, promoted_notices = _promote_owned_item_linked_master_from_discogs_source(owned_item_id)
+    if promoted_master_id > 0:
+        resolved_master_id = promoted_master_id
+    for msg in promoted_notices:
+        text = str(msg or "").strip()
+        if text and text not in notices:
+            notices.append(text)
+
+    return OwnedItemCreateResponse(
+        owned_item_id=owned_item_id,
+        label_id=_build_label_id(payload.category, owned_item_id),
+        linked_album_master_id=resolved_master_id if resolved_master_id > 0 else None,
+        notices=notices,
+    )
+
+
+@app.patch("/owned-items/{owned_item_id}", response_model=OwnedItemCreateResponse)
+def update_owned_item(owned_item_id: int, payload: OwnedItemCreate) -> OwnedItemCreateResponse:
+    existing = db.get_owned_item(owned_item_id)
+    return _save_owned_item_update(owned_item_id=owned_item_id, payload=payload, existing=existing)
+
+
+@app.post("/owned-items/source-replace-bulk", response_model=OwnedItemSourceReplaceBulkResponse)
+def bulk_replace_owned_item_sources(payload: OwnedItemSourceReplaceBulkRequest) -> OwnedItemSourceReplaceBulkResponse:
+    results: list[OwnedItemSourceReplaceResult] = []
+    updated_count = 0
+
+    for item in payload.items:
+        owned_item_id = int(item.owned_item_id)
+        try:
+            replace_payload = _build_owned_item_payload_for_source_replace(
+                owned_item_id=owned_item_id,
+                candidate=item.candidate.model_dump(),
+            )
+            saved = _save_owned_item_update(owned_item_id=owned_item_id, payload=replace_payload)
+            updated_count += 1
+            results.append(
+                OwnedItemSourceReplaceResult(
+                    owned_item_id=owned_item_id,
+                    label_id=saved.label_id,
+                    updated=True,
+                    source_code=replace_payload.source_code,
+                    source_external_id=replace_payload.source_external_id,
+                    linked_album_master_id=saved.linked_album_master_id,
+                    notices=saved.notices,
+                )
+            )
+        except HTTPException as exc:
+            message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+            results.append(
+                OwnedItemSourceReplaceResult(
+                    owned_item_id=owned_item_id,
+                    updated=False,
+                    error=message,
+                )
+            )
+        except Exception as exc:
+            results.append(
+                OwnedItemSourceReplaceResult(
+                    owned_item_id=owned_item_id,
+                    updated=False,
+                    error=str(exc),
+                )
+            )
+
+    failed_count = len([row for row in results if not row.updated])
+    return OwnedItemSourceReplaceBulkResponse(
+        requested_count=len(payload.items),
+        updated_count=updated_count,
+        failed_count=failed_count,
+        results=results,
+    )
+
+
+@app.post("/owned-items/bulk-update", response_model=OwnedItemBulkUpdateResponse)
+def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBulkUpdateResponse:
+    owned_item_ids = [int(v) for v in payload.owned_item_ids if int(v) > 0]
+    if not owned_item_ids:
+        raise HTTPException(status_code=400, detail="owned_item_ids is required")
+
+    status = str(payload.status or "").strip() or None
+    domain_code = _normalize_domain_code(payload.domain_code)
+    release_type = str(payload.release_type or "").strip().upper() or None
+    if release_type and release_type not in RELEASE_TYPES:
+        raise HTTPException(status_code=400, detail="invalid release_type")
+    is_second_hand = bool(payload.is_second_hand) if payload.is_second_hand is not None else None
+    purchase_source = payload.purchase_source.strip() if isinstance(payload.purchase_source, str) else None
+    append_memory_note = payload.append_memory_note.strip() if isinstance(payload.append_memory_note, str) else None
+    preferred_storage_size_group = str(payload.preferred_storage_size_group or "").strip().upper() or None
+    if preferred_storage_size_group and preferred_storage_size_group not in {"STD", "BOOK", "LP", "OVERSIZE", "GOODS"}:
+        raise HTTPException(status_code=400, detail="invalid preferred_storage_size_group")
+    if (
+        status is None
+        and domain_code is None
+        and release_type is None
+        and is_second_hand is None
+        and purchase_source is None
+        and append_memory_note is None
+        and preferred_storage_size_group is None
+    ):
+        raise HTTPException(status_code=400, detail="at least one field is required")
+
+    updated_item_ids = db.bulk_update_owned_items(
+        owned_item_ids,
+        status=status,
+        domain_code=domain_code,
+        release_type=release_type,
+        is_second_hand=is_second_hand,
+        purchase_source=purchase_source,
+        append_memory_note=append_memory_note,
+        preferred_storage_size_group=preferred_storage_size_group,
+    )
+    return OwnedItemBulkUpdateResponse(
+        requested_count=len({int(v) for v in owned_item_ids}),
+        updated_count=len(updated_item_ids),
+        updated_item_ids=updated_item_ids,
+    )
+
+
+@app.delete("/owned-items/{owned_item_id}", response_model=OwnedItemDeleteResponse)
+def delete_owned_item(owned_item_id: int) -> OwnedItemDeleteResponse:
+    deleted = db.delete_owned_item(owned_item_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    return OwnedItemDeleteResponse(owned_item_id=owned_item_id, deleted=True)
+
+
+@app.patch("/owned-items/{owned_item_id}/slot", response_model=SlotUpdateResponse)
+def update_owned_item_slot(owned_item_id: int, payload: SlotUpdateRequest) -> SlotUpdateResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    _validate_slot(existing["size_group"], payload.storage_slot_id)
+    db.update_owned_item_slot(owned_item_id, payload.storage_slot_id)
+
+    return SlotUpdateResponse(owned_item_id=owned_item_id, storage_slot_id=payload.storage_slot_id)
+
+
+@app.post("/owned-items/{owned_item_id}/restore-previous-slot")
+def restore_owned_item_previous_slot(owned_item_id: int) -> dict[str, Any]:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    result = db.restore_owned_item_previous_slot(owned_item_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    if not bool(result.get("restored")):
+        raise HTTPException(status_code=400, detail=str(result.get("reason") or "restore failed"))
+    return result
+
+
+@app.patch("/owned-items/{owned_item_id}/order", response_model=OrderMoveResponse)
+def move_owned_item_order(owned_item_id: int, payload: OrderMoveRequest) -> OrderMoveResponse:
+    try:
+        order_key = db.move_owned_item_order(
+            owned_item_id=owned_item_id,
+            target_owned_item_id=payload.target_owned_item_id,
+            position=payload.position,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return OrderMoveResponse(
+        owned_item_id=owned_item_id,
+        target_owned_item_id=payload.target_owned_item_id,
+        position=payload.position,
+        order_key=order_key,
+    )
+
+
+@app.post("/owned-items/{owned_item_id}/digital-links", response_model=DigitalLinkCreateResponse)
+def create_digital_link(
+    owned_item_id: int,
+    payload: DigitalLinkCreate,
+) -> DigitalLinkCreateResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    ids = db.insert_digital_link(owned_item_id, payload.model_dump())
+
+    return DigitalLinkCreateResponse(
+        owned_item_id=owned_item_id,
+        digital_asset_id=ids["digital_asset_id"],
+        link_id=ids["link_id"],
+    )
+
+
+@app.get(
+    "/owned-items/{owned_item_id}/audio-directory-mappings",
+    response_model=AudioDirectoryMappingListResponse,
+)
+def get_audio_directory_mappings(owned_item_id: int) -> AudioDirectoryMappingListResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    rows = db.list_owned_item_audio_directory_links(owned_item_id)
+    mappings: list[AudioDirectoryMappingItem] = []
+    for row in rows:
+        metadata_json = row.get("metadata_json")
+        metadata = metadata_json if isinstance(metadata_json, dict) else {}
+        directory_path = str(metadata.get("directory_path") or row.get("file_path") or "").strip()
+        if not directory_path:
+            continue
+        mappings.append(
+            AudioDirectoryMappingItem(
+                link_id=int(row["link_id"]),
+                digital_asset_id=int(row["digital_asset_id"]),
+                directory_path=directory_path,
+                note=row.get("note"),
+                created_at=str(row["created_at"]),
+                metadata_json=metadata,
+            )
+        )
+
+    return AudioDirectoryMappingListResponse(
+        owned_item_id=owned_item_id,
+        mapping_count=len(mappings),
+        mappings=mappings,
+    )
+
+
+@app.post(
+    "/owned-items/{owned_item_id}/audio-directory-mappings",
+    response_model=AudioDirectoryMappingCreateResponse,
+)
+def create_audio_directory_mapping(
+    owned_item_id: int,
+    payload: AudioDirectoryMappingCreateRequest,
+) -> AudioDirectoryMappingCreateResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    if str(existing.get("category") or "").upper() not in MUSIC_CATEGORIES:
+        raise HTTPException(status_code=400, detail="audio directory mapping is allowed only for music categories")
+
+    directory_raw = payload.directory_path.strip()
+    if not directory_raw:
+        raise HTTPException(status_code=400, detail="directory_path is required")
+
+    directory = Path(directory_raw).expanduser()
+    if not directory.exists():
+        raise HTTPException(status_code=400, detail=f"directory not found: {directory}")
+    if not directory.is_dir():
+        raise HTTPException(status_code=400, detail=f"not a directory: {directory}")
+
+    replaced_existing_links = 0
+    if payload.replace_existing:
+        replaced_existing_links = db.delete_owned_item_audio_directory_links(owned_item_id)
+
+    note_text = str(payload.note or "").strip() or None
+    ids = db.insert_digital_link(
+        owned_item_id,
+        {
+            "asset_type": "AUDIO",
+            "file_path": str(directory),
+            "link_type": "FULL_ALBUM",
+            "track_no": None,
+            "note": note_text,
+            "metadata_json": {
+                "source": "DIR_ONLY",
+                "directory_path": str(directory),
+            },
+        },
+    )
+
+    return AudioDirectoryMappingCreateResponse(
+        owned_item_id=owned_item_id,
+        directory_path=str(directory),
+        digital_asset_id=ids["digital_asset_id"],
+        link_id=ids["link_id"],
+        replaced_existing_links=replaced_existing_links,
+    )
+
+
+@app.get(
+    "/owned-items/{owned_item_id}/audio-directory-files",
+    response_model=AudioDirectoryFileListResponse,
+)
+def get_audio_directory_files(
+    owned_item_id: int,
+    directory_path: str | None = Query(default=None),
+    recursive: bool = Query(default=True),
+    limit: int = Query(default=300, ge=1, le=2000),
+) -> AudioDirectoryFileListResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    if str(existing.get("category") or "").upper() not in MUSIC_CATEGORIES:
+        raise HTTPException(status_code=400, detail="audio directory listing is allowed only for music categories")
+
+    selected_dir = str(directory_path or "").strip()
+    if not selected_dir:
+        mappings = db.list_owned_item_audio_directory_links(owned_item_id)
+        if mappings:
+            top = mappings[0]
+            top_meta = top.get("metadata_json") if isinstance(top.get("metadata_json"), dict) else {}
+            selected_dir = str(top_meta.get("directory_path") or top.get("file_path") or "").strip()
+
+    if not selected_dir:
+        raise HTTPException(status_code=400, detail="directory_path is required or mapped directory must exist")
+
+    directory = Path(selected_dir).expanduser()
+    if not directory.exists():
+        raise HTTPException(status_code=400, detail=f"directory not found: {directory}")
+    if not directory.is_dir():
+        raise HTTPException(status_code=400, detail=f"not a directory: {directory}")
+
+    files = _collect_audio_files(
+        directory=directory,
+        recursive=recursive,
+        extensions=_normalize_audio_extensions(None),
+    )
+    total_count = len(files)
+    truncated = total_count > limit
+    shown_files = files[:limit]
+
+    items: list[AudioDirectoryFileItem] = []
+    for path in shown_files:
+        try:
+            relative = str(path.relative_to(directory))
+        except ValueError:
+            relative = path.name
+        try:
+            size_bytes = int(path.stat().st_size)
+        except OSError:
+            size_bytes = None
+        items.append(
+            AudioDirectoryFileItem(
+                file_path=str(path),
+                relative_path=relative,
+                file_size_bytes=size_bytes,
+            )
+        )
+
+    return AudioDirectoryFileListResponse(
+        owned_item_id=owned_item_id,
+        directory_path=str(directory),
+        recursive=recursive,
+        file_count=total_count,
+        returned_count=len(items),
+        truncated=truncated,
+        files=items,
+    )
+
+
+DEFAULT_AUDIO_EXTENSIONS = {
+    "flac",
+    "mp3",
+    "m4a",
+    "wav",
+    "aac",
+    "ogg",
+    "opus",
+    "aiff",
+    "ape",
+    "alac",
+    "wma",
+}
+
+
+def _normalize_audio_extensions(values: list[str] | None) -> set[str]:
+    out: set[str] = set()
+    for raw in values or []:
+        text = str(raw or "").strip().lower()
+        if not text:
+            continue
+        if text.startswith("."):
+            text = text[1:]
+        if text:
+            out.add(text)
+    return out or set(DEFAULT_AUDIO_EXTENSIONS)
+
+
+def _collect_audio_files(directory: Path, recursive: bool, extensions: set[str]) -> list[Path]:
+    iterator = directory.rglob("*") if recursive else directory.iterdir()
+    files: list[Path] = []
+    for path in iterator:
+        if not path.is_file():
+            continue
+        ext = path.suffix.lower().lstrip(".")
+        if ext in extensions:
+            files.append(path)
+    files.sort(key=lambda p: (p.name.lower(), str(p).lower()))
+    return files
+
+
+def _extract_track_no_from_filename(path: Path) -> int | None:
+    name = path.stem.strip()
+    m = re.match(r"^\s*(\d{1,2})(?:\D|$)", name)
+    if m:
+        try:
+            return int(m.group(1))
+        except (TypeError, ValueError):
+            return None
+
+    m = re.search(r"\btrack[\s._-]*(\d{1,2})\b", name, flags=re.IGNORECASE)
+    if m:
+        try:
+            return int(m.group(1))
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _assign_audio_files_to_tracks(track_list: list[str], files: list[Path]) -> list[Path | None]:
+    track_count = len(track_list)
+    assigned: list[Path | None] = [None] * track_count
+    remaining: list[Path] = []
+
+    for path in files:
+        track_no = _extract_track_no_from_filename(path)
+        if track_no is None or track_no <= 0 or track_no > track_count:
+            remaining.append(path)
+            continue
+        idx = track_no - 1
+        if assigned[idx] is None:
+            assigned[idx] = path
+        else:
+            remaining.append(path)
+
+    rem_idx = 0
+    for idx in range(track_count):
+        if assigned[idx] is not None:
+            continue
+        if rem_idx >= len(remaining):
+            break
+        assigned[idx] = remaining[rem_idx]
+        rem_idx += 1
+    return assigned
+
+
+@app.get("/owned-items/{owned_item_id}/track-mappings", response_model=TrackMappingListResponse)
+def get_track_mappings(owned_item_id: int) -> TrackMappingListResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    track_list = db.get_owned_item_track_list(owned_item_id)
+    links = db.list_owned_item_track_links(owned_item_id)
+
+    grouped: dict[int, list[TrackMappedAssetItem]] = {}
+    for row in links:
+        track_no = int(row.get("track_no") or 0)
+        if track_no <= 0:
+            continue
+        grouped.setdefault(track_no, []).append(
+            TrackMappedAssetItem(
+                link_id=int(row["link_id"]),
+                digital_asset_id=int(row["digital_asset_id"]),
+                file_path=str(row["file_path"]),
+                duration_sec=row.get("duration_sec"),
+                note=row.get("note"),
+                created_at=str(row["created_at"]),
+            )
+        )
+
+    mappings: list[TrackMappingItem] = []
+    for idx, entry in enumerate(track_list, start=1):
+        mappings.append(
+            TrackMappingItem(
+                track_no=idx,
+                track_entry=entry,
+                assets=grouped.get(idx, []),
+            )
+        )
+
+    return TrackMappingListResponse(
+        owned_item_id=owned_item_id,
+        track_count=len(track_list),
+        mappings=mappings,
+    )
+
+
+@app.post("/owned-items/{owned_item_id}/track-mappings", response_model=TrackMappingCreateResponse)
+def create_track_mapping(
+    owned_item_id: int,
+    payload: TrackMappingCreateRequest,
+) -> TrackMappingCreateResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    track_list = db.get_owned_item_track_list(owned_item_id)
+    if not track_list:
+        raise HTTPException(status_code=400, detail="track_list not found for this owned_item")
+    if payload.track_no > len(track_list):
+        raise HTTPException(status_code=400, detail=f"track_no out of range (max={len(track_list)})")
+
+    track_entry = track_list[payload.track_no - 1]
+    note = payload.note.strip() if payload.note else track_entry
+    link_payload: dict[str, object] = {
+        "asset_type": "AUDIO",
+        "file_path": payload.file_path,
+        "link_type": "TRACK",
+        "file_hash": payload.file_hash,
+        "file_size_bytes": payload.file_size_bytes,
+        "duration_sec": payload.duration_sec,
+        "metadata_json": payload.metadata_json,
+        "track_no": payload.track_no,
+        "note": note,
+    }
+
+    ids = db.insert_digital_link(owned_item_id, link_payload)
+    return TrackMappingCreateResponse(
+        owned_item_id=owned_item_id,
+        track_no=payload.track_no,
+        digital_asset_id=ids["digital_asset_id"],
+        link_id=ids["link_id"],
+    )
+
+
+@app.post(
+    "/owned-items/{owned_item_id}/track-mappings/bulk-from-dir",
+    response_model=TrackMappingBulkFromDirResponse,
+)
+def bulk_create_track_mappings_from_dir(
+    owned_item_id: int,
+    payload: TrackMappingBulkFromDirRequest,
+) -> TrackMappingBulkFromDirResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    track_list = db.get_owned_item_track_list(owned_item_id)
+    if not track_list:
+        raise HTTPException(status_code=400, detail="track_list not found for this owned_item")
+
+    directory_raw = payload.directory_path.strip()
+    if not directory_raw:
+        raise HTTPException(status_code=400, detail="directory_path is required")
+    directory = Path(directory_raw).expanduser()
+    if not directory.exists():
+        raise HTTPException(status_code=400, detail=f"directory not found: {directory}")
+    if not directory.is_dir():
+        raise HTTPException(status_code=400, detail=f"not a directory: {directory}")
+
+    extensions = _normalize_audio_extensions(payload.extensions)
+    files = _collect_audio_files(directory=directory, recursive=payload.recursive, extensions=extensions)
+    if not files:
+        raise HTTPException(status_code=400, detail="no audio files found in directory")
+
+    replaced_existing_links = 0
+    if payload.replace_existing:
+        replaced_existing_links = db.delete_owned_item_track_links(owned_item_id)
+
+    assignments = _assign_audio_files_to_tracks(track_list=track_list, files=files)
+
+    mappings: list[TrackMappingBulkMappedItem] = []
+    mapped_count = 0
+    for idx, track_entry in enumerate(track_list, start=1):
+        assigned = assignments[idx - 1]
+        file_path = str(assigned) if assigned is not None else None
+
+        if file_path:
+            link_payload: dict[str, object] = {
+                "asset_type": "AUDIO",
+                "file_path": file_path,
+                "link_type": "TRACK",
+                "track_no": idx,
+                "note": track_entry,
+                "metadata_json": {
+                    "source": "BULK_DIR",
+                    "directory_path": str(directory),
+                    "recursive": bool(payload.recursive),
+                },
+            }
+            db.insert_digital_link(owned_item_id, link_payload)
+            mapped_count += 1
+
+        mappings.append(
+            TrackMappingBulkMappedItem(
+                track_no=idx,
+                track_entry=track_entry,
+                file_path=file_path,
+            )
+        )
+
+    return TrackMappingBulkFromDirResponse(
+        owned_item_id=owned_item_id,
+        track_count=len(track_list),
+        candidate_file_count=len(files),
+        candidate_files=[str(path) for path in files],
+        mapped_count=mapped_count,
+        unmapped_track_count=max(0, len(track_list) - mapped_count),
+        replaced_existing_links=replaced_existing_links,
+        mappings=mappings,
+    )
+
+
+@app.post(
+    "/owned-items/{owned_item_id}/track-mappings/manual-assign",
+    response_model=TrackMappingManualAssignResponse,
+)
+def manual_assign_track_mappings(
+    owned_item_id: int,
+    payload: TrackMappingManualAssignRequest,
+) -> TrackMappingManualAssignResponse:
+    existing = db.get_owned_item(owned_item_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    track_list = db.get_owned_item_track_list(owned_item_id)
+    if not track_list:
+        raise HTTPException(status_code=400, detail="track_list not found for this owned_item")
+
+    track_count = len(track_list)
+    assignment_by_track: dict[int, str | None] = {}
+    duplicate_check: set[str] = set()
+    for row in payload.assignments:
+        track_no = int(row.track_no)
+        if track_no < 1 or track_no > track_count:
+            raise HTTPException(status_code=400, detail=f"track_no out of range: {track_no} (max={track_count})")
+        if track_no in assignment_by_track:
+            raise HTTPException(status_code=400, detail=f"duplicate track_no in assignments: {track_no}")
+
+        file_path = str(row.file_path or "").strip() or None
+        if file_path and not payload.allow_duplicate_files:
+            if file_path in duplicate_check:
+                raise HTTPException(status_code=400, detail=f"duplicate file_path in assignments: {file_path}")
+            duplicate_check.add(file_path)
+        assignment_by_track[track_no] = file_path
+
+    replaced_existing_links = 0
+    if payload.replace_existing:
+        replaced_existing_links = db.delete_owned_item_track_links(owned_item_id)
+
+    mappings: list[TrackMappingBulkMappedItem] = []
+    mapped_count = 0
+    for idx, track_entry in enumerate(track_list, start=1):
+        file_path = assignment_by_track.get(idx)
+        if file_path:
+            db.insert_digital_link(
+                owned_item_id,
+                {
+                    "asset_type": "AUDIO",
+                    "file_path": file_path,
+                    "link_type": "TRACK",
+                    "track_no": idx,
+                    "note": track_entry,
+                    "metadata_json": {
+                        "source": "MANUAL_ASSIGN",
+                        "replace_existing": bool(payload.replace_existing),
+                    },
+                },
+            )
+            mapped_count += 1
+
+        mappings.append(
+            TrackMappingBulkMappedItem(
+                track_no=idx,
+                track_entry=track_entry,
+                file_path=file_path,
+            )
+        )
+
+    return TrackMappingManualAssignResponse(
+        owned_item_id=owned_item_id,
+        track_count=track_count,
+        mapped_count=mapped_count,
+        unmapped_track_count=max(0, track_count - mapped_count),
+        replaced_existing_links=replaced_existing_links,
+        mappings=mappings,
+    )
