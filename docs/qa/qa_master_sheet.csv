@@ -26,7 +26,7 @@ CAM-006,카메라,관리자,P1,UX,대시보드 카메라 기본 접힘,장식장
 CAM-007,카메라,관리자,P1,UX,대시보드 카메라 펼침/숨기기,장식장과 연결된 카메라 존재,1) 보기 클릭 2) 새로고침/영상 열기 확인 3) 숨기기 클릭,펼친 상태에서만 스냅샷과 관련 버튼이 보이고 다시 숨길 수 있다,Pass,,2026-03-17 브라우저 검증 통과 | 보기/숨기기 정상 | preview block -> none
 CAM-008,카메라,관리자,P1,Regression,대시보드 카메라 카드 기본 숨김,장식장에 카메라 등록됨,1) 대시보드에서 장식장 선택 2) 카메라 카드 확인,스냅샷은 기본 숨김이고 보기 클릭 시에만 열린다,Pass,,"toggle=보기, preview=none"
 DASH-001,대시보드,관리자,P0,Smoke,장식장 카드 진입,관리자 로그인,1) 대시보드 진입 2) 장식장 카드 클릭,선택한 장식장의 층/칸 상세가 열린다,Pass,,대시보드 장식장 데이터 조회 성공 | slots=414
-DASH-002,대시보드,관리자,P0,Smoke,칸 선택 후 상품 표시,장식장 상세 열림,1) 칸 선택,선택 칸 상품이 하단에 표시된다,Pass,,칸 상품 조회 성공 | slot=LP장-1-01-01 | items=23
+DASH-002,대시보드,관리자,P0,Smoke,칸 선택 후 상품 표시,장식장 상세 열림,1) 칸 선택,선택 칸 상품이 하단에 표시된다,Pass,,칸 상품 조회 성공 | slot=LP장-1-01-01 | items=13
 DASH-003,대시보드,관리자,P0,Regression,선반 보기 선택/해제,칸 상품 존재,1) 선반 보기 2) 여러 상품 선택/해제,선택 아이콘이 정상 표시되고 선택 상태가 유지된다,Pass,,2026-03-15 브라우저 검증 통과 | 선반 보기에서 선택/해제 정상 | 선택 1건 -> 선택 0건 요약 변경 확인
 DASH-004,대시보드,관리자,P1,Regression,선반 첫 상품 선택,칸 첫 카드 존재,1) 선반에서 맨 왼쪽 상품 선택,첫 상품도 정상 선택된다,Pass,,2026-03-17 브라우저 검증 통과 | LP장-1-01-01 선반 첫 상품 선택 | summary=현재 칸 24건 | 선택 1건 | 선택 위치 1번 | 직전 미배치 | 직전 위치 복구 가능
 DASH-005,대시보드,관리자,P1,Regression,선반 연속 선택,겹쳐진 카드 존재,1) 상품 선택 2) 바로 옆/다다음 상품 선택,선택된 카드가 옆 카드를 막지 않고 연속 선택 가능하다,Pass,,2026-03-17 브라우저 검증 통과 | 선반 연속 선택 정상 | LP장-1-01-01 | 선택 3건
@@ -60,7 +60,7 @@ OPS-006,장식장,관리자,P0,Workflow,장식장 등록,운영/연계 진입,1)
 OPS-007,슬롯,관리자,P1,Workflow,개별 슬롯 수정,슬롯 존재,1) 슬롯 선택 2) 값 수정 3) 저장,슬롯 값이 저장되고 대시보드에 반영된다,Pass,,개별 슬롯 수정 성공 | slot_id=1604 | 02층/03칸
 OPS-008,계정,관리자,P0,Workflow,관리 계정 생성,운영/연계 진입,1) 새 계정 정보 입력 2) 저장,새 계정이 즉시 로그인 가능 상태로 생성된다,Pass,,관리 계정 생성/로그인 성공 | user=qaop1773678196
 OPS-009,계정,관리자,P1,Regression,시스템 계정 읽기 전용,기본 계정 존재,1) 기본 계정 선택,수정/삭제가 제한되고 안내 문구가 보인다,Pass,,시스템 계정 읽기 전용 확인 | system_accounts=3
-OPS-010,백업/내보내기,관리자,P0,Smoke,DB 백업 다운로드,운영/연계 진입,1) DB 백업 다운로드 클릭,백업 파일이 다운로드된다,Pass,,DB 백업 다운로드 성공 | bytes=1765376
+OPS-010,백업/내보내기,관리자,P0,Smoke,DB 백업 다운로드,운영/연계 진입,1) DB 백업 다운로드 클릭,백업 파일이 다운로드된다,Pass,,DB 백업 다운로드 성공 | bytes=26120192
 OPS-011,백업/내보내기,관리자,P0,Smoke,보유 상품 CSV 다운로드,운영/연계 진입,1) 보유 상품 CSV 클릭,CSV가 정상 다운로드되고 헤더/행이 올바르다,Pass,,"보유 상품 CSV 다운로드 성공 | owned_item_id,label_id,category,item_name,status,signature_type,size_group,preferred_storage_size_group,album_master_id,purchase_source,memory_note,cabinet_name,column_code,cell_code,artist,format_name,released_date,label_name,catalog_no,barcode"
 OPS-012,백업/내보내기,관리자,P0,Smoke,마스터 CSV 다운로드,운영/연계 진입,1) 마스터 CSV 클릭,CSV가 정상 다운로드된다,Pass,,"마스터 CSV 다운로드 성공 | album_master_id,source_code,source_master_id,title,artist,release_year,member_count,updated_at"
 OPS-013,운영/연계,관리자,P0,Regression,백업/내보내기 서브탭 열림,관리자 로그인,1) 운영/연계 진입 2) 백업/내보내기 클릭,백업/내보내기 패널이 열리고 다운로드 버튼 3개가 표시된다,Pass,,Selenium 실검증 완료 | opsExportPanel visible=True
@@ -73,12 +73,12 @@ REC-001,복구/운영,관리자,P0,Recovery,재부팅 후 자동 복구,launchd 
 REC-002,복구/운영,관리자,P1,Recovery,AFP 지연 시 로그 확인,AFP 마운트 지연 상황 재현,1) check_library_status.sh 실행 2) launchd 에러 로그 확인,한글 안내 로그로 원인 파악이 가능하다,Pass,,AFP 지연 한글 로그 확인 | wrapper guidance ok
 REC-003,복구/운영,관리자,P1,Recovery,시스템 상태 패널 로그 확인,문제 상황 발생,1) 운영/연계 진입,최근 launchd 로그와 health 상태를 한 화면에서 확인할 수 있다,Pass,,시스템 상태 패널 로그 확인 가능 | log_lines=2
 REGISTER-001,간편 등록,관리자,P0,Smoke,간편 등록 필수값 검증,등록/수집 진입,1) 아티스트명 비우기 2) 저장 3) 상품명 비우기 4) 저장,아티스트명과 상품명 모두 필수로 검증된다,Pass,,"2026-03-15 브라우저 검증 통과 | 간편 등록 저장 버튼에서 빈값 검증 확인 | 아티스트명 필수, 상품명 필수 메시지 확인"
-REGISTER-002,간편 등록,관리자,P0,Workflow,간편 등록 저장,필수값 입력 완료,1) 아티스트명 입력 2) 상품명 입력 3) 저장,보유 상품이 생성되고 검색/관리에서 조회 가능하다,Pass,,간편 등록 저장/삭제 성공 | owned_item_id=139 | label_id=CD-000139
+REGISTER-002,간편 등록,관리자,P0,Workflow,간편 등록 저장,필수값 입력 완료,1) 아티스트명 입력 2) 상품명 입력 3) 저장,보유 상품이 생성되고 검색/관리에서 조회 가능하다,Pass,,간편 등록 저장/삭제 성공 | owned_item_id=11835 | label_id=CD-011835
 REGISTER-003,API 메타 조회,관리자,P0,Workflow,바코드 조회 후 저장,유효 바코드 준비,1) 바코드 조회 2) 결과 선택 3) 보유 상품 저장,메타가 반영된 상품이 생성된다,Pass,,바코드 메타 조회 성공 | source=DISCOGS | title=제11집
 REGISTER-004,API 메타 조회,관리자,P0,Workflow,무바코드 조회 후 저장,아티스트/앨범 정보 준비,1) 무바코드 조회 2) 후보 확인 3) 저장,후보 메타 기반 상품이 생성된다,Pass,,무바코드 메타 조회 성공 | source=DISCOGS | title=제11집
 REGISTER-005,대량 등록,관리자,P1,Workflow,CSV 업로드 및 검수 큐 적재,샘플 CSV 준비,1) CSV 업로드 2) 검수 큐 불러오기,행이 AUTO_APPROVED 또는 NEEDS_REVIEW로 적재된다,Pass,,CSV 업로드 및 검수 큐 적재 성공 | batch_id=7 | rows=1 | statuses=AUTO_APPROVED
 REGISTER-006,등록/수집,관리자,P0,Regression,외부 메타 저장 시 미배치 유지,"관리자 로그인, 외부 메타 기반 등록 가능",1) 외부 메타 기반 상품 생성 2) 장식장/칸 미지정 3) 저장 4) 상세 확인,storage_slot_id가 비어 있고 자동 슬롯 추천이 적용되지 않는다,Pass,,외부 메타 저장 시 미배치 유지 | owned_item_id=140 | master_id=12
-SEARCH-001,검색/관리,관리자,P0,Smoke,상품명 검색,보유 상품 존재,1) 상품명 입력 2) 검색,해당 마스터가 결과에 표시된다,Pass,,앨범 검색 성공 | master_id=15 | title=제11집
+SEARCH-001,검색/관리,관리자,P0,Smoke,상품명 검색,보유 상품 존재,1) 상품명 입력 2) 검색,해당 마스터가 결과에 표시된다,Pass,,앨범 검색 성공 | master_id=294 | title=산울림 - 제11집
 SEARCH-002,검색/관리,관리자,P0,Regression,변형 제목 검색,제11집 형태 상품 존재,1) 산울림 11집 검색,제11집으로 저장된 상품도 검색된다,Pass,,변형 제목 검색 성공 | master_id=15 | title=제11집
 SEARCH-003,검색/관리,관리자,P0,Regression,곡명 검색,곡 정보 있는 상품 존재,1) 곡명 검색,해당 곡이 수록된 상품/마스터가 검색되고 일치 곡이 표시된다,Pass,,곡명 검색 성공 | master_id=15 | match=A1 슬픈 장난감
 SEARCH-004,검색/관리,관리자,P0,Regression,바코드 검색,바코드 보유 상품 존재,1) 바코드 입력 2) 검색,정확한 상품/마스터가 우선 노출된다,Pass,,바코드 검색 성공 | master_id=15 | title=제11집
