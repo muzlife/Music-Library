@@ -7438,6 +7438,7 @@
     let opsCameraSelectedId = null;
     let opsCameraDiscoverItems = [];
     let appAuthSession = null;
+    let appAuthSessionResolved = false;
     let appShellMode = "ops";
     let operatorLookupResults = [];
     let operatorRequestItems = [];
@@ -8527,7 +8528,13 @@
     function normalizeShellMode(mode, session = appAuthSession) {
       const requested = String(mode || "").trim().toLowerCase();
       const authenticated = Boolean(session?.authenticated);
-      if (!authenticated) return "ops";
+      if (!authenticated) {
+        if (!appAuthSessionResolved) {
+          if (requested === "admin") return "admin";
+          if (requested === "cabinets") return "cabinets";
+        }
+        return "ops";
+      }
       if (requested === "admin") return isAdminSession(session) ? "admin" : "ops";
       if (requested === "cabinets") return "cabinets";
       return "ops";
@@ -8580,10 +8587,14 @@
     }
 
     function updateShellRoute(mode, options = {}) {
-      if (options.pushHistory === false) return;
       const nextPath = shellRoutePath(mode);
       if (currentAppPath() === nextPath) return;
-      window.history.replaceState({}, "", nextPath);
+      if (options.pushHistory === false && options.replaceHistory !== true) return;
+      if (options.replaceHistory === true) {
+        window.history.replaceState({}, "", nextPath);
+        return;
+      }
+      window.history.pushState({}, "", nextPath);
     }
 
     // Nav contract:
@@ -8623,7 +8634,11 @@
       const nextMode = normalizeShellMode(mode, appAuthSession);
       appShellMode = nextMode;
       if (nextMode === "admin") {
-        openAdminConsole(options.adminTab || "home", { remember: false, pushHistory: options.pushHistory });
+        openAdminConsole(options.adminTab || "home", {
+          remember: false,
+          pushHistory: options.pushHistory,
+          replaceHistory: options.replaceHistory,
+        });
         return;
       }
       applyShellNavigation(appAuthSession);
@@ -8694,7 +8709,11 @@
     }
 
     function applyRouteSelectedShellMode(mode) {
+      const resolvedMode = normalizeShellMode(mode, appAuthSession);
       switchShellMode(mode, { remember: false, pushHistory: false, adminTab: "home" });
+      if (appAuthSessionResolved) {
+        updateShellRoute(resolvedMode, { replaceHistory: true });
+      }
     }
 
     async function safeJson(res) {
@@ -8755,6 +8774,7 @@
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || "세션 확인 실패");
         appAuthSession = data;
+        appAuthSessionResolved = true;
         renderAuthSession();
         applyAuthSessionUi();
         clearDashboardSearchAutofill();
@@ -8763,6 +8783,7 @@
         applyRouteSelectedShellMode(initialShellMode);
       } catch (_) {
         appAuthSession = null;
+        appAuthSessionResolved = true;
         renderAuthSession();
         applyAuthSessionUi();
         clearDashboardSearchAutofill();
@@ -20260,7 +20281,7 @@
     });
 
     const initialShellMode = shellModeFromPath();
-    appShellMode = normalizeShellMode(initialShellMode, appAuthSession);
+    appShellMode = initialShellMode;
 
     initMediaLabelUi();
     applyFieldHelpTooltips();
@@ -20310,6 +20331,11 @@
     loadAlbumMasterGroups();
     loadMetadataSyncStatus();
     loadOpsSystemStatus();
+    window.addEventListener("popstate", () => {
+      const routeShellMode = shellModeFromPath();
+      appShellMode = routeShellMode;
+      applyRouteSelectedShellMode(routeShellMode);
+    });
   </script>
 </body>
 </html>

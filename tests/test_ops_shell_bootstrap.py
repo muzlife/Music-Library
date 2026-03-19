@@ -31,10 +31,10 @@ def test_index_defines_route_aware_shell_mode_helpers():
 def test_index_bootstrap_uses_route_selected_shell_mode_first():
     html = read_static_html("index.html")
     assert "function applyRouteSelectedShellMode(mode)" in html
-    assert 'switchMainTab("simple", { remember: false });' in html
-    assert 'switchMainTab("ops", { remember: false });' in html
-    assert 'switchSubTab("ops", "cabinet", { remember: false });' in html
-    assert 'switchMainTab("home", { remember: false });' in html
+    assert 'switchMainTab(nextMode === "cabinets" ? "home" : "simple", { remember: false });' in html
+    assert 'openAdminConsole(options.adminTab || "home", {' in html
+    assert "pushHistory: options.pushHistory," in html
+    assert "replaceHistory: options.replaceHistory," in html
     assert "const initialShellMode = shellModeFromPath();" in html
     assert "applyRouteSelectedShellMode(initialShellMode);" in html
     assert "const preferredMainTab = loadRoleScopedValue(APP_MAIN_TAB_MEMORY_KEY);" not in html
@@ -44,6 +44,7 @@ def test_index_bootstrap_uses_route_selected_shell_mode_first():
 def test_index_startup_does_not_force_home_before_route_mode():
     html = read_static_html("index.html")
     assert "const initialShellMode = shellModeFromPath();" in html
+    assert "appShellMode = initialShellMode;" in html
     assert "applyRouteSelectedShellMode(initialShellMode);" in html
     assert "loadAuthSession(initialShellMode);" in html
     assert 'resetPurchaseImportForm();\n    switchMainTab("home", { remember: false });' not in html
@@ -56,10 +57,26 @@ def test_index_failure_path_reapplies_route_mode():
     assert html.count("applyRouteSelectedShellMode(initialShellMode);") >= 2
 
 
+def test_index_pre_auth_route_mode_preserves_direct_admin_and_cabinets_entry():
+    html = read_static_html("index.html")
+    assert "let appAuthSessionResolved = false;" in html
+    assert "if (!appAuthSessionResolved) {" in html
+    assert 'if (requested === "admin") return "admin";' in html
+    assert 'if (requested === "cabinets") return "cabinets";' in html
+
+
+def test_index_shell_navigation_uses_history_and_popstate():
+    html = read_static_html("index.html")
+    assert 'window.history.pushState({}, "", nextPath);' in html
+    assert 'window.addEventListener("popstate", () => {' in html
+    assert "const routeShellMode = shellModeFromPath();" in html
+    assert "applyRouteSelectedShellMode(routeShellMode);" in html
+
+
 def test_index_auth_failure_fallback_hides_full_ui_until_session_loads():
     html = read_static_html("index.html")
     assert "const authenticated = Boolean(appAuthSession?.authenticated);" in html
-    assert 'const role = authenticated ? String(appAuthSession?.role || "").trim().toUpperCase() : "";' in html
-    assert 'const allowCabinetShell = authenticated && isOperator && shellModeFromPath() === "cabinets";' in html
-    assert 'const visible = authenticated && (!isOperator || (allowCabinetShell && id === "tabOpsBtn"));' in html
-    assert 'const visible = authenticated && (!isOperator || (allowCabinetShell && id === "tabOps"));' in html
+    assert 'setDisplayIfPresent("shellTabs", authenticated ? "flex" : "none");' in html
+    assert 'setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin ? "inline-flex" : "none");' in html
+    assert 'setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");' in html
+    assert "appAuthSessionResolved = true;" in html
