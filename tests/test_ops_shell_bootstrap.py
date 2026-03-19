@@ -181,3 +181,34 @@ def test_index_operator_lookup_reset_invalidates_inflight_request_before_clearin
     assert "operatorLookupRequestSeq += 1;" in block
     assert '$("operatorLookupQuery").value = "";' in block
     assert 'setOperatorLookupResults([], "");' in block
+
+
+def test_index_operator_helper_summary_prioritizes_exact_matches_before_assigned_or_first():
+    html = read_static_html("index.html")
+    summarize_start = "    function summarizeOperatorResults(results, normalizedQuery) {"
+    build_start = "    function buildOperatorLookupSummary(results, normalizedQuery, status = \"\") {"
+    assert summarize_start in html
+    assert build_start in html
+    block = html.split(summarize_start, 1)[1].split(build_start, 1)[0]
+    assert "const exactBarcode = normalizedDigits" in block
+    assert "const exactLabel = list.find(" in block
+    assert "const exactTitleArtist = list.find((row) => exactTitleArtistMatch(row, normalizedQuery));" in block
+    assert "const assigned = list.find((row) => hasOperatorCurrentLocation(row));" in block
+    assert "const topCandidate = exactBarcode || exactLabel || exactTitleArtist || assigned || list[0] || null;" in block
+    assert 'if (reason === "barcode") return "바코드 정확 일치";' in html
+    assert 'if (reason === "label") return "견출지 ID 정확 일치";' in html
+    assert 'if (reason === "titleArtist") return "제목/아티스트 정확 일치";' in html
+    assert 'if (reason === "assigned") return "배치된 후보 우선";' in html
+
+
+def test_index_operator_helper_hides_cabinet_cta_for_unassigned_items():
+    html = read_static_html("index.html")
+    render_start = "    function renderOperatorHelperSummary() {"
+    load_start = "    async function loadOperatorLookupResults() {"
+    assert render_start in html
+    assert load_start in html
+    block = html.split(render_start, 1)[1].split(load_start, 1)[0]
+    assert 'const canOpenCabinet = Boolean(topCandidate && currentCabinetName && currentColumnCode && currentCellCode);' in block
+    assert 'data-operator-open-cabinet="${ownedItemId}"' in block
+    assert "현재 배치가 없어서 장식장 열기는 숨깁니다." in block
+    assert "기존 결과 목록을 그대로 유지한 채 상단 후보만 요약합니다." in block
