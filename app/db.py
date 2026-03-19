@@ -3086,61 +3086,10 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
     query_like = f"%{query_norm}%"
     query_token_groups = _search_token_groups(clean_query)
     barcode_digits = re.sub(r"[^0-9]", "", clean_query)
-    fetch_limit = max(10, min(200, int(limit) * 4))
+    requested_limit = max(1, int(limit))
+    fetch_limit = max(10, min(200, requested_limit * 4))
 
-    where_clauses = [
-        "LOWER(COALESCE(oi.item_name_override, '')) LIKE ?",
-        "LOWER(COALESCE(am.title, '')) LIKE ?",
-        "LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?",
-        "LOWER(COALESCE(mid.label_name, '')) LIKE ?",
-        "LOWER(COALESCE(mid.catalog_no, '')) LIKE ?",
-        "LOWER(COALESCE(mid.track_list_json, '')) LIKE ?",
-        "LOWER(COALESCE(mid.track_items_json, '')) LIKE ?",
-    ]
-    params: list[Any] = [query_like, query_like, query_like, query_like, query_like, query_like, query_like]
-    if barcode_digits:
-        where_clauses.append("REPLACE(COALESCE(mid.barcode, ''), '-', '') LIKE ?")
-        params.append(f"%{barcode_digits}%")
-    where_clauses.append(
-        """
-        EXISTS (
-          SELECT 1
-          FROM json_each(COALESCE(mid.track_list_json, '[]')) jt
-          WHERE LOWER(COALESCE(jt.value, '')) LIKE ?
-        )
-        """
-    )
-    params.append(query_like)
-    where_clauses.append(
-        """
-        EXISTS (
-          SELECT 1
-          FROM json_each(COALESCE(mid.track_items_json, '[]')) ji
-          WHERE LOWER(COALESCE(json_extract(ji.value, '$.display'), '')) LIKE ?
-             OR LOWER(COALESCE(json_extract(ji.value, '$.title'), '')) LIKE ?
-        )
-        """
-    )
-    params.extend([query_like, query_like])
-    if query_token_groups:
-        token_sql, token_params = _build_compact_token_match_sql(
-            """
-            COALESCE(oi.item_name_override, '') || ' ' ||
-            COALESCE(am.title, '') || ' ' ||
-            COALESCE(mid.artist_or_brand, '') || ' ' ||
-            COALESCE(mid.label_name, '') || ' ' ||
-            COALESCE(mid.catalog_no, '') || ' ' ||
-            COALESCE(mid.barcode, '') || ' ' ||
-            COALESCE(mid.track_list_json, '') || ' ' ||
-            COALESCE(mid.track_items_json, '')
-            """,
-            query_token_groups,
-        )
-        if token_sql:
-            where_clauses.append(token_sql)
-            params.extend(token_params)
-
-    sql = f"""
+    base_sql_template = """
       SELECT
         oi.id,
         oi.category,
@@ -3185,65 +3134,159 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
       LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
       LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
       WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-        AND ({' OR '.join(where_clauses)})
+        AND {where_sql}
       ORDER BY
         CASE WHEN oi.status = 'IN_COLLECTION' THEN 0 ELSE 1 END,
         oi.updated_at DESC,
         oi.id DESC
       LIMIT ?
     """
-    params.append(fetch_limit)
+
+    def _build_items(rows: list[sqlite3.Row]) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for row in rows:
+            item = _normalize_owned_item_row(dict(row))
+            track_matches: list[str] = []
+            seen_tracks: set[str] = set()
+
+            def _push_track(value: Any) -> None:
+                text = str(value or "").strip()
+                if not text or text.lower() in seen_tracks:
+                    return
+                if not _matches_search_text(text, clean_query, query_token_groups):
+                    return
+                seen_tracks.add(text.lower())
+                track_matches.append(text)
+
+            for track in item.get("track_list") or []:
+                _push_track(track)
+            for track_item in item.get("track_items") or []:
+                if not isinstance(track_item, dict):
+                    continue
+                _push_track(track_item.get("display"))
+                _push_track(track_item.get("title"))
+
+            current_slot_display_name = "미배치"
+            if item.get("slot_code"):
+                current_slot_display_name = _storage_slot_display_name(
+                    {
+                        "slot_code": item.get("slot_code"),
+                        "cabinet_name": item.get("cabinet_name"),
+                        "column_code": item.get("column_code"),
+                        "cell_code": item.get("cell_code"),
+                        "allowed_size_group": item.get("allowed_size_group"),
+                        "is_overflow_zone": item.get("is_overflow_zone"),
+                    }
+                )
+
+            item["current_slot_code"] = item.get("slot_code")
+            item["current_slot_display_name"] = current_slot_display_name
+            item["current_cabinet_name"] = str(item.get("cabinet_name") or "").strip() or None
+            item["current_column_code"] = str(item.get("column_code") or "").strip() or None
+            item["current_cell_code"] = str(item.get("cell_code") or "").strip() or None
+            item["previous_slot_code"] = str(item.get("previous_slot_code") or "").strip() or None
+            item["previous_slot_display_name"] = str(item.get("previous_slot_display_name") or "").strip() or None
+            item["track_matches"] = track_matches[:8]
+            item["matched_track_count"] = len(track_matches)
+            out.append(item)
+        return out
+
+    def _select_candidate_rows(
+        conn: sqlite3.Connection,
+        where_clauses: list[str],
+        params: list[Any],
+        *,
+        query_limit: int,
+        exclude_ids: list[int] | None = None,
+    ) -> list[sqlite3.Row]:
+        filters = ["(" + " OR ".join(where_clauses) + ")"]
+        query_params = list(params)
+        if exclude_ids:
+            placeholders = ",".join("?" for _ in exclude_ids)
+            filters.append(f"oi.id NOT IN ({placeholders})")
+            query_params.extend(exclude_ids)
+        sql = base_sql_template.format(where_sql=" AND ".join(filters))
+        query_params.append(query_limit)
+        return conn.execute(sql, query_params).fetchall()
+
+    primary_where_clauses = [
+        "LOWER(COALESCE(oi.item_name_override, '')) LIKE ?",
+        "LOWER(COALESCE(am.title, '')) LIKE ?",
+        "LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?",
+        "LOWER(COALESCE(mid.label_name, '')) LIKE ?",
+        "LOWER(COALESCE(mid.catalog_no, '')) LIKE ?",
+    ]
+    primary_params: list[Any] = [query_like, query_like, query_like, query_like, query_like]
+    if barcode_digits:
+        primary_where_clauses.append("REPLACE(COALESCE(mid.barcode, ''), '-', '') LIKE ?")
+        primary_params.append(f"%{barcode_digits}%")
+    if query_token_groups:
+        token_sql, token_params = _build_compact_token_match_sql(
+            """
+            COALESCE(oi.item_name_override, '') || ' ' ||
+            COALESCE(am.title, '') || ' ' ||
+            COALESCE(mid.artist_or_brand, '') || ' ' ||
+            COALESCE(mid.label_name, '') || ' ' ||
+            COALESCE(mid.catalog_no, '') || ' ' ||
+            COALESCE(mid.barcode, '')
+            """,
+            query_token_groups,
+        )
+        if token_sql:
+            primary_where_clauses.append(token_sql)
+            primary_params.extend(token_params)
+
+    fallback_where_clauses = [
+        "LOWER(COALESCE(mid.track_list_json, '')) LIKE ?",
+        "LOWER(COALESCE(mid.track_items_json, '')) LIKE ?",
+        """
+        EXISTS (
+          SELECT 1
+          FROM json_each(COALESCE(mid.track_list_json, '[]')) jt
+          WHERE LOWER(COALESCE(jt.value, '')) LIKE ?
+        )
+        """,
+        """
+        EXISTS (
+          SELECT 1
+          FROM json_each(COALESCE(mid.track_items_json, '[]')) ji
+          WHERE LOWER(COALESCE(json_extract(ji.value, '$.display'), '')) LIKE ?
+             OR LOWER(COALESCE(json_extract(ji.value, '$.title'), '')) LIKE ?
+        )
+        """,
+    ]
+    fallback_params: list[Any] = [query_like, query_like, query_like, query_like, query_like]
+    if query_token_groups:
+        token_sql, token_params = _build_compact_token_match_sql(
+            """
+            COALESCE(mid.track_list_json, '') || ' ' ||
+            COALESCE(mid.track_items_json, '')
+            """,
+            query_token_groups,
+        )
+        if token_sql:
+            fallback_where_clauses.append(token_sql)
+            fallback_params.extend(token_params)
 
     with get_conn() as conn:
-        rows = conn.execute(sql, params).fetchall()
-
-    out: list[dict[str, Any]] = []
-    for row in rows:
-        item = _normalize_owned_item_row(dict(row))
-        track_matches: list[str] = []
-        seen_tracks: set[str] = set()
-
-        def _push_track(value: Any) -> None:
-            text = str(value or "").strip()
-            if not text or text.lower() in seen_tracks:
-                return
-            if not _matches_search_text(text, clean_query, query_token_groups):
-                return
-            seen_tracks.add(text.lower())
-            track_matches.append(text)
-
-        for track in item.get("track_list") or []:
-            _push_track(track)
-        for track_item in item.get("track_items") or []:
-            if not isinstance(track_item, dict):
-                continue
-            _push_track(track_item.get("display"))
-            _push_track(track_item.get("title"))
-
-        current_slot_display_name = "미배치"
-        if item.get("slot_code"):
-            current_slot_display_name = _storage_slot_display_name(
-                {
-                    "slot_code": item.get("slot_code"),
-                    "cabinet_name": item.get("cabinet_name"),
-                    "column_code": item.get("column_code"),
-                    "cell_code": item.get("cell_code"),
-                    "allowed_size_group": item.get("allowed_size_group"),
-                    "is_overflow_zone": item.get("is_overflow_zone"),
-                }
+        primary_rows = _select_candidate_rows(
+            conn,
+            primary_where_clauses,
+            primary_params,
+            query_limit=fetch_limit,
+        )
+        rows = list(primary_rows)
+        if len(rows) < requested_limit:
+            fallback_rows = _select_candidate_rows(
+                conn,
+                fallback_where_clauses,
+                fallback_params,
+                query_limit=max(10, min(200, (requested_limit - len(rows)) * 4)),
+                exclude_ids=[int(row["id"]) for row in rows],
             )
+            rows.extend(fallback_rows)
 
-        item["current_slot_code"] = item.get("slot_code")
-        item["current_slot_display_name"] = current_slot_display_name
-        item["current_cabinet_name"] = str(item.get("cabinet_name") or "").strip() or None
-        item["current_column_code"] = str(item.get("column_code") or "").strip() or None
-        item["current_cell_code"] = str(item.get("cell_code") or "").strip() or None
-        item["previous_slot_code"] = str(item.get("previous_slot_code") or "").strip() or None
-        item["previous_slot_display_name"] = str(item.get("previous_slot_display_name") or "").strip() or None
-        item["track_matches"] = track_matches[:8]
-        item["matched_track_count"] = len(track_matches)
-        out.append(item)
-
+    out = _build_items(rows)
     out.sort(
         key=lambda row: (
             0 if (row.get("matched_track_count") or 0) > 0 else 1,
@@ -3252,7 +3295,7 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
             int(row.get("id") or 0),
         )
     )
-    return out[: max(1, int(limit))]
+    return out[:requested_limit]
 
 
 def create_customer_track_request(
