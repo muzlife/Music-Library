@@ -15632,12 +15632,33 @@
       await applyPendingOpsCabinetSelection({ selection, silent: options.silent === true });
     }
 
+    function findCabinetSelectionFromSlot(slotId, slotCode) {
+      const directRow = getStorageSlotById(slotId)
+        || getDashboardSlotRow(slotCode)
+        || homeDashboardBySlot.find((item) => Number(item?.id || 0) === Number(slotId || 0))
+        || null;
+      if (!directRow) return null;
+      return normalizeCabinetRouteSelection(
+        directRow.cabinet_name,
+        directRow.column_code,
+        directRow.cell_code,
+      );
+    }
+
     async function openCabinetLocationAction(slotId, slotCode, cabinetName, columnCode, cellCode) {
       if (isAdminSession() && currentShellMode() === "admin") {
         await openDashboardForSlotLocation(slotId, slotCode);
         return;
       }
-      await openOpsCabinetView(cabinetName, columnCode, cellCode);
+      let selection = normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode);
+      if (!selection && !homeDashboardBySlot.length) {
+        await loadHomeDashboard({ silent: true });
+      }
+      selection = selection || findCabinetSelectionFromSlot(slotId, slotCode);
+      await openOpsCabinetView(selection?.cabinet_name, selection?.column_code, selection?.cell_code);
+      if (!selection && (Number(slotId || 0) > 0 || String(slotCode || "").trim())) {
+        setStatus("homeDashboardStatus", "err", "장식장 상세 위치를 찾지 못해 장식장 목록만 열었습니다.");
+      }
     }
 
     async function openDashboardForCurrentLocation() {
@@ -19908,6 +19929,14 @@
       toggleDashboardSlotSelectionById(ownedItemId);
     });
     $("homeDashWorkbenchList").addEventListener("click", (e) => {
+      const locateBtn = e.target.closest("[data-dashboard-workbench-open-slot]");
+      if (locateBtn) {
+        e.stopPropagation();
+        const slotId = Number(locateBtn.getAttribute("data-dashboard-workbench-open-slot") || 0);
+        const slotCode = String(locateBtn.getAttribute("data-dashboard-workbench-open-slot-code") || "");
+        openCabinetLocationAction(slotId, slotCode, "", "", "");
+        return;
+      }
       if (isShellReadOnly()) return;
       const check = e.target.closest("[data-dashboard-workbench-select]");
       if (check) {
@@ -19924,14 +19953,6 @@
         if (ownedItemId > 0) {
           loadHomeItemForEdit(ownedItemId);
         }
-        return;
-      }
-      const locateBtn = e.target.closest("[data-dashboard-workbench-open-slot]");
-      if (locateBtn) {
-        e.stopPropagation();
-        const slotId = Number(locateBtn.getAttribute("data-dashboard-workbench-open-slot") || 0);
-        const slotCode = String(locateBtn.getAttribute("data-dashboard-workbench-open-slot-code") || "");
-        openDashboardForSlotLocation(slotId, slotCode);
         return;
       }
       const row = e.target.closest("[data-dashboard-workbench-owned-item-id]");
