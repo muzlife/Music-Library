@@ -13,7 +13,7 @@ from .config import get_settings
 ORDER_KEY_WIDTH = 12
 ORDER_KEY_STEP = 1024
 SQLITE_BUSY_TIMEOUT_MS = 30_000
-DASHBOARD_MOVE_WINDOW_DAYS = 14
+DASHBOARD_MOVE_WINDOW_DAYS = 1
 SIZE_GROUP_CODES = ("STD", "BOOK", "LP", "OVERSIZE", "GOODS")
 DOMAIN_CODES = ("KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN")
 CABINET_SORT_POLICIES = ("ARTIST_RELEASE_TITLE", "LABEL_ID")
@@ -3298,6 +3298,153 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
     return out[:requested_limit]
 
 
+def _build_ops_home_recent_item(row: dict[str, Any]) -> dict[str, Any]:
+    category = str(row.get("category") or "").strip()
+    owned_item_id = int(row.get("owned_item_id") or row.get("id") or 0)
+    current_slot_code = str(row.get("current_slot_code") or "").strip() or None
+    current_cabinet_name = str(row.get("current_cabinet_name") or "").strip() or None
+    current_column_code = str(row.get("current_column_code") or "").strip() or None
+    current_cell_code = str(row.get("current_cell_code") or "").strip() or None
+    current_slot_display_name = "미배치"
+    if current_slot_code:
+        current_slot_display_name = _storage_slot_display_name(
+            {
+                "slot_code": current_slot_code,
+                "cabinet_name": current_cabinet_name,
+                "column_code": current_column_code,
+                "cell_code": current_cell_code,
+                "allowed_size_group": row.get("allowed_size_group"),
+                "is_overflow_zone": row.get("is_overflow_zone"),
+            }
+        )
+    return {
+        "owned_item_id": owned_item_id,
+        "label_id": _build_label_id(category, owned_item_id),
+        "category": category,
+        "format_name": str(row.get("format_name") or "").strip() or None,
+        "item_title": str(row.get("item_title") or "").strip() or None,
+        "artist_or_brand": str(row.get("artist_or_brand") or "").strip() or None,
+        "released_date": str(row.get("released_date") or "").strip() or None,
+        "label_name": str(row.get("label_name") or "").strip() or None,
+        "catalog_no": str(row.get("catalog_no") or "").strip() or None,
+        "cover_image_url": str(row.get("cover_image_url") or "").strip() or None,
+        "current_slot_code": current_slot_code,
+        "current_slot_display_name": current_slot_display_name,
+        "current_cabinet_name": current_cabinet_name,
+        "current_column_code": current_column_code,
+        "current_cell_code": current_cell_code,
+        "previous_slot_code": str(row.get("previous_slot_code") or "").strip() or None,
+        "previous_slot_display_name": str(row.get("previous_slot_display_name") or "").strip() or None,
+        "created_at": str(row.get("created_at") or ""),
+    }
+
+
+def list_ops_home_recent_moved_items(limit: int = 6) -> list[dict[str, Any]]:
+    move_threshold = (datetime.now(timezone.utc) - timedelta(days=DASHBOARD_MOVE_WINDOW_DAYS)).isoformat()
+    fetch_limit = max(int(limit) * 4, int(limit), 12)
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            WITH ranked_events AS (
+              SELECT
+                e.id AS event_id,
+                oi.id AS owned_item_id,
+                oi.category,
+                mid.format_name,
+                COALESCE(oi.item_name_override, am.title) AS item_title,
+                COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
+                mid.released_date,
+                mid.label_name,
+                mid.catalog_no,
+                COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
+                ss.slot_code AS current_slot_code,
+                ss.cabinet_name AS current_cabinet_name,
+                ss.column_code AS current_column_code,
+                ss.cell_code AS current_cell_code,
+                ss.allowed_size_group,
+                ss.is_overflow_zone,
+                e.from_slot_code AS previous_slot_code,
+                e.from_slot_display_name AS previous_slot_display_name,
+                e.created_at,
+                ROW_NUMBER() OVER (
+                  PARTITION BY oi.id
+                  ORDER BY e.created_at DESC, e.id DESC
+                ) AS event_rank
+              FROM owned_item_location_event e
+              JOIN owned_item oi ON oi.id = e.owned_item_id
+              LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+              LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
+              LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+              LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+              WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                AND oi.storage_slot_id IS NOT NULL
+                AND e.movement_kind IN ('ASSIGN', 'MOVE')
+                AND TRIM(COALESCE(e.from_slot_code, '')) <> ''
+            )
+            SELECT *
+            FROM ranked_events
+            WHERE event_rank = 1
+              AND created_at >= ?
+            ORDER BY created_at DESC, event_id DESC
+            LIMIT ?
+            """,
+            (move_threshold, fetch_limit),
+        ).fetchall()
+    items: list[dict[str, Any]] = []
+    seen_owned_item_ids: set[int] = set()
+    for row in rows:
+        owned_item_id = int(row["owned_item_id"] or 0)
+        if owned_item_id <= 0 or owned_item_id in seen_owned_item_ids:
+            continue
+        seen_owned_item_ids.add(owned_item_id)
+        items.append(_build_ops_home_recent_item(dict(row)))
+        if len(items) >= int(limit):
+            break
+    return items
+
+
+def list_ops_home_recent_registered_items(limit: int = 6) -> list[dict[str, Any]]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+              oi.id AS owned_item_id,
+              oi.category,
+              mid.format_name,
+              COALESCE(oi.item_name_override, am.title) AS item_title,
+              COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
+              mid.released_date,
+              mid.label_name,
+              mid.catalog_no,
+              COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
+              ss.slot_code AS current_slot_code,
+              ss.cabinet_name AS current_cabinet_name,
+              ss.column_code AS current_column_code,
+              ss.cell_code AS current_cell_code,
+              ss.allowed_size_group,
+              ss.is_overflow_zone,
+              oi.created_at
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            ORDER BY oi.created_at DESC, oi.id DESC
+            LIMIT ?
+            """,
+            (int(limit),),
+        ).fetchall()
+    return [_build_ops_home_recent_item(dict(row)) for row in rows]
+
+
+def get_ops_home_recent_sections(limit: int = 6) -> dict[str, Any]:
+    return {
+        "recent_moved_items": list_ops_home_recent_moved_items(limit=limit),
+        "recent_registered_items": list_ops_home_recent_registered_items(limit=limit),
+    }
+
+
 def create_customer_track_request(
     requested_track: str,
     requested_by: str | None = None,
@@ -3724,6 +3871,8 @@ def _normalize_owned_item_row(obj: dict[str, Any]) -> dict[str, Any]:
     obj["hat_size"] = str(obj.get("hat_size") or "").strip() or None
 
     obj["is_second_hand"] = bool(obj.get("is_second_hand"))
+    if obj.get("recently_moved_to_current_slot") is not None:
+        obj["recently_moved_to_current_slot"] = bool(obj.get("recently_moved_to_current_slot"))
     if obj.get("is_promotional_not_for_sale") is not None:
         obj["is_promotional_not_for_sale"] = bool(obj.get("is_promotional_not_for_sale"))
     if obj.get("has_obi") is not None:

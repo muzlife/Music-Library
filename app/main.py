@@ -115,6 +115,8 @@ from .schemas import (
     OwnedItemSourceReplaceResult,
     OperatorCatalogSearchItem,
     OperatorCatalogSearchResponse,
+    OpsHomeRecentItem,
+    OpsHomeRecentSectionsResponse,
     PurchaseImportListResponse,
     PurchaseImportPreviewItem,
     PurchaseImportPreviewRequest,
@@ -3314,6 +3316,15 @@ def operator_catalog_search(
             )
         )
     return OperatorCatalogSearchResponse(query=q, total_count=len(items), items=items)
+
+
+@app.get("/operator/home/recent", response_model=OpsHomeRecentSectionsResponse)
+def operator_home_recent_sections() -> OpsHomeRecentSectionsResponse:
+    data = db.get_ops_home_recent_sections()
+    return OpsHomeRecentSectionsResponse(
+        recent_moved_items=[OpsHomeRecentItem(**row) for row in data.get("recent_moved_items") or []],
+        recent_registered_items=[OpsHomeRecentItem(**row) for row in data.get("recent_registered_items") or []],
+    )
 
 
 @app.get("/operator/customer-requests", response_model=CustomerTrackRequestListResponse)
