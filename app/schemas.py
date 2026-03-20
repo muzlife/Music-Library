@@ -194,6 +194,32 @@ class OperatorCatalogSearchResponse(BaseModel):
     items: list[OperatorCatalogSearchItem] = Field(default_factory=list)
 
 
+class OpsHomeRecentItem(BaseModel):
+    owned_item_id: int
+    label_id: str
+    category: ItemCategory
+    format_name: str | None = None
+    item_title: str | None = None
+    artist_or_brand: str | None = None
+    released_date: str | None = None
+    label_name: str | None = None
+    catalog_no: str | None = None
+    cover_image_url: str | None = None
+    current_slot_code: str | None = None
+    current_slot_display_name: str | None = None
+    current_cabinet_name: str | None = None
+    current_column_code: str | None = None
+    current_cell_code: str | None = None
+    previous_slot_code: str | None = None
+    previous_slot_display_name: str | None = None
+    created_at: str
+
+
+class OpsHomeRecentSectionsResponse(BaseModel):
+    recent_moved_items: list[OpsHomeRecentItem] = Field(default_factory=list)
+    recent_registered_items: list[OpsHomeRecentItem] = Field(default_factory=list)
+
+
 class CustomerTrackRequestCreate(BaseModel):
     requested_track: str = Field(min_length=1, max_length=300)
     owned_item_id: int | None = Field(default=None, ge=1)
@@ -817,7 +843,7 @@ class CollectionDashboardResponse(BaseModel):
     by_release_type: list[CollectionValueCount] = Field(default_factory=list)
     by_size_group: list[CollectionValueCount] = Field(default_factory=list)
     by_source: list[CollectionValueCount] = Field(default_factory=list)
-    movement_window_days: int = 14
+    movement_window_days: int = 1
     recent_move_total: int = 0
     recent_moves: list[CollectionMovementItem] = Field(default_factory=list)
     by_slot: list[CollectionSlotCount] = Field(default_factory=list)
