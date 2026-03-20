@@ -72,6 +72,44 @@
       flex-wrap: wrap;
     }
 
+    .utility-mount {
+      display: flex;
+      justify-content: flex-end;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .shell-header-row {
+      margin-top: 8px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .shell-utility {
+      display: none;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .shell-utility .chip {
+      color: #334155;
+      border-color: #cbd5e1;
+      background: rgba(255,255,255,0.88);
+      padding: 4px 9px;
+      font-size: 0.72rem;
+    }
+
+    .shell-utility .tab-btn {
+      padding: 4px 9px;
+      font-size: 0.76rem;
+    }
+
     .hero p {
       margin: 0;
       color: #d1fae5;
@@ -123,6 +161,121 @@
       flex-wrap: wrap;
       gap: 8px;
       margin-top: 10px;
+    }
+
+    .admin-shell-hero {
+      margin: 10px 0 8px;
+      padding: 16px 18px;
+      border: 1px solid #d8e4ec;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at top left, rgba(254, 240, 138, 0.34), transparent 30%),
+        radial-gradient(circle at top right, rgba(191, 219, 254, 0.48), transparent 34%),
+        linear-gradient(135deg, #fff8ed 0%, #f6fbff 48%, #f2fcf5 100%);
+      color: #164e63;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.07);
+      overflow: hidden;
+      position: relative;
+      gap: 14px;
+    }
+
+    .admin-shell-hero::before,
+    .admin-shell-hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .admin-shell-hero::before {
+      width: 128px;
+      height: 128px;
+      top: -30px;
+      right: -10px;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.78) 0 18%, rgba(148, 163, 184, 0.16) 18% 22%, transparent 22%),
+        radial-gradient(circle at center, rgba(15, 23, 42, 0.08) 0 44%, transparent 44%);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+    }
+
+    .admin-shell-hero::after {
+      width: 84px;
+      height: 84px;
+      bottom: 16px;
+      right: 122px;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.76) 0 16%, rgba(148, 163, 184, 0.14) 16% 21%, transparent 21%),
+        radial-gradient(circle at center, rgba(15, 23, 42, 0.06) 0 44%, transparent 44%);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
+    }
+
+    .admin-shell-hero-main {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 14px;
+    }
+
+    .admin-shell-copy {
+      display: grid;
+      gap: 6px;
+      max-width: 56ch;
+    }
+
+    .admin-shell-kicker {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #0f766e;
+    }
+
+    .admin-shell-hero h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: -0.02em;
+      color: #164e63;
+    }
+
+    .admin-shell-hero p {
+      margin: 0;
+      color: #475569;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      max-width: 52ch;
+    }
+
+    .admin-shell-docs {
+      margin-top: 0;
+      border-color: rgba(191, 219, 254, 0.9);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(8px);
+    }
+
+    .admin-shell-docs summary {
+      color: #164e63;
+      background: rgba(255,255,255,0.52);
+    }
+
+    .admin-shell-docs .doc-link-chip {
+      border-color: #dbe3ec;
+      background: rgba(255,255,255,0.92);
+      color: #0f766e;
+    }
+
+    .admin-shell-docs .doc-link-chip:hover {
+      background: #ffffff;
+    }
+
+    .admin-shell-row {
+      margin-top: 0;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .admin-shell-row .tabs {
+      margin-top: 0;
     }
 
     .chip {
@@ -754,8 +907,167 @@
 
     .operator-shell {
       display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+      grid-template-columns: minmax(0, 1fr);
       gap: 8px;
+    }
+
+    .ops-home-hero {
+      margin: 10px 0 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      padding: 16px 18px;
+      border: 1px solid #d8e4ec;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at top right, rgba(191, 219, 254, 0.52), transparent 34%),
+        radial-gradient(circle at left center, rgba(253, 224, 191, 0.28), transparent 32%),
+        linear-gradient(135deg, #f7efe3 0%, #eefbf4 55%, #edf4ff 100%);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.07);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ops-home-hero-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.85fr);
+      gap: 16px;
+      align-items: center;
+    }
+
+    .ops-home-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(transparent 0, transparent calc(100% - 1px), rgba(148, 163, 184, 0.08) calc(100% - 1px)),
+        repeating-linear-gradient(
+          0deg,
+          rgba(148, 163, 184, 0.05) 0,
+          rgba(148, 163, 184, 0.05) 1px,
+          transparent 1px,
+          transparent 18px
+        );
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .ops-home-hero-copy,
+    .ops-home-hero-art {
+      position: relative;
+      z-index: 1;
+    }
+
+    .ops-home-hero-copy {
+      display: grid;
+      gap: 6px;
+    }
+
+    .ops-home-hero-copy h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: -0.02em;
+      color: #164e63;
+    }
+
+    .ops-home-hero-copy p {
+      margin: 0;
+      color: #475569;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      max-width: 42ch;
+    }
+
+    .ops-home-hero-kicker {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #0f766e;
+    }
+
+    .ops-home-hero-art {
+      min-height: 110px;
+    }
+
+    .ops-home-record {
+      position: absolute;
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(15, 23, 42, 0.08), rgba(255, 255, 255, 0.9)),
+        linear-gradient(135deg, #fef3c7, #dbeafe);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .ops-home-record::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 26% 24%, rgba(255,255,255,0.45), transparent 18%),
+        linear-gradient(135deg, rgba(15, 118, 110, 0.14), transparent 46%),
+        linear-gradient(145deg, rgba(71, 85, 105, 0.06), rgba(255,255,255,0.8));
+      border: 1px solid rgba(255,255,255,0.45);
+    }
+
+    .ops-home-record--a {
+      width: 132px;
+      height: 88px;
+      top: 4px;
+      right: 18px;
+      transform: rotate(-8deg);
+    }
+
+    .ops-home-record--b {
+      width: 128px;
+      height: 84px;
+      right: 90px;
+      bottom: -4px;
+      transform: rotate(8deg);
+      background:
+        linear-gradient(145deg, rgba(15, 23, 42, 0.1), rgba(255, 255, 255, 0.92)),
+        linear-gradient(135deg, #d9f99d, #fde68a);
+    }
+
+    .ops-home-note {
+      position: absolute;
+      color: rgba(15, 118, 110, 0.7);
+      font-weight: 700;
+      text-shadow: 0 8px 14px rgba(15, 23, 42, 0.08);
+      user-select: none;
+    }
+
+    .ops-home-note--one {
+      top: 8px;
+      left: 24px;
+      font-size: 1.4rem;
+      transform: rotate(-8deg);
+    }
+
+    .ops-home-note--two {
+      right: 10px;
+      bottom: 12px;
+      font-size: 1.8rem;
+      transform: rotate(7deg);
+    }
+
+    .ops-home-manual {
+      margin-top: 0;
+      background: rgba(255,255,255,0.62);
+      border-color: rgba(191, 219, 254, 0.88);
+      backdrop-filter: blur(8px);
+    }
+
+    .ops-home-shell-row {
+      margin-top: 0;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ops-home-shell-row .tabs {
+      margin-top: 0;
     }
 
     .operator-card-stack {
@@ -858,6 +1170,64 @@
       max-height: 70vh;
       overflow: auto;
       padding-right: 2px;
+    }
+
+    .operator-recent-sections {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .operator-recent-section {
+      border: 1px solid #dbe4ee;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .operator-recent-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .operator-recent-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.92);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .operator-recent-copy {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .operator-recent-copy strong {
+      color: #0f172a;
+      font-size: 0.9rem;
+      line-height: 1.25;
+    }
+
+    .operator-recent-copy strong span {
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-left: 6px;
+    }
+
+    .operator-recent-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      color: #475569;
+      font-size: 0.78rem;
     }
 
     .operator-result-item,
@@ -2617,12 +2987,6 @@
       color: #9d174d;
     }
 
-    .dashboard-slot-flag-icon--recent-move {
-      border-color: #93c5fd;
-      background: #dbeafe;
-      color: #1d4ed8;
-    }
-
     .dashboard-slot-covercard-note {
       max-width: 100%;
       font-size: 0.67rem;
@@ -2792,6 +3156,34 @@
       min-width: 56px;
       max-width: 92px;
       padding-top: 2px;
+    }
+
+    .dashboard-slot-recentmove {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 0.62rem;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dashboard-slot-covercard-recentmove {
+      margin-top: 2px;
+      justify-self: start;
+    }
+
+    .dashboard-slot-listitem-recentmove {
+      margin-top: 1px;
+      justify-self: start;
     }
 
     #homeDashSlotItems.dashboard-slot-shelfview,
@@ -3043,6 +3435,19 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+      pointer-events: none;
+    }
+
+    .dashboard-slot-shelfrecentmove {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 36px;
+      z-index: 7;
+      justify-content: center;
+      padding: 3px 8px;
+      background: rgba(219, 234, 254, 0.96);
       box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
       pointer-events: none;
     }
@@ -3780,6 +4185,22 @@
       color: #0f172a;
     }
 
+    .dashboard-action-group {
+      display: grid;
+      gap: 4px;
+    }
+
+    .dashboard-action-group--view {
+      justify-items: end;
+    }
+
+    .dashboard-action-group-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #475569;
+    }
+
     .dashboard-detail-meta {
       display: flex;
       flex-wrap: wrap;
@@ -3978,6 +4399,30 @@
       display: flex;
       gap: 4px;
       flex-wrap: wrap;
+    }
+
+    .dashboard-selection-toolbar--stack {
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 5px;
+    }
+
+    .dashboard-selection-toolbar-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-slot-mutation-row {
+      display: grid;
+      gap: 6px;
+      margin: -2px 0 2px;
+      padding: 8px 10px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
     }
 
     .dashboard-bulk-edit-bar {
@@ -4629,6 +5074,43 @@
     }
 
     @media (max-width: 760px) {
+      .admin-shell-hero {
+        gap: 10px;
+        padding: 14px;
+      }
+      .admin-shell-hero h1 {
+        font-size: 1.3rem;
+      }
+      .admin-shell-row {
+        align-items: stretch;
+      }
+      .ops-home-hero {
+        gap: 10px;
+        padding: 14px;
+      }
+      .ops-home-hero-main {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .ops-home-hero-copy h1 {
+        font-size: 1.3rem;
+      }
+      .ops-home-hero-copy p {
+        font-size: 0.9rem;
+      }
+      .ops-home-hero-art {
+        min-height: 82px;
+      }
+      .ops-home-record--a {
+        width: 112px;
+        height: 74px;
+        right: 16px;
+      }
+      .ops-home-record--b {
+        width: 106px;
+        height: 72px;
+        right: 84px;
+      }
       .operator-searchbar,
       .operator-form-grid { grid-template-columns: 1fr; }
       .operator-form-grid .span-2 { grid-column: auto; }
@@ -4691,41 +5173,79 @@
 </head>
 <body data-shell-mode="ops" data-shell-readonly="true">
   <div class="wrap">
-    <header class="hero">
-      <div class="hero-topbar">
-        <h1>라이브러리 관리/운영 콘솔</h1>
-        <div class="hero-auth">
-          <span id="appSessionInfo" class="chip" style="display:none;"></span>
-          <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;">기본값 초기화</button>
-          <button id="appLogoutBtn" class="tab-btn" type="button">로그아웃</button>
+    <header id="appHero" class="hero admin-shell-hero">
+      <div class="admin-shell-hero-main">
+        <div class="admin-shell-copy">
+          <span class="admin-shell-kicker">Admin Backstage</span>
+          <h1>라이브러리 관리/운영 콘솔</h1>
+          <p>메타 관리, 배치 운영, 소스 보강을 한 화면에서 정리합니다.</p>
+        </div>
+        <details class="hero-docs admin-shell-docs">
+          <summary>문서 / ERD / 활용 매뉴얼</summary>
+          <div class="hero-docs-body">
+            <div class="mini" style="color:#475569; margin:0 0 6px;">운영자용 요약, 개발자용 상세, 화면별 사용 순서를 바로 엽니다.</div>
+            <div class="doc-link-row">
+              <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer">ERD 요약</a>
+              <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer">ERD 상세</a>
+              <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer">툴 활용 매뉴얼</a>
+              <a class="doc-link-chip" href="/tool-docs/go-live-checklist" target="_blank" rel="noreferrer">상용화 체크리스트</a>
+            </div>
+          </div>
+        </details>
+        <div class="shell-header-row admin-shell-row">
+          <div id="adminTabs" class="tabs" style="display:none;">
+            <button id="tabHomeBtn" class="tab-btn same-as-home" type="button">대시보드</button>
+            <button id="tabManageBtn" class="tab-btn" type="button">검색/관리</button>
+            <button id="tabSourceBtn" class="tab-btn same-as-home" type="button">소스 보강</button>
+            <button id="tabRegisterBtn" class="tab-btn same-as-home" type="button">등록/수집</button>
+            <button id="tabOpsBtn" class="tab-btn same-as-home" type="button">운영/연계</button>
+          </div>
+          <div id="adminUtilityMount" class="utility-mount"></div>
         </div>
       </div>
-      <details class="hero-docs">
-        <summary>문서 / ERD / 활용 매뉴얼</summary>
-        <div class="hero-docs-body">
-          <div class="mini" style="color:#d1fae5; margin:0 0 6px;">운영자용 요약, 개발자용 상세, 화면별 사용 순서를 바로 엽니다.</div>
-          <div class="doc-link-row">
-            <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer">ERD 요약</a>
-            <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer">ERD 상세</a>
-            <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer">툴 활용 매뉴얼</a>
-            <a class="doc-link-chip" href="/tool-docs/go-live-checklist" target="_blank" rel="noreferrer">상용화 체크리스트</a>
-          </div>
-        </div>
-      </details>
     </header>
 
-    <div id="shellTabs" class="tabs" style="display:none;">
-      <button id="tabSimpleBtn" class="tab-btn active" type="button">운영 홈</button>
-      <button id="shellCabinetsBtn" class="tab-btn" type="button">장식장</button>
-      <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;">관리</button>
-    </div>
+    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">
+      <div class="ops-home-hero-main">
+        <div class="ops-home-hero-copy">
+          <span class="ops-home-hero-kicker">Operator Home</span>
+          <h1>라이브러리 운영 홈</h1>
+          <p>상품을 찾고, 위치를 확인하고, 장식장으로 바로 이동합니다.</p>
+        </div>
+        <div class="ops-home-hero-art" aria-hidden="true">
+          <span class="ops-home-record ops-home-record--a"></span>
+          <span class="ops-home-record ops-home-record--b"></span>
+          <span class="ops-home-note ops-home-note--one">♪</span>
+          <span class="ops-home-note ops-home-note--two">♬</span>
+        </div>
+      </div>
+      <details class="manual-block ops-home-manual">
+        <summary>운영 홈 활용 매뉴얼</summary>
+        <div class="manual-block-body">
+          <ol>
+            <li>상품 보유 여부나 현재 위치를 빠르게 확인해야 할 때 이 화면을 엽니다.</li>
+            <li>곡명, 아티스트명, 상품명, 바코드, 견출지 ID로 먼저 상품을 조회합니다.</li>
+            <li>현재 위치와 직전 위치를 확인해 장식장 동선을 판단합니다.</li>
+            <li>수정이나 재배치가 필요하면 관리자만 상단 `관리`로 이동합니다.</li>
+          </ol>
+          <div class="manual-block-note">운영 홈은 조회 전용입니다. 상품 수정, 이동, 등록/삭제는 `관리`에서만 처리합니다.</div>
+        </div>
+      </details>
+      <div class="shell-header-row ops-home-shell-row">
+        <div id="shellTabs" class="tabs" style="display:none;">
+          <button id="tabSimpleBtn" class="tab-btn active" type="button">운영 홈</button>
+          <button id="shellCabinetsBtn" class="tab-btn" type="button">장식장</button>
+        </div>
+        <div id="opsUtilityMount" class="utility-mount"></div>
+      </div>
+    </section>
 
-    <div id="adminTabs" class="tabs" style="display:none;">
-      <button id="tabHomeBtn" class="tab-btn same-as-home" type="button">대시보드</button>
-      <button id="tabManageBtn" class="tab-btn" type="button">검색/관리</button>
-      <button id="tabSourceBtn" class="tab-btn same-as-home" type="button">소스 보강</button>
-      <button id="tabRegisterBtn" class="tab-btn same-as-home" type="button">등록/수집</button>
-      <button id="tabOpsBtn" class="tab-btn same-as-home" type="button">운영/연계</button>
+    <div id="shellUtilityBar" class="shell-utility" style="display:none;">
+      <span id="appSessionInfo" class="chip" style="display:none;"></span>
+      <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;">관리</button>
+      <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;">기본값 초기화</button>
+      <button id="appLogoutBtn" class="tab-btn" type="button">로그아웃</button>
+      <button id="shellOpsHomeBtn" class="tab-btn" type="button" style="display:none;">hahahoho</button>
     </div>
 
     <div id="tabHome" class="tab-panel active">
@@ -4798,7 +5318,7 @@
           <section class="dashboard-panel dashboard-slot-panel">
             <div class="dashboard-panel-head">
               <h3>장식장 / 슬롯 점유<span class="help-dot" tabindex="0" data-help="장식장별 적재 현황을 확인하는 영역입니다. 장식장을 누르면 층과 칸이 열리고, 칸을 누르면 그 칸에 꽂힌 상품을 확인할 수 있습니다. 위치 정리와 재배치는 이 영역에서 시작합니다.">?</span></h3>
-              <span id="homeDashSlotWindow" class="mini">최근 이동 배지 포함</span>
+              <span id="homeDashSlotWindow" class="mini">최근 이동 표시 포함</span>
             </div>
             <div id="homeDashSlotGrid" class="dashboard-slot-grid"></div>
             <div id="homeDashCabinetDetail" class="dashboard-cabinet-detail" style="display:none;">
@@ -4814,34 +5334,37 @@
                   <h4 id="homeDashSlotItemsTitle">선택 칸<span class="help-dot" tabindex="0" data-help="선택한 칸에 꽂힌 상품을 실제 운영 순서에 가깝게 확인하는 영역입니다. 선반은 진열 감각 확인, 썸네일은 커버 판별, 리스트는 순서/메타 확인에 적합합니다. 체크 후 맨 앞/맨 뒤 정렬, 다른 칸 클릭 이동, 직전 위치 복구를 처리합니다.">?</span></h4>
                   <div id="homeDashSlotItemsMeta" class="mini muted">장식장을 열고 칸을 선택하세요.</div>
                 </div>
-                <div class="dashboard-slot-viewtools">
-                  <div class="dashboard-slot-viewbar">
-                    <button id="homeDashSlotViewShelfBtn" class="dashboard-slot-viewbtn active" type="button">선반</button>
-                    <button id="homeDashSlotViewThumbBtn" class="dashboard-slot-viewbtn" type="button">썸네일</button>
-                    <button id="homeDashSlotViewListBtn" class="dashboard-slot-viewbtn" type="button">리스트</button>
-                  </div>
-                  <div class="dashboard-slot-pagebar">
-                    <button id="homeDashSlotPagePrevBtn" class="btn ghost tiny" type="button">◀</button>
-                    <select id="homeDashSlotPageSize" class="dashboard-slot-pagesize" title="한 화면 표시 수">
-                      <option value="">자동</option>
-                      <option value="12">12</option>
-                      <option value="15">15</option>
-                      <option value="18">18</option>
-                    </select>
-                    <div id="homeDashSlotPageInfo" class="dashboard-slot-pageinfo">0 / 0</div>
-                    <button id="homeDashSlotPageNextBtn" class="btn ghost tiny" type="button">▶</button>
+                <div id="homeDashSlotViewGroup" class="dashboard-action-group dashboard-action-group--view">
+                  <div class="dashboard-action-group-label">보기/탐색</div>
+                  <div class="dashboard-slot-viewtools">
+                    <div class="dashboard-slot-viewbar">
+                      <button id="homeDashSlotViewShelfBtn" class="dashboard-slot-viewbtn active" type="button">선반</button>
+                      <button id="homeDashSlotViewThumbBtn" class="dashboard-slot-viewbtn" type="button">썸네일</button>
+                      <button id="homeDashSlotViewListBtn" class="dashboard-slot-viewbtn" type="button">리스트</button>
+                    </div>
+                    <div class="dashboard-slot-pagebar">
+                      <button id="homeDashSlotPagePrevBtn" class="btn ghost tiny" type="button">◀</button>
+                      <select id="homeDashSlotPageSize" class="dashboard-slot-pagesize" title="한 화면 표시 수">
+                        <option value="">자동</option>
+                        <option value="12">12</option>
+                        <option value="15">15</option>
+                        <option value="18">18</option>
+                      </select>
+                      <div id="homeDashSlotPageInfo" class="dashboard-slot-pageinfo">0 / 0</div>
+                      <button id="homeDashSlotPageNextBtn" class="btn ghost tiny" type="button">▶</button>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="dashboard-selection-toolbar">
-                <div id="homeDashSlotSelectionSummary" class="dashboard-selection-summary">선택 0건</div>
-                <div class="dashboard-selection-actions">
-                  <button id="homeDashSlotRestoreBtn" class="btn tiny" type="button">직전 위치 복구</button>
-                  <button id="homeDashSlotEditBtn" class="btn ghost tiny" type="button">선택 상품 편집</button>
-                  <button id="homeDashSlotMoveFrontBtn" class="btn ghost tiny" type="button">맨 앞</button>
-                  <button id="homeDashSlotMoveBackBtn" class="btn ghost tiny" type="button">맨 뒤</button>
-                  <button id="homeDashSlotSelectAllBtn" class="btn ghost" type="button">전체 선택</button>
-                  <button id="homeDashSlotClearBtn" class="btn ghost" type="button">선택 해제</button>
+              <div id="homeDashSlotSelectionGroup" class="dashboard-selection-toolbar dashboard-selection-toolbar--stack">
+                <div class="dashboard-action-group-label">선택 관리</div>
+                <div class="dashboard-selection-toolbar-body">
+                  <div id="homeDashSlotSelectionSummary" class="dashboard-selection-summary">선택 0건</div>
+                  <div class="dashboard-selection-actions">
+                    <button id="homeDashSlotEditBtn" class="btn ghost tiny" type="button">선택 상품 편집</button>
+                    <button id="homeDashSlotSelectAllBtn" class="btn ghost" type="button">전체 선택</button>
+                    <button id="homeDashSlotClearBtn" class="btn ghost" type="button">선택 해제</button>
+                  </div>
                 </div>
               </div>
               <section id="homeDashCameraCard" class="dashboard-camera-card" style="display:none;">
@@ -4861,6 +5384,14 @@
                 </div>
               </section>
               <div id="homeDashSelectedItemMeta" class="compact-line" style="display:none;"></div>
+              <div id="homeDashSlotMutationGroup" class="dashboard-slot-mutation-row">
+                <div class="dashboard-action-group-label">실제 변경</div>
+                <div class="dashboard-selection-actions">
+                  <button id="homeDashSlotRestoreBtn" class="btn tiny" type="button">직전 위치 복구</button>
+                  <button id="homeDashSlotMoveFrontBtn" class="btn ghost tiny" type="button">맨 앞</button>
+                  <button id="homeDashSlotMoveBackBtn" class="btn ghost tiny" type="button">맨 뒤</button>
+                </div>
+              </div>
               <div class="dashboard-bulk-edit-bar">
                 <div>
                   <label for="homeDashBulkStatus">상태 일괄</label>
@@ -4960,56 +5491,6 @@
             </div>
             <div id="homeDashWorkbenchList" class="dashboard-workbench-list"></div>
           </section>
-          <section class="dashboard-panel">
-            <div class="dashboard-panel-head">
-              <h3>미디어 / 상태</h3>
-              <span class="mini">현재 등록 구조</span>
-            </div>
-            <div class="dashboard-stack">
-              <div>
-                <div class="dashboard-subtitle">카테고리</div>
-                <div id="homeDashByCategory" class="dashboard-chip-grid"></div>
-              </div>
-              <div>
-                <div class="dashboard-subtitle">상태</div>
-                <div id="homeDashByStatus" class="dashboard-chip-grid"></div>
-              </div>
-            </div>
-          </section>
-          <section class="dashboard-panel">
-            <div class="dashboard-panel-head">
-              <h3>도메인 / 타입 / 규격</h3>
-              <span class="mini">분류 체계 기준 현황</span>
-            </div>
-            <div class="dashboard-stack">
-              <div>
-                <div class="dashboard-subtitle">도메인</div>
-                <div id="homeDashByDomain" class="dashboard-chip-grid"></div>
-              </div>
-              <div>
-                <div class="dashboard-subtitle">타입</div>
-                <div id="homeDashByReleaseType" class="dashboard-chip-grid"></div>
-              </div>
-              <div>
-                <div class="dashboard-subtitle">보관 규격</div>
-                <div id="homeDashBySizeGroup" class="dashboard-chip-grid"></div>
-              </div>
-            </div>
-          </section>
-          <section class="dashboard-panel">
-            <div class="dashboard-panel-head">
-              <h3>확보 소스</h3>
-              <span class="mini">직접 등록 / 외부 메타 반영 비중</span>
-            </div>
-            <div id="homeDashBySource" class="dashboard-source-list"></div>
-          </section>
-          <section class="dashboard-panel">
-            <div class="dashboard-panel-head">
-              <h3>최근 이동</h3>
-              <span id="homeDashMoveWindow" class="mini">최근 14일 / 0건</span>
-            </div>
-            <div id="homeDashRecentMoves" class="dashboard-move-list"></div>
-          </section>
           </div>
         </div>
         <div id="homeDashboardStatus" class="status"></div>
@@ -5017,18 +5498,6 @@
     </div>
 
     <div id="tabSimple" class="tab-panel">
-      <details class="manual-block">
-        <summary>운영 홈 활용 매뉴얼</summary>
-        <div class="manual-block-body">
-          <ol>
-            <li>상품 보유 여부나 현재 위치를 빠르게 확인해야 할 때 이 화면을 엽니다.</li>
-            <li>곡명, 아티스트명, 상품명, 바코드, 견출지 ID로 먼저 상품을 조회합니다.</li>
-            <li>현재 위치와 직전 위치를 확인해 장식장 동선을 판단합니다.</li>
-            <li>수정이나 재배치가 필요하면 관리자만 상단 `관리`로 이동합니다.</li>
-          </ol>
-          <div class="manual-block-note">운영 홈은 조회 전용입니다. 상품 수정, 이동, 등록/삭제는 `관리`에서만 처리합니다.</div>
-        </div>
-      </details>
       <div class="operator-shell">
         <div class="operator-card-stack">
           <section class="card">
@@ -5051,66 +5520,10 @@
               <span id="operatorLookupCount" class="mini">0건</span>
             </div>
             <div id="operatorLookupResults" class="operator-result-list"></div>
+            <div id="operatorRecentSections" class="operator-recent-sections" aria-live="polite"></div>
           </section>
         </div>
 
-        <div class="operator-card-stack">
-          <section id="operatorRequestComposerCard" class="card">
-            <div class="result-head">
-              <strong>요청곡 등록<span class="help-dot" tabindex="0" data-help="고객 요청곡이나 현장 재생 요청을 기록하는 영역입니다. 어떤 곡을 어떤 상품으로 응대한 것인지와 원래 위치를 함께 남겨 두면 재배치와 복귀 확인이 쉬워집니다.">?</span></strong>
-              <span class="mini">현장 운영자는 요청 로그만 입력합니다.</span>
-            </div>
-            <div class="operator-form-grid">
-              <div class="span-2">
-                <label for="operatorRequestTrack">요청곡</label>
-                <input id="operatorRequestTrack" placeholder="예: 청춘" />
-              </div>
-              <div class="span-2">
-                <label for="operatorRequestItemText">연결 상품</label>
-                <input id="operatorRequestItemText" placeholder="선택 안 됨" readonly />
-                <input id="operatorRequestOwnedItemId" type="hidden" />
-              </div>
-              <div>
-                <label for="operatorRequestMatchedTrack">연결 트랙명</label>
-                <input id="operatorRequestMatchedTrack" placeholder="예: 청춘" />
-              </div>
-              <div>
-                <label for="operatorRequestMatchedTrackNo">트랙 번호</label>
-                <input id="operatorRequestMatchedTrackNo" type="number" min="1" placeholder="예: 4" />
-              </div>
-              <div class="span-2">
-                <label for="operatorRequestCustomerNote">운영 메모</label>
-                <input id="operatorRequestCustomerNote" placeholder="예: 3번 테이블 요청 / DJ 교체 예정" />
-              </div>
-            </div>
-            <div class="row" style="margin-top:8px;">
-              <button id="operatorRequestCreateBtn" class="btn" type="button">요청 등록</button>
-              <button id="operatorRequestClearBtn" class="btn ghost" type="button">입력 비우기</button>
-            </div>
-            <div id="operatorRequestStatus" class="status"></div>
-          </section>
-
-          <section id="operatorRequestHistoryCard" class="card">
-            <div class="result-head">
-              <strong>최근 요청곡</strong>
-              <span id="operatorRequestCount" class="mini">0건</span>
-            </div>
-            <div class="row" style="justify-content:space-between;">
-              <div>
-                <label for="operatorRequestFilterStatus">상태</label>
-                <select id="operatorRequestFilterStatus">
-                  <option value="">전체</option>
-                  <option value="REQUESTED">요청 접수</option>
-                  <option value="PLAYING">재생중</option>
-                  <option value="RETURNED">반납 완료</option>
-                  <option value="CANCELLED">취소</option>
-                </select>
-              </div>
-              <button id="operatorRequestRefreshBtn" class="btn ghost" type="button">새로고침</button>
-            </div>
-            <div id="operatorRequestList" class="operator-request-list"></div>
-          </section>
-        </div>
       </div>
     </div>
 
@@ -7546,6 +7959,8 @@
       status: "idle",
       matchReason: "",
     };
+    let recentMovedItems = [];
+    let recentRegisteredItems = [];
     let operatorRequestItems = [];
     let dashboardDraggedOwnedItemId = null;
     let dashboardDraggedSlotCode = null;
@@ -8722,6 +9137,16 @@
       $("shellAdminBtn")?.classList.toggle("active", mode === "admin");
     }
 
+    function placeShellUtilityBar(mode = currentShellMode()) {
+      const utilityBar = $("shellUtilityBar");
+      if (!utilityBar) return;
+      const targetMount = mode === "admin" ? $("adminUtilityMount") : $("opsUtilityMount");
+      if (!targetMount) return;
+      if (utilityBar.parentElement !== targetMount) {
+        targetMount.appendChild(utilityBar);
+      }
+    }
+
     function resetReadOnlyShellState() {
       resetDashboardSlotSelection();
       resetDashboardUnassignedSelection();
@@ -8764,10 +9189,15 @@
       setTextIfPresent("tabSimpleBtn", "운영 홈");
       setTextIfPresent("shellCabinetsBtn", "장식장");
       setTextIfPresent("shellAdminBtn", "관리");
+      placeShellUtilityBar(mode);
+      setDisplayIfPresent("appHero", authenticated && isAdmin && mode === "admin" ? "block" : "none");
+      setDisplayIfPresent("opsHomeHero", authenticated && mode !== "admin" ? "grid" : "none");
       setDisplayIfPresent("shellTabs", authenticated ? "flex" : "none");
+      setDisplayIfPresent("shellUtilityBar", authenticated ? "flex" : "none");
       setDisplayIfPresent("tabSimpleBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
-      setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin ? "inline-flex" : "none");
+      setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");
+      setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       syncShellButtons();
       syncShellReadonlyState();
@@ -8817,7 +9247,12 @@
       if (nextMode === "cabinets" && pendingOpsCabinetSelection && homeDashboardBySlot.length) {
         applyPendingOpsCabinetSelection({ silent: true }).catch(() => {});
       }
-      if (nextMode === "ops") focusOpsHomeSearchInput();
+      if (nextMode === "ops") {
+        if (appAuthSessionResolved && appAuthSession?.authenticated) {
+          loadOperatorHomeRecentSections();
+        }
+        focusOpsHomeSearchInput();
+      }
     }
 
     function switchMainTab(tab, options = {}) {
@@ -8944,6 +9379,15 @@
       applyShellNavigation(appAuthSession);
     }
 
+    function loadAdminBootstrapData() {
+      if (!isAdminSession()) return;
+      loadOpsCameras({ silent: true });
+      loadReviewQueue();
+      loadAlbumMasterGroups();
+      loadMetadataSyncStatus();
+      loadOpsSystemStatus();
+    }
+
     async function loadAuthSession(initialShellMode) {
       try {
         const res = await fetch("/auth/session");
@@ -8957,6 +9401,8 @@
         renderOpsExceptionPresetOptions();
         applyDefaultOpsExceptionPreset();
         applyRouteSelectedShellMode(initialShellMode);
+        loadOperatorHomeRecentSections();
+        loadAdminBootstrapData();
       } catch (_) {
         appAuthSession = null;
         appAuthSessionResolved = true;
@@ -8965,6 +9411,7 @@
         clearDashboardSearchAutofill();
         renderOpsExceptionPresetOptions();
         applyRouteSelectedShellMode(initialShellMode);
+        loadOperatorHomeRecentSections();
       }
     }
 
@@ -9305,6 +9752,96 @@
       renderOperatorLookupResults();
     }
 
+    function renderOperatorHomeRecentItems(items, options = {}) {
+      const list = Array.isArray(items) ? items : [];
+      const kind = String(options.kind || "").trim();
+      return list.map((row) => {
+        const ownedItemId = Number(row.owned_item_id || row.id || 0);
+        const title = String(row.item_title || "-").trim() || "-";
+        const artist = String(row.artist_or_brand || "").trim();
+        const currentLocation = String(row.current_slot_display_name || "미배치").trim() || "미배치";
+        const previousLocation = String(row.previous_slot_display_name || row.previous_slot_code || "-").trim() || "-";
+        const currentCabinetName = String(row.current_cabinet_name || "").trim();
+        const currentColumnCode = String(row.current_column_code || "").trim();
+        const currentCellCode = String(row.current_cell_code || "").trim();
+        const hasCurrentTriplet = Boolean(currentCabinetName && currentColumnCode && currentCellCode);
+        const whenLabel = kind === "moved" ? "이동" : "등록";
+        const secondLine = kind === "moved"
+          ? `<span><strong>직전</strong> ${escapeHtml(previousLocation)}</span>`
+          : "";
+        const actionHtml = hasCurrentTriplet
+          ? `<button class="btn ghost tiny" type="button" data-operator-open-cabinet="${ownedItemId}" data-cabinet-name="${escapeHtml(currentCabinetName)}" data-column-code="${escapeHtml(currentColumnCode)}" data-cell-code="${escapeHtml(currentCellCode)}">장식장 열기</button>`
+          : `<div class="mini muted">미배치</div>`;
+        return `
+          <div class="operator-recent-item">
+            <div class="operator-recent-copy">
+              <strong>${escapeHtml(title)}${artist ? `<span>${escapeHtml(artist)}</span>` : ""}</strong>
+              <div class="operator-recent-meta">
+                <span><strong>현재</strong> ${escapeHtml(currentLocation)}</span>
+                ${secondLine}
+              </div>
+              <div class="operator-recent-meta">
+                <span>${escapeHtml(String(row.label_id || "").trim() || "-")}</span>
+                <span><strong>${escapeHtml(whenLabel)}</strong> ${escapeHtml(formatDateTimeCompact(row.created_at))}</span>
+              </div>
+            </div>
+            <div class="operator-actions">${actionHtml}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderOperatorHomeRecentSections() {
+      const el = $("operatorRecentSections");
+      if (!el) return;
+      if (!recentMovedItems.length && !recentRegisteredItems.length) {
+        el.innerHTML = "";
+        el.style.display = "none";
+        return;
+      }
+      el.style.display = "grid";
+      el.innerHTML = [
+        recentMovedItems.length ? `
+          <section class="operator-recent-section">
+            <div class="result-head" style="margin-top:0;">
+              <strong>최근 배치 이동 상품</strong>
+              <span class="mini">${formatCount(recentMovedItems.length)}건</span>
+            </div>
+            <div class="operator-recent-list">${renderOperatorHomeRecentItems(recentMovedItems, { kind: "moved" })}</div>
+          </section>
+        ` : "",
+        recentRegisteredItems.length ? `
+          <section class="operator-recent-section">
+            <div class="result-head" style="margin-top:0;">
+              <strong>최근 등록 상품</strong>
+              <span class="mini">${formatCount(recentRegisteredItems.length)}건</span>
+            </div>
+            <div class="operator-recent-list">${renderOperatorHomeRecentItems(recentRegisteredItems, { kind: "registered" })}</div>
+          </section>
+        ` : "",
+      ].filter(Boolean).join("");
+    }
+
+    async function loadOperatorHomeRecentSections() {
+      if (!appAuthSession?.authenticated) {
+        recentMovedItems = [];
+        recentRegisteredItems = [];
+        renderOperatorHomeRecentSections();
+        return;
+      }
+      try {
+        const res = await fetch("/operator/home/recent");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, "운영 홈 최근 목록 조회 실패"));
+        recentMovedItems = Array.isArray(data.recent_moved_items) ? data.recent_moved_items : [];
+        recentRegisteredItems = Array.isArray(data.recent_registered_items) ? data.recent_registered_items : [];
+      } catch (_) {
+        recentMovedItems = [];
+        recentRegisteredItems = [];
+      }
+      renderOperatorHomeRecentSections();
+    }
+
     function operatorSummaryReasonLabel(reason) {
       if (reason === "barcode") return "바코드 정확 일치";
       if (reason === "label") return "견출지 ID 정확 일치";
@@ -9463,15 +10000,6 @@
             `<button class="btn ghost tiny" type="button" data-operator-open-cabinet="${ownedItemId}" data-cabinet-name="${escapeHtml(currentCabinetName)}" data-column-code="${escapeHtml(currentColumnCode)}" data-cell-code="${escapeHtml(currentCellCode)}">장식장 열기</button>`
           );
         }
-        if (!readOnlyShell && trackHits.length) {
-          trackHits.slice(0, 5).forEach((track, idx) => {
-            rightButtons.push(
-              `<button class="btn ghost tiny" type="button" data-operator-fill-track="${ownedItemId}" data-operator-track-title="${escapeHtml(track)}" data-operator-track-no="${idx + 1}">요청 등록</button>`
-            );
-          });
-        } else if (!readOnlyShell) {
-          rightButtons.push(`<button class="btn ghost tiny" type="button" data-operator-fill-item="${ownedItemId}">상품 연결</button>`);
-        }
         if (operatorCanUseManage()) {
           rightButtons.push(`<button class="btn ghost tiny" type="button" data-operator-open-manage="${ownedItemId}">관리 화면</button>`);
         }
@@ -9496,7 +10024,7 @@
               <div class="operator-track-hits">
                 ${trackHits.length
                   ? trackHits.slice(0, 5).map((track) => `<div class="operator-track-hit"><strong>곡</strong>${escapeHtml(track)}</div>`).join("")
-                  : `<div class="mini muted">${readOnlyShell ? "곡 일치 항목이 없으면 상품 기준으로 현재 위치를 확인하세요." : "곡 일치 항목이 없으면 상품 기준으로 요청을 남길 수 있습니다."}</div>`
+                  : `<div class="mini muted">곡 일치 항목이 없으면 상품 기준으로 현재 위치를 확인하세요.</div>`
                 }
               </div>
             </div>
@@ -9513,23 +10041,6 @@
         const columnCode = String(cabinetBtn.getAttribute("data-column-code") || "").trim();
         const cellCode = String(cabinetBtn.getAttribute("data-cell-code") || "").trim();
         await openOpsCabinetView(cabinetName, columnCode, cellCode);
-        return;
-      }
-      if (isShellReadOnly()) return;
-      const trackBtn = e.target.closest("[data-operator-fill-track]");
-      if (trackBtn) {
-        const ownedItemId = Number(trackBtn.getAttribute("data-operator-fill-track") || 0);
-        const trackTitle = String(trackBtn.getAttribute("data-operator-track-title") || "").trim();
-        const trackNo = String(trackBtn.getAttribute("data-operator-track-no") || "").trim();
-        const row = operatorLookupResults.find((item) => Number(item.owned_item_id || 0) === ownedItemId);
-        if (row) fillOperatorRequestForm(row, trackTitle, trackNo);
-        return;
-      }
-      const itemBtn = e.target.closest("[data-operator-fill-item]");
-      if (itemBtn) {
-        const ownedItemId = Number(itemBtn.getAttribute("data-operator-fill-item") || 0);
-        const row = operatorLookupResults.find((item) => Number(item.owned_item_id || 0) === ownedItemId);
-        if (row) fillOperatorRequestForm(row);
         return;
       }
       const manageBtn = e.target.closest("[data-operator-open-manage]");
@@ -11429,6 +11940,13 @@
       return previousLocation ? `${previousLocation}에서 이동` : "최근 이동";
     }
 
+    function dashboardRecentMoveInlineHtml(row, extraClass = "") {
+      const recentMoveText = dashboardRecentMoveText(row);
+      if (!recentMoveText) return "";
+      const className = ["dashboard-slot-recentmove", extraClass].filter(Boolean).join(" ");
+      return `<div class="${className}" title="${escapeHtml(recentMoveText)}">최근 이동 · ${escapeHtml(recentMoveText)}</div>`;
+    }
+
     function dashboardItemReleasedText(row) {
       return String(row?.released_date || row?.release_year || "").trim() || "-";
     }
@@ -11461,17 +11979,12 @@
       const statusIcon = statusCode && statusCode !== "IN_COLLECTION"
         ? `<span class="dashboard-slot-flag-icon" title="${escapeHtml(dashboardStatusLabel(statusCode))}">${escapeHtml(statusIconLabel(statusCode) || statusCode.slice(0, 2).toUpperCase())}</span>`
         : "";
-      const recentMoveText = dashboardRecentMoveText(row);
-      const recentMoveIcon = recentMoveText
-        ? `<span class="dashboard-slot-flag-icon dashboard-slot-flag-icon--recent-move" title="${escapeHtml(recentMoveText)}">이동</span>`
-        : "";
       return [
         formatIcon,
         signatureIcon,
         coverConditionIcon,
         discConditionIcon,
         statusIcon,
-        recentMoveIcon,
       ].filter(Boolean).join("");
     }
 
@@ -11522,6 +12035,7 @@
             <div class="dashboard-slot-covercard-title">${escapeHtml(title)}</div>
             <div class="dashboard-slot-covercard-sub">${escapeHtml(releasedDate)}</div>
             <div class="dashboard-slot-covercard-sub">${escapeHtml(labelCatalogText)}</div>
+            ${dashboardRecentMoveInlineHtml(row, "dashboard-slot-covercard-recentmove")}
             ${memoryNote ? `<div class="dashboard-slot-covercard-note">${escapeHtml(memoryNote)}</div>` : ""}
           </div>
         </div>
@@ -11558,6 +12072,7 @@
               <div class="dashboard-slot-listitem-date">${escapeHtml(releasedDate)}</div>
             </div>
             <div class="dashboard-slot-listitem-sub">${escapeHtml(dashboardItemLabelCatalogText(row))}</div>
+            ${dashboardRecentMoveInlineHtml(row, "dashboard-slot-listitem-recentmove")}
             ${memoryNote ? `<div class="dashboard-slot-listitem-note">${escapeHtml(memoryNote)}</div>` : ""}
           </div>
           ${readOnlyShell ? "" : `<button class="dashboard-slot-editbtn" type="button" aria-label="상품 수정" data-dashboard-slot-edit="${ownedItemId}" title="상품 수정">✎</button>`}
@@ -11589,6 +12104,7 @@
           <div class="dashboard-slot-shelfcover">
             <div class="dashboard-slot-covercard-index">${index + 1}</div>
             ${flagIcons ? `<div class="dashboard-slot-covercard-badges">${flagIcons}</div>` : ""}
+            ${dashboardRecentMoveInlineHtml(row, "dashboard-slot-shelfrecentmove")}
             ${dashboardItemCoverHtml(row, title)}
           </div>
         </div>
@@ -12716,14 +13232,14 @@
 
     function renderDashboardRecentMoves(rows, windowDays, totalMoves) {
       const root = $("homeDashRecentMoves");
-      if (!root) return;
       const info = $("homeDashMoveWindow");
       const slotInfo = $("homeDashSlotWindow");
       const list = Array.isArray(rows) ? rows : [];
-      const safeWindowDays = Math.max(1, Number(windowDays || 14));
+      const safeWindowDays = Math.max(1, Number(windowDays || 1));
       const safeTotalMoves = Math.max(0, Number(totalMoves || 0));
       if (info) info.textContent = `최근 ${safeWindowDays}일 / ${formatCount(safeTotalMoves)}건`;
       if (slotInfo) slotInfo.textContent = `최근 ${safeWindowDays}일 기준 IN / OUT`;
+      if (!root) return;
       if (!list.length) {
         root.innerHTML = "<div class='mini muted'>최근 이동 이력이 없습니다.</div>";
         return;
@@ -12766,7 +13282,6 @@
 
     function renderDashboardSourceRows(rows, totalItems) {
       const root = $("homeDashBySource");
-      if (!root) return;
       const list = Array.isArray(rows) ? rows : [];
       setTextIfPresent("homeDashSourceCount", formatCount(list.length));
       const externalLinkedEl = $("homeDashExternalSourceItems");
@@ -12778,6 +13293,7 @@
         }, 0);
         externalLinkedEl.textContent = formatCount(externalLinkedCount);
       }
+      if (!root) return;
       if (!list.length) {
         root.innerHTML = "<div class='mini muted'>소스 데이터가 없습니다.</div>";
         return;
@@ -19628,6 +20144,7 @@
     $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
     $("shellCabinetsBtn").addEventListener("click", () => switchShellMode("cabinets"));
     $("shellAdminBtn").addEventListener("click", () => switchShellMode("admin"));
+    $("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabManageBtn").addEventListener("click", () => openAdminConsole("manage"));
     $("tabSourceBtn").addEventListener("click", () => openAdminConsole("source"));
     $("tabRegisterBtn").addEventListener("click", () => openAdminConsole("register"));
@@ -19682,24 +20199,9 @@
       e.preventDefault();
       loadOperatorLookupResults();
     });
-    $("operatorRequestCreateBtn").addEventListener("click", createOperatorRequest);
-    $("operatorRequestClearBtn").addEventListener("click", () => {
-      clearOperatorRequestForm();
-      setStatus("operatorRequestStatus", "", "");
-    });
-    $("operatorRequestRefreshBtn").addEventListener("click", loadOperatorRequestList);
-    $("operatorRequestFilterStatus").addEventListener("change", loadOperatorRequestList);
     $("operatorHelperSummary").addEventListener("click", handleOperatorLookupAction);
     $("operatorLookupResults").addEventListener("click", handleOperatorLookupAction);
-    $("operatorRequestList").addEventListener("click", async (e) => {
-      if (isShellReadOnly()) return;
-      const statusBtn = e.target.closest("[data-operator-request-status]");
-      if (!statusBtn) return;
-      const requestId = Number(statusBtn.getAttribute("data-operator-request-status") || 0);
-      const status = String(statusBtn.getAttribute("data-status") || "").trim().toUpperCase();
-      if (!requestId || !status) return;
-      await updateOperatorRequestStatus(requestId, status);
-    });
+    $("operatorRecentSections").addEventListener("click", handleOperatorLookupAction);
     $("homeOpenManageBtn").addEventListener("click", () => switchMainTab("manage"));
     $("homeOpenRegisterBtn").addEventListener("click", () => {
       switchMainTab("register");
@@ -20825,24 +21327,17 @@
     renderOpsExceptionSummary();
     renderOpsExceptionList();
     syncMasterExceptionBanner();
-    clearOperatorRequestForm();
     renderOperatorLookupResults();
-    renderOperatorRequestList();
+    renderOperatorHomeRecentSections();
     renderPurchaseImportPreview([]);
     renderPurchaseImportQueue([]);
     resetDashboardBulkEditForm();
     syncDashboardSelectionControls();
     loadStorageSlots();
-    loadOpsCameras({ silent: true });
     loadAuthSession(initialShellMode);
-    loadOperatorRequestList();
     loadHomeDashboard();
     homeSearchOwnedItems({ resetPage: true });
-    loadReviewQueue();
     loadMasterOwnedItems();
-    loadAlbumMasterGroups();
-    loadMetadataSyncStatus();
-    loadOpsSystemStatus();
     window.addEventListener("popstate", () => {
       const routeShellMode = shellModeFromPath();
       appShellMode = routeShellMode;
