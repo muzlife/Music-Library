@@ -1,5 +1,7 @@
 import re
 import subprocess
+import tempfile
+import json
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +14,109 @@ def read_static_html(name: str) -> str:
 
 def extract_inline_scripts(html: str) -> list[str]:
     return re.findall(r"<script>(.*?)</script>", html, re.S)
+
+
+def call_js_comparator_card_fragment(payload: dict | None = None) -> dict:
+    html = read_static_html("index.html")
+    script = html.split("function sourceWorkbenchEditionComparatorFieldDefs() {", 1)[1].split("function buildSourceWorkbenchSearchRequest(entry, opts = {}) {", 1)[0]
+    payload = payload or {}
+    payload_json = json.dumps(payload, ensure_ascii=False)
+    harness = '''
+function sourceWorkbenchEditionComparatorFieldDefs() {
+__SCRIPT__
+
+function escapeHtml(input) {
+  return String(input == null ? "" : input)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/\x27/g, "&#39;");
+}
+
+const payload = __PAYLOAD__;
+const current = payload.current || {};
+const candidate = payload.candidate || {};
+const rows = buildSourceWorkbenchEditionComparatorRows({ current, candidate });
+const summary = buildSourceWorkbenchEditionComparatorSummary({ current, candidate });
+const explanations = buildSourceWorkbenchEditionComparatorExplanationPhrases({ current, candidate });
+const comparatorCard = sourceWorkbenchEditionComparatorCardHtml({ summary, rows, explanations });
+const roles = rows.reduce((acc, row) => {
+  if (!row?.key) return acc;
+  acc.push({ key: row.key, cardRole: row.cardRole || "", group: row.group || "", label: row.label || "" });
+  return acc;
+}, []);
+process.stdout.write(JSON.stringify({ summary, comparatorCard, roles }));
+'''
+    harness = harness.replace("__SCRIPT__", script).replace("__PAYLOAD__", payload_json)
+    with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
+        handle.write(harness)
+        path = Path(handle.name)
+    try:
+        result = subprocess.run(["node", str(path)], capture_output=True, text=True, check=False, cwd=str(REPO_ROOT))
+    finally:
+        path.unlink(missing_ok=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout, "empty node output"
+    return json.loads(result.stdout)
+
+
+def extract_js_function(script: str, function_name: str) -> str:
+    marker = f"    function {function_name}("
+    start = script.index(marker)
+    tail = script[start + 4 :]
+    match = re.search(r"\n    function [A-Za-z0-9_]+\s*\(", tail)
+    if not match:
+        return script[start:]
+    return script[start : start + 4 + match.start()]
+
+
+def render_media_search_result_card_html(row: dict) -> str:
+    html = read_static_html("index.html")
+    script = next((s for s in extract_inline_scripts(html) if "function homeResultItemHtml(row) {" in s), "")
+    assert script, "homeResultItemHtml function block not found"
+    blocks = [
+        extract_js_function(script, "homeMasterMemberPreviewHtml"),
+        extract_js_function(script, "getHomeMasterVisiblePreviewItems"),
+        extract_js_function(script, "homeMasterMemberPreviewToggleHtml"),
+        extract_js_function(script, "homeResultItemHtml"),
+    ]
+    harness = f"""
+const t = (key, params) => key + (params ? JSON.stringify(params) : "");
+const escapeHtml = (input) => String(input == null ? "" : input);
+const normalizeSourceCode = (value) => String(value || "").trim().toUpperCase();
+const resolveAlbumMasterName = (row) => String(row?.title || "");
+const homeMasterHeadingLabel = (row) => String(row?.heading || "");
+const buildOperatorDisplayTitleParts = (item) => ({{
+  title: String(item?.title || item?.name || item?.item_name || ""),
+  artist: String(item?.artist || ""),
+}});
+const formatOperatorCardDateTime = () => "";
+const operatorRunoutSampleText = () => "-";
+const homeMasterMemberPreviewMetaLine = () => "";
+const homeMasterMemberPreviewLocationHtml = () => "";
+const getMediaSearchContextSelectedOwnedItemId = () => 0;
+const mediaSearchMemberPreviewCoverSrc = () => "";
+const discogsRepairSlotHtml = () => "";
+const formatCount = (value) => String(value);
+const homeMasterLocationButtonsHtml = () => "";
+const homeExpandedMasterPreviewIds = new Set();
+const homeSelectedMasterId = 0;
+
+{chr(10).join(blocks)}
+
+const row = {json.dumps(row, ensure_ascii=False)};
+process.stdout.write(homeResultItemHtml(row) || "");
+"""
+    with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
+        handle.write(harness)
+        path = Path(handle.name)
+    try:
+        result = subprocess.run(["node", str(path)], capture_output=True, text=True, check=False, cwd=str(REPO_ROOT))
+    finally:
+        path.unlink(missing_ok=True)
+    assert result.returncode == 0, result.stderr
+    return result.stdout
 
 
 def test_login_page_redirect_target_is_ops():
@@ -162,21 +267,15 @@ def test_ops_home_context_panel_reuses_open_cabinet_action():
     assert "openOperatorCabinetLocationFromButton" in html
 
 
-def test_ops_home_context_panel_supports_click_pin_and_hover_preview():
+def test_ops_home_context_panel_updates_only_on_click_selection():
     html = read_static_html("index.html")
     assert "let homePreviewContextItem = null;" in html
-    assert "function clearOpsLibraryContextPreview()" in html
     assert "const activeItem = homeSelectedContextItem || homePreviewContextItem || null;" in html
-    assert 'setOpsLibraryContextSelectionFromTarget(e.target, { pin: false });' in html
     assert 'setOpsLibraryContextSelectionFromTarget(e.target, { pin: true });' in html
-    assert '$("operatorLookupResults").addEventListener("mouseleave", () => {' in html
-    assert '$("operatorLookupResults").addEventListener("focusout", (e) => {' in html
-
-
-def test_ops_home_hover_preview_does_not_override_pinned_selection():
-    html = read_static_html("index.html")
-    block = html.split("function setOpsLibraryContextSelectionFromTarget(target, options = {}) {", 1)[1].split("function resolveOperatorWeatherCoords() {", 1)[0]
-    assert "if (homeSelectedContextItem) return false;" in block
+    assert '$("operatorLookupResults").addEventListener("mouseover"' not in html
+    assert '$("operatorLookupResults").addEventListener("focusin"' not in html
+    assert '$("operatorLookupResults").addEventListener("mouseleave"' not in html
+    assert '$("operatorLookupResults").addEventListener("focusout"' not in html
 
 
 def test_ops_home_feed_reload_preserves_pinned_context_selection():
@@ -285,22 +384,28 @@ def test_ops_home_context_panel_groups_plugins_above_mini_map_and_preview():
 
 def test_ops_home_context_panel_includes_artist_context_shell_and_loader():
     html = read_static_html("index.html")
-    assert 'id="opsArtistContextCard"' in html
+    assert 'const cardId = String(options.cardId || "opsArtistContextCard");' in html
     assert "const opsArtistContextCache = new Map();" in html
     assert "let opsArtistContextLoadingKey = \"\";" in html
     assert "let opsArtistContextRequestSeq = 0;" in html
-    assert "function renderOpsArtistContextCard(item) {" in html
-    assert "function renderOpsArtistContextIdle() {" in html
-    assert "function renderOpsArtistContextLoading(item) {" in html
-    assert "function renderOpsArtistContextReady(payload) {" in html
-    assert "function renderOpsArtistContextUnavailable(item, payload = null) {" in html
-    assert "async function loadOpsArtistContext(item) {" in html
+    assert "function renderOpsArtistContextCard(item, options = {}) {" in html
+    assert "function renderOpsArtistContextIdle(options = {}) {" in html
+    assert "function renderOpsArtistContextLoading(item, options = {}) {" in html
+    assert "function renderOpsArtistContextReady(payload, options = {}) {" in html
+    assert "function renderOpsArtistContextUnavailable(item, payload = null, options = {}) {" in html
+    assert "async function loadOpsArtistContext(item, options = {}) {" in html
     default_block = html.split("function renderOpsLibraryContextDefault(climate) {", 1)[1].split("function getOpsPlacementHintOwnedItemId(item) {", 1)[0]
     selection_block = html.split("function renderOpsLibraryContextSelection(item) {", 1)[1].split("function findOpsLibraryContextCabinetGroup(item) {", 1)[0]
     assert "${renderOpsPluginSection(`" in default_block
     assert "${renderOpsArtistContextIdle()}" in default_block
     assert "${renderOpsArtistContextCard(item)}" in selection_block
     assert "loadOpsArtistContext(item).catch(() => {});" in selection_block
+
+
+def test_ops_home_artist_context_caches_only_available_payloads():
+    html = read_static_html("index.html")
+    load_block = html.split("async function loadOpsArtistContext(item, options = {}) {", 1)[1].split("    function getMediaSearchContextSelectedOwnedItemId()", 1)[0]
+    assert "if (payload.available) opsArtistContextCache.set(cacheKey, payload);" in load_block
 
 
 def test_ops_home_artist_context_runtime_copy_uses_i18n_keys():
@@ -326,8 +431,13 @@ def test_ops_home_artist_context_runtime_copy_uses_i18n_keys():
 
 def test_ops_home_artist_context_ready_markup_supports_original_summary_toggle():
     html = read_static_html("index.html")
+    idle_block = html.split("function renderOpsArtistContextIdle(options = {}) {", 1)[1].split("function renderOpsArtistContextLoading", 1)[0]
+    loading_block = html.split("function renderOpsArtistContextLoading(item, options = {}) {", 1)[1].split("function renderOpsArtistContextLinks", 1)[0]
     ready_block = html.split("function renderOpsArtistContextReady(payload, options = {}) {", 1)[1].split("function renderOpsArtistContextUnavailable", 1)[0]
+    assert "payload.image_url" not in idle_block
+    assert "payload.image_url" not in loading_block
     assert "payload.image_url" in ready_block
+    assert 'ops-artist-context-card${payload.image_url ? " has-image" : ""}' in ready_block
     assert "ops-artist-context-media" in ready_block
     assert "ops-artist-context-image" in ready_block
     assert "payload.summary_original" in ready_block
@@ -339,9 +449,38 @@ def test_ops_home_artist_context_ready_markup_supports_original_summary_toggle()
 
 def test_ops_home_artist_context_image_uses_square_top_aligned_crop():
     html = read_static_html("index.html")
-    css_block = html.split(".ops-artist-context-media {", 1)[1].split(".ops-artist-context-summary {", 1)[0]
-    assert "aspect-ratio: 1 / 1;" in css_block
-    assert "object-position: center top;" in css_block
+    card_block = html.split(".ops-artist-context-card.has-image {", 1)[1].split(".ops-artist-context-head {", 1)[0]
+    media_block = html.split(".ops-artist-context-media {", 1)[1].split(".ops-artist-context-image {", 1)[0]
+    image_block = html.split(".ops-artist-context-image {", 1)[1].split(".ops-artist-context-summary {", 1)[0]
+    assert "grid-template-columns: 104px minmax(0, 1fr);" in card_block
+    assert "grid-template-areas:" in card_block
+    assert '"head head"' in card_block
+    assert '"media name"' in card_block
+    assert "width: 104px;" in media_block
+    assert "justify-self: start;" in media_block
+    assert "align-self: start;" in media_block
+    assert "aspect-ratio: 1 / 1;" in image_block
+    assert "object-position: center top;" in image_block
+
+
+def test_ops_home_artist_context_without_image_uses_linear_flow():
+    html = read_static_html("index.html")
+    head_block = html.split(".ops-artist-context-head {", 1)[1].split("}", 1)[0]
+    name_block = html.split(".ops-artist-context-name {", 1)[1].split("}", 1)[0]
+    summary_wrap_block = html.split(".ops-artist-context-summary-wrap {", 1)[1].split("}", 1)[0]
+    meta_block = html.split(".ops-artist-context-meta {", 1)[1].split("}", 1)[0]
+    links_block = html.split(".ops-artist-context-links {", 1)[1].split("}", 1)[0]
+    assert "grid-area:" not in head_block
+    assert "grid-area:" not in name_block
+    assert "grid-area:" not in summary_wrap_block
+    assert "grid-area:" not in meta_block
+    assert "grid-area:" not in links_block
+    assert ".ops-artist-context-card.has-image .ops-artist-context-head {" in html
+    assert ".ops-artist-context-card.has-image .ops-artist-context-name {" in html
+    assert ".ops-artist-context-card.has-image .ops-artist-context-media {" in html
+    assert ".ops-artist-context-card.has-image .ops-artist-context-summary-wrap {" in html
+    assert ".ops-artist-context-card.has-image .ops-artist-context-meta {" in html
+    assert ".ops-artist-context-card.has-image .ops-artist-context-links {" in html
 
 
 def test_ops_home_context_panel_excludes_collector_card_shell_and_loader():
@@ -418,9 +557,23 @@ def test_ops_home_context_panel_adds_placement_hint_i18n_copy():
 
 def test_media_search_context_subtitle_removes_slot_recommendation_copy():
     html = read_static_html("index.html")
-    assert '"media.search.context.subtitle": "상품 preview를 선택하면 아티스트 소개와 현재 장식장 위치를 여기서 확인합니다."' in html
-    assert '"media.search.context.subtitle": "Select a member-item preview to see artist background and the current cabinet location here."' in html
-    assert '"media.search.context.subtitle": "商品 preview を選ぶと、アーティスト紹介と現在のキャビネット位置をここで確認できます。"' in html
+    assert '"media.search.context.subtitle": "상품 preview를 선택하면 현재 위치와 아티스트 컨텍스트를 여기서 확인하고 관리 화면으로 이어갈 수 있습니다."' in html
+    assert '"media.search.context.subtitle": "Select a member-item preview to inspect its current location, artist context, and jump into manage."' in html
+    assert '"media.search.context.subtitle": "商品 preview を選ぶと、現在位置とアーティストコンテキストを確認し、そのまま管理へ進めます。"' in html
+
+
+def test_media_search_right_panel_selected_item_inspector_copy():
+    html = read_static_html("index.html")
+    default_block = html.split("    function renderMediaSearchContextDefault() {", 1)[1].split("    function setMediaSearchContextSelectionByOwnedItem(ownedItemId) {", 1)[0]
+    selection_block = html.split("    function renderMediaSearchContextSelection(item) {", 1)[1].split("    function findOpsLibraryContextCabinet(item) {", 1)[0]
+    assert '"media.search.context.title": "선택한 상품"' in html
+    assert '"media.search.context.title": "Selected item"' in html
+    assert '"media.search.context.title": "選択した商品"' in html
+    assert '"media.search.context.subtitle": "상품 preview를 선택하면 현재 위치와 아티스트 컨텍스트를 여기서 확인하고 관리 화면으로 이어갈 수 있습니다."' in html
+    assert '"media.search.context.subtitle": "Select a member-item preview to inspect its current location, artist context, and jump into manage."' in html
+    assert '"media.search.context.subtitle": "商品 preview を選ぶと、現在位置とアーティストコンテキストを確認し、そのまま管理へ進めます。"' in html
+    assert 't("media.search.context.selection_label")' in selection_block
+    assert '<h3>${escapeHtml(t("media.search.context.title"))}</h3>' in default_block
 
 
 def test_ops_home_context_panel_emphasizes_current_slot_with_contrast_badge():
@@ -459,8 +612,8 @@ def test_storage_mapping_high_occupancy_percent_uses_contrast_pill_tokens():
 def test_ops_home_context_panel_compacts_right_panel_density():
     html = read_static_html("index.html")
     weather_block = html.split(".operator-weather-card {", 1)[1].split("}", 1)[0]
-    assert "gap: 6px;" in weather_block
-    assert "padding: 10px;" in weather_block
+    assert "gap: 2px;" in weather_block
+    assert "padding: 8px 8px 10px;" in weather_block
     mini_map_block = html.split(".ops-library-mini-map {", 1)[1].split("}", 1)[0]
     assert "gap: 6px;" in mini_map_block
     assert "padding: 8px;" in mini_map_block
@@ -479,10 +632,10 @@ def test_ops_home_context_panel_compacts_mini_slot_preview_density():
     preview_block = html.split(".ops-library-slot-preview {", 1)[1].split("}", 1)[0]
     grid_block = html.split(".ops-library-slot-preview-grid {", 1)[1].split("}", 1)[0]
     label_block = html.split(".ops-library-slot-preview-label {", 1)[1].split("}", 1)[0]
-    assert "gap: 5px;" in preview_block
-    assert "padding: 6px;" in preview_block
-    assert "grid-template-columns: repeat(4, minmax(0, 1fr));" in grid_block
-    assert "font-size: 0.6rem;" in label_block
+    assert "gap: 4px;" in preview_block
+    assert "padding: 5px;" in preview_block
+    assert "grid-template-columns: repeat(6, minmax(0, 1fr));" in grid_block
+    assert "font-size: 0.58rem;" in label_block
 
 
 def test_ops_home_context_panel_allows_preview_cover_click_to_open_cabinet():
@@ -840,13 +993,68 @@ def test_admin_non_barcode_query_search_keeps_auto_and_tries_candidate_sources()
     html = read_static_html("index.html")
     block = html.split("async function querySearch() {", 1)[1].split("function buildOwnedPayload()", 1)[0]
     assert 'const selectedSource = String($("metaSourceFilter").value || "AUTO").trim().toUpperCase() || "AUTO";' in block
-    assert "const requestSources = buildHomeMetaSourceCandidates(selectedSource);" in block
-    assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.query_loading", { source: requestSources[0] }));' in block
+    assert "const requestSources = buildRegisterLookupSourceCandidates(selectedSource);" in block
+    assert 'const loadingStatusText = t("media.register.api_lookup.status.query_loading", { source: requestSources[0] });' in block
+    assert 'setStatus("barcodeStatus", "ok", loadingStatusText);' in block
     assert "for (const source of requestSources) {" in block
     assert "source," in block
     assert 'const adjustedSourceText = usedSource !== selectedSource ? t("media.register.api_lookup.status.adjusted_source", { source: usedSource }) : "";' in block
     assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.query_done", {' in block
     assert 'selectedSource === "AUTO" ? "MANIADB" : selectedSource' not in block
+
+
+def test_admin_query_search_autoadjusts_single_maniadb_category_mismatch():
+    html = read_static_html("index.html")
+    helper_block = html.split("async function detectRegisterLookupCategoryMismatch(payload, source) {", 1)[1].split("    async function barcodeSearch() {", 1)[0]
+    query_block = html.split("async function querySearch() {", 1)[1].split("    function selectedRegisterLookupCandidateSource()", 1)[0]
+    assert 'if (String(source || "").trim().toUpperCase() !== "MANIADB") return { categories: [], candidates: [] };' in helper_block
+    assert "category: null," in helper_block
+    assert "return {" in helper_block
+    assert "categories: Array.from(new Set(" in helper_block
+    assert "candidates: mismatchCandidates," in helper_block
+    assert 'if (!items.length && selectedSource === "MANIADB") {' in query_block
+    assert 'const mismatchInfo = await detectRegisterLookupCategoryMismatch(payload, selectedSource);' in query_block
+    assert 'if (mismatchInfo.categories.length === 1 && mismatchInfo.candidates.length) {' in query_block
+    assert '$("category").value = mismatchInfo.categories[0];' in query_block
+    assert "items = mismatchInfo.candidates;" in query_block
+    assert 't("media.register.api_lookup.status.category_mismatch_autofix"' in query_block
+    assert 'mismatchInfo.categories.join(", ")' in query_block
+
+
+def test_home_meta_source_candidates_only_fallback_when_source_is_auto():
+    html = read_static_html("index.html")
+    helper_block = html.split("function buildHomeMetaSourceCandidates(source) {", 1)[1].split("async function searchHomeMetadataByBarcode() {", 1)[0]
+    assert 'if (primary === "AUTO") return ["AUTO"];' in helper_block
+    assert 'return [primary];' in helper_block
+    assert 'return [primary, "AUTO"];' not in helper_block
+
+
+def test_register_lookup_explicit_source_uses_fallback_candidates_and_provider_status_badges():
+    html = read_static_html("index.html")
+    assert 'id="barcodeProviderStatusBadges"' in html
+    assert 'class="operator-status-badges admin-barcode-provider-status-badges"' in html
+    helper_block = html.split("function buildRegisterLookupSourceCandidates(source) {", 1)[1].split("function renderRegisterLookupProviderStatusBadges(entries = []) {", 1)[0]
+    assert 'if (primary === "AUTO") return ["AUTO"];' in helper_block
+    assert 'const fallbacks = ["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"].filter((sourceCode) => sourceCode !== primary);' in helper_block
+    assert "return [primary, ...fallbacks];" in helper_block
+    render_block = html.split("function renderRegisterLookupProviderStatusBadges(entries = []) {", 1)[1].split("async function searchHomeMetadataByBarcode() {", 1)[0]
+    assert 't("media.register.api_lookup.provider_status.unavailable", { source: entry.source })' in render_block
+    assert 't("media.register.api_lookup.provider_status.fallback_results", { source: entry.source })' in render_block
+
+
+def test_admin_api_lookup_explicit_source_only_falls_back_after_provider_unavailable():
+    html = read_static_html("index.html")
+    barcode_block = html.split("async function barcodeSearch() {", 1)[1].split("async function querySearch() {", 1)[0]
+    query_block = html.split("async function querySearch() {", 1)[1].split("function buildOwnedPayload()", 1)[0]
+    assert 'const requestSources = buildRegisterLookupSourceCandidates(selectedSource);' in barcode_block
+    assert 'const providerStatusEntries = [];' in barcode_block
+    assert 'if (res.status === 502 && selectedSource !== "AUTO") {' in barcode_block
+    assert 'providerStatusEntries.push({ kind: "unavailable", source });' in barcode_block
+    assert 'renderRegisterLookupProviderStatusBadges(providerStatusEntries);' in barcode_block
+    assert 'const requestSources = buildRegisterLookupSourceCandidates(selectedSource);' in query_block
+    assert 'const providerStatusEntries = [];' in query_block
+    assert 'if (res.status === 502 && selectedSource !== "AUTO") {' in query_block
+    assert 'providerStatusEntries.push({ kind: "fallback_results", source: usedSource });' in query_block
 
 
 def test_admin_api_lookup_copy_explains_integrated_condition_search_flow():
@@ -895,7 +1103,8 @@ def test_shell_global_barcode_scanner_routes_admin_scans_to_existing_search_befo
     route_block = html.split("async function routeGlobalBarcodeScanForAdmin(barcode) {", 1)[1].split("function renderAuthSession() {", 1)[0]
     assert "const params = new URLSearchParams({" in lookup_block
     assert 'params.set("barcode", normalizedBarcode);' in lookup_block
-    assert 'const res = await fetch(`/album-masters?${params.toString()}`);' in lookup_block
+    assert 'const res = await fetchWithRetry(`/album-masters?${params.toString()}`' in lookup_block
+    assert 'retries: 2,' in lookup_block
     assert 'const lookup = await lookupAdminOwnedBarcodeMatches(normalizedBarcode);' in route_block
     assert 'openAdminConsole("manage");' in route_block
     assert 'await homeSearchOwnedItems({ resetPage: true });' in route_block
@@ -1319,15 +1528,21 @@ def test_storage_mapping_uses_size_group_legend_and_slot_classes():
 
 def test_apply_locale_rerenders_dashboard_and_operator_context_runtime_panels():
     html = read_static_html("index.html")
+    helper_block = html.split("function rerenderLocaleSensitiveViews() {", 1)[1].split("function applyLocale(locale = appLocale) {", 1)[0]
     block = html.split("function applyLocale(locale = appLocale) {", 1)[1].split("function mediaDisplayLabel(value) {", 1)[0]
-    assert "renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);" in block
-    assert "renderOpsLibraryContextDefault();" in block
+    assert "rerenderLocaleSensitiveViews();" in block
+    assert "rerender(() => renderOperatorLookupResults());" in helper_block
+    assert "rerender(() => renderHomeSearchResults(homeSearchResults));" in helper_block
+    assert "rerender(() => renderDashboardWorkbench());" in helper_block
+    assert "rerender(() => renderOpsLibraryContextDefault());" in helper_block
 
 
 def test_ops_home_context_panel_uses_card_style_for_location_rows():
     html = read_static_html("index.html")
+    list_block = html.split(".operator-mini-list {", 1)[1].split("}", 1)[0]
     card_block = html.split(".operator-mini-card {", 1)[1].split("}", 1)[0]
     selection_block = html.split("function renderOpsLibraryContextSelection(item) {", 1)[1].split("function findOpsLibraryContextCabinetGroup(item) {", 1)[0]
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in list_block
     assert "border-radius: 14px;" in card_block
     assert "border: 1px solid #dce7e1;" in card_block
     assert 'id="opsLibraryContextCurrentLocation" class="operator-mini-line operator-mini-card"' in selection_block
@@ -1396,22 +1611,27 @@ def test_ops_home_context_panel_compacts_weather_card_density():
     metrics_block = html.split(".operator-weather-metrics {", 1)[1].split("}", 1)[0]
     metric_block = html.split(".operator-weather-metric {", 1)[1].split("}", 1)[0]
     foot_block = html.split(".operator-weather-foot {", 1)[1].split("}", 1)[0]
-    assert "gap: 3px;" in card_block
+    assert "gap: 2px;" in card_block
+    assert 'grid-template-areas:' in card_block
+    assert '"head head"' in card_block
+    assert '"summary metrics"' in card_block
+    assert '"foot foot"' in card_block
     assert "padding: 10px 10px 12px;" in search_shell_block
     assert "position: sticky;" in sidebar_block
     assert "top: 88px;" in sidebar_block
-    assert "padding: 10px 10px 12px;" in card_block
+    assert "padding: 8px 8px 10px;" in card_block
     assert "overflow: hidden;" in card_block
     assert "position: sticky;" not in card_block
     assert "top: 88px;" not in card_block
-    assert "gap: 6px;" in head_block
-    assert "width: 34px;" in icon_block
-    assert "height: 34px;" in icon_block
-    assert "gap: 1px;" in summary_block
-    assert "gap: 3px;" in metrics_block
-    assert "padding: 5px 8px;" in metric_block
+    assert "gap: 4px;" in head_block
+    assert "width: 30px;" in icon_block
+    assert "height: 30px;" in icon_block
+    assert "gap: 0;" in summary_block
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in metrics_block
+    assert "gap: 4px;" in metrics_block
+    assert "padding: 4px 7px;" in metric_block
     assert "gap: 2px;" in metric_block
-    assert "gap: 1px;" in foot_block
+    assert "gap: 0;" in foot_block
 
 
 def test_ops_home_lookup_lists_do_not_force_internal_scroll_region():
@@ -1436,6 +1656,7 @@ def test_media_search_results_do_not_force_internal_scroll_region():
 def test_media_search_surface_adds_right_side_context_panel():
     html = read_static_html("index.html")
     layout_block = html.split(".media-search-layout {", 1)[1].split("}", 1)[0]
+    search_card_block = html.split("#homeSearchCard {", 1)[1].split("}", 1)[0]
     panel_block = html.split(".media-search-context-panel {", 1)[1].split("}", 1)[0]
     panel_id_block = html.split("#adminSearchContextPanel {", 1)[1].split("}", 1)[0]
     body_id_block = html.split("#adminSearchContextBody {", 1)[1].split("}", 1)[0]
@@ -1445,6 +1666,8 @@ def test_media_search_surface_adds_right_side_context_panel():
     assert 'data-i18n="media.search.context.title"' in html
     assert "display: flex !important;" in layout_block
     assert "align-items: flex-start;" in layout_block
+    assert "flex: 0 1 60%;" in search_card_block
+    assert "flex: 0 1 40%;" in panel_block
     assert "align-self: start;" in panel_block
     assert "position: sticky !important;" in panel_block
     assert "top: 20px !important;" in panel_block
@@ -1454,6 +1677,158 @@ def test_media_search_surface_adds_right_side_context_panel():
     assert "bottom: auto !important;" in body_id_block
     assert 'id="adminSearchContextPanel" class="media-search-context-panel" style="position:sticky;top:20px;align-self:start;"' in html
     assert 'id="adminSearchContextBody" class="card" style="position:relative;top:auto;bottom:auto;"' in html
+
+
+def test_index_defines_network_error_retry_helper_for_search_requests():
+    html = read_static_html("index.html")
+    assert "function isRetryableFetchError(err) {" in html
+    assert "async function fetchWithRetry(input, init = {}, options = {}) {" in html
+    helper_block = html.split("async function fetchWithRetry(input, init = {}, options = {}) {", 1)[1].split("function firstOperatorFormatLine(", 1)[0]
+    assert "function buildClientRequestId() {" in html
+    assert "const clientRequestId = String(options.requestId || buildClientRequestId()).trim();" in helper_block
+    assert '"X-Client-Request-ID"' in helper_block
+    assert "const retries = Math.max(0, Number(options.retries ?? 1) || 0);" in helper_block
+    assert "const onRetry = typeof options.onRetry === \"function\" ? options.onRetry : null;" in helper_block
+    assert "if (!isRetryableFetchError(err) || attempt >= retries) {" in helper_block
+    assert 'const errorMessage = detailText(err?.message ?? err) || t("common.request_failed");' in helper_block
+    assert 'throw new Error(`${errorMessage} [ref: ${clientRequestId}]`);' in helper_block
+    assert "if (onRetry) onRetry(attempt + 1, retries + 1, err);" in helper_block
+    assert "await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs * (attempt + 1)));" in helper_block
+
+
+def test_search_flows_use_fetch_retry_helper_for_network_failures():
+    html = read_static_html("index.html")
+    admin_search_block = html.split("async function homeSearchOwnedItems(opts = {}) {", 1)[1].split("function renderHomeLocationInfo(row) {", 1)[0]
+    ops_lookup_block = html.split("async function loadOperatorLookupResults() {", 1)[1].split("function firstOperatorFormatLine(", 1)[0]
+    barcode_block = html.split("async function barcodeSearch() {", 1)[1].split("async function querySearch() {", 1)[0]
+    query_block = html.split("async function querySearch() {", 1)[1].split("    function selectedRegisterLookupCandidateSource()", 1)[0]
+    master_search_block = html.split("async function searchAlbumMasters() {", 1)[1].split("    function masterVariantRowHtml(row) {", 1)[0]
+    assert "const res = await fetchWithRetry(`/album-masters?${params.toString()}`" in admin_search_block
+    assert "const res = await fetchWithRetry(`/operator/catalog-search?${params.toString()}`" in ops_lookup_block
+    assert 'const res = await fetchWithRetry("/ingest/barcode",' in barcode_block
+    assert 'const res = await fetchWithRetry("/ingest/search",' in query_block
+    assert 'const res = await fetchWithRetry("/album-masters/search",' in master_search_block
+
+
+def test_media_search_omits_acquisition_mode_filter_field():
+    html = read_static_html("index.html")
+    assert 'homeAcquisitionMode' not in html
+    assert 'media.search.field.acquisition_mode.label' not in html
+
+
+def test_media_search_includes_signature_mode_filter_field():
+    html = read_static_html("index.html")
+    assert '<label for="homeSignatureMode" data-i18n="media.search.field.signature_mode.label">싸인 경로</label>' in html
+    assert '<select id="homeSignatureMode">' in html
+    assert '<option value="ANY" data-i18n="media.search.field.signature_mode.option.any">전체</option>' in html
+    assert '<option value="DIRECT" data-i18n="media.search.field.signature_mode.option.direct">직접</option>' in html
+    assert '<option value="PURCHASE" data-i18n="media.search.field.signature_mode.option.purchase">구매</option>' in html
+    assert '"media.search.field.signature_mode.label": "싸인 경로"' in html
+    assert '"media.search.field.signature_mode.option.direct": "직접"' in html
+    assert '"media.search.field.signature_mode.option.purchase": "구매"' in html
+
+
+def test_media_search_includes_sort_mode_filter_field():
+    html = read_static_html("index.html")
+    assert '<label for="homeSortMode" data-i18n="media.search.field.sort_mode.label">정렬</label>' in html
+    assert '<select id="homeSortMode">' in html
+    assert '<option value="CREATED_DESC" data-i18n="media.search.field.sort_mode.option.created_desc">최신 등록</option>' in html
+    assert '<option value="ARTIST_ASC" data-i18n="media.search.field.sort_mode.option.artist_asc">아티스트순</option>' in html
+    assert '<option value="RELEASE_DESC" data-i18n="media.search.field.sort_mode.option.release_desc">발매일 최신순</option>' in html
+    assert '<option value="SIGNED_FIRST" data-i18n="media.search.field.sort_mode.option.signed_first">싸인 우선</option>' in html
+    assert '"media.search.field.sort_mode.label": "정렬"' in html
+
+
+def test_media_search_uses_two_row_filter_layout_with_secondary_controls_on_bottom_row():
+    html = read_static_html("index.html")
+    top_block = html.split('<div class="home-search-grid-top">', 1)[1].split('<div class="home-search-grid-bottom">', 1)[0]
+    bottom_block = html.split('<div class="home-search-grid-bottom">', 1)[1].split('<div id="homeSearchStatus" class="status"></div>', 1)[0]
+
+    assert 'id="homeArtist"' in top_block
+    assert 'id="homeItemName"' in top_block
+    assert 'id="homeReleaseYear"' in top_block
+    assert 'id="homeBarcode"' not in top_block
+    assert 'id="homeCatalogNo"' not in top_block
+    assert 'id="homeSignatureMode"' not in top_block
+    assert 'id="homeSortMode"' not in top_block
+
+    assert 'id="homeBarcode"' in bottom_block
+    assert 'id="homeCatalogNo"' in bottom_block
+    assert 'id="homeSignatureMode"' in bottom_block
+    assert 'id="homeSortMode"' in bottom_block
+    assert 'id="homeSearchBtn"' in bottom_block
+    assert 'id="homeResetBtn"' in bottom_block
+    assert 'id="homeNewBtn"' in bottom_block
+
+    assert """    .home-search-grid-bottom {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) 104px 104px 40px 40px 40px;
+      margin-top: 6px;
+    }""" in html
+
+
+def test_media_search_omits_acquisition_mode_param_and_reset():
+    html = read_static_html("index.html")
+    admin_search_block = html.split("async function homeSearchOwnedItems(opts = {}) {", 1)[1].split("function renderHomeLocationInfo(row) {", 1)[0]
+    assert "homeAcquisitionMode" not in admin_search_block
+    assert "acquisition_mode" not in admin_search_block
+    assert '$("homeAcquisitionMode").value = "ANY";' not in html
+
+
+def test_media_search_sends_signature_mode_only_when_selected_and_resets_to_any():
+    html = read_static_html("index.html")
+    admin_search_block = html.split("async function homeSearchOwnedItems(opts = {}) {", 1)[1].split("function renderHomeLocationInfo(row) {", 1)[0]
+    assert 'const signatureMode = String($("homeSignatureMode").value || "ANY").trim().toUpperCase() || "ANY";' in admin_search_block
+    assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in admin_search_block
+    assert '$("homeSignatureMode").value = "ANY";' in html
+
+
+def test_media_search_sends_sort_mode_only_when_selected_and_resets_to_default():
+    html = read_static_html("index.html")
+    admin_search_block = html.split("async function homeSearchOwnedItems(opts = {}) {", 1)[1].split("function renderHomeLocationInfo(row) {", 1)[0]
+    assert 'const sortMode = String($("homeSortMode").value || "CREATED_DESC").trim().toUpperCase() || "CREATED_DESC";' in admin_search_block
+    assert 'if (sortMode !== "CREATED_DESC") params.set("sort_mode", sortMode);' in admin_search_block
+    assert '$("homeSortMode").value = "CREATED_DESC";' in html
+
+
+def test_operator_lookup_includes_signature_filter_field_only():
+    html = read_static_html("index.html")
+    assert '<label for="operatorLookupSignatureMode" data-i18n="operator.lookup.field.signature_mode.label">싸인 경로</label>' in html
+    assert '<select id="operatorLookupSignatureMode">' in html
+    assert '<option value="DIRECT" data-i18n="operator.lookup.field.signature_mode.option.direct">직접</option>' in html
+    assert '<option value="PURCHASE" data-i18n="operator.lookup.field.signature_mode.option.purchase">구매</option>' in html
+    assert 'operatorLookupAcquisitionMode' not in html
+    assert '"operator.lookup.field.acquisition_mode.label": "확보 방식"' not in html
+    assert '"operator.lookup.field.signature_mode.label": "싸인 경로"' in html
+
+
+def test_operator_lookup_includes_sort_mode_filter_field():
+    html = read_static_html("index.html")
+    assert '<label for="operatorLookupSortMode" data-i18n="operator.lookup.field.sort_mode.label">정렬</label>' in html
+    assert '<select id="operatorLookupSortMode">' in html
+    assert '<option value="CREATED_DESC" data-i18n="operator.lookup.field.sort_mode.option.created_desc">최신 등록</option>' in html
+    assert '<option value="MOVED_DESC" data-i18n="operator.lookup.field.sort_mode.option.moved_desc">최근 이동</option>' in html
+    assert '<option value="LOCATION_ASC" data-i18n="operator.lookup.field.sort_mode.option.location_asc">장식장 위치순</option>' in html
+    assert '<option value="UNSLOTTED_FIRST" data-i18n="operator.lookup.field.sort_mode.option.unslotted_first">미배치 우선</option>' in html
+    assert '"operator.lookup.field.sort_mode.label": "정렬"' in html
+
+
+def test_operator_lookup_sends_signature_mode_only_when_selected_and_resets_to_any():
+    html = read_static_html("index.html")
+    ops_lookup_block = html.split("async function loadOperatorLookupResults() {", 1)[1].split("function firstOperatorFormatLine(", 1)[0]
+    assert 'const signatureMode = String($("operatorLookupSignatureMode").value || "ANY").trim().toUpperCase() || "ANY";' in ops_lookup_block
+    assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in ops_lookup_block
+    assert 'operatorLookupAcquisitionMode' not in ops_lookup_block
+    assert '$("operatorLookupAcquisitionMode").value = "ANY";' not in html
+    assert '$("operatorLookupSignatureMode").value = "ANY";' in html
+
+
+def test_operator_lookup_sends_sort_mode_only_when_selected_and_resets_to_default():
+    html = read_static_html("index.html")
+    ops_lookup_block = html.split("async function loadOperatorLookupResults() {", 1)[1].split("function firstOperatorFormatLine(", 1)[0]
+    assert 'const sortMode = String($("operatorLookupSortMode").value || "CREATED_DESC").trim().toUpperCase() || "CREATED_DESC";' in ops_lookup_block
+    assert 'if (sortMode !== "CREATED_DESC") params.set("sort_mode", sortMode);' in ops_lookup_block
+    assert 'await loadOperatorHomeFeed({ kind: operatorFeedKindFromSortMode(sortMode), page: 1 });' in ops_lookup_block
+    assert '$("operatorLookupSortMode").value = "CREATED_DESC";' in html
 
 
 def test_media_search_mobile_flattens_outer_shell_and_softens_preview_selection():
@@ -1562,6 +1937,8 @@ def test_media_search_phone_compacts_right_context_card_density():
     assert ".operator-mini-card {" in phone_block
     assert "padding: 6px 8px;" in phone_block
     assert "border-radius: 12px;" in phone_block
+    assert ".operator-mini-list {" in phone_block
+    assert "grid-template-columns: 1fr;" in phone_block
     assert ".operator-mini-line {" in phone_block
     assert "font-size: 0.74rem;" in phone_block
     assert "gap: 4px;" in phone_block
@@ -1741,9 +2118,122 @@ def test_media_search_member_preview_defines_split_click_targets():
     preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
     location_block = html.split("    function homeMasterMemberPreviewLocationHtml(item) {", 1)[1].split("    function homeMasterMemberPreviewMetaLine(item) {", 1)[0]
     assert 'data-home-member-preview-owned-id="' in preview_block
-    assert 'data-home-open-owned-editor="' in preview_block
     assert 'data-home-member-preview-select="' in preview_block
-    assert 'data-home-open-dashboard-location="' in location_block
+    assert 'data-home-open-dashboard-location="' in location_block or 'data-home-member-preview-open-location="' in location_block
+    assert 'home-master-member-preview-code' in preview_block
+    assert 'escapeHtml(labelId)' in preview_block
+    assert 'data-home-preview-edit="' in preview_block
+    assert 'data-home-open-detail-manage=' in preview_block
+    assert 'data-home-open-owned-editor="' not in preview_block
+    assert 'home-master-member-preview-code-btn' not in preview_block
+
+
+def test_media_search_master_location_buttons_collapse_same_slot_and_label_distinct_items():
+    html = read_static_html("index.html")
+    helper_block = html.split("    function homeMasterLocationButtonsHtml(row) {", 1)[1].split("    function homeMasterMemberPreviewLocationHtml(item) {", 1)[0]
+    result_block = html.split("    function homeResultItemHtml(row) {", 1)[1].split("    function renderHomeSearchResults(items) {", 1)[0]
+    assert "const actions = Array.isArray(row?.member_location_actions)" in helper_block
+    assert "const distinctLocationKeys = new Set(actions.map((item) => {" in helper_block
+    assert "const hasMultipleLocations = distinctLocationKeys.size > 1;" in helper_block
+    assert "const dedupedActions = [];" in helper_block
+    assert "if (!hasMultipleLocations && seenLocationKeys.has(locationKey)) return;" in helper_block
+    assert 'const itemCode = String(item.label_id || "").trim();' in helper_block
+    assert 'const itemLabel = String(item.item_label || "").trim();' in helper_block
+    assert "const itemDescriptor = itemCode || itemLabel;" in helper_block
+    assert 'const buttonLabel = hasMultipleLocations && itemDescriptor' in helper_block
+    assert '`${itemDescriptor} · ${label}`' in helper_block
+    assert "const locationButtons = homeMasterLocationButtonsHtml(row);" in result_block
+    assert 'row.member_location_actions.filter' not in result_block
+
+
+def test_media_search_member_preview_keeps_inline_editor_out_of_full_manage_surfaces():
+    html = read_static_html("index.html")
+    preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
+    assert 'home-master-member-preview-actions' in preview_block
+    assert 'data-home-preview-edit="' in preview_block
+    assert 'class="btn tiny" type="button" data-home-preview-edit="' in preview_block
+    assert 'class="btn ghost tiny home-master-member-preview-detail-btn" type="button" data-home-open-detail-manage="' in preview_block
+    assert 'home-master-member-preview-code' in preview_block
+    # First-pass inline edit should not expose full editor surfaces in the row panel.
+    assert 'id="homeEditProductBlock"' not in preview_block
+    assert 'id="homeEditMusicBox"' not in preview_block
+    assert 'id="homeEditGoodsBox"' not in preview_block
+    assert 'id="homeMasterInlineEditorHost"' not in preview_block
+    # Row-level quick edit should stay separate from the full manage surface.
+    assert 'id="editStatus"' not in preview_block
+    assert 'id="editSignatureType"' not in preview_block
+    assert 'id="editMemoryNote"' not in preview_block
+    assert 'home-master-member-preview-code-btn' not in preview_block
+
+
+def test_media_search_member_preview_uses_compact_collector_meta_pairs():
+    html = read_static_html("index.html")
+    meta_block = html.split("    function homeMasterMemberPreviewMetaLine(item) {", 1)[1].split("    function mediaSearchMemberPreviewCoverSrc(item) {", 1)[0]
+    preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
+    assert 'operatorMetaPairHtml(t("operator.feed.meta.summary.release"), releaseDate)' in meta_block
+    assert 'operatorMetaPairHtml(t("operator.feed.meta.summary.country"), releaseCountry)' in meta_block
+    assert 'operatorMetaPairHtml(t("operator.feed.meta.summary.label"), labelCatalogText)' in meta_block
+    assert 'operatorMetaPairHtml(t("operator.feed.meta.summary.format"), formatSummary)' in meta_block
+    assert "parts.join('<span class=\"operator-meta-separator\">/</span>')" in meta_block
+    assert '<div class="operator-meta-line">${collectorMetaHtml}</div>' in preview_block
+    assert '<div class="operator-meta-line"><span>${escapeHtml(collectorMetaLine || "-")}</span></div>' not in preview_block
+
+
+def test_media_search_member_preview_uses_subtle_runout_tone():
+    html = read_static_html("index.html")
+    preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
+    css_block = html.split(".home-master-member-preview-detail-btn {", 1)[1].split(".media-search-inline-editor {", 1)[0]
+    phone_block = html.split("@media (max-width: 760px) {", 1)[1].split("      .ops-plugin-section-cards {", 1)[0]
+    assert 'class="operator-meta-subline home-master-member-preview-runout"' in preview_block
+    assert ".home-master-member-preview-runout {" in css_block
+    assert "font-size: 0.64rem;" in css_block
+    assert "color: #94a3b8;" in css_block
+    assert ".home-master-member-preview-runout {" in phone_block
+    assert "font-size: 0.62rem;" in phone_block
+
+
+def test_media_search_single_master_item_uses_member_row_actions():
+    single_item_row_html = render_media_search_result_card_html({
+        "id": 101,
+        "title": "Single master",
+        "heading": "Single master",
+        "source_code": "DISCOGS",
+        "member_count": 1,
+        "matched_track_preview": [],
+        "member_items_preview": [
+            {"owned_item_id": 9001, "title": "A-side", "artist": "A", "label_id": "LP-000123"},
+        ],
+    })
+    multi_item_row_html = render_media_search_result_card_html({
+        "id": 102,
+        "title": "Multi master",
+        "heading": "Multi master",
+        "source_code": "DISCOGS",
+        "member_count": 2,
+        "matched_track_preview": [],
+        "member_items_preview": [
+            {"owned_item_id": 9001, "title": "A-side", "artist": "A", "label_id": "LP-000123"},
+            {"owned_item_id": 9002, "title": "B-side", "artist": "B", "label_id": "LP-000124"},
+        ],
+    })
+    assert 'LP-000123' in single_item_row_html
+    assert 'LP-000124' in multi_item_row_html
+    assert 'home-master-member-preview-code' in single_item_row_html
+    assert 'home-master-member-preview-code' in multi_item_row_html
+    assert 'data-home-preview-edit="' in single_item_row_html
+    assert 'data-home-open-detail-manage=' in single_item_row_html
+    assert "LP-000123" in single_item_row_html
+    assert 'data-home-open-owned-editor="' not in single_item_row_html
+    assert 'data-home-open-manage="' not in single_item_row_html
+    assert 'home-master-member-preview-code-btn' not in single_item_row_html
+    assert 'data-home-preview-edit="' in multi_item_row_html
+    assert 'data-home-open-detail-manage=' in multi_item_row_html
+    assert "LP-000123" in multi_item_row_html
+    assert "LP-000124" in multi_item_row_html
+    assert 'data-home-open-manage="' not in multi_item_row_html
+    assert 'home-master-member-preview-code-btn' not in multi_item_row_html
+    assert 'data-home-member-preview-select="9001"' in single_item_row_html
+    assert 'data-home-member-preview-select="9002"' in multi_item_row_html
 
 
 def test_media_search_member_preview_shows_per_item_cover_for_multi_item_masters():
@@ -1754,8 +2244,7 @@ def test_media_search_member_preview_shows_per_item_cover_for_multi_item_masters
     assert "const showCover = Boolean(options?.showCover);" in preview_block
     assert "home-master-member-preview-cover" in preview_block
     assert 'allMemberItemsPreview.length > 1' in result_block
-    assert '.map((item) => homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover }))' in result_block
-    assert "width: 52px;" in cover_css
+    assert '.map((item) => homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode }))' in result_block
 
 
 def test_media_search_member_preview_uses_discogs_cover_preview_route_for_discogs_items():
@@ -1764,8 +2253,6 @@ def test_media_search_member_preview_uses_discogs_cover_preview_route_for_discog
     preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
     assert 'const sourceCode = normalizeSourceCode(item?.source_code);' in helper_block
     assert 'const sourceExternalId = String(item?.source_external_id || "").trim();' in helper_block
-    assert 'if (sourceCode === "DISCOGS" && sourceExternalId) {' in helper_block
-    assert 'return `/discogs/release/${encodeURIComponent(sourceExternalId)}/cover-preview`;' in helper_block
     assert "const coverUrl = mediaSearchMemberPreviewCoverSrc(item);" in preview_block
 
 
@@ -1773,26 +2260,178 @@ def test_media_search_master_cards_place_source_chip_before_heading_and_remove_m
     html = read_static_html("index.html")
     result_block = html.split("    function homeResultItemHtml(row) {", 1)[1].split("    function renderHomeSearchResults(items) {", 1)[0]
     assert 'const sourceChip = `<span class="tag home-master-source-chip">${escapeHtml(sourceCode)}</span>`;' in result_block
-    assert '${sourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>' in result_block
+    assert '<div class="home-master-heading-line">' in result_block
+    assert '${sourceChip}' in result_block
     assert 't("media.manage.search.member_count"' not in result_block
     assert 't("media.manage.search.location_empty")' not in result_block
     assert '${locationButtons}' in result_block
 
 
+def test_media_search_result_card_primary_manage_cta():
+    html = read_static_html("index.html")
+    result_block = html.split("    function homeResultItemHtml(row) {", 1)[1].split("    function renderHomeSearchResults(items) {", 1)[0]
+    location_block = html.split("    function homeMasterLocationButtonsHtml(row) {", 1)[1].split("    function homeMasterMemberPreviewLocationHtml(item) {", 1)[0]
+    preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
+    click_block = html.split('    $("homeSearchResults").addEventListener("click", async (e) => {', 1)[1].split('    $("homeDashSlotGrid").addEventListener("click", async (e) => {', 1)[0]
+    assert 'data-i18n="media.manage.search.action.open_manage"' not in result_block
+    assert 'data-home-open-manage="${row.id}"' not in result_block
+    assert 'home-master-manage-btn' not in result_block
+    assert 'data-home-preview-edit=' in preview_block
+    assert 't("common.action.edit_item")' in preview_block
+    assert 'data-home-open-detail-manage=' in preview_block
+    assert 't("media.manage.search.action.open_detail_manage")' in preview_block
+    assert 'data-home-open-owned-editor=' not in preview_block
+    assert 'home-master-member-preview-code-btn' not in preview_block
+    assert 'data-home-toggle-member-preview' in result_block
+    assert 'home-master-member-preview-more' in result_block
+    assert 'home-master-member-preview-toggle' in result_block
+    assert 'const locationButtons = homeMasterLocationButtonsHtml(row);' in result_block
+    assert ('data-home-open-dashboard-location=' in location_block) or ('data-home-member-preview-open-location="' in location_block)
+    assert 'const repairDiscogsMasterBtn = discogsRepairSlotHtml("home", {' in preview_block
+    assert 'data-home-member-preview-select' in click_block
+
+def test_media_search_member_rows_use_per_master_inline_editor_state_contract():
+    html = read_static_html("index.html")
+    assert 'const mediaSearchExpandedPreviewByMaster = new Map();' in html
+    assert 'mediaSearchExpandedPreviewByMaster.set(String(masterId), nextOwnedItemId);' in html
+    assert 'mediaSearchExpandedPreviewByMaster.get(String(masterId))' in html
+    assert 'mediaSearchExpandedPreviewByMaster.delete(String(masterId))' in html
+    assert 'mediaSearchExpandedPreviewByMaster.clear()' not in html
+
+
+def test_media_search_master_cards_gate_discogs_repair_button_on_eligibility():
+    html = read_static_html("index.html")
+    preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
+    result_block = html.split("    function homeResultItemHtml(row) {", 1)[1].split("    function renderHomeSearchResults(items) {", 1)[0]
+    assert 'const repairDiscogsMasterBtn = discogsRepairSlotHtml("home", {' in preview_block
+    assert 'data-home-discogs-repair-slot="' in preview_block
+    assert 'const repairDiscogsMasterBtn = e.target.closest("[data-home-repair-discogs-master]");' in html
+    assert 'homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode })' in result_block
+    assert 'function discogsRepairSlotHtml(scope, { ownedItemId, sourceCode, masterSourceCode, sourceExternalId }) {' in html
+    assert 'data-home-discogs-repair-slot="${id}"' in html
+    assert '/discogs-repair-status' in html
+    assert ".home-master-member-preview-repair-btn {" in html
+
+
+def test_media_search_inline_editor_uses_quick_edit_copy_and_compact_header():
+    html = read_static_html("index.html")
+    editor_block = html.split("    function renderMediaSearchInlineEditor(masterId, item) {", 1)[1].split("    async function loadMediaSearchInlineEditorDetail(ownedItemId) {", 1)[0]
+    css_block = html.split(".media-search-inline-editor {", 1)[1].split(".home-master-member-preview-more {", 1)[0]
+    assert 't("media.manage.search.inline_editor.kicker")' in editor_block
+    assert 'media-search-inline-editor-copy' in editor_block
+    assert '.media-search-inline-editor-copy {' in css_block
+    assert '.media-search-inline-editor-kicker {' in css_block
+    assert '.home-master-member-preview-detail-btn {' in html
+
+
+def test_media_search_inline_editor_exposes_extended_operational_fields():
+    html = read_static_html("index.html")
+    editor_block = html.split("    function renderMediaSearchInlineEditor(masterId, item) {", 1)[1].split("    async function loadMediaSearchInlineEditorDetail(ownedItemId) {", 1)[0]
+    assert 'data-media-search-inline-domain-field="${ownedItemId}"' in editor_block
+    assert 'data-media-search-inline-preferred-size-field="${ownedItemId}"' in editor_block
+    assert 'data-media-search-inline-purchase-price-field="${ownedItemId}"' in editor_block
+    assert 'data-media-search-inline-currency-field="${ownedItemId}"' in editor_block
+    assert 'data-media-search-inline-cover-condition-field="${ownedItemId}"' in editor_block
+    assert 'data-media-search-inline-disc-condition-field="${ownedItemId}"' in editor_block
+    assert 'data-media-search-inline-has-obi-field="${ownedItemId}"' in editor_block
+    assert 't("media.manage.product.field.domain_code.label")' in editor_block
+    assert 't("common.meta.storage_size")' in editor_block
+    assert 't("media.manage.product.field.purchase_price.label")' in editor_block
+    assert 't("media.manage.product.field.currency_code.label")' in editor_block
+    assert 't("media.manage.product.field.cover_condition.label")' in editor_block
+    assert 't("media.manage.product.field.disc_condition.label")' in editor_block
+    assert 't("media.manage.product.field.has_obi.label")' in editor_block
+
+
+def test_media_search_inline_editor_save_reads_extended_operational_fields():
+    html = read_static_html("index.html")
+    payload_block = html.split("    function buildMediaSearchInlineEditorPayload(detail, overrides = {}) {", 1)[1].split("    function mediaSearchInlineEditorStatusOptionsHtml(selectedValue) {", 1)[0]
+    save_block = html.split("    async function saveMediaSearchInlineEditor(masterId, ownedItemId) {", 1)[1].split("    function normalizeHomeSearchResultItem(row) {", 1)[0]
+    assert "domain_code: overrides.domain_code !== undefined" in payload_block
+    assert "preferred_storage_size_group: overrides.preferred_storage_size_group !== undefined" in payload_block
+    assert "purchase_price: overrides.purchase_price !== undefined" in payload_block
+    assert "currency_code: overrides.currency_code !== undefined" in payload_block
+    assert "payload.music_detail.cover_condition = overrides.cover_condition !== undefined" in payload_block
+    assert "payload.music_detail.disc_condition = overrides.disc_condition !== undefined" in payload_block
+    assert "payload.music_detail.has_obi = overrides.has_obi !== undefined" in payload_block
+    assert 'const domainField = document.querySelector(`[data-media-search-inline-domain-field="${cacheKey}"]`);' in save_block
+    assert 'const preferredSizeField = document.querySelector(`[data-media-search-inline-preferred-size-field="${cacheKey}"]`);' in save_block
+    assert 'const purchasePriceField = document.querySelector(`[data-media-search-inline-purchase-price-field="${cacheKey}"]`);' in save_block
+    assert 'const currencyField = document.querySelector(`[data-media-search-inline-currency-field="${cacheKey}"]`);' in save_block
+    assert 'const coverConditionField = document.querySelector(`[data-media-search-inline-cover-condition-field="${cacheKey}"]`);' in save_block
+    assert 'const discConditionField = document.querySelector(`[data-media-search-inline-disc-condition-field="${cacheKey}"]`);' in save_block
+    assert 'const hasObiField = document.querySelector(`[data-media-search-inline-has-obi-field="${cacheKey}"]`);' in save_block
+    assert "domain_code: nextDomainCode," in save_block
+    assert "preferred_storage_size_group: nextPreferredSizeGroup," in save_block
+    assert "purchase_price: nextPurchasePrice," in save_block
+    assert "currency_code: nextCurrencyCode," in save_block
+    assert "cover_condition: nextCoverCondition," in save_block
+    assert "disc_condition: nextDiscCondition," in save_block
+    assert "has_obi: nextHasObi," in save_block
+
+
 def test_media_search_click_handler_routes_code_location_and_preview_selection():
     html = read_static_html("index.html")
     click_block = html.split('    $("homeSearchResults").addEventListener("click", async (e) => {', 1)[1].split('    $("homeDashSlotGrid").addEventListener("click", async (e) => {', 1)[0]
-    assert 'const openOwnedEditorBtn = e.target.closest("[data-home-open-owned-editor]");' in click_block
-    assert 'await loadHomeItemForEdit(ownedItemId, { keepMasterContext: true });' in click_block
-    assert 'const previewSelectBtn = e.target.closest("[data-home-member-preview-select]");' in click_block
-    assert 'setMediaSearchContextSelectionByOwnedItem(ownedItemId);' in click_block
+    assert '[data-home-preview-edit]' in click_block
+    assert '[data-home-open-detail-manage]' in click_block
+    assert '[data-home-member-preview-select]' in click_block
+    preview_edit_index = click_block.index('[data-home-preview-edit]')
+    detail_manage_index = click_block.index('[data-home-open-detail-manage]')
+    preview_select_index = click_block.index('[data-home-member-preview-select]')
+    assert preview_edit_index < detail_manage_index < preview_select_index
+    preview_edit_if = click_block.rfind("if (", 0, detail_manage_index)
+    detail_manage_if = click_block.rfind("if (", preview_edit_if + 1, preview_select_index)
+    assert preview_edit_if >= 0 and detail_manage_if >= 0
+    edit_handler_block = click_block[preview_edit_if:detail_manage_if]
+    detail_handler_block = click_block[detail_manage_if:preview_select_index]
+    select_handler_block = click_block[preview_select_index:]
+    assert 'setMediaSearchContextSelectionByOwnedItem(ownedItemId);' in select_handler_block
+    assert 'setMediaSearchContextSelectionByOwnedItem(ownedItemId);' not in edit_handler_block
+    assert 'setMediaSearchContextSelectionByOwnedItem(ownedItemId);' not in detail_handler_block
+    assert 'getAttribute("data-home-preview-edit")' in edit_handler_block
+    assert 'getAttribute("data-home-open-detail-manage")' not in edit_handler_block
+    assert 'getAttribute("data-home-open-detail-manage")' in detail_handler_block
+    assert 'getAttribute("data-home-preview-edit")' not in detail_handler_block
+    assert 'return;' in edit_handler_block
+    assert 'return;' in detail_handler_block
+    assert 'e.stopPropagation()' in click_block
+
+
+def test_media_search_context_click_handler_routes_manage_and_clear_actions():
+    html = read_static_html("index.html")
+    handler_block = html.split("    async function handleMediaSearchContextAction(e) {", 1)[1].split('    document.addEventListener("click", (e) => {', 1)[0]
+    assert 'const clearBtn = e.target.closest("[data-media-search-context-clear]");' in handler_block
+    assert 'mediaSearchSelectedContextItem = null;' in handler_block
+
+
+def test_media_search_detail_manage_keeps_master_context_and_focuses_structural_section():
+    html = read_static_html("index.html")
+    open_block = html.split("    async function openMediaSearchDetailManage(masterId, ownedItemId) {", 1)[1].split("    function findOpsLibraryContextCabinet(item) {", 1)[0]
+    helper_block = html.split("    function ensureHomeManageStructuralSectionVisible() {", 1)[1].split("    function resolveHomeLinkedCollectiblesMasterId() {", 1)[0]
+    assert "await loadHomeItemForEdit(targetOwnedItemId, {" in open_block
+    assert "keepMasterContext: targetMasterId > 0," in open_block
+    assert "resetMasterLookupUi: false," in open_block
+    assert "ensureHomeManageStructuralSectionVisible();" in open_block
+    assert '$("homeMasterFetchDetails")?.setAttribute("open", "");' in helper_block
+    assert '$("homeMasterLookupResultsDetails")?.removeAttribute("open");' in helper_block
 
 
 def test_media_search_click_handler_does_not_open_master_from_card_background():
     html = read_static_html("index.html")
     click_block = html.split('    $("homeSearchResults").addEventListener("click", async (e) => {', 1)[1].split('    $("homeDashSlotGrid").addEventListener("click", async (e) => {', 1)[0]
     assert 'const row = e.target.closest(".result-item.album-result");' not in click_block
-    assert 'await openHomeMasterForEdit(albumMasterId);' not in click_block
+    assert '[data-home-open-manage]' not in click_block
+    assert '[data-home-open-detail-manage]' in click_block
+
+
+def test_media_search_click_handler_routes_discogs_master_repair_action():
+    html = read_static_html("index.html")
+    click_block = html.split('    $("homeSearchResults").addEventListener("click", async (e) => {', 1)[1].split('    $("homeDashSlotGrid").addEventListener("click", async (e) => {', 1)[0]
+    assert 'const repairDiscogsMasterBtn = e.target.closest("[data-home-repair-discogs-master]");' in click_block
+    assert 'const ownedItemId = Number(repairDiscogsMasterBtn.getAttribute("data-home-repair-discogs-master") || 0);' in click_block
+    assert 'await fetchWithRetry(`/owned-items/${ownedItemId}/repair-discogs-master-link`, { method: "POST" }, {' in click_block
+    assert 'await homeSearchOwnedItems({ allowPageAdjust: false });' in click_block
 
 
 def test_ops_home_context_panel_keeps_mini_map_head_on_one_line():
@@ -1897,8 +2536,8 @@ def test_index_operator_home_search_uses_curator_shell_markup():
     assert 'class="ops-library-context-panel operator-shell-sidebar"' in html
     assert 'id="operatorLookupQuery"' in html
     assert 'id="operatorLookupBtn"' in html
-    assert 'id="operatorFeedRegisteredBtn"' in html
-    assert 'id="operatorFeedMovedBtn"' in html
+    assert 'id="operatorFeedRegisteredBtn"' not in html
+    assert 'id="operatorFeedMovedBtn"' not in html
     assert 'id="operatorFeedPager"' in html
     assert 'id="operatorWeatherStatus"' in html
     assert 'id="operatorWeatherTemperature"' in html
@@ -1907,7 +2546,7 @@ def test_index_operator_home_search_uses_curator_shell_markup():
 
 def test_index_ops_home_reuses_default_main_and_context_column_ratio():
     html = read_static_html("index.html")
-    assert ".operator-shell,\n    .ops-home-layout {\n      display: grid;\n      grid-template-columns: minmax(0, 4fr) minmax(248px, 1fr);" in html
+    assert ".operator-shell,\n    .ops-home-layout {\n      display: grid;\n      grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);" in html
     assert ".ops-home-layout {\n      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);\n    }" not in html
 
 
@@ -1915,15 +2554,19 @@ def test_index_home_search_uses_same_numeric_pager_pattern_as_operator_feed():
     html = read_static_html("index.html")
     assert 'id="homeSearchPager"' in html
     assert 'id="homeSearchPagerBottom"' in html
+    assert 'id="operatorFeedPagerBottom"' in html
     assert 'id="homePagePrevBtn"' not in html
     assert 'id="homePageNextBtn"' not in html
     assert 'id="homePageInfo"' not in html
     assert 'id="homeSearchPagerBottom"' in html
     assert "const pagers = [$(\"homeSearchPager\"), $(\"homeSearchPagerBottom\")].filter(Boolean);" in html
+    assert "const pagers = [$(\"operatorFeedPager\"), $(\"operatorFeedPagerBottom\")].filter(Boolean);" in html
     assert "const tokens = buildOperatorFeedPagerTokens(homeSearchPage, totalPages);" in html
     assert 'data-home-search-page="${homeSearchPage - 1}"' in html
     assert '$("homeSearchPager").addEventListener("click", (e) => {' in html
     assert '$("homeSearchPagerBottom").addEventListener("click", (e) => {' in html
+    assert '$("operatorFeedPager").addEventListener("click", (e) => {' in html
+    assert '$("operatorFeedPagerBottom").addEventListener("click", (e) => {' in html
 
 
 def test_index_admin_dashboard_removes_secondary_grid_after_source_summary_moves_into_hero():
@@ -3086,6 +3729,56 @@ def test_goods_manage_surface_contains_album_artist_label_mapping_sections():
     assert 'id="goodsLabelMapList"' in html
 
 
+def test_goods_manage_surface_is_split_into_basic_product_collectible_and_notes_sections():
+    html = read_static_html("index.html")
+    assert 'id="goodsManageBasicSection"' in html
+    assert 'id="goodsManageProductLinksSection"' in html
+    assert 'id="goodsManageCollectibleLinksSection"' in html
+    assert 'id="goodsManageNotesSection"' in html
+
+
+def test_goods_manage_surface_uses_compact_core_and_extra_notes_layout():
+    html = read_static_html("index.html")
+    assert 'id="goodsManageCoreFields"' in html
+    assert 'id="goodsManageCoreRowA"' in html
+    assert 'id="goodsManageCoreRowB"' in html
+    assert 'id="goodsManageNotesDetails"' in html
+    assert 'class="ops-compact-form-grid goods-manage-compact-grid"' in html
+
+
+def test_goods_manage_mapping_blocks_use_compact_stack_controls():
+    html = read_static_html("index.html")
+    assert 'id="goodsManageAlbumMasterControls" class="compact-stack"' in html
+    assert 'id="goodsManageArtistControls" class="compact-stack"' in html
+    assert 'id="goodsManageLabelControls" class="compact-stack"' in html
+    assert 'id="goodsManageCollectibleLookupControls" class="compact-stack"' in html
+    assert 'id="goodsManageCollectibleComposeControls" class="compact-stack"' in html
+
+
+def test_goods_search_surface_contains_collectible_relation_filters():
+    html = read_static_html("index.html")
+    assert 'id="goodsSearchCollectibleRelationState"' in html
+    assert 'id="goodsSearchCollectibleRelationType"' in html
+
+
+def test_goods_manage_surface_contains_collectible_relation_lookup_and_save_controls():
+    html = read_static_html("index.html")
+    assert 'id="goodsManageCollectibleQuery"' in html
+    assert 'id="goodsManageCollectibleResults"' in html
+    assert 'id="goodsManageRelationType"' in html
+    assert 'id="goodsManageRelationNote"' in html
+    assert 'id="goodsCollectibleRelationMapList"' in html
+    assert 'id="goodsManageSaveRelationsBtn"' in html
+
+
+def test_goods_search_results_render_collectible_relation_summary_metadata():
+    html = read_static_html("index.html")
+    render_block = html.split("function renderGoodsSearchResults() {", 1)[1].split("function resetGoodsManageSelection()", 1)[0]
+    assert 'row.collectible_relation_count' in render_block
+    assert 'row.relation_badges' in render_block
+    assert 'row.collectible_relation_preview' in render_block
+
+
 def test_admin_parent_tabs_are_registered_in_shell_switching():
     html = read_static_html("index.html")
     assert '{ id: "media", btn: "tabMediaBtn", panel: "tabMedia" }' in html
@@ -3110,6 +3803,7 @@ def test_goods_surface_wires_search_manage_and_register_actions():
     assert '$("goodsManageSaveBtn").addEventListener("click", saveGoodsManageItem);' in html
     assert '$("goodsManageDeleteBtn").addEventListener("click", deleteGoodsManageItem);' in html
     assert '$("goodsManageSaveMappingsBtn").addEventListener("click", saveGoodsManageMappings);' in html
+    assert '$("goodsManageSaveRelationsBtn").addEventListener("click", saveGoodsManageRelations);' in html
     assert '$("goodsRegisterSaveBtn").addEventListener("click", createGoodsRegisterItem);' in html
 
 
@@ -3135,15 +3829,19 @@ def test_admin_manage_surface_contains_empty_state_prompt():
 
 def test_manage_view_separates_linked_goods_zone_from_album_editor_area():
     html = read_static_html("index.html")
-    assert 'id="homeMasterGoodsSection" class="home-goods-zone"' in html
-    assert 'id="homeLinkedGoodsPanel" class="home-goods-panel"' in html
+    assert 'id="homeMasterGoodsSection" class="home-goods-zone' in html
+    assert 'id="homeLinkedGoodsPanel" class="home-goods-panel' in html
     assert 'id="homeMasterSummarySection" style="display:none;"' in html
     assert ".home-goods-panel {" in html
     assert 'data-i18n="media.manage.collectibles.kicker"' in html
-    assert 'id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register"' in html
-    assert 'id="homeLinkedGoodsLegacyFields" style="display:none;" hidden' in html
+    assert 'id="homeLinkedGoodsCreateBtn"' in html
+    assert 'data-i18n="media.manage.collectibles.action.open_register"' in html
+    assert 'id="homeLinkedGoodsLegacyFields"' in html
+    assert 'style="display:none;" hidden' in html
     assert 'data-i18n="media.manage.collectibles.panel_intro"' in html
-    assert html.index('id="homeEditorProductBlock"') < html.index('id="homeMasterGoodsSection"') < html.index('id="homeTrackMapBox"')
+    assert html.index('id="homeEditorProductBlock"') < html.index('id="homeMasterGoodsSection"') < html.index('id="homeLinkedGoodsPanel"')
+    assert html.index('id="homeLinkedGoodsPanel"') < html.index('id="homeManageMasterSection"')
+    assert html.index('id="homeMasterGoodsSection"') < html.index('id="homeTrackMapBox"')
 
 
 def test_manage_view_orders_sections_as_product_collectibles_master_then_cabinet():
@@ -3159,11 +3857,10 @@ def test_manage_view_orders_sections_as_product_collectibles_master_then_cabinet
     assert '$("homeMasterGoodsSection"),' in mount_block
 
 
-def test_manage_view_keeps_master_summary_hidden_even_after_master_lookup():
+def test_manage_view_shows_master_summary_after_master_lookup():
     html = read_static_html("index.html")
     related_block = html.split("function renderHomeRelatedVersions() {", 1)[1].split("async function saveHomeMasterSortArtistName()", 1)[0]
-    assert 'setDisplayIfPresent("homeMasterSummarySection", "none");' in related_block
-    assert 'setDisplayIfPresent("homeMasterSummarySection", "block");' not in related_block
+    assert 'setDisplayIfPresent("homeMasterSummarySection", "block");' in related_block
     assert html.index('id="homeLinkedGoodsPanel"') < html.index('id="homeManageMasterSection"')
     assert html.index('id="homeMasterAddBlock"') < html.index('id="homeEditorMetaFetchBlock"') < html.index('id="homeMasterDeleteBtn"')
 
@@ -3206,6 +3903,77 @@ def test_manage_view_can_render_linked_collectibles_without_master_lookup():
     assert 'setDisplayIfPresent("homeMasterGoodsSection", "block");' in helper_block
     assert 'setDisplayIfPresent("homeLinkedGoodsPanel", "block");' in helper_block
     assert 'setDisplayIfPresent("homeLinkedGoodsPanel", collectibles.length ? "none" : "block");' in helper_block
+
+
+def test_manage_view_contains_owned_item_product_relationship_section():
+    html = read_static_html("index.html")
+    assert 'id="homeProductRelationSection"' in html
+    assert 'id="homeProductRelationScopeInfo"' in html
+    assert 'id="homeProductRelationMasterList"' in html
+    assert 'id="homeProductRelationSeriesList"' in html
+    assert 'id="homeProductRelationReleaseList"' in html
+    assert 'id="homeProductRelationComponentList"' in html
+    assert 'id="homeProductRelationSeriesQuery"' in html
+    assert 'id="homeProductRelationReleaseQuery"' in html
+    assert 'id="homeProductRelationType"' in html
+    assert 'id="homeProductRelationSearchBtn"' in html
+    assert 'id="homeProductRelationSaveBtn"' in html
+    assert 'id="homeProductRelationStatus"' in html
+    assert '"media.manage.product_relation.title":' in html
+    assert '"media.manage.product_relation.scope.shared":' in html
+    assert '"media.manage.product_relation.scope.single":' in html
+    assert '"media.manage.product_relation.block.master":' in html
+    assert '"media.manage.product_relation.block.series":' in html
+    assert '"media.manage.product_relation.block.release":' in html
+    assert '"media.manage.product_relation.block.components":' in html
+    assert html.index('id="homeEditorProductBlock"') < html.index('id="homeProductRelationSection"') < html.index('id="homeEditorActionBlock"')
+
+
+def test_manage_view_product_editor_uses_compact_core_and_extra_layout():
+    html = read_static_html("index.html")
+    assert 'id="homeEditProductCoreFields"' in html
+    assert 'id="homeEditProductCoreRowA"' in html
+    assert 'id="homeEditProductCoreRowB"' in html
+    assert 'id="homeEditProductExtraDetails"' in html
+    assert 'class="ops-compact-form-grid home-manage-product-compact-grid"' in html
+
+
+def test_manage_view_product_editor_keeps_auxiliary_blocks_under_extra_details():
+    html = read_static_html("index.html")
+    assert 'id="homeEditMusicOpsRow"' in html
+    assert 'id="homeEditMusicInfoRow"' in html
+    assert 'id="editMemoryNote"' in html
+    assert 'id="editPurchaseSource"' in html
+    assert 'id="editConditionGrade"' in html
+    assert 'id="editPurchasePrice"' in html
+    assert 'id="editCurrencyCode"' in html
+    assert 'id="homeEditProductExtraDetails"' in html
+
+
+def test_manage_view_product_relationship_runtime_uses_relation_routes_and_preview_fields():
+    html = read_static_html("index.html")
+    relation_block = html.split("function homeOwnedItemRelationTypeLabel(", 1)[1].split("async function saveHomeEditedItem()", 1)[0]
+    preview_block = html.split("function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
+
+    assert 'fetch(`/owned-items/${ownedItemId}/relations`)' in relation_block
+    assert 'fetch(`/owned-item-relation-targets?${params.toString()}`)' in relation_block
+    assert 'fetch("/product-groups", {' in relation_block
+    assert 'fetch(`/product-groups?${params.toString()}`)' in relation_block
+    assert 't("media.manage.product_relation.scope.shared"' in relation_block
+    assert 't("media.manage.product_relation.scope.single"' in relation_block
+    assert 't("media.manage.product_relation.status.loading")' in relation_block
+    assert 't("media.manage.product_relation.status.loaded"' in relation_block
+    assert 't("media.manage.product_relation.status.lookup_loading")' in relation_block
+    assert 't("media.manage.product_relation.status.save_progress")' in relation_block
+    assert 't("media.manage.product_relation.status.save_done"' in relation_block
+    assert 't("media.manage.product_relation.results.empty")' in relation_block
+    assert 't("media.manage.product_relation.action.create_series")' in relation_block
+
+    assert "product_relation_badges" in preview_block
+    assert "product_relation_preview" in preview_block
+    assert "box_component_count" in preview_block
+    assert "uses_shared_relation_scope" in preview_block
+    assert 'homeOwnedItemRelationTypeLabel' in preview_block
 
 
 def test_manage_view_linked_collectibles_copy_uses_i18n_keys():
@@ -3395,6 +4163,292 @@ def test_media_source_and_register_form_labels_and_placeholders_use_i18n_keys():
     assert '"media.register.batch.field.notes.label":' in html
 
 
+def test_source_workbench_bulk_apply_opens_diff_review_surface_markup():
+    html = read_static_html("index.html")
+    assert 'id="sourceWorkbenchDiffReview"' in html
+    assert 'id="sourceWorkbenchDiffReviewList"' in html
+    assert 'id="sourceWorkbenchDiffReviewSummary"' in html
+    assert 'id="sourceWorkbenchDiffReviewSelectAllBtn"' in html
+    assert 'id="sourceWorkbenchDiffReviewSelectEmptyBtn"' in html
+    assert 'id="sourceWorkbenchDiffReviewClearBtn"' in html
+    assert 'id="sourceWorkbenchDiffReviewCancelBtn"' in html
+    assert 'id="sourceWorkbenchDiffReviewApplyBtn"' in html
+    assert 'data-i18n="media.source.diff.title"' in html
+    assert 'data-i18n="media.source.diff.action.select_all"' in html
+    assert 'data-i18n="media.source.diff.action.select_empty"' in html
+    assert 'data-i18n="media.source.diff.action.clear"' in html
+    assert 'data-i18n="media.source.diff.action.cancel"' in html
+    assert 'data-i18n="media.source.diff.action.apply_selected"' in html
+    assert 'data-i18n="media.source.diff.note.title"' in html
+    assert 'data-i18n="media.source.diff.note.body"' in html
+    assert 'data-i18n="media.source.diff.footer.note"' in html
+    assert '"media.source.diff.status.empty_fill":' in html
+    assert '"media.source.diff.status.conflict":' in html
+    assert '"media.source.diff.status.same":' in html
+    assert '"media.source.diff.summary":' in html
+    assert '"media.source.diff.card.current_title":' in html
+    assert '"media.source.diff.field.item_title":' in html
+
+
+def test_source_workbench_bulk_apply_wiring_opens_review_surface_only():
+    html = read_static_html("index.html")
+    assert 'let sourceWorkbenchDiffReviewState = null;' in html
+    assert "function openSourceWorkbenchDiffReview(selectedRows) {" in html
+    assert 'setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.diff_review_open",' in html
+    assert '$("sourceWorkbenchApplyBtn").addEventListener("click", openSourceWorkbenchDiffReviewForSelections);' in html
+    assert '$("sourceWorkbenchAutoApplyBtn").addEventListener("click", runAutoReadySourceWorkbench);' in html
+    assert 'await applySourceWorkbenchItems(autoRows, "AUTO_READY");' in html
+    assert 'await applySourceWorkbenchItems([entry], "ROW_UPDATE");' in html
+
+
+def test_source_workbench_edition_comparator_candidate_cards_render_summary_identity_and_evidence():
+    html = read_static_html("index.html")
+    source_block = html.split("function renderSourceWorkbenchList() {", 1)[1].split("async function loadSourceWorkbenchTargets()", 1)[0]
+    assert "const comparatorRows = buildSourceWorkbenchEditionComparatorRows({ current: row, candidate });" in source_block
+    assert "sourceWorkbenchEditionComparatorCardHtml({ summary: comparatorSummary, rows: comparatorRows, explanations: comparatorExplanations })" in source_block
+    card_helper_block = html.split("function sourceWorkbenchEditionComparatorCardHtml(", 1)[1].split("function sourceWorkbenchEditionComparatorStateLabel", 1)[0]
+    assert "item?.cardRole === \"identity_chip\"" in card_helper_block
+    assert "item?.cardRole === \"evidence_preview\"" in card_helper_block
+    assert "data-source-workbench-edition-summary" in card_helper_block
+
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-001",
+            "barcode": "1234567890",
+            "pressing_country": "Japan",
+            "runout_matrix": ["A1", "A2", "A3", "A4"],
+            "track_list": ["Intro", "Track A", "Track B", "Track C"],
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-002",
+            "barcode": "0987654321",
+            "pressing_country": "Korea",
+            "runout_matrix": ["A1", "B2", "B3", "C4"],
+            "track_list": ["Intro", "Track A", "Track C", "Track D", "Track E"],
+        },
+    })
+    card = result["comparatorCard"]
+    assert "source-workbench-edition-summary" in card
+    assert "source-workbench-edition-identity" in card
+    assert "source-workbench-edition-evidence" in card
+    assert "source-workbench-edition-identity-chip" in card
+    assert "source-workbench-edition-evidence-row" in card
+    assert "→" in card
+
+
+def test_source_workbench_edition_comparator_card_surfaces_name_title_match_reasoning():
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_name_override": "Artist - Title",
+            "catalog_no": "CAT-001",
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "title": "Title",
+            "catalog_no": "CAT-002",
+        },
+    })
+    card = re.sub(r"\s+", " ", result["comparatorCard"]).lower()
+    assert "evidence:" in card
+    assert "name matches" in card
+
+
+def test_source_workbench_edition_comparator_candidate_cards_surface_runout_and_track_compact_previews():
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "runout_matrix": ["M1", "M2", "M3", "M4", "M5"],
+            "track_list": ["One", "Two", "Three", "Four"],
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "runout_matrix": ["M1", "M9", "M4", "M5", "M8"],
+            "track_list": ["One", "Two", "Three", "Four", "Five"],
+        },
+    })
+    roles = {row["key"]: row["cardRole"] for row in result["roles"]}
+    assert roles.get("runout_matrix") == "evidence_preview"
+    assert roles.get("track_list") == "evidence_preview"
+
+    card = result["comparatorCard"]
+    assert "(+" in card
+    assert "source-workbench-edition-evidence-row-values" in card
+    assert re.search(r"\(\+\d+ more\)", card) is not None
+
+
+def test_source_workbench_edition_comparator_non_identity_changed_fields_are_visible():
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "label_name": "Riverman",
+            "format_name": "LP",
+            "format_items": [{"name": "LP", "qty": "1"}],
+            "identifier_items": [{"type": "cat", "value": "ABC"}],
+            "series": ["Original"],
+            "company_items": [{"name": "LabelCo", "role": "publisher"}],
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "label_name": "Riverman Reissue",
+            "format_name": "LP",
+            "format_items": [{"name": "EP", "qty": "1"}],
+            "identifier_items": [{"type": "cat", "value": "DEF"}],
+            "series": ["Original"],
+            "company_items": [{"name": "LabelCo", "role": "publisher"}],
+        },
+    })
+    card = result["comparatorCard"]
+    compact_card = re.sub(r"\s+", " ", card)
+    assert "Label" in compact_card
+    assert "Format items" in compact_card
+    assert "Identifiers" in compact_card
+    assert "Format items" in compact_card
+    assert "source-workbench-edition-evidence-row" in card
+    assert "Riverman" in compact_card
+    assert "Riverman Reissue" in compact_card
+    assert re.search(r"cat: abc", compact_card.lower()) is not None
+
+
+def test_source_workbench_edition_comparator_missing_evidence_is_explicit_when_uncomparable():
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-001",
+            "barcode": "123",
+            "pressing_country": "KR",
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-001",
+            "barcode": "123",
+            "pressing_country": "KR",
+        },
+    })
+    card = re.sub(r"\s+", " ", result["comparatorCard"])
+    assert "Format items" in card
+    assert "Identifiers" in card
+    assert "Series" in card
+    assert "Companies" in card
+    assert "uncomparable" in card
+    assert re.search(r"Format items.*-.*→.*-", card) is not None
+    assert re.search(r"Identifiers.*-.*→.*-", card) is not None
+    assert re.search(r"Series.*-.*→.*-", card) is not None
+    assert re.search(r"Companies.*-.*→.*-", card) is not None
+
+
+def test_source_workbench_edition_comparator_card_shows_current_and_candidate_values():
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-001",
+            "barcode": "880000000001",
+            "pressing_country": "KR",
+            "track_list": ["A", "B"],
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-002",
+            "barcode": "880000000001",
+            "pressing_country": "JP",
+            "track_list": ["A", "B", "C"],
+        },
+    })
+    card = result["comparatorCard"]
+    assert "CAT-001" in card
+    assert "CAT-002" in card
+    assert "880000000001" in card
+    assert "KR" in card
+    assert "JP" in card
+    assert "A" in card
+    assert "C" in card
+    assert "source-workbench-edition-identity-chip" in card
+
+
+def test_source_workbench_edition_comparator_missing_current_values_stay_visible_as_empty():
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-009",
+            "pressing_country": "KR",
+            "runout_matrix": ["SIDE-A", "SIDE-B"],
+            "track_list": ["A", "B", "C"],
+        },
+    })
+    card = result["comparatorCard"]
+    compact_card = re.sub(r"\s+", " ", card)
+    assert re.search(r"Catalog no.*-\s*→\s*CAT-009", compact_card) is not None
+    assert re.search(r"Pressing country.*-\s*→\s*KR", compact_card) is not None
+    assert re.search(r"Runout.*SIDE-A \| SIDE-B", compact_card) is not None
+    assert re.search(r">-<.*SIDE-A \| SIDE-B", compact_card) is not None
+
+
+def test_source_workbench_edition_comparator_copy_stays_advisory_without_source_trust_language():
+    html = read_static_html("index.html")
+    comparator_block = html.split("function buildSourceWorkbenchEditionComparatorSummary(payload = {}) {", 1)[1].split("function sourceWorkbenchEditionComparatorStateLabel", 1)[0]
+    forbidden = ["판본", "trust", "tier", "likely", "confidence", "source-trust", "신뢰"]
+    assert "No comparable edition evidence." in comparator_block
+    for term in forbidden:
+      assert term.lower() not in comparator_block.lower()
+
+    result = call_js_comparator_card_fragment({
+        "current": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "catalog_no": "CAT-001",
+            "pressing_country": "Japan",
+        },
+        "candidate": {
+            "artist_or_brand": "Artist",
+            "item_title": "Title",
+            "barcode": "999",
+            "pressing_country": "Korea",
+        },
+    })
+    rendered_copy = f"{result['summary']} {result['comparatorCard']}".lower()
+    for term in forbidden:
+      assert term.lower() not in rendered_copy
+
+
+def test_source_workbench_diff_review_confirm_wiring_uses_selected_fields_and_blocks_zero_selected_posts():
+    html = read_static_html("index.html")
+    submit_block = html.split("function submitSourceWorkbenchDiffReviewSelection() {", 1)[1].split("async function applySourceWorkbenchItems(", 1)[0]
+    assert 'const selectedItems = buildSourceWorkbenchDiffApplyItems({ reviewState: sourceWorkbenchDiffReviewState });' in submit_block
+    assert 'setStatus("sourceWorkbenchStatus", "err", t("media.source.status.diff_review_none_selected"));' in submit_block
+    assert 'await applySourceWorkbenchItems(sourceWorkbenchDiffReviewState.items, "MANUAL_BATCH", {' in submit_block
+    assert 'items: selectedItems,' in submit_block
+    assert 'selectedFieldCount,' in submit_block
+    assert 'closeSourceWorkbenchDiffReview();' in submit_block
+    assert '"media.source.status.diff_review_none_selected":' in html
+
+
+def test_source_workbench_review_apply_keeps_failed_review_items_open_for_retry():
+    html = read_static_html("index.html")
+    apply_block = html.split("async function applySourceWorkbenchItems(selectedRows, mode, opts = {}) {", 1)[1].split("async function applySingleSourceWorkbenchRow(", 1)[0]
+    assert 'function updateSourceWorkbenchDiffReviewStateAfterApply(payload = {}) {' in html
+    assert 'if (mode === "MANUAL_BATCH" && failed.length) {' in apply_block
+    assert 'sourceWorkbenchDiffReviewState = updateSourceWorkbenchDiffReviewStateAfterApply({' in apply_block
+    assert 'renderSourceWorkbenchDiffReview();' in apply_block
+    assert 'return false;' in apply_block
+
+
 def test_media_source_and_purchase_status_copy_and_table_headers_use_i18n():
     html = read_static_html("index.html")
     assert '<th data-i18n="media.register.purchase.preview.header.cover">커버</th>' in html
@@ -3576,7 +4630,7 @@ def test_collectibles_search_actions_align_to_right_edge():
     assert "display: flex;" in actions_block
     assert "justify-content: flex-end;" in actions_block
     assert "margin-top: 10px;" in actions_block
-    assert '<div class="goods-search-actions">' in html
+    assert '<div class="ops-compact-form-actions goods-search-actions">' in html
 
 
 def test_collectibles_dynamic_status_messages_use_i18n_keys():
@@ -3595,6 +4649,40 @@ def test_collectibles_dynamic_status_messages_use_i18n_keys():
     assert '"collectibles.manage.status.loading":' in html
     assert '"collectibles.mapping.status.save_complete":' in html
     assert '"collectibles.register.status.start_independent":' in html
+
+
+def test_collectibles_search_uses_compact_two_row_density_layout():
+    html = read_static_html("index.html")
+    assert '<div class="ops-compact-form-grid goods-search-compact-grid">' in html
+    assert '<div class="ops-compact-form-row goods-search-compact-row--primary" data-density-role="collectibles-search-primary">' in html
+    assert '<div class="ops-compact-form-row goods-search-compact-row--secondary" data-density-role="collectibles-search-secondary">' in html
+    assert html.count('data-density-role="collectibles-search-primary"') == 1
+    assert html.count('data-density-role="collectibles-search-secondary"') == 1
+
+
+def test_collectibles_register_uses_compact_core_and_extra_layout():
+    html = read_static_html("index.html")
+    assert '<div id="goodsRegisterCoreFields" class="ops-compact-form-grid goods-register-compact-grid"' in html
+    assert '<div id="goodsRegisterCoreRowA" class="ops-compact-form-row goods-register-compact-row--primary">' in html
+    assert '<div id="goodsRegisterCoreRowB" class="ops-compact-form-row goods-register-compact-row--secondary">' in html
+    assert '<details id="goodsRegisterExtraFields" class="ops-compact-extra-fields goods-extra-fields">' in html
+    assert '<div class="ops-compact-extra-fields-body goods-form-grid">' in html
+
+
+def test_direct_register_uses_compact_core_and_extra_layout():
+    html = read_static_html("index.html")
+    assert '<div id="quickRegisterCoreRowA" class="ops-compact-form-row quick-register-compact-row--primary">' in html
+    assert '<div id="quickRegisterCoreRowB" class="ops-compact-form-row quick-register-compact-row--secondary"' in html
+    assert '<details id="quickRegisterExtraFields" class="ops-compact-extra-fields"' in html
+    assert '<div class="ops-compact-extra-fields-body">' in html
+    assert '<div class="quick-register-extra-grid">' in html
+
+
+def test_ops_compact_density_common_classes_exist():
+    html = read_static_html("index.html")
+    assert ".ops-compact-form-grid {" in html
+    assert ".ops-compact-form-actions {" in html
+    assert ".ops-compact-extra-fields {" in html
 
 
 def test_collectibles_form_labels_and_placeholders_use_i18n_keys():
@@ -3742,6 +4830,7 @@ def test_operator_dashboard_and_home_primary_controls_use_i18n_keys():
     assert 'data-i18n="dashboard.workbench.meta"' in html
     assert 'data-i18n="dashboard.workbench.mode.unslotted"' in html
     assert 'data-i18n="dashboard.workbench.mode.search_results"' in html
+    assert 'data-i18n="dashboard.workbench.field.category.label"' in html
     assert 'data-i18n-placeholder="dashboard.workbench.field.artist.placeholder"' in html
     assert 'data-i18n="operator.lookup.summary_fields"' in html
     assert 'data-i18n="operator.lookup.field.query.label"' in html
@@ -3750,8 +4839,7 @@ def test_operator_dashboard_and_home_primary_controls_use_i18n_keys():
     assert 'data-i18n-aria-label="operator.lookup.action.run"' in html
     assert 'data-i18n="operator.lookup.action.reset"' in html
     assert 'data-i18n="operator.feed.heading.recent_registered"' in html
-    assert 'data-i18n="operator.feed.filter.registered"' in html
-    assert 'data-i18n="operator.feed.filter.moved"' in html
+    assert 'id="operatorLookupSortMode"' in html
     assert 'data-i18n="operator.context.title"' in html
 
 
@@ -3855,6 +4943,9 @@ def test_operator_focus_docs_and_meta_sync_static_copy_use_i18n_keys():
     assert 'data-i18n="shell.admin.doc_link.erd_summary"' in html
     assert 'data-i18n="shell.admin.doc_link.erd_detail"' in html
     assert 'data-i18n="shell.admin.doc_link.manual"' in html
+    assert 'data-tool-doc-key="erd-summary"' in html
+    assert 'data-tool-doc-key="erd-detail"' in html
+    assert 'data-tool-doc-key="manual"' in html
     assert 'data-i18n="shell.admin.doc_link.checklist"' not in html
     assert '"manual.utility.summary":' in html
     assert 'data-i18n="utility.language"' in html
@@ -3874,6 +4965,10 @@ def test_operator_focus_docs_and_meta_sync_static_copy_use_i18n_keys():
     assert '"dashboard.action.search":' in html
     assert '"operator.lookup.action.run":' in html
     assert '"shared_camera.empty.meta":' in html
+    assert "function buildLocalizedToolDocHref(docKey) {" in html
+    assert "function syncLocalizedToolDocLinks() {" in html
+    apply_locale_block = html.split("function applyLocale(locale = appLocale) {", 1)[1].split("function mediaDisplayLabel", 1)[0]
+    assert "syncLocalizedToolDocLinks();" in apply_locale_block
 
 
 def test_dashboard_overview_actions_use_media_icon_button_pattern():
@@ -3932,6 +5027,17 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     html = read_static_html("index.html")
     assert 'id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n-title="dashboard.selection.action.edit_selected"' in html
     assert 'data-i18n="dashboard.selection.action.edit_short"' in html
+    assert 'id="homeDashSelectedSortArtistRow"' in html
+    assert 'id="homeDashSelectedSortArtistName"' in html
+    assert 'id="homeDashSelectedSortArtistSaveBtn"' in html
+    assert 'id="homeDashSelectedSortArtistStatus"' in html
+    assert 'id="homeDashSelectedSortArtistDisplay"' in html
+    assert 'data-i18n="dashboard.selection.sort_artist.label"' in html
+    assert 'data-i18n="media.manage.master.sort_artist.action.save"' in html
+    assert 'data-i18n="dashboard.selection.sort_artist.note"' in html
+    assert '"dashboard.selection.sort_artist.label":' in html
+    assert '"dashboard.selection.sort_artist.note":' in html
+    assert '"dashboard.selection.sort_artist.display_artist":' in html
     assert 'id="homeDashSearchTitle" data-i18n-placeholder="dashboard.workbench.field.title.placeholder"' in html
     assert 'id="homeDashSearchCatalogNo" data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder"' in html
     assert 'id="homeDashSearchBarcode" data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder"' in html
@@ -3948,6 +5054,27 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     assert '"dashboard.workbench.field.title.placeholder":' in html
     assert '"dashboard.workbench.field.catalog.placeholder":' in html
     assert '"dashboard.workbench.field.barcode.placeholder":' in html
+
+
+def test_dashboard_selected_sort_artist_row_uses_aligned_grid_layout():
+    html = read_static_html("index.html")
+    assert 'id="homeDashSelectedSortArtistRow" class="dashboard-selected-sort-artist-row"' in html
+    assert 'class="dashboard-selected-sort-artist-label mini"' in html
+    assert 'class="dashboard-selected-sort-artist-input"' in html
+    assert 'class="btn ghost tiny dashboard-slot-actionbtn dashboard-selected-sort-artist-save"' in html
+    assert 'id="homeDashSelectedSortArtistDisplay" class="dashboard-selected-sort-artist-display mini muted"' in html
+    assert 'class="dashboard-selected-sort-artist-note mini muted"' in html
+    assert ".dashboard-selected-sort-artist-row {" in html
+    assert "grid-template-columns: minmax(240px, 1.4fr) auto minmax(220px, 0.9fr) minmax(260px, 1fr);" in html
+    assert 'grid-template-areas:' in html
+    assert '"label . . ."' in html
+    assert '"input button display note";' in html
+    assert ".dashboard-selected-sort-artist-row--master {" in html
+    assert '"input button note";' in html
+    assert "@media (max-width: 1280px) {" in html
+    assert '"label label label"' in html
+    assert '"input button display"' in html
+    assert 'id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master" style="display:none;"' in html
 
     operator_block = html.split("    function updateOperatorFeedControls() {", 1)[1].split("    async function openOperatorCabinetLocationFromButton(button) {", 1)[0]
     assert 't("operator.feed.heading.search_results")' in operator_block
@@ -3972,6 +5099,375 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     assert 't("dashboard.workbench.meta.search_ready")' in workbench_block
     assert 't("dashboard.workbench.status.loading_search")' in workbench_block
     assert 't("dashboard.workbench.status.empty_search")' in workbench_block
+
+
+def test_dashboard_workbench_includes_media_filter_field():
+    html = read_static_html("index.html")
+    assert '<label for="homeDashMediaFilter" data-i18n="dashboard.workbench.field.category.label">미디어</label>' in html
+    assert '<select id="homeDashMediaFilter">' in html
+    assert '<option value="ANY" data-i18n="common.all">전체</option>' in html
+    assert '<option value="LP">LP</option>' in html
+    assert '<option value="CD">CD</option>' in html
+    assert '<option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>' in html
+    assert '<option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>' in html
+    assert '<option value="DIGITAL">Digital</option>' in html
+    assert '<option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>' in html
+    assert '"dashboard.workbench.field.category.label": "미디어"' in html
+    assert '<label for="homeDashSignatureMode" data-i18n="dashboard.workbench.field.signature_mode.label">싸인 경로</label>' in html
+    assert '<select id="homeDashSignatureMode">' in html
+    assert '<option value="ANY" data-i18n="dashboard.workbench.field.signature_mode.option.any">전체</option>' in html
+    assert '<option value="DIRECT" data-i18n="dashboard.workbench.field.signature_mode.option.direct">직접</option>' in html
+    assert '<option value="PURCHASE" data-i18n="dashboard.workbench.field.signature_mode.option.purchase">구매</option>' in html
+    assert '"dashboard.workbench.field.signature_mode.label": "싸인 경로"' in html
+    assert '<label for="homeDashWorkbenchSortMode" data-i18n="dashboard.workbench.field.sort_mode.label">정렬</label>' in html
+    assert '<select id="homeDashWorkbenchSortMode">' in html
+    assert '<option value="CREATED_DESC" data-i18n="dashboard.workbench.field.sort_mode.option.created_desc">등록순</option>' in html
+    assert '<option value="NAME_ASC" selected data-i18n="dashboard.workbench.field.sort_mode.option.name_asc">이름순</option>' in html
+    assert '"dashboard.workbench.field.sort_mode.label": "정렬"' in html
+
+
+def test_dashboard_workbench_includes_sort_warning_filter_controls():
+    html = read_static_html("index.html")
+    assert 'id="homeDashSortWarningOnly"' in html
+    assert 'data-i18n="dashboard.workbench.field.sort_warning_only.label"' in html
+    assert 'id="homeDashWorkbenchDomainFilter"' in html
+    assert "homeDashWorkbenchDomainFilter" in html
+    domain_filter_block = html.split('id="homeDashWorkbenchDomainFilter"', 1)[1]
+    assert "<select" in domain_filter_block
+    assert "</select>" in domain_filter_block
+    assert 'value="ANY"' in domain_filter_block
+    assert 'value="KOREA"' in domain_filter_block
+    assert 'data-i18n="dashboard.workbench.field.domain_filter.option.any"' in domain_filter_block
+    assert 'value="JAPAN"' in domain_filter_block
+    assert 'data-i18n="dashboard.workbench.field.domain_filter.option.korea"' in domain_filter_block
+    assert 'data-i18n="dashboard.workbench.field.domain_filter.option.japan"' in domain_filter_block
+    assert 'value="GREATER_CHINA"' in domain_filter_block
+    assert 'data-i18n="dashboard.workbench.field.domain_filter.option.greater_china"' in domain_filter_block
+    assert 'value="OTHER_ASIA"' in domain_filter_block
+    assert 'data-i18n="dashboard.workbench.field.domain_filter.option.other_asia"' in domain_filter_block
+    assert '"dashboard.workbench.field.domain_filter.label":' in html
+    assert "dashboard.workbench.field.domain_filter.option" in html
+
+
+def test_dashboard_workbench_warning_helpers_render_compact_reason_only():
+    html = read_static_html("index.html")
+    assert "정렬 주의" in html
+    assert "도메인-이름 불일치" in html or "domain_name_mismatch" in html or "domain mismatch" in html
+    assert "dashboard.workbench.warning" in html
+    assert "dashboard.workbench.warning.badge" in html
+    assert "dashboard.workbench.warning.reason" in html
+    assert '"dashboard.workbench.warning.detail.domain_name_mismatch":' in html
+    assert "dashboard.slot.warning" in html
+    assert '"dashboard.slot.warning.badge.size_mismatch":' in html
+    assert '"dashboard.slot.warning.badge.domain_mismatch":' in html
+    assert '"dashboard.slot.warning.badge.domain_name_mismatch":' in html
+    assert '"dashboard.slot.warning.detail.size_mismatch":' in html
+    assert '"dashboard.slot.warning.detail.domain_mismatch":' in html
+    assert '"dashboard.slot.warning.detail.domain_name_mismatch":' in html
+    workbench_block = html.split("function dashboardWorkbenchWarningInfo(row) {", 1)[1].split("function dashboardSlotWarningInfo(row, slotRow) {", 1)[0]
+    assert "details:" not in workbench_block
+
+
+def test_dashboard_workbench_warning_html_renders_badges_only():
+    html = read_static_html("index.html")
+    warning_block = html.split("function dashboardWorkbenchWarningHtml(row) {", 1)[1].split("function dashboardSlotWarningHtml(row, slotRow) {", 1)[0]
+    assert "warning.details.map" not in warning_block
+
+
+def test_dashboard_workbench_warning_helper_excludes_various_artist_exceptions():
+    html = read_static_html("index.html")
+    helper_block = html.split("function dashboardWorkbenchNeedsSortWarning(row) {", 1)[1].split("function dashboardWorkbenchWarningInfo(row) {", 1)[0]
+    assert 'const normalizedArtist = dashboardWorkbenchArtistSortText(row).toUpperCase();' in helper_block
+    assert 'if (normalizedArtist === "VARIOUS" || normalizedArtist === "VARIOUS ARTISTS") return false;' in helper_block
+
+
+def test_dashboard_workbench_warning_helper_clears_when_saved_sort_artist_matches_domain():
+    html = read_static_html("index.html")
+    match_block = html.split("function dashboardWorkbenchSortArtistMatchesDomain(row) {", 1)[1].split("function dashboardWorkbenchNeedsSortWarning(row) {", 1)[0]
+    assert 'const explicitSortArtist = String(row?.master_sort_artist_name || "").trim();' in match_block
+    assert 'if (!explicitSortArtist) return false;' in match_block
+    assert 'if (domainCode === "KOREA") return /[\\uac00-\\ud7af]/.test(explicitSortArtist);' in match_block
+    assert 'if (domainCode === "JAPAN") return /[\\u3040-\\u30ff\\u4e00-\\u9fff]/.test(explicitSortArtist);' in match_block
+    assert 'if (["GREATER_CHINA", "OTHER_ASIA"].includes(domainCode)) return /[\\u3400-\\u4dbf\\u4e00-\\u9fff]/.test(explicitSortArtist);' in match_block
+    helper_block = html.split("function dashboardWorkbenchNeedsSortWarning(row) {", 1)[1].split("function dashboardWorkbenchWarningInfo(row) {", 1)[0]
+    assert 'if (dashboardWorkbenchSortArtistMatchesDomain(row)) return false;' in helper_block
+
+
+def test_dashboard_move_status_includes_sort_warning_notice_for_warned_rows():
+    html = read_static_html("index.html")
+    assert '"dashboard.move.progress_sort_warning":' in html
+    assert "moveDashboardOwnedItemsToSlot(" in html
+    move_block = html.split("moveDashboardOwnedItemsToSlot(", 1)[1].split("function selectDashboardSingleWorkbenchItemById(", 1)[0]
+    assert re.search(r"\?\s*t\(\s*['\"]dashboard\.move\.progress_sort_warning['\"]", move_block)
+
+
+def test_dashboard_move_done_includes_sort_warning_followup():
+    html = read_static_html("index.html")
+    assert '"dashboard.move.done_sort_warning_followup":' in html
+    move_block = html.split("moveDashboardOwnedItemsToSlot(", 1)[1].split("function selectDashboardSingleWorkbenchItemById(", 1)[0]
+    assert "const movedWarningRows = eligible.filter((row) => {" in move_block
+    assert "movedIds.has(ownedItemId)" in move_block
+    assert "dashboardWorkbenchNeedsSortWarning(row)" in move_block
+    assert 'movedWarningRows.length ? t("dashboard.move.done_sort_warning_followup"' in move_block
+
+
+def test_dashboard_workbench_warning_rendering_is_shared_without_actions():
+    html = read_static_html("index.html")
+    list_block = html.split("function dashboardWorkbenchListItemHtml(row, source, index = 0) {", 1)[1].split("function dashboardWorkbenchShelfItemHtml", 1)[0]
+    shelf_block = html.split("function dashboardWorkbenchShelfItemHtml(row, source, index = 0) {", 1)[1].split("function getDashboardWorkbenchRecommendation", 1)[0]
+    assert 'const warningHtml = dashboardWorkbenchWarningHtml(row);' in list_block
+    assert 'const warningHtml = dashboardWorkbenchWarningHtml(row);' in shelf_block
+
+
+def test_dashboard_slot_warning_helpers_detect_size_domain_and_name_mismatch():
+    html = read_static_html("index.html")
+    helper_block = html.split("function dashboardSlotWarningInfo(row, slotRow) {", 1)[1].split("function dashboardSlotWarningHtml(row, slotRow) {", 1)[0]
+    assert 'const warnings = [];' in helper_block
+    assert 'const slotSizeGroup = String(slotRow?.allowed_size_group || "").trim().toUpperCase();' in helper_block
+    assert 'const itemSizeGroup = String(ownedPreferredStorageSizeGroup(row) || row?.size_group || "").trim().toUpperCase();' in helper_block
+    assert 'const slotDomainCode = String(slotRow?.cabinet_domain_code || "").trim().toUpperCase();' in helper_block
+    assert 'const itemDomainCode = String(row?.domain_code || "").trim().toUpperCase();' in helper_block
+    assert 'dashboardWorkbenchNeedsSortWarning(row)' in helper_block
+    assert 'kind: "SIZE_MISMATCH"' in helper_block
+    assert 'kind: "DOMAIN_MISMATCH"' in helper_block
+    assert 'kind: "DOMAIN_NAME_MISMATCH"' in helper_block
+
+
+def test_dashboard_slot_renderers_use_slot_specific_warning_logic():
+    html = read_static_html("index.html")
+    slot_item_block = html.split("function dashboardSlotItemHtml(row, index) {", 1)[1].split("function dashboardSlotListItemHtml", 1)[0]
+    slot_list_block = html.split("function dashboardSlotListItemHtml(row, index) {", 1)[1].split("function dashboardSlotShelfItemHtml", 1)[0]
+    slot_shelf_block = html.split("function dashboardSlotShelfItemHtml(row, index) {", 1)[1].split("function dashboardWorkbenchListItemHtml", 1)[0]
+    assert 'const slotRow = getDashboardSlotRow(String(row?.slot_code || homeDashboardSelectedSlotCode || "").trim()) || null;' in slot_item_block
+    assert 'const warningHtml = dashboardSlotWarningHtml(row, slotRow);' in slot_item_block
+    assert 'const slotRow = getDashboardSlotRow(String(row?.slot_code || homeDashboardSelectedSlotCode || "").trim()) || null;' in slot_list_block
+    assert 'const warningHtml = dashboardSlotWarningHtml(row, slotRow);' in slot_list_block
+    assert 'const slotRow = getDashboardSlotRow(String(row?.slot_code || homeDashboardSelectedSlotCode || "").trim()) || null;' in slot_shelf_block
+    assert 'const warningHtml = dashboardSlotWarningHtml(row, slotRow);' in slot_shelf_block
+
+
+def test_dashboard_workbench_loaders_apply_media_filter_when_selected():
+    html = read_static_html("index.html")
+    unassigned_block = html.split("async function loadDashboardUnassignedItems(opts = {}) {", 1)[1].split("    async function loadDashboardSearchItems(opts = {}) {", 1)[0]
+    search_block = html.split("async function loadDashboardSearchItems(opts = {}) {", 1)[1].split("    function getDashboardSelectedWorkbenchRows()", 1)[0]
+    expected = 'const category = String($("homeDashMediaFilter")?.value || "ANY").trim().toUpperCase() || "ANY";'
+    assert expected in unassigned_block
+    assert 'if (category !== "ANY") params.set("category", category);' in unassigned_block
+    assert 'const signatureMode = dashboardWorkbenchSignatureModeValue();' in unassigned_block
+    assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in unassigned_block
+    assert expected in search_block
+    assert 'if (category !== "ANY") params.set("category", category);' in search_block
+    assert 'const signatureMode = dashboardWorkbenchSignatureModeValue();' in search_block
+    assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in search_block
+
+
+def test_dashboard_workbench_media_filter_change_reload_current_mode():
+    html = read_static_html("index.html")
+    change_start = '$("homeDashMediaFilter").addEventListener("change", () => {'
+    next_start = '    $("homeOpenDashboardSlotBtn").addEventListener("click", openDashboardForCurrentLocation);'
+    assert change_start in html
+    assert next_start in html
+    block = html.split(change_start, 1)[1].split(next_start, 1)[0]
+    assert 'if (homeDashboardWorkbenchMode === "SEARCH") {' in block
+    assert 'loadDashboardSearchItems({ silent: true });' in block
+    assert 'loadDashboardUnassignedItems({ silent: true });' in block
+    signature_change_start = '$("homeDashSignatureMode").addEventListener("change", () => {'
+    assert signature_change_start in html
+    signature_block = html.split(signature_change_start, 1)[1].split(next_start, 1)[0]
+    assert 'if (homeDashboardWorkbenchMode === "SEARCH") {' in signature_block
+    assert 'loadDashboardSearchItems({ silent: true });' in signature_block
+    assert 'loadDashboardUnassignedItems({ silent: true });' in signature_block
+
+
+def test_dashboard_workbench_search_row_tunes_warning_and_compact_filters():
+    html = read_static_html("index.html")
+    next_start = '    $("homeOpenDashboardSlotBtn").addEventListener("click", openDashboardForCurrentLocation);'
+    assert ".dashboard-workbench-search {" in html
+    assert "108px" in html
+    assert "minmax(118px, 0.76fr)" in html
+    assert ".dashboard-workbench-filter--signature" in html
+    assert ".dashboard-workbench-filter--sort" in html
+    assert 'class="dashboard-workbench-filter dashboard-workbench-filter--signature"' in html
+    assert 'class="dashboard-workbench-filter dashboard-workbench-filter--sort"' in html
+    assert 'id="homeDashSearchCatalogNo" class="dashboard-workbench-search-input--catalog"' in html
+    assert 'id="homeDashSearchBarcode" class="dashboard-workbench-search-input--barcode"' in html
+    sort_change_start = '$("homeDashWorkbenchSortMode").addEventListener("change", () => {'
+    assert sort_change_start in html
+    sort_block = html.split(sort_change_start, 1)[1].split(next_start, 1)[0]
+    assert "resetDashboardWorkbenchPage();" in sort_block
+    assert "renderDashboardWorkbench();" in sort_block
+
+
+def test_dashboard_workbench_places_sort_warning_toggle_in_selection_row():
+    html = read_static_html("index.html")
+    workbench_toolbar = html.split('<div class="dashboard-workbench-search">', 1)[1].split("</div>\n            </div>\n            <div class=\"dashboard-slot-rack-surface", 1)[0]
+    assert 'homeDashSortWarningOnly' not in workbench_toolbar
+    workbench_summary = html.split('<div id="homeDashWorkbenchSummary"', 1)[1].split('<div class="dashboard-selection-actions dashboard-selection-actions--secondary">', 1)[0]
+    assert 'class="dashboard-selection-inline-filter"' in workbench_summary
+    assert 'id="homeDashSortWarningOnly"' in workbench_summary
+    assert 'class="dashboard-workbench-checkbox" for="homeDashSortWarningOnly"' in workbench_summary
+
+
+def test_dashboard_workbench_sort_helper_supports_created_and_name_modes():
+    html = read_static_html("index.html")
+    assert 'function dashboardWorkbenchSortModeValue() {' in html
+    helper_block = html.split("function dashboardWorkbenchSortModeValue() {", 1)[1].split("    function renderDashboardUnassignedItems() {", 1)[0]
+    assert 'String($("homeDashWorkbenchSortMode")?.value || "NAME_ASC").trim().toUpperCase() || "NAME_ASC"' in helper_block
+    assert 'if (sortMode === "NAME_ASC") {' in helper_block
+    assert 'const artistA = String(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase();' in helper_block
+    assert 'const releaseA = dashboardPreferredReleaseSortValue(a);' in helper_block
+    assert 'const releaseCompare = releaseA.localeCompare(releaseB);' in helper_block
+    assert 'if (releaseCompare !== 0) return releaseCompare;' in helper_block
+    assert 'const titleA = String(a?.master_title || a?.item_title || a?.item_name_override || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase();' in helper_block
+    assert 'const createdA = String(a?.created_at || "").trim();' in helper_block
+    assert 'const createdCompare = createdB.localeCompare(createdA);' in helper_block
+    assert 'if (createdCompare !== 0) return createdCompare;' in helper_block
+
+
+def test_dashboard_slot_includes_sort_mode_field():
+    html = read_static_html("index.html")
+    assert '<label for="homeDashSlotSortMode" data-i18n="dashboard.cover_flow.field.sort_mode.label">정렬</label>' in html
+    assert '<select id="homeDashSlotSortMode">' in html
+    assert '<option value="CREATED_DESC" data-i18n="dashboard.cover_flow.field.sort_mode.option.created_desc">등록순</option>' in html
+    assert '<option value="NAME_ASC" selected data-i18n="dashboard.cover_flow.field.sort_mode.option.name_asc">이름순</option>' in html
+    assert '"dashboard.cover_flow.field.sort_mode.label": "정렬"' in html
+
+
+def test_dashboard_slot_includes_media_filter_field():
+    html = read_static_html("index.html")
+    assert '<label for="homeDashSlotMediaFilter" data-i18n="dashboard.cover_flow.field.category.label">미디어</label>' in html
+    assert '<select id="homeDashSlotMediaFilter">' in html
+    assert '<option value="ANY" data-i18n="dashboard.cover_flow.field.category.option.any">전체</option>' in html
+    assert '<option value="LP" data-i18n="common.size_group.lp">LP</option>' in html
+    assert '<option value="CD" data-i18n="common.size_group.cd">CD</option>' in html
+    assert '<option value="CASSETTE" data-i18n="common.size_group.cassette">Cassette</option>' in html
+    assert '<option value="8TRACK">8-track</option>' in html
+    assert '<option value="DIGITAL">Digital</option>' in html
+    assert '<option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>' in html
+    assert '"dashboard.cover_flow.field.category.label": "미디어"' in html
+
+
+def test_dashboard_slot_media_filter_helper_supports_selected_category():
+    html = read_static_html("index.html")
+    assert 'function dashboardSlotMediaFilterValue() {' in html
+    helper_block = html.split("function dashboardSlotMediaFilterValue() {", 1)[1].split("    function dashboardSlotSortModeValue() {", 1)[0]
+    assert 'String($("homeDashSlotMediaFilter")?.value || "ANY").trim().toUpperCase() || "ANY"' in helper_block
+    assert 'const category = dashboardSlotMediaFilterValue();' in helper_block
+    assert 'if (category === "ANY") return list;' in helper_block
+    assert 'return list.filter((row) => String(row?.category || "").trim().toUpperCase() === category);' in helper_block
+
+
+def test_dashboard_slot_sort_helper_supports_created_and_name_modes():
+    html = read_static_html("index.html")
+    assert 'function dashboardSlotSortModeValue() {' in html
+    helper_block = html.split("function dashboardSlotSortModeValue() {", 1)[1].split("    function dashboardWorkbenchPageSlice(items, slotRow) {", 1)[0]
+    assert 'String($("homeDashSlotSortMode")?.value || "NAME_ASC").trim().toUpperCase() || "NAME_ASC"' in helper_block
+    assert 'if (sortMode === "NAME_ASC") {' in helper_block
+    assert 'const artistA = String(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase();' in helper_block
+    assert 'const releaseA = dashboardPreferredReleaseSortValue(a);' in helper_block
+    assert 'const releaseCompare = releaseA.localeCompare(releaseB);' in helper_block
+    assert 'if (releaseCompare !== 0) return releaseCompare;' in helper_block
+    assert 'const titleA = String(a?.master_title || a?.item_title || a?.item_name_override || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase();' in helper_block
+    assert 'const createdA = String(a?.created_at || "").trim();' in helper_block
+    assert 'const createdCompare = createdB.localeCompare(createdA);' in helper_block
+    assert 'if (createdCompare !== 0) return createdCompare;' in helper_block
+
+
+def test_dashboard_workbench_name_sort_prefers_canonical_artist_and_master_title():
+    html = read_static_html("index.html")
+    assert 'function sortDashboardWorkbenchItems(items) {' in html
+    helper_block = html.split("function sortDashboardWorkbenchItems(items) {", 1)[1].split("    function loadDashboardWorkbenchPreferences() {", 1)[0]
+    assert 'if (sortMode === "NAME_ASC") {' in helper_block
+    assert 'const artistA = String(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase();' in helper_block
+    assert 'const titleA = String(a?.master_title || a?.item_title || a?.item_name_override || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase();' in helper_block
+
+
+def test_dashboard_name_sort_uses_release_priority_and_year_only_first():
+    html = read_static_html("index.html")
+    assert 'function normalizeDashboardReleaseSortValue(value) {' in html
+    helper_block = html.split("function normalizeDashboardReleaseSortValue(value) {", 1)[1].split("    function dashboardSlotSortModeValue() {", 1)[0]
+    assert "if (/^\\d{4}-\\d{2}$/.test(text)) return `${text}-00`;" in helper_block
+    assert "if (/^\\d{4}$/.test(text)) return `${text}-00-00`;" in helper_block
+    assert 'function dashboardPreferredReleaseSortValue(row) {' in helper_block
+    assert 'const candidates = [masterRelease, itemRelease].filter(Boolean).sort();' in helper_block
+
+
+def test_dashboard_slot_items_apply_sort_helper_for_live_and_snapshot_rows():
+    html = read_static_html("index.html")
+    block = html.split("function renderDashboardSlotItems(slotRow, cabinetGroup = null) {", 1)[1].split("    function renderDashboardCabinetDetail() {", 1)[0]
+    assert 'const visibleSnapshotItems = sortDashboardSlotItems(filterDashboardSlotItemsByMedia(snapshotItems));' in block
+    assert 'const items = sortDashboardSlotItems(filterDashboardSlotItemsByMedia(Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : []));' in block
+
+
+def test_dashboard_workbench_rows_apply_media_filter_then_sort():
+    html = read_static_html("index.html")
+    block = html.split("function getDashboardWorkbenchRows() {", 1)[1].split("    function getDashboardWorkbenchSelectedIds()", 1)[0]
+    assert 'return sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardSearchItems));' in block
+    assert 'return sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardUnassignedItems));' in block
+
+
+def test_dashboard_workbench_persists_filter_preferences_by_role():
+    html = read_static_html("index.html")
+    assert 'const DASHBOARD_WORKBENCH_PREFS_KEY = "hahahoho.dashboardWorkbenchPrefsByRole.v1";' in html
+    assert "function loadDashboardWorkbenchPreferences() {" in html
+    assert "function saveDashboardWorkbenchPreferences() {" in html
+    assert "function applyDashboardWorkbenchPreferences() {" in html
+    helper_block = html.split("function loadDashboardWorkbenchPreferences() {", 1)[1].split("    function renderDashboardUnassignedItems() {", 1)[0]
+    assert 'const map = loadRoleScopedMap(DASHBOARD_WORKBENCH_PREFS_KEY);' in helper_block
+    assert 'saveRoleScopedMap(DASHBOARD_WORKBENCH_PREFS_KEY, map);' in helper_block
+    assert 'category: dashboardWorkbenchMediaFilterValue(),' in helper_block
+    assert 'signature_mode: dashboardWorkbenchSignatureModeValue(),' in helper_block
+    assert 'sort_mode: dashboardWorkbenchSortModeValue(),' in helper_block
+    assert 'slot_sort_mode: dashboardSlotSortModeValue(),' in helper_block
+    assert 'artist: String($("homeDashSearchArtist")?.value || "").trim(),' in helper_block
+    assert 'title: String($("homeDashSearchTitle")?.value || "").trim(),' in helper_block
+    assert 'catalog_no: String($("homeDashSearchCatalogNo")?.value || "").trim(),' in helper_block
+    assert 'barcode: String($("homeDashSearchBarcode")?.value || "").trim(),' in helper_block
+
+
+def test_dashboard_workbench_restores_preferences_on_dashboard_load_and_saves_on_change():
+    html = read_static_html("index.html")
+    load_block = html.split("async function loadHomeDashboard(opts = {}) {", 1)[1].split("    function resetHomeSearchForm()", 1)[0]
+    assert "applyDashboardWorkbenchPreferences();" in load_block
+    next_start = '    $("homeOpenDashboardSlotBtn").addEventListener("click", openDashboardForCurrentLocation);'
+    media_block = html.split('$("homeDashMediaFilter").addEventListener("change", () => {', 1)[1].split(next_start, 1)[0]
+    signature_block = html.split('$("homeDashSignatureMode").addEventListener("change", () => {', 1)[1].split(next_start, 1)[0]
+    sort_block = html.split('$("homeDashWorkbenchSortMode").addEventListener("change", () => {', 1)[1].split(next_start, 1)[0]
+    slot_sort_block = html.split('$("homeDashSlotSortMode").addEventListener("change", () => {', 1)[1].split(next_start, 1)[0]
+    assert "saveDashboardWorkbenchPreferences();" in media_block
+    assert "saveDashboardWorkbenchPreferences();" in signature_block
+    assert "saveDashboardWorkbenchPreferences();" in sort_block
+    assert "saveDashboardWorkbenchPreferences();" in slot_sort_block
+    assert '$("homeDashSearchArtist").addEventListener("input", saveDashboardWorkbenchPreferences);' in html
+    assert '$("homeDashSearchTitle").addEventListener("input", saveDashboardWorkbenchPreferences);' in html
+    assert '$("homeDashSearchCatalogNo").addEventListener("input", saveDashboardWorkbenchPreferences);' in html
+    assert '$("homeDashSearchBarcode").addEventListener("input", saveDashboardWorkbenchPreferences);' in html
+    assert '$("homeDashWorkbenchSortMode").value = ["CREATED_DESC", "NAME_ASC"].includes(sortMode) ? sortMode : "NAME_ASC";' in html
+    assert '$("homeDashSlotSortMode").value = ["CREATED_DESC", "NAME_ASC"].includes(slotSortMode) ? slotSortMode : "NAME_ASC";' in html
+    assert '$("homeDashSearchArtist").value = String(prefs?.artist || "");' in html
+    assert '$("homeDashSearchTitle").value = String(prefs?.title || "");' in html
+    assert '$("homeDashSearchCatalogNo").value = String(prefs?.catalog_no || "");' in html
+    assert '$("homeDashSearchBarcode").value = String(prefs?.barcode || "");' in html
+
+
+def test_dashboard_slot_sort_change_rerenders_selected_slot_items():
+    html = read_static_html("index.html")
+    next_start = '    $("homeOpenDashboardSlotBtn").addEventListener("click", openDashboardForCurrentLocation);'
+    change_start = '$("homeDashSlotSortMode").addEventListener("change", () => {'
+    assert change_start in html
+    block = html.split(change_start, 1)[1].split(next_start, 1)[0]
+    assert "resetDashboardSlotPage();" in block
+    assert "renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));" in block
+
+
+def test_dashboard_slot_media_filter_change_rerenders_selected_slot_items():
+    html = read_static_html("index.html")
+    next_start = '    $("homeOpenDashboardSlotBtn").addEventListener("click", openDashboardForCurrentLocation);'
+    change_start = '$("homeDashSlotMediaFilter").addEventListener("change", () => {'
+    assert change_start in html
+    block = html.split(change_start, 1)[1].split(next_start, 1)[0]
+    assert "resetDashboardSlotPage();" in block
+    assert "renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));" in block
 
 
 def test_index_dashboard_selection_toolbar_uses_tiered_visual_weights_for_selection_secondary_and_primary_actions():
@@ -4245,6 +5741,63 @@ def test_media_register_api_lookup_runtime_copy_use_i18n():
     assert 'registerBtn.textContent = isSaving ? t("media.register.api_lookup.action.save_loading") : (isQueued ? t("media.register.api_lookup.action.save_queued") : t("media.register.api_lookup.action.save_owned"));' in html
 
 
+def test_api_lookup_results_render_explicit_owned_badge_for_registered_candidates():
+    html = read_static_html("index.html")
+    barcode_block = html.split("function renderBarcodeResults(items, opts = {}) {", 1)[1].split("function resetOpsSlotForm() {", 1)[0]
+    assert "box.classList.toggle(\"is-owned\", Number(c.owned_count || 0) > 0 || Boolean(c.is_owned));" in barcode_block
+    assert 'const ownedBadge = Number(c.owned_count || 0) > 0 || c.is_owned' in barcode_block
+    assert 'album-result-status-badge owned admin-barcode-candidate-flag' in barcode_block
+    assert 't("common.meta.already_owned", { count: countWithUnit(Number(c.owned_count || 0)) })' in barcode_block
+
+
+def test_api_lookup_results_sort_registered_candidates_to_top_while_preserving_input_order_within_groups():
+    html = read_static_html("index.html")
+    barcode_block = html.split("function renderBarcodeResults(items, opts = {}) {", 1)[1].split("function resetOpsSlotForm() {", 1)[0]
+    assert 'registerLookupCandidates = Array.isArray(items)' in barcode_block
+    assert '.map((candidate, order) => ({' in barcode_block
+    assert 'isOwned: Number(candidate.owned_count || 0) > 0 || Boolean(candidate.is_owned),' in barcode_block
+    assert '.sort((a, b) => Number(b.isOwned) - Number(a.isOwned) || compareRegisterLookupCandidateDisplay(a.candidate, b.candidate) || a.order - b.order)' in barcode_block
+    assert '.map(({ candidate }) => candidate)' in barcode_block
+
+
+def test_api_lookup_results_sort_maniadb_variants_by_year_format_and_catalog_within_owned_groups():
+    html = read_static_html("index.html")
+    assert "function compareRegisterLookupCandidateDisplay(a, b) {" in html
+    helper_block = html.split("function compareRegisterLookupCandidateDisplay(a, b) {", 1)[1].split("function renderBarcodeResults(items, opts = {}) {", 1)[0]
+    barcode_block = html.split("function renderBarcodeResults(items, opts = {}) {", 1)[1].split("function resetOpsSlotForm() {", 1)[0]
+    assert 'if (sourceA !== "MANIADB" || sourceB !== "MANIADB") return 0;' in helper_block
+    assert 'const yearDiff = registerLookupCandidateSortYear(a) - registerLookupCandidateSortYear(b);' in helper_block
+    assert 'const formatDiff = registerLookupCandidateFormatRank(a) - registerLookupCandidateFormatRank(b);' in helper_block
+    assert 'const catalogDiff = compareCodeValue(aCatalog || "ZZZ", bCatalog || "ZZZ");' in helper_block
+    assert '.sort((a, b) => Number(b.isOwned) - Number(a.isOwned) || compareRegisterLookupCandidateDisplay(a.candidate, b.candidate) || a.order - b.order)' in barcode_block
+
+
+def test_cover_url_normalizer_repairs_legacy_maniadb_variant_paths_for_rendering():
+    html = read_static_html("index.html")
+    assert "function normalizeRenderableCoverUrl(value) {" in html
+    helper_block = html.split("function normalizeRenderableCoverUrl(value) {", 1)[1].split("function cleanLinkedGoodsMemoryNote(value) {", 1)[0]
+    assert 'replace(/^http:\\/\\/i\\.maniadb\\.com\\//i, "https://i.maniadb.com/")' in helper_block
+    assert "function resolveAlternateManiadbCoverUrl(value) {" in helper_block
+    assert 'normalized.match(/^(https:\\/\\/i\\.maniadb\\.com\\/images\\/album\\/\\d+\\/\\d+)_(\\d+)_([fb])\\.jpg$/i);' in helper_block
+    assert 'normalized.match(/^(https:\\/\\/i\\.maniadb\\.com\\/images\\/album\\/\\d+\\/\\d+)_([fb])_(\\d+)\\.jpg$/i);' in helper_block
+    assert "function applyBrokenCoverFallback(img) {" in helper_block
+    assert 'img.id === "imageGalleryPreviewImg"' in helper_block
+    assert 'img.closest(".album-result-cover, .home-master-member-preview-cover, .table-cover-thumb, .dashboard-move-cover, .operator-cover, .image-gallery-thumb")' in helper_block
+    assert 'const primary = normalizeRenderableCoverUrl(row?.cover_image_url || row?.goods_primary_image_url);' in html
+    assert 'const coverUrl = normalizeRenderableCoverUrl(c.cover_image_url);' in html
+    assert 'const src = normalizeRenderableCoverUrl(url);' in html
+    assert 'document.addEventListener("error", (e) => {' in html
+    assert 'applyBrokenCoverFallback(e.target);' in html
+
+
+def test_api_lookup_flow_retries_recommendation_and_save_requests_instead_of_plain_fetch():
+    html = read_static_html("index.html")
+    assert 'const res = await fetchWithRetry("/ingest/barcode/recommend-location"' in html
+    assert 'const res = await fetchWithRetry("/owned-items"' in html
+    assert 't("media.register.api_lookup.status.recommendation_failed")' in html
+    assert 't("media.register.api_lookup.status.save_failed")' in html
+
+
 def test_register_lookup_and_ops_slot_camera_remaining_runtime_copy_use_i18n():
     html = read_static_html("index.html")
     assert '"common.cabinet":' in html
@@ -4316,6 +5869,40 @@ def test_dashboard_system_queue_and_sort_runtime_copy_use_i18n():
     assert '`<tr><td colspan=\'6\' class=\'muted\'>${escapeHtml(t("common.data_empty"))}</td></tr>`' in html
     assert 'if (!res.ok) throw new Error(responseDetailText(data, t("media.manage.owned.status.load_failed")));' in html
     assert '`<tr><td colspan=\'18\' class=\'muted\'>${escapeHtml(t("common.data_empty"))}</td></tr>`' in html
+
+
+def test_home_master_manual_correction_controls_and_save_flow_exist():
+    html = read_static_html("index.html")
+
+    assert 'id="homeMasterCorrectionRow"' in html
+    assert 'id="homeMasterCorrectionReleaseYear"' in html
+    assert 'id="homeMasterCorrectionDomainCode"' in html
+    assert 'id="homeMasterCorrectionNote"' in html
+    assert 'id="homeMasterCorrectionSaveBtn"' in html
+    assert 'id="homeMasterCorrectionStatus"' in html
+    assert '"media.manage.master.correction.action.save":' in html
+    assert '"media.manage.master.correction.status.saving":' in html
+    assert '"media.manage.master.correction.status.saved":' in html
+    assert '"media.manage.master.correction.status.cleared":' in html
+    assert '"media.manage.master.correction.status.save_failed":' in html
+    assert '"media.manage.master.correction.field.release_year.label":' in html
+    assert '"media.manage.master.correction.field.domain_code.label":' in html
+    assert '"media.manage.master.correction.field.note.label":' in html
+    assert '"media.manage.master.correction.source_hint":' in html
+    assert 'row.style.display = "grid";' in html
+
+    save_block = html.split("    async function saveHomeMasterCorrection() {", 1)[1].split("    async function saveHomeMasterSortArtistName()", 1)[0]
+    assert 'const res = await fetch(`/album-masters/${masterId}/correction`,' in save_block
+    assert 'release_year: releaseYearValue,' in save_block
+    assert 'domain_code: domainCodeValue,' in save_block
+    assert 'override_note: overrideNoteValue,' in save_block
+    assert 'homeMasterInfo.release_year = data.release_year || null;' in save_block
+    assert 'homeMasterInfo.domain_code = data.domain_code || null;' in save_block
+    assert 'homeMasterInfo.source_release_year = data.source_release_year || null;' in save_block
+    assert 'homeMasterInfo.source_domain_code = data.source_domain_code || null;' in save_block
+    assert 'homeMasterInfo.override_release_year = data.override_release_year || null;' in save_block
+    assert 'homeMasterInfo.override_domain_code = data.override_domain_code || null;' in save_block
+    assert 'homeMasterInfo.override_note = data.override_note || null;' in save_block
 
 
 def test_lower_admin_empty_states_and_mode_hints_use_i18n_keys():
@@ -4407,7 +5994,8 @@ def test_operator_search_result_cards_render_collector_style_meta_line():
     assert "const runoutSample = operatorRunoutSampleText(row.runout_sample || row.runout_matrix || []);" in search_block
     assert "const labelCatalogText = labelName && catalogSummary" in search_block
     assert '<span class="operator-label-chip">${escapeHtml(String(row.label_id || "").trim() || "-")}</span>' in search_block
-    assert '<span>${escapeHtml(collectorMetaLine || "-")}</span>' in search_block
+    assert "const collectorMetaHtml = operatorCollectorMetaHtml(row);" in search_block
+    assert '<div class="operator-meta-line">${collectorMetaHtml}</div>' in search_block
     assert 'runoutSample !== "-"' in search_block
     assert 'class="operator-meta-subline"' in search_block
 
@@ -4420,9 +6008,41 @@ def test_operator_recent_cards_render_collector_style_meta_line():
     assert "const runoutSample = operatorRunoutSampleText(row.runout_sample || row.runout_matrix || []);" in recent_block
     assert "const labelCatalogText = labelName && catalogSummary" in recent_block
     assert '<span class="operator-label-chip">${escapeHtml(String(row.label_id || "").trim() || "-")}</span>' in recent_block
-    assert '<span>${escapeHtml(collectorMetaLine || "-")}</span>' in recent_block
+    assert "const collectorMetaHtml = operatorCollectorMetaHtml(row);" in recent_block
+    assert '${collectorMetaHtml}' in recent_block
     assert 'runoutSample !== "-"' in recent_block
     assert 'class="operator-meta-subline"' in recent_block
+
+
+def test_operator_cards_render_compact_collector_meta_pairs():
+    html = read_static_html("index.html")
+    helper_block = html.split("    function operatorMetaPairHtml(label, value, options = {}) {", 1)[1].split("    function renderOperatorHomeRecentItems(items, options = {}) {", 1)[0]
+    assert 'function operatorCollectorMetaHtml(row) {' in html
+    assert 'operator.feed.meta.summary.release' in helper_block
+    assert 'operator.feed.meta.summary.country' in helper_block
+    assert 'operator.feed.meta.summary.label' in helper_block
+    assert 'operator.feed.meta.summary.format' in helper_block
+    assert ".operator-meta-pair {" in html
+    assert ".operator-meta-key {" in html
+    assert ".operator-meta-value {" in html
+
+
+def test_manage_source_meta_summary_uses_compact_label_value_rows():
+    html = read_static_html("index.html")
+    summary_block = html.split("    function renderHomeSourceManagedMetaSummary() {", 1)[1].split("    function syncHomeSourceManagedMetaUi() {", 1)[0]
+    assert '"media.manage.source_meta.label.source":' in html
+    assert '"media.manage.source_meta.label.item":' in html
+    assert '"media.manage.source_meta.label.format":' in html
+    assert '"media.manage.source_meta.label.release":' in html
+    assert '"media.manage.source_meta.label.country":' in html
+    assert '"media.manage.source_meta.label.label":' in html
+    assert '"media.manage.source_meta.label.barcode":' in html
+    assert 'operatorMetaPairHtml(t("media.manage.source_meta.label.source"), `${sourceLabel}#${sourceExternalId}`)' in summary_block
+    assert 'operatorMetaPairHtml(t("media.manage.source_meta.label.memo"), memoText, { subtle: true })' in summary_block
+    assert '$("homeEditMusicSourceSummaryMain").innerHTML = mainSummaryHtml' in summary_block
+    assert '$("homeEditMusicSourceSummarySub").innerHTML = subSummaryHtml' in summary_block
+    assert '$("homeEditMusicSourceSummaryExtra").style.display = "none";' in summary_block
+    assert '$("homeEditMusicSourceSummaryOps").style.display = "none";' in summary_block
 
 
 def test_operator_cards_place_registered_or_moved_time_on_second_line():
@@ -4445,6 +6065,23 @@ def test_operator_cards_place_registered_or_moved_time_on_second_line():
     assert 'operator-secondary-line-main' in recent_block
     assert 'operator-secondary-line-main' in feed_block
     assert 'operator-secondary-line-main' in search_block
+
+
+def test_operator_recent_cards_gate_discogs_repair_button_on_eligibility():
+    html = read_static_html("index.html")
+    recent_block = html.split("function renderOperatorHomeRecentItems(items, options = {}) {", 1)[1].split("function renderOperatorFeedItems(items, options = {}) {", 1)[0]
+    assert 'const repairDiscogsMasterSlot = discogsRepairSlotHtml("operator", {' in recent_block
+    assert 'const canRepairDiscogsMaster = ownedItemId > 0 && normalizeSourceCode(row?.source_code) === "DISCOGS" && normalizeSourceCode(row?.linked_master_source_code) === "MANUAL";' not in recent_block
+    assert 'data-operator-discogs-repair-slot="${id}"' in html
+    assert '/discogs-repair-status' in html
+
+
+def test_operator_lookup_click_handler_routes_discogs_master_repair_action():
+    html = read_static_html("index.html")
+    click_block = html.split("    async function handleOperatorLookupAction(e) {", 1)[1].split("    async function loadOperatorRequestList() {", 1)[0]
+    assert 'const repairDiscogsMasterBtn = e.target.closest("[data-operator-repair-discogs-master]");' in click_block
+    assert 'await fetchWithRetry(`/owned-items/${ownedItemId}/repair-discogs-master-link`, { method: "POST" }, {' in click_block
+    assert 'await loadOperatorHomeRecentSections();' in click_block
 
 
 def test_operator_cards_omit_previous_line_when_no_previous_history():
@@ -4567,10 +6204,10 @@ def test_media_search_and_manage_core_labels_use_i18n_keys():
     assert '<label for="editGoodsImageUrls" data-i18n="media.manage.goods.field.image_urls.label">사진 URL (줄바꿈, 복수)</label>' in html
     assert 'id="homeEditSaveBtn" class="btn" data-i18n="media.manage.product.action.save"' in html
     assert 'id="homeEditDeleteBtn" class="btn ghost" type="button" data-i18n="media.manage.product.action.delete"' in html
-    assert '<h2 data-i18n="media.manage.master.lookup.title">마스터 버전 조회 / 추가</h2>' in html
+    assert '<h2 data-i18n="media.manage.master.lookup.title">마스터 후보 조회 / 연결</h2>' in html
     assert 'id="homeMasterAddLoadBtn" class="btn ghost home-master-load-btn" type="button" data-i18n="media.manage.master.lookup.action.load"' in html
-    assert '<summary class="home-master-results-summary" data-i18n="media.manage.master.lookup.results.toggle">조회 결과 접기 / 펼치기</summary>' in html
-    assert '<summary style="cursor:pointer;font-weight:700;" data-i18n="media.manage.master.fetch.title">다른 소스 상품 추가 (Discogs / ManiaDB / Aladin)</summary>' in html
+    assert '<summary class="home-master-results-summary home-manage-secondary-summary" data-i18n="media.manage.master.lookup.results.toggle">조회 후보 보기 / 접기</summary>' in html
+    assert '<summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.master.fetch.title">다른 소스 상품 추가 (Discogs / ManiaDB / Aladin)</summary>' in html
     assert '<label for="homeMetaBarcode" data-i18n="media.manage.master.fetch.barcode.field.label">바코드</label>' in html
     assert 'id="homeMetaQueryBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.query.action.lookup"' in html
     assert '<h2 data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</h2>' in html
@@ -4942,6 +6579,15 @@ def test_index_purchase_import_queue_shows_single_product_title_column_without_a
     assert 'body.innerHTML = `<tr><td colspan="9" class="muted">${escapeHtml(t("media.register.purchase.queue.status.empty"))}</td></tr>`;' in queue_render_block
 
 
+def test_index_purchase_import_queue_item_cell_shows_artist_with_title():
+    html = read_static_html("index.html")
+    block = html.split("function purchaseImportItemNameHtml(row) {", 1)[1].split("function purchaseImportRowDetailSummaryHtml(row) {", 1)[0]
+    assert "const artist = purchaseImportParsedArtistName(row);" in block
+    assert 'const parsedItemName = purchaseImportParsedItemName(row);' in block
+    assert 'if (!artist || !parsedItemName || title !== parsedItemName) return titleHtml;' in block
+    assert 'return `<div class="mini muted">${escapeHtml(artist)}</div><div>${titleHtml}</div>`;' in block
+
+
 def test_index_manage_editor_schedules_secondary_hydration_after_next_frame_and_skips_smooth_scroll():
     html = read_static_html("index.html")
     show_block = html.split("function showHomeEditView() {", 1)[1].split("function isActiveHomeEditRequest", 1)[0]
@@ -4989,7 +6635,7 @@ def test_index_manage_master_lookup_waits_for_explicit_query_button():
     assert 'setTextIfPresent("homeMasterMeta", homeMasterMetaPlaceholderText());' in render_block
     assert '"media.manage.master.placeholder.pending_versions":' in html
     assert 'classList.toggle("home-master-lookup-pending", isPending)' in html
-    assert 'setDisplayIfPresent("homeMasterSummarySection", "none");' in render_block
+    assert 'setDisplayIfPresent("homeMasterSummarySection", "block");' in render_block
     assert "loadHomeManageMasterLookup({ resetPage: true })" in button_block
 
 
@@ -5012,10 +6658,21 @@ def test_index_manage_product_edit_and_master_lookup_use_distinct_visual_section
     assert ".home-master-load-btn {" in html
     assert ".home-master-lookup-note {" in html
     assert '<div class="home-product-edit-kicker" data-i18n="media.manage.product.kicker">바로 수정 가능</div>' in html
-    assert '<div class="home-master-lookup-kicker" data-i18n="media.manage.master.lookup.kicker">조회 전용 영역</div>' in html
+    assert '<div class="home-master-lookup-kicker" data-i18n="media.manage.master.lookup.kicker">후보 조회</div>' in html
     assert 'id="homeMasterSummarySection" style="display:none;"' in html
     assert 'class="btn ghost home-master-load-btn"' in html
     assert 'data-i18n="media.manage.master.lookup.note"' in html
+
+
+def test_index_manage_structural_landing_uses_master_operations_copy():
+    html = read_static_html("index.html")
+    manage_block = html.split('<div id="homeManageMasterSection">', 1)[1].split('<div class="home-master-danger-zone">', 1)[0]
+    assert 'data-i18n="media.manage.master.structure.kicker"' in manage_block
+    assert 'data-i18n="media.manage.master.structure.note"' in manage_block
+    assert 'data-i18n="media.manage.master.lookup.kicker"' in manage_block
+    assert 'data-i18n="media.manage.master.lookup.title"' in manage_block
+    assert 'data-i18n="media.manage.master.lookup.results.toggle"' in manage_block
+    assert 'data-i18n="media.manage.master.fetch.title"' in manage_block
 
 
 def test_index_manage_right_aligns_mutating_action_rows():
@@ -5138,6 +6795,46 @@ def test_index_dashboard_cover_flow_accepts_dragged_workbench_items_into_current
     assert 'const currentSlotCode = String(homeDashboardSelectedSlotCode || "").trim();' in block
     assert "await moveDashboardOwnedItemsToSlot(selectedRows, currentSlotCode);" in block
     assert "await moveDashboardOwnedItemToSlot(draggedOwnedItemId, currentSlotCode);" in block
+
+
+def test_index_dashboard_artist_sorted_slots_block_manual_reorder_interactions():
+    html = read_static_html("index.html")
+
+    helper_start = "    function dashboardSlotAllowsManualOrder(slotRow) {"
+    helper_end = "    function getDashboardDraggedOwnedItemId(event) {"
+    assert helper_start in html
+    assert helper_end in html
+    helper_block = html.split(helper_start, 1)[1].split(helper_end, 1)[0]
+    assert 'String(slotRow?.cabinet_sort_policy || "ARTIST_RELEASE_TITLE").trim().toUpperCase() === "LABEL_ID"' in helper_block
+
+    move_start = "    async function moveDashboardOwnedItemRelative(ownedItemId, targetOwnedItemId, position) {"
+    move_end = "    async function moveDashboardSlotSelectionToEdge(direction) {"
+    assert move_start in html
+    assert move_end in html
+    move_block = html.split(move_start, 1)[1].split(move_end, 1)[0]
+    assert 'if (!dashboardSlotAllowsManualOrder(currentSlotRow)) {' in move_block
+    assert 't("dashboard.order.locked_artist_slot")' in move_block
+
+
+def test_index_dashboard_slot_drop_avoids_same_slot_reorder_for_artist_sorted_cabinets():
+    html = read_static_html("index.html")
+
+    drag_start = '$("homeDashSlotItems").addEventListener("dragover", (e) => {'
+    drag_end = '$("homeDashSlotItems").addEventListener("dragleave", (e) => {'
+    assert drag_start in html
+    assert drag_end in html
+    drag_block = html.split(drag_start, 1)[1].split(drag_end, 1)[0]
+    assert "const currentSlotRow = getDashboardSlotRow(currentSlotCode);" in drag_block
+    assert "dashboardSlotAllowsManualOrder(currentSlotRow) === false" in drag_block
+
+    drop_start = '$("homeDashSlotItems").addEventListener("drop", async (e) => {'
+    drop_end = '    $("opsSlotTableBody").addEventListener("click", (e) => {'
+    assert drop_start in html
+    assert drop_end in html
+    drop_block = html.split(drop_start, 1)[1].split(drop_end, 1)[0]
+    assert "const currentSlotRow = getDashboardSlotRow(currentSlotCode);" in drop_block
+    assert 'setStatus("homeDashboardStatus", "err", t("dashboard.order.locked_artist_slot"));' in drop_block
+    assert "resetDashboardDragState();" in drop_block
 
 
 def test_index_dashboard_drag_highlight_strengthens_slot_targets_and_cover_flow_surface():
@@ -5792,9 +7489,57 @@ def test_index_storage_mapping_slot_tiles_share_selected_item_move_flow_with_flo
     block = html.split(start, 1)[1].split(end, 1)[0]
     assert 'const selectedWorkbenchItems = getDashboardSelectedWorkbenchRows();' in block
     assert 'const selectionSourceKind = getDashboardSelectionSourceKind();' in block
-    assert 'await moveDashboardOwnedItemsToSlot(selectedWorkbenchItems, slotCode);' in block
+    assert 'await moveDashboardOwnedItemsToSlot(selectedWorkbenchItems, slotCode, { trigger: "click" });' in block
     assert 'await moveDashboardOwnedItemToSlot(sourceOwnedItemId, slotCode);' in block
     assert 'await openDashboardForResolvedSlot(slotRow);' in block
+
+
+def test_index_storage_mapping_slot_tiles_require_explicit_move_mode_for_click_move():
+    html = read_static_html("index.html")
+    start = '    $("homeDashSlotGrid").addEventListener("click", async (e) => {'
+    end = '    $("homeDashCabinetFloors").addEventListener("click", async (e) => {'
+    assert start in html
+    assert end in html
+    block = html.split(start, 1)[1].split(end, 1)[0]
+    assert "const clickMoveActive = isDashboardClickMoveModeActive();" in block
+    assert "if (selectedWorkbenchItems.length && !clickMoveActive) {" in block
+    assert "await openDashboardForResolvedSlot(slotRow);" in block
+    assert 'await moveDashboardOwnedItemsToSlot(selectedWorkbenchItems, slotCode, { trigger: "click" });' in block
+
+
+def test_index_storage_floor_buttons_require_explicit_move_mode_for_click_move():
+    html = read_static_html("index.html")
+    start = '    $("homeDashCabinetFloors").addEventListener("click", async (e) => {'
+    end = '    $("homeDashCabinetFloors").addEventListener("dragover", (e) => {'
+    assert start in html
+    assert end in html
+    block = html.split(start, 1)[1].split(end, 1)[0]
+    assert "const clickMoveActive = isDashboardClickMoveModeActive();" in block
+    assert "if (selectedWorkbenchItems.length && !clickMoveActive) {" in block
+    assert "await selectDashboardSlot(slotCode);" in block
+    assert 'await moveDashboardOwnedItemsToSlot(selectedWorkbenchItems, slotCode, { trigger: "click" });' in block
+
+
+def test_index_dashboard_selection_toolbars_include_move_mode_controls():
+    html = read_static_html("index.html")
+    assert 'id="homeDashSlotMoveModeBtn"' in html
+    assert 'id="homeDashSlotMoveCancelBtn"' in html
+    assert 'id="homeDashWorkbenchMoveModeBtn"' in html
+    assert 'id="homeDashWorkbenchMoveCancelBtn"' in html
+    assert 'data-i18n="dashboard.selection.action.start_move"' in html
+    assert 'data-i18n="dashboard.selection.action.cancel_move"' in html
+
+
+def test_index_dashboard_selection_runtime_copy_explains_click_move_guard():
+    html = read_static_html("index.html")
+    assert '"dashboard.selection.summary.move_guard":' in html
+    assert '"dashboard.selection.summary.move_active":' in html
+    assert '"dashboard.selection.status.move_mode_started":' in html
+    assert '"dashboard.selection.status.move_mode_cancelled":' in html
+    assert '? "dashboard.selection.summary.move_active"' in html
+    assert ': "dashboard.selection.summary.move_guard"' in html
+    assert 't("dashboard.workbench.meta.unslotted_ready")' in html
+    assert 't("dashboard.workbench.meta.search_ready")' in html
 
 
 def test_index_slot_reorder_applies_local_order_before_background_reload():
@@ -5852,6 +7597,90 @@ def test_index_selected_item_edit_buttons_look_disabled_when_multi_select_blocks
     sync_block = html.split(sync_start, 1)[1].split(sync_end, 1)[0]
     assert '$("homeDashSelectedItemEditBtn").disabled = slotSelectedCount !== 1;' in sync_block
     assert '$("homeDashWorkbenchEditBtn").disabled = workbenchSelectedCount !== 1;' in sync_block
+
+
+def test_dashboard_selected_item_meta_exposes_master_sort_artist_quick_edit_logic():
+    html = read_static_html("index.html")
+    assert '"dashboard.selection.summary.sort_artist":' in html
+    assert 'id="homeDashWorkbenchSortArtistRow"' in html
+    assert 'id="homeDashWorkbenchSortArtistName"' in html
+    assert 'id="homeDashWorkbenchSortArtistSaveBtn"' in html
+    assert 'id="homeDashWorkbenchSortArtistDisplay"' in html
+    assert 'id="homeDashWorkbenchSortArtistStatus"' in html
+    meta_block = html.split("function renderDashboardSelectedItemMeta() {", 1)[1].split("    function syncDashboardSelectedSortArtistEditor() {", 1)[0]
+    assert 'const sortArtist = String(row?.master_sort_artist_name || "").trim();' in meta_block
+    assert 'sortArtist ? t("dashboard.selection.summary.sort_artist", { value: sortArtist }) : null,' in meta_block
+    sync_start = "    function syncDashboardSelectedSortArtistEditor() {"
+    sync_end = "    function setDashboardWorkbenchMode(mode) {"
+    assert sync_start in html
+    block = html.split(sync_start, 1)[1].split(sync_end, 1)[0]
+    assert 'const sourceKind = getDashboardSelectionSourceKind();' in block
+    assert 'const slotEditor = {' in block
+    assert 'const workbenchEditor = {' in block
+    assert 'const editors = [slotEditor, workbenchEditor];' in block
+    assert 'const isVisible = editor.sourceKinds.includes(sourceKind);' in block
+    assert 'const selectedRow = getDashboardSingleSelectedRow();' in block
+    assert 'const masterId = Number(selectedRow?.linked_album_master_id || selectedRow?.album_master_id || 0);' in block
+    assert 'setStatus(editor.statusId, "ok", "");' in block
+    assert 'editor.row.style.display = "none";' in block
+    assert 'editor.input.value = String(selectedRow?.master_sort_artist_name || "").trim();' in block
+    assert 'const displayArtist = String(selectedRow?.artist_or_brand || selectedRow?.linked_artist_name || selectedRow?.master_artist_or_brand || "-").trim() || "-";' in block
+    assert 'editor.displayEl.textContent = t("dashboard.selection.sort_artist.display_artist", { value: displayArtist });' in block
+    assert 'editor.saveBtn.disabled = false;' in block
+
+
+def test_dashboard_selected_item_meta_sort_artist_save_reuses_master_patch_and_rerenders_lists():
+    html = read_static_html("index.html")
+    helper_start = "    function updateDashboardMasterSortArtistNameLocally(masterId, sortArtistName) {"
+    helper_end = "    async function saveDashboardSelectedSortArtistName() {"
+    assert helper_start in html
+    helper_block = html.split(helper_start, 1)[1].split(helper_end, 1)[0]
+    assert "homeDashboardSlotItems," in helper_block
+    assert "homeDashboardSlotSelectionSnapshot," in helper_block
+    assert "homeDashboardUnassignedItems," in helper_block
+    assert "homeDashboardSearchItems," in helper_block
+    assert "Number(row?.linked_album_master_id || row?.album_master_id || 0) !== normalizedMasterId" in helper_block
+    assert "row.master_sort_artist_name = normalizedSortArtistName;" in helper_block
+
+    save_end = "    async function duplicateHomeRelatedItem(ownedItemId, count = 1) {"
+    save_block = html.split(helper_end, 1)[1].split(save_end, 1)[0]
+    assert "function getActiveDashboardSelectedSortArtistEditor() {" in html
+    assert "function getDashboardSingleSelectedRowBySourceKind(sourceKind) {" in html
+    assert 'const selectionSourceKind = getDashboardSelectionSourceKind();' in save_block
+    assert 'const selectedRow = getDashboardSingleSelectedRowBySourceKind(selectionSourceKind);' in save_block
+    assert 'const activeEditor = getActiveDashboardSelectedSortArtistEditor();' in save_block
+    assert 'const masterId = Number(selectedRow?.linked_album_master_id || selectedRow?.album_master_id || 0);' in save_block
+    assert 'const sortArtistName = activeEditor?.input?.value.trim() || "";' in save_block
+    assert 'const res = await fetch(`/album-masters/${masterId}/sort-artist-name`,' in save_block
+    assert 'updateDashboardMasterSortArtistNameLocally(masterId, data.sort_artist_name || null);' in save_block
+    assert 'renderDashboardSelectionSummary();' in save_block
+    assert 'renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));' in save_block
+    assert 'renderDashboardWorkbench();' in save_block
+    assert 'setStatus(activeEditor.statusId,' in save_block
+
+
+def test_dashboard_workbench_sort_artist_save_keeps_workbench_rerender_without_pinned_order():
+    html = read_static_html("index.html")
+    rows_block = html.split("function getDashboardWorkbenchRows() {", 1)[1].split("function getDashboardWorkbenchSelectedIds()", 1)[0]
+    assert "sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardSearchItems))" in rows_block
+    assert "sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardUnassignedItems))" in rows_block
+    assert "applyDashboardWorkbenchPinnedOrder" not in rows_block
+    assert "homeDashboardWorkbenchPinnedOrderIds" not in html
+
+
+def test_dashboard_workbench_sort_artist_save_skips_auto_scroll_once():
+    html = read_static_html("index.html")
+    assert "let homeDashboardWorkbenchSuppressSelectionScrollOnce = false;" in html
+    save_block = html.split("    async function saveDashboardSelectedSortArtistName() {", 1)[1].split("    async function duplicateHomeRelatedItem(ownedItemId, count = 1) {", 1)[0]
+    assert 'homeDashboardWorkbenchSuppressSelectionScrollOnce = selectionSourceKind === "UNASSIGNED" || selectionSourceKind === "SEARCH";' in save_block
+    render_unassigned_block = html.split("    function renderDashboardUnassignedItems() {", 1)[1].split("    function renderDashboardWorkbench() {", 1)[0]
+    assert 'const skipSelectionScroll = homeDashboardWorkbenchSuppressSelectionScrollOnce;' in render_unassigned_block
+    assert 'homeDashboardWorkbenchSuppressSelectionScrollOnce = false;' in render_unassigned_block
+    assert 'if (!skipSelectionScroll) {' in render_unassigned_block
+    render_search_block = html.split("    function renderDashboardWorkbench() {", 1)[1].split("    async function loadDashboardUnassignedItems(opts = {}) {", 1)[0]
+    assert 'const skipSelectionScroll = homeDashboardWorkbenchSuppressSelectionScrollOnce;' in render_search_block
+    assert 'homeDashboardWorkbenchSuppressSelectionScrollOnce = false;' in render_search_block
+    assert 'if (!skipSelectionScroll) {' in render_search_block
 
 
 def test_index_ops_home_header_moves_page_help_to_operator_panel_header():
@@ -6031,8 +7860,20 @@ def test_index_operator_lookup_reset_invalidates_inflight_request_before_clearin
     block = html.split(reset_start, 1)[1].split(keydown_start, 1)[0]
     assert "operatorLookupRequestSeq += 1;" in block
     assert '$("operatorLookupQuery").value = "";' in block
-    assert "loadOperatorHomeFeed({ kind: operatorFeedKind, page: 1 });" in block
+    assert 'loadOperatorHomeFeed({ kind: operatorFeedKindFromSortMode("CREATED_DESC"), page: 1 });' in block
     assert 'setStatus("operatorLookupStatus", "", "");' in block
+
+
+def test_index_operator_feed_kind_follows_sort_mode_without_legacy_toggle_buttons():
+    html = read_static_html("index.html")
+    helper_start = "    function operatorFeedKindFromSortMode(sortMode) {"
+    helper_end = "    function operatorFeedKindBaseLabel(kind) {"
+    assert helper_start in html
+    assert helper_end in html
+    helper_block = html.split(helper_start, 1)[1].split(helper_end, 1)[0]
+    assert 'return normalizedSortMode === "MOVED_DESC" ? "moved" : "registered";' in helper_block
+    assert '$("operatorFeedRegisteredBtn").addEventListener("click"' not in html
+    assert '$("operatorFeedMovedBtn").addEventListener("click"' not in html
 
 
 def test_index_operator_helper_summary_prioritizes_exact_matches_before_assigned_or_first():
