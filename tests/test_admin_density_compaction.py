@@ -45,6 +45,15 @@ def test_manage_edit_grids_use_grid12_mapping():
     assert "home-edit-grid-6 home-product-grid" not in html
 
 
+def test_collector_relation_compact_stack_helpers():
+    html = read_static_html("index.html")
+    block_1080 = html.split("@media (max-width: 1080px)", 1)[1].split("@media", 1)[0]
+    assert ".compact-stack" in html
+    assert ".compact-stack-actions" in html
+    assert ".compact-stack-grid" in html
+    assert ".compact-stack { grid-template-columns: 1fr; }" in block_1080
+
+
 def test_search_list_edit_button_has_arrow_indicator():
     html = read_static_html("index.html")
     block = html.split("function homeMasterMemberPreviewHtml(item", 1)[1].split("function getHomeMasterVisiblePreviewItems", 1)[0]

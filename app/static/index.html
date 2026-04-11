@@ -1040,6 +1040,130 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .ops-compact-form-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .ops-compact-form-row {
+      display: grid;
+      gap: 6px;
+      align-items: end;
+    }
+
+    .ops-compact-form-actions {
+      display: inline-flex;
+      align-items: end;
+      justify-content: flex-end;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .compact-stack {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 0.6fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .compact-stack-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .compact-stack-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .compact-stack-note {
+      margin-top: 4px;
+    }
+
+    .ops-compact-extra-fields {
+      margin-top: 8px;
+      border: 1px solid #dbe3ec;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 8px 10px;
+    }
+
+    .ops-compact-extra-fields > summary {
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+      list-style: none;
+    }
+
+    .ops-compact-extra-fields > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .ops-compact-extra-fields > summary::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 6px;
+      color: #64748b;
+      transition: transform 120ms ease;
+    }
+
+    .ops-compact-extra-fields[open] > summary::before {
+      transform: rotate(90deg);
+    }
+
+    .ops-compact-extra-fields-body {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .goods-search-compact-grid,
+    .goods-register-compact-grid,
+    .quick-register-compact-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .goods-search-compact-row--primary {
+      grid-template-columns: minmax(0, 2.4fr) repeat(4, minmax(132px, 1fr));
+    }
+
+    .goods-search-compact-row--secondary {
+      grid-template-columns: repeat(6, minmax(120px, 1fr)) auto;
+    }
+
+    .goods-search-compact-row--secondary .goods-search-actions {
+      margin-top: 0;
+    }
+
+    .goods-register-compact-row--primary {
+      grid-template-columns: 0.9fr 0.58fr 0.9fr 0.8fr 1fr 1fr;
+    }
+
+    .goods-register-compact-row--secondary {
+      grid-template-columns: minmax(0, 2.1fr) minmax(132px, 0.95fr) minmax(0, 1.45fr) minmax(0, 1.45fr) auto;
+    }
+
+    .quick-register-compact-row--primary {
+      grid-template-columns: 0.9fr 0.56fr minmax(0, 1.6fr) minmax(0, 2.2fr) 1fr;
+    }
+
+    .quick-register-compact-row--secondary {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(120px, 0.9fr) minmax(0, 1.35fr) auto;
+    }
+
+    .quick-register-extra-grid {
+      display: grid;
+      gap: 6px;
+      grid-template-columns: minmax(0, 1.8fr) minmax(120px, 0.8fr) minmax(96px, 0.7fr) auto auto;
+      align-items: end;
+    }
+
     .goods-form-grid .span-2 {
       grid-column: span 2;
     }
@@ -1063,10 +1187,12 @@
 
     .goods-result-item {
       display: grid;
-      gap: 6px;
-      padding: 10px 12px;
+      grid-template-columns: 78px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
       border: 1px solid #dbe3ea;
-      border-radius: 14px;
+      border-radius: 12px;
       background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       cursor: pointer;
     }
@@ -1078,10 +1204,10 @@
 
     .goods-result-meta {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       color: #64748b;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
     }
 
     .goods-map-section {
@@ -6423,18 +6549,43 @@
     .dashboard-selected-sort-artist-row {
       display: none;
       margin-top: 6px;
-      align-items: end;
-      gap: 8px 14px;
+      column-gap: 14px;
+      row-gap: 4px;
+      align-items: center;
       grid-template-columns: minmax(240px, 1.4fr) auto minmax(220px, 0.9fr) minmax(260px, 1fr);
+      grid-template-areas:
+        "label . . ."
+        "input button display note";
     }
 
-    .dashboard-selected-sort-artist-field {
+    .dashboard-selected-sort-artist-row--master {
+      grid-template-columns: minmax(240px, 1.4fr) auto minmax(260px, 1fr);
+      grid-template-areas:
+        "label . ."
+        "input button note";
+    }
+
+    .dashboard-selected-sort-artist-label {
+      grid-area: label;
       min-width: 0;
-      display: grid;
+      display: inline-flex;
+      align-items: center;
       gap: 4px;
     }
 
+    .dashboard-selected-sort-artist-input {
+      grid-area: input;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .dashboard-selected-sort-artist-save {
+      grid-area: button;
+      align-self: center;
+    }
+
     .dashboard-selected-sort-artist-display {
+      grid-area: display;
       min-width: 0;
       align-self: center;
       white-space: nowrap;
@@ -6443,6 +6594,7 @@
     }
 
     .dashboard-selected-sort-artist-note {
+      grid-area: note;
       min-width: 0;
       align-self: center;
       text-align: right;
@@ -8873,6 +9025,12 @@
       gap: 6px;
     }
 
+    .dashboard-selection-inline-filter {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+    }
+
     .dashboard-selection-toolbar--stack {
       align-items: stretch;
       justify-content: flex-start;
@@ -9226,13 +9384,23 @@
 
     .dashboard-workbench-search {
       display: grid;
-      grid-template-columns: 90px 90px 90px 112px 112px repeat(4, minmax(0, 1fr)) 72px;
+      grid-template-columns:
+        90px
+        84px
+        84px
+        108px
+        minmax(0, 1.05fr)
+        minmax(0, 1.05fr)
+        minmax(118px, 0.76fr)
+        minmax(118px, 0.76fr)
+        64px;
       gap: 5px;
     }
     .dashboard-workbench-filter {
       display: grid;
       gap: 3px;
       align-content: start;
+      min-width: 0;
     }
     .dashboard-workbench-filter label {
       font-size: 0.63rem;
@@ -9254,6 +9422,10 @@
       align-self: end;
       padding-top: 17px;
     }
+    .dashboard-workbench-filter--signature,
+    .dashboard-workbench-filter--sort {
+      min-width: 84px;
+    }
     .dashboard-workbench-checkbox {
       display: inline-flex;
       align-items: center;
@@ -9273,6 +9445,10 @@
       width: 14px;
       height: 14px;
       accent-color: #0f766e;
+    }
+    .dashboard-workbench-search-input--catalog,
+    .dashboard-workbench-search-input--barcode {
+      min-width: 0;
     }
     .dashboard-workbench-warning {
       display: grid;
@@ -9917,6 +10093,15 @@
       .dashboard-topbar { align-items: flex-start; flex-direction: column; }
       .dashboard-secondary-grid { grid-template-columns: 1fr; }
       .dashboard-workbench-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .goods-search-compact-row--primary,
+      .goods-search-compact-row--secondary,
+      .goods-register-compact-row--primary,
+      .goods-register-compact-row--secondary,
+      .quick-register-compact-row--primary,
+      .quick-register-compact-row--secondary,
+      .quick-register-extra-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .compact-stack { grid-template-columns: 1fr; }
+      .ops-compact-form-actions { justify-content: flex-start; }
       #homeDashSlotItems.dashboard-slot-pagegrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       #homeDashSlotItems.dashboard-slot-pagegrid.dashboard-slot-pagegrid--lp { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       #homeDashSlotItems.dashboard-slot-shelfview { min-height: 232px; }
@@ -9932,6 +10117,13 @@
         gap: 10px;
         padding: 14px;
       }
+      .goods-search-compact-row--primary,
+      .goods-search-compact-row--secondary,
+      .goods-register-compact-row--primary,
+      .goods-register-compact-row--secondary,
+      .quick-register-compact-row--primary,
+      .quick-register-compact-row--secondary,
+      .quick-register-extra-grid { grid-template-columns: 1fr; }
       .grid-12 { grid-template-columns: 1fr; }
       .grid-12 > * { grid-column: auto; }
       .grid-12--from-6 > * { grid-column: auto; }
@@ -10112,11 +10304,22 @@
         border-radius: 12px;
       }
       .dashboard-selected-sort-artist-row {
-        gap: 6px 10px;
+        column-gap: 10px;
+        row-gap: 4px;
         grid-template-columns: minmax(200px, 1fr) auto minmax(180px, 0.9fr);
+        grid-template-areas:
+          "label label label"
+          "input button display"
+          "note note note";
+      }
+      .dashboard-selected-sort-artist-row--master {
+        grid-template-columns: minmax(200px, 1fr) auto;
+        grid-template-areas:
+          "label label"
+          "input button"
+          "note note";
       }
       .dashboard-selected-sort-artist-note {
-        grid-column: 1 / -1;
         text-align: left;
         white-space: normal;
       }
@@ -10564,11 +10767,9 @@
                     <button id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n-title="dashboard.selection.action.edit_selected" data-i18n-aria-label="dashboard.selection.action.edit_selected" data-i18n="dashboard.selection.action.edit_short">편집</button>
                   </div>
                   <div id="homeDashSelectedSortArtistRow" class="dashboard-selected-sort-artist-row">
-                    <label class="dashboard-selected-sort-artist-field">
-                      <div class="mini" data-i18n="dashboard.selection.sort_artist.label">정렬 아티스트명 (마스터)</div>
-                      <input id="homeDashSelectedSortArtistName" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-                    </label>
-                    <button id="homeDashSelectedSortArtistSaveBtn" class="btn ghost tiny dashboard-slot-actionbtn" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+                    <label class="dashboard-selected-sort-artist-label mini" for="homeDashSelectedSortArtistName" data-i18n="dashboard.selection.sort_artist.label">정렬 아티스트명 (마스터)</label>
+                    <input id="homeDashSelectedSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
+                    <button id="homeDashSelectedSortArtistSaveBtn" class="btn ghost tiny dashboard-slot-actionbtn dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
                     <div id="homeDashSelectedSortArtistDisplay" class="dashboard-selected-sort-artist-display mini muted"></div>
                     <div class="dashboard-selected-sort-artist-note mini muted" data-i18n="dashboard.selection.sort_artist.note">같은 마스터 상품 전체의 가나다순에 적용됩니다.</div>
                   </div>
@@ -10742,7 +10943,7 @@
                     <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
                   </select>
                 </div>
-                <div class="dashboard-workbench-filter">
+                <div class="dashboard-workbench-filter dashboard-workbench-filter--signature">
                   <label for="homeDashSignatureMode" data-i18n="dashboard.workbench.field.signature_mode.label">싸인 경로</label>
                   <select id="homeDashSignatureMode">
                     <option value="ANY" data-i18n="dashboard.workbench.field.signature_mode.option.any">전체</option>
@@ -10750,18 +10951,12 @@
                     <option value="PURCHASE" data-i18n="dashboard.workbench.field.signature_mode.option.purchase">구매</option>
                   </select>
                 </div>
-                <div class="dashboard-workbench-filter">
+                <div class="dashboard-workbench-filter dashboard-workbench-filter--sort">
                   <label for="homeDashWorkbenchSortMode" data-i18n="dashboard.workbench.field.sort_mode.label">정렬</label>
                   <select id="homeDashWorkbenchSortMode">
                     <option value="CREATED_DESC" data-i18n="dashboard.workbench.field.sort_mode.option.created_desc">등록순</option>
                     <option value="NAME_ASC" selected data-i18n="dashboard.workbench.field.sort_mode.option.name_asc">이름순</option>
                   </select>
-                </div>
-                <div class="dashboard-workbench-filter dashboard-workbench-filter--checkbox">
-                  <label class="dashboard-workbench-checkbox" for="homeDashSortWarningOnly">
-                    <input id="homeDashSortWarningOnly" type="checkbox" />
-                    <span data-i18n="dashboard.workbench.field.sort_warning_only.label">정렬 주의만</span>
-                  </label>
                 </div>
                 <div id="homeDashWorkbenchDomainFilter" class="dashboard-workbench-filter">
                   <label data-i18n="dashboard.workbench.field.domain_filter.label">도메인</label>
@@ -10775,8 +10970,8 @@
                 </div>
                 <input id="homeDashSearchArtist" data-i18n-placeholder="dashboard.workbench.field.artist.placeholder" placeholder="아티스트" autocomplete="off" />
                 <input id="homeDashSearchTitle" data-i18n-placeholder="dashboard.workbench.field.title.placeholder" placeholder="상품명" autocomplete="off" />
-                <input id="homeDashSearchCatalogNo" data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder" placeholder="카탈로그" autocomplete="off" />
-                <input id="homeDashSearchBarcode" data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder" placeholder="바코드" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+                <input id="homeDashSearchCatalogNo" class="dashboard-workbench-search-input--catalog" data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder" placeholder="카탈로그" autocomplete="off" />
+                <input id="homeDashSearchBarcode" class="dashboard-workbench-search-input--barcode" data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder" placeholder="바코드" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
                 <button id="homeDashSearchRunBtn" class="btn ghost icon-btn" type="button" data-i18n-title="operator.lookup.action.run" data-i18n-aria-label="operator.lookup.action.run" title="조회" aria-label="조회">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                 </button>
@@ -10796,6 +10991,12 @@
                       <div class="dashboard-selection-actions dashboard-selection-actions--selection">
                         <button id="homeDashWorkbenchSelectAllBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--select-all" type="button" title="전체 선택" aria-label="전체 선택" data-i18n="dashboard.selection.action.select_all" data-i18n-title="dashboard.selection.action.select_all" data-i18n-aria-label="dashboard.selection.action.select_all">전체 선택</button>
                         <button id="homeDashWorkbenchClearBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--clear-selection" type="button" title="선택 해제" aria-label="선택 해제" data-i18n="dashboard.selection.action.clear" data-i18n-title="dashboard.selection.action.clear" data-i18n-aria-label="dashboard.selection.action.clear">선택 해제</button>
+                        <div class="dashboard-selection-inline-filter">
+                          <label class="dashboard-workbench-checkbox" for="homeDashSortWarningOnly">
+                            <input id="homeDashSortWarningOnly" type="checkbox" />
+                            <span data-i18n="dashboard.workbench.field.sort_warning_only.label">정렬 주의만</span>
+                          </label>
+                        </div>
                       </div>
                       <div class="dashboard-selection-actions dashboard-selection-actions--secondary">
                         <button id="homeDashWorkbenchRecommendBtn" class="btn ghost tiny dashboard-workbench-actionbtn" type="button" data-i18n="dashboard.workbench.action.recommend_slot">추천 칸</button>
@@ -10809,11 +11010,9 @@
                   </div>
                 </div>
                 <div id="homeDashWorkbenchSortArtistRow" class="dashboard-selected-sort-artist-row" style="display:none;">
-                  <label class="dashboard-selected-sort-artist-field">
-                    <div class="mini" data-i18n="dashboard.selection.sort_artist.label">정렬 아티스트명 (마스터)</div>
-                    <input id="homeDashWorkbenchSortArtistName" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-                  </label>
-                  <button id="homeDashWorkbenchSortArtistSaveBtn" class="btn ghost tiny dashboard-slot-actionbtn" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+                  <label class="dashboard-selected-sort-artist-label mini" for="homeDashWorkbenchSortArtistName" data-i18n="dashboard.selection.sort_artist.label">정렬 아티스트명 (마스터)</label>
+                  <input id="homeDashWorkbenchSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
+                  <button id="homeDashWorkbenchSortArtistSaveBtn" class="btn ghost tiny dashboard-slot-actionbtn dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
                   <div id="homeDashWorkbenchSortArtistDisplay" class="dashboard-selected-sort-artist-display mini muted"></div>
                   <div class="dashboard-selected-sort-artist-note mini muted" data-i18n="dashboard.selection.sort_artist.note">같은 마스터 상품 전체의 가나다순에 적용됩니다.</div>
                 </div>
@@ -11669,13 +11868,13 @@
               <div id="homeMasterCorrectionSourceHint" class="mini" style="flex:1 1 280px;" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
             </div>
             <div id="homeMasterCorrectionStatus" class="status"></div>
-            <div id="homeMasterSortArtistRow" class="row" style="margin-top:6px;align-items:end;gap:8px;flex-wrap:wrap;display:none;">
-              <label style="flex:0 1 320px;">
-                <div class="mini" data-i18n="media.manage.master.sort_artist.label">정렬 아티스트명<span class="help-dot" tabindex="0" data-help="같은 앨범 마스터의 LP, CD 등 모든 미디어 정렬에 공통으로 적용됩니다. 현지 표기 기준으로 순서를 맞추고 싶을 때 사용합니다.">?</span></div>
-                <input id="homeMasterSortArtistName" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
+            <div id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master" style="display:none;">
+              <label class="dashboard-selected-sort-artist-label mini" for="homeMasterSortArtistName">
+                <span data-i18n="media.manage.master.sort_artist.label">정렬 아티스트명</span><span class="help-dot" tabindex="0" data-help="같은 앨범 마스터의 LP, CD 등 모든 미디어 정렬에 공통으로 적용됩니다. 현지 표기 기준으로 순서를 맞추고 싶을 때 사용합니다.">?</span>
               </label>
-              <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
-              <div class="mini" style="flex:1 1 280px;" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
+              <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
+              <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+              <div class="dashboard-selected-sort-artist-note mini" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
             </div>
             <div id="homeMasterSortArtistStatus" class="status"></div>
             <div id="homeMasterRelatedList" class="related-list"></div>
@@ -11855,94 +12054,98 @@
 
         <div id="goodsSearchSurface" class="goods-surface active">
           <section class="card" style="margin-top:0;">
-            <div class="goods-form-grid">
-              <div class="span-2">
-                <label for="goodsSearchQuery" data-i18n="collectibles.search.field.query.label">검색어</label>
-                <input id="goodsSearchQuery" data-i18n-placeholder="collectibles.search.field.query.placeholder" placeholder="예: 포스터, 머그잔, 투어 티셔츠" />
-              </div>
-              <div>
-                <label for="goodsSearchCategory" data-i18n="collectibles.search.field.category.label">카테고리</label>
-                <select id="goodsSearchCategory">
-                  <option value="" data-i18n="common.all">전체</option>
-                  <option value="POSTER" data-i18n="collectibles.category.poster">포스터</option>
-                  <option value="T_SHIRT" data-i18n="collectibles.category.t_shirt">티셔츠</option>
-                  <option value="LIGHT_STICK" data-i18n="collectibles.category.light_stick">응원봉</option>
-                  <option value="HAT" data-i18n="collectibles.category.hat">모자</option>
-                  <option value="BAG" data-i18n="collectibles.category.bag">가방</option>
-                  <option value="CUP" data-i18n="collectibles.category.cup">컵</option>
-                  <option value="OTHER" data-i18n="collectibles.category.other">기타</option>
-                </select>
-              </div>
-              <div>
-                <label for="goodsSearchStatusFilter" data-i18n="collectibles.search.field.status.label">상태</label>
-                <select id="goodsSearchStatusFilter">
-                  <option value="" data-i18n="common.all">전체</option>
-                  <option value="ACTIVE" data-i18n="collectibles.item_status.active">활성</option>
-                  <option value="ARCHIVED" data-i18n="collectibles.item_status.archived">보관</option>
-                </select>
-              </div>
-              <div>
+            <div class="ops-compact-form-grid goods-search-compact-grid">
+              <div class="ops-compact-form-row goods-search-compact-row--primary" data-density-role="collectibles-search-primary">
+                <div>
+                  <label for="goodsSearchQuery" data-i18n="collectibles.search.field.query.label">검색어</label>
+                  <input id="goodsSearchQuery" data-i18n-placeholder="collectibles.search.field.query.placeholder" placeholder="예: 포스터, 머그잔, 투어 티셔츠" />
+                </div>
+                <div>
+                  <label for="goodsSearchCategory" data-i18n="collectibles.search.field.category.label">카테고리</label>
+                  <select id="goodsSearchCategory">
+                    <option value="" data-i18n="common.all">전체</option>
+                    <option value="POSTER" data-i18n="collectibles.category.poster">포스터</option>
+                    <option value="T_SHIRT" data-i18n="collectibles.category.t_shirt">티셔츠</option>
+                    <option value="LIGHT_STICK" data-i18n="collectibles.category.light_stick">응원봉</option>
+                    <option value="HAT" data-i18n="collectibles.category.hat">모자</option>
+                    <option value="BAG" data-i18n="collectibles.category.bag">가방</option>
+                    <option value="CUP" data-i18n="collectibles.category.cup">컵</option>
+                    <option value="OTHER" data-i18n="collectibles.category.other">기타</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsSearchStatusFilter" data-i18n="collectibles.search.field.status.label">상태</label>
+                  <select id="goodsSearchStatusFilter">
+                    <option value="" data-i18n="common.all">전체</option>
+                    <option value="ACTIVE" data-i18n="collectibles.item_status.active">활성</option>
+                    <option value="ARCHIVED" data-i18n="collectibles.item_status.archived">보관</option>
+                  </select>
+                </div>
+                <div>
                   <label for="goodsSearchDomainCode" data-i18n="collectibles.search.field.domain.label">도메인</label>
-                <select id="goodsSearchDomainCode">
-                  <option value="" data-i18n="common.all">전체</option>
-                  <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                  <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                  <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                  <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                  <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                  <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
-                  <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                </select>
+                  <select id="goodsSearchDomainCode">
+                    <option value="" data-i18n="common.all">전체</option>
+                    <option value="KOREA" data-i18n="common.domain.korea">가요</option>
+                    <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
+                    <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
+                    <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
+                    <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
+                    <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
+                    <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsSearchArtist" data-i18n="collectibles.search.field.artist.label">연계 아티스트</label>
+                  <input id="goodsSearchArtist" data-i18n-placeholder="collectibles.search.field.artist.placeholder" placeholder="예: 산울림" />
+                </div>
               </div>
-              <div>
-                <label for="goodsSearchArtist" data-i18n="collectibles.search.field.artist.label">연계 아티스트</label>
-                <input id="goodsSearchArtist" data-i18n-placeholder="collectibles.search.field.artist.placeholder" placeholder="예: 산울림" />
+              <div class="ops-compact-form-row goods-search-compact-row--secondary" data-density-role="collectibles-search-secondary">
+                <div>
+                  <label for="goodsSearchLabel" data-i18n="collectibles.search.field.label.label">연계 레이블</label>
+                  <input id="goodsSearchLabel" data-i18n-placeholder="collectibles.search.field.label.placeholder" placeholder="예: 서울음반" />
+                </div>
+                <div>
+                  <label for="goodsSearchAlbumMasterId" data-i18n="collectibles.search.field.album_master_id.label">연계 마스터 ID</label>
+                  <input id="goodsSearchAlbumMasterId" type="number" min="1" data-i18n-placeholder="collectibles.search.field.album_master_id.placeholder" placeholder="예: 120" />
+                </div>
+                <div>
+                  <label for="goodsSearchLinkedState" data-i18n="collectibles.search.field.linked_state.label">연계 상태</label>
+                  <select id="goodsSearchLinkedState">
+                    <option value="ANY" data-i18n="collectibles.search.linked_state.any">전체</option>
+                    <option value="LINKED" data-i18n="collectibles.search.linked_state.linked">연계 있음</option>
+                    <option value="UNLINKED" data-i18n="collectibles.search.linked_state.unlinked">연계 없음</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsSearchCollectibleRelationState">컬렉터블 연계</label>
+                  <select id="goodsSearchCollectibleRelationState">
+                    <option value="ANY">전체</option>
+                    <option value="LINKED">연계 있음</option>
+                    <option value="UNLINKED">연계 없음</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsSearchCollectibleRelationType">관계 타입</label>
+                  <select id="goodsSearchCollectibleRelationType">
+                    <option value="">전체</option>
+                    <option value="SERIES">시리즈</option>
+                    <option value="VARIANT">변형</option>
+                    <option value="SET_MEMBER">세트 구성</option>
+                    <option value="RELATED">관련</option>
+                    <option value="PROMO_FOR">프로모 연계</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsSearchStorageSlotId" data-i18n="collectibles.search.field.slot_id.label">보관 슬롯</label>
+                  <select id="goodsSearchStorageSlotId"><option value="" data-i18n="common.all">전체</option></select>
+                </div>
+                <div class="ops-compact-form-actions goods-search-actions">
+                  <button id="goodsSearchRunBtn" class="btn secondary icon-btn" type="button" data-i18n-title="common.search" data-i18n-aria-label="common.search" title="검색" aria-label="검색">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+                  </button>
+                  <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear">비우기</button>
+                </div>
               </div>
-              <div>
-                <label for="goodsSearchLabel" data-i18n="collectibles.search.field.label.label">연계 레이블</label>
-                <input id="goodsSearchLabel" data-i18n-placeholder="collectibles.search.field.label.placeholder" placeholder="예: 서울음반" />
-              </div>
-              <div>
-                <label for="goodsSearchAlbumMasterId" data-i18n="collectibles.search.field.album_master_id.label">연계 마스터 ID</label>
-                <input id="goodsSearchAlbumMasterId" type="number" min="1" data-i18n-placeholder="collectibles.search.field.album_master_id.placeholder" placeholder="예: 120" />
-              </div>
-              <div>
-                <label for="goodsSearchLinkedState" data-i18n="collectibles.search.field.linked_state.label">연계 상태</label>
-                <select id="goodsSearchLinkedState">
-                  <option value="ANY" data-i18n="collectibles.search.linked_state.any">전체</option>
-                  <option value="LINKED" data-i18n="collectibles.search.linked_state.linked">연계 있음</option>
-                  <option value="UNLINKED" data-i18n="collectibles.search.linked_state.unlinked">연계 없음</option>
-                </select>
-              </div>
-              <div>
-                <label for="goodsSearchCollectibleRelationState">컬렉터블 연계</label>
-                <select id="goodsSearchCollectibleRelationState">
-                  <option value="ANY">전체</option>
-                  <option value="LINKED">연계 있음</option>
-                  <option value="UNLINKED">연계 없음</option>
-                </select>
-              </div>
-              <div>
-                <label for="goodsSearchCollectibleRelationType">관계 타입</label>
-                <select id="goodsSearchCollectibleRelationType">
-                  <option value="">전체</option>
-                  <option value="SERIES">시리즈</option>
-                  <option value="VARIANT">변형</option>
-                  <option value="SET_MEMBER">세트 구성</option>
-                  <option value="RELATED">관련</option>
-                  <option value="PROMO_FOR">프로모 연계</option>
-                </select>
-              </div>
-              <div>
-                <label for="goodsSearchStorageSlotId" data-i18n="collectibles.search.field.slot_id.label">보관 슬롯</label>
-              <select id="goodsSearchStorageSlotId"><option value="" data-i18n="common.all">전체</option></select>
-              </div>
-            </div>
-            <div class="goods-search-actions">
-              <button id="goodsSearchRunBtn" class="btn secondary icon-btn" type="button" data-i18n-title="common.search" data-i18n-aria-label="common.search" title="검색" aria-label="검색">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
-              </button>
-              <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear">비우기</button>
             </div>
             <div id="goodsSearchStatus" class="status"></div>
             <div class="result-head" style="margin-top:10px;">
@@ -12133,93 +12336,102 @@
         <div id="goodsRegisterSurface" class="goods-surface">
           <section class="card" style="margin-top:0;">
             <div class="mini" data-i18n="collectibles.register.intro">컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.</div>
-            <div class="goods-form-grid" style="margin-top:10px;">
-              <div>
-                <label for="goodsRegisterCategory" data-i18n="collectibles.register.field.category.label">카테고리</label>
-                <select id="goodsRegisterCategory">
-                  <option value="POSTER" data-i18n="collectibles.category.poster">포스터</option>
-                  <option value="T_SHIRT" data-i18n="collectibles.category.t_shirt">티셔츠</option>
-                  <option value="LIGHT_STICK" data-i18n="collectibles.category.light_stick">응원봉</option>
-                  <option value="HAT" data-i18n="collectibles.category.hat">모자</option>
-                  <option value="BAG" data-i18n="collectibles.category.bag">가방</option>
-                  <option value="CUP" data-i18n="collectibles.category.cup">컵</option>
-                  <option value="OTHER" data-i18n="collectibles.category.other">기타</option>
-                </select>
+            <div id="goodsRegisterCoreFields" class="ops-compact-form-grid goods-register-compact-grid" style="margin-top:10px;">
+              <div id="goodsRegisterCoreRowA" class="ops-compact-form-row goods-register-compact-row--primary">
+                <div>
+                  <label for="goodsRegisterCategory" data-i18n="collectibles.register.field.category.label">카테고리</label>
+                  <select id="goodsRegisterCategory">
+                    <option value="POSTER" data-i18n="collectibles.category.poster">포스터</option>
+                    <option value="T_SHIRT" data-i18n="collectibles.category.t_shirt">티셔츠</option>
+                    <option value="LIGHT_STICK" data-i18n="collectibles.category.light_stick">응원봉</option>
+                    <option value="HAT" data-i18n="collectibles.category.hat">모자</option>
+                    <option value="BAG" data-i18n="collectibles.category.bag">가방</option>
+                    <option value="CUP" data-i18n="collectibles.category.cup">컵</option>
+                    <option value="OTHER" data-i18n="collectibles.category.other">기타</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsRegisterQuantity" data-i18n="collectibles.register.field.quantity.label">수량</label>
+                  <input id="goodsRegisterQuantity" type="number" min="1" value="1" />
+                </div>
+                <div>
+                  <label for="goodsRegisterSizeGroup" data-i18n="collectibles.register.field.size_group.label">보관 규격</label>
+                  <select id="goodsRegisterSizeGroup">
+                    <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                    <option value="LP" data-i18n="common.size_group.lp">LP</option>
+                    <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
+                    <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
+                    <option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option>
+                    <option value="STD" data-i18n="common.size_group.std">CD</option>
+                    <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
+                    <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
+                    <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsRegisterStatus" data-i18n="collectibles.register.field.status.label">상태</label>
+                  <select id="goodsRegisterStatus">
+                    <option value="ACTIVE" data-i18n="collectibles.item_status.active">활성</option>
+                    <option value="ARCHIVED" data-i18n="collectibles.item_status.archived">보관</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="goodsRegisterSlotId" data-i18n="collectibles.register.field.slot_id.label">보관 슬롯</label>
+                  <select id="goodsRegisterSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
+                </div>
+                <div>
+                  <label for="goodsRegisterDomainCode" data-i18n="collectibles.register.field.domain.label">도메인</label>
+                  <select id="goodsRegisterDomainCode">
+                    <option value="" data-i18n="common.unspecified">미지정</option>
+                    <option value="KOREA" data-i18n="common.domain.korea">가요</option>
+                    <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
+                    <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
+                    <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
+                    <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
+                    <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
+                    <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label for="goodsRegisterQuantity" data-i18n="collectibles.register.field.quantity.label">수량</label>
-                <input id="goodsRegisterQuantity" type="number" min="1" value="1" />
-              </div>
-              <div>
-                <label for="goodsRegisterSizeGroup" data-i18n="collectibles.register.field.size_group.label">보관 규격</label>
-                <select id="goodsRegisterSizeGroup">
-                  <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
-                  <option value="LP" data-i18n="common.size_group.lp">LP</option>
-                  <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
-                  <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
-                  <option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option>
-                  <option value="STD" data-i18n="common.size_group.std">CD</option>
-                  <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
-                  <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
-                  <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
-                </select>
-              </div>
-              <div class="span-2">
-                <label for="goodsRegisterName" data-i18n="collectibles.register.field.name.label">컬렉터블명</label>
-                <input id="goodsRegisterName" data-i18n-placeholder="collectibles.register.field.name.placeholder" placeholder="예: 산울림 투어 포스터" />
-              </div>
-              <div>
-                <label for="goodsRegisterStatus" data-i18n="collectibles.register.field.status.label">상태</label>
-                <select id="goodsRegisterStatus">
-                  <option value="ACTIVE" data-i18n="collectibles.item_status.active">활성</option>
-                  <option value="ARCHIVED" data-i18n="collectibles.item_status.archived">보관</option>
-                </select>
-              </div>
-              <div>
-                <label for="goodsRegisterSlotId" data-i18n="collectibles.register.field.slot_id.label">보관 슬롯</label>
-                <select id="goodsRegisterSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
-              </div>
-              <div>
-                <label for="goodsRegisterDomainCode" data-i18n="collectibles.register.field.domain.label">도메인</label>
-                <select id="goodsRegisterDomainCode">
-                  <option value="" data-i18n="common.unspecified">미지정</option>
-                  <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                  <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                  <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                  <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                  <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                  <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
-                  <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                </select>
-              </div>
-              <div class="span-3">
-                <label for="goodsRegisterDescription" data-i18n="collectibles.register.field.description.label">설명</label>
-                <textarea id="goodsRegisterDescription" data-i18n-placeholder="collectibles.register.field.description.placeholder" placeholder="예: 레이블 행사 한정 포스터"></textarea>
-              </div>
-              <div class="span-3">
-                <label for="goodsRegisterMemoryNote" data-i18n="collectibles.register.field.memory_note.label">메모</label>
-                <textarea id="goodsRegisterMemoryNote" data-i18n-placeholder="collectibles.register.field.memory_note.placeholder" placeholder="운영 메모"></textarea>
-              </div>
-              <div class="span-3">
-                <label for="goodsRegisterImageUrls" data-i18n="collectibles.register.field.image_urls.label">이미지 URL (줄바꿈, 복수)</label>
-                <textarea id="goodsRegisterImageUrls" data-i18n-placeholder="collectibles.register.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
-              </div>
-              <div>
-                <label for="goodsRegisterAlbumMasterId" data-i18n="collectibles.register.field.album_master_id.label">연계 마스터 ID(선택)</label>
-                <input id="goodsRegisterAlbumMasterId" type="number" min="1" />
-              </div>
-              <div class="span-2">
-                <label for="goodsRegisterArtistNames" data-i18n="collectibles.register.field.artist_names.label">연계 아티스트명(쉼표 구분)</label>
-                <input id="goodsRegisterArtistNames" data-i18n-placeholder="collectibles.register.field.artist_names.placeholder" placeholder="예: 산울림, 김창완" />
-              </div>
-              <div class="span-2">
-                <label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>
-                <input id="goodsRegisterLabelNames" data-i18n-placeholder="collectibles.register.field.label_names.placeholder" placeholder="예: 서울음반, 서라벌레코드" />
+              <div id="goodsRegisterCoreRowB" class="ops-compact-form-row goods-register-compact-row--secondary">
+                <div>
+                  <label for="goodsRegisterName" data-i18n="collectibles.register.field.name.label">컬렉터블명</label>
+                  <input id="goodsRegisterName" data-i18n-placeholder="collectibles.register.field.name.placeholder" placeholder="예: 산울림 투어 포스터" />
+                </div>
+                <div>
+                  <label for="goodsRegisterAlbumMasterId" data-i18n="collectibles.register.field.album_master_id.label">연계 마스터 ID(선택)</label>
+                  <input id="goodsRegisterAlbumMasterId" type="number" min="1" />
+                </div>
+                <div>
+                  <label for="goodsRegisterArtistNames" data-i18n="collectibles.register.field.artist_names.label">연계 아티스트명(쉼표 구분)</label>
+                  <input id="goodsRegisterArtistNames" data-i18n-placeholder="collectibles.register.field.artist_names.placeholder" placeholder="예: 산울림, 김창완" />
+                </div>
+                <div>
+                  <label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>
+                  <input id="goodsRegisterLabelNames" data-i18n-placeholder="collectibles.register.field.label_names.placeholder" placeholder="예: 서울음반, 서라벌레코드" />
+                </div>
+                <div class="ops-compact-form-actions">
+                  <button id="goodsRegisterSaveBtn" class="btn" type="button" data-i18n="collectibles.register.save">컬렉터블 등록</button>
+                </div>
               </div>
             </div>
-            <div class="row" style="margin-top:10px;">
-            <button id="goodsRegisterSaveBtn" class="btn" type="button" data-i18n="collectibles.register.save">컬렉터블 등록</button>
-            </div>
+            <details id="goodsRegisterExtraFields" class="ops-compact-extra-fields goods-extra-fields">
+              <summary>추가 정보</summary>
+              <div class="ops-compact-extra-fields-body goods-form-grid">
+                <div class="span-3">
+                  <label for="goodsRegisterDescription" data-i18n="collectibles.register.field.description.label">설명</label>
+                  <textarea id="goodsRegisterDescription" data-i18n-placeholder="collectibles.register.field.description.placeholder" placeholder="예: 레이블 행사 한정 포스터"></textarea>
+                </div>
+                <div class="span-3">
+                  <label for="goodsRegisterMemoryNote" data-i18n="collectibles.register.field.memory_note.label">메모</label>
+                  <textarea id="goodsRegisterMemoryNote" data-i18n-placeholder="collectibles.register.field.memory_note.placeholder" placeholder="운영 메모"></textarea>
+                </div>
+                <div class="span-3">
+                  <label for="goodsRegisterImageUrls" data-i18n="collectibles.register.field.image_urls.label">이미지 URL (줄바꿈, 복수)</label>
+                  <textarea id="goodsRegisterImageUrls" data-i18n-placeholder="collectibles.register.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
+                </div>
+              </div>
+            </details>
             <div id="goodsRegisterStatusLine" class="status"></div>
           </section>
         </div>
@@ -12326,8 +12538,8 @@
         </div>
         <p class="sub" data-i18n="media.register.direct.subtitle">먼저 빠르게 등록한 뒤, 관리 홈에서 클릭해 상세 정보를 보강합니다.</p>
 
-        <div class="grid-12">
-          <div class="span-2">
+        <div id="quickRegisterCoreRowA" class="ops-compact-form-row quick-register-compact-row--primary">
+          <div>
             <label for="quickCategory" data-i18n="media.register.direct.field.category.label">포맷</label>
             <select id="quickCategory">
               <option>LP</option><option>CD</option><option>CASSETTE</option><option>8TRACK</option><option>DIGITAL</option><option>REEL_TO_REEL</option>
@@ -12337,37 +12549,29 @@
             <label for="quickQuantity" data-i18n="media.register.direct.field.quantity.label">수량</label>
             <input id="quickQuantity" type="number" min="1" value="1" />
           </div>
-          <div class="span-3">
+          <div>
             <label for="quickArtist" data-i18n="media.register.direct.field.artist.label">아티스트명(필수)</label>
             <input id="quickArtist" data-i18n-placeholder="media.register.direct.field.artist.placeholder" placeholder="예: 산울림" />
           </div>
-          <div class="span-4">
+          <div>
             <label for="quickItemName" data-i18n="media.register.direct.field.item_name.label">상품명(필수)</label>
             <input id="quickItemName" data-i18n-placeholder="media.register.direct.field.item_name.placeholder" placeholder="예: 제2집" />
           </div>
-          <div class="span-2">
+          <div>
             <label for="quickSlotId" data-i18n="media.register.direct.field.slot_id.label">보관 슬롯(선택)</label>
             <select id="quickSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
           </div>
         </div>
-        <div class="grid-12" style="margin-top:6px;">
-          <div class="span-2">
+        <div id="quickRegisterCoreRowB" class="ops-compact-form-row quick-register-compact-row--secondary" style="margin-top:6px;">
+          <div>
             <label for="quickLabelName" data-i18n="media.register.direct.field.label_name.label">레이블(선택)</label>
             <input id="quickLabelName" data-i18n-placeholder="media.register.direct.field.label_name.placeholder" placeholder="예: Jigu" />
           </div>
-          <div class="span-2">
+          <div>
             <label for="quickReleasedDate" data-i18n="media.register.direct.field.released_date.label">발매일(선택)</label>
             <input id="quickReleasedDate" data-i18n-placeholder="media.register.direct.field.released_date.placeholder" placeholder="예: 1995-08-15" />
           </div>
-          <div class="span-2">
-            <label for="quickCoverImageUrl" data-i18n="media.register.direct.field.cover_image_url.label">커버 이미지 URL(선택)</label>
-            <input id="quickCoverImageUrl" data-i18n-placeholder="media.register.direct.field.cover_image_url.placeholder" placeholder="https://..." />
-          </div>
-          <div class="span-2">
-            <label for="quickMemoryNote" data-i18n="media.register.direct.field.memory_note.label">메모(선택)</label>
-            <input id="quickMemoryNote" data-i18n-placeholder="media.register.direct.field.memory_note.placeholder" placeholder="간단 메모" />
-          </div>
-          <div class="span-2">
+          <div>
             <label for="quickDomainCode" data-i18n="media.register.direct.field.domain.label">도메인(선택)</label>
             <select id="quickDomainCode">
               <option value="" data-i18n="common.unspecified">미지정</option>
@@ -12381,35 +12585,48 @@
             </select>
           </div>
           <div>
-            <label for="quickPurchasePrice" data-i18n="media.register.direct.field.purchase_price.label">구매 가격(선택)</label>
-            <input id="quickPurchasePrice" type="number" min="0" step="0.01" data-i18n-placeholder="media.register.direct.field.purchase_price.placeholder" placeholder="예: 49800" />
+            <label for="quickMemoryNote" data-i18n="media.register.direct.field.memory_note.label">메모(선택)</label>
+            <input id="quickMemoryNote" data-i18n-placeholder="media.register.direct.field.memory_note.placeholder" placeholder="간단 메모" />
           </div>
-          <div>
-            <label for="quickCurrencyCode" data-i18n="media.register.direct.field.currency_code.label">통화(선택)</label>
-            <select id="quickCurrencyCode">
-              <option value="KRW">KRW</option>
-              <option value="USD">USD</option>
-              <option value="GBP">GBP</option>
-              <option value="JPY">JPY</option>
-              <option value="EUR">EUR</option>
-            </select>
+          <div class="ops-compact-form-actions">
+            <button id="quickCreateBtn" class="btn" data-i18n="media.register.direct.action.save">직접 등록 저장</button>
+            <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset">직접 등록 폼 초기화</button>
           </div>
         </div>
+        <details id="quickRegisterExtraFields" class="ops-compact-extra-fields" style="margin-top:8px;">
+          <summary>추가 정보</summary>
+          <div class="ops-compact-extra-fields-body">
+            <div class="quick-register-extra-grid">
+              <div>
+                <label for="quickCoverImageUrl" data-i18n="media.register.direct.field.cover_image_url.label">커버 이미지 URL(선택)</label>
+                <input id="quickCoverImageUrl" data-i18n-placeholder="media.register.direct.field.cover_image_url.placeholder" placeholder="https://..." />
+              </div>
+              <div>
+                <label for="quickPurchasePrice" data-i18n="media.register.direct.field.purchase_price.label">구매 가격(선택)</label>
+                <input id="quickPurchasePrice" type="number" min="0" step="0.01" data-i18n-placeholder="media.register.direct.field.purchase_price.placeholder" placeholder="예: 49800" />
+              </div>
+              <div>
+                <label for="quickCurrencyCode" data-i18n="media.register.direct.field.currency_code.label">통화(선택)</label>
+                <select id="quickCurrencyCode">
+                  <option value="KRW">KRW</option>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="JPY">JPY</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+              <label class="inline-check">
+                <input id="quickIsSecondHand" type="checkbox" />
+                <span data-i18n="media.register.direct.field.is_second_hand.label">중고 상품</span>
+              </label>
+              <label class="inline-check">
+                <input id="quickOpenEditAfterCreate" type="checkbox" />
+                <span data-i18n="media.register.direct.field.open_edit_after_create.label">저장 후 즉시 수정 화면 열기</span>
+              </label>
+            </div>
+          </div>
+        </details>
         <input id="quickSizeGroup" type="hidden" value="LP" />
-        <div class="grid" style="margin-top:10px;">
-          <label class="inline-check">
-            <input id="quickIsSecondHand" type="checkbox" />
-            <span data-i18n="media.register.direct.field.is_second_hand.label">중고 상품</span>
-          </label>
-          <label class="inline-check">
-            <input id="quickOpenEditAfterCreate" type="checkbox" />
-            <span data-i18n="media.register.direct.field.open_edit_after_create.label">저장 후 즉시 수정 화면 열기</span>
-          </label>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button id="quickCreateBtn" class="btn" data-i18n="media.register.direct.action.save">직접 등록 저장</button>
-          <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset">직접 등록 폼 초기화</button>
-        </div>
         <div id="quickCreateStatus" class="status"></div>
       </section>
 
@@ -14288,7 +14505,7 @@
     let homeDashboardClickMoveMode = false;
     let homeDashboardWorkbenchPage = 0;
     let homeDashboardWorkbenchShelfScrollLeft = 0;
-    let homeDashboardWorkbenchPinnedOrderIds = [];
+    let homeDashboardWorkbenchSuppressSelectionScrollOnce = false;
     let homeDashboardWorkbenchRecommendations = {};
     let homeDashboardWorkbenchMode = "UNASSIGNED";
     let sharedCameraSelectedId = null;
@@ -28938,7 +29155,6 @@
     function resetDashboardWorkbenchPage() {
       homeDashboardWorkbenchPage = 0;
       homeDashboardWorkbenchShelfScrollLeft = 0;
-      homeDashboardWorkbenchPinnedOrderIds = [];
     }
 
     function dashboardSlotGridMode(slotRow) {
@@ -29313,28 +29529,11 @@
       }, 160);
     }
 
-    function setDashboardWorkbenchPinnedOrder(ids) {
-      homeDashboardWorkbenchPinnedOrderIds = Array.isArray(ids)
-        ? ids.map((id) => Number(id || 0)).filter((id) => id > 0)
-        : [];
-    }
-
-    function applyDashboardWorkbenchPinnedOrder(rows) {
-      const list = Array.isArray(rows) ? [...rows] : [];
-      const pinnedIds = homeDashboardWorkbenchPinnedOrderIds.filter((id) => id > 0);
-      if (!pinnedIds.length || !list.length) return list;
-      const rowMap = new Map(list.map((row) => [Number(row?.id || 0), row]));
-      const pinnedRows = pinnedIds.map((id) => rowMap.get(id)).filter(Boolean);
-      const pinnedSet = new Set(pinnedRows.map((row) => Number(row?.id || 0)));
-      const remainingRows = list.filter((row) => !pinnedSet.has(Number(row?.id || 0)));
-      return [...pinnedRows, ...remainingRows];
-    }
-
     function getDashboardWorkbenchRows() {
       if (homeDashboardWorkbenchMode === "SEARCH") {
-        return applyDashboardWorkbenchPinnedOrder(sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardSearchItems)));
+        return sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardSearchItems));
       }
-      return applyDashboardWorkbenchPinnedOrder(sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardUnassignedItems)));
+      return sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardUnassignedItems));
     }
 
     function getDashboardWorkbenchSelectedIds() {
@@ -30546,7 +30745,11 @@
         root.innerHTML = sliceInfo.items.map((row, index) => dashboardWorkbenchShelfItemHtml(row, "UNASSIGNED", sliceInfo.start + index)).join("");
         applyDashboardShelfNeighborHighlight(root);
         restoreDashboardWorkbenchShelfScroll(root);
-        requestAnimationFrame(() => scrollDashboardShelfSelectionIntoView(root));
+        const skipSelectionScroll = homeDashboardWorkbenchSuppressSelectionScrollOnce;
+        homeDashboardWorkbenchSuppressSelectionScrollOnce = false;
+        if (!skipSelectionScroll) {
+          requestAnimationFrame(() => scrollDashboardShelfSelectionIntoView(root));
+        }
       } else {
         root.innerHTML = sliceInfo.items.map((row) => dashboardWorkbenchItemHtml(row, "UNASSIGNED")).join("");
       }
@@ -30590,7 +30793,11 @@
         root.innerHTML = sliceInfo.items.map((row, index) => dashboardWorkbenchShelfItemHtml(row, "SEARCH", sliceInfo.start + index)).join("");
         applyDashboardShelfNeighborHighlight(root);
         restoreDashboardWorkbenchShelfScroll(root);
-        requestAnimationFrame(() => scrollDashboardShelfSelectionIntoView(root));
+        const skipSelectionScroll = homeDashboardWorkbenchSuppressSelectionScrollOnce;
+        homeDashboardWorkbenchSuppressSelectionScrollOnce = false;
+        if (!skipSelectionScroll) {
+          requestAnimationFrame(() => scrollDashboardShelfSelectionIntoView(root));
+        }
       } else {
         root.innerHTML = sliceInfo.items.map((row) => dashboardWorkbenchItemHtml(row, "SEARCH")).join("");
       }
@@ -30710,6 +30917,28 @@
     function getDashboardSingleSelectedRow() {
       const rows = getDashboardSelectedWorkbenchRows();
       return rows.length === 1 ? rows[0] : null;
+    }
+
+    function getDashboardSingleSelectedRowBySourceKind(sourceKind) {
+      const normalizedSourceKind = String(sourceKind || "").trim().toUpperCase();
+      if (normalizedSourceKind === "SLOT") {
+        const source = Array.isArray(homeDashboardSlotSelectionSnapshot) && homeDashboardSlotSelectionSnapshot.length
+          ? homeDashboardSlotSelectionSnapshot
+          : (Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : []);
+        const rows = source.filter((row) => homeDashboardSlotSelectedIds.has(Number(row?.id || 0)));
+        return rows.length === 1 ? rows[0] : null;
+      }
+      if (normalizedSourceKind === "UNASSIGNED") {
+        const rows = filterDashboardWorkbenchItems(homeDashboardUnassignedItems)
+          .filter((row) => homeDashboardUnassignedSelectedIds.has(Number(row?.id || 0)));
+        return rows.length === 1 ? rows[0] : null;
+      }
+      if (normalizedSourceKind === "SEARCH") {
+        const rows = filterDashboardWorkbenchItems(homeDashboardSearchItems)
+          .filter((row) => homeDashboardSearchSelectedIds.has(Number(row?.id || 0)));
+        return rows.length === 1 ? rows[0] : null;
+      }
+      return null;
     }
 
     async function openDashboardSelectedItemForEdit() {
@@ -35114,7 +35343,7 @@
         setStatus("homeMasterSortArtistStatus", "ok", "");
         return;
       }
-      row.style.display = "flex";
+      row.style.display = "grid";
       input.value = String(homeMasterInfo?.sort_artist_name || "").trim();
       saveBtn.disabled = false;
     }
@@ -37823,17 +38052,13 @@
     }
 
     async function saveDashboardSelectedSortArtistName() {
-      const selectedRow = getDashboardSingleSelectedRow();
+      const selectionSourceKind = getDashboardSelectionSourceKind();
+      const selectedRow = getDashboardSingleSelectedRowBySourceKind(selectionSourceKind);
       const activeEditor = getActiveDashboardSelectedSortArtistEditor();
       if (!activeEditor) {
         setStatus("homeDashSelectedSortArtistStatus", "err", t("media.manage.master.sort_artist.status.master_required"));
         return;
       }
-      const selectionSourceKind = getDashboardSelectionSourceKind();
-      const shouldPreserveWorkbenchOrder = selectionSourceKind === "UNASSIGNED" || selectionSourceKind === "SEARCH";
-      const preservedWorkbenchOrderIds = shouldPreserveWorkbenchOrder
-        ? getDashboardWorkbenchRows().map((row) => Number(row?.id || 0)).filter((id) => id > 0)
-        : [];
       const masterId = Number(selectedRow?.linked_album_master_id || selectedRow?.album_master_id || 0);
       if (masterId <= 0) {
         setStatus(activeEditor.statusId, "err", t("media.manage.master.sort_artist.status.master_required"));
@@ -37850,8 +38075,8 @@
         const data = await safeJson(res);
         if (!res.ok) throw new Error(responseDetailText(data, t("media.manage.master.sort_artist.status.save_failed")));
         updateDashboardMasterSortArtistNameLocally(masterId, data.sort_artist_name || null);
-        setDashboardWorkbenchPinnedOrder(preservedWorkbenchOrderIds);
         updateDashboardSlotSelectionSnapshot();
+        homeDashboardWorkbenchSuppressSelectionScrollOnce = selectionSourceKind === "UNASSIGNED" || selectionSourceKind === "SEARCH";
         renderDashboardSelectionSummary();
         renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
         renderDashboardWorkbench();
