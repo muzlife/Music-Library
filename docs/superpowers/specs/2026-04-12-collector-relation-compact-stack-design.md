@@ -19,6 +19,7 @@ Applies to the following areas in the admin manage view (as shown in the screens
 - Collector relation block (연계 컬렉터블)
 - Master-linked collector relation block (마스터 연계 컬렉터블)
 - Product relationship block (상품 관계: series / boxset / related releases)
+  - Includes 마스터 하위, 박스 구성품, and the shared save/status rows within the same product relationship section.
 
 ## Layout Direction (Compact Stack)
 ### High-level structure
@@ -54,4 +55,3 @@ Applies to the following areas in the admin manage view (as shown in the screens
 ## Testing / Verification
 - Visual inspection at 1080px and 760px (ensure no overflow).
 - No functional regression in button actions or input editing.
-
