@@ -1162,6 +1162,28 @@
       min-height: 44px;
     }
 
+    .home-manage-product-compact-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .home-manage-product-row--primary {
+      grid-template-columns: minmax(78px, 0.72fr) minmax(84px, 0.78fr) minmax(0, 2.2fr) minmax(132px, 1.05fr) minmax(120px, 0.96fr);
+    }
+
+    .home-manage-product-row--secondary {
+      grid-template-columns: minmax(0, 1.9fr) minmax(132px, 1.05fr) minmax(120px, 0.92fr) minmax(112px, 0.8fr) minmax(112px, 0.84fr) minmax(132px, 0.98fr);
+    }
+
+    .home-manage-product-extra-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .home-manage-product-extra-row--pricing {
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(112px, 0.8fr) minmax(88px, 0.7fr);
+    }
+
     .quick-register-compact-row--primary {
       grid-template-columns: 0.9fr 0.56fr minmax(0, 1.6fr) minmax(0, 2.2fr) 1fr;
     }
@@ -10114,6 +10136,9 @@
       .goods-search-compact-row--secondary,
       .goods-manage-compact-row--primary,
       .goods-manage-compact-row--secondary,
+      .home-manage-product-row--primary,
+      .home-manage-product-row--secondary,
+      .home-manage-product-extra-row--pricing,
       .goods-register-compact-row--primary,
       .goods-register-compact-row--secondary,
       .quick-register-compact-row--primary,
@@ -10140,6 +10165,9 @@
       .goods-search-compact-row--secondary,
       .goods-manage-compact-row--primary,
       .goods-manage-compact-row--secondary,
+      .home-manage-product-row--primary,
+      .home-manage-product-row--secondary,
+      .home-manage-product-extra-row--pricing,
       .goods-register-compact-row--primary,
       .goods-register-compact-row--secondary,
       .quick-register-compact-row--primary,
@@ -11454,184 +11482,191 @@
               <div class="section-divider">
                 <h2 data-i18n="media.manage.product.title">상품 정보</h2>
               </div>
-              <div data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid">
-                <div>
-                  <label for="editOwnedId">owned_item_id</label>
-                  <input id="editOwnedId" readonly />
+              <div id="homeEditProductCoreFields" class="ops-compact-form-grid home-manage-product-compact-grid">
+                <div id="homeEditProductCoreRowA" class="ops-compact-form-row home-manage-product-row--primary">
+                  <div>
+                    <label for="editOwnedId">owned_item_id</label>
+                    <input id="editOwnedId" readonly />
+                  </div>
+                  <div>
+                    <label for="editLabelId" data-i18n="media.manage.product.field.label_id.label">견출지 ID</label>
+                    <input id="editLabelId" readonly />
+                  </div>
+                  <div>
+                    <label for="editItemName" data-i18n="media.manage.product.field.item_name.label">상품명</label>
+                    <input id="editItemName" data-i18n-placeholder="media.manage.product.field.item_name.placeholder" placeholder="예: 산울림 - 제13집" />
+                  </div>
+                  <div>
+                    <label for="editLinkedAlbumMasterId" data-i18n="media.manage.product.field.linked_album_master_id.label">연계 앨범 마스터 ID(내부)</label>
+                    <input id="editLinkedAlbumMasterId" type="number" min="1" data-i18n-placeholder="media.manage.product.field.linked_album_master_id.placeholder" placeholder="예: 2" readonly />
+                  </div>
+                  <div>
+                    <label for="editSlotId" data-i18n="media.manage.product.field.slot_id.label">보관 슬롯</label>
+                    <select id="editSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
+                  </div>
                 </div>
-                <div>
-                  <label for="editLabelId" data-i18n="media.manage.product.field.label_id.label">견출지 ID</label>
-                  <input id="editLabelId" readonly />
-                </div>
-                <div class="span-2">
-                  <label for="editItemName" data-i18n="media.manage.product.field.item_name.label">상품명</label>
-                  <input id="editItemName" data-i18n-placeholder="media.manage.product.field.item_name.placeholder" placeholder="예: 산울림 - 제13집" />
-                </div>
-                <div>
-                  <label for="editLinkedAlbumMasterId" data-i18n="media.manage.product.field.linked_album_master_id.label">연계 앨범 마스터 ID(내부)</label>
-                  <input id="editLinkedAlbumMasterId" type="number" min="1" data-i18n-placeholder="media.manage.product.field.linked_album_master_id.placeholder" placeholder="예: 2" readonly />
-                </div>
-                <div>
-                  <label for="editSlotId" data-i18n="media.manage.product.field.slot_id.label">보관 슬롯</label>
-                  <select id="editSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
-                </div>
-              </div>
-              <div data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px;">
-                <div id="homeEditLinkedArtistWrap" class="span-2">
-                  <label for="editLinkedArtistName" data-i18n="media.manage.product.field.linked_artist_name.label">연계 아티스트명 (앨범 모호 시)</label>
-                  <input id="editLinkedArtistName" data-i18n-placeholder="media.manage.product.field.linked_artist_name.placeholder" placeholder="예: 산울림" />
-                </div>
-                <div class="span-2">
-                  <label for="editPreferredStorageSizeGroup" data-i18n="media.manage.product.field.preferred_size.label">권장 보관 규격</label>
-                  <select id="editPreferredStorageSizeGroup">
-                    <option value="STD" data-i18n="common.size_group.std">CD</option>
-                    <option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option>
-                    <option value="LP" data-i18n="common.size_group.lp">LP</option>
-                    <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
-                    <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
-                    <option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option>
-                    <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
-                    <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
-                    <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
-                    <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
-                  </select>
-                </div>
-                <div class="span-2">
-                  <label for="editDomainCode" data-i18n="media.manage.product.field.domain_code.label">도메인</label>
-                  <select id="editDomainCode">
-                    <option value="" data-i18n="common.unspecified">미지정</option>
-                    <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                    <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                    <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                    <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                    <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                    <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
-                    <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                  </select>
+                <div id="homeEditProductCoreRowB" class="ops-compact-form-row home-manage-product-row--secondary">
+                  <div id="homeEditLinkedArtistWrap">
+                    <label for="editLinkedArtistName" data-i18n="media.manage.product.field.linked_artist_name.label">연계 아티스트명 (앨범 모호 시)</label>
+                    <input id="editLinkedArtistName" data-i18n-placeholder="media.manage.product.field.linked_artist_name.placeholder" placeholder="예: 산울림" />
+                  </div>
+                  <div>
+                    <label for="editPreferredStorageSizeGroup" data-i18n="media.manage.product.field.preferred_size.label">권장 보관 규격</label>
+                    <select id="editPreferredStorageSizeGroup">
+                      <option value="STD" data-i18n="common.size_group.std">CD</option>
+                      <option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option>
+                      <option value="LP" data-i18n="common.size_group.lp">LP</option>
+                      <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
+                      <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
+                      <option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option>
+                      <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
+                      <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
+                      <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
+                      <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="editDomainCode" data-i18n="media.manage.product.field.domain_code.label">도메인</label>
+                    <select id="editDomainCode">
+                      <option value="" data-i18n="common.unspecified">미지정</option>
+                      <option value="KOREA" data-i18n="common.domain.korea">가요</option>
+                      <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
+                      <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
+                      <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
+                      <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
+                      <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
+                      <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="editStatus" data-i18n="media.manage.product.field.status.label">상태</label>
+                    <select id="editStatus">
+                      <option>IN_COLLECTION</option>
+                      <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="editSignatureType" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
+                    <select id="editSignatureType">
+                      <option>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="editDisplayRank" data-i18n="media.manage.product.field.display_rank.label">진열 순서(display_rank)</label>
+                    <input id="editDisplayRank" type="number" />
+                  </div>
                 </div>
               </div>
               <input id="editCategory" type="hidden" value="LP" />
               <input id="editSizeGroup" type="hidden" value="STD" />
               <input id="editReleaseType" type="hidden" value="" />
-              <div data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px;">
-                <div>
-                  <label for="editStatus" data-i18n="media.manage.product.field.status.label">상태</label>
-                  <select id="editStatus">
-                    <option>IN_COLLECTION</option>
-                    <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="editSignatureType" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
-                  <select id="editSignatureType">
-                    <option>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
-                  </select>
-                </div>
-                <div class="span-2">
-                  <label for="editDisplayRank" data-i18n="media.manage.product.field.display_rank.label">진열 순서(display_rank)</label>
-                  <input id="editDisplayRank" type="number" />
-                </div>
-                <div class="span-2">
-                  <label for="editPurchaseSource" data-i18n="media.manage.product.field.purchase_source.label">구매처</label>
-                  <input id="editPurchaseSource" data-i18n-placeholder="media.manage.product.field.purchase_source.placeholder" placeholder="예: 홍대 중고매장" />
-                </div>
-                <div class="span-2">
-                  <label for="editConditionGrade" data-i18n="media.manage.product.field.condition_grade.label">일반 컨디션 메모</label>
-                  <input id="editConditionGrade" data-i18n-placeholder="media.manage.product.field.condition_grade.placeholder" placeholder="예: Very Good" />
-                </div>
-                <div>
-                  <label for="editPurchasePrice" data-i18n="media.manage.product.field.purchase_price.label">구매 가격</label>
-                  <input id="editPurchasePrice" type="number" min="0" step="0.01" data-i18n-placeholder="media.manage.product.field.purchase_price.placeholder" placeholder="예: 49800" />
-                </div>
-                <div>
-                  <label for="editCurrencyCode" data-i18n="media.manage.product.field.currency_code.label">통화</label>
-                  <select id="editCurrencyCode">
-                    <option value="KRW">KRW</option>
-                    <option value="USD">USD</option>
-                    <option value="GBP">GBP</option>
-                    <option value="JPY">JPY</option>
-                    <option value="EUR">EUR</option>
-                  </select>
-                </div>
-              </div>
-              <div id="homeEditMusicOpsRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px; display:none;">
-                <div>
-                  <label for="editCoverCondition" data-i18n="media.manage.product.field.cover_condition.label">커버 컨디션</label>
-                  <select id="editCoverCondition">
-                    <option value="">-</option>
-                    <option value="M">M (Mint)</option>
-                    <option value="NM">NM / M- (Near Mint)</option>
-                    <option value="VG+">VG+ / E (Excellent)</option>
-                    <option value="VG">VG</option>
-                    <option value="G+">G+ / VG-</option>
-                    <option value="G">G</option>
-                    <option value="F">F (Fair)</option>
-                    <option value="P">P (Poor)</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="editDiscCondition" data-i18n="media.manage.product.field.disc_condition.label">알판 컨디션</label>
-                  <select id="editDiscCondition">
-                    <option value="">-</option>
-                    <option value="M">M (Mint)</option>
-                    <option value="NM">NM / M- (Near Mint)</option>
-                    <option value="VG+">VG+ / E (Excellent)</option>
-                    <option value="VG">VG</option>
-                    <option value="G+">G+ / VG-</option>
-                    <option value="G">G</option>
-                    <option value="F">F (Fair)</option>
-                    <option value="P">P (Poor)</option>
-                  </select>
-                </div>
-                <label class="inline-check" style="margin-top:20px;">
-                  <input id="editHasObi" type="checkbox" />
-                  <span data-i18n="media.manage.product.field.has_obi.label">OBI 포함</span>
-                </label>
-                <div></div>
-                <div></div>
-                <div></div>
-              </div>
               <input id="editFormatName" type="hidden" value="LP" />
               <input id="editReleasedDate" type="hidden" />
               <input id="editGenres" type="hidden" />
               <input id="editBarcode" type="hidden" />
-              <div id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px; display:none;">
-                <div class="span-4">
-                  <label for="homeEditCoverImagePaste" data-i18n="media.manage.product.field.cover_upload.label">커버 직접 등록 / 붙여넣기 / URL</label>
-                  <div style="display:flex;gap:6px;align-items:stretch;">
-                    <input id="homeEditCoverImageFile" type="file" accept="image/*" style="max-width:220px;" />
-                    <textarea
-                      id="homeEditCoverImagePaste"
-                      class="image-paste-box"
-                      data-i18n-placeholder="media.manage.product.field.cover_upload.placeholder"
-                      placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
-                      style="min-height:38px;flex:1;"
-                    ></textarea>
+              <details id="homeEditProductExtraDetails" class="ops-compact-extra-fields">
+                <summary>구매 / 컨디션 / 커버 / 메모</summary>
+                <div class="ops-compact-extra-fields-body home-manage-product-extra-grid">
+                  <div class="ops-compact-form-row home-manage-product-extra-row--pricing">
+                    <div>
+                      <label for="editPurchaseSource" data-i18n="media.manage.product.field.purchase_source.label">구매처</label>
+                      <input id="editPurchaseSource" data-i18n-placeholder="media.manage.product.field.purchase_source.placeholder" placeholder="예: 홍대 중고매장" />
+                    </div>
+                    <div>
+                      <label for="editConditionGrade" data-i18n="media.manage.product.field.condition_grade.label">일반 컨디션 메모</label>
+                      <input id="editConditionGrade" data-i18n-placeholder="media.manage.product.field.condition_grade.placeholder" placeholder="예: Very Good" />
+                    </div>
+                    <div>
+                      <label for="editPurchasePrice" data-i18n="media.manage.product.field.purchase_price.label">구매 가격</label>
+                      <input id="editPurchasePrice" type="number" min="0" step="0.01" data-i18n-placeholder="media.manage.product.field.purchase_price.placeholder" placeholder="예: 49800" />
+                    </div>
+                    <div>
+                      <label for="editCurrencyCode" data-i18n="media.manage.product.field.currency_code.label">통화</label>
+                      <select id="editCurrencyCode">
+                        <option value="KRW">KRW</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                        <option value="JPY">JPY</option>
+                        <option value="EUR">EUR</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div id="homeEditMusicOpsRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:0; display:none;">
+                    <div>
+                      <label for="editCoverCondition" data-i18n="media.manage.product.field.cover_condition.label">커버 컨디션</label>
+                      <select id="editCoverCondition">
+                        <option value="">-</option>
+                        <option value="M">M (Mint)</option>
+                        <option value="NM">NM / M- (Near Mint)</option>
+                        <option value="VG+">VG+ / E (Excellent)</option>
+                        <option value="VG">VG</option>
+                        <option value="G+">G+ / VG-</option>
+                        <option value="G">G</option>
+                        <option value="F">F (Fair)</option>
+                        <option value="P">P (Poor)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="editDiscCondition" data-i18n="media.manage.product.field.disc_condition.label">알판 컨디션</label>
+                      <select id="editDiscCondition">
+                        <option value="">-</option>
+                        <option value="M">M (Mint)</option>
+                        <option value="NM">NM / M- (Near Mint)</option>
+                        <option value="VG+">VG+ / E (Excellent)</option>
+                        <option value="VG">VG</option>
+                        <option value="G+">G+ / VG-</option>
+                        <option value="G">G</option>
+                        <option value="F">F (Fair)</option>
+                        <option value="P">P (Poor)</option>
+                      </select>
+                    </div>
+                    <label class="inline-check" style="margin-top:20px;">
+                      <input id="editHasObi" type="checkbox" />
+                      <span data-i18n="media.manage.product.field.has_obi.label">OBI 포함</span>
+                    </label>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                  </div>
+                  <div id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:0; display:none;">
+                    <div class="span-4">
+                      <label for="homeEditCoverImagePaste" data-i18n="media.manage.product.field.cover_upload.label">커버 직접 등록 / 붙여넣기 / URL</label>
+                      <div style="display:flex;gap:6px;align-items:stretch;">
+                        <input id="homeEditCoverImageFile" type="file" accept="image/*" style="max-width:220px;" />
+                        <textarea
+                          id="homeEditCoverImagePaste"
+                          class="image-paste-box"
+                          data-i18n-placeholder="media.manage.product.field.cover_upload.placeholder"
+                          placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
+                          style="min-height:38px;flex:1;"
+                        ></textarea>
+                      </div>
+                    </div>
+                    <div class="span-2">
+                      <label data-i18n="media.manage.product.field.current_cover.label">현재 커버</label>
+                      <div class="home-edit-cover-meta-box">
+                        <div id="homeEditCoverImagePreview" class="image-chip-list"><span class="mini" data-i18n="media.manage.product.state.no_cover">없음</span></div>
+                        <div id="homeEditCoverCatalogMeta" class="home-edit-cover-meta-text" data-i18n="media.manage.product.state.no_catalog_meta">카탈로그 정보 없음</div>
+                        <div id="homeEditCoverSourceLink" class="home-edit-cover-link" style="display:none;"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="home-product-note" style="margin-top:0;">
+                    <label for="editMemoryNote" data-i18n="media.manage.product.field.memory_note.label">기억 메모</label>
+                    <textarea id="editMemoryNote"></textarea>
+                  </div>
+                  <div class="home-edit-flag-row home-product-flags">
+                    <label class="inline-check">
+                      <input id="editIsSecondHand" type="checkbox" />
+                      <span data-i18n="media.manage.product.field.is_second_hand.label">중고 상품</span>
+                    </label>
+                    <label class="inline-check">
+                      <input id="editPromoNfs" type="checkbox" />
+                      <span data-i18n="media.manage.product.field.promo_nfs.label">홍보반 / Not For Sale</span>
+                    </label>
                   </div>
                 </div>
-                <div class="span-2">
-                  <label data-i18n="media.manage.product.field.current_cover.label">현재 커버</label>
-                  <div class="home-edit-cover-meta-box">
-                    <div id="homeEditCoverImagePreview" class="image-chip-list"><span class="mini" data-i18n="media.manage.product.state.no_cover">없음</span></div>
-                    <div id="homeEditCoverCatalogMeta" class="home-edit-cover-meta-text" data-i18n="media.manage.product.state.no_catalog_meta">카탈로그 정보 없음</div>
-                    <div id="homeEditCoverSourceLink" class="home-edit-cover-link" style="display:none;"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="home-product-note" style="margin-top:6px;">
-                <label for="editMemoryNote" data-i18n="media.manage.product.field.memory_note.label">기억 메모</label>
-                <textarea id="editMemoryNote"></textarea>
-              </div>
-              <div class="home-edit-flag-row home-product-flags">
-                <label class="inline-check">
-                  <input id="editIsSecondHand" type="checkbox" />
-                  <span data-i18n="media.manage.product.field.is_second_hand.label">중고 상품</span>
-                </label>
-                <label class="inline-check">
-                  <input id="editPromoNfs" type="checkbox" />
-                  <span data-i18n="media.manage.product.field.promo_nfs.label">홍보반 / Not For Sale</span>
-                </label>
-              </div>
+              </details>
             </div>
 
             <div id="homeEditTrackPanel" class="home-edit-track-panel" style="display:none;">
@@ -11682,7 +11717,7 @@
           </div>
           <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
 
-          <div class="goods-map-section compact-stack">
+          <div class="goods-map-section compact-stack" style="grid-template-columns: 1fr;">
             <div class="compact-stack-grid">
               <div class="result-head span-2" style="margin-bottom:0;">
                 <strong data-i18n="media.manage.product_relation.block.master">마스터 하위</strong>
@@ -11738,7 +11773,7 @@
             <div id="homeProductRelationReleaseResults" class="goods-target-results span-2"></div>
           </div>
 
-          <div class="goods-map-section compact-stack">
+          <div class="goods-map-section compact-stack" style="grid-template-columns: 1fr;">
             <div class="compact-stack-grid">
               <div class="result-head span-2" style="margin-bottom:0;">
                 <strong data-i18n="media.manage.product_relation.block.components">박스 구성품</strong>
@@ -11748,10 +11783,8 @@
           </div>
 
           <div class="compact-stack" style="margin-top:6px;">
-            <div class="compact-stack-grid">
-              <div id="homeProductRelationStatus" class="status span-2"></div>
-            </div>
-            <div class="compact-stack-actions">
+            <div id="homeProductRelationStatus" class="status span-2"></div>
+            <div class="compact-stack-actions span-2">
               <button id="homeProductRelationSaveBtn" class="btn ghost" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
             </div>
           </div>

@@ -68,6 +68,7 @@ def test_product_relation_blocks_use_compact_stack():
     html = read_static_html("index.html")
     section = html.split("homeProductRelationSection", 1)[1].split("homeEditorActionBlock", 1)[0]
     assert section.count("goods-map-section compact-stack") >= 4
+    assert section.count('goods-map-section compact-stack" style="grid-template-columns: 1fr;"') == 2
     assert 'id="homeProductRelationMasterList"' in section
     assert 'id="homeProductRelationSeriesList"' in section
     assert 'id="homeProductRelationReleaseList"' in section
@@ -76,6 +77,9 @@ def test_product_relation_blocks_use_compact_stack():
     assert 'id="homeProductRelationStatus"' in section
     assert "compact-stack-grid" in section
     assert "compact-stack-actions" in section
+    status_block = section.split('<div class="compact-stack" style="margin-top:6px;">', 1)[1].lstrip()
+    assert status_block.startswith('<div id="homeProductRelationStatus" class="status span-2"></div>')
+    assert 'class="compact-stack-actions span-2"' in section
 
 
 def test_search_list_edit_button_has_arrow_indicator():
