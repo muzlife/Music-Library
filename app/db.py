@@ -14,7 +14,7 @@ ORDER_KEY_WIDTH = 12
 ORDER_KEY_STEP = 1024
 SQLITE_BUSY_TIMEOUT_MS = 30_000
 DASHBOARD_MOVE_WINDOW_DAYS = 1
-SIZE_GROUP_CODES = ("STD", "BOOK", "LP", "OVERSIZE", "GOODS")
+SIZE_GROUP_CODES = ("STD", "BOOK", "LP", "LP10", "LP7", "OVERSIZE", "CASSETTE", "8TRACK", "REEL_TO_REEL", "GOODS")
 DOMAIN_CODES = ("KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN")
 CABINET_SORT_POLICIES = ("ARTIST_RELEASE_TITLE", "LABEL_ID")
 LEGACY_DOMAIN_CODE_MAP = {
@@ -37,11 +37,54 @@ LABEL_PREFIX_BY_CATEGORY = {
     "CUP": "CP",
     "OTHER": "OT",
 }
+DEFAULT_SLOT_CAPACITY_MM = {
+    "STD": 142,
+    "BOOK": 220,
+    "LP": 360,
+    "LP10": 300,
+    "LP7": 200,
+    "OVERSIZE": 320,
+    "CASSETTE": 142,
+    "8TRACK": 142,
+    "REEL_TO_REEL": 320,
+    "GOODS": 220,
+}
+DEFAULT_ITEM_THICKNESS_MM = {
+    "CD": 10,
+    "CD_SLIM": 5,
+    "CD_BOX": 18,
+    "LP": 4,
+    "LP10": 4,
+    "LP7": 3,
+    "LP_GATEFOLD": 7,
+    "LP_BOX": 12,
+    "CASSETTE": 11,
+    "8TRACK": 22,
+    "REEL_TO_REEL": 25,
+    "BOOK": 12,
+    "GOODS": 12,
+}
+GOODS_CATEGORY_CODES = ("POSTER", "T_SHIRT", "LIGHT_STICK", "HAT", "BAG", "CUP", "OTHER")
+GOODS_STATUS_CODES = ("ACTIVE", "ARCHIVED")
 _UNSET = object()
+AUTO_BACKUP_SETTING_KEYS = (
+    "auto_backup_enabled",
+    "auto_backup_interval_minutes",
+    "auto_backup_dir",
+    "auto_backup_scope",
+    "auto_backup_include_env_file",
+    "auto_backup_last_at",
+    "auto_backup_last_path",
+    "auto_backup_last_error",
+)
 
 
 def _domain_code_check_sql() -> str:
     return "', '".join(DOMAIN_CODES)
+
+
+def _size_group_check_sql() -> str:
+    return "', '".join(SIZE_GROUP_CODES)
 
 
 def _normalize_domain_code_sql(expr: str) -> str:
@@ -74,6 +117,14 @@ def _cabinet_sort_policy_check_sql() -> str:
     return "', '".join(CABINET_SORT_POLICIES)
 
 
+def _goods_category_check_sql() -> str:
+    return "', '".join(GOODS_CATEGORY_CODES)
+
+
+def _goods_status_check_sql() -> str:
+    return "', '".join(GOODS_STATUS_CODES)
+
+
 def _normalize_cabinet_sort_policy_value(value: Any) -> str:
     code = str(value or "").strip().upper()
     return code if code in CABINET_SORT_POLICIES else "ARTIST_RELEASE_TITLE"
@@ -85,6 +136,254 @@ def _natural_sort_key(value: Any) -> list[Any]:
         return [""]
     parts = re.split(r"(\d+)", text)
     return [int(part) if part.isdigit() else part.lower() for part in parts]
+
+
+def _contains_any_token(value: Any, tokens: tuple[str, ...]) -> bool:
+    text = str(value or "").strip().lower()
+    if not text:
+        return False
+    return any(token in text for token in tokens)
+
+
+def _resolve_slot_capacity_mm(
+    *,
+    allowed_size_group: Any,
+    cabinet_name: Any = None,
+    slot_code: Any = None,
+    format_name: Any = None,
+    max_thickness_mm: Any = None,
+) -> int:
+    try:
+        explicit_capacity = int(max_thickness_mm) if max_thickness_mm not in (None, "") else 0
+    except (TypeError, ValueError):
+        explicit_capacity = 0
+    if explicit_capacity > 0:
+        return explicit_capacity
+    size_group = str(allowed_size_group or "").strip().upper()
+    hint_values = (cabinet_name, slot_code, format_name)
+    if size_group == "LP":
+        if any(_contains_any_token(value, ("확장", "extended", "oversize", "box")) for value in hint_values):
+            return 520
+        return DEFAULT_SLOT_CAPACITY_MM["LP"]
+    if size_group == "LP10":
+        if any(_contains_any_token(value, ("확장", "extended", "oversize", "box")) for value in hint_values):
+            return DEFAULT_SLOT_CAPACITY_MM["LP"]
+        return DEFAULT_SLOT_CAPACITY_MM["LP10"]
+    if size_group == "LP7":
+        if any(_contains_any_token(value, ("확장", "extended", "oversize", "box")) for value in hint_values):
+            return 240
+        return DEFAULT_SLOT_CAPACITY_MM["LP7"]
+    if size_group == "OVERSIZE":
+        if any(_contains_any_token(value, ("lp", "엘피")) for value in hint_values):
+            return 520
+        return 320
+    if size_group in ("BOOK", "GOODS", "CASSETTE", "8TRACK", "REEL_TO_REEL"):
+        return DEFAULT_SLOT_CAPACITY_MM[size_group]
+    if any(_contains_any_token(value, ("확장", "extended", "oversize", "box")) for value in hint_values):
+        return 320
+    return DEFAULT_SLOT_CAPACITY_MM.get(size_group, DEFAULT_SLOT_CAPACITY_MM["STD"])
+
+
+def _resolve_owned_item_thickness_mm(
+    *,
+    thickness_mm: Any = None,
+    size_group: Any = None,
+    format_name: Any = None,
+    package_hint: Any = None,
+    disc_count: Any = None,
+    format_items: Any = None,
+    slot_size_group: Any = None,
+) -> int:
+    size_group_u = str(size_group or "").strip().upper()
+    slot_size_group_u = str(slot_size_group or "").strip().upper()
+    format_name_u = str(format_name or "").strip().upper()
+
+    try:
+        disc_count_value = int(disc_count) if disc_count not in (None, "") else None
+    except (TypeError, ValueError):
+        disc_count_value = None
+    if disc_count_value is not None and disc_count_value <= 0:
+        disc_count_value = None
+
+    def _vinyl_box_thickness(base_thickness_mm: int) -> int:
+        if disc_count_value is None:
+            return DEFAULT_ITEM_THICKNESS_MM["LP_BOX"]
+        return max(1, (int(base_thickness_mm) * disc_count_value * 120 + 99) // 100)
+
+    def _coerce_format_items(raw: Any) -> list[dict[str, Any]]:
+        if isinstance(raw, list):
+            return [row for row in raw if isinstance(row, dict)]
+        if raw in (None, ""):
+            return []
+        try:
+            parsed = json.loads(str(raw))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return []
+        if not isinstance(parsed, list):
+            return []
+        return [row for row in parsed if isinstance(row, dict)]
+
+    def _parse_positive_int(raw: Any, default: int = 0) -> int:
+        text = str(raw or "").strip()
+        if not text:
+            return default
+        try:
+            value = int(text)
+        except (TypeError, ValueError):
+            return default
+        return value if value > 0 else default
+
+    if size_group_u == "BOOK":
+        return DEFAULT_ITEM_THICKNESS_MM["BOOK"]
+    if size_group_u == "GOODS":
+        return DEFAULT_ITEM_THICKNESS_MM["GOODS"]
+    if size_group_u == "CASSETTE" or _contains_any_token(format_name, ("cassette", "카세트", "tape", "mc")):
+        return DEFAULT_ITEM_THICKNESS_MM["CASSETTE"]
+    if size_group_u == "8TRACK" or _contains_any_token(format_name, ("8-track", "8 track", "8track")):
+        return DEFAULT_ITEM_THICKNESS_MM["8TRACK"]
+    if size_group_u == "REEL_TO_REEL" or _contains_any_token(format_name, ("reel-to-reel", "reel to reel", "open reel")):
+        return DEFAULT_ITEM_THICKNESS_MM["REEL_TO_REEL"]
+
+    hint_values = (format_name, package_hint)
+    hint_is_slim = any(_contains_any_token(value, ("slim", "슬림")) for value in hint_values)
+    hint_is_gatefold = any(_contains_any_token(value, ("gatefold", "게이트폴드")) for value in hint_values)
+    hint_is_box = any(_contains_any_token(value, ("box", "박스", "확장", "digipak")) for value in hint_values)
+    hint_is_10inch = any(_contains_any_token(value, ('10"', "10inch", "10-inch", "10인치")) for value in hint_values)
+    hint_is_7inch = any(_contains_any_token(value, ('7"', "7inch", "7-inch", "7인치")) for value in hint_values)
+    slot_is_box_set = slot_size_group_u == "OVERSIZE"
+    lp_box_unit_thickness = DEFAULT_ITEM_THICKNESS_MM["LP_GATEFOLD"] if slot_is_box_set else DEFAULT_ITEM_THICKNESS_MM["LP"]
+    format_item_rows = _coerce_format_items(format_items)
+    lp_count = 0
+    lp10_count = 0
+    lp7_count = 0
+    cd_count = 0
+    for item in format_item_rows:
+        qty = _parse_positive_int(item.get("qty"), default=1)
+        values = [
+            item.get("name"),
+            item.get("text"),
+            item.get("display"),
+            *list(item.get("descriptions") or []),
+        ]
+        if any(_contains_any_token(value, ("cd", "compact disc", "compactdisc")) for value in values):
+            cd_count += qty
+            continue
+        if any(_contains_any_token(value, ('7"', "7inch", "7-inch", "7인치")) for value in values):
+            lp7_count += qty
+            continue
+        if any(_contains_any_token(value, ('10"', "10inch", "10-inch", "10인치")) for value in values):
+            lp10_count += qty
+            continue
+        if any(_contains_any_token(value, ("lp", "vinyl", "엘피")) for value in values):
+            lp_count += qty
+
+    parsed_total_count = lp_count + lp10_count + lp7_count + cd_count
+    missing_count = max(0, (disc_count_value or 0) - parsed_total_count)
+    if missing_count > 0:
+        if size_group_u == "LP7" or hint_is_7inch:
+            lp7_count += missing_count
+        elif size_group_u == "LP10" or hint_is_10inch:
+            lp10_count += missing_count
+        elif size_group_u in {"STD", "BOOK"} or format_name_u == "CD":
+            cd_count += missing_count
+        else:
+            lp_count += missing_count
+
+    box_set_slot_item = slot_is_box_set and (
+        size_group_u in {"LP", "LP10", "LP7", "OVERSIZE"}
+        or size_group_u in {"STD", "BOOK"}
+        or format_name_u == "LP"
+        or format_name_u == "CD"
+        or hint_is_10inch
+        or hint_is_7inch
+        or bool(format_item_rows)
+    )
+
+    if thickness_mm not in (None, ""):
+        try:
+            value = int(thickness_mm)
+        except (TypeError, ValueError):
+            value = 0
+        if value > 0 and not box_set_slot_item:
+            return value
+
+    if slot_is_box_set:
+        base_thickness_mm = (
+            (lp_count * lp_box_unit_thickness)
+            + (lp10_count * DEFAULT_ITEM_THICKNESS_MM["LP10"])
+            + (lp7_count * DEFAULT_ITEM_THICKNESS_MM["LP7"])
+            + (((cd_count + 3) // 4) * DEFAULT_ITEM_THICKNESS_MM["CD"])
+        )
+        if base_thickness_mm <= 0 and disc_count_value is not None:
+            if size_group_u == "LP7" or hint_is_7inch:
+                base_thickness_mm = DEFAULT_ITEM_THICKNESS_MM["LP7"] * disc_count_value
+            elif size_group_u == "LP10" or hint_is_10inch:
+                base_thickness_mm = DEFAULT_ITEM_THICKNESS_MM["LP10"] * disc_count_value
+            elif size_group_u in {"STD", "BOOK"} or format_name_u == "CD":
+                base_thickness_mm = ((disc_count_value + 3) // 4) * DEFAULT_ITEM_THICKNESS_MM["CD"]
+            else:
+                base_thickness_mm = lp_box_unit_thickness * disc_count_value
+        if base_thickness_mm > 0:
+            return max(1, (base_thickness_mm * 120 + 99) // 100)
+
+    if size_group_u == "LP7" or hint_is_7inch:
+        if hint_is_box or slot_is_box_set:
+            return _vinyl_box_thickness(DEFAULT_ITEM_THICKNESS_MM["LP7"])
+        return DEFAULT_ITEM_THICKNESS_MM["LP7"]
+
+    if size_group_u == "LP10" or hint_is_10inch:
+        if hint_is_box or slot_is_box_set:
+            return _vinyl_box_thickness(DEFAULT_ITEM_THICKNESS_MM["LP10"])
+        if hint_is_gatefold:
+            return DEFAULT_ITEM_THICKNESS_MM["LP_GATEFOLD"]
+        return DEFAULT_ITEM_THICKNESS_MM["LP10"]
+
+    if format_name_u == "LP" or size_group_u in {"LP", "OVERSIZE"}:
+        if hint_is_box or size_group_u == "OVERSIZE" or slot_is_box_set:
+            return _vinyl_box_thickness(lp_box_unit_thickness)
+        if hint_is_gatefold:
+            return DEFAULT_ITEM_THICKNESS_MM["LP_GATEFOLD"]
+        return DEFAULT_ITEM_THICKNESS_MM["LP"]
+
+    if hint_is_slim:
+        return DEFAULT_ITEM_THICKNESS_MM["CD_SLIM"]
+    if hint_is_box or size_group_u == "OVERSIZE":
+        return DEFAULT_ITEM_THICKNESS_MM["CD_BOX"]
+    return DEFAULT_ITEM_THICKNESS_MM["CD"]
+
+
+def build_storage_slot_occupancy_summary(
+    slot_row: dict[str, Any],
+    item_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    capacity_mm = _resolve_slot_capacity_mm(
+        allowed_size_group=slot_row.get("allowed_size_group"),
+        cabinet_name=slot_row.get("cabinet_name"),
+        slot_code=slot_row.get("slot_code"),
+        format_name=slot_row.get("format_name"),
+        max_thickness_mm=slot_row.get("max_thickness_mm"),
+    )
+    used_thickness_mm = sum(
+        _resolve_owned_item_thickness_mm(
+            thickness_mm=row.get("thickness_mm"),
+            size_group=row.get("size_group"),
+            format_name=row.get("format_name"),
+            package_hint=row.get("package_hint") or row.get("notes") or row.get("item_name_override"),
+            disc_count=row.get("disc_count"),
+            format_items=row.get("format_items") or row.get("format_items_json"),
+            slot_size_group=slot_row.get("allowed_size_group"),
+        )
+        for row in item_rows
+    )
+    free_thickness_mm = max(capacity_mm - used_thickness_mm, 0)
+    occupancy_ratio = (used_thickness_mm / capacity_mm) if capacity_mm > 0 else 0.0
+    return {
+        "capacity_mm": capacity_mm,
+        "used_thickness_mm": used_thickness_mm,
+        "free_thickness_mm": free_thickness_mm,
+        "occupancy_ratio": occupancy_ratio,
+        "occupancy_percent": int(round(occupancy_ratio * 100)),
+    }
 
 
 def _slot_token(value: Any) -> str | None:
@@ -245,7 +544,7 @@ def _storage_slot_display_name(row: dict[str, Any]) -> str:
     if cabinet_name:
         parts = [cabinet_name]
         if column_code:
-            parts.append(f"{column_code}층")
+            parts.append(f"{column_code}열")
         if cell_code:
             parts.append(f"{cell_code}칸")
         return " / ".join(parts)
@@ -255,16 +554,30 @@ def _storage_slot_display_name(row: dict[str, Any]) -> str:
     return slot_code or "-"
 
 
+def _cabinet_group_order_value(value: Any) -> int:
+    try:
+        parsed = int(str(value or "").strip())
+    except (TypeError, ValueError):
+        return 0
+    return parsed if parsed > 0 else 0
+
+
 def _storage_slot_sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
     slot_code = str(row.get("slot_code") or "").strip()
     if slot_code == "UNASSIGNED":
         return (2, ["unassigned"], [""], [""], [""], 0)
     if bool(row.get("is_overflow_zone")):
         return (1, _natural_sort_key(row.get("cabinet_name") or "Overflow"), _natural_sort_key(row.get("allowed_size_group")), [""], [""], int(row.get("id") or 0))
+    cabinet_name = str(row.get("cabinet_name") or "").strip()
+    cabinet_group_name = str(row.get("cabinet_group_name") or "").strip()
+    group_name_key = _natural_sort_key(cabinet_group_name or cabinet_name)
+    group_order_key = _cabinet_group_order_value(row.get("cabinet_group_order")) if cabinet_group_name else 0
     return (
         0,
-        _natural_sort_key(row.get("cabinet_name")),
+        group_name_key,
         _natural_sort_key(row.get("column_code")),
+        group_order_key,
+        _natural_sort_key(cabinet_name),
         _natural_sort_key(row.get("cell_code")),
         _natural_sort_key(slot_code),
         int(row.get("id") or 0),
@@ -282,7 +595,52 @@ def _normalize_artist_sort_text(text: Any) -> str:
         return ""
     value = value.replace("*", " ").replace("·", " ").replace("ㆍ", " ")
     value = " ".join(value.split())
+    article_match = re.match(r"^(the|a|an)\s+(.+)$", value, flags=re.IGNORECASE)
+    if article_match:
+        article = article_match.group(1)
+        remainder = article_match.group(2).strip()
+        if remainder:
+            value = f"{remainder}, {article}"
     return value.casefold()
+
+
+def _normalize_released_date_sort_text(text: Any) -> str:
+    return str(text or "").strip()
+
+
+def _normalize_master_release_sort_text(text: Any, fallback_year: Any = None) -> str:
+    raw = str(text or "").strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+        return raw
+    if re.fullmatch(r"\d{4}-\d{2}", raw):
+        return f"{raw}-99"
+    if re.fullmatch(r"\d{4}", raw):
+        return f"{raw}-99-99"
+    try:
+        year_value = int(fallback_year) if fallback_year is not None else None
+    except (TypeError, ValueError):
+        year_value = None
+    if year_value is not None:
+        return f"{year_value:04d}-99-99"
+    return "9999-99-99"
+
+
+def _normalize_goods_category_value(value: Any) -> str:
+    category = str(value or "").strip().upper()
+    if category not in GOODS_CATEGORY_CODES:
+        raise ValueError("invalid goods category")
+    return category
+
+
+def _normalize_goods_status_value(value: Any) -> str:
+    status = str(value or "").strip().upper() or "ACTIVE"
+    if status not in GOODS_STATUS_CODES:
+        raise ValueError("invalid goods status")
+    return status
+
+
+def _normalize_goods_mapping_text(value: Any) -> str:
+    return " ".join(str(value or "").strip().split())
 
 
 def _normalize_recommendation_text(text: Any) -> str:
@@ -401,6 +759,11 @@ def _owned_item_storage_sort_key(
         release_year_value = int(release_year) if release_year is not None else None
     except (TypeError, ValueError):
         release_year_value = None
+    master_release_sort_value = _normalize_master_release_sort_text(
+        row.get("master_release_date"),
+        release_year_value,
+    )
+    released_date_value = _normalize_released_date_sort_text(row.get("released_date"))
     title_value = _normalize_artist_sort_text(row.get("master_title") or row.get("item_name_override"))
     order_key = str(row.get("order_key") or "").strip()
     display_rank = row.get("display_rank")
@@ -408,30 +771,106 @@ def _owned_item_storage_sort_key(
         display_rank_value = int(display_rank) if display_rank is not None else None
     except (TypeError, ValueError):
         display_rank_value = None
+    if display_rank_value is not None:
+        return (
+            0,
+            display_rank_value,
+            int(row.get("id") or 0),
+        )
     artist_value = _preferred_owned_item_artist_sort_value(row, korean_artist_by_master_id)
     title_first_group = _title_first_group_artist_key(artist_value)
     common_tail = (
         1 if not order_key else 0,
         order_key,
-        1 if display_rank_value is None else 0,
-        display_rank_value if display_rank_value is not None else 999999,
         int(row.get("id") or 0),
     )
     if title_first_group:
         return (
+            1,
             artist_value,
             title_value,
-            1 if release_year_value is None else 0,
-            release_year_value if release_year_value is not None else 999999,
+            master_release_sort_value,
+            1 if not released_date_value else 0,
+            released_date_value or "9999-99-99",
             *common_tail,
         )
     return (
+        1,
         artist_value,
-        1 if release_year_value is None else 0,
-        release_year_value if release_year_value is not None else 999999,
+        master_release_sort_value,
+        1 if not released_date_value else 0,
+        released_date_value or "9999-99-99",
         title_value,
         *common_tail,
     )
+
+
+def _extract_collection_dashboard_release_year(row: dict[str, Any]) -> int | None:
+    for candidate in (
+        row.get("master_release_year"),
+        row.get("release_year"),
+    ):
+        try:
+            value = int(candidate) if candidate is not None and str(candidate).strip() else None
+        except (TypeError, ValueError):
+            value = None
+        if value is not None and value > 0:
+            return value
+    for text in (
+        row.get("master_release_date"),
+        row.get("released_date"),
+    ):
+        raw = str(text or "").strip()
+        match = re.match(r"^(\d{4})", raw)
+        if not match:
+            continue
+        try:
+            value = int(match.group(1))
+        except (TypeError, ValueError):
+            value = None
+        if value is not None and value > 0:
+            return value
+    return None
+
+
+def _build_collection_dashboard_first_item_hints(
+    slot_item_map: dict[int, list[dict[str, Any]]],
+) -> dict[int, dict[str, Any]]:
+    master_ids = [
+        int(row.get("linked_album_master_id") or 0)
+        for rows in slot_item_map.values()
+        for row in rows
+        if int(row.get("linked_album_master_id") or 0) > 0
+    ]
+    korean_artist_by_master_id = _preferred_korean_artist_by_master_ids(master_ids)
+    hints: dict[int, dict[str, Any]] = {}
+    for slot_id, rows in slot_item_map.items():
+        if not rows:
+            continue
+        ordered_rows = sorted(
+            rows,
+            key=lambda row: _owned_item_storage_sort_key(row, korean_artist_by_master_id),
+        )
+        first_row = ordered_rows[0] if ordered_rows else None
+        if not first_row:
+            continue
+        artist = (
+            str(first_row.get("artist_or_brand") or "").strip()
+            or str(first_row.get("linked_artist_name") or "").strip()
+            or str(first_row.get("master_artist_or_brand") or "").strip()
+            or None
+        )
+        title = (
+            str(first_row.get("item_name_override") or "").strip()
+            or str(first_row.get("master_title") or "").strip()
+            or None
+        )
+        hints[int(slot_id)] = {
+            "first_item_artist_or_brand": artist,
+            "first_item_title": title,
+            "first_item_release_year": _extract_collection_dashboard_release_year(first_row),
+        }
+    return hints
 
 
 def utc_now_iso() -> str:
@@ -566,6 +1005,72 @@ def _ensure_parent_dir(path: str) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
 
+def _default_auto_backup_dir() -> str:
+    settings = get_settings()
+    return str(Path(settings.db_path).resolve().parent / "backups")
+
+
+def _ensure_app_setting_table(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS app_setting (
+          setting_key TEXT PRIMARY KEY,
+          setting_value TEXT,
+          updated_at TEXT NOT NULL
+        );
+        """
+    )
+
+
+def _upsert_app_setting(conn: sqlite3.Connection, key: str, value: Any) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        """
+        INSERT INTO app_setting (setting_key, setting_value, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(setting_key) DO UPDATE SET
+          setting_value = excluded.setting_value,
+          updated_at = excluded.updated_at
+        """,
+        (str(key), None if value is None else str(value), now),
+    )
+
+
+def _auto_backup_settings_from_conn(conn: sqlite3.Connection) -> dict[str, Any]:
+    _ensure_app_setting_table(conn)
+    placeholders = ", ".join("?" for _ in AUTO_BACKUP_SETTING_KEYS)
+    rows = conn.execute(
+        f"""
+        SELECT setting_key, setting_value
+        FROM app_setting
+        WHERE setting_key IN ({placeholders})
+        """,
+        AUTO_BACKUP_SETTING_KEYS,
+    ).fetchall()
+    values = {str(row["setting_key"]): row["setting_value"] for row in rows}
+    enabled_raw = str(values.get("auto_backup_enabled") or "").strip().lower()
+    interval_raw = str(values.get("auto_backup_interval_minutes") or "").strip()
+    try:
+        interval_minutes = max(0, int(interval_raw or "0"))
+    except (TypeError, ValueError):
+        interval_minutes = 0
+    backup_dir = str(values.get("auto_backup_dir") or "").strip() or _default_auto_backup_dir()
+    backup_scope = str(values.get("auto_backup_scope") or "").strip().upper()
+    if backup_scope not in {"DB", "FULL"}:
+        backup_scope = "DB"
+    include_env_raw = str(values.get("auto_backup_include_env_file") or "").strip().lower()
+    return {
+        "enabled": enabled_raw in {"1", "true", "yes", "on", "y"},
+        "interval_minutes": interval_minutes,
+        "backup_dir": backup_dir,
+        "backup_scope": backup_scope,
+        "include_env_file": include_env_raw in {"1", "true", "yes", "on", "y"},
+        "last_backup_at": str(values.get("auto_backup_last_at") or "").strip() or None,
+        "last_backup_path": str(values.get("auto_backup_last_path") or "").strip() or None,
+        "last_error": str(values.get("auto_backup_last_error") or "").strip() or None,
+    }
+
+
 @contextmanager
 def get_conn() -> Generator[sqlite3.Connection, None, None]:
     settings = get_settings()
@@ -589,7 +1094,7 @@ def get_conn() -> Generator[sqlite3.Connection, None, None]:
 def init_db() -> None:
     with get_conn() as conn:
         conn.executescript(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS metadata_source (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               source_code TEXT NOT NULL UNIQUE,
@@ -634,8 +1139,12 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS storage_slot (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               slot_code TEXT NOT NULL UNIQUE,
-              allowed_size_group TEXT NOT NULL CHECK (allowed_size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
+              allowed_size_group TEXT NOT NULL CHECK (allowed_size_group IN ('{_size_group_check_sql()}')),
               cabinet_sort_policy TEXT NOT NULL DEFAULT 'ARTIST_RELEASE_TITLE' CHECK (cabinet_sort_policy IN ('ARTIST_RELEASE_TITLE', 'LABEL_ID')),
+              cabinet_domain_code TEXT CHECK (cabinet_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              max_thickness_mm INTEGER,
+              cabinet_group_name TEXT,
+              cabinet_group_order INTEGER,
               is_overflow_zone INTEGER NOT NULL DEFAULT 0,
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL
@@ -679,8 +1188,8 @@ def init_db() -> None:
               item_name_override TEXT,
               quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
               is_second_hand INTEGER NOT NULL DEFAULT 0,
-              size_group TEXT NOT NULL CHECK (size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
-              preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
+              size_group TEXT NOT NULL CHECK (size_group IN ('{_size_group_check_sql()}')),
+              preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('{_size_group_check_sql()}')),
               status TEXT NOT NULL DEFAULT 'IN_COLLECTION' CHECK (status IN ('IN_COLLECTION', 'LOANED', 'SOLD', 'LOST', 'ARCHIVED')),
               condition_grade TEXT,
               signature_type TEXT NOT NULL DEFAULT 'NONE' CHECK (signature_type IN ('NONE', 'IN_PERSON', 'PURCHASE_INCLUDED', 'UNKNOWN')),
@@ -770,6 +1279,58 @@ def init_db() -> None:
               FOREIGN KEY (owned_item_id) REFERENCES owned_item(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS goods_item (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              category TEXT NOT NULL CHECK (category IN ('{_goods_category_check_sql()}')),
+              goods_name TEXT NOT NULL,
+              description TEXT,
+              quantity INTEGER NOT NULL DEFAULT 1,
+              size_group TEXT NOT NULL DEFAULT 'GOODS' CHECK (size_group IN ('{_size_group_check_sql()}')),
+              storage_slot_id INTEGER,
+              status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('{_goods_status_check_sql()}')),
+              domain_code TEXT CHECK (domain_code IN ('{_domain_code_check_sql()}')),
+              memory_note TEXT,
+              image_urls_json TEXT NOT NULL DEFAULT '[]',
+              primary_image_url TEXT,
+              poster_storage_spec TEXT,
+              tshirt_size TEXT,
+              cup_material TEXT,
+              hat_size TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              FOREIGN KEY (storage_slot_id) REFERENCES storage_slot(id) ON DELETE SET NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS goods_item_album_master_map (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              goods_item_id INTEGER NOT NULL,
+              album_master_id INTEGER NOT NULL,
+              created_at TEXT NOT NULL,
+              UNIQUE (goods_item_id, album_master_id),
+              FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE,
+              FOREIGN KEY (album_master_id) REFERENCES album_master(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS goods_item_artist_map (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              goods_item_id INTEGER NOT NULL,
+              artist_name TEXT NOT NULL,
+              normalized_artist_name TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              UNIQUE (goods_item_id, normalized_artist_name),
+              FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS goods_item_label_map (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              goods_item_id INTEGER NOT NULL,
+              label_name TEXT NOT NULL,
+              normalized_label_name TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              UNIQUE (goods_item_id, normalized_label_name),
+              FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
+            );
+
             CREATE TABLE IF NOT EXISTS owned_item_subtype (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               owned_item_id INTEGER NOT NULL,
@@ -824,7 +1385,7 @@ def init_db() -> None:
               sort_artist_name TEXT,
               domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
               release_year INTEGER,
-              raw_json TEXT NOT NULL DEFAULT '{}',
+              raw_json TEXT NOT NULL DEFAULT '{{}}',
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
               UNIQUE (source_code, source_master_id)
@@ -848,7 +1409,7 @@ def init_db() -> None:
               title_hint TEXT,
               artist_or_brand_hint TEXT,
               release_year INTEGER,
-              raw_json TEXT NOT NULL DEFAULT '{}',
+              raw_json TEXT NOT NULL DEFAULT '{{}}',
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
               UNIQUE (source_code, source_master_id),
@@ -909,7 +1470,7 @@ def init_db() -> None:
               item_url TEXT,
               image_url TEXT,
               raw_line TEXT,
-              raw_payload_json TEXT NOT NULL DEFAULT '{}',
+              raw_payload_json TEXT NOT NULL DEFAULT '{{}}',
               queue_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (queue_status IN ('PENDING', 'CREATED', 'IGNORED')),
               linked_owned_item_id INTEGER,
               created_at TEXT NOT NULL,
@@ -931,23 +1492,116 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_album_master_member_owned ON album_master_member (owned_item_id);
             CREATE INDEX IF NOT EXISTS idx_album_master_external_ref_master ON album_master_external_ref (album_master_id);
             CREATE INDEX IF NOT EXISTS idx_album_master_external_ref_lookup ON album_master_external_ref (source_code, source_master_id);
+            CREATE INDEX IF NOT EXISTS idx_goods_item_category_name ON goods_item (category, goods_name);
+            CREATE INDEX IF NOT EXISTS idx_goods_item_storage_slot ON goods_item (storage_slot_id, status);
+            CREATE INDEX IF NOT EXISTS idx_goods_item_album_master_map_goods ON goods_item_album_master_map (goods_item_id, album_master_id);
+            CREATE INDEX IF NOT EXISTS idx_goods_item_artist_map_lookup ON goods_item_artist_map (normalized_artist_name);
+            CREATE INDEX IF NOT EXISTS idx_goods_item_label_map_lookup ON goods_item_label_map (normalized_label_name);
             CREATE INDEX IF NOT EXISTS idx_customer_track_request_status ON customer_track_request (status, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_customer_track_request_owned ON customer_track_request (owned_item_id, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_auth_account_role ON auth_account (role, is_active, username);
             CREATE INDEX IF NOT EXISTS idx_purchase_import_queue_status ON purchase_import_queue (queue_status, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_purchase_import_queue_vendor ON purchase_import_queue (vendor_code, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_owned_item_category_created_id ON owned_item (category, created_at DESC, id DESC);
+            CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_move_created_owned ON owned_item_location_event (movement_kind, created_at DESC, owned_item_id, id DESC);
             """
         )
 
         _apply_migrations(conn)
+        _ensure_app_setting_table(conn)
+        _ensure_recent_feed_indexes(conn)
         _seed_metadata_sources(conn)
-        _seed_storage_slots(conn)
+        _cleanup_overflow_slots(conn)
         _seed_classification_options(conn)
+
+
+def ensure_startup_db_ready() -> None:
+    settings = get_settings()
+    db_path = Path(settings.db_path)
+    _ensure_parent_dir(settings.db_path)
+    if not db_path.exists() or db_path.stat().st_size == 0:
+        init_db()
+        return
+
+    conn = sqlite3.connect(settings.db_path, timeout=1)
+    try:
+        row = conn.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name = 'owned_item'
+            """
+        ).fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        init_db()
+        return
+
+    conn = sqlite3.connect(settings.db_path, timeout=1)
+    try:
+        conn.row_factory = sqlite3.Row
+        _apply_migrations(conn)
+        _ensure_app_setting_table(conn)
+        _ensure_recent_feed_indexes(conn)
+        _seed_metadata_sources(conn)
+        _cleanup_overflow_slots(conn)
+        _seed_classification_options(conn)
+    finally:
+        conn.close()
+
+
+def get_auto_backup_settings() -> dict[str, Any]:
+    with get_conn() as conn:
+        return _auto_backup_settings_from_conn(conn)
+
+
+def save_auto_backup_settings(
+    *,
+    enabled: bool,
+    interval_minutes: int,
+    backup_dir: str,
+    backup_scope: str = "DB",
+    include_env_file: bool = False,
+) -> dict[str, Any]:
+    with get_conn() as conn:
+        _ensure_app_setting_table(conn)
+        _upsert_app_setting(conn, "auto_backup_enabled", "1" if enabled else "0")
+        _upsert_app_setting(conn, "auto_backup_interval_minutes", str(max(0, int(interval_minutes))))
+        _upsert_app_setting(conn, "auto_backup_dir", str(backup_dir or "").strip() or _default_auto_backup_dir())
+        _upsert_app_setting(conn, "auto_backup_scope", "FULL" if str(backup_scope or "").strip().upper() == "FULL" else "DB")
+        _upsert_app_setting(conn, "auto_backup_include_env_file", "1" if include_env_file else "0")
+        return _auto_backup_settings_from_conn(conn)
+
+
+def record_auto_backup_result(*, last_backup_at: str | None, last_backup_path: str | None, last_error: str | None) -> None:
+    with get_conn() as conn:
+        _ensure_app_setting_table(conn)
+        _upsert_app_setting(conn, "auto_backup_last_at", last_backup_at)
+        _upsert_app_setting(conn, "auto_backup_last_path", last_backup_path)
+        _upsert_app_setting(conn, "auto_backup_last_error", last_error)
 
 
 def _column_exists(conn: sqlite3.Connection, table_name: str, column_name: str) -> bool:
     rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
     return any(str(row["name"]) == column_name for row in rows)
+
+
+def _ensure_recent_feed_indexes(conn: sqlite3.Connection) -> None:
+    if _column_exists(conn, "owned_item", "category") and _column_exists(conn, "owned_item", "created_at"):
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_owned_item_category_created_id ON owned_item (category, created_at DESC, id DESC)"
+        )
+    if (
+        _column_exists(conn, "owned_item_location_event", "movement_kind")
+        and _column_exists(conn, "owned_item_location_event", "created_at")
+        and _column_exists(conn, "owned_item_location_event", "owned_item_id")
+    ):
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_move_created_owned ON owned_item_location_event (movement_kind, created_at DESC, owned_item_id, id DESC)"
+        )
 
 
 def _ensure_auth_account_table(conn: sqlite3.Connection) -> None:
@@ -991,7 +1645,7 @@ def _ensure_purchase_import_queue_table(conn: sqlite3.Connection) -> None:
           item_url TEXT,
           image_url TEXT,
           raw_line TEXT,
-          raw_payload_json TEXT NOT NULL DEFAULT '{}',
+          raw_payload_json TEXT NOT NULL DEFAULT '{{}}',
           queue_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (queue_status IN ('PENDING', 'CREATED', 'IGNORED')),
           linked_owned_item_id INTEGER,
           created_at TEXT NOT NULL,
@@ -1063,7 +1717,7 @@ def _migrate_purchase_import_queue_allow_file_upload(conn: sqlite3.Connection) -
               item_url TEXT,
               image_url TEXT,
               raw_line TEXT,
-              raw_payload_json TEXT NOT NULL DEFAULT '{}',
+              raw_payload_json TEXT NOT NULL DEFAULT '{{}}',
               queue_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (queue_status IN ('PENDING', 'CREATED', 'IGNORED')),
               linked_owned_item_id INTEGER,
               created_at TEXT NOT NULL,
@@ -1121,7 +1775,7 @@ def _migrate_album_master_allow_manual(conn: sqlite3.Connection) -> None:
               sort_artist_name TEXT,
               domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
               release_year INTEGER,
-              raw_json TEXT NOT NULL DEFAULT '{}',
+              raw_json TEXT NOT NULL DEFAULT '{{}}',
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
               UNIQUE (source_code, source_master_id)
@@ -1155,7 +1809,7 @@ def _ensure_album_master_external_ref_table(conn: sqlite3.Connection) -> None:
           title_hint TEXT,
           artist_or_brand_hint TEXT,
           release_year INTEGER,
-          raw_json TEXT NOT NULL DEFAULT '{}',
+          raw_json TEXT NOT NULL DEFAULT '{{}}',
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
           UNIQUE (source_code, source_master_id),
@@ -1299,7 +1953,7 @@ def _storage_slot_allows_goods(conn: sqlite3.Connection) -> bool:
     if not row:
         return False
     table_sql = str(row["sql"] or "").upper()
-    return "'GOODS'" in table_sql
+    return "'GOODS'" in table_sql and "'LP10'" in table_sql and "'LP7'" in table_sql and "'CASSETTE'" in table_sql
 
 
 def _migrate_storage_slot_allow_goods(conn: sqlite3.Connection) -> None:
@@ -1312,17 +1966,35 @@ def _migrate_storage_slot_allow_goods(conn: sqlite3.Connection) -> None:
     if conn.in_transaction:
         conn.commit()
 
+    source_has = lambda column: _column_exists(conn, "storage_slot", column)
+    now = utc_now_iso()
+    cabinet_name_expr = "cabinet_name" if source_has("cabinet_name") else "NULL"
+    column_code_expr = "column_code" if source_has("column_code") else "NULL"
+    cell_code_expr = "cell_code" if source_has("cell_code") else "NULL"
+    sort_policy_expr = "cabinet_sort_policy" if source_has("cabinet_sort_policy") else "'ARTIST_RELEASE_TITLE'"
+    cabinet_domain_expr = _normalize_domain_code_sql("cabinet_domain_code") if source_has("cabinet_domain_code") else "NULL"
+    max_thickness_expr = "max_thickness_mm" if source_has("max_thickness_mm") else "NULL"
+    cabinet_group_name_expr = "cabinet_group_name" if source_has("cabinet_group_name") else "NULL"
+    cabinet_group_order_expr = "cabinet_group_order" if source_has("cabinet_group_order") else "NULL"
+    is_overflow_expr = "is_overflow_zone" if source_has("is_overflow_zone") else "0"
+    created_at_expr = "created_at" if source_has("created_at") else f"'{now}'"
+    updated_at_expr = "updated_at" if source_has("updated_at") else f"'{now}'"
+
     conn.execute("PRAGMA foreign_keys = OFF")
     try:
         conn.executescript(
-            """
+            f"""
             BEGIN;
             DROP TABLE IF EXISTS storage_slot_new;
             CREATE TABLE storage_slot_new (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               slot_code TEXT NOT NULL UNIQUE,
-              allowed_size_group TEXT NOT NULL CHECK (allowed_size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
-              cabinet_sort_policy TEXT NOT NULL DEFAULT 'ARTIST_RELEASE_TITLE' CHECK (cabinet_sort_policy IN ('ARTIST_RELEASE_TITLE', 'LABEL_ID')),
+              allowed_size_group TEXT NOT NULL CHECK (allowed_size_group IN ('{_size_group_check_sql()}')),
+              cabinet_sort_policy TEXT NOT NULL DEFAULT 'ARTIST_RELEASE_TITLE' CHECK (cabinet_sort_policy IN ('{_cabinet_sort_policy_check_sql()}')),
+              cabinet_domain_code TEXT CHECK (cabinet_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              max_thickness_mm INTEGER,
+              cabinet_group_name TEXT,
+              cabinet_group_order INTEGER,
               is_overflow_zone INTEGER NOT NULL DEFAULT 0,
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
@@ -1331,9 +2003,15 @@ def _migrate_storage_slot_allow_goods(conn: sqlite3.Connection) -> None:
               cell_code TEXT
             );
             INSERT INTO storage_slot_new
-              (id, slot_code, allowed_size_group, cabinet_sort_policy, is_overflow_zone, created_at, updated_at, cabinet_name, column_code, cell_code)
+              (
+                id, slot_code, allowed_size_group, cabinet_sort_policy, cabinet_domain_code, max_thickness_mm,
+                cabinet_group_name, cabinet_group_order, is_overflow_zone, created_at, updated_at,
+                cabinet_name, column_code, cell_code
+              )
             SELECT
-              id, slot_code, allowed_size_group, 'ARTIST_RELEASE_TITLE', is_overflow_zone, created_at, updated_at, cabinet_name, column_code, cell_code
+              id, slot_code, allowed_size_group, {sort_policy_expr}, {cabinet_domain_expr}, {max_thickness_expr},
+              {cabinet_group_name_expr}, {cabinet_group_order_expr}, {is_overflow_expr}, {created_at_expr}, {updated_at_expr},
+              {cabinet_name_expr}, {column_code_expr}, {cell_code_expr}
             FROM storage_slot;
             DROP TABLE storage_slot;
             ALTER TABLE storage_slot_new RENAME TO storage_slot;
@@ -1354,7 +2032,7 @@ def _owned_item_allows_goods(conn: sqlite3.Connection) -> bool:
     if not row:
         return False
     table_sql = str(row["sql"] or "").upper()
-    return "'GOODS'" in table_sql
+    return "'GOODS'" in table_sql and "'LP10'" in table_sql and "'LP7'" in table_sql and "'CASSETTE'" in table_sql
 
 
 def _owned_item_allows_extended_domains(conn: sqlite3.Connection) -> bool:
@@ -1395,8 +2073,8 @@ def _migrate_owned_item_allow_goods(conn: sqlite3.Connection) -> None:
               item_name_override TEXT,
               quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
               is_second_hand INTEGER NOT NULL DEFAULT 0,
-              size_group TEXT NOT NULL CHECK (size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
-              preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
+              size_group TEXT NOT NULL CHECK (size_group IN ('{_size_group_check_sql()}')),
+              preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('{_size_group_check_sql()}')),
               status TEXT NOT NULL DEFAULT 'IN_COLLECTION' CHECK (status IN ('IN_COLLECTION', 'LOANED', 'SOLD', 'LOST', 'ARCHIVED')),
               condition_grade TEXT,
               signature_type TEXT NOT NULL DEFAULT 'NONE' CHECK (signature_type IN ('NONE', 'IN_PERSON', 'PURCHASE_INCLUDED', 'UNKNOWN')),
@@ -1476,8 +2154,8 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
               item_name_override TEXT,
               quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
               is_second_hand INTEGER NOT NULL DEFAULT 0,
-              size_group TEXT NOT NULL CHECK (size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
-              preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS')),
+              size_group TEXT NOT NULL CHECK (size_group IN ('{_size_group_check_sql()}')),
+              preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('{_size_group_check_sql()}')),
               status TEXT NOT NULL DEFAULT 'IN_COLLECTION' CHECK (status IN ('IN_COLLECTION', 'LOANED', 'SOLD', 'LOST', 'ARCHIVED')),
               condition_grade TEXT,
               signature_type TEXT NOT NULL DEFAULT 'NONE' CHECK (signature_type IN ('NONE', 'IN_PERSON', 'PURCHASE_INCLUDED', 'UNKNOWN')),
@@ -1633,7 +2311,7 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE owned_item ADD COLUMN order_key TEXT")
     if not _column_exists(conn, "owned_item", "preferred_storage_size_group"):
         conn.execute(
-            "ALTER TABLE owned_item ADD COLUMN preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('STD', 'BOOK', 'LP', 'OVERSIZE', 'GOODS'))"
+            f"ALTER TABLE owned_item ADD COLUMN preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('{_size_group_check_sql()}'))"
         )
     if _column_exists(conn, "owned_item", "preferred_storage_size_group"):
         conn.execute(
@@ -1657,6 +2335,7 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_owned_item_linked_album_master ON owned_item (linked_album_master_id)"
         )
+    _ensure_recent_feed_indexes(conn)
     if _column_exists(conn, "album_master", "domain_code"):
         conn.execute("CREATE INDEX IF NOT EXISTS idx_album_master_domain ON album_master (domain_code)")
     _backfill_album_master_external_refs(conn)
@@ -1736,6 +2415,67 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         """
     )
     conn.executescript(
+        f"""
+        CREATE TABLE IF NOT EXISTS goods_item (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category TEXT NOT NULL CHECK (category IN ('{_goods_category_check_sql()}')),
+          goods_name TEXT NOT NULL,
+          description TEXT,
+          quantity INTEGER NOT NULL DEFAULT 1,
+          size_group TEXT NOT NULL DEFAULT 'GOODS' CHECK (size_group IN ('{_size_group_check_sql()}')),
+          storage_slot_id INTEGER,
+          status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('{_goods_status_check_sql()}')),
+          domain_code TEXT CHECK (domain_code IN ('{_domain_code_check_sql()}')),
+          memory_note TEXT,
+          image_urls_json TEXT NOT NULL DEFAULT '[]',
+          primary_image_url TEXT,
+          poster_storage_spec TEXT,
+          tshirt_size TEXT,
+          cup_material TEXT,
+          hat_size TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (storage_slot_id) REFERENCES storage_slot(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS goods_item_album_master_map (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          goods_item_id INTEGER NOT NULL,
+          album_master_id INTEGER NOT NULL,
+          created_at TEXT NOT NULL,
+          UNIQUE (goods_item_id, album_master_id),
+          FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE,
+          FOREIGN KEY (album_master_id) REFERENCES album_master(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS goods_item_artist_map (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          goods_item_id INTEGER NOT NULL,
+          artist_name TEXT NOT NULL,
+          normalized_artist_name TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          UNIQUE (goods_item_id, normalized_artist_name),
+          FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS goods_item_label_map (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          goods_item_id INTEGER NOT NULL,
+          label_name TEXT NOT NULL,
+          normalized_label_name TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          UNIQUE (goods_item_id, normalized_label_name),
+          FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_goods_item_category_name ON goods_item (category, goods_name);
+        CREATE INDEX IF NOT EXISTS idx_goods_item_storage_slot ON goods_item (storage_slot_id, status);
+        CREATE INDEX IF NOT EXISTS idx_goods_item_album_master_map_goods ON goods_item_album_master_map (goods_item_id, album_master_id);
+        CREATE INDEX IF NOT EXISTS idx_goods_item_artist_map_lookup ON goods_item_artist_map (normalized_artist_name);
+        CREATE INDEX IF NOT EXISTS idx_goods_item_label_map_lookup ON goods_item_label_map (normalized_label_name);
+        """
+    )
+    conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS owned_item_location_event (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1766,6 +2506,16 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         conn.execute(
             f"ALTER TABLE storage_slot ADD COLUMN cabinet_sort_policy TEXT NOT NULL DEFAULT 'ARTIST_RELEASE_TITLE' CHECK (cabinet_sort_policy IN ('{_cabinet_sort_policy_check_sql()}'))"
         )
+    if not _column_exists(conn, "storage_slot", "cabinet_domain_code"):
+        conn.execute(
+            f"ALTER TABLE storage_slot ADD COLUMN cabinet_domain_code TEXT CHECK (cabinet_domain_code IN ('{_domain_code_check_sql()}'))"
+        )
+    if not _column_exists(conn, "storage_slot", "max_thickness_mm"):
+        conn.execute("ALTER TABLE storage_slot ADD COLUMN max_thickness_mm INTEGER")
+    if not _column_exists(conn, "storage_slot", "cabinet_group_name"):
+        conn.execute("ALTER TABLE storage_slot ADD COLUMN cabinet_group_name TEXT")
+    if not _column_exists(conn, "storage_slot", "cabinet_group_order"):
+        conn.execute("ALTER TABLE storage_slot ADD COLUMN cabinet_group_order INTEGER")
     conn.execute(
         """
         UPDATE storage_slot
@@ -1960,6 +2710,59 @@ def _rebalance_in_collection_order(conn: sqlite3.Connection) -> None:
         )
 
 
+def resequence_in_collection_order() -> dict[str, int]:
+    with get_conn() as conn:
+        slot_rows = conn.execute(
+            """
+            SELECT DISTINCT ss.*
+            FROM storage_slot ss
+            JOIN owned_item oi ON oi.storage_slot_id = ss.id
+            WHERE oi.status = 'IN_COLLECTION'
+              AND oi.storage_slot_id IS NOT NULL
+            """
+        ).fetchall()
+        slot_dicts = [dict(row) for row in slot_rows]
+        slot_dicts.sort(key=_storage_slot_sort_key)
+
+        ordered_ids: list[int] = []
+        for slot in slot_dicts:
+            rows = list_owned_items_for_storage_slot(int(slot["id"]))
+            ordered_ids.extend(int(row["id"]) for row in rows if int(row.get("id") or 0) > 0)
+
+        unassigned_rows = conn.execute(
+            """
+            SELECT id
+            FROM owned_item
+            WHERE status = 'IN_COLLECTION'
+              AND storage_slot_id IS NULL
+            ORDER BY
+              CASE WHEN order_key IS NULL OR TRIM(order_key) = '' THEN 1 ELSE 0 END,
+              order_key ASC,
+              id ASC
+            """
+        ).fetchall()
+        ordered_ids.extend(int(row["id"]) for row in unassigned_rows if int(row["id"] or 0) > 0)
+
+        now = utc_now_iso()
+        value = 0
+        for owned_item_id in ordered_ids:
+            value += ORDER_KEY_STEP
+            conn.execute(
+                """
+                UPDATE owned_item
+                SET order_key = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (_format_order_value(value), now, owned_item_id),
+            )
+
+    return {
+        "reordered_count": len(ordered_ids),
+        "assigned_slot_count": len(slot_dicts),
+        "unassigned_tail_count": len(unassigned_rows),
+    }
+
+
 def _seed_metadata_sources(conn: sqlite3.Connection) -> None:
     now = utc_now_iso()
     rows = [
@@ -1986,29 +2789,36 @@ def _seed_metadata_sources(conn: sqlite3.Connection) -> None:
     )
 
 
-def _seed_storage_slots(conn: sqlite3.Connection) -> None:
+def _cleanup_overflow_slots(conn: sqlite3.Connection) -> None:
     now = utc_now_iso()
-    rows = [
-        ("OVERFLOW-STD", "Overflow", "STD", "보조", "STD", 1, now, now),
-        ("OVERFLOW-BOOK", "Overflow", "BOOK", "보조", "BOOK", 1, now, now),
-        ("OVERFLOW-LP", "Overflow", "LP", "보조", "LP", 1, now, now),
-        ("OVERFLOW-OVERSIZE", "Overflow", "OVERSIZE", "보조", "OVERSIZE", 1, now, now),
-        ("OVERFLOW-GOODS", "Overflow", "GOODS", "보조", "GOODS", 1, now, now),
+    overflow_ids = [
+        int(row["id"])
+        for row in conn.execute(
+            """
+            SELECT id
+            FROM storage_slot
+            WHERE is_overflow_zone = 1
+               OR UPPER(TRIM(COALESCE(cabinet_name, ''))) = 'OVERFLOW'
+               OR UPPER(TRIM(COALESCE(slot_code, ''))) LIKE 'OVERFLOW-%'
+            """
+        ).fetchall()
+        if row["id"] is not None
     ]
-    conn.executemany(
-        """
-        INSERT INTO storage_slot
-          (slot_code, cabinet_name, column_code, cell_code, allowed_size_group, is_overflow_zone, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(slot_code) DO UPDATE SET
-          cabinet_name = excluded.cabinet_name,
-          column_code = excluded.column_code,
-          cell_code = excluded.cell_code,
-          allowed_size_group = excluded.allowed_size_group,
-          is_overflow_zone = excluded.is_overflow_zone,
-          updated_at = excluded.updated_at
+    if not overflow_ids:
+        return
+    placeholders = ",".join("?" for _ in overflow_ids)
+    conn.execute(
+        f"""
+        UPDATE owned_item
+        SET storage_slot_id = NULL,
+            updated_at = ?
+        WHERE storage_slot_id IN ({placeholders})
         """,
-        rows,
+        [now, *overflow_ids],
+    )
+    conn.execute(
+        "DELETE FROM storage_slot WHERE id IN (" + placeholders + ")",
+        overflow_ids,
     )
 
 
@@ -3095,14 +3905,18 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
         oi.category,
         oi.item_name_override,
         oi.linked_album_master_id,
+        oi.created_at,
         oi.status,
         oi.signature_type,
         mid.format_name,
         mid.artist_or_brand,
         mid.released_date,
+        mid.pressing_country,
         mid.label_name,
         mid.catalog_no,
         mid.barcode,
+        mid.runout_matrix_json,
+        mid.format_items_json,
         mid.cover_image_url,
         mid.track_list_json,
         mid.track_items_json,
@@ -3317,16 +4131,43 @@ def _build_ops_home_recent_item(row: dict[str, Any]) -> dict[str, Any]:
                 "is_overflow_zone": row.get("is_overflow_zone"),
             }
         )
+    runout_values: list[str] = []
+    raw_runout_json = row.get("runout_matrix_json")
+    if raw_runout_json:
+        try:
+            parsed_runout = json.loads(str(raw_runout_json))
+        except json.JSONDecodeError:
+            parsed_runout = []
+        if isinstance(parsed_runout, list):
+            runout_values = [str(value).strip() for value in parsed_runout if str(value).strip()]
+    if not runout_values:
+        legacy_runout = str(row.get("runout_matrix") or "").strip()
+        if legacy_runout:
+            runout_values = [part.strip() for part in legacy_runout.split("|") if part.strip()]
+
+    format_items: list[dict[str, Any]] = []
+    raw_format_items = row.get("format_items_json")
+    if raw_format_items:
+        try:
+            parsed_format_items = json.loads(str(raw_format_items))
+        except json.JSONDecodeError:
+            parsed_format_items = []
+        if isinstance(parsed_format_items, list):
+            format_items = [dict(value) for value in parsed_format_items if isinstance(value, dict)]
     return {
         "owned_item_id": owned_item_id,
         "label_id": _build_label_id(category, owned_item_id),
         "category": category,
         "format_name": str(row.get("format_name") or "").strip() or None,
+        "format_items": format_items,
         "item_title": str(row.get("item_title") or "").strip() or None,
         "artist_or_brand": str(row.get("artist_or_brand") or "").strip() or None,
         "released_date": str(row.get("released_date") or "").strip() or None,
+        "pressing_country": str(row.get("pressing_country") or "").strip() or None,
         "label_name": str(row.get("label_name") or "").strip() or None,
         "catalog_no": str(row.get("catalog_no") or "").strip() or None,
+        "barcode": str(row.get("barcode") or "").strip() or None,
+        "runout_sample": " | ".join(runout_values[:2]) if runout_values else None,
         "cover_image_url": str(row.get("cover_image_url") or "").strip() or None,
         "current_slot_code": current_slot_code,
         "current_slot_display_name": current_slot_display_name,
@@ -3339,74 +4180,141 @@ def _build_ops_home_recent_item(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def list_ops_home_recent_moved_items(limit: int = 6) -> list[dict[str, Any]]:
+def count_ops_home_recent_moved_items() -> int:
     move_threshold = (datetime.now(timezone.utc) - timedelta(days=DASHBOARD_MOVE_WINDOW_DAYS)).isoformat()
-    fetch_limit = max(int(limit) * 4, int(limit), 12)
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            WITH ranked_events AS (
+              SELECT
+                e.owned_item_id,
+                ROW_NUMBER() OVER (
+                  PARTITION BY e.owned_item_id
+                  ORDER BY e.created_at DESC, e.id DESC
+                ) AS event_rank
+              FROM owned_item_location_event e
+              WHERE e.movement_kind = 'MOVE'
+                AND TRIM(COALESCE(e.from_slot_code, '')) NOT IN ('', 'UNASSIGNED')
+                AND e.created_at >= ?
+            )
+            SELECT COUNT(*) AS total_count
+            FROM ranked_events re
+            JOIN owned_item oi ON oi.id = re.owned_item_id
+            WHERE re.event_rank = 1
+              AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND oi.storage_slot_id IS NOT NULL
+            """,
+            (move_threshold,),
+        ).fetchone()
+    return int(row["total_count"] or 0) if row else 0
+
+
+def list_ops_home_recent_moved_items(limit: int = 6, offset: int = 0) -> list[dict[str, Any]]:
+    move_threshold = (datetime.now(timezone.utc) - timedelta(days=DASHBOARD_MOVE_WINDOW_DAYS)).isoformat()
     with get_conn() as conn:
         rows = conn.execute(
             """
             WITH ranked_events AS (
               SELECT
                 e.id AS event_id,
-                oi.id AS owned_item_id,
-                oi.category,
-                mid.format_name,
-                COALESCE(oi.item_name_override, am.title) AS item_title,
-                COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
-                mid.released_date,
-                mid.label_name,
-                mid.catalog_no,
-                COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
-                ss.slot_code AS current_slot_code,
-                ss.cabinet_name AS current_cabinet_name,
-                ss.column_code AS current_column_code,
-                ss.cell_code AS current_cell_code,
-                ss.allowed_size_group,
-                ss.is_overflow_zone,
+                e.owned_item_id,
                 e.from_slot_code AS previous_slot_code,
                 e.from_slot_display_name AS previous_slot_display_name,
                 e.created_at,
                 ROW_NUMBER() OVER (
-                  PARTITION BY oi.id
+                  PARTITION BY e.owned_item_id
                   ORDER BY e.created_at DESC, e.id DESC
                 ) AS event_rank
               FROM owned_item_location_event e
-              JOIN owned_item oi ON oi.id = e.owned_item_id
-              LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-              LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
-              LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
-              LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
-              WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-                AND oi.storage_slot_id IS NOT NULL
-                AND e.movement_kind IN ('ASSIGN', 'MOVE')
-                AND TRIM(COALESCE(e.from_slot_code, '')) <> ''
+              WHERE e.movement_kind = 'MOVE'
+                AND TRIM(COALESCE(e.from_slot_code, '')) NOT IN ('', 'UNASSIGNED')
+                AND e.created_at >= ?
+            ),
+            recent_events AS (
+              SELECT *
+              FROM ranked_events
+              WHERE event_rank = 1
+              ORDER BY created_at DESC, event_id DESC
+              LIMIT ?
+              OFFSET ?
             )
-            SELECT *
-            FROM ranked_events
-            WHERE event_rank = 1
-              AND created_at >= ?
-            ORDER BY created_at DESC, event_id DESC
-            LIMIT ?
+            SELECT
+              re.event_id,
+              oi.id AS owned_item_id,
+              oi.category,
+              mid.format_name,
+              COALESCE(oi.item_name_override, am.title) AS item_title,
+              COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
+              mid.released_date,
+              mid.pressing_country,
+              mid.label_name,
+              mid.catalog_no,
+              mid.barcode,
+              mid.runout_matrix_json,
+              mid.format_items_json,
+              COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
+              ss.slot_code AS current_slot_code,
+              ss.cabinet_name AS current_cabinet_name,
+              ss.column_code AS current_column_code,
+              ss.cell_code AS current_cell_code,
+              ss.allowed_size_group,
+              ss.is_overflow_zone,
+              re.previous_slot_code,
+              re.previous_slot_display_name,
+              re.created_at
+            FROM recent_events re
+            JOIN owned_item oi ON oi.id = re.owned_item_id
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND oi.storage_slot_id IS NOT NULL
+            ORDER BY re.created_at DESC, re.event_id DESC
             """,
-            (move_threshold, fetch_limit),
+            (move_threshold, int(limit), max(0, int(offset))),
         ).fetchall()
-    items: list[dict[str, Any]] = []
-    seen_owned_item_ids: set[int] = set()
-    for row in rows:
-        owned_item_id = int(row["owned_item_id"] or 0)
-        if owned_item_id <= 0 or owned_item_id in seen_owned_item_ids:
-            continue
-        seen_owned_item_ids.add(owned_item_id)
-        items.append(_build_ops_home_recent_item(dict(row)))
-        if len(items) >= int(limit):
-            break
-    return items
+    return [_build_ops_home_recent_item(dict(row)) for row in rows]
 
 
-def list_ops_home_recent_registered_items(limit: int = 6) -> list[dict[str, Any]]:
+def count_ops_home_recent_registered_items(days: int | None = None) -> int:
+    where_sql = "WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')"
+    params: list[Any] = []
+    if days is not None and int(days) > 0:
+        threshold = (datetime.now(timezone.utc) - timedelta(days=int(days))).isoformat()
+        where_sql += " AND oi.created_at >= ?"
+        params.append(threshold)
+    with get_conn() as conn:
+        row = conn.execute(
+            f"""
+            SELECT COUNT(*) AS total_count
+            FROM owned_item oi
+            {where_sql}
+            """,
+            tuple(params),
+        ).fetchone()
+    return int(row["total_count"] or 0) if row else 0
+
+
+def list_ops_home_recent_registered_items(limit: int = 6, offset: int = 0) -> list[dict[str, Any]]:
     with get_conn() as conn:
         rows = conn.execute(
             """
+            WITH recent_owned AS (
+              SELECT
+                oi.id,
+                oi.category,
+                oi.item_name_override,
+                oi.linked_album_master_id,
+                oi.linked_artist_name,
+                oi.storage_slot_id,
+                oi.created_at
+              FROM owned_item oi
+              WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              ORDER BY oi.created_at DESC, oi.id DESC
+              LIMIT ?
+              OFFSET ?
+            )
             SELECT
               oi.id AS owned_item_id,
               oi.category,
@@ -3414,8 +4322,12 @@ def list_ops_home_recent_registered_items(limit: int = 6) -> list[dict[str, Any]
               COALESCE(oi.item_name_override, am.title) AS item_title,
               COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
               mid.released_date,
+              mid.pressing_country,
               mid.label_name,
               mid.catalog_no,
+              mid.barcode,
+              mid.runout_matrix_json,
+              mid.format_items_json,
               COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
               ss.slot_code AS current_slot_code,
               ss.cabinet_name AS current_cabinet_name,
@@ -3424,16 +4336,14 @@ def list_ops_home_recent_registered_items(limit: int = 6) -> list[dict[str, Any]
               ss.allowed_size_group,
               ss.is_overflow_zone,
               oi.created_at
-            FROM owned_item oi
+            FROM recent_owned oi
             LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
             LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
             LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
             LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
-            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
             ORDER BY oi.created_at DESC, oi.id DESC
-            LIMIT ?
             """,
-            (int(limit),),
+            (int(limit), max(0, int(offset))),
         ).fetchall()
     return [_build_ops_home_recent_item(dict(row)) for row in rows]
 
@@ -3442,6 +4352,28 @@ def get_ops_home_recent_sections(limit: int = 6) -> dict[str, Any]:
     return {
         "recent_moved_items": list_ops_home_recent_moved_items(limit=limit),
         "recent_registered_items": list_ops_home_recent_registered_items(limit=limit),
+        "recent_moved_total_count": count_ops_home_recent_moved_items(),
+        "recent_registered_total_count": count_ops_home_recent_registered_items(days=30),
+    }
+
+
+def get_ops_home_feed(kind: str = "registered", page: int = 1, limit: int = 30) -> dict[str, Any]:
+    normalized_kind = "moved" if str(kind or "").strip().lower() == "moved" else "registered"
+    safe_page = max(1, int(page))
+    safe_limit = max(1, int(limit))
+    offset = (safe_page - 1) * safe_limit
+    if normalized_kind == "moved":
+        total_count = count_ops_home_recent_moved_items()
+        items = list_ops_home_recent_moved_items(limit=safe_limit, offset=offset)
+    else:
+        total_count = count_ops_home_recent_registered_items()
+        items = list_ops_home_recent_registered_items(limit=safe_limit, offset=offset)
+    return {
+        "kind": normalized_kind,
+        "page": safe_page,
+        "limit": safe_limit,
+        "total_count": total_count,
+        "items": items,
     }
 
 
@@ -4316,6 +5248,13 @@ def get_collection_dashboard() -> dict[str, Any]:
             """
         ).fetchone()
 
+        standalone_goods_row = conn.execute(
+            """
+            SELECT COUNT(*) AS cnt
+            FROM goods_item
+            """
+        ).fetchone()
+
         audio_row = conn.execute(
             """
             SELECT COUNT(DISTINCT l.owned_item_id) AS cnt
@@ -4381,46 +5320,9 @@ def get_collection_dashboard() -> dict[str, Any]:
             """
         ).fetchall()
 
-        recent_move_total_row = conn.execute(
-            """
-            SELECT COUNT(*) AS cnt
-            FROM owned_item_location_event
-            WHERE created_at >= ?
-            """,
-            (move_threshold,),
-        ).fetchone()
-
-        recent_move_rows = conn.execute(
-            """
-            SELECT
-              e.id,
-              e.owned_item_id,
-              oi.category,
-              COALESCE(oi.item_name_override, am.title) AS item_title,
-              COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
-              COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
-              e.movement_kind,
-              e.from_slot_code,
-              e.from_slot_display_name,
-              e.to_slot_code,
-              e.to_slot_display_name,
-              e.note,
-              e.created_at
-            FROM owned_item_location_event e
-            JOIN owned_item oi ON oi.id = e.owned_item_id
-            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-            LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
-            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
-            WHERE e.created_at >= ?
-            ORDER BY e.created_at DESC, e.id DESC
-            LIMIT 12
-            """,
-            (move_threshold,),
-        ).fetchall()
-
         slot_rows = conn.execute(
             """
-            SELECT id, slot_code, cabinet_name, column_code, cell_code, allowed_size_group, is_overflow_zone
+            SELECT id, slot_code, cabinet_name, cabinet_domain_code, cabinet_group_name, cabinet_group_order, column_code, cell_code, allowed_size_group, is_overflow_zone
             FROM storage_slot
             """
         ).fetchall()
@@ -4432,6 +5334,40 @@ def get_collection_dashboard() -> dict[str, Any]:
             WHERE status = 'IN_COLLECTION'
               AND storage_slot_id IS NOT NULL
             GROUP BY storage_slot_id
+            """
+        ).fetchall()
+
+        slot_item_rows = conn.execute(
+            """
+            SELECT
+              oi.storage_slot_id,
+              oi.id,
+              oi.linked_album_master_id,
+              oi.linked_artist_name,
+              oi.domain_code,
+              oi.order_key,
+              oi.display_rank,
+              oi.size_group,
+              oi.thickness_mm,
+              oi.notes,
+              oi.item_name_override,
+              mid.format_name,
+              mid.artist_or_brand,
+              mid.release_year,
+              mid.released_date,
+              mid.disc_count,
+              mid.format_items_json,
+              am.title AS master_title,
+              am.artist_or_brand AS master_artist_or_brand,
+              am.sort_artist_name AS master_sort_artist_name,
+              am.domain_code AS master_domain_code,
+              am.release_year AS master_release_year,
+              TRIM(COALESCE(json_extract(am.raw_json, '$.release_date'), json_extract(am.raw_json, '$.master_release_date'), '')) AS master_release_date
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            WHERE oi.status = 'IN_COLLECTION'
+              AND oi.storage_slot_id IS NOT NULL
             """
         ).fetchall()
 
@@ -4465,21 +5401,35 @@ def get_collection_dashboard() -> dict[str, Any]:
         ).fetchone()
 
     slot_count_map = {int(row["storage_slot_id"]): int(row["cnt"] or 0) for row in slot_count_rows if row["storage_slot_id"] is not None}
+    slot_item_map: dict[int, list[dict[str, Any]]] = {}
+    for row in slot_item_rows:
+        storage_slot_id = int(row["storage_slot_id"] or 0)
+        if storage_slot_id <= 0:
+            continue
+        slot_item_map.setdefault(storage_slot_id, []).append(dict(row))
+    slot_first_item_hint_map = _build_collection_dashboard_first_item_hints(slot_item_map)
     slot_in_map = {str(row["slot_code"] or "UNASSIGNED"): int(row["cnt"] or 0) for row in slot_in_rows}
     slot_out_map = {str(row["slot_code"] or "UNASSIGNED"): int(row["cnt"] or 0) for row in slot_out_rows}
     structured_slots = [dict(row) for row in slot_rows]
+    recent_move_total = count_ops_home_recent_moved_items()
+    recent_move_items = list_ops_home_recent_moved_items(limit=12)
     for item in structured_slots:
         item["display_name"] = _storage_slot_display_name(item)
         item["count"] = int(slot_count_map.get(int(item["id"]), 0))
         item["recent_in_count"] = int(slot_in_map.get(str(item["slot_code"] or ""), 0))
         item["recent_out_count"] = int(slot_out_map.get(str(item["slot_code"] or ""), 0))
+        item.update(build_storage_slot_occupancy_summary(item, slot_item_map.get(int(item["id"]), [])))
+        item.update(slot_first_item_hint_map.get(int(item["id"]), {}))
     structured_slots.sort(key=_storage_slot_sort_key)
+
+    legacy_goods_items = int((summary["goods_items"] if summary else 0) or 0)
+    standalone_goods_items = int((standalone_goods_row["cnt"] if standalone_goods_row else 0) or 0)
 
     return {
         "total_items": int((summary["total_items"] if summary else 0) or 0),
         "in_collection_items": int((summary["in_collection_items"] if summary else 0) or 0),
         "music_items": int((summary["music_items"] if summary else 0) or 0),
-        "goods_items": int((summary["goods_items"] if summary else 0) or 0),
+        "goods_items": legacy_goods_items + standalone_goods_items,
         "signed_items": int((summary["signed_items"] if summary else 0) or 0),
         "second_hand_items": int((summary["second_hand_items"] if summary else 0) or 0),
         "audio_mapped_items": int((audio_row["cnt"] if audio_row else 0) or 0),
@@ -4511,30 +5461,33 @@ def get_collection_dashboard() -> dict[str, Any]:
             for row in by_source_rows
         ],
         "movement_window_days": DASHBOARD_MOVE_WINDOW_DAYS,
-        "recent_move_total": int((recent_move_total_row["cnt"] if recent_move_total_row else 0) or 0),
+        "recent_move_total": int(recent_move_total),
         "recent_moves": [
             {
-                "id": int(row["id"]),
+                "id": int(row["owned_item_id"]),
                 "owned_item_id": int(row["owned_item_id"]),
-                "label_id": _build_label_id(str(row["category"] or ""), int(row["owned_item_id"])),
+                "label_id": str(row.get("label_id") or _build_label_id(str(row["category"] or ""), int(row["owned_item_id"]))),
                 "category": str(row["category"] or ""),
                 "item_title": str(row["item_title"]) if row["item_title"] is not None else None,
                 "artist_or_brand": str(row["artist_or_brand"]) if row["artist_or_brand"] is not None else None,
                 "cover_image_url": str(row["cover_image_url"]) if row["cover_image_url"] is not None else None,
-                "movement_kind": str(row["movement_kind"] or ""),
-                "from_slot_code": str(row["from_slot_code"]) if row["from_slot_code"] is not None else None,
-                "from_display_name": str(row["from_slot_display_name"]) if row["from_slot_display_name"] is not None else None,
-                "to_slot_code": str(row["to_slot_code"]) if row["to_slot_code"] is not None else None,
-                "to_display_name": str(row["to_slot_display_name"]) if row["to_slot_display_name"] is not None else None,
-                "note": str(row["note"]) if row["note"] is not None else None,
+                "movement_kind": "MOVE",
+                "from_slot_code": str(row["previous_slot_code"]) if row.get("previous_slot_code") is not None else None,
+                "from_display_name": str(row["previous_slot_display_name"]) if row.get("previous_slot_display_name") is not None else None,
+                "to_slot_code": str(row["current_slot_code"]) if row.get("current_slot_code") is not None else None,
+                "to_display_name": str(row["current_slot_display_name"]) if row.get("current_slot_display_name") is not None else None,
+                "note": None,
                 "created_at": str(row["created_at"] or ""),
             }
-            for row in recent_move_rows
+            for row in recent_move_items
         ],
         "by_slot": [
             {
                 "slot_code": str(row["slot_code"]),
                 "cabinet_name": str(row["cabinet_name"]) if row.get("cabinet_name") is not None else None,
+                "cabinet_domain_code": _normalize_domain_code_value(row.get("cabinet_domain_code")),
+                "cabinet_group_name": str(row["cabinet_group_name"]) if row.get("cabinet_group_name") is not None else None,
+                "cabinet_group_order": int(row["cabinet_group_order"]) if row.get("cabinet_group_order") not in (None, "") else None,
                 "column_code": str(row["column_code"]) if row.get("column_code") is not None else None,
                 "cell_code": str(row["cell_code"]) if row.get("cell_code") is not None else None,
                 "display_name": str(row["display_name"]) if row.get("display_name") is not None else None,
@@ -4543,6 +5496,14 @@ def get_collection_dashboard() -> dict[str, Any]:
                 "count": int(row["count"] or 0),
                 "recent_in_count": int(row.get("recent_in_count") or 0),
                 "recent_out_count": int(row.get("recent_out_count") or 0),
+                "capacity_mm": int(row.get("capacity_mm") or 0),
+                "used_thickness_mm": int(row.get("used_thickness_mm") or 0),
+                "free_thickness_mm": int(row.get("free_thickness_mm") or 0),
+                "occupancy_ratio": float(row.get("occupancy_ratio") or 0.0),
+                "occupancy_percent": int(row.get("occupancy_percent") or 0),
+                "first_item_artist_or_brand": str(row["first_item_artist_or_brand"]) if row.get("first_item_artist_or_brand") is not None else None,
+                "first_item_title": str(row["first_item_title"]) if row.get("first_item_title") is not None else None,
+                "first_item_release_year": int(row["first_item_release_year"]) if row.get("first_item_release_year") not in (None, "") else None,
             }
             for row in structured_slots
         ]
@@ -4550,6 +5511,9 @@ def get_collection_dashboard() -> dict[str, Any]:
             {
                 "slot_code": "UNASSIGNED",
                 "cabinet_name": "미배치",
+                "cabinet_domain_code": None,
+                "cabinet_group_name": None,
+                "cabinet_group_order": None,
                 "column_code": None,
                 "cell_code": None,
                 "display_name": "미배치",
@@ -4558,6 +5522,11 @@ def get_collection_dashboard() -> dict[str, Any]:
                 "count": int((unassigned_row["cnt"] if unassigned_row else 0) or 0),
                 "recent_in_count": int(slot_in_map.get("UNASSIGNED", 0)),
                 "recent_out_count": int(slot_out_map.get("UNASSIGNED", 0)),
+                "capacity_mm": 0,
+                "used_thickness_mm": 0,
+                "free_thickness_mm": 0,
+                "occupancy_ratio": 0.0,
+                "occupancy_percent": 0,
             }
         ],
     }
@@ -6319,7 +7288,7 @@ def list_album_masters(
                 ELSE '미배치'
               END ||
               CASE
-                WHEN TRIM(COALESCE(ss.column_code, '')) <> '' THEN ' / ' || ss.column_code || '층'
+                WHEN TRIM(COALESCE(ss.column_code, '')) <> '' THEN ' / ' || ss.column_code || '열'
                 ELSE ''
               END ||
               CASE
@@ -6623,10 +7592,10 @@ def get_storage_slot_by_code(slot_code: str) -> dict[str, Any] | None:
 def list_storage_slots() -> list[dict[str, Any]]:
     with get_conn() as conn:
         rows = conn.execute(
-            """
-            SELECT id, slot_code, cabinet_name, column_code, cell_code, allowed_size_group, cabinet_sort_policy, is_overflow_zone
-            FROM storage_slot
-            """
+        """
+        SELECT id, slot_code, cabinet_name, cabinet_domain_code, cabinet_group_name, cabinet_group_order, column_code, cell_code, allowed_size_group, cabinet_sort_policy, max_thickness_mm, is_overflow_zone
+        FROM storage_slot
+        """
         ).fetchall()
     items = [dict(row) for row in rows]
     for item in items:
@@ -6657,7 +7626,7 @@ def list_cabinet_cameras(cabinet_name: str | None = None) -> list[dict[str, Any]
     if cabinet:
         query += " WHERE TRIM(COALESCE(cabinet_name, '')) = ?"
         params.append(cabinet)
-    query += " ORDER BY is_active DESC, LOWER(cabinet_name) ASC, id ASC"
+    query += " ORDER BY is_active DESC, LOWER(COALESCE(camera_name, cabinet_name, '')) ASC, id ASC"
     with get_conn() as conn:
         rows = conn.execute(query, params).fetchall()
     return [dict(row) for row in rows]
@@ -6721,8 +7690,9 @@ def get_cabinet_camera_by_cabinet(cabinet_name: str) -> dict[str, Any] | None:
 def upsert_cabinet_camera(
     *,
     camera_id: int | None = None,
-    cabinet_name: str,
+    cabinet_name: str | None = None,
     camera_name: str,
+    description: str | None = None,
     onvif_device_url: str | None = None,
     snapshot_url: str | None = None,
     stream_url: str | None = None,
@@ -6731,12 +7701,10 @@ def upsert_cabinet_camera(
     notes: str | None = None,
     is_active: bool = True,
 ) -> dict[str, Any] | None:
-    cabinet = str(cabinet_name or "").strip()
     name = str(camera_name or "").strip()
-    if not cabinet:
-        raise ValueError("cabinet_name required")
     if not name:
         raise ValueError("camera_name required")
+    cabinet = str(cabinet_name or "").strip() or name
     now = utc_now_iso()
     device_url = str(onvif_device_url or "").strip() or None
     snapshot = str(snapshot_url or "").strip() or None
@@ -6744,7 +7712,7 @@ def upsert_cabinet_camera(
     user = str(username or "").strip() or None
     secret = str(password or "")
     secret_value = secret if secret.strip() else None
-    memo = str(notes or "").strip() or None
+    memo = str(description or notes or "").strip() or None
     active_value = int(bool(is_active))
 
     with get_conn() as conn:
@@ -6797,6 +7765,552 @@ def delete_cabinet_camera(camera_id: int) -> bool:
     return int(cur.rowcount or 0) > 0
 
 
+def _goods_item_select_query() -> str:
+    return """
+        SELECT
+          gi.*,
+          ss.slot_code,
+          ss.cabinet_name AS slot_cabinet_name,
+          ss.column_code AS slot_column_code,
+          ss.cell_code AS slot_cell_code
+        FROM goods_item gi
+        LEFT JOIN storage_slot ss ON ss.id = gi.storage_slot_id
+    """
+
+
+def _normalize_goods_item_row(row: dict[str, Any]) -> dict[str, Any]:
+    item = dict(row)
+    image_urls_raw = item.get("image_urls_json")
+    try:
+        image_urls = json.loads(image_urls_raw) if image_urls_raw not in (None, "") else []
+    except json.JSONDecodeError:
+        image_urls = []
+    if not isinstance(image_urls, list):
+        image_urls = []
+    item["image_urls"] = [str(url or "").strip() for url in image_urls if str(url or "").strip()]
+    slot_display_name = None
+    if item.get("storage_slot_id"):
+        slot_display_name = _storage_slot_display_name(
+            {
+                "slot_code": item.get("slot_code"),
+                "cabinet_name": item.get("slot_cabinet_name"),
+                "column_code": item.get("slot_column_code"),
+                "cell_code": item.get("slot_cell_code"),
+            }
+        )
+    item["slot_display_name"] = slot_display_name
+    item["quantity"] = int(item.get("quantity") or 0)
+    return item
+
+
+def _list_goods_item_album_master_mappings_in_conn(conn: sqlite3.Connection, goods_item_id: int) -> list[dict[str, Any]]:
+    rows = conn.execute(
+        """
+        SELECT
+          gam.album_master_id,
+          am.title,
+          am.artist_or_brand
+        FROM goods_item_album_master_map gam
+        JOIN album_master am ON am.id = gam.album_master_id
+        WHERE gam.goods_item_id = ?
+        ORDER BY LOWER(COALESCE(am.sort_artist_name, am.artist_or_brand, '')) ASC,
+                 LOWER(COALESCE(am.title, '')) ASC,
+                 am.id ASC
+        """,
+        (int(goods_item_id),),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def _list_goods_item_artist_mappings_in_conn(conn: sqlite3.Connection, goods_item_id: int) -> list[str]:
+    rows = conn.execute(
+        """
+        SELECT artist_name
+        FROM goods_item_artist_map
+        WHERE goods_item_id = ?
+        ORDER BY normalized_artist_name ASC, artist_name ASC
+        """,
+        (int(goods_item_id),),
+    ).fetchall()
+    return [str(row["artist_name"] or "").strip() for row in rows if str(row["artist_name"] or "").strip()]
+
+
+def _list_goods_item_label_mappings_in_conn(conn: sqlite3.Connection, goods_item_id: int) -> list[str]:
+    rows = conn.execute(
+        """
+        SELECT label_name
+        FROM goods_item_label_map
+        WHERE goods_item_id = ?
+        ORDER BY normalized_label_name ASC, label_name ASC
+        """,
+        (int(goods_item_id),),
+    ).fetchall()
+    return [str(row["label_name"] or "").strip() for row in rows if str(row["label_name"] or "").strip()]
+
+
+def _build_goods_item_with_mappings(conn: sqlite3.Connection, row: sqlite3.Row | dict[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    item = _normalize_goods_item_row(dict(row))
+    goods_item_id = int(item["id"])
+    item["album_master_mappings"] = _list_goods_item_album_master_mappings_in_conn(conn, goods_item_id)
+    item["artist_mappings"] = _list_goods_item_artist_mappings_in_conn(conn, goods_item_id)
+    item["label_mappings"] = _list_goods_item_label_mappings_in_conn(conn, goods_item_id)
+    return item
+
+
+def _replace_goods_item_mappings_in_conn(
+    conn: sqlite3.Connection,
+    goods_item_id: int,
+    *,
+    album_master_ids: list[int],
+    artist_names: list[str],
+    label_names: list[str],
+) -> None:
+    item_id = int(goods_item_id or 0)
+    if item_id <= 0:
+        raise ValueError("goods_item_id must be positive")
+    now = utc_now_iso()
+    normalized_album_master_ids = sorted({int(mid) for mid in album_master_ids if int(mid or 0) > 0})
+    normalized_artist_names = []
+    seen_artist_keys: set[str] = set()
+    for value in artist_names:
+        text = _normalize_goods_mapping_text(value)
+        key = _normalize_artist_sort_text(text)
+        if not text or not key or key in seen_artist_keys:
+            continue
+        seen_artist_keys.add(key)
+        normalized_artist_names.append((text, key))
+    normalized_label_names = []
+    seen_label_keys: set[str] = set()
+    for value in label_names:
+        text = _normalize_goods_mapping_text(value)
+        key = _compact_search_text(text)
+        if not text or not key or key in seen_label_keys:
+            continue
+        seen_label_keys.add(key)
+        normalized_label_names.append((text, key))
+
+    if normalized_album_master_ids:
+        placeholders = ", ".join("?" for _ in normalized_album_master_ids)
+        rows = conn.execute(
+            f"SELECT id FROM album_master WHERE id IN ({placeholders})",
+            tuple(normalized_album_master_ids),
+        ).fetchall()
+        found_ids = {int(row["id"]) for row in rows}
+        missing_ids = [mid for mid in normalized_album_master_ids if mid not in found_ids]
+        if missing_ids:
+            raise ValueError(f"album masters not found: {', '.join(str(mid) for mid in missing_ids)}")
+
+    conn.execute("DELETE FROM goods_item_album_master_map WHERE goods_item_id = ?", (item_id,))
+    conn.execute("DELETE FROM goods_item_artist_map WHERE goods_item_id = ?", (item_id,))
+    conn.execute("DELETE FROM goods_item_label_map WHERE goods_item_id = ?", (item_id,))
+
+    for album_master_id in normalized_album_master_ids:
+        conn.execute(
+            """
+            INSERT INTO goods_item_album_master_map (goods_item_id, album_master_id, created_at)
+            VALUES (?, ?, ?)
+            """,
+            (item_id, album_master_id, now),
+        )
+    for artist_name, normalized_artist_name in normalized_artist_names:
+        conn.execute(
+            """
+            INSERT INTO goods_item_artist_map (goods_item_id, artist_name, normalized_artist_name, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (item_id, artist_name, normalized_artist_name, now),
+        )
+    for label_name, normalized_label_name in normalized_label_names:
+        conn.execute(
+            """
+            INSERT INTO goods_item_label_map (goods_item_id, label_name, normalized_label_name, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (item_id, label_name, normalized_label_name, now),
+        )
+
+
+def create_goods_item(payload: dict[str, Any]) -> dict[str, Any]:
+    category = _normalize_goods_category_value(payload.get("category"))
+    goods_name = _normalize_goods_mapping_text(payload.get("goods_name"))
+    if not goods_name:
+        raise ValueError("goods_name required")
+    quantity = max(1, int(payload.get("quantity") or 1))
+    size_group = str(payload.get("size_group") or "GOODS").strip().upper() or "GOODS"
+    if size_group not in SIZE_GROUP_CODES:
+        raise ValueError("invalid goods size_group")
+    status = _normalize_goods_status_value(payload.get("status"))
+    domain_code = _normalize_domain_code_value(payload.get("domain_code"))
+    description = _normalize_goods_mapping_text(payload.get("description")) or None
+    memory_note = _normalize_goods_mapping_text(payload.get("memory_note")) or None
+    primary_image_url = str(payload.get("primary_image_url") or "").strip() or None
+    image_urls = [str(url or "").strip() for url in payload.get("image_urls") or [] if str(url or "").strip()]
+    poster_storage_spec = _normalize_goods_mapping_text(payload.get("poster_storage_spec")) or None
+    tshirt_size = _normalize_goods_mapping_text(payload.get("tshirt_size")) or None
+    cup_material = _normalize_goods_mapping_text(payload.get("cup_material")) or None
+    hat_size = _normalize_goods_mapping_text(payload.get("hat_size")) or None
+    storage_slot_id = payload.get("storage_slot_id")
+    slot_id_value = int(storage_slot_id) if storage_slot_id not in (None, "") else None
+    now = utc_now_iso()
+
+    with get_conn() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO goods_item (
+              category, goods_name, description, quantity, size_group, storage_slot_id, status, domain_code,
+              memory_note, image_urls_json, primary_image_url, poster_storage_spec, tshirt_size, cup_material,
+              hat_size, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                category,
+                goods_name,
+                description,
+                quantity,
+                size_group,
+                slot_id_value,
+                status,
+                domain_code,
+                memory_note,
+                json.dumps(image_urls, ensure_ascii=True),
+                primary_image_url,
+                poster_storage_spec,
+                tshirt_size,
+                cup_material,
+                hat_size,
+                now,
+                now,
+            ),
+        )
+        goods_item_id = int(cur.lastrowid)
+        _replace_goods_item_mappings_in_conn(
+            conn,
+            goods_item_id,
+            album_master_ids=[int(mid) for mid in payload.get("album_master_ids") or []],
+            artist_names=[str(name or "") for name in payload.get("artist_names") or []],
+            label_names=[str(name or "") for name in payload.get("label_names") or []],
+        )
+        row = conn.execute(f"{_goods_item_select_query()} WHERE gi.id = ?", (goods_item_id,)).fetchone()
+        item = _build_goods_item_with_mappings(conn, row)
+    if item is None:
+        raise RuntimeError("goods item create failed")
+    return item
+
+
+def update_goods_item(goods_item_id: int, payload: dict[str, Any]) -> dict[str, Any] | None:
+    item_id = int(goods_item_id or 0)
+    if item_id <= 0:
+        raise ValueError("goods_item_id must be positive")
+    assignments: list[str] = []
+    params: list[Any] = []
+    if "category" in payload:
+        assignments.append("category = ?")
+        params.append(_normalize_goods_category_value(payload.get("category")))
+    if "goods_name" in payload:
+        goods_name = _normalize_goods_mapping_text(payload.get("goods_name"))
+        if not goods_name:
+            raise ValueError("goods_name required")
+        assignments.append("goods_name = ?")
+        params.append(goods_name)
+    if "description" in payload:
+        assignments.append("description = ?")
+        params.append(_normalize_goods_mapping_text(payload.get("description")) or None)
+    if "quantity" in payload:
+        assignments.append("quantity = ?")
+        params.append(max(1, int(payload.get("quantity") or 1)))
+    if "size_group" in payload:
+        size_group = str(payload.get("size_group") or "").strip().upper()
+        if size_group not in SIZE_GROUP_CODES:
+            raise ValueError("invalid goods size_group")
+        assignments.append("size_group = ?")
+        params.append(size_group)
+    if "storage_slot_id" in payload:
+        storage_slot_id = payload.get("storage_slot_id")
+        assignments.append("storage_slot_id = ?")
+        params.append(int(storage_slot_id) if storage_slot_id not in (None, "") else None)
+    if "status" in payload:
+        assignments.append("status = ?")
+        params.append(_normalize_goods_status_value(payload.get("status")))
+    if "domain_code" in payload:
+        assignments.append("domain_code = ?")
+        params.append(_normalize_domain_code_value(payload.get("domain_code")))
+    if "memory_note" in payload:
+        assignments.append("memory_note = ?")
+        params.append(_normalize_goods_mapping_text(payload.get("memory_note")) or None)
+    if "image_urls" in payload:
+        image_urls = [str(url or "").strip() for url in payload.get("image_urls") or [] if str(url or "").strip()]
+        assignments.append("image_urls_json = ?")
+        params.append(json.dumps(image_urls, ensure_ascii=True))
+    if "primary_image_url" in payload:
+        assignments.append("primary_image_url = ?")
+        params.append(str(payload.get("primary_image_url") or "").strip() or None)
+    if "poster_storage_spec" in payload:
+        assignments.append("poster_storage_spec = ?")
+        params.append(_normalize_goods_mapping_text(payload.get("poster_storage_spec")) or None)
+    if "tshirt_size" in payload:
+        assignments.append("tshirt_size = ?")
+        params.append(_normalize_goods_mapping_text(payload.get("tshirt_size")) or None)
+    if "cup_material" in payload:
+        assignments.append("cup_material = ?")
+        params.append(_normalize_goods_mapping_text(payload.get("cup_material")) or None)
+    if "hat_size" in payload:
+        assignments.append("hat_size = ?")
+        params.append(_normalize_goods_mapping_text(payload.get("hat_size")) or None)
+    if not assignments:
+        return get_goods_item(item_id)
+    params.extend([utc_now_iso(), item_id])
+    with get_conn() as conn:
+        existing = conn.execute("SELECT id FROM goods_item WHERE id = ?", (item_id,)).fetchone()
+        if existing is None:
+            return None
+        conn.execute(
+            f"UPDATE goods_item SET {', '.join(assignments)}, updated_at = ? WHERE id = ?",
+            tuple(params),
+        )
+        row = conn.execute(f"{_goods_item_select_query()} WHERE gi.id = ?", (item_id,)).fetchone()
+        return _build_goods_item_with_mappings(conn, row)
+
+
+def get_goods_item(goods_item_id: int) -> dict[str, Any] | None:
+    item_id = int(goods_item_id or 0)
+    if item_id <= 0:
+        return None
+    with get_conn() as conn:
+        row = conn.execute(f"{_goods_item_select_query()} WHERE gi.id = ?", (item_id,)).fetchone()
+        return _build_goods_item_with_mappings(conn, row)
+
+
+def replace_goods_item_mappings(goods_item_id: int, payload: dict[str, Any]) -> dict[str, Any] | None:
+    item_id = int(goods_item_id or 0)
+    if item_id <= 0:
+        raise ValueError("goods_item_id must be positive")
+    with get_conn() as conn:
+        existing = conn.execute("SELECT id FROM goods_item WHERE id = ?", (item_id,)).fetchone()
+        if existing is None:
+            return None
+        _replace_goods_item_mappings_in_conn(
+            conn,
+            item_id,
+            album_master_ids=[int(mid) for mid in payload.get("album_master_ids") or []],
+            artist_names=[str(name or "") for name in payload.get("artist_names") or []],
+            label_names=[str(name or "") for name in payload.get("label_names") or []],
+        )
+        row = conn.execute(f"{_goods_item_select_query()} WHERE gi.id = ?", (item_id,)).fetchone()
+        return _build_goods_item_with_mappings(conn, row)
+
+
+def _build_goods_search_where(
+    *,
+    query_text: str | None = None,
+    category: str | None = None,
+    status: str | None = None,
+    domain_code: str | None = None,
+    artist_name: str | None = None,
+    album_master_id: int | None = None,
+    label_name: str | None = None,
+    storage_slot_id: int | None = None,
+    linked_state: str = "ANY",
+) -> tuple[str, list[Any]]:
+    clauses: list[str] = []
+    params: list[Any] = []
+    query = str(query_text or "").strip()
+    if query:
+        clauses.append(
+            "("
+            "LOWER(COALESCE(gi.goods_name, '')) LIKE ? OR "
+            "LOWER(COALESCE(gi.description, '')) LIKE ? OR "
+            "LOWER(COALESCE(gi.memory_note, '')) LIKE ?"
+            ")"
+        )
+        like = f"%{query.lower()}%"
+        params.extend([like, like, like])
+    category_code = str(category or "").strip().upper()
+    if category_code:
+        clauses.append("gi.category = ?")
+        params.append(category_code)
+    status_code = str(status or "").strip().upper()
+    if status_code:
+        clauses.append("gi.status = ?")
+        params.append(status_code)
+    domain_code_value = str(domain_code or "").strip().upper()
+    if domain_code_value:
+        clauses.append("gi.domain_code = ?")
+        params.append(domain_code_value)
+    if storage_slot_id is not None:
+        clauses.append("gi.storage_slot_id = ?")
+        params.append(int(storage_slot_id))
+    if album_master_id is not None:
+        clauses.append(
+            "EXISTS (SELECT 1 FROM goods_item_album_master_map gam WHERE gam.goods_item_id = gi.id AND gam.album_master_id = ?)"
+        )
+        params.append(int(album_master_id))
+    normalized_artist = _normalize_artist_sort_text(artist_name)
+    if normalized_artist:
+        clauses.append(
+            "EXISTS (SELECT 1 FROM goods_item_artist_map gam WHERE gam.goods_item_id = gi.id AND gam.normalized_artist_name = ?)"
+        )
+        params.append(normalized_artist)
+    normalized_label = _compact_search_text(label_name)
+    if normalized_label:
+        clauses.append(
+            "EXISTS (SELECT 1 FROM goods_item_label_map glm WHERE glm.goods_item_id = gi.id AND glm.normalized_label_name = ?)"
+        )
+        params.append(normalized_label)
+    linked_state_u = str(linked_state or "ANY").strip().upper() or "ANY"
+    if linked_state_u == "LINKED":
+        clauses.append(
+            "("
+            "EXISTS (SELECT 1 FROM goods_item_album_master_map gam WHERE gam.goods_item_id = gi.id) OR "
+            "EXISTS (SELECT 1 FROM goods_item_artist_map gim WHERE gim.goods_item_id = gi.id) OR "
+            "EXISTS (SELECT 1 FROM goods_item_label_map glm WHERE glm.goods_item_id = gi.id)"
+            ")"
+        )
+    elif linked_state_u == "UNLINKED":
+        clauses.append(
+            "NOT ("
+            "EXISTS (SELECT 1 FROM goods_item_album_master_map gam WHERE gam.goods_item_id = gi.id) OR "
+            "EXISTS (SELECT 1 FROM goods_item_artist_map gim WHERE gim.goods_item_id = gi.id) OR "
+            "EXISTS (SELECT 1 FROM goods_item_label_map glm WHERE glm.goods_item_id = gi.id)"
+            ")"
+        )
+    return (" WHERE " + " AND ".join(clauses)) if clauses else "", params
+
+
+def count_goods_items(
+    *,
+    query_text: str | None = None,
+    category: str | None = None,
+    status: str | None = None,
+    domain_code: str | None = None,
+    artist_name: str | None = None,
+    album_master_id: int | None = None,
+    label_name: str | None = None,
+    storage_slot_id: int | None = None,
+    linked_state: str = "ANY",
+) -> int:
+    where_sql, params = _build_goods_search_where(
+        query_text=query_text,
+        category=category,
+        status=status,
+        domain_code=domain_code,
+        artist_name=artist_name,
+        album_master_id=album_master_id,
+        label_name=label_name,
+        storage_slot_id=storage_slot_id,
+        linked_state=linked_state,
+    )
+    with get_conn() as conn:
+        row = conn.execute(
+            f"SELECT COUNT(*) AS cnt FROM goods_item gi{where_sql}",
+            tuple(params),
+        ).fetchone()
+    return int(row["cnt"] or 0) if row is not None else 0
+
+
+def search_goods_items(
+    *,
+    query_text: str | None = None,
+    category: str | None = None,
+    status: str | None = None,
+    domain_code: str | None = None,
+    artist_name: str | None = None,
+    album_master_id: int | None = None,
+    label_name: str | None = None,
+    storage_slot_id: int | None = None,
+    linked_state: str = "ANY",
+    limit: int = 50,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    where_sql, params = _build_goods_search_where(
+        query_text=query_text,
+        category=category,
+        status=status,
+        domain_code=domain_code,
+        artist_name=artist_name,
+        album_master_id=album_master_id,
+        label_name=label_name,
+        storage_slot_id=storage_slot_id,
+        linked_state=linked_state,
+    )
+    with get_conn() as conn:
+        rows = conn.execute(
+            f"""
+            {_goods_item_select_query()}
+            {where_sql}
+            ORDER BY LOWER(COALESCE(gi.goods_name, '')) ASC, gi.id ASC
+            LIMIT ? OFFSET ?
+            """,
+            tuple(params) + (int(limit), int(offset)),
+        ).fetchall()
+        return [_build_goods_item_with_mappings(conn, row) for row in rows if row is not None]
+
+
+def list_goods_artist_name_candidates(query_text: str, limit: int = 10) -> list[str]:
+    query = str(query_text or "").strip().lower()
+    if not query:
+        return []
+    like = f"%{query}%"
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT name
+            FROM (
+              SELECT DISTINCT TRIM(COALESCE(artist_or_brand, '')) AS name
+              FROM album_master
+              WHERE TRIM(COALESCE(artist_or_brand, '')) <> ''
+              UNION
+              SELECT DISTINCT TRIM(COALESCE(linked_artist_name, '')) AS name
+              FROM owned_item
+              WHERE TRIM(COALESCE(linked_artist_name, '')) <> ''
+              UNION
+              SELECT DISTINCT TRIM(COALESCE(artist_name, '')) AS name
+              FROM goods_item_artist_map
+              WHERE TRIM(COALESCE(artist_name, '')) <> ''
+            )
+            WHERE LOWER(name) LIKE ?
+            ORDER BY LOWER(name) ASC
+            LIMIT ?
+            """,
+            (like, int(limit)),
+        ).fetchall()
+    return [str(row["name"] or "").strip() for row in rows if str(row["name"] or "").strip()]
+
+
+def list_goods_label_name_candidates(query_text: str, limit: int = 10) -> list[str]:
+    query = str(query_text or "").strip().lower()
+    if not query:
+        return []
+    like = f"%{query}%"
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT name
+            FROM (
+              SELECT DISTINCT TRIM(COALESCE(label_name, '')) AS name
+              FROM music_item_detail
+              WHERE TRIM(COALESCE(label_name, '')) <> ''
+              UNION
+              SELECT DISTINCT TRIM(COALESCE(label_name, '')) AS name
+              FROM goods_item_label_map
+              WHERE TRIM(COALESCE(label_name, '')) <> ''
+            )
+            WHERE LOWER(name) LIKE ?
+            ORDER BY LOWER(name) ASC
+            LIMIT ?
+            """,
+            (like, int(limit)),
+        ).fetchall()
+    return [str(row["name"] or "").strip() for row in rows if str(row["name"] or "").strip()]
+
+
+def delete_goods_item(goods_item_id: int) -> bool:
+    with get_conn() as conn:
+        cur = conn.execute("DELETE FROM goods_item WHERE id = ?", (int(goods_item_id),))
+    return int(cur.rowcount or 0) > 0
+
+
 def list_owned_items_for_storage_slot(
     storage_slot_id: int,
     limit: int = 300,
@@ -6805,15 +8319,28 @@ def list_owned_items_for_storage_slot(
     recent_cutoff = (datetime.now(timezone.utc) - timedelta(days=DASHBOARD_MOVE_WINDOW_DAYS)).isoformat()
     slot = get_storage_slot(storage_slot_id) or {}
     cabinet_sort_policy = _normalize_cabinet_sort_policy_value(slot.get("cabinet_sort_policy"))
+    master_release_sort_sql = (
+        "COALESCE("
+        "NULLIF(TRIM(COALESCE(json_extract(am.raw_json, '$.release_date'), json_extract(am.raw_json, '$.master_release_date'), '')), ''), "
+        "CASE WHEN COALESCE(am.release_year, base.release_year) IS NOT NULL "
+        "THEN printf('%04d-99-99', COALESCE(am.release_year, base.release_year)) ELSE '' END"
+        ")"
+    )
     if cabinet_sort_policy == "LABEL_ID":
         order_by_sql = """
+          CASE WHEN base.display_rank IS NULL THEN 1 ELSE 0 END,
+          base.display_rank ASC,
           base.id ASC
         """
     else:
-        order_by_sql = """
+        order_by_sql = f"""
+          CASE WHEN base.display_rank IS NULL THEN 1 ELSE 0 END,
+          base.display_rank ASC,
           LOWER(TRIM(COALESCE(am.sort_artist_name, base.artist_or_brand, am.artist_or_brand, base.linked_artist_name, ''))) ASC,
-          CASE WHEN COALESCE(am.release_year, base.release_year) IS NULL THEN 1 ELSE 0 END,
-          COALESCE(am.release_year, base.release_year) ASC,
+          CASE WHEN {master_release_sort_sql} = '' THEN 1 ELSE 0 END,
+          {master_release_sort_sql} ASC,
+          CASE WHEN base.released_date IS NULL OR TRIM(base.released_date) = '' THEN 1 ELSE 0 END,
+          TRIM(COALESCE(base.released_date, '')) ASC,
           LOWER(TRIM(COALESCE(am.title, base.item_name_override, ''))) ASC,
           CASE WHEN base.order_key IS NULL OR TRIM(base.order_key) = '' THEN 1 ELSE 0 END,
           base.order_key ASC,
@@ -6832,6 +8359,7 @@ def list_owned_items_for_storage_slot(
           am.sort_artist_name AS master_sort_artist_name,
           am.domain_code AS master_domain_code,
           am.release_year AS master_release_year,
+          TRIM(COALESCE(json_extract(am.raw_json, '$.release_date'), json_extract(am.raw_json, '$.master_release_date'), '')) AS master_release_date,
           (
             SELECT e.from_slot_code
             FROM owned_item_location_event e
@@ -6880,6 +8408,8 @@ def list_owned_items_for_storage_slot(
     if cabinet_sort_policy == "LABEL_ID":
         items.sort(
             key=lambda row: (
+                0 if row.get("display_rank") is not None else 1,
+                int(row.get("display_rank") or 0) if row.get("display_rank") is not None else 999999,
                 _natural_sort_key(_build_label_id(row.get("category"), int(row.get("id") or 0))),
                 int(row.get("id") or 0),
             )
@@ -6897,7 +8427,9 @@ def upsert_storage_slot(
     column_code: str | None,
     cell_code: str | None,
     allowed_size_group: str,
+    cabinet_domain_code: str | None = None,
     cabinet_sort_policy: str | None = None,
+    max_thickness_mm: int | None = None,
     is_overflow_zone: bool = False,
     slot_id: int | None = None,
 ) -> dict[str, Any]:
@@ -6909,14 +8441,19 @@ def upsert_storage_slot(
     size_group = str(allowed_size_group or "").strip().upper()
     if size_group not in SIZE_GROUP_CODES:
         raise ValueError("invalid allowed_size_group")
+    domain_code = _normalize_domain_code_value(cabinet_domain_code)
     sort_policy = _normalize_cabinet_sort_policy_value(cabinet_sort_policy)
+    capacity_override = int(max_thickness_mm or 0) if max_thickness_mm not in (None, "") else 0
+    if capacity_override < 0:
+        raise ValueError("invalid max_thickness_mm")
+    capacity_override_value = capacity_override or None
     overflow = bool(is_overflow_zone)
     slot_code = _compose_storage_slot_code(cabinet, column, cell, size_group, overflow)
     now = utc_now_iso()
 
     with get_conn() as conn:
         if slot_id is not None:
-            existing = conn.execute("SELECT id, cabinet_sort_policy FROM storage_slot WHERE id = ?", (slot_id,)).fetchone()
+            existing = conn.execute("SELECT id, cabinet_sort_policy, cabinet_domain_code, max_thickness_mm FROM storage_slot WHERE id = ?", (slot_id,)).fetchone()
             if existing is None:
                 raise ValueError("storage_slot not found")
             dup = conn.execute("SELECT id FROM storage_slot WHERE slot_code = ? AND id <> ?", (slot_code, slot_id)).fetchone()
@@ -6924,39 +8461,47 @@ def upsert_storage_slot(
                 raise ValueError("duplicate storage_slot code")
             if cabinet_sort_policy is None:
                 sort_policy = _normalize_cabinet_sort_policy_value(existing["cabinet_sort_policy"])
+            if cabinet_domain_code is None:
+                domain_code = _normalize_domain_code_value(existing["cabinet_domain_code"])
+            if max_thickness_mm is None:
+                capacity_override_value = existing["max_thickness_mm"]
             conn.execute(
                 """
                 UPDATE storage_slot
                 SET slot_code = ?, cabinet_name = ?, column_code = ?, cell_code = ?,
-                    allowed_size_group = ?, cabinet_sort_policy = ?, is_overflow_zone = ?, updated_at = ?
+                    allowed_size_group = ?, cabinet_sort_policy = ?, cabinet_domain_code = ?, max_thickness_mm = ?, is_overflow_zone = ?, updated_at = ?
                 WHERE id = ?
                 """,
-                (slot_code, cabinet, column, cell, size_group, sort_policy, int(overflow), now, slot_id),
+                (slot_code, cabinet, column, cell, size_group, sort_policy, domain_code, capacity_override_value, int(overflow), now, slot_id),
             )
             row = conn.execute("SELECT * FROM storage_slot WHERE id = ?", (slot_id,)).fetchone()
         else:
-            existing = conn.execute("SELECT id, cabinet_sort_policy FROM storage_slot WHERE slot_code = ?", (slot_code,)).fetchone()
+            existing = conn.execute("SELECT id, cabinet_sort_policy, cabinet_domain_code, max_thickness_mm FROM storage_slot WHERE slot_code = ?", (slot_code,)).fetchone()
             if existing is not None:
                 if cabinet_sort_policy is None:
                     sort_policy = _normalize_cabinet_sort_policy_value(existing["cabinet_sort_policy"])
+                if cabinet_domain_code is None:
+                    domain_code = _normalize_domain_code_value(existing["cabinet_domain_code"])
+                if max_thickness_mm is None:
+                    capacity_override_value = existing["max_thickness_mm"]
                 conn.execute(
                     """
                     UPDATE storage_slot
                     SET cabinet_name = ?, column_code = ?, cell_code = ?,
-                        allowed_size_group = ?, cabinet_sort_policy = ?, is_overflow_zone = ?, updated_at = ?
+                        allowed_size_group = ?, cabinet_sort_policy = ?, cabinet_domain_code = ?, max_thickness_mm = ?, is_overflow_zone = ?, updated_at = ?
                     WHERE id = ?
                     """,
-                    (cabinet, column, cell, size_group, sort_policy, int(overflow), now, int(existing["id"])),
+                    (cabinet, column, cell, size_group, sort_policy, domain_code, capacity_override_value, int(overflow), now, int(existing["id"])),
                 )
                 row = conn.execute("SELECT * FROM storage_slot WHERE id = ?", (int(existing["id"]),)).fetchone()
             else:
                 cur = conn.execute(
                     """
                     INSERT INTO storage_slot
-                      (slot_code, cabinet_name, column_code, cell_code, allowed_size_group, cabinet_sort_policy, is_overflow_zone, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                      (slot_code, cabinet_name, column_code, cell_code, allowed_size_group, cabinet_sort_policy, cabinet_domain_code, max_thickness_mm, is_overflow_zone, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (slot_code, cabinet, column, cell, size_group, sort_policy, int(overflow), now, now),
+                    (slot_code, cabinet, column, cell, size_group, sort_policy, domain_code, capacity_override_value, int(overflow), now, now),
                 )
                 row = conn.execute("SELECT * FROM storage_slot WHERE id = ?", (int(cur.lastrowid),)).fetchone()
 
@@ -6972,13 +8517,22 @@ def register_storage_cabinet_slots(
     floor_count: int,
     cell_count: int,
     allowed_size_group: str,
+    cabinet_domain_code: str | None = None,
     cabinet_sort_policy: str | None = None,
+    max_thickness_mm: int | None = None,
     floor_start: int = 1,
     cell_start: int = 1,
+    cabinet_group_name: str | None = None,
+    cabinet_group_order: int | None = None,
 ) -> dict[str, Any]:
     cabinet = str(cabinet_name or "").strip()
     if not cabinet:
         raise ValueError("cabinet_name required")
+    group_name = str(cabinet_group_name or "").strip() or None
+    group_order = int(cabinet_group_order or 0) if cabinet_group_order not in (None, "") else 0
+    if group_order < 0:
+        raise ValueError("invalid cabinet_group_order")
+    group_order_value = group_order or None
 
     floors = int(floor_count or 0)
     cells = int(cell_count or 0)
@@ -6992,7 +8546,12 @@ def register_storage_cabinet_slots(
     size_group = str(allowed_size_group or "").strip().upper()
     if size_group not in SIZE_GROUP_CODES:
         raise ValueError("invalid allowed_size_group")
+    domain_code = _normalize_domain_code_value(cabinet_domain_code)
     sort_policy = _normalize_cabinet_sort_policy_value(cabinet_sort_policy)
+    capacity_override = int(max_thickness_mm or 0) if max_thickness_mm not in (None, "") else 0
+    if capacity_override < 0:
+        raise ValueError("invalid max_thickness_mm")
+    capacity_override_value = capacity_override or None
 
     max_floor = floor_begin + floors - 1
     max_cell = cell_begin + cells - 1
@@ -7018,22 +8577,33 @@ def register_storage_cabinet_slots(
                         """
                         UPDATE storage_slot
                         SET cabinet_name = ?, column_code = ?, cell_code = ?,
-                            allowed_size_group = ?, cabinet_sort_policy = ?, is_overflow_zone = 0, updated_at = ?
+                            allowed_size_group = ?, cabinet_sort_policy = ?, cabinet_domain_code = ?, max_thickness_mm = ?, cabinet_group_name = ?, cabinet_group_order = ?, is_overflow_zone = 0, updated_at = ?
                         WHERE id = ?
                         """,
-                        (cabinet, floor_code, cell_code, size_group, sort_policy, now, int(existing["id"])),
+                        (cabinet, floor_code, cell_code, size_group, sort_policy, domain_code, capacity_override_value, group_name, group_order_value, now, int(existing["id"])),
                     )
                     updated_count += 1
                 else:
                     conn.execute(
                         """
                         INSERT INTO storage_slot
-                          (slot_code, cabinet_name, column_code, cell_code, allowed_size_group, cabinet_sort_policy, is_overflow_zone, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+                          (slot_code, cabinet_name, column_code, cell_code, allowed_size_group, cabinet_sort_policy, cabinet_domain_code, max_thickness_mm, cabinet_group_name, cabinet_group_order, is_overflow_zone, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
                         """,
-                        (slot_code, cabinet, floor_code, cell_code, size_group, sort_policy, now, now),
+                        (slot_code, cabinet, floor_code, cell_code, size_group, sort_policy, domain_code, capacity_override_value, group_name, group_order_value, now, now),
                     )
                     created_count += 1
+
+        conn.execute(
+            """
+            UPDATE storage_slot
+            SET cabinet_domain_code = ?,
+                updated_at = ?
+            WHERE cabinet_name = ?
+              AND is_overflow_zone = 0
+            """,
+            (domain_code, now, cabinet),
+        )
 
         total_slot_row = conn.execute(
             """
@@ -7047,9 +8617,13 @@ def register_storage_cabinet_slots(
 
     return {
         "cabinet_name": cabinet,
+        "cabinet_domain_code": domain_code,
+        "cabinet_group_name": group_name,
+        "cabinet_group_order": group_order_value,
         "floor_count": floors,
         "cell_count": cells,
         "cabinet_sort_policy": sort_policy,
+        "max_thickness_mm": capacity_override,
         "created_count": created_count,
         "updated_count": updated_count,
         "total_slot_count": int(total_slot_row["cnt"] or 0) if total_slot_row is not None else 0,
@@ -7060,8 +8634,6 @@ def delete_storage_cabinet(cabinet_name: str) -> dict[str, Any]:
     cabinet = str(cabinet_name or "").strip()
     if not cabinet:
         raise ValueError("cabinet_name required")
-    if cabinet.lower() == "overflow":
-        raise ValueError("overflow cabinet cannot be deleted")
 
     with get_conn() as conn:
         slot_rows = conn.execute(
@@ -7123,8 +8695,13 @@ def recommend_owned_item_location(
     size_group: str,
     artist_or_brand: str | None,
     release_year: int | None,
+    released_date: str | None = None,
+    domain_code: str | None = None,
     item_title: str | None = None,
     exclude_owned_item_id: int | None = None,
+    incoming_thickness_mm: int | None = None,
+    incoming_format_name: str | None = None,
+    incoming_package_hint: str | None = None,
 ) -> dict[str, Any]:
     size = str(size_group or "").strip().upper()
     if size not in SIZE_GROUP_CODES:
@@ -7144,7 +8721,23 @@ def recommend_owned_item_location(
         year_value = int(release_year) if release_year is not None else None
     except (TypeError, ValueError):
         year_value = None
+    released_date_value = _normalize_released_date_sort_text(released_date)
     exclude_id = int(exclude_owned_item_id or 0)
+    requested_domain_code = _normalize_domain_code_value(domain_code)
+    incoming_has_context = any(
+        value not in (None, "")
+        for value in (incoming_thickness_mm, incoming_format_name, incoming_package_hint)
+    )
+    required_thickness_mm = (
+        _resolve_owned_item_thickness_mm(
+            thickness_mm=incoming_thickness_mm,
+            size_group=size,
+            format_name=incoming_format_name,
+            package_hint=incoming_package_hint,
+        )
+        if incoming_has_context
+        else None
+    )
 
     anchor_row: sqlite3.Row | None = None
     anchor_position: str | None = None
@@ -7161,18 +8754,27 @@ def recommend_owned_item_location(
             row_year = int(raw_year) if raw_year is not None else None
         except (TypeError, ValueError):
             row_year = None
+        master_release_sort_value = _normalize_master_release_sort_text(
+            row["master_release_date"] if isinstance(row, sqlite3.Row) else row.get("master_release_date"),
+            row_year,
+        )
+        row_released_date = _normalize_released_date_sort_text(
+            row["released_date"] if isinstance(row, sqlite3.Row) else row.get("released_date")
+        )
         row_title_norm = _normalize_recommendation_text(
             row["item_title"] if isinstance(row, sqlite3.Row) else row.get("item_title")
         )
         if _title_first_group_artist_key(artist_norm):
             return (
                 row_title_norm,
-                1 if row_year is None else 0,
-                row_year if row_year is not None else 999999,
+                master_release_sort_value,
+                1 if not row_released_date else 0,
+                row_released_date or "9999-99-99",
             )
         return (
-            1 if row_year is None else 0,
-            row_year if row_year is not None else 999999,
+            master_release_sort_value,
+            1 if not row_released_date else 0,
+            row_released_date or "9999-99-99",
             row_title_norm,
         )
 
@@ -7180,6 +8782,83 @@ def recommend_owned_item_location(
         _backfill_order_keys(conn)
         exclude_sql = " AND oi.id <> ? " if exclude_id > 0 else " "
         exclude_params = [exclude_id] if exclude_id > 0 else []
+        slot_rows = conn.execute(
+            """
+            SELECT id, slot_code, cabinet_name, cabinet_domain_code, cabinet_group_name, cabinet_group_order, column_code, cell_code, allowed_size_group
+            FROM storage_slot
+            WHERE allowed_size_group = ?
+              AND cabinet_sort_policy = 'ARTIST_RELEASE_TITLE'
+            """,
+            (size,),
+        ).fetchall()
+        slot_item_rows = conn.execute(
+            """
+            SELECT
+              oi.storage_slot_id,
+              oi.size_group,
+              oi.thickness_mm,
+              oi.notes,
+              oi.item_name_override,
+              mid.format_name,
+              mid.disc_count,
+              mid.format_items_json
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+            WHERE oi.status = 'IN_COLLECTION'
+              AND ss.allowed_size_group = ?
+              AND ss.cabinet_sort_policy = 'ARTIST_RELEASE_TITLE'
+            """,
+            (size,),
+        ).fetchall()
+        slot_item_map: dict[int, list[dict[str, Any]]] = {}
+        for row in slot_item_rows:
+            storage_slot_id = int(row["storage_slot_id"] or 0)
+            if storage_slot_id <= 0:
+                continue
+            slot_item_map.setdefault(storage_slot_id, []).append(dict(row))
+        slot_occupancy_map: dict[int, dict[str, Any]] = {
+            int(row["id"]): build_storage_slot_occupancy_summary(dict(row), slot_item_map.get(int(row["id"]), []))
+            for row in slot_rows
+            if row["id"] is not None
+        }
+        slot_domain_map: dict[int, str | None] = {
+            int(row["id"]): _normalize_domain_code_value(row["cabinet_domain_code"])
+            for row in slot_rows
+            if row["id"] is not None
+        }
+
+        def _slot_domain_rank(slot_id: int | None) -> int:
+            if not requested_domain_code:
+                return 0
+            safe_slot_id = int(slot_id or 0)
+            slot_domain_code = slot_domain_map.get(safe_slot_id)
+            if slot_domain_code == requested_domain_code:
+                return 0
+            if slot_domain_code is None:
+                return 1
+            return 2
+
+        def _slot_has_capacity(slot_id: int | None) -> bool:
+            if required_thickness_mm is None:
+                return True
+            safe_slot_id = int(slot_id or 0)
+            if safe_slot_id <= 0:
+                return False
+            summary = slot_occupancy_map.get(safe_slot_id)
+            if summary is None:
+                return False
+            return int(summary.get("free_thickness_mm") or 0) >= int(required_thickness_mm)
+
+        available_slot_ids = [
+            int(row["id"] or 0)
+            for row in slot_rows
+            if int(row["id"] or 0) > 0 and _slot_has_capacity(int(row["id"] or 0))
+        ]
+        allowed_domain_rank = min((_slot_domain_rank(slot_id) for slot_id in available_slot_ids), default=0)
+
+        def _slot_matches_domain(slot_id: int | None) -> bool:
+            return _slot_domain_rank(slot_id) == allowed_domain_rank
 
         artist_rows: list[sqlite3.Row] = []
         if artist_norm:
@@ -7194,6 +8873,8 @@ def recommend_owned_item_location(
                   ss.column_code,
                   ss.cell_code,
                   COALESCE(am.release_year, mid.release_year) AS release_year,
+                  TRIM(COALESCE(json_extract(am.raw_json, '$.release_date'), json_extract(am.raw_json, '$.master_release_date'), '')) AS master_release_date,
+                  mid.released_date AS released_date,
                   COALESCE(oi.item_name_override, am.title, '') AS item_title
                 FROM owned_item oi
                 JOIN music_item_detail mid ON mid.owned_item_id = oi.id
@@ -7216,6 +8897,13 @@ def recommend_owned_item_location(
                     int(row["id"] or 0),
                 ),
             )
+        incoming_sort_key = _recommendation_sort_key(
+            {
+                "release_year": year_value,
+                "released_date": released_date_value,
+                "item_title": item_title,
+            }
+        )
 
         candidate_slot_map: dict[int, dict[str, Any]] = {}
         for row in artist_rows:
@@ -7231,7 +8919,7 @@ def recommend_owned_item_location(
                     value
                     for value in (
                         cabinet_name,
-                        f"{column_code}층" if column_code else "",
+                        f"{column_code}열" if column_code else "",
                         f"{cell_code}칸" if cell_code else "",
                     )
                     if value
@@ -7246,46 +8934,118 @@ def recommend_owned_item_location(
                 "display_name": display_name or None,
             }
         candidate_slots = list(candidate_slot_map.values())
+        if required_thickness_mm is not None:
+            candidate_slots = [
+                slot for slot in candidate_slots
+                if _slot_has_capacity(int(slot.get("storage_slot_id") or 0))
+                and _slot_matches_domain(int(slot.get("storage_slot_id") or 0))
+            ]
+
+        def _boundary_tail_anchor(
+            rows: list[sqlite3.Row],
+            *,
+            newer_index: int,
+            boundary_reason: str,
+        ) -> tuple[sqlite3.Row | None, str | None, str | None]:
+            if newer_index <= 0 or newer_index >= len(rows):
+                return None, None, None
+            newer_row = rows[newer_index]
+            previous_row = rows[newer_index - 1]
+            try:
+                newer_slot_id = int(newer_row["storage_slot_id"] or 0)
+                previous_slot_id = int(previous_row["storage_slot_id"] or 0)
+            except (TypeError, ValueError):
+                return None, None, None
+            if newer_slot_id <= 0 or previous_slot_id <= 0 or newer_slot_id == previous_slot_id:
+                return None, None, None
+            return previous_row, "AFTER", boundary_reason
+
+        def _previous_row_anchor(
+            rows: list[sqlite3.Row],
+            *,
+            newer_index: int,
+            reason: str,
+        ) -> tuple[sqlite3.Row | None, str | None, str | None]:
+            if newer_index <= 0 or newer_index >= len(rows):
+                return None, None, None
+            previous_row = rows[newer_index - 1]
+            try:
+                previous_slot_id = int(previous_row["storage_slot_id"] or 0)
+            except (TypeError, ValueError):
+                return None, None, None
+            if previous_slot_id <= 0:
+                return None, None, None
+            return previous_row, "AFTER", reason
 
         if artist_rows:
             if _title_first_group_artist_key(artist_norm):
                 newer_row: sqlite3.Row | None = None
-                for row in artist_rows:
-                    row_title_norm = _normalize_recommendation_text(row["item_title"])
-                    if bool(title_norm) and row_title_norm > title_norm:
+                newer_row_index = -1
+                for index, row in enumerate(artist_rows):
+                    if _recommendation_sort_key(row) > incoming_sort_key:
                         newer_row = row
+                        newer_row_index = index
                         break
                 if newer_row is not None:
-                    anchor_row = newer_row
-                    anchor_position = "BEFORE"
-                    anchor_reason = "SAME_GROUP_TITLE"
+                    boundary_anchor_row, boundary_anchor_position, boundary_anchor_reason = _boundary_tail_anchor(
+                        artist_rows,
+                        newer_index=newer_row_index,
+                        boundary_reason="SAME_GROUP_BOUNDARY_TAIL",
+                    )
+                    if boundary_anchor_row is not None:
+                        anchor_row = boundary_anchor_row
+                        anchor_position = boundary_anchor_position
+                        anchor_reason = boundary_anchor_reason
+                    else:
+                        previous_anchor_row, previous_anchor_position, previous_anchor_reason = _previous_row_anchor(
+                            artist_rows,
+                            newer_index=newer_row_index,
+                            reason="SAME_GROUP_PREVIOUS",
+                        )
+                        if previous_anchor_row is not None:
+                            anchor_row = previous_anchor_row
+                            anchor_position = previous_anchor_position
+                            anchor_reason = previous_anchor_reason
+                        else:
+                            anchor_row = newer_row
+                            anchor_position = "BEFORE"
+                            anchor_reason = "SAME_GROUP_TITLE"
                 else:
                     anchor_row = artist_rows[-1]
                     anchor_position = "AFTER"
                     anchor_reason = "SAME_GROUP_TAIL"
-            elif year_value is not None:
+            elif year_value is not None or released_date_value:
                 newer_row = None
-                for row in artist_rows:
-                    raw_year = row["release_year"]
-                    try:
-                        row_year = int(raw_year) if raw_year is not None else None
-                    except (TypeError, ValueError):
-                        row_year = None
-                    row_title_norm = _normalize_recommendation_text(row["item_title"])
-                    is_newer_year = row_year is not None and row_year > year_value
-                    is_same_year_later_title = (
-                        row_year is not None
-                        and row_year == year_value
-                        and bool(title_norm)
-                        and row_title_norm > title_norm
-                    )
-                    if is_newer_year or is_same_year_later_title:
+                newer_row_index = -1
+                for index, row in enumerate(artist_rows):
+                    if _recommendation_sort_key(row) > incoming_sort_key:
                         newer_row = row
+                        newer_row_index = index
                         break
                 if newer_row is not None:
-                    anchor_row = newer_row
-                    anchor_position = "BEFORE"
-                    anchor_reason = "SAME_ARTIST_YEAR_TITLE"
+                    boundary_anchor_row, boundary_anchor_position, boundary_anchor_reason = _boundary_tail_anchor(
+                        artist_rows,
+                        newer_index=newer_row_index,
+                        boundary_reason="SAME_ARTIST_BOUNDARY_TAIL",
+                    )
+                    if boundary_anchor_row is not None:
+                        anchor_row = boundary_anchor_row
+                        anchor_position = boundary_anchor_position
+                        anchor_reason = boundary_anchor_reason
+                    else:
+                        previous_anchor_row, previous_anchor_position, previous_anchor_reason = _previous_row_anchor(
+                            artist_rows,
+                            newer_index=newer_row_index,
+                            reason="SAME_ARTIST_PREVIOUS",
+                        )
+                        if previous_anchor_row is not None:
+                            anchor_row = previous_anchor_row
+                            anchor_position = previous_anchor_position
+                            anchor_reason = previous_anchor_reason
+                        else:
+                            anchor_row = newer_row
+                            anchor_position = "BEFORE"
+                            anchor_reason = "SAME_ARTIST_YEAR_TITLE"
                 else:
                     anchor_row = artist_rows[-1]
                     anchor_position = "AFTER"
@@ -7333,17 +9093,22 @@ def recommend_owned_item_location(
                 """,
                 (preferred_slot_id, size),
             ).fetchone()
-            if slot_row is not None:
+            if slot_row is not None and _slot_has_capacity(int(slot_row["id"] or 0)) and _slot_matches_domain(int(slot_row["id"] or 0)):
                 recommended_slot_id = int(slot_row["id"])
                 recommended_slot_code = str(slot_row["slot_code"] or "")
                 slot_reason = "ANCHOR_SLOT"
 
         if recommended_slot_id is None and artist_norm:
-            slot_row = conn.execute(
+            slot_rows = conn.execute(
                 f"""
                 SELECT
                   ss.id,
                   ss.slot_code,
+                  ss.cabinet_name,
+                  ss.cabinet_group_name,
+                  ss.cabinet_group_order,
+                  ss.column_code,
+                  ss.cell_code,
                   ss.is_overflow_zone,
                   COUNT(*) AS cnt
                 FROM owned_item oi
@@ -7356,23 +9121,42 @@ def recommend_owned_item_location(
                   AND {_compact_search_sql_expr("COALESCE(am.sort_artist_name, oi.linked_artist_name, mid.artist_or_brand, am.artist_or_brand, '')")} = ?
                   AND ss.allowed_size_group = ?
                   {exclude_sql}
-                GROUP BY ss.id, ss.slot_code, ss.is_overflow_zone
-                ORDER BY cnt DESC, ss.is_overflow_zone ASC, ss.id ASC
-                LIMIT 1
+                GROUP BY ss.id, ss.slot_code, ss.cabinet_name, ss.cabinet_group_name, ss.cabinet_group_order, ss.column_code, ss.cell_code, ss.is_overflow_zone
                 """,
                 [artist_norm, size, *exclude_params],
-            ).fetchone()
+            ).fetchall()
+            slot_rows = sorted(
+                slot_rows,
+                key=lambda row: (
+                    -int(row["cnt"] or 0),
+                    bool(row["is_overflow_zone"]),
+                    _storage_slot_sort_key(dict(row)),
+                ),
+            )
+            slot_row = next(
+                (
+                    row for row in slot_rows
+                    if _slot_has_capacity(int(row["id"] or 0))
+                    and _slot_matches_domain(int(row["id"] or 0))
+                ),
+                None,
+            )
             if slot_row is not None:
                 recommended_slot_id = int(slot_row["id"])
                 recommended_slot_code = str(slot_row["slot_code"] or "")
                 slot_reason = "ARTIST_SLOT"
 
         if recommended_slot_id is None:
-            slot_row = conn.execute(
+            slot_rows = conn.execute(
                 """
                 SELECT
                   ss.id,
                   ss.slot_code,
+                  ss.cabinet_name,
+                  ss.cabinet_group_name,
+                  ss.cabinet_group_order,
+                  ss.column_code,
+                  ss.cell_code,
                   ss.is_overflow_zone,
                   COUNT(oi.id) AS usage_count
                 FROM storage_slot ss
@@ -7381,16 +9165,35 @@ def recommend_owned_item_location(
                  AND oi.status = 'IN_COLLECTION'
                 WHERE ss.allowed_size_group = ?
                   AND ss.cabinet_sort_policy = 'ARTIST_RELEASE_TITLE'
-                GROUP BY ss.id, ss.slot_code, ss.is_overflow_zone
-                ORDER BY ss.is_overflow_zone ASC, usage_count ASC, ss.id ASC
-                LIMIT 1
+                GROUP BY ss.id, ss.slot_code, ss.cabinet_name, ss.cabinet_group_name, ss.cabinet_group_order, ss.column_code, ss.cell_code, ss.is_overflow_zone
                 """,
                 (size,),
-            ).fetchone()
+            ).fetchall()
+            slot_rows = sorted(
+                slot_rows,
+                key=lambda row: (
+                    bool(row["is_overflow_zone"]),
+                    int(row["usage_count"] or 0),
+                    _storage_slot_sort_key(dict(row)),
+                ),
+            )
+            slot_row = next(
+                (
+                    row for row in slot_rows
+                    if _slot_has_capacity(int(row["id"] or 0))
+                    and _slot_matches_domain(int(row["id"] or 0))
+                ),
+                None,
+            )
             if slot_row is not None:
                 recommended_slot_id = int(slot_row["id"])
                 recommended_slot_code = str(slot_row["slot_code"] or "")
                 slot_reason = "LEAST_OCCUPIED_SLOT"
+
+    if recommended_slot_id is not None and requested_domain_code:
+        resolved_domain_code = slot_domain_map.get(int(recommended_slot_id))
+        if resolved_domain_code == requested_domain_code:
+            slot_reason = "DOMAIN_SLOT"
 
     used_fallback_slot = slot_reason in {"ARTIST_SLOT", "LEAST_OCCUPIED_SLOT"}
     if slot_reason == "ANCHOR_SLOT":
@@ -7407,6 +9210,158 @@ def recommend_owned_item_location(
         "reason": f"{anchor_reason}/{slot_reason}",
         "used_fallback_slot": used_fallback_slot,
     }
+
+
+def recommend_barcode_candidate_locations(
+    *,
+    category: str,
+    size_group: str | None,
+    domain_code: str | None = None,
+    format_name: str | None,
+    artist_or_brand: str | None,
+    title: str | None,
+    release_year: int | None,
+    thickness_mm: int | None,
+    package_hint: str | None,
+    limit: int = 3,
+) -> list[dict[str, Any]]:
+    category_code = str(category or "").strip().upper()
+    fallback_size_group = (
+        "LP"
+        if category_code == "LP"
+        else "CASSETTE"
+        if category_code == "CASSETTE"
+        else "GOODS"
+        if category_code in {"T_SHIRT", "POSTER", "LIGHT_STICK", "HAT", "BAG", "CUP", "OTHER"}
+        else "STD"
+    )
+    size = str(size_group or "").strip().upper() or fallback_size_group
+    if size not in SIZE_GROUP_CODES:
+        return []
+
+    safe_limit = max(1, min(int(limit or 3), 3))
+    required_thickness_mm = _resolve_owned_item_thickness_mm(
+        thickness_mm=thickness_mm,
+        size_group=size,
+        format_name=format_name,
+        package_hint=package_hint,
+    )
+    suggestion = recommend_owned_item_location(
+        size_group=size,
+        artist_or_brand=artist_or_brand,
+        release_year=release_year,
+        domain_code=domain_code,
+        item_title=title,
+        incoming_thickness_mm=required_thickness_mm,
+    )
+
+    with get_conn() as conn:
+        slot_rows = conn.execute(
+            """
+            SELECT id, slot_code, cabinet_name, cabinet_domain_code, cabinet_group_name, cabinet_group_order, column_code, cell_code, allowed_size_group, is_overflow_zone
+            FROM storage_slot
+            WHERE allowed_size_group = ?
+              AND cabinet_sort_policy = 'ARTIST_RELEASE_TITLE'
+            """,
+            (size,),
+        ).fetchall()
+        slot_item_rows = conn.execute(
+            """
+            SELECT
+              oi.storage_slot_id,
+              oi.size_group,
+              oi.thickness_mm,
+              oi.notes,
+              oi.item_name_override,
+              mid.format_name,
+              mid.disc_count,
+              mid.format_items_json
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+            WHERE oi.status = 'IN_COLLECTION'
+              AND ss.allowed_size_group = ?
+              AND ss.cabinet_sort_policy = 'ARTIST_RELEASE_TITLE'
+            """,
+            (size,),
+        ).fetchall()
+
+    slot_item_map: dict[int, list[dict[str, Any]]] = {}
+    for row in slot_item_rows:
+        storage_slot_id = int(row["storage_slot_id"] or 0)
+        if storage_slot_id <= 0:
+            continue
+        slot_item_map.setdefault(storage_slot_id, []).append(dict(row))
+
+    ranked_slots: list[dict[str, Any]] = []
+    requested_domain_code = _normalize_domain_code_value(domain_code)
+    for row in slot_rows:
+        item = dict(row)
+        slot_id = int(item.get("id") or 0)
+        if slot_id <= 0:
+            continue
+        summary = build_storage_slot_occupancy_summary(item, slot_item_map.get(slot_id, []))
+        if int(summary.get("free_thickness_mm") or 0) < required_thickness_mm:
+            continue
+        ranked_slots.append(
+            {
+                "storage_slot_id": slot_id,
+                "slot_code": str(item.get("slot_code") or "").strip(),
+                "cabinet_name": str(item.get("cabinet_name") or "").strip() or None,
+                "column_code": str(item.get("column_code") or "").strip() or None,
+                "cell_code": str(item.get("cell_code") or "").strip() or None,
+                "slot_display_name": _storage_slot_display_name(item),
+                "free_thickness_mm": int(summary.get("free_thickness_mm") or 0),
+                "used_thickness_mm": int(summary.get("used_thickness_mm") or 0),
+                "capacity_mm": int(summary.get("capacity_mm") or 0),
+                "occupancy_percent": int(summary.get("occupancy_percent") or 0),
+                "is_overflow_zone": bool(item.get("is_overflow_zone")),
+                "cabinet_domain_code": _normalize_domain_code_value(item.get("cabinet_domain_code")),
+                "_sort_key": (
+                    0 if _normalize_domain_code_value(item.get("cabinet_domain_code")) == requested_domain_code else 1 if not _normalize_domain_code_value(item.get("cabinet_domain_code")) else 2,
+                    max(int(summary.get("free_thickness_mm") or 0) - required_thickness_mm, 0),
+                    _storage_slot_sort_key(item),
+                ),
+            }
+        )
+
+    ranked_slots.sort(key=lambda row: (bool(row.get("is_overflow_zone")), *row["_sort_key"]))
+
+    preferred_slot_id = int(suggestion.get("recommended_storage_slot_id") or 0)
+    result: list[dict[str, Any]] = []
+    seen_slot_ids: set[int] = set()
+
+    if preferred_slot_id > 0:
+        preferred_row = next((row for row in ranked_slots if int(row["storage_slot_id"]) == preferred_slot_id), None)
+        if preferred_row is not None:
+            seen_slot_ids.add(preferred_slot_id)
+            result.append(preferred_row)
+
+    for row in ranked_slots:
+        slot_id = int(row["storage_slot_id"])
+        if slot_id in seen_slot_ids:
+            continue
+        seen_slot_ids.add(slot_id)
+        result.append(row)
+        if len(result) >= safe_limit:
+            break
+
+    return [
+        {
+            "rank": index,
+            "storage_slot_id": int(row["storage_slot_id"]),
+            "slot_code": str(row["slot_code"]),
+            "cabinet_name": row.get("cabinet_name"),
+            "column_code": row.get("column_code"),
+            "cell_code": row.get("cell_code"),
+            "slot_display_name": str(row["slot_display_name"]),
+            "free_thickness_mm": int(row["free_thickness_mm"]),
+            "used_thickness_mm": int(row["used_thickness_mm"]),
+            "capacity_mm": int(row["capacity_mm"]),
+            "occupancy_percent": int(row["occupancy_percent"]),
+        }
+        for index, row in enumerate(result[:safe_limit], start=1)
+    ]
 
 
 def list_classification_options(option_group: str, include_inactive: bool = False) -> list[dict[str, Any]]:
@@ -7461,18 +9416,20 @@ def upsert_classification_option(option_group: str, label: str, sort_order: int 
 def update_owned_item_slot(owned_item_id: int, storage_slot_id: int | None, movement_note: str | None = None) -> None:
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT storage_slot_id FROM owned_item WHERE id = ? LIMIT 1",
+            "SELECT storage_slot_id, display_rank FROM owned_item WHERE id = ? LIMIT 1",
             (owned_item_id,),
         ).fetchone()
         previous_storage_slot_id = row["storage_slot_id"] if row is not None else None
+        previous_display_rank = row["display_rank"] if row is not None else None
         now = utc_now_iso()
+        next_display_rank = previous_display_rank if previous_storage_slot_id == storage_slot_id else None
         conn.execute(
             """
             UPDATE owned_item
-            SET storage_slot_id = ?, updated_at = ?
+            SET storage_slot_id = ?, display_rank = ?, updated_at = ?
             WHERE id = ?
             """,
-            (storage_slot_id, now, owned_item_id),
+            (storage_slot_id, next_display_rank, now, owned_item_id),
         )
         if row is not None and previous_storage_slot_id != storage_slot_id:
             _log_owned_item_location_event_in_conn(
@@ -7483,6 +9440,33 @@ def update_owned_item_slot(owned_item_id: int, storage_slot_id: int | None, move
                 note=movement_note,
                 now=now,
             )
+
+
+def inherit_owned_item_domain_from_slot_if_missing(owned_item_id: int, storage_slot_id: int | None) -> str | None:
+    if storage_slot_id is None:
+        return None
+    with get_conn() as conn:
+        owned_row = conn.execute(
+            "SELECT domain_code FROM owned_item WHERE id = ? LIMIT 1",
+            (int(owned_item_id),),
+        ).fetchone()
+        if owned_row is None:
+            return None
+        current_domain_code = _normalize_domain_code_value(owned_row["domain_code"])
+        if current_domain_code not in (None, "UNKNOWN"):
+            return current_domain_code
+        slot_row = conn.execute(
+            "SELECT cabinet_domain_code FROM storage_slot WHERE id = ? LIMIT 1",
+            (int(storage_slot_id),),
+        ).fetchone()
+        inherited_domain_code = _normalize_domain_code_value(slot_row["cabinet_domain_code"]) if slot_row is not None else None
+        if inherited_domain_code in (None, "UNKNOWN"):
+            return current_domain_code
+        conn.execute(
+            "UPDATE owned_item SET domain_code = ?, updated_at = ? WHERE id = ?",
+            (inherited_domain_code, utc_now_iso(), int(owned_item_id)),
+        )
+        return inherited_domain_code
 
 
 def restore_owned_item_previous_slot(owned_item_id: int) -> dict[str, Any] | None:
@@ -7581,6 +9565,194 @@ def move_owned_item_order(owned_item_id: int, target_owned_item_id: int, positio
             return new_order_key
 
     raise RuntimeError("order move failed after rebalance")
+
+
+def realign_owned_item_order_after_slot_move(owned_item_id: int, target_slot_id: int) -> str:
+    target_slot_id = int(target_slot_id)
+    moved_row = get_owned_item(owned_item_id)
+    if moved_row is None:
+        raise LookupError("owned_item not found")
+    if str(moved_row.get("status") or "").strip().upper() != "IN_COLLECTION":
+        raise ValueError("slot move order realign is available only for IN_COLLECTION items")
+    if int(moved_row.get("storage_slot_id") or 0) != target_slot_id:
+        raise ValueError("owned_item is not assigned to the target slot")
+
+    target_rows = list_owned_items_for_storage_slot(target_slot_id, limit=1000, offset=0)
+    ordered_ids = [int(row["id"]) for row in target_rows if int(row.get("id") or 0) > 0]
+    if owned_item_id not in ordered_ids:
+        raise LookupError("owned_item not found in target slot order")
+
+    anchor_owned_item_id: int | None = None
+    anchor_position: str | None = None
+    target_index = ordered_ids.index(owned_item_id)
+    if target_index > 0:
+        anchor_owned_item_id = ordered_ids[target_index - 1]
+        anchor_position = "AFTER"
+    elif target_index + 1 < len(ordered_ids):
+        anchor_owned_item_id = ordered_ids[target_index + 1]
+        anchor_position = "BEFORE"
+
+    if anchor_owned_item_id is None:
+        with get_conn() as conn:
+            _backfill_order_keys(conn)
+            slot_rows = conn.execute(
+                """
+                SELECT DISTINCT ss.*
+                FROM storage_slot ss
+                JOIN owned_item oi ON oi.storage_slot_id = ss.id
+                WHERE oi.status = 'IN_COLLECTION'
+                  AND oi.storage_slot_id IS NOT NULL
+                """
+            ).fetchall()
+            slot_dicts = [dict(row) for row in slot_rows]
+            slot_dicts.sort(key=_storage_slot_sort_key)
+            slot_order = [int(row["id"]) for row in slot_dicts if row["id"] is not None]
+            slot_index = next((idx for idx, slot_id in enumerate(slot_order) if slot_id == target_slot_id), None)
+
+            if slot_index is not None:
+                for previous_slot_id in reversed(slot_order[:slot_index]):
+                    previous_rows = list_owned_items_for_storage_slot(previous_slot_id, limit=1000, offset=0)
+                    previous_ids = [int(row["id"]) for row in previous_rows if int(row.get("id") or 0) > 0]
+                    if previous_ids:
+                        anchor_owned_item_id = previous_ids[-1]
+                        anchor_position = "AFTER"
+                        break
+
+            if anchor_owned_item_id is None and slot_index is not None:
+                for next_slot_id in slot_order[slot_index + 1 :]:
+                    next_rows = list_owned_items_for_storage_slot(next_slot_id, limit=1000, offset=0)
+                    next_ids = [int(row["id"]) for row in next_rows if int(row.get("id") or 0) > 0]
+                    if next_ids:
+                        anchor_owned_item_id = next_ids[0]
+                        anchor_position = "BEFORE"
+                        break
+
+            if anchor_owned_item_id is None:
+                unassigned_row = conn.execute(
+                    """
+                    SELECT order_key
+                    FROM owned_item
+                    WHERE status = 'IN_COLLECTION'
+                      AND storage_slot_id IS NULL
+                      AND id <> ?
+                    ORDER BY
+                      CASE WHEN order_key IS NULL OR TRIM(order_key) = '' THEN 1 ELSE 0 END,
+                      order_key ASC,
+                      id ASC
+                    LIMIT 1
+                    """,
+                    (owned_item_id,),
+                ).fetchone()
+                right_value = _parse_order_value(unassigned_row["order_key"]) if unassigned_row else None
+                next_value = _compute_between_order_value(None, right_value)
+                if next_value is None and right_value is not None:
+                    _rebalance_in_collection_order(conn)
+                    refreshed_row = conn.execute(
+                        """
+                        SELECT order_key
+                        FROM owned_item
+                        WHERE status = 'IN_COLLECTION'
+                          AND storage_slot_id IS NULL
+                          AND id <> ?
+                        ORDER BY
+                          CASE WHEN order_key IS NULL OR TRIM(order_key) = '' THEN 1 ELSE 0 END,
+                          order_key ASC,
+                          id ASC
+                        LIMIT 1
+                        """,
+                        (owned_item_id,),
+                    ).fetchone()
+                    refreshed_value = _parse_order_value(refreshed_row["order_key"]) if refreshed_row else None
+                    next_value = _compute_between_order_value(None, refreshed_value)
+                new_order_key = (
+                    _format_order_value(next_value)
+                    if next_value is not None
+                    else _next_order_key_in_conn(conn)
+                )
+                conn.execute(
+                    """
+                    UPDATE owned_item
+                    SET order_key = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (new_order_key, utc_now_iso(), owned_item_id),
+                )
+                return new_order_key
+
+    if anchor_owned_item_id is None or anchor_position is None:
+        raise RuntimeError("slot move order realign failed without anchor")
+    return move_owned_item_order(
+        owned_item_id=owned_item_id,
+        target_owned_item_id=anchor_owned_item_id,
+        position=anchor_position,
+    )
+
+
+def move_owned_item_slot_display_rank(
+    storage_slot_id: int,
+    owned_item_id: int,
+    target_owned_item_id: int,
+    position: str,
+) -> int:
+    if owned_item_id == target_owned_item_id:
+        raise ValueError("owned_item_id and target_owned_item_id must be different")
+    if position not in {"BEFORE", "AFTER"}:
+        raise ValueError("position must be BEFORE or AFTER")
+
+    with get_conn() as conn:
+        source_row = conn.execute(
+            "SELECT id, status, storage_slot_id FROM owned_item WHERE id = ? LIMIT 1",
+            (owned_item_id,),
+        ).fetchone()
+        if source_row is None:
+            raise LookupError("owned_item not found")
+        target_row = conn.execute(
+            "SELECT id, status, storage_slot_id FROM owned_item WHERE id = ? LIMIT 1",
+            (target_owned_item_id,),
+        ).fetchone()
+        if target_row is None:
+            raise LookupError("target owned_item not found")
+
+    source_slot_id = int(source_row["storage_slot_id"] or 0) if source_row["storage_slot_id"] is not None else 0
+    target_slot_id = int(target_row["storage_slot_id"] or 0) if target_row["storage_slot_id"] is not None else 0
+    if source_slot_id <= 0 or target_slot_id <= 0:
+        raise ValueError("slot order move is available only for assigned items")
+    if source_slot_id != int(storage_slot_id) or target_slot_id != int(storage_slot_id):
+        raise ValueError("slot order move is available only within the current slot")
+    if str(source_row["status"] or "") != "IN_COLLECTION" or str(target_row["status"] or "") != "IN_COLLECTION":
+        raise ValueError("slot order move is available only for IN_COLLECTION items")
+
+    current_rows = list_owned_items_for_storage_slot(int(storage_slot_id), limit=1000, offset=0)
+    ordered_ids = [int(row["id"]) for row in current_rows if int(row.get("id") or 0) > 0]
+    if owned_item_id not in ordered_ids:
+        raise LookupError("owned_item not found in current slot")
+    if target_owned_item_id not in ordered_ids:
+        raise LookupError("target owned_item not found in current slot")
+
+    ordered_ids = [item_id for item_id in ordered_ids if item_id != owned_item_id]
+    target_index = ordered_ids.index(target_owned_item_id)
+    insert_index = target_index if position == "BEFORE" else target_index + 1
+    ordered_ids.insert(insert_index, owned_item_id)
+
+    now = utc_now_iso()
+    display_rank = 0
+    with get_conn() as conn:
+        for index, item_id in enumerate(ordered_ids, start=1):
+            rank_value = index * 10
+            conn.execute(
+                """
+                UPDATE owned_item
+                SET display_rank = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (rank_value, now, item_id),
+            )
+            if item_id == owned_item_id:
+                display_rank = rank_value
+
+    if display_rank <= 0:
+        raise RuntimeError("slot order move failed")
+    return display_rank
 
 
 def insert_digital_link(owned_item_id: int, payload: dict[str, Any]) -> dict[str, int]:

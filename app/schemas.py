@@ -21,7 +21,7 @@ ItemCategory = Literal[
     "OTHER",
 ]
 
-SizeGroup = Literal["STD", "BOOK", "LP", "OVERSIZE", "GOODS"]
+SizeGroup = Literal["STD", "BOOK", "LP", "LP10", "LP7", "OVERSIZE", "CASSETTE", "8TRACK", "REEL_TO_REEL", "GOODS"]
 ItemStatus = Literal["IN_COLLECTION", "LOANED", "SOLD", "LOST", "ARCHIVED"]
 SignatureType = Literal["NONE", "IN_PERSON", "PURCHASE_INCLUDED", "UNKNOWN"]
 ReviewStatus = Literal["AUTO_APPROVED", "NEEDS_REVIEW", "APPROVED", "REJECTED"]
@@ -30,7 +30,7 @@ LinkType = Literal["FULL_ALBUM", "TRACK", "SCAN", "REFERENCE", "PROOF"]
 ExternalSourceCode = Literal["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"]
 AlbumMasterSource = Literal["AUTO", "DISCOGS", "MANIADB", "MUSICBRAINZ"]
 AlbumMasterBoundSource = Literal["DISCOGS", "MANIADB", "MUSICBRAINZ", "MANUAL"]
-MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB"]
+MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB", "MUSICBRAINZ"]
 MetadataSyncSource = Literal["ALL", "DISCOGS", "MANIADB", "ALADIN"]
 DomainCode = Literal["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]
 ReleaseType = Literal["ALBUM", "EP", "SINGLE"]
@@ -43,6 +43,10 @@ PurchaseImportVendor = Literal["SAILMUSIC", "AMAZON", "EBAY", "OTHER"]
 PurchaseImportSourceType = Literal["EMAIL_HTML", "EMAIL_TEXT", "FILE_UPLOAD", "MANUAL"]
 PurchaseImportStatus = Literal["PENDING", "CREATED", "IGNORED"]
 CabinetSortPolicy = Literal["ARTIST_RELEASE_TITLE", "LABEL_ID"]
+BackupScope = Literal["DB", "FULL"]
+GoodsCategory = Literal["POSTER", "T_SHIRT", "LIGHT_STICK", "HAT", "BAG", "CUP", "OTHER"]
+GoodsStatus = Literal["ACTIVE", "ARCHIVED"]
+GoodsLinkedState = Literal["ANY", "LINKED", "UNLINKED"]
 
 
 class BarcodeIngestRequest(BaseModel):
@@ -97,6 +101,40 @@ class BarcodeIngestResponse(BaseModel):
     candidates: list[MetadataCandidate]
 
 
+class BarcodePlacementRecommendationRequest(BaseModel):
+    category: ItemCategory
+    size_group: SizeGroup | None = None
+    domain_code: DomainCode | None = None
+    format_name: str | None = None
+    artist_or_brand: str | None = None
+    title: str | None = None
+    release_year: int | None = Field(default=None, ge=1900, le=2100)
+    barcode: str | None = None
+    source: Literal["DISCOGS", "MANIADB", "MUSICBRAINZ", "ALADIN", "AUTO"] | None = None
+    package_hint: str | None = None
+    thickness_mm: int | None = Field(default=None, ge=1)
+
+
+class BarcodePlacementRecommendationItem(BaseModel):
+    rank: int = Field(ge=1)
+    storage_slot_id: int
+    slot_code: str
+    cabinet_name: str | None = None
+    column_code: str | None = None
+    cell_code: str | None = None
+    slot_display_name: str
+    free_thickness_mm: int = Field(ge=0)
+    used_thickness_mm: int = Field(ge=0)
+    capacity_mm: int = Field(ge=0)
+    occupancy_percent: int = Field(ge=0)
+
+
+class BarcodePlacementRecommendationResponse(BaseModel):
+    available: bool = False
+    recommendations: list[BarcodePlacementRecommendationItem] = Field(default_factory=list)
+    fallback_message: str | None = None
+
+
 class QueryIngestRequest(BaseModel):
     category: ItemCategory | None = None
     source: MetadataSearchSource = "AUTO"
@@ -115,6 +153,87 @@ class QueryIngestResponse(BaseModel):
     query_type: Literal["query"] = "query"
     query: str
     candidates: list[MetadataCandidate]
+
+
+class GoodsItemAlbumMasterMapping(BaseModel):
+    album_master_id: int
+    title: str
+    artist_or_brand: str | None = None
+
+
+class GoodsItemBase(BaseModel):
+    category: GoodsCategory
+    goods_name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    quantity: int = Field(default=1, ge=1, le=9999)
+    size_group: SizeGroup = "GOODS"
+    storage_slot_id: int | None = Field(default=None, ge=1)
+    status: GoodsStatus = "ACTIVE"
+    domain_code: DomainCode | None = None
+    memory_note: str | None = None
+    image_urls: list[str] = Field(default_factory=list)
+    primary_image_url: str | None = None
+    poster_storage_spec: str | None = None
+    tshirt_size: str | None = None
+    cup_material: str | None = None
+    hat_size: str | None = None
+
+    @field_validator("image_urls", mode="before")
+    @classmethod
+    def _normalize_goods_image_urls(cls, value: Any) -> list[str]:
+        if value in (None, "", []):
+            return []
+        if isinstance(value, str):
+            return [line.strip() for line in value.splitlines() if line.strip()]
+        if isinstance(value, list):
+            return [str(item or "").strip() for item in value if str(item or "").strip()]
+        return []
+
+
+class GoodsItemCreateRequest(GoodsItemBase):
+    album_master_ids: list[int] = Field(default_factory=list)
+    artist_names: list[str] = Field(default_factory=list)
+    label_names: list[str] = Field(default_factory=list)
+
+
+class GoodsItemUpdateRequest(BaseModel):
+    category: GoodsCategory | None = None
+    goods_name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    quantity: int | None = Field(default=None, ge=1, le=9999)
+    size_group: SizeGroup | None = None
+    storage_slot_id: int | None = Field(default=None, ge=1)
+    status: GoodsStatus | None = None
+    domain_code: DomainCode | None = None
+    memory_note: str | None = None
+    image_urls: list[str] | None = None
+    primary_image_url: str | None = None
+    poster_storage_spec: str | None = None
+    tshirt_size: str | None = None
+    cup_material: str | None = None
+    hat_size: str | None = None
+
+
+class GoodsItemMappingUpdateRequest(BaseModel):
+    album_master_ids: list[int] = Field(default_factory=list)
+    artist_names: list[str] = Field(default_factory=list)
+    label_names: list[str] = Field(default_factory=list)
+
+
+class GoodsItemResponse(GoodsItemBase):
+    id: int
+    slot_code: str | None = None
+    slot_display_name: str | None = None
+    album_master_mappings: list[GoodsItemAlbumMasterMapping] = Field(default_factory=list)
+    artist_mappings: list[str] = Field(default_factory=list)
+    label_mappings: list[str] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+
+class GoodsItemSearchResponse(BaseModel):
+    total_count: int
+    items: list[GoodsItemResponse] = Field(default_factory=list)
 
 
 class OwnedItemSourceReplaceChoice(BaseModel):
@@ -169,9 +288,12 @@ class OperatorCatalogSearchItem(BaseModel):
     item_title: str | None = None
     artist_or_brand: str | None = None
     released_date: str | None = None
+    pressing_country: str | None = None
     label_name: str | None = None
     catalog_no: str | None = None
     barcode: str | None = None
+    format_items: list[dict[str, Any]] = Field(default_factory=list)
+    runout_sample: str | None = None
     cover_image_url: str | None = None
     signature_type: SignatureType
     status: ItemStatus
@@ -182,6 +304,7 @@ class OperatorCatalogSearchItem(BaseModel):
     current_cell_code: str | None = None
     previous_slot_code: str | None = None
     previous_slot_display_name: str | None = None
+    created_at: str | None = None
     track_matches: list[str] = Field(default_factory=list)
     matched_track_count: int = 0
     track_items: list[dict[str, Any]] = Field(default_factory=list)
@@ -194,16 +317,43 @@ class OperatorCatalogSearchResponse(BaseModel):
     items: list[OperatorCatalogSearchItem] = Field(default_factory=list)
 
 
+class ArtistContextRequest(BaseModel):
+    artist_name: str = Field(min_length=1, max_length=4000)
+    category: str | None = None
+    locale: str | None = Field(default=None, max_length=16)
+
+
+class ArtistContextLink(BaseModel):
+    label: str
+    url: str
+
+
+class ArtistContextResponse(BaseModel):
+    available: bool = False
+    artist_name: str
+    summary: str | None = None
+    summary_original: str | None = None
+    image_url: str | None = None
+    country: str | None = None
+    active_years: str | None = None
+    genres: list[str] = Field(default_factory=list)
+    links: list[ArtistContextLink] = Field(default_factory=list)
+
+
 class OpsHomeRecentItem(BaseModel):
     owned_item_id: int
     label_id: str
     category: ItemCategory
     format_name: str | None = None
+    format_items: list[dict[str, Any]] = Field(default_factory=list)
     item_title: str | None = None
     artist_or_brand: str | None = None
     released_date: str | None = None
+    pressing_country: str | None = None
     label_name: str | None = None
     catalog_no: str | None = None
+    barcode: str | None = None
+    runout_sample: str | None = None
     cover_image_url: str | None = None
     current_slot_code: str | None = None
     current_slot_display_name: str | None = None
@@ -218,6 +368,27 @@ class OpsHomeRecentItem(BaseModel):
 class OpsHomeRecentSectionsResponse(BaseModel):
     recent_moved_items: list[OpsHomeRecentItem] = Field(default_factory=list)
     recent_registered_items: list[OpsHomeRecentItem] = Field(default_factory=list)
+    recent_moved_total_count: int = 0
+    recent_registered_total_count: int = 0
+
+
+class OpsHomeFeedResponse(BaseModel):
+    kind: str
+    page: int
+    limit: int
+    total_count: int = 0
+    items: list[OpsHomeRecentItem] = Field(default_factory=list)
+
+
+class OfficeClimateResponse(BaseModel):
+    available: bool = False
+    source: str = "home_assistant"
+    location_label: str = "상주 사무실"
+    description: str = ""
+    temperature_c: float | None = None
+    humidity_percent: float | None = None
+    comfort_label: str | None = None
+    updated_at: str | None = None
 
 
 class CustomerTrackRequestCreate(BaseModel):
@@ -293,7 +464,9 @@ class AuthAccountListResponse(BaseModel):
 
 
 class PurchaseImportPreviewRequest(BaseModel):
-    raw_content: str = Field(min_length=1)
+    raw_content: str | None = None
+    raw_content_base64: str | None = None
+    source_filename: str | None = None
     vendor_code: PurchaseImportVendor = "OTHER"
     email_from: str | None = None
     email_subject: str | None = None
@@ -581,6 +754,41 @@ class AlbumMasterImportVariantsResponse(BaseModel):
     skipped_items: list[AlbumMasterImportSkippedItem] = Field(default_factory=list)
     notices: list[str] = Field(default_factory=list)
 
+class AlbumMasterLocationAction(BaseModel):
+    owned_item_id: int
+    storage_slot_id: int | None = None
+    slot_code: str | None = None
+    cabinet_name: str | None = None
+    column_code: str | None = None
+    cell_code: str | None = None
+    location_display_name: str
+    item_label: str | None = None
+
+
+class AlbumMasterMemberPreviewItem(BaseModel):
+    owned_item_id: int
+    storage_slot_id: int | None = None
+    label_id: str | None = None
+    source_code: str | None = None
+    source_external_id: str | None = None
+    item_title: str | None = None
+    artist_or_brand: str | None = None
+    cover_image_url: str | None = None
+    created_at: str | None = None
+    released_date: str | None = None
+    pressing_country: str | None = None
+    label_name: str | None = None
+    catalog_no: str | None = None
+    barcode: str | None = None
+    format_name: str | None = None
+    format_items: list[dict[str, Any]] = Field(default_factory=list)
+    runout_sample: str | None = None
+    current_slot_display_name: str | None = None
+    current_slot_code: str | None = None
+    current_cabinet_name: str | None = None
+    current_column_code: str | None = None
+    current_cell_code: str | None = None
+
 
 class AlbumMasterListItem(BaseModel):
     id: int
@@ -596,7 +804,9 @@ class AlbumMasterListItem(BaseModel):
     has_audio: bool = False
     audio_asset_count: int = 0
     member_preview: list[str] = Field(default_factory=list)
+    member_items_preview: list[AlbumMasterMemberPreviewItem] = Field(default_factory=list)
     member_location_preview: list[str] = Field(default_factory=list)
+    member_location_actions: list[AlbumMasterLocationAction] = Field(default_factory=list)
     first_member_storage_slot_id: int | None = None
     first_member_slot_code: str | None = None
     first_member_cabinet_name: str | None = None
@@ -799,6 +1009,9 @@ class CollectionValueCount(BaseModel):
 class CollectionSlotCount(BaseModel):
     slot_code: str
     cabinet_name: str | None = None
+    cabinet_domain_code: DomainCode | None = None
+    cabinet_group_name: str | None = None
+    cabinet_group_order: int | None = None
     column_code: str | None = None
     cell_code: str | None = None
     display_name: str | None = None
@@ -807,6 +1020,14 @@ class CollectionSlotCount(BaseModel):
     count: int
     recent_in_count: int = 0
     recent_out_count: int = 0
+    capacity_mm: int = 0
+    used_thickness_mm: int = 0
+    free_thickness_mm: int = 0
+    occupancy_ratio: float = 0.0
+    occupancy_percent: int = 0
+    first_item_artist_or_brand: str | None = None
+    first_item_title: str | None = None
+    first_item_release_year: int | None = None
 
 
 class CollectionMovementItem(BaseModel):
@@ -896,6 +1117,14 @@ class OrderMoveResponse(BaseModel):
     target_owned_item_id: int
     position: Literal["BEFORE", "AFTER"]
     order_key: str
+
+
+class SlotOrderMoveResponse(BaseModel):
+    storage_slot_id: int
+    owned_item_id: int
+    target_owned_item_id: int
+    position: Literal["BEFORE", "AFTER"]
+    display_rank: int
 
 
 class OwnedAlbumShelfWindowResponse(BaseModel):
@@ -1213,6 +1442,61 @@ class MetadataSyncStatusResponse(BaseModel):
     last_error: str | None = None
 
 
+class AutoBackupSettingsResponse(BaseModel):
+    enabled: bool
+    interval_minutes: int = Field(ge=0, le=10080)
+    backup_dir: str
+    backup_scope: BackupScope = "DB"
+    include_env_file: bool = False
+    last_backup_at: str | None = None
+    last_backup_path: str | None = None
+    last_error: str | None = None
+
+
+class AutoBackupSettingsUpdateRequest(BaseModel):
+    enabled: bool = False
+    interval_minutes: int = Field(default=0, ge=0, le=10080)
+    backup_dir: str = Field(min_length=1, max_length=2000)
+    backup_scope: BackupScope = "DB"
+    include_env_file: bool = False
+
+
+class MetadataProviderSettingsResponse(BaseModel):
+    discogs_token_configured: bool = False
+    aladin_ttb_key_configured: bool = False
+    deepl_auth_key_configured: bool = False
+    discogs_user_agent: str
+    aladin_base_url: str
+    maniadb_base_url: str
+    musicbrainz_user_agent: str
+    deepl_base_url: str
+
+
+class MetadataProviderSettingsUpdateRequest(BaseModel):
+    discogs_token: str | None = Field(default=None, max_length=4000)
+    aladin_ttb_key: str | None = Field(default=None, max_length=4000)
+    deepl_auth_key: str | None = Field(default=None, max_length=4000)
+    discogs_user_agent: str | None = Field(default=None, max_length=4000)
+    aladin_base_url: str | None = Field(default=None, max_length=4000)
+    maniadb_base_url: str | None = Field(default=None, max_length=4000)
+    musicbrainz_user_agent: str | None = Field(default=None, max_length=4000)
+    deepl_base_url: str | None = Field(default=None, max_length=4000)
+
+
+class MetadataProviderConnectionTestResponse(BaseModel):
+    ok: bool = False
+    configured: bool = False
+    translated_text: str | None = None
+    detail: str | None = None
+
+
+class DatabaseRestoreResponse(BaseModel):
+    restored: bool = True
+    restored_filename: str
+    restored_bytes: int = Field(ge=0)
+    backup_path: str | None = None
+
+
 class DiscogsIdentityResponse(BaseModel):
     username: str
     resource_url: str | None = None
@@ -1223,6 +1507,29 @@ class DiscogsOwnedSyncResponse(BaseModel):
     source_external_id: str
     username: str
     synced: bool = True
+
+
+class OpsCollectorInfoResponse(BaseModel):
+    available: bool = False
+    owned_item_id: int
+    source_code: str | None
+    source_external_id: str | None
+    release_title: str | None = None
+    artist_or_brand: str | None = None
+    country: str | None = None
+    pressing_country: str | None = None
+    label_name: str | None = None
+    catalog_no: str | None = None
+    barcode: str | None = None
+    formats: list[str] = Field(default_factory=list)
+    format_items: list[dict[str, Any]] = Field(default_factory=list)
+    disc_count: int | None = None
+    speed_rpm: int | None = None
+    runout_sample: str | None = None
+    other_versions_count: int = 0
+    external_links: list[str] = Field(default_factory=list)
+    fallback_reason: str | None = None
+    fallback_message: str | None = None
 
 
 class ReviewQueueItem(BaseModel):
@@ -1244,18 +1551,23 @@ class StorageSlotItem(BaseModel):
     id: int
     slot_code: str
     cabinet_name: str | None = None
+    cabinet_domain_code: DomainCode | None = None
+    cabinet_group_name: str | None = None
+    cabinet_group_order: int | None = Field(default=None, ge=1)
     column_code: str | None = None
     cell_code: str | None = None
     display_name: str | None = None
     allowed_size_group: str
     cabinet_sort_policy: CabinetSortPolicy = "ARTIST_RELEASE_TITLE"
+    max_thickness_mm: int | None = Field(default=None, ge=0)
     is_overflow_zone: bool
 
 
 class CabinetCameraItem(BaseModel):
     id: int
-    cabinet_name: str
+    cabinet_name: str | None = None
     camera_name: str
+    description: str | None = None
     onvif_device_url: str | None = None
     snapshot_url: str | None = None
     stream_url: str | None = None
@@ -1268,8 +1580,9 @@ class CabinetCameraItem(BaseModel):
 
 class CabinetCameraUpsertRequest(BaseModel):
     camera_id: int | None = Field(default=None, ge=1)
-    cabinet_name: str = Field(min_length=1, max_length=80)
+    cabinet_name: str | None = Field(default=None, max_length=80)
     camera_name: str = Field(min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
     onvif_device_url: str | None = Field(default=None, max_length=1000)
     snapshot_url: str | None = Field(default=None, max_length=1000)
     stream_url: str | None = Field(default=None, max_length=1000)
@@ -1295,6 +1608,7 @@ class CabinetCameraDiscoveryItem(BaseModel):
 
 
 class CabinetCameraConnectionTestRequest(BaseModel):
+    camera_id: int | None = Field(default=None, ge=1)
     onvif_device_url: str = Field(min_length=1, max_length=1000)
     username: str | None = Field(default=None, max_length=200)
     password: str | None = Field(default=None, max_length=500)
@@ -1318,26 +1632,36 @@ class StorageSlotUpsertRequest(BaseModel):
     cabinet_name: str = Field(min_length=1, max_length=80)
     column_code: str | None = Field(default=None, max_length=40)
     cell_code: str | None = Field(default=None, max_length=40)
+    cabinet_domain_code: DomainCode | None = None
     allowed_size_group: SizeGroup
     cabinet_sort_policy: CabinetSortPolicy = "ARTIST_RELEASE_TITLE"
+    max_thickness_mm: int | None = Field(default=None, ge=0)
     is_overflow_zone: bool = False
 
 
 class StorageCabinetRegisterRequest(BaseModel):
     cabinet_name: str = Field(min_length=1, max_length=80)
+    cabinet_domain_code: DomainCode | None = None
+    cabinet_group_name: str | None = Field(default=None, max_length=80)
+    cabinet_group_order: int | None = Field(default=None, ge=1, le=999)
     floor_count: int = Field(ge=1, le=99)
     cell_count: int = Field(ge=1, le=999)
     floor_start: int = Field(default=1, ge=1, le=999)
     cell_start: int = Field(default=1, ge=1, le=999)
     allowed_size_group: SizeGroup
     cabinet_sort_policy: CabinetSortPolicy = "ARTIST_RELEASE_TITLE"
+    max_thickness_mm: int | None = Field(default=None, ge=0)
 
 
 class StorageCabinetRegisterResponse(BaseModel):
     cabinet_name: str
+    cabinet_domain_code: DomainCode | None = None
+    cabinet_group_name: str | None = None
+    cabinet_group_order: int | None = None
     floor_count: int
     cell_count: int
     cabinet_sort_policy: CabinetSortPolicy = "ARTIST_RELEASE_TITLE"
+    max_thickness_mm: int = 0
     created_count: int
     updated_count: int
     total_slot_count: int
