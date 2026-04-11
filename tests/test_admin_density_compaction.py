@@ -64,6 +64,20 @@ def test_collector_relation_blocks_use_compact_stack():
     assert "compact-stack-actions" in linked_section
 
 
+def test_product_relation_blocks_use_compact_stack():
+    html = read_static_html("index.html")
+    section = html.split("homeProductRelationSection", 1)[1].split("homeEditorActionBlock", 1)[0]
+    assert section.count("goods-map-section compact-stack") >= 4
+    assert 'id="homeProductRelationMasterList"' in section
+    assert 'id="homeProductRelationSeriesList"' in section
+    assert 'id="homeProductRelationReleaseList"' in section
+    assert 'id="homeProductRelationComponentList"' in section
+    assert 'id="homeProductRelationSaveBtn"' in section
+    assert 'id="homeProductRelationStatus"' in section
+    assert "compact-stack-grid" in section
+    assert "compact-stack-actions" in section
+
+
 def test_search_list_edit_button_has_arrow_indicator():
     html = read_static_html("index.html")
     block = html.split("function homeMasterMemberPreviewHtml(item", 1)[1].split("function getHomeMasterVisiblePreviewItems", 1)[0]
