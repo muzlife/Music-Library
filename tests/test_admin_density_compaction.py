@@ -51,3 +51,10 @@ def test_search_list_edit_button_has_arrow_indicator():
     assert 'data-home-open-owned-editor' in block
     assert 'class="edit-arrow"' in block
     assert 'aria-expanded' in block
+
+
+def test_search_list_label_id_chip_is_non_button():
+    html = read_static_html("index.html")
+    block = html.split("function homeMasterMemberPreviewHtml(item", 1)[1].split("function getHomeMasterVisiblePreviewItems", 1)[0]
+    assert 'class="tag home-master-member-preview-code"' in block
+    assert "home-master-member-preview-code-btn" not in block
