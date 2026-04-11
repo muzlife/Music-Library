@@ -35,6 +35,7 @@ Apply to admin-only scope via `body[data-shell-mode="admin"]` (no new attribute 
 - Grid gap: 4px (down from 6px)
 - Section/card vertical padding: reduce by ~25%
 - Button height: 32–34px (tiny: 26–28px)
+ - Exclude non-text inputs (checkbox/radio/file/hidden) from the compact text-input sizing to avoid misalignment; keep them at default sizing via explicit overrides.
 
 ### 2) Direct Register Form (2-row layout)
 Adopt a 12-column grid for the direct registration form at desktop widths.
