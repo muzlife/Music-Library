@@ -54,6 +54,16 @@ def test_collector_relation_compact_stack_helpers():
     assert ".compact-stack { grid-template-columns: 1fr; }" in block_1080
 
 
+def test_collector_relation_blocks_use_compact_stack():
+    html = read_static_html("index.html")
+    goods_section = html.split('id="homeMasterGoodsSection"', 1)[1].split('id="homeLinkedGoodsPanel"', 1)[0]
+    linked_section = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
+    assert "compact-stack" in goods_section
+    assert "compact-stack-actions" in goods_section
+    assert "compact-stack" in linked_section
+    assert "compact-stack-actions" in linked_section
+
+
 def test_search_list_edit_button_has_arrow_indicator():
     html = read_static_html("index.html")
     block = html.split("function homeMasterMemberPreviewHtml(item", 1)[1].split("function getHomeMasterVisiblePreviewItems", 1)[0]
