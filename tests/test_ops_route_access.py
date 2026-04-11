@@ -1,4 +1,15 @@
+import base64
+from types import SimpleNamespace
+import sqlite3
+import httpx
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+
 import app.main as main_module
+import app.config as config_module
+from app import db
+from app.services import providers as provider_module
 
 
 def _assert_index_shell_response(response):
@@ -32,6 +43,22 @@ def test_operator_cannot_open_admin_route(operator_client):
     assert res.headers["location"] == "/ops"
 
 
+def test_operator_cannot_post_barcode_recommend_location(operator_client):
+    res = operator_client.post(
+        "/ingest/barcode/recommend-location",
+        json={
+            "category": "CD",
+            "size_group": "STD",
+            "format_name": "CD",
+            "artist_or_brand": "산울림",
+            "title": "1집",
+        },
+    )
+
+    assert res.status_code == 403
+    assert res.json() == {"detail": "operator write access denied"}
+
+
 def test_admin_root_redirects_to_ops(admin_client):
     res = admin_client.get("/", follow_redirects=False, headers={"accept": "text/html"})
     assert res.status_code == 303
@@ -48,6 +75,407 @@ def test_authenticated_ops_cabinets_serves_index_html(operator_client):
     _assert_index_shell_response(res)
 
 
+def test_operator_can_read_shared_camera_list(operator_client):
+    res = operator_client.get("/cabinet-cameras")
+
+    assert res.status_code == 200
+    assert isinstance(res.json(), list)
+
+
+def test_operator_cannot_mutate_shared_cameras(operator_client):
+    res = operator_client.post(
+        "/cabinet-cameras",
+        json={
+            "camera_name": "LP존 전경 1",
+            "cabinet_name": "legacy-camera-key",
+            "notes": "LP존 전체",
+            "is_active": True,
+        },
+    )
+
+    assert res.status_code == 403
+
+
+def test_ops_placement_hint_models_include_owned_item_id():
+    try:
+        from app.schemas import OpsPlacementHintRecommendation, OpsPlacementHintRequest, OpsPlacementHintResponse
+    except ImportError:
+        from app.main import OpsPlacementHintRecommendation, OpsPlacementHintRequest, OpsPlacementHintResponse
+
+    request = OpsPlacementHintRequest(owned_item_id=42)
+    recommendation = OpsPlacementHintRecommendation(
+        rank=1,
+        storage_slot_id=17,
+        slot_code="LP-01",
+        slot_display_name="LP 1",
+        reason_code="SAME_ARTIST",
+        reason_message="같은 아티스트의 인접 배치 힌트입니다.",
+    )
+    response = OpsPlacementHintResponse(
+        available=False,
+        recommendations=[recommendation],
+        fallback_reason="NO_HINTS",
+        fallback_message="추천 가능한 위치를 찾지 못했습니다.",
+    )
+
+    assert request.owned_item_id == 42
+    assert response.fallback_message == "추천 가능한 위치를 찾지 못했습니다."
+
+
+def test_operator_can_post_ops_placement_hints_with_ready_payload(operator_client, monkeypatch):
+    payload = {
+        "available": True,
+        "recommendations": [
+            {
+                "rank": 1,
+                "storage_slot_id": 17,
+                "slot_code": "LP-01",
+                "slot_display_name": "LP 1",
+                "reason_code": "SAME_ARTIST",
+                "reason_message": "같은 아티스트의 인접 배치 힌트입니다.",
+            },
+            {
+                "rank": 2,
+                "storage_slot_id": 18,
+                "slot_code": "LP-02",
+                "slot_display_name": "LP 2",
+                "reason_code": "ANCHOR_PATTERN",
+                "reason_message": "기존 배치 순서를 잇는 앵커 패턴입니다.",
+            },
+        ],
+        "fallback_reason": None,
+        "fallback_message": None,
+    }
+    seen = {}
+
+    def fake_build_ops_placement_hint_payload(owned_item_id: int):
+        seen["owned_item_id"] = owned_item_id
+        return payload
+
+    monkeypatch.setattr(main_module, "_build_ops_placement_hint_payload", fake_build_ops_placement_hint_payload, raising=False)
+
+    res = operator_client.post("/ops/placement-hints", json={"owned_item_id": 123})
+
+    assert res.status_code == 200
+    assert seen["owned_item_id"] == 123
+    assert res.json() == payload
+
+
+def test_operator_can_post_artist_context_with_available_payload(operator_client, monkeypatch):
+    from app.services import artist_context as artist_context_service
+
+    seen = {}
+
+    monkeypatch.setattr(
+        artist_context_service,
+        "build_artist_context",
+        lambda artist_name, category=None, locale=None: seen.update(
+            {"artist_name": artist_name, "category": category, "locale": locale}
+        ) or {
+            "available": True,
+            "artist_name": artist_name,
+            "summary": "서울의 대표 아티스트",
+            "summary_original": "Representative artist from Seoul",
+            "image_url": "https://upload.wikimedia.org/artist.jpg",
+            "country": "대한민국",
+            "active_years": "1990-현재",
+            "genres": ["록", "팝"],
+            "links": [{"label": "Wikipedia", "url": "https://wikipedia.org"}],
+        },
+    )
+
+    response = operator_client.post("/ops/artist-context", json={"artist_name": "어떤날", "category": "CD", "locale": "ko"})
+
+    assert response.status_code == 200
+    assert seen == {"artist_name": "어떤날", "category": "CD", "locale": "ko"}
+    payload = response.json()
+    assert payload["available"] is True
+    assert payload["artist_name"] == "어떤날"
+    assert payload["summary"] == "서울의 대표 아티스트"
+    assert payload["summary_original"] == "Representative artist from Seoul"
+    assert payload["image_url"] == "https://upload.wikimedia.org/artist.jpg"
+
+
+def test_operator_can_post_artist_context_with_unavailable_payload(operator_client, monkeypatch):
+    from app.services import artist_context as artist_context_service
+
+    monkeypatch.setattr(
+        artist_context_service,
+        "build_artist_context",
+        lambda artist_name, category=None, locale=None: {
+            "available": False,
+            "artist_name": artist_name,
+            "summary": None,
+            "summary_original": None,
+            "image_url": None,
+            "country": None,
+            "active_years": None,
+            "genres": [],
+            "links": [{"label": "Discogs", "url": "https://discogs.com"}],
+        },
+    )
+
+    response = operator_client.post("/ops/artist-context", json={"artist_name": "어떤날", "category": "LP"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["available"] is False
+    assert payload["links"] == [{"label": "Discogs", "url": "https://discogs.com"}]
+
+
+def test_operator_can_post_ops_placement_hints_with_unavailable_payload(operator_client, monkeypatch):
+    payload = {
+        "available": False,
+        "recommendations": [],
+        "fallback_reason": "NO_HINTS",
+        "fallback_message": "추천 가능한 위치를 찾지 못했습니다.",
+    }
+    seen = {}
+
+    def fake_build_ops_placement_hint_payload(owned_item_id: int):
+        seen["owned_item_id"] = owned_item_id
+        return payload
+
+    monkeypatch.setattr(main_module, "_build_ops_placement_hint_payload", fake_build_ops_placement_hint_payload, raising=False)
+
+    res = operator_client.post("/ops/placement-hints", json={"owned_item_id": 123})
+
+    assert res.status_code == 200
+    assert seen["owned_item_id"] == 123
+    assert res.json()["available"] is False
+    assert res.json()["fallback_message"] == "추천 가능한 위치를 찾지 못했습니다."
+
+
+def test_operator_can_get_ops_owned_item_collector_info_for_discogs_item(operator_client, monkeypatch):
+    owned_item_row = {
+        "id": 101,
+        "source_code": "DISCOGS",
+        "source_external_id": "9876543",
+    }
+
+    def fake_get_owned_item_detail(owned_item_id: int):
+        if int(owned_item_id) == 101:
+            return owned_item_row
+        return None
+
+    def fake_collector_info(release_id: str, compare_limit: int = 12):
+        assert release_id == "9876543"
+        return {
+            "formats": [" LP ", " 7\" Vinyl ", " LP "],
+            "format_items": [
+                {
+                    "name": "Vinyl",
+                    "descriptions": ["LP", "Album", "Stereo"],
+                    "qty": "2",
+                    "text": None,
+                    "display": "Vinyl (LP, Album, Stereo) / qty 2",
+                }
+            ],
+            "label_items": [
+                {
+                    "name": "Example Label",
+                    "catno": "EX-123",
+                }
+            ],
+            "title": "Example Album",
+            "artist_or_brand": "Example Artist",
+            "country": "  Korea ",
+            "pressing_country": "JPN",
+            "catalog_no": None,
+            "barcode": "1234567890123",
+            "disc_count": 2,
+            "speed_rpm": 33,
+            "runout_matrix": ["A1 ", " B2", "C3"],
+            "other_versions": [{"external_id": "1"}, {"external_id": "2"}],
+        }
+
+    monkeypatch.setattr(main_module.db, "get_owned_item_detail", fake_get_owned_item_detail)
+    monkeypatch.setattr(main_module, "get_discogs_release_collector_info", fake_collector_info)
+
+    res = operator_client.get("/ops/owned-items/101/collector-info")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["available"] is True
+    assert payload["owned_item_id"] == 101
+    assert payload["source_code"] == "DISCOGS"
+    assert payload["source_external_id"] == "9876543"
+    assert payload["release_title"] == "Example Album"
+    assert payload["artist_or_brand"] == "Example Artist"
+    assert payload["country"] == "Korea"
+    assert payload["pressing_country"] == "JPN"
+    assert payload["catalog_no"] == "EX-123"
+    assert payload["label_name"] == "Example Label"
+    assert payload["barcode"] == "1234567890123"
+    assert payload["formats"] == ["LP", "7\" Vinyl"]
+    assert payload["format_items"] == [
+        {
+            "name": "Vinyl",
+            "descriptions": ["LP", "Album", "Stereo"],
+            "qty": "2",
+            "text": None,
+            "display": "Vinyl (LP, Album, Stereo) / qty 2",
+        }
+    ]
+    assert payload["disc_count"] == 2
+    assert payload["speed_rpm"] == 33
+    assert payload["runout_sample"] == "A1 | B2"
+    assert payload["other_versions_count"] == 2
+    assert payload["external_links"] == ["https://www.discogs.com/release/9876543"]
+    assert payload["fallback_reason"] is None
+    assert payload["fallback_message"] is None
+
+
+def test_operator_gets_unavailable_ops_owned_item_collector_info_for_non_discogs_item(operator_client, monkeypatch):
+    owned_item_row = {
+        "id": 202,
+        "source_code": "MANIADB",
+        "source_external_id": "abc-123",
+    }
+
+    def fake_get_owned_item_detail(owned_item_id: int):
+        if int(owned_item_id) == 202:
+            return owned_item_row
+        return None
+
+    monkeypatch.setattr(main_module.db, "get_owned_item_detail", fake_get_owned_item_detail)
+
+    res = operator_client.get("/ops/owned-items/202/collector-info")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["available"] is False
+    assert payload["owned_item_id"] == 202
+    assert payload["source_code"] == "MANIADB"
+    assert payload["source_external_id"] == "abc-123"
+    assert payload["fallback_reason"] == "UNSUPPORTED_SOURCE"
+    assert payload["fallback_message"] == "collector info is available only for Discogs-linked items."
+
+
+def test_discogs_release_collector_info_uses_plain_int_default_compare_limit(monkeypatch):
+    def fake_snapshot(source: str, external_id: str):
+        assert source == "DISCOGS"
+        assert external_id == "9876543"
+        return {
+            "raw": {
+                "title": "Example Album",
+                "artists": [{"name": "Example Artist"}],
+                "country": "Korea",
+                "master_id": "12345",
+                "formats": [{"name": "Vinyl", "qty": "1", "descriptions": ["LP"]}],
+                "tracklist": [],
+            },
+            "disc_count": 1,
+            "speed_rpm": 33,
+            "released_date": "1989-01-01",
+            "pressing_country": "Korea",
+            "catalog_no": "EX-123",
+            "barcode": "1234567890123",
+            "track_list": [],
+        }
+
+    monkeypatch.setattr(main_module, "get_source_release_snapshot", fake_snapshot)
+    monkeypatch.setattr(main_module, "_discogs_compare_variants", lambda **kwargs: [])
+
+    payload = main_module.get_discogs_release_collector_info("9876543")
+
+    assert payload["title"] == "Example Album"
+    assert payload["artist_or_brand"] == "Example Artist"
+    assert payload["catalog_no"] == "EX-123"
+
+
+def test_parse_maniadb_release_legend_preserves_full_released_date():
+    parsed = provider_module._parse_maniadb_release_legend(
+        '<font color="black"><strong><a href="/album/153773?o=l&amp;s=1"><img src="http://i.maniadb.com/images/music_lp.gif" border="0" alt="LP"/></a> :: 2003-12-20 :: 리버맨 <span style="padding-left:10px">2LP + 7인치 싱글 3장</span></strong></font>',
+        album_id="153773",
+        album_artist="김두수",
+        album_title="自由魂 [box]",
+        block_html=None,
+    )
+
+    assert parsed is not None
+    assert parsed["release_year"] == 2003
+    assert parsed["released_date"] == "2003-12-20"
+
+
+def test_get_source_release_snapshot_for_maniadb_uses_variant_released_date(monkeypatch):
+    monkeypatch.setattr(
+        provider_module,
+        "get_maniadb_master_variants",
+        lambda master_external_id, limit=30: [
+            {
+                "external_id": "153773:1",
+                "title": "自由魂 [box]",
+                "artist_or_brand": "김두수",
+                "release_year": 2003,
+                "released_date": "2003-12-20",
+                "label_name": "리버맨",
+            }
+        ],
+    )
+
+    snapshot = provider_module.get_source_release_snapshot("MANIADB", "album:153773")
+
+    assert snapshot is not None
+    assert snapshot["release_year"] == 2003
+    assert snapshot["released_date"] == "2003-12-20"
+
+
+def test_operator_office_climate_returns_home_assistant_snapshot(operator_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "_load_operator_office_climate",
+        lambda: {
+            "available": True,
+            "source": "home_assistant",
+            "location_label": "상주 사무실",
+            "description": "온/습도계",
+            "temperature_c": 22.4,
+            "humidity_percent": 48.0,
+            "comfort_label": "쾌적",
+            "updated_at": "2026-03-21T08:30:00+09:00",
+        },
+    )
+
+    res = operator_client.get("/operator/office-climate")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["available"] is True
+    assert payload["location_label"] == "상주 사무실"
+    assert payload["description"] == "온/습도계"
+    assert payload["temperature_c"] == 22.4
+    assert payload["humidity_percent"] == 48.0
+    assert payload["comfort_label"] == "쾌적"
+
+
+def test_operator_office_climate_returns_cached_snapshot_when_home_assistant_fails(operator_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "_OFFICE_CLIMATE_CACHE",
+        {
+            "available": True,
+            "source": "home_assistant",
+            "location_label": "상주 사무실",
+            "description": "온/습도계",
+            "temperature_c": 21.8,
+            "humidity_percent": 51.0,
+            "comfort_label": "쾌적",
+            "updated_at": "2026-04-03T14:10:00+09:00",
+        },
+    )
+    monkeypatch.setattr(main_module, "_load_operator_office_climate", lambda: (_ for _ in ()).throw(RuntimeError("502 bad gateway")))
+
+    res = operator_client.get("/operator/office-climate")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["available"] is True
+    assert payload["temperature_c"] == 21.8
+    assert payload["humidity_percent"] == 51.0
+    assert payload["updated_at"] == "2026-04-03T14:10:00+09:00"
+
+
 def test_operator_catalog_search_includes_current_cabinet_triplet(operator_client, monkeypatch):
     def fake_search_operator_catalog(query_text: str, limit: int = 30):
         assert query_text == "산울림"
@@ -60,19 +488,30 @@ def test_operator_catalog_search_includes_current_cabinet_triplet(operator_clien
                 "item_title": "제11집",
                 "artist_or_brand": "산울림",
                 "released_date": "1985-01-01",
+                "pressing_country": "Korea",
                 "label_name": "서울음반",
                 "catalog_no": "JLS-120123",
                 "barcode": "8800000000000",
+                "format_items": [
+                    {
+                        "name": "Vinyl",
+                        "descriptions": ["LP", "Album", "Stereo"],
+                        "qty": "2",
+                        "text": None,
+                    }
+                ],
+                "runout_matrix": ["A1", "B2", "C3"],
                 "cover_image_url": "https://example.com/cover.jpg",
                 "signature_type": "NONE",
                 "status": "IN_COLLECTION",
                 "current_slot_code": "CAB-A-02-05",
-                "current_slot_display_name": "A장 2층 5칸",
+                "current_slot_display_name": "A장 2열 5칸",
                 "current_cabinet_name": "A장",
                 "current_column_code": "02",
                 "current_cell_code": "05",
                 "previous_slot_code": "CAB-A-01-04",
-                "previous_slot_display_name": "A장 1층 4칸",
+                "previous_slot_display_name": "A장 1열 4칸",
+                "created_at": "2026-04-01T13:18:00+00:00",
                 "track_matches": ["청춘"],
                 "matched_track_count": 1,
                 "track_items": [],
@@ -90,3 +529,1707 @@ def test_operator_catalog_search_includes_current_cabinet_triplet(operator_clien
     assert payload["items"][0]["current_cabinet_name"] == "A장"
     assert payload["items"][0]["current_column_code"] == "02"
     assert payload["items"][0]["current_cell_code"] == "05"
+    assert payload["items"][0]["pressing_country"] == "Korea"
+    assert payload["items"][0]["format_items"][0]["name"] == "Vinyl"
+    assert payload["items"][0]["runout_sample"] == "A1 | B2"
+    assert payload["items"][0]["created_at"] == "2026-04-01T13:18:00+00:00"
+
+
+def test_ingest_search_maniadb_filters_title_false_positives_when_artist_field_is_used(admin_client, monkeypatch):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+        assert barcode is None
+        assert query == "어떤날"
+        assert source == "MANIADB"
+        assert limit == 5
+        return [
+            {
+                "source": "MANIADB",
+                "external_id": "album:wrong-title",
+                "title": "어떤날",
+                "artist_or_brand": "다른 아티스트",
+                "domain_code": "KOREA",
+                "confidence": 0.81,
+                "raw": {"kind": "album"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "album:artist-match",
+                "title": "출발",
+                "artist_or_brand": "어떤날",
+                "domain_code": "KOREA",
+                "confidence": 0.88,
+                "raw": {"kind": "album"},
+            },
+        ]
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "MANIADB",
+            "category": "CD",
+            "artist_or_brand": "어떤날",
+            "limit": 5,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["query"] == "어떤날"
+    assert [item["external_id"] for item in payload["candidates"]] == ["album:artist-match"]
+
+
+def test_ingest_search_maniadb_prefers_artist_and_title_match_when_both_fields_are_used(admin_client, monkeypatch):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+        assert barcode is None
+        assert query == "어떤날 출발"
+        assert source == "MANIADB"
+        assert limit == 5
+        return [
+            {
+                "source": "MANIADB",
+                "external_id": "album:title-only",
+                "title": "출발",
+                "artist_or_brand": "다른 아티스트",
+                "domain_code": "KOREA",
+                "confidence": 0.81,
+                "raw": {"kind": "album"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "album:artist-only",
+                "title": "하늘",
+                "artist_or_brand": "어떤날",
+                "domain_code": "KOREA",
+                "confidence": 0.82,
+                "raw": {"kind": "album"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "album:artist-and-title",
+                "title": "출발",
+                "artist_or_brand": "어떤날",
+                "domain_code": "KOREA",
+                "confidence": 0.9,
+                "raw": {"kind": "album"},
+            },
+        ]
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "MANIADB",
+            "category": "CD",
+            "artist_or_brand": "어떤날",
+            "title": "출발",
+            "limit": 5,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["query"] == "어떤날 출발"
+    assert [item["external_id"] for item in payload["candidates"]] == ["album:artist-and-title"]
+
+
+def test_ingest_search_maniadb_ranks_exact_artist_and_title_match_first(admin_client, monkeypatch):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+        assert barcode is None
+        assert query == "어떤날 출발"
+        assert source == "MANIADB"
+        assert limit == 5
+        return [
+            {
+                "source": "MANIADB",
+                "external_id": "album:artist-and-title-partial",
+                "title": "출발 라이브",
+                "artist_or_brand": "어떤날",
+                "domain_code": "KOREA",
+                "confidence": 0.91,
+                "raw": {"kind": "album"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "album:artist-and-title-exact",
+                "title": "출발",
+                "artist_or_brand": "어떤날",
+                "domain_code": "KOREA",
+                "confidence": 0.84,
+                "raw": {"kind": "album"},
+            },
+        ]
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "MANIADB",
+            "category": "CD",
+            "artist_or_brand": "어떤날",
+            "title": "출발",
+            "limit": 5,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert [item["external_id"] for item in payload["candidates"]] == [
+        "album:artist-and-title-exact",
+        "album:artist-and-title-partial",
+    ]
+
+
+def test_ingest_search_accepts_musicbrainz_source(admin_client, monkeypatch):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+        assert barcode is None
+        assert query == "David Bowie"
+        assert source == "MUSICBRAINZ"
+        assert limit == 5
+        return [
+            {
+                "source": "MUSICBRAINZ",
+                "external_id": "mb-release-1",
+                "title": "Heroes",
+                "artist_or_brand": "David Bowie",
+                "domain_code": "WESTERN",
+                "confidence": 0.88,
+                "raw": {},
+            }
+        ]
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "MUSICBRAINZ",
+            "category": "CD",
+            "artist_or_brand": "David Bowie",
+            "limit": 5,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["query"] == "David Bowie"
+    assert [item["source"] for item in payload["candidates"]] == ["MUSICBRAINZ"]
+
+
+def test_provider_search_music_metadata_supports_explicit_musicbrainz_source(monkeypatch):
+    monkeypatch.setattr(
+        provider_module,
+        "search_musicbrainz_by_query",
+        lambda query, limit=5: [
+            {
+                "source": "MUSICBRAINZ",
+                "external_id": "mb-release-1",
+                "title": "Heroes",
+                "artist_or_brand": "David Bowie",
+                "confidence": 0.88,
+            }
+        ],
+    )
+
+    result = provider_module.search_music_metadata(query="David Bowie", source="MUSICBRAINZ", limit=5)
+
+    assert [item["source"] for item in result] == ["MUSICBRAINZ"]
+    assert [item["external_id"] for item in result] == ["mb-release-1"]
+
+
+def test_admin_can_create_goods_item_without_mappings(admin_client):
+    res = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "POSTER",
+            "goods_name": "독립 포스터",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["goods_name"] == "독립 포스터"
+    assert payload["artist_mappings"] == []
+    assert payload["album_master_mappings"] == []
+    assert payload["label_mappings"] == []
+
+
+def test_goods_items_search_returns_unlinked_goods(admin_client):
+    created = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "HAT",
+            "goods_name": "무연계 모자",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+    assert created.status_code == 200
+
+    res = admin_client.get("/goods-items", params={"q": "모자", "linked_state": "UNLINKED"})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["items"][0]["goods_name"] == "무연계 모자"
+
+
+def test_ebay_purchase_preview_parses_search_fields_and_condition_pair_from_listing_title():
+    raw_html = """
+    <div class="m-item-card">
+      <h3 class="title-heading">Grand Funk - We're An American Band 1973 USA Orig. LP Gold Rec. G/VG+</h3>
+      <div class="container-item-col__info-item-info-additionalPrice">US $19.99</div>
+      <a href="/usr/example-seller">example-seller</a>
+      <a href="/itm/1234567890">item</a>
+      <img src="https://example.com/grandfunk.jpg" />
+    </div>
+    """
+
+    items = main_module._purchase_preview_items_from_ebay_html(raw_html, purchase_date="2026-03-31")
+
+    assert len(items) == 1
+    item = items[0]
+    assert item.artist_name == "Grand Funk"
+    assert item.item_name == "We're An American Band 1973 USA"
+    assert item.raw_payload["listing_title"] == "Grand Funk - We're An American Band 1973 USA Orig. LP Gold Rec. G/VG+"
+    assert item.raw_payload["parsed_cover_condition"] == "G"
+    assert item.raw_payload["parsed_disc_condition"] == "VG+"
+
+
+def test_purchase_import_build_owned_item_uses_parsed_condition_pair_from_queue_row():
+    payload = main_module._build_owned_item_from_purchase_queue_row(
+        {
+            "id": 9,
+            "artist_name": "Grand Funk",
+            "item_name": "We're An American Band 1973 USA",
+            "media_format": "LP",
+            "quantity": 1,
+            "unit_price": 19.99,
+            "currency_code": "USD",
+            "purchase_date": "2026-03-31",
+            "seller_name": "EBAY",
+            "raw_payload": {
+                "parsed_cover_condition": "G",
+                "parsed_disc_condition": "VG+",
+            },
+        }
+    )
+
+    assert payload.music_detail is not None
+    assert payload.music_detail.cover_condition == "G"
+    assert payload.music_detail.disc_condition == "VG+"
+
+
+def test_purchase_import_preview_accepts_cp949_ebay_html_via_base64_upload_payload():
+    raw_html = """
+    <div class="m-item-card">
+      <h3 class="title-heading">김윤아 - 유리가면 1997 Korea LP NM/VG+</h3>
+      <div class="container-item-col__info-item-info-additionalPrice">US $19.99</div>
+      <a href="/usr/example-seller">example-seller</a>
+      <a href="/itm/1234567890">item</a>
+      <img src="https://example.com/kimyuna.jpg" />
+    </div>
+    """.strip()
+    payload = main_module.PurchaseImportPreviewRequest(
+        raw_content=None,
+        raw_content_base64=base64.b64encode(raw_html.encode("cp949")).decode("ascii"),
+        source_filename="ebay-order.html",
+        vendor_code="EBAY",
+    )
+
+    items = main_module._parse_purchase_import_preview(payload)
+
+    assert len(items) == 1
+    assert items[0].artist_name == "김윤아"
+    assert items[0].item_name == "유리가면 1997 Korea"
+
+
+def test_ebay_purchase_preview_parses_artist_quoted_title_pattern():
+    raw_html = """
+    <div class="m-item-card">
+      <h3 class="title-heading">Emerson, Lake & Palmer "Brain Salad Surgery" 1973 USA Orig. LP VG+/VG+</h3>
+      <div class="container-item-col__info-item-info-additionalPrice">US $24.99</div>
+      <a href="/usr/example-seller">example-seller</a>
+      <a href="/itm/1234567890">item</a>
+      <img src="https://example.com/elp.jpg" />
+    </div>
+    """
+
+    items = main_module._purchase_preview_items_from_ebay_html(raw_html, purchase_date="2026-03-31")
+
+    assert len(items) == 1
+    item = items[0]
+    assert item.artist_name == "Emerson, Lake & Palmer"
+    assert item.item_name == "Brain Salad Surgery 1973 USA"
+    assert item.raw_payload["parsed_cover_condition"] == "VG+"
+    assert item.raw_payload["parsed_disc_condition"] == "VG+"
+
+
+def test_purchase_import_queue_item_prefers_clean_item_name_over_garbled_raw_line_for_ebay():
+    item = main_module._purchase_queue_item_from_row(
+        {
+            "id": 228,
+            "vendor_code": "EBAY",
+            "source_type": "FILE_UPLOAD",
+            "item_name": "Paul McCartney - McCartney 1970 USA Gatefold LP G/G",
+            "artist_name": None,
+            "raw_line": "���������(��������� ������): 5��� 18��� ��� - 5��� 21��� ��� ������ ������ 6��� 17������ ������ ������ ������. Paul McCartney - McCartney 1970 USA Gatefold LP G/G",
+            "raw_payload": {},
+            "queue_status": "PENDING",
+            "quantity": 1,
+            "unit_price": 3.80,
+            "line_total": 3.80,
+            "currency_code": "USD",
+            "purchase_date": "2026-05-21",
+            "seller_name": "123davie39",
+            "item_url": None,
+            "image_url": None,
+            "source_ref": None,
+            "email_from": None,
+            "email_subject": None,
+            "linked_owned_item_id": None,
+            "created_at": "2026-03-31T00:00:00+00:00",
+            "updated_at": "2026-03-31T00:00:00+00:00",
+        }
+    )
+
+    assert item.artist_name == "Paul McCartney"
+    assert item.item_name == "Paul McCartney - McCartney 1970 USA Gatefold LP G/G"
+    assert item.raw_payload["parsed_search_artist_name"] == "Paul McCartney"
+    assert item.raw_payload["parsed_search_item_name"] == "McCartney 1970 USA Gatefold"
+
+
+def test_purchase_queue_candidate_query_prefers_parsed_search_fields_for_ebay():
+    query = main_module._purchase_queue_candidate_query(
+        {
+            "vendor_code": "EBAY",
+            "artist_name": "The Dregs",
+            "item_name": 'The Dregs "Industry Standard" 1982 Rock LP, Nice VG++!, Original Arista Pressing',
+            "raw_payload": {
+                "parsed_search_artist_name": "The Dregs",
+                "parsed_search_item_name": "Industry Standard 1982 Rock",
+            },
+        }
+    )
+
+    assert query == "The Dregs Industry Standard 1982 Rock"
+
+
+def test_admin_can_replace_goods_item_mappings(admin_client):
+    master_id = db.upsert_album_master(
+        source_code="MANUAL",
+        source_master_id="goods-route-master",
+        title="굿즈 연결 앨범",
+        artist_or_brand="굿즈 연결 아티스트",
+        domain_code=None,
+        release_year=2001,
+        raw={},
+    )
+    created = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "T_SHIRT",
+            "goods_name": "콜라보 티셔츠",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+    assert created.status_code == 200
+    goods_id = int(created.json()["id"])
+
+    res = admin_client.put(
+        f"/goods-items/{goods_id}/mappings",
+        json={
+            "album_master_ids": [master_id],
+            "artist_names": ["산울림", "아이유"],
+            "label_names": ["서울음반"],
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["album_master_mappings"][0]["album_master_id"] == master_id
+    assert payload["artist_mappings"] == ["산울림", "아이유"]
+    assert payload["label_mappings"] == ["서울음반"]
+
+
+def test_admin_can_search_goods_album_master_targets(admin_client):
+    master_id = db.upsert_album_master(
+        source_code="MANUAL",
+        source_master_id="goods-target-master",
+        title="연계 대상 앨범",
+        artist_or_brand="테스트 아티스트",
+        domain_code=None,
+        release_year=2003,
+        raw={},
+    )
+
+    res = admin_client.get(
+        "/goods-targets",
+        params={"kind": "album_master", "q": "연계 대상", "limit": 5},
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["items"][0]["album_master_id"] == master_id
+    assert payload["items"][0]["title"] == "연계 대상 앨범"
+
+
+def test_goods_items_search_supports_status_domain_and_slot_filters(admin_client):
+    slot = db.upsert_storage_slot(
+        cabinet_name="굿즈장",
+        column_code="01",
+        cell_code="01",
+        allowed_size_group="GOODS",
+    )
+    archived = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "HAT",
+            "goods_name": "보관 모자",
+            "quantity": 1,
+            "status": "ARCHIVED",
+            "domain_code": "WESTERN",
+            "storage_slot_id": int(slot["id"]),
+        },
+    )
+    assert archived.status_code == 200
+    active = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "HAT",
+            "goods_name": "활성 모자",
+            "quantity": 1,
+            "status": "ACTIVE",
+            "domain_code": "KOREA",
+        },
+    )
+    assert active.status_code == 200
+
+    res = admin_client.get(
+        "/goods-items",
+        params={
+            "category": "HAT",
+            "status": "ARCHIVED",
+            "domain_code": "WESTERN",
+            "storage_slot_id": int(slot["id"]),
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["total_count"] == 1
+    assert [item["goods_name"] for item in payload["items"]] == ["보관 모자"]
+
+
+def test_admin_can_delete_goods_item(admin_client):
+    created = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "POSTER",
+            "goods_name": "삭제 포스터",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+    assert created.status_code == 200
+    goods_id = int(created.json()["id"])
+
+    res = admin_client.delete(f"/goods-items/{goods_id}")
+
+    assert res.status_code == 200
+    assert res.json() == {"deleted": True, "goods_item_id": goods_id}
+    assert db.get_goods_item(goods_id) is None
+
+
+def test_update_owned_item_slot_route_resequences_order_key_to_match_slot_sort(admin_client):
+    slot = db.upsert_storage_slot(
+        cabinet_name="재정렬 LP장",
+        column_code="01",
+        cell_code="01",
+        allowed_size_group="LP",
+        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
+    )
+
+    bob_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Highway 61 Revisited",
+            "storage_slot_id": int(slot["id"]),
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "Bob Dylan",
+                "label_name": "QA Label",
+                "catalog_no": "BD-001",
+                "barcode": "8800000091001",
+                "track_list": ["Like a Rolling Stone"],
+                "track_items": [{"display": "1. Like a Rolling Stone", "title": "Like a Rolling Stone"}],
+            },
+        }
+    )
+    beatles_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Abbey Road",
+            "storage_slot_id": None,
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "The Beatles",
+                "label_name": "QA Label",
+                "catalog_no": "TB-001",
+                "barcode": "8800000091002",
+                "track_list": ["Come Together"],
+                "track_items": [{"display": "1. Come Together", "title": "Come Together"}],
+            },
+        }
+    )
+
+    res = admin_client.patch(f"/owned-items/{beatles_id}/slot", json={"storage_slot_id": int(slot["id"])})
+
+    assert res.status_code == 200
+
+    beatles_row = db.get_owned_item(beatles_id)
+    bob_row = db.get_owned_item(bob_id)
+    assert beatles_row is not None and bob_row is not None
+    assert str(beatles_row["order_key"] or "") < str(bob_row["order_key"] or "")
+
+
+def test_update_owned_item_slot_route_skips_full_resequence_for_unassigned_to_slot_move(admin_client, monkeypatch):
+    slot = db.upsert_storage_slot(
+        cabinet_name="속도 테스트 LP장",
+        column_code="01",
+        cell_code="01",
+        allowed_size_group="LP",
+        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
+    )
+
+    bob_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Highway 61 Revisited",
+            "storage_slot_id": int(slot["id"]),
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "Bob Dylan",
+                "label_name": "QA Label",
+                "catalog_no": "BD-001",
+                "barcode": "8800000091001",
+                "track_list": ["Like a Rolling Stone"],
+                "track_items": [{"display": "1. Like a Rolling Stone", "title": "Like a Rolling Stone"}],
+            },
+        }
+    )
+    beatles_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Abbey Road",
+            "storage_slot_id": None,
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "The Beatles",
+                "label_name": "QA Label",
+                "catalog_no": "TB-001",
+                "barcode": "8800000091002",
+                "track_list": ["Come Together"],
+                "track_items": [{"display": "1. Come Together", "title": "Come Together"}],
+            },
+        }
+    )
+
+    def _unexpected_resequence():
+        raise AssertionError("full resequence should not run for unassigned-to-slot moves")
+
+    monkeypatch.setattr(main_module.db, "resequence_in_collection_order", _unexpected_resequence)
+
+    res = admin_client.patch(f"/owned-items/{beatles_id}/slot", json={"storage_slot_id": int(slot["id"])})
+
+    assert res.status_code == 200
+    beatles_row = db.get_owned_item(beatles_id)
+    bob_row = db.get_owned_item(bob_id)
+    assert beatles_row is not None and bob_row is not None
+    assert str(beatles_row["order_key"] or "") < str(bob_row["order_key"] or "")
+
+
+def test_update_owned_item_slot_route_skips_full_resequence_for_slot_to_slot_move(admin_client, monkeypatch):
+    source_slot = db.upsert_storage_slot(
+        cabinet_name="속도 테스트 LP장",
+        column_code="01",
+        cell_code="01",
+        allowed_size_group="LP",
+        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
+    )
+    target_slot = db.upsert_storage_slot(
+        cabinet_name="속도 테스트 LP장",
+        column_code="01",
+        cell_code="02",
+        allowed_size_group="LP",
+        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
+    )
+
+    moving_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Abbey Road",
+            "storage_slot_id": int(source_slot["id"]),
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "The Beatles",
+                "label_name": "QA Label",
+                "catalog_no": "TB-FAST-001",
+                "barcode": "8800000091991",
+                "track_list": ["Come Together"],
+                "track_items": [{"display": "1. Come Together", "title": "Come Together"}],
+            },
+        }
+    )
+    anchor_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Highway 61 Revisited",
+            "storage_slot_id": int(target_slot["id"]),
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "Bob Dylan",
+                "label_name": "QA Label",
+                "catalog_no": "BD-FAST-001",
+                "barcode": "8800000091992",
+                "track_list": ["Like a Rolling Stone"],
+                "track_items": [{"display": "1. Like a Rolling Stone", "title": "Like a Rolling Stone"}],
+            },
+        }
+    )
+
+    def _unexpected_resequence():
+        raise AssertionError("full resequence should not run for slot-to-slot moves")
+
+    monkeypatch.setattr(main_module.db, "resequence_in_collection_order", _unexpected_resequence)
+
+    res = admin_client.patch(f"/owned-items/{moving_id}/slot", json={"storage_slot_id": int(target_slot["id"])})
+
+    assert res.status_code == 200
+    moved_row = db.get_owned_item(moving_id)
+    anchor_row = db.get_owned_item(anchor_id)
+    assert moved_row is not None and anchor_row is not None
+    assert int(moved_row["storage_slot_id"] or 0) == int(target_slot["id"])
+    assert str(moved_row["order_key"] or "") < str(anchor_row["order_key"] or "")
+
+
+def test_update_owned_item_slot_route_inherits_target_cabinet_domain_when_item_domain_is_unspecified(admin_client):
+    target_slot = db.upsert_storage_slot(
+        cabinet_name="도메인 상속 LP장",
+        column_code="01",
+        cell_code="01",
+        allowed_size_group="LP",
+        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
+        cabinet_domain_code="WESTERN",
+    )
+
+    moving_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "domain_code": "UNKNOWN",
+            "item_name_override": "Abbey Road",
+            "storage_slot_id": None,
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "The Beatles",
+                "label_name": "QA Label",
+                "catalog_no": "TB-DOMAIN-001",
+                "barcode": "8800000091881",
+                "track_list": ["Come Together"],
+                "track_items": [{"display": "1. Come Together", "title": "Come Together"}],
+            },
+        }
+    )
+
+    res = admin_client.patch(f"/owned-items/{moving_id}/slot", json={"storage_slot_id": int(target_slot["id"])})
+
+    assert res.status_code == 200
+    moved_row = db.get_owned_item(moving_id)
+    assert moved_row is not None
+    assert int(moved_row["storage_slot_id"] or 0) == int(target_slot["id"])
+    assert str(moved_row["domain_code"] or "") == "WESTERN"
+
+
+def test_update_owned_item_slot_route_keeps_existing_domain_when_target_cabinet_has_different_domain(admin_client):
+    target_slot = db.upsert_storage_slot(
+        cabinet_name="도메인 유지 LP장",
+        column_code="01",
+        cell_code="01",
+        allowed_size_group="LP",
+        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
+        cabinet_domain_code="WESTERN",
+    )
+
+    moving_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "domain_code": "KOREA",
+            "item_name_override": "이미 도메인 있는 상품",
+            "storage_slot_id": None,
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "테스트 아티스트",
+                "label_name": "QA Label",
+                "catalog_no": "TB-DOMAIN-002",
+                "barcode": "8800000091882",
+                "track_list": ["Track 1"],
+                "track_items": [{"display": "1. Track 1", "title": "Track 1"}],
+            },
+        }
+    )
+
+    res = admin_client.patch(f"/owned-items/{moving_id}/slot", json={"storage_slot_id": int(target_slot["id"])})
+
+    assert res.status_code == 200
+    moved_row = db.get_owned_item(moving_id)
+    assert moved_row is not None
+    assert int(moved_row["storage_slot_id"] or 0) == int(target_slot["id"])
+    assert str(moved_row["domain_code"] or "") == "KOREA"
+
+
+def test_onvif_connection_tolerates_optional_unauthorized_calls(monkeypatch):
+    def fake_onvif_soap_request(service_url, body_xml, *, username, password, timeout=8.0):
+        if "GetCapabilities" in body_xml:
+            return ET.fromstring(
+                """
+                <Envelope xmlns:tt="http://www.onvif.org/ver10/schema">
+                  <Body>
+                    <Capabilities>
+                      <tt:Media>
+                        <tt:XAddr>http://camera.local/onvif/media_service</tt:XAddr>
+                      </tt:Media>
+                    </Capabilities>
+                  </Body>
+                </Envelope>
+                """
+            )
+        if "GetDeviceInformation" in body_xml:
+            request = httpx.Request("POST", "http://camera.local/onvif/device_service")
+            response = httpx.Response(400, request=request, text="Not Authorized")
+            raise httpx.HTTPStatusError("400", request=request, response=response)
+        if "GetProfiles" in body_xml:
+            request = httpx.Request("POST", "http://camera.local/onvif/media_service")
+            response = httpx.Response(400, request=request, text="Not Authorized")
+            raise httpx.HTTPStatusError("400", request=request, response=response)
+        raise AssertionError(f"unexpected body: {body_xml}")
+
+    monkeypatch.setattr(main_module, "_onvif_soap_request", fake_onvif_soap_request)
+
+    payload = main_module._test_onvif_camera_connection(
+        "http://camera.local/onvif/device_service",
+        username=None,
+        password=None,
+    )
+
+    assert payload["device_service_url"] == "http://camera.local/onvif/device_service"
+    assert payload["media_service_url"] == "http://camera.local/onvif/media_service"
+    assert payload["manufacturer"] is None
+    assert payload["snapshot_url"] is None
+    assert payload["stream_url"] is None
+
+
+def test_camera_onvif_route_uses_stored_credentials_for_selected_camera(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "get_cabinet_camera",
+        lambda camera_id: {
+            "id": int(camera_id),
+            "username": "stored-admin",
+            "password": "stored-pass",
+        },
+    )
+    captured = {}
+
+    def fake_test_onvif(url, *, username, password):
+        captured["url"] = url
+        captured["username"] = username
+        captured["password"] = password
+        return {
+            "device_service_url": url,
+            "media_service_url": "http://camera.local/onvif/media_service",
+            "profile_token": "PROFILE_000",
+            "snapshot_url": "http://camera.local/snapshot",
+            "stream_url": "rtsp://camera.local/stream",
+            "manufacturer": "Meari",
+            "model": "Speed 4T",
+            "firmware_version": None,
+            "serial_number": None,
+            "hardware_id": None,
+        }
+
+    monkeypatch.setattr(main_module, "_test_onvif_camera_connection", fake_test_onvif)
+
+    res = admin_client.post(
+        "/cabinet-cameras/test-onvif",
+        json={
+            "camera_id": 7,
+            "onvif_device_url": "http://camera.local/onvif/device_service",
+            "username": None,
+            "password": None,
+        },
+    )
+
+    assert res.status_code == 200
+    assert captured["url"] == "http://camera.local/onvif/device_service"
+    assert captured["username"] == "stored-admin"
+    assert captured["password"] == "stored-pass"
+
+
+def test_admin_can_read_and_save_auto_backup_settings(admin_client, tmp_path):
+    res = admin_client.get("/ops/export/backup-settings")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["enabled"] is False
+    assert payload["interval_minutes"] == 0
+    assert payload["backup_dir"].endswith("/backups")
+    assert payload["backup_scope"] == "DB"
+    assert payload["include_env_file"] is False
+
+    save_res = admin_client.post(
+        "/ops/export/backup-settings",
+        json={
+            "enabled": True,
+            "interval_minutes": 180,
+            "backup_dir": str(tmp_path / "auto-backups"),
+            "backup_scope": "FULL",
+            "include_env_file": True,
+        },
+    )
+
+    assert save_res.status_code == 200
+    saved = save_res.json()
+    assert saved["enabled"] is True
+    assert saved["interval_minutes"] == 180
+    assert saved["backup_dir"] == str(tmp_path / "auto-backups")
+    assert saved["backup_scope"] == "FULL"
+    assert saved["include_env_file"] is True
+
+    reread_res = admin_client.get("/ops/export/backup-settings")
+    assert reread_res.status_code == 200
+    reread = reread_res.json()
+    assert reread["enabled"] is True
+    assert reread["interval_minutes"] == 180
+    assert reread["backup_dir"] == str(tmp_path / "auto-backups")
+    assert reread["backup_scope"] == "FULL"
+    assert reread["include_env_file"] is True
+
+
+def test_admin_can_read_and_save_metadata_provider_settings(admin_client, monkeypatch, tmp_path):
+    env_path = tmp_path / ".env.local"
+    env_path.write_text(
+        "\n".join(
+            [
+                "DISCOGS_TOKEN=existing-discogs-token",
+                "ALADIN_TTB_KEY=existing-aladin-key",
+                "DISCOGS_USER_AGENT=hahahoho-library/0.1 (contact: test@example.com)",
+                "ALADIN_BASE_URL=https://api.example.com/aladin",
+                "MANIADB_BASE_URL=https://api.example.com/maniadb",
+                "MUSICBRAINZ_USER_AGENT=hahahoho-library/0.1 (musicbrainz-test)",
+                "DEEPL_AUTH_KEY=existing-deepl-key",
+                "DEEPL_BASE_URL=https://api-free.deepl.com/v2/translate",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(config_module, "_default_env_path", lambda: env_path)
+    for key in (
+        "DISCOGS_TOKEN",
+        "ALADIN_TTB_KEY",
+        "DISCOGS_USER_AGENT",
+        "ALADIN_BASE_URL",
+        "MANIADB_BASE_URL",
+        "MUSICBRAINZ_USER_AGENT",
+        "DEEPL_AUTH_KEY",
+        "DEEPL_BASE_URL",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    main_module.get_settings.cache_clear()
+
+    res = admin_client.get("/ops/provider-settings")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["discogs_token_configured"] is True
+    assert payload["aladin_ttb_key_configured"] is True
+    assert payload["discogs_user_agent"] == "hahahoho-library/0.1 (contact: test@example.com)"
+    assert payload["aladin_base_url"] == "https://api.example.com/aladin"
+    assert payload["maniadb_base_url"] == "https://api.example.com/maniadb"
+    assert payload["musicbrainz_user_agent"] == "hahahoho-library/0.1 (musicbrainz-test)"
+    assert payload["deepl_auth_key_configured"] is True
+    assert payload["deepl_base_url"] == "https://api-free.deepl.com/v2/translate"
+
+    save_res = admin_client.post(
+        "/ops/provider-settings",
+        json={
+            "discogs_token": "updated-discogs-token",
+            "aladin_ttb_key": "updated-aladin-key",
+            "discogs_user_agent": "hahahoho-library/0.2 (contact: ops@example.com)",
+            "aladin_base_url": "https://api.example.com/aladin-v2",
+            "maniadb_base_url": "https://api.example.com/maniadb-v2",
+            "musicbrainz_user_agent": "hahahoho-library/0.2 (musicbrainz-ops)",
+            "deepl_auth_key": "updated-deepl-key",
+            "deepl_base_url": "https://api.deepl.com/v2/translate",
+        },
+    )
+
+    assert save_res.status_code == 200
+    saved = save_res.json()
+    assert saved["discogs_token_configured"] is True
+    assert saved["aladin_ttb_key_configured"] is True
+    assert saved["discogs_user_agent"] == "hahahoho-library/0.2 (contact: ops@example.com)"
+    assert saved["aladin_base_url"] == "https://api.example.com/aladin-v2"
+    assert saved["maniadb_base_url"] == "https://api.example.com/maniadb-v2"
+    assert saved["musicbrainz_user_agent"] == "hahahoho-library/0.2 (musicbrainz-ops)"
+    assert saved["deepl_auth_key_configured"] is True
+    assert saved["deepl_base_url"] == "https://api.deepl.com/v2/translate"
+
+    reread_res = admin_client.get("/ops/provider-settings")
+    assert reread_res.status_code == 200
+    reread = reread_res.json()
+    assert reread == saved
+    env_text = env_path.read_text(encoding="utf-8")
+    assert "DISCOGS_TOKEN=updated-discogs-token" in env_text
+    assert "ALADIN_TTB_KEY=updated-aladin-key" in env_text
+    assert 'DISCOGS_USER_AGENT="hahahoho-library/0.2 (contact: ops@example.com)"' in env_text
+    assert "ALADIN_BASE_URL=https://api.example.com/aladin-v2" in env_text
+    assert "MANIADB_BASE_URL=https://api.example.com/maniadb-v2" in env_text
+    assert 'MUSICBRAINZ_USER_AGENT="hahahoho-library/0.2 (musicbrainz-ops)"' in env_text
+    assert "DEEPL_AUTH_KEY=updated-deepl-key" in env_text
+    assert "DEEPL_BASE_URL=https://api.deepl.com/v2/translate" in env_text
+
+
+def test_admin_can_run_deepl_provider_connection_test(admin_client, monkeypatch):
+    from app.services import artist_context as artist_context_service
+
+    monkeypatch.setenv("DEEPL_AUTH_KEY", "test-deepl-key")
+    monkeypatch.setenv("DEEPL_BASE_URL", "https://api-free.deepl.com/v2/translate")
+    main_module.get_settings.cache_clear()
+
+    monkeypatch.setattr(
+        artist_context_service,
+        "fetch_deepl_usage",
+        lambda auth_key, base_url: {"character_count": 64, "character_limit": 500000},
+    )
+
+    response = admin_client.post("/ops/provider-settings/deepl-test")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["configured"] is True
+    assert payload["translated_text"] == "사용량 64 / 500000"
+
+
+def test_full_backup_route_returns_zip_bundle(admin_client, monkeypatch, tmp_path):
+    bundle_path = tmp_path / "hahahoho-library-full-backup.zip"
+    bundle_path.write_bytes(b"zip-bundle")
+    captured = {}
+
+    def fake_create_bundle(backup_dir: str, *, reason: str = "manual-full", include_env_file: bool = False) -> str:
+        captured["backup_dir"] = backup_dir
+        captured["reason"] = reason
+        captured["include_env_file"] = include_env_file
+        return str(bundle_path)
+
+    monkeypatch.setattr(main_module, "_create_local_full_backup_bundle", fake_create_bundle)
+
+    res = admin_client.get("/ops/export/full-backup?include_env_file=true")
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("application/zip")
+    assert captured["reason"] == "manual-full"
+    assert captured["include_env_file"] is True
+
+
+def test_full_restore_upload_route_accepts_zip_bundle_and_returns_restore_metadata(admin_client, monkeypatch, tmp_path):
+    seen = {}
+
+    def fake_restore(upload_path: str, original_filename: str) -> dict[str, object]:
+        seen["upload_path"] = upload_path
+        seen["original_filename"] = original_filename
+        assert Path(upload_path).is_file()
+        return {
+            "restored": True,
+            "restored_filename": original_filename,
+            "restored_bytes": Path(upload_path).stat().st_size,
+            "backup_path": str(tmp_path / "before-full-restore.zip"),
+        }
+
+    monkeypatch.setattr(main_module, "_restore_library_bundle_from_upload", fake_restore)
+
+    res = admin_client.post(
+        "/ops/export/full-restore",
+        files={"file": ("restore.zip", b"zip-upload", "application/zip")},
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["restored"] is True
+    assert payload["restored_filename"] == "restore.zip"
+    assert payload["backup_path"] == str(tmp_path / "before-full-restore.zip")
+    assert seen["original_filename"] == "restore.zip"
+
+
+def test_restore_upload_route_accepts_db_file_and_returns_restore_metadata(admin_client, monkeypatch, tmp_path):
+    seen = {}
+
+    def fake_restore(upload_path: str, original_filename: str) -> dict[str, object]:
+        seen["upload_path"] = upload_path
+        seen["original_filename"] = original_filename
+        assert Path(upload_path).is_file()
+        return {
+            "restored": True,
+            "restored_filename": original_filename,
+            "restored_bytes": Path(upload_path).stat().st_size,
+            "backup_path": str(tmp_path / "before-restore.db"),
+        }
+
+    monkeypatch.setattr(main_module, "_restore_library_db_from_upload", fake_restore)
+
+    res = admin_client.post(
+        "/ops/export/db-restore",
+        files={"file": ("restore.db", b"sqlite-upload", "application/octet-stream")},
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["restored"] is True
+    assert payload["restored_filename"] == "restore.db"
+    assert payload["backup_path"] == str(tmp_path / "before-restore.db")
+    assert seen["original_filename"] == "restore.db"
+
+
+def test_maybe_run_auto_backup_once_uses_saved_settings(monkeypatch, tmp_path):
+    recorded = {}
+    now = datetime(2026, 3, 30, 12, 0, tzinfo=timezone.utc)
+
+    monkeypatch.setattr(
+        main_module.db,
+        "get_auto_backup_settings",
+        lambda: {
+            "enabled": True,
+            "interval_minutes": 120,
+            "backup_dir": str(tmp_path),
+            "backup_scope": "DB",
+            "include_env_file": False,
+            "last_backup_at": (now - timedelta(minutes=121)).isoformat(),
+            "last_backup_path": None,
+            "last_error": None,
+        },
+    )
+    monkeypatch.setattr(
+        main_module,
+        "_create_local_db_backup",
+        lambda backup_dir, *, reason="auto": str(Path(backup_dir) / f"{reason}-backup.db"),
+    )
+
+    def fake_record(*, last_backup_at, last_backup_path, last_error):
+        recorded["last_backup_at"] = last_backup_at
+        recorded["last_backup_path"] = last_backup_path
+        recorded["last_error"] = last_error
+
+    monkeypatch.setattr(main_module.db, "record_auto_backup_result", fake_record)
+
+    result = main_module._maybe_run_auto_backup_once(now=now)
+
+    assert result == str(tmp_path / "auto-backup.db")
+    assert recorded["last_backup_path"] == str(tmp_path / "auto-backup.db")
+    assert recorded["last_error"] is None
+
+
+def test_maybe_run_auto_backup_once_uses_full_bundle_when_scope_is_full(monkeypatch, tmp_path):
+    recorded = {}
+    now = datetime(2026, 3, 30, 12, 0, tzinfo=timezone.utc)
+
+    monkeypatch.setattr(
+        main_module.db,
+        "get_auto_backup_settings",
+        lambda: {
+            "enabled": True,
+            "interval_minutes": 60,
+            "backup_dir": str(tmp_path),
+            "backup_scope": "FULL",
+            "include_env_file": True,
+            "last_backup_at": (now - timedelta(minutes=61)).isoformat(),
+            "last_backup_path": None,
+            "last_error": None,
+        },
+    )
+    monkeypatch.setattr(
+        main_module,
+        "_create_local_full_backup_bundle",
+        lambda backup_dir, *, reason="auto", include_env_file=False: str(tmp_path / f"{reason}.zip"),
+    )
+
+    def fake_record(*, last_backup_at, last_backup_path, last_error):
+        recorded["last_backup_at"] = last_backup_at
+        recorded["last_backup_path"] = last_backup_path
+        recorded["last_error"] = last_error
+
+    monkeypatch.setattr(main_module.db, "record_auto_backup_result", fake_record)
+
+    result = main_module._maybe_run_auto_backup_once(now=now)
+
+    assert result == str(tmp_path / "auto.zip")
+    assert recorded["last_backup_path"] == str(tmp_path / "auto.zip")
+    assert recorded["last_error"] is None
+
+
+def test_update_owned_item_route_resequences_order_key_after_sorting_metadata_changes(admin_client):
+    slot = db.upsert_storage_slot(
+        cabinet_name="편집 재정렬 LP장",
+        column_code="01",
+        cell_code="01",
+        allowed_size_group="LP",
+        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
+    )
+
+    bob_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Highway 61 Revisited",
+            "storage_slot_id": int(slot["id"]),
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "Bob Dylan",
+                "label_name": "QA Label",
+                "catalog_no": "BD-101",
+                "barcode": "8800000091101",
+                "track_list": ["Like a Rolling Stone"],
+                "track_items": [{"display": "1. Like a Rolling Stone", "title": "Like a Rolling Stone"}],
+            },
+        }
+    )
+    zed_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Zed Album",
+            "storage_slot_id": int(slot["id"]),
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "Zed Artist",
+                "label_name": "QA Label",
+                "catalog_no": "ZA-101",
+                "barcode": "8800000091102",
+                "track_list": ["Track 1"],
+                "track_items": [{"display": "1. Track 1", "title": "Track 1"}],
+            },
+        }
+    )
+
+    res = admin_client.patch(
+        f"/owned-items/{zed_id}",
+        json={
+            "category": "LP",
+            "size_group": "LP",
+            "quantity": 1,
+            "status": "IN_COLLECTION",
+            "signature_type": "NONE",
+            "item_name_override": "The Beatles - Abbey Road",
+            "storage_slot_id": int(slot["id"]),
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "The Beatles",
+                "label_name": "QA Label",
+                "catalog_no": "TB-101",
+                "barcode": "8800000091102",
+                "track_list": ["Come Together"],
+                "track_items": [{"display": "1. Come Together", "title": "Come Together"}],
+            },
+        },
+    )
+
+    assert res.status_code == 200
+
+    beatles_row = db.get_owned_item(zed_id)
+    bob_row = db.get_owned_item(bob_id)
+    assert beatles_row is not None and bob_row is not None
+    assert str(beatles_row["order_key"] or "") < str(bob_row["order_key"] or "")
+
+
+def test_slot_order_move_route_returns_display_rank(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "get_storage_slot",
+        lambda storage_slot_id: {"id": storage_slot_id, "slot_code": "QA-01-01"},
+    )
+
+    def fake_slot_move(*, storage_slot_id: int, owned_item_id: int, target_owned_item_id: int, position: str):
+        assert storage_slot_id == 17
+        assert owned_item_id == 101
+        assert target_owned_item_id == 202
+        assert position == "BEFORE"
+        return 10
+
+    monkeypatch.setattr(main_module.db, "move_owned_item_slot_display_rank", fake_slot_move)
+
+    res = admin_client.patch(
+        "/storage-slots/17/owned-items/101/order",
+        json={"target_owned_item_id": 202, "position": "BEFORE"},
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["storage_slot_id"] == 17
+    assert payload["owned_item_id"] == 101
+    assert payload["target_owned_item_id"] == 202
+    assert payload["position"] == "BEFORE"
+    assert payload["display_rank"] == 10
+
+
+def test_album_master_search_returns_clickable_location_actions(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "list_album_masters",
+        lambda **kwargs: [
+            {
+                "id": 91,
+                "source_code": "DISCOGS",
+                "source_master_id": "master-91",
+                "title": "The Album",
+                "artist_or_brand": "The Artist",
+                "sort_artist_name": "The Artist",
+                "domain_code": "WESTERN",
+                "release_year": 2004,
+                "member_count": 2,
+                "cover_image_url": "https://example.com/cover.jpg",
+                "audio_asset_count": 0,
+                "member_preview_text": "Sub Pop / SP-01",
+                "member_location_preview_text": "CD장 1 / 01열 / 03칸 || CD장 2 / 02열 / 04칸",
+                "first_member_storage_slot_id": 17,
+                "first_member_slot_code": "CD-1-01-03",
+                "first_member_cabinet_name": "CD장 1",
+                "first_member_column_code": "01",
+                "first_member_cell_code": "03",
+                "updated_at": "2026-03-20T12:00:00+00:00",
+            }
+        ],
+    )
+    monkeypatch.setattr(main_module.db, "count_album_masters", lambda **kwargs: 1)
+    monkeypatch.setattr(main_module.db, "list_album_master_track_matches", lambda *args, **kwargs: [])
+    monkeypatch.setattr(
+        main_module.db,
+        "list_owned_items_by_album_master",
+        lambda album_master_id: [
+            {
+                "id": 501,
+                "item_name_override": "The Artist - The Album",
+                "current_slot_display_name": "CD장 1 / 01열 / 03칸",
+                "storage_slot_id": 17,
+                "slot_code": "CD-1-01-03",
+                "current_cabinet_name": "CD장 1",
+                "current_column_code": "01",
+                "current_cell_code": "03",
+                "cabinet_name": "CD장 1",
+                "column_code": "01",
+                "cell_code": "03",
+            },
+            {
+                "id": 502,
+                "item_name_override": "The Artist - The Album (Deluxe)",
+                "current_slot_display_name": "CD장 2 / 02열 / 04칸",
+                "storage_slot_id": 24,
+                "slot_code": "CD-2-02-04",
+                "current_cabinet_name": "CD장 2",
+                "current_column_code": "02",
+                "current_cell_code": "04",
+                "cabinet_name": "CD장 2",
+                "column_code": "02",
+                "cell_code": "04",
+            },
+        ],
+    )
+
+    res = admin_client.get("/album-masters", params={"q": "The Album"})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert len(payload) == 1
+    row = payload[0]
+    assert row["member_count"] == 2
+    assert len(row["member_location_actions"]) == 2
+    assert row["member_location_actions"][0]["owned_item_id"] == 501
+    assert row["member_location_actions"][0]["storage_slot_id"] == 17
+    assert row["member_location_actions"][0]["cabinet_name"] == "CD장 1"
+    assert row["member_location_actions"][1]["cell_code"] == "04"
+
+
+def test_album_master_search_returns_structured_member_items_preview(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "list_album_masters",
+        lambda **kwargs: [
+            {
+                "id": 92,
+                "source_code": "DISCOGS",
+                "source_master_id": "master-92",
+                "title": "Preview Album",
+                "artist_or_brand": "Preview Artist",
+                "sort_artist_name": "Preview Artist",
+                "domain_code": "WESTERN",
+                "release_year": 2018,
+                "member_count": 4,
+                "cover_image_url": "https://example.com/cover.jpg",
+                "audio_asset_count": 0,
+                "member_preview_text": "Rhino Records / R1 544846",
+                "member_location_preview_text": "LP장 6 / 03열 / 01칸",
+                "first_member_storage_slot_id": 31,
+                "first_member_slot_code": "LP-6-03-01",
+                "first_member_cabinet_name": "LP장 6",
+                "first_member_column_code": "03",
+                "first_member_cell_code": "01",
+                "updated_at": "2026-04-04T09:10:00+00:00",
+            }
+        ],
+    )
+    monkeypatch.setattr(main_module.db, "count_album_masters", lambda **kwargs: 1)
+    monkeypatch.setattr(main_module.db, "list_album_master_track_matches", lambda *args, **kwargs: [])
+    monkeypatch.setattr(
+        main_module.db,
+        "list_owned_items_by_album_master",
+        lambda album_master_id: [
+            {
+                "id": 701,
+                "owned_item_id": 701,
+                "category": "LP",
+                "source_code": "DISCOGS",
+                "source_external_id": "701-release",
+                "item_title": "Preview Artist - Preview Album",
+                "item_name_override": "Preview Artist - Preview Album",
+                "artist_or_brand": "Preview Artist",
+                "cover_image_url": "https://example.com/items/701.jpg",
+                "released_date": "2018-11-02",
+                "pressing_country": "Worldwide",
+                "label_name": "Rhino Records",
+                "catalog_no": "R1 544846",
+                "barcode": "603497856244",
+                "format_name": "LP",
+                "format_items": [{"qty": "1", "descriptions": ["LP", "Album"]}],
+                "runout_sample": "R1-544846 A",
+                "created_at": "2026-04-03T05:18:00+00:00",
+                "storage_slot_id": 31,
+                "slot_code": "LP-6-03-01",
+                "current_slot_code": "LP-6-03-01",
+                "current_slot_display_name": "LP장 6 / 03열 / 01칸",
+                "current_cabinet_name": "LP장 6",
+                "current_column_code": "03",
+                "current_cell_code": "01",
+                "cabinet_name": "LP장 6",
+                "column_code": "03",
+                "cell_code": "01",
+                "label_id": "LP-000701",
+            },
+            {
+                "id": 702,
+                "owned_item_id": 702,
+                "category": "LP",
+                "source_code": "DISCOGS",
+                "source_external_id": "702-release",
+                "item_title": "Preview Artist - Preview Album (Deluxe)",
+                "item_name_override": "Preview Artist - Preview Album (Deluxe)",
+                "artist_or_brand": "Preview Artist",
+                "cover_image_url": "https://example.com/items/702.jpg",
+                "released_date": "2019-01-10",
+                "pressing_country": "US",
+                "label_name": "Rhino Records",
+                "catalog_no": "R1 544846X",
+                "barcode": "603497856245",
+                "format_name": "LP",
+                "format_items": [{"qty": "2", "descriptions": ["LP", "Deluxe Edition"]}],
+                "runout_sample": "R1-544846 B",
+                "created_at": "2026-04-04T01:12:00+00:00",
+                "storage_slot_id": None,
+                "slot_code": None,
+                "current_slot_code": None,
+                "current_slot_display_name": "미배치",
+                "current_cabinet_name": None,
+                "current_column_code": None,
+                "current_cell_code": None,
+                "cabinet_name": None,
+                "column_code": None,
+                "cell_code": None,
+                "label_id": "LP-000702",
+            },
+        ],
+    )
+
+    res = admin_client.get("/album-masters", params={"q": "Preview Album"})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert len(payload) == 1
+    row = payload[0]
+    assert len(row["member_items_preview"]) == 2
+    assert row["member_items_preview"][0]["owned_item_id"] == 701
+    assert row["member_items_preview"][0]["label_id"] == "LP-000701"
+    assert row["member_items_preview"][0]["cover_image_url"] == "https://example.com/items/701.jpg"
+    assert row["member_items_preview"][0]["source_code"] == "DISCOGS"
+    assert row["member_items_preview"][0]["source_external_id"] == "701-release"
+    assert row["member_items_preview"][0]["current_slot_display_name"] == "LP장 6 / 03열 / 01칸"
+    assert row["member_items_preview"][0]["runout_sample"] == "R1-544846 A"
+    assert row["member_items_preview"][1]["label_id"] == "LP-000702"
+    assert row["member_items_preview"][1]["cover_image_url"] == "https://example.com/items/702.jpg"
+    assert row["member_items_preview"][1]["source_code"] == "DISCOGS"
+    assert row["member_items_preview"][1]["source_external_id"] == "702-release"
+    assert row["member_items_preview"][1]["current_slot_display_name"] == "미배치"
+
+
+def test_album_master_search_preview_backfills_missing_released_date_from_source_snapshot(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "list_album_masters",
+        lambda **kwargs: [
+            {
+                "id": 93,
+                "source_code": "MANIADB",
+                "source_master_id": "153773",
+                "title": "自由魂 [box]",
+                "artist_or_brand": "김두수",
+                "sort_artist_name": "김두수",
+                "domain_code": "KOREA",
+                "release_year": 2003,
+                "member_count": 1,
+                "cover_image_url": "https://example.com/cover.jpg",
+                "audio_asset_count": 0,
+                "member_preview_text": "",
+                "member_location_preview_text": "",
+                "updated_at": "2026-04-05T01:00:00+00:00",
+            }
+        ],
+    )
+    monkeypatch.setattr(main_module.db, "count_album_masters", lambda **kwargs: 1)
+    monkeypatch.setattr(main_module.db, "list_album_master_track_matches", lambda *args, **kwargs: [])
+    monkeypatch.setattr(
+        main_module.db,
+        "list_owned_items_by_album_master",
+        lambda album_master_id: [
+            {
+                "id": 567,
+                "owned_item_id": 567,
+                "category": "LP",
+                "source_code": "MANIADB",
+                "source_external_id": "album:153773",
+                "item_title": "김두수 - 자유혼",
+                "artist_or_brand": "김두수",
+                "cover_image_url": "https://example.com/items/567.jpg",
+                "released_date": None,
+                "pressing_country": "KR",
+                "label_name": "리버맨",
+                "catalog_no": None,
+                "barcode": None,
+                "format_name": "LP",
+                "format_items": [],
+                "runout_sample": None,
+                "created_at": "2026-04-04T14:54:37+00:00",
+                "storage_slot_id": None,
+                "slot_code": None,
+                "current_slot_code": None,
+                "current_slot_display_name": "미배치",
+                "current_cabinet_name": None,
+                "current_column_code": None,
+                "current_cell_code": None,
+                "cabinet_name": None,
+                "column_code": None,
+                "cell_code": None,
+                "label_id": "LP-000567",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        main_module,
+        "get_source_release_snapshot",
+        lambda source, external_id: {"released_date": "2003-12-20"} if source == "MANIADB" and external_id == "album:153773" else None,
+    )
+
+    res = admin_client.get("/album-masters", params={"q": "자유혼"})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload[0]["member_items_preview"][0]["released_date"] == "2003-12-20"
+
+
+def test_owned_items_list_backfills_missing_released_date_from_source_snapshot(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "list_owned_items",
+        lambda **kwargs: [
+            {
+                "id": 567,
+                "category": "LP",
+                "size_group": "LP",
+                "preferred_storage_size_group": "LP",
+                "quantity": 1,
+                "is_second_hand": 0,
+                "signature_type": "NONE",
+                "source_code": "MANIADB",
+                "source_external_id": "album:153773",
+                "released_date": None,
+                "release_year": 2003,
+                "created_at": "2026-04-04T14:54:37+00:00",
+                "updated_at": "2026-04-04T14:54:37+00:00",
+                "status": "IN_COLLECTION",
+            }
+        ],
+    )
+    monkeypatch.setattr(main_module.db, "count_owned_items", lambda **kwargs: 1)
+    monkeypatch.setattr(
+        main_module,
+        "get_source_release_snapshot",
+        lambda source, external_id: {"released_date": "2003-12-20"} if source == "MANIADB" and external_id == "album:153773" else None,
+    )
+
+    res = admin_client.get("/owned-items", params={"category": "LP"})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload[0]["released_date"] == "2003-12-20"
+
+
+def test_admin_can_fetch_discogs_cover_preview(admin_client, monkeypatch, tmp_path):
+    cover_path = tmp_path / "discogs-preview.jpg"
+    expected = b"fake-discogs-cover-preview"
+    cover_path.write_bytes(expected)
+
+    def fake_ensure_discogs_cover_preview(release_id: str):
+        assert release_id == "1017068"
+        return cover_path, "image/jpeg"
+
+    monkeypatch.setattr(
+        main_module,
+        "_ensure_discogs_cover_preview",
+        fake_ensure_discogs_cover_preview,
+    )
+
+    res = admin_client.get("/discogs/release/1017068/cover-preview")
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("image/jpeg")
+    assert res.content == expected
+
+
+def test_startup_db_ready_skips_full_init_for_existing_db(monkeypatch, tmp_path):
+    db_path = tmp_path / "library.db"
+    monkeypatch.setenv("LIBRARY_DB_PATH", str(db_path))
+    main_module.db.get_settings.cache_clear()
+    main_module.db.init_db()
+
+    called = {"init": 0}
+
+    def fake_init_db():
+        called["init"] += 1
+
+    monkeypatch.setattr(
+        main_module.db,
+        "get_settings",
+        lambda: SimpleNamespace(db_path=str(db_path)),
+    )
+    monkeypatch.setattr(main_module.db, "init_db", fake_init_db)
+
+    main_module.db.ensure_startup_db_ready()
+
+    assert called["init"] == 0
+
+
+def test_startup_db_ready_runs_full_init_for_missing_db(monkeypatch, tmp_path):
+    db_path = tmp_path / "missing.db"
+    called = {"init": 0}
+
+    def fake_init_db():
+        called["init"] += 1
+
+    monkeypatch.setattr(
+        main_module.db,
+        "get_settings",
+        lambda: SimpleNamespace(db_path=str(db_path)),
+    )
+    monkeypatch.setattr(main_module.db, "init_db", fake_init_db)
+
+    main_module.db.ensure_startup_db_ready()
+
+    assert called["init"] == 1
+
+
+def test_startup_db_ready_recreates_collectibles_tables_for_existing_db(monkeypatch, tmp_path):
+    db_path = tmp_path / "library.db"
+    monkeypatch.setenv("LIBRARY_DB_PATH", str(db_path))
+    main_module.db.get_settings.cache_clear()
+    main_module.db.init_db()
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = OFF")
+    conn.execute("DROP TABLE IF EXISTS goods_item_album_master_map")
+    conn.execute("DROP TABLE IF EXISTS goods_item_artist_map")
+    conn.execute("DROP TABLE IF EXISTS goods_item_label_map")
+    conn.execute("DROP TABLE IF EXISTS goods_item")
+    conn.commit()
+    conn.close()
+
+    main_module.db.ensure_startup_db_ready()
+
+    conn = sqlite3.connect(db_path)
+    try:
+        tables = {
+            row[0]
+            for row in conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table'
+                  AND name IN (
+                    'goods_item',
+                    'goods_item_detail',
+                    'goods_item_album_master_map',
+                    'goods_item_artist_map',
+                    'goods_item_label_map'
+                  )
+                """
+            ).fetchall()
+        }
+    finally:
+        conn.close()
+        main_module.db.get_settings.cache_clear()
+
+    assert tables == {
+        "goods_item",
+        "goods_item_detail",
+        "goods_item_album_master_map",
+        "goods_item_artist_map",
+        "goods_item_label_map",
+    }
