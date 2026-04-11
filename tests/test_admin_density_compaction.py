@@ -43,3 +43,11 @@ def test_manage_edit_grids_use_grid12_mapping():
     assert 'id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid"' in html
     assert html.count('data-grid="home-product-grid"') == 5
     assert "home-edit-grid-6 home-product-grid" not in html
+
+
+def test_search_list_edit_button_has_arrow_indicator():
+    html = read_static_html("index.html")
+    block = html.split("function homeMasterMemberPreviewHtml(item", 1)[1].split("function getHomeMasterVisiblePreviewItems", 1)[0]
+    assert 'data-home-open-owned-editor' in block
+    assert 'class="edit-arrow"' in block
+    assert 'aria-expanded' in block

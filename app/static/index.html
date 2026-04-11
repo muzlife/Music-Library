@@ -4061,8 +4061,21 @@
       min-width: 0;
     }
 
+    .home-master-member-preview-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
     .home-master-member-preview-code-btn {
       flex: 0 0 auto;
+    }
+
+    .edit-arrow {
+      font-size: 0.7rem;
+      margin-left: 4px;
+      opacity: 0.7;
     }
 
     .home-master-member-preview-more {
@@ -31943,6 +31956,7 @@
       const runoutSample = operatorRunoutSampleText(item?.runout_sample || item?.runout_matrix || []);
       const collectorMetaLine = homeMasterMemberPreviewMetaLine(item);
       const ownedItemId = Number(item?.owned_item_id || item?.id || 0);
+      const isInlineExpanded = ownedItemId > 0 && ownedItemId === Number(homeSelectedItemId || 0) && !homeInlineEditorCollapsed;
       const isContextSelected = ownedItemId > 0 && ownedItemId === getMediaSearchContextSelectedOwnedItemId();
       const labelId = String(item?.label_id || "").trim() || "-";
       const showCover = Boolean(options?.showCover);
@@ -31959,7 +31973,10 @@
           <div class="home-master-member-preview-body">
             <div class="home-master-member-preview-title-row">
               <div class="home-master-member-preview-title">${escapeHtml(title)}${artist ? `<span>${escapeHtml(artist)}</span>` : ""}</div>
-              <button class="btn ghost tiny home-master-member-preview-code-btn" type="button" data-home-open-owned-editor="${ownedItemId}">${escapeHtml(labelId)}</button>
+              <div class="home-master-member-preview-actions">
+                <span class="btn ghost tiny home-master-member-preview-code-btn">${escapeHtml(labelId)}</span>
+                <button class="btn ghost tiny home-master-member-preview-edit-btn" type="button" data-home-open-owned-editor="${ownedItemId}" aria-expanded="${isInlineExpanded ? "true" : "false"}">상품 수정 <span class="edit-arrow">${isInlineExpanded ? "▲" : "▼"}</span></button>
+              </div>
             </div>
             <div class="operator-secondary-line">
               <div class="operator-secondary-line-main">
@@ -39150,6 +39167,7 @@
       if (isSameItem) {
         homeInlineEditorCollapsed = !homeInlineEditorCollapsed;
         syncHomeMasterInlineEditor();
+        renderHomeSearchResults(homeSearchResults);
         return;
       }
       openHomeOwnedItemFromManageContext(ownedItemId);
