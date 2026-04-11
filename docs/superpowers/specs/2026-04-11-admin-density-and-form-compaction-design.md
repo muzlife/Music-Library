@@ -8,7 +8,8 @@ Increase information density across the entire admin area while preserving reada
 
 ## Scope
 - Admin UI only (`/admin` route, `body[data-shell-mode="admin"]`).
-- Admin media search/list, manage, register, and source workbench surfaces.
+- Density tokens apply to **all admin screens** to keep a consistent look.
+- Layout reflow changes are limited to admin media search/list, manage, register, and source workbench surfaces.
 - Search list “상품 수정” button: add inline up/down arrow state to indicate expanded/collapsed quick edit.
 - Direct register form layout: all fields remain visible, arranged to ≤2 rows at desktop widths (>=1280px).
 - Master/Item edit blocks: reduce vertical density and minimize rows while keeping all fields visible.
@@ -27,7 +28,7 @@ Increase information density across the entire admin area while preserving reada
 ## Layout Design
 
 ### 1) Admin Density Tokens (High)
-Apply to admin-only scope via `body[data-shell-mode="admin"][data-admin-density="high"]`:
+Apply to admin-only scope via `body[data-shell-mode="admin"]` (no new attribute required):
 - Input height: 26–28px
 - Input padding: 2px 6px
 - Label font-size: 0.68–0.70rem
@@ -60,7 +61,7 @@ Notes:
 
 ### 3) Master / Item Edit Blocks
 Keep all fields visible, but reduce row count and spacing:
-- Convert key sections to 12-column grid where feasible.
+- Convert key sections to 12-column grid where feasible (media manage edit, source meta, and product detail grids).
 - Group related fields (status/signature, price/currency, domain/size) on the same row.
 - Reduce spacing between section dividers and form groups using admin density tokens.
 
