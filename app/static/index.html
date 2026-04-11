@@ -1826,13 +1826,23 @@
       margin-bottom: 1px;
     }
 
-    body[data-shell-mode="admin"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+    body[data-shell-mode="admin"] input,
     body[data-shell-mode="admin"] select,
     body[data-shell-mode="admin"] textarea {
       min-height: 28px;
       padding: 2px 6px;
       font-size: 0.86rem;
       line-height: 1.1;
+    }
+
+    body[data-shell-mode="admin"] input[type="checkbox"],
+    body[data-shell-mode="admin"] input[type="radio"],
+    body[data-shell-mode="admin"] input[type="file"],
+    body[data-shell-mode="admin"] input[type="hidden"] {
+      min-height: auto;
+      padding: 0;
+      font-size: inherit;
+      line-height: normal;
     }
 
     body[data-shell-mode="admin"] .btn {
