@@ -31,9 +31,14 @@ def test_manage_edit_grids_use_grid12_mapping():
     assert ".grid-12--from-6 .span-4 { grid-column: span 8; }" in html
     assert ".grid-12--from-6 .span-5 { grid-column: span 10; }" in html
     assert ".grid-12--from-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }" in html
+    assert ".grid-12--from-6 > * { grid-column: span 1; }" in html
+    assert ".grid-12--from-6 .span-2 { grid-column: span 2; }" in html
+    assert ".grid-12--from-6 .span-3 { grid-column: span 3; }" in html
+    assert ".grid-12--from-6 .span-4 { grid-column: span 4; }" in html
+    assert ".grid-12--from-6 .span-5 { grid-column: span 4; }" in html
     assert 'id="homeEditMusicMetaFieldsA" class="grid-12 grid-12--from-6"' in html
     assert 'id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6"' in html
     assert 'id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6"' in html
     assert 'id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid"' in html
-    assert 'data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid"' in html
+    assert html.count('data-grid="home-product-grid"') == 5
     assert "home-edit-grid-6 home-product-grid" not in html

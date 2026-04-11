@@ -8905,6 +8905,11 @@
       .grid-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .grid-12 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
       .grid-12--from-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .grid-12--from-6 > * { grid-column: span 1; }
+      .grid-12--from-6 .span-2 { grid-column: span 2; }
+      .grid-12--from-6 .span-3 { grid-column: span 3; }
+      .grid-12--from-6 .span-4 { grid-column: span 4; }
+      .grid-12--from-6 .span-5 { grid-column: span 4; }
       .home-edit-grid-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .option-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .meta-search-fields-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
