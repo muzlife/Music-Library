@@ -21,3 +21,9 @@ def test_direct_register_uses_two_grid_rows_for_all_fields():
     block = html.split('data-i18n="media.register.direct.title"', 1)[1].split('id="quickSizeGroup"', 1)[0]
     assert block.count('class="grid-12"') == 2
     assert 'id="quickItemName"' in block and 'span-4' in block
+
+
+def test_manage_edit_grids_use_grid12_mapping():
+    html = read_static_html("index.html")
+    assert 'id="homeEditMusicMetaFieldsA" class="grid-12 grid-12--from-6"' in html
+    assert 'home-product-grid" class="grid-12 grid-12--from-6' in html

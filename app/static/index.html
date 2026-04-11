@@ -1608,6 +1608,12 @@
       gap: 4px;
     }
 
+    .grid-12--from-6 > * { grid-column: span 2; }
+    .grid-12--from-6 .span-2 { grid-column: span 4; }
+    .grid-12--from-6 .span-3 { grid-column: span 6; }
+    .grid-12--from-6 .span-4 { grid-column: span 8; }
+    .grid-12--from-6 .span-5 { grid-column: span 10; }
+
     .span-2 { grid-column: span 2; }
     .span-3 { grid-column: span 3; }
     .span-4 { grid-column: span 4; }
@@ -10070,7 +10076,7 @@
               <div id="homeEditMusicSourceTracks" class="source-meta-tracklist" data-i18n="media.manage.source_meta.tracks_empty">-</div>
             </details>
           </div>
-          <div id="homeEditMusicMetaFieldsA" class="grid-6">
+          <div id="homeEditMusicMetaFieldsA" class="grid-12 grid-12--from-6">
             <div class="span-2">
               <label for="editArtistName" data-i18n="media.manage.field.artist_name.label">아티스트명</label>
               <input id="editArtistName" data-i18n-placeholder="media.manage.field.artist_name.placeholder" placeholder="예: 산울림" />
@@ -10080,7 +10086,7 @@
               <input id="editMediaType" data-i18n-placeholder="media.manage.field.media_type.placeholder" placeholder="예: Vinyl / CD / Cassette" />
             </div>
           </div>
-          <div id="homeEditMusicMetaFieldsB" class="grid-6" style="margin-top:6px;">
+          <div id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6" style="margin-top:6px;">
             <div class="span-2">
               <label for="editLabelName" data-i18n="media.manage.field.label_name.label">레이블</label>
               <input id="editLabelName" data-i18n-placeholder="media.manage.field.label_name.placeholder" placeholder="예: Ecole de Gorae" />
@@ -10108,7 +10114,7 @@
               <input id="editSpeedRpm" type="number" min="1" />
             </div>
           </div>
-          <div id="homeEditMusicMetaFieldsC" class="grid-6" style="margin-top:6px;">
+          <div id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6" style="margin-top:6px;">
             <div class="span-2">
               <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
               <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." />
@@ -10131,7 +10137,7 @@
               <div class="section-divider">
                 <h2 data-i18n="media.manage.product.title">상품 정보</h2>
               </div>
-              <div class="home-edit-grid-6 home-product-grid">
+              <div data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid">
                 <div>
                   <label for="editOwnedId">owned_item_id</label>
                   <input id="editOwnedId" readonly />
@@ -10153,7 +10159,7 @@
                   <select id="editSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
                 </div>
               </div>
-              <div class="home-edit-grid-6 home-product-grid" style="margin-top:6px;">
+              <div data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px;">
                 <div id="homeEditLinkedArtistWrap" class="span-2">
                   <label for="editLinkedArtistName" data-i18n="media.manage.product.field.linked_artist_name.label">연계 아티스트명 (앨범 모호 시)</label>
                   <input id="editLinkedArtistName" data-i18n-placeholder="media.manage.product.field.linked_artist_name.placeholder" placeholder="예: 산울림" />
@@ -10190,7 +10196,7 @@
               <input id="editCategory" type="hidden" value="LP" />
               <input id="editSizeGroup" type="hidden" value="STD" />
               <input id="editReleaseType" type="hidden" value="" />
-              <div class="home-edit-grid-6 home-product-grid" style="margin-top:6px;">
+              <div data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px;">
                 <div>
                   <label for="editStatus" data-i18n="media.manage.product.field.status.label">상태</label>
                   <select id="editStatus">
@@ -10231,7 +10237,7 @@
                   </select>
                 </div>
               </div>
-              <div id="homeEditMusicOpsRow" class="home-edit-grid-6 home-product-grid" style="margin-top:6px; display:none;">
+              <div id="homeEditMusicOpsRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px; display:none;">
                 <div>
                   <label for="editCoverCondition" data-i18n="media.manage.product.field.cover_condition.label">커버 컨디션</label>
                   <select id="editCoverCondition">
@@ -10272,7 +10278,7 @@
               <input id="editReleasedDate" type="hidden" />
               <input id="editGenres" type="hidden" />
               <input id="editBarcode" type="hidden" />
-              <div id="homeEditMusicInfoRow" class="home-edit-grid-6 home-product-grid" style="margin-top:6px; display:none;">
+              <div id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid" style="margin-top:6px; display:none;">
                 <div class="span-4">
                   <label for="homeEditCoverImagePaste" data-i18n="media.manage.product.field.cover_upload.label">커버 직접 등록 / 붙여넣기 / URL</label>
                   <div style="display:flex;gap:6px;align-items:stretch;">
