@@ -1826,7 +1826,7 @@
       margin-bottom: 1px;
     }
 
-    body[data-shell-mode="admin"] input,
+    body[data-shell-mode="admin"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
     body[data-shell-mode="admin"] select,
     body[data-shell-mode="admin"] textarea {
       min-height: 28px;

@@ -10,7 +10,8 @@ def read_static_html(name: str) -> str:
 
 def test_admin_density_overrides_define_compact_tokens():
     html = read_static_html("index.html")
-    assert 'body[data-shell-mode="admin"] input' in html
+    assert 'body[data-shell-mode="admin"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"])' in html
+    assert 'body[data-shell-mode="admin"] input,' not in html
     assert 'body[data-shell-mode="admin"] label' in html
     assert 'body[data-shell-mode="admin"] .btn' in html
     assert 'body[data-shell-mode="admin"] .section-divider' in html
