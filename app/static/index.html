@@ -1137,16 +1137,29 @@
       grid-template-columns: repeat(6, minmax(120px, 1fr)) auto;
     }
 
-    .goods-search-compact-row--secondary .goods-search-actions {
-      margin-top: 0;
-    }
-
     .goods-register-compact-row--primary {
       grid-template-columns: 0.9fr 0.58fr 0.9fr 0.8fr 1fr 1fr;
     }
 
     .goods-register-compact-row--secondary {
       grid-template-columns: minmax(0, 2.1fr) minmax(132px, 0.95fr) minmax(0, 1.45fr) minmax(0, 1.45fr) auto;
+    }
+
+    .goods-manage-compact-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .goods-manage-compact-row--primary {
+      grid-template-columns: minmax(84px, 0.72fr) 0.84fr 0.62fr 0.72fr 0.86fr 1fr 1fr;
+    }
+
+    .goods-manage-compact-row--secondary {
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 2.3fr) auto;
+    }
+
+    .goods-manage-compact-row--secondary textarea {
+      min-height: 44px;
     }
 
     .quick-register-compact-row--primary {
@@ -1183,6 +1196,10 @@
       align-items: center;
       gap: 6px;
       margin-top: 10px;
+    }
+
+    .goods-search-compact-row--secondary .goods-search-actions {
+      margin-top: 0;
     }
 
     .goods-result-item {
@@ -10095,6 +10112,8 @@
       .dashboard-workbench-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .goods-search-compact-row--primary,
       .goods-search-compact-row--secondary,
+      .goods-manage-compact-row--primary,
+      .goods-manage-compact-row--secondary,
       .goods-register-compact-row--primary,
       .goods-register-compact-row--secondary,
       .quick-register-compact-row--primary,
@@ -10119,6 +10138,8 @@
       }
       .goods-search-compact-row--primary,
       .goods-search-compact-row--secondary,
+      .goods-manage-compact-row--primary,
+      .goods-manage-compact-row--secondary,
       .goods-register-compact-row--primary,
       .goods-register-compact-row--secondary,
       .quick-register-compact-row--primary,
@@ -11734,103 +11755,107 @@
         <div id="homeEditStatus" class="status"></div>
         </div>
 
-        <div id="homeMasterGoodsSection" class="home-goods-zone" style="display:none;">
-          <div class="home-goods-zone-kicker" data-i18n="media.manage.collectibles.kicker">컬렉터블 전용 영역</div>
-          <div class="mini home-goods-zone-note" data-i18n="media.manage.collectibles.note">음반/상품 편집 구역과 분리된 연계 컬렉터블 목록입니다.</div>
-          <div class="section-divider" style="margin-top:8px;">
-            <h2 data-i18n="media.manage.collectibles.title">연계 컬렉터블</h2>
+        <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack" style="display:none;">
+          <div class="compact-stack-grid">
+            <div class="home-goods-zone-kicker span-2" data-i18n="media.manage.collectibles.kicker">컬렉터블 전용 영역</div>
+            <div class="mini home-goods-zone-note span-2" data-i18n="media.manage.collectibles.note">음반/상품 편집 구역과 분리된 연계 컬렉터블 목록입니다.</div>
+            <div class="section-divider span-2" style="margin-top:8px;">
+              <h2 data-i18n="media.manage.collectibles.title">연계 컬렉터블</h2>
+            </div>
+            <div id="homeMasterGoodsList" class="related-list span-2"></div>
           </div>
-          <div id="homeMasterGoodsList" class="related-list"></div>
-          <div id="homeMasterGoodsActionMount"></div>
+          <div class="compact-stack-actions">
+            <div id="homeMasterGoodsActionMount"></div>
+          </div>
         </div>
 
-        <div id="homeLinkedGoodsPanel" class="home-goods-panel">
-        <div class="mini" style="margin-top:0;color:#6b7280;" data-i18n="media.manage.collectibles.panel_intro">컬렉터블 등록과 검색은 상단 `컬렉터블` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
-        <div class="section-divider" style="margin-top:10px;">
-          <h2 data-i18n="media.manage.collectibles.panel_title">마스터 연계 컬렉터블</h2>
-        </div>
-        <div class="mini" style="margin-top:6px;" data-i18n="media.manage.collectibles.panel_note">콜라보, 레이블 행사 컬렉터블, 단독 컬렉터블은 `컬렉터블` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.</div>
-        <div class="grid-6" style="margin-top:8px;">
-          <div class="span-3">
-            <label data-i18n="media.manage.collectibles.field.current_master">현재 연계 기준</label>
-            <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
+        <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack">
+          <div class="compact-stack-grid">
+            <div class="mini span-2" style="margin-top:0;color:#6b7280;" data-i18n="media.manage.collectibles.panel_intro">컬렉터블 등록과 검색은 상단 `컬렉터블` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
+            <div class="section-divider span-2" style="margin-top:10px;">
+              <h2 data-i18n="media.manage.collectibles.panel_title">마스터 연계 컬렉터블</h2>
+            </div>
+            <div class="mini span-2" style="margin-top:6px;" data-i18n="media.manage.collectibles.panel_note">콜라보, 레이블 행사 컬렉터블, 단독 컬렉터블은 `컬렉터블` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.</div>
+            <div class="span-2">
+              <label data-i18n="media.manage.collectibles.field.current_master">현재 연계 기준</label>
+              <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
+            </div>
           </div>
-            <div class="span-3">
+          <div class="compact-stack-actions">
+            <div>
               <label data-i18n="media.manage.collectibles.field.register_method">등록 방식</label>
               <div class="compact-line" data-i18n="media.manage.collectibles.register_method.body">`컬렉터블 > 컬렉터블 등록`으로 이동해 기본 정보와 매핑을 함께 입력합니다.</div>
             </div>
-        </div>
-        <div class="row home-manage-actions-right" style="margin-top:8px;">
-          <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">컬렉터블 탭에서 연계 컬렉터블 등록</button>
-        </div>
-        <div id="homeLinkedGoodsStatus" class="status"></div>
-        <div id="homeLinkedGoodsLegacyFields" style="display:none;" hidden>
-        <div class="grid-6">
-          <div>
-            <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
-            <select id="homeLinkedGoodsCategory">
-              <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
-              <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
-            </select>
+            <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">컬렉터블 탭에서 연계 컬렉터블 등록</button>
           </div>
-          <div class="span-2">
-            <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
-            <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
+          <div id="homeLinkedGoodsStatus" class="status span-2"></div>
+          <div id="homeLinkedGoodsLegacyFields" class="span-2" style="display:none;" hidden>
+            <div class="grid-6">
+              <div>
+                <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
+                <select id="homeLinkedGoodsCategory">
+                  <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
+                  <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
+                </select>
+              </div>
+              <div class="span-2">
+                <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
+                <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
+              </div>
+              <div>
+                <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
+                <select id="homeLinkedGoodsSizeGroup">
+                  <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-6" style="margin-top:6px;">
+              <div>
+                <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
+                <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
+              </div>
+              <div class="span-2">
+                <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
+                <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
+              </div>
+              <div id="homeLinkedPosterSpecWrap">
+                <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
+                <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
+              </div>
+              <div id="homeLinkedTshirtSizeWrap">
+                <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
+                <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
+              </div>
+              <div id="homeLinkedCupMaterialWrap">
+                <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
+                <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
+              </div>
+              <div id="homeLinkedHatSizeWrap">
+                <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
+                <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
+              </div>
+            </div>
+            <div class="grid-6" style="margin-top:6px;">
+              <div class="span-2">
+                <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
+                <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
+              </div>
+              <div class="span-2">
+                <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
+                <textarea
+                  id="homeLinkedGoodsImagePaste"
+                  class="image-paste-box"
+                  data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
+                  placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
+                ></textarea>
+              </div>
+              <div class="span-2">
+                <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
+                <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
+              </div>
+            </div>
+            <input id="homeLinkedGoodsImageUrls" type="hidden" />
           </div>
-          <div>
-            <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
-            <select id="homeLinkedGoodsSizeGroup">
-              <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
-            </select>
-          </div>
-        </div>
-        <div class="grid-6" style="margin-top:6px;">
-          <div>
-            <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
-            <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
-          </div>
-          <div class="span-2">
-            <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
-            <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
-          </div>
-          <div id="homeLinkedPosterSpecWrap">
-            <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
-            <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
-          </div>
-          <div id="homeLinkedTshirtSizeWrap">
-            <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
-            <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
-          </div>
-          <div id="homeLinkedCupMaterialWrap">
-            <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
-            <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
-          </div>
-          <div id="homeLinkedHatSizeWrap">
-            <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
-            <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
-          </div>
-        </div>
-        <div class="grid-6" style="margin-top:6px;">
-          <div class="span-2">
-            <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
-            <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
-          </div>
-          <div class="span-2">
-            <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
-            <textarea
-              id="homeLinkedGoodsImagePaste"
-              class="image-paste-box"
-              data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
-              placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
-            ></textarea>
-          </div>
-          <div class="span-2">
-            <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
-            <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
-          </div>
-        </div>
-        <input id="homeLinkedGoodsImageUrls" type="hidden" />
-        </div>
         </div>
 
         <div id="homeManageMasterSection">
@@ -12170,77 +12195,81 @@
               <div class="result-head" style="margin-bottom:0;">
                 <strong>기본 정보</strong>
               </div>
-              <div class="goods-form-grid" style="margin-top:8px;">
-                <div>
-                  <label for="goodsManageId" data-i18n="collectibles.manage.field.id.label">goods_item_id</label>
-                  <input id="goodsManageId" readonly />
+              <div id="goodsManageCoreFields" class="ops-compact-form-grid goods-manage-compact-grid" style="margin-top:8px;">
+                <div id="goodsManageCoreRowA" class="ops-compact-form-row goods-manage-compact-row--primary">
+                  <div>
+                    <label for="goodsManageId" data-i18n="collectibles.manage.field.id.label">goods_item_id</label>
+                    <input id="goodsManageId" readonly />
+                  </div>
+                  <div>
+                    <label for="goodsManageCategory" data-i18n="collectibles.manage.field.category.label">카테고리</label>
+                    <select id="goodsManageCategory">
+                      <option value="POSTER" data-i18n="collectibles.category.poster">포스터</option>
+                      <option value="T_SHIRT" data-i18n="collectibles.category.t_shirt">티셔츠</option>
+                      <option value="LIGHT_STICK" data-i18n="collectibles.category.light_stick">응원봉</option>
+                      <option value="HAT" data-i18n="collectibles.category.hat">모자</option>
+                      <option value="BAG" data-i18n="collectibles.category.bag">가방</option>
+                      <option value="CUP" data-i18n="collectibles.category.cup">컵</option>
+                      <option value="OTHER" data-i18n="collectibles.category.other">기타</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="goodsManageQuantity" data-i18n="collectibles.manage.field.quantity.label">수량</label>
+                    <input id="goodsManageQuantity" type="number" min="1" value="1" />
+                  </div>
+                  <div>
+                    <label for="goodsManageStatus" data-i18n="collectibles.manage.field.status.label">상태</label>
+                    <select id="goodsManageStatus">
+                      <option value="ACTIVE" data-i18n="collectibles.item_status.active">활성</option>
+                      <option value="ARCHIVED" data-i18n="collectibles.item_status.archived">보관</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="goodsManageSizeGroup" data-i18n="collectibles.manage.field.size_group.label">보관 규격</label>
+                    <select id="goodsManageSizeGroup">
+                      <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                      <option value="LP" data-i18n="common.size_group.lp">LP</option>
+                      <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
+                      <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
+                      <option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option>
+                      <option value="STD" data-i18n="common.size_group.std">CD</option>
+                      <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
+                      <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
+                      <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="goodsManageSlotId" data-i18n="collectibles.manage.field.slot_id.label">보관 슬롯</label>
+                    <select id="goodsManageSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
+                  </div>
+                  <div>
+                    <label for="goodsManageDomainCode" data-i18n="collectibles.manage.field.domain.label">도메인</label>
+                    <select id="goodsManageDomainCode">
+                      <option value="" data-i18n="common.unspecified">미지정</option>
+                      <option value="KOREA" data-i18n="common.domain.korea">가요</option>
+                      <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
+                      <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
+                      <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
+                      <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
+                      <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
+                      <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label for="goodsManageCategory" data-i18n="collectibles.manage.field.category.label">카테고리</label>
-                  <select id="goodsManageCategory">
-                    <option value="POSTER" data-i18n="collectibles.category.poster">포스터</option>
-                    <option value="T_SHIRT" data-i18n="collectibles.category.t_shirt">티셔츠</option>
-                    <option value="LIGHT_STICK" data-i18n="collectibles.category.light_stick">응원봉</option>
-                    <option value="HAT" data-i18n="collectibles.category.hat">모자</option>
-                    <option value="BAG" data-i18n="collectibles.category.bag">가방</option>
-                    <option value="CUP" data-i18n="collectibles.category.cup">컵</option>
-                    <option value="OTHER" data-i18n="collectibles.category.other">기타</option>
-                  </select>
+                <div id="goodsManageCoreRowB" class="ops-compact-form-row goods-manage-compact-row--secondary">
+                  <div>
+                    <label for="goodsManageName" data-i18n="collectibles.manage.field.name.label">컬렉터블명</label>
+                    <input id="goodsManageName" data-i18n-placeholder="collectibles.manage.field.name.placeholder" placeholder="예: 산울림 2집 포스터" />
+                  </div>
+                  <div>
+                    <label for="goodsManageDescription" data-i18n="collectibles.manage.field.description.label">설명</label>
+                    <textarea id="goodsManageDescription" data-i18n-placeholder="collectibles.manage.field.description.placeholder" placeholder="예: 투어 현장 판매 포스터"></textarea>
+                  </div>
+                  <div class="ops-compact-form-actions">
+                    <button id="goodsManageSaveBtn" class="btn" type="button" data-i18n="collectibles.manage.save">컬렉터블 저장</button>
+                    <button id="goodsManageDeleteBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.delete">컬렉터블 삭제</button>
+                  </div>
                 </div>
-                <div>
-                  <label for="goodsManageQuantity" data-i18n="collectibles.manage.field.quantity.label">수량</label>
-                  <input id="goodsManageQuantity" type="number" min="1" value="1" />
-                </div>
-                <div class="span-2">
-                  <label for="goodsManageName" data-i18n="collectibles.manage.field.name.label">컬렉터블명</label>
-                  <input id="goodsManageName" data-i18n-placeholder="collectibles.manage.field.name.placeholder" placeholder="예: 산울림 2집 포스터" />
-                </div>
-                <div>
-                  <label for="goodsManageStatus" data-i18n="collectibles.manage.field.status.label">상태</label>
-                  <select id="goodsManageStatus">
-                    <option value="ACTIVE" data-i18n="collectibles.item_status.active">활성</option>
-                    <option value="ARCHIVED" data-i18n="collectibles.item_status.archived">보관</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="goodsManageSizeGroup" data-i18n="collectibles.manage.field.size_group.label">보관 규격</label>
-                  <select id="goodsManageSizeGroup">
-                    <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
-                    <option value="LP" data-i18n="common.size_group.lp">LP</option>
-                    <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
-                    <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
-                    <option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option>
-                    <option value="STD" data-i18n="common.size_group.std">CD</option>
-                    <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
-                    <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
-                    <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="goodsManageSlotId" data-i18n="collectibles.manage.field.slot_id.label">보관 슬롯</label>
-                  <select id="goodsManageSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
-                </div>
-                <div>
-                  <label for="goodsManageDomainCode" data-i18n="collectibles.manage.field.domain.label">도메인</label>
-                  <select id="goodsManageDomainCode">
-                    <option value="" data-i18n="common.unspecified">미지정</option>
-                    <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                    <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                    <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                    <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                    <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                    <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
-                    <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                  </select>
-                </div>
-                <div class="span-3">
-                  <label for="goodsManageDescription" data-i18n="collectibles.manage.field.description.label">설명</label>
-                  <textarea id="goodsManageDescription" data-i18n-placeholder="collectibles.manage.field.description.placeholder" placeholder="예: 투어 현장 판매 포스터"></textarea>
-                </div>
-              </div>
-              <div class="row" style="margin-top:10px;">
-                <button id="goodsManageSaveBtn" class="btn" type="button" data-i18n="collectibles.manage.save">컬렉터블 저장</button>
-                <button id="goodsManageDeleteBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.delete">컬렉터블 삭제</button>
               </div>
               <div id="goodsManageStatusLine" class="status"></div>
             </section>
@@ -12251,9 +12280,11 @@
                 <span class="mini" data-i18n="collectibles.manage.map.album_master.subtitle">선택적으로 여러 개 연결</span>
               </div>
               <div id="goodsAlbumMasterMapList" class="goods-chip-list"></div>
-              <div class="row">
-                <input id="goodsManageAlbumMasterQuery" data-i18n-placeholder="collectibles.manage.map.album_master.query.placeholder" placeholder="앨범명 / 아티스트명 검색" style="flex:1;" />
-                <button id="goodsManageAlbumMasterSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.album_master.action.search">조회</button>
+              <div id="goodsManageAlbumMasterControls" class="compact-stack" style="margin-top:8px;">
+                <input id="goodsManageAlbumMasterQuery" data-i18n-placeholder="collectibles.manage.map.album_master.query.placeholder" placeholder="앨범명 / 아티스트명 검색" />
+                <div class="compact-stack-actions">
+                  <button id="goodsManageAlbumMasterSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.album_master.action.search">조회</button>
+                </div>
               </div>
               <div id="goodsManageAlbumMasterResults" class="goods-target-results"></div>
             </div>
@@ -12264,9 +12295,11 @@
                 <span class="mini" data-i18n="collectibles.manage.map.artist.subtitle">문자열 기준</span>
               </div>
               <div id="goodsArtistMapList" class="goods-chip-list"></div>
-              <div class="row">
-                <input id="goodsManageArtistName" data-i18n-placeholder="collectibles.manage.map.artist.placeholder" placeholder="예: 산울림" style="flex:1;" />
-                <button id="goodsManageArtistAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.artist.action.add">추가</button>
+              <div id="goodsManageArtistControls" class="compact-stack" style="margin-top:8px;">
+                <input id="goodsManageArtistName" data-i18n-placeholder="collectibles.manage.map.artist.placeholder" placeholder="예: 산울림" />
+                <div class="compact-stack-actions">
+                  <button id="goodsManageArtistAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.artist.action.add">추가</button>
+                </div>
               </div>
             </div>
 
@@ -12276,9 +12309,11 @@
                 <span class="mini" data-i18n="collectibles.manage.map.label.subtitle">문자열 기준</span>
               </div>
               <div id="goodsLabelMapList" class="goods-chip-list"></div>
-              <div class="row">
-                <input id="goodsManageLabelName" data-i18n-placeholder="collectibles.manage.map.label.placeholder" placeholder="예: 서울음반" style="flex:1;" />
-                <button id="goodsManageLabelAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.label.action.add">추가</button>
+              <div id="goodsManageLabelControls" class="compact-stack" style="margin-top:8px;">
+                <input id="goodsManageLabelName" data-i18n-placeholder="collectibles.manage.map.label.placeholder" placeholder="예: 서울음반" />
+                <div class="compact-stack-actions">
+                  <button id="goodsManageLabelAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.label.action.add">추가</button>
+                </div>
               </div>
             </div>
 
@@ -12294,41 +12329,51 @@
                 <span class="mini">시리즈/변형/세트/프로모 관계 관리</span>
               </div>
               <div id="goodsCollectibleRelationMapList" class="goods-chip-list"></div>
-              <div class="row">
-                <input id="goodsManageCollectibleQuery" placeholder="연결할 컬렉터블 검색" style="flex:1;" />
-                <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button">조회</button>
-              </div>
-              <div class="row">
-                <select id="goodsManageRelationType" style="width:170px;flex:0 0 170px;">
-                  <option value="SERIES">시리즈</option>
-                  <option value="VARIANT">변형</option>
-                  <option value="SET_MEMBER">세트 구성</option>
-                  <option value="RELATED">관련</option>
-                  <option value="PROMO_FOR">프로모 연계</option>
-                </select>
-                <input id="goodsManageRelationNote" placeholder="관계 메모(선택)" style="flex:1;" />
+              <div id="goodsManageCollectibleLookupControls" class="compact-stack" style="margin-top:8px;">
+                <input id="goodsManageCollectibleQuery" placeholder="연결할 컬렉터블 검색" />
+                <div class="compact-stack-actions">
+                  <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button">조회</button>
+                </div>
               </div>
               <div id="goodsManageCollectibleResults" class="goods-target-results"></div>
-              <div class="row">
-                <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button">컬렉터블 연계 저장</button>
+              <div id="goodsManageCollectibleComposeControls" class="compact-stack" style="margin-top:8px;">
+                <div class="compact-stack-grid">
+                  <div>
+                    <label for="goodsManageRelationType">관계 타입</label>
+                    <select id="goodsManageRelationType">
+                      <option value="SERIES">시리즈</option>
+                      <option value="VARIANT">변형</option>
+                      <option value="SET_MEMBER">세트 구성</option>
+                      <option value="RELATED">관련</option>
+                      <option value="PROMO_FOR">프로모 연계</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="goodsManageRelationNote">관계 메모(선택)</label>
+                    <input id="goodsManageRelationNote" placeholder="관계 메모(선택)" />
+                  </div>
+                </div>
+                <div class="compact-stack-actions">
+                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button">컬렉터블 연계 저장</button>
+                </div>
               </div>
               <div id="goodsManageRelationStatus" class="status"></div>
             </section>
 
             <section id="goodsManageNotesSection" class="goods-map-section">
-              <div class="result-head" style="margin-bottom:0;">
-                <strong>운영 메모</strong>
-              </div>
-              <div class="goods-form-grid" style="margin-top:8px;">
-                <div class="span-3">
-                  <label for="goodsManageMemoryNote" data-i18n="collectibles.manage.field.memory_note.label">메모</label>
-                  <textarea id="goodsManageMemoryNote" data-i18n-placeholder="collectibles.manage.field.memory_note.placeholder" placeholder="운영 메모"></textarea>
+              <details id="goodsManageNotesDetails" class="ops-compact-extra-fields">
+                <summary>운영 메모 / 이미지</summary>
+                <div class="ops-compact-extra-fields-body goods-form-grid">
+                  <div class="span-3">
+                    <label for="goodsManageMemoryNote" data-i18n="collectibles.manage.field.memory_note.label">메모</label>
+                    <textarea id="goodsManageMemoryNote" data-i18n-placeholder="collectibles.manage.field.memory_note.placeholder" placeholder="운영 메모"></textarea>
+                  </div>
+                  <div class="span-3">
+                    <label for="goodsManageImageUrls" data-i18n="collectibles.manage.field.image_urls.label">이미지 URL (줄바꿈, 복수)</label>
+                    <textarea id="goodsManageImageUrls" data-i18n-placeholder="collectibles.manage.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
+                  </div>
                 </div>
-                <div class="span-3">
-                  <label for="goodsManageImageUrls" data-i18n="collectibles.manage.field.image_urls.label">이미지 URL (줄바꿈, 복수)</label>
-                  <textarea id="goodsManageImageUrls" data-i18n-placeholder="collectibles.manage.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
-                </div>
-              </div>
+              </details>
             </section>
           </section>
         </div>
@@ -30514,11 +30559,22 @@
       return latinCount >= Math.max(1, nonLatinCount);
     }
 
+    function dashboardWorkbenchSortArtistMatchesDomain(row) {
+      const domainCode = String(row?.domain_code || "").trim().toUpperCase();
+      const explicitSortArtist = String(row?.master_sort_artist_name || "").trim();
+      if (!explicitSortArtist) return false;
+      if (domainCode === "KOREA") return /[\uac00-\ud7af]/.test(explicitSortArtist);
+      if (domainCode === "JAPAN") return /[\u3040-\u30ff\u4e00-\u9fff]/.test(explicitSortArtist);
+      if (["GREATER_CHINA", "OTHER_ASIA"].includes(domainCode)) return /[\u3400-\u4dbf\u4e00-\u9fff]/.test(explicitSortArtist);
+      return false;
+    }
+
     function dashboardWorkbenchNeedsSortWarning(row) {
       const domainCode = String(row?.domain_code || "").trim().toUpperCase();
       if (!["KOREA", "JAPAN", "GREATER_CHINA", "OTHER_ASIA"].includes(domainCode)) return false;
       const normalizedArtist = dashboardWorkbenchArtistSortText(row).toUpperCase();
       if (normalizedArtist === "VARIOUS" || normalizedArtist === "VARIOUS ARTISTS") return false;
+      if (dashboardWorkbenchSortArtistMatchesDomain(row)) return false;
       return dashboardWorkbenchHasLatinDominantArtist(dashboardWorkbenchArtistSortText(row));
     }
 
