@@ -179,6 +179,7 @@ document.addEventListener("click", (e) => {
 
 - [ ] **Step 3: Add `syncPrimarySubnavActiveState()`**
   - Show only submenu group for active primary tab.
+  - If no group is active, hide the entire submenu container to avoid blank space.
   - Highlight active item based on `mediaMode`, `goodsMode`, or active ops subtab.
 
 ```js
@@ -188,6 +189,8 @@ function syncPrimarySubnavActiveState() {
     const match = group.getAttribute("data-primary-subnav-group") === activePrimary;
     group.style.display = match ? "grid" : "none";
   });
+  const subnav = document.querySelector("[data-primary-subnav]");
+  if (subnav) subnav.style.display = ["media", "collectibles", "ops"].includes(activePrimary) ? "grid" : "none";
   // set active buttons for media/goods/ops based on current state
 }
 ```
@@ -214,7 +217,8 @@ git commit -m "Wire left nav submenus to existing tab flows"
 - Modify: `/Volumes/Works/07.hahahoho/.worktrees/deploy-left-sidebar/app/static/index.html`
 
 - [ ] **Step 1: Add camera primary tab to left nav (admin only)**
-  - Add a `tabCameraBtn` entry in left nav primary tab list.
+  - Add a **new** button id (e.g., `tabCameraNavBtn`) in left nav primary tab list to avoid collisions with the ops-header `tabCameraBtn`.
+  - `tabCameraBtn` remains the ops-header button.
   - Ensure `PRIMARY_NAV_ITEMS` and `normalizePrimaryNavTab()` include `"camera"`.
 
 - [ ] **Step 2: Remove camera from ops subtab line**
@@ -272,4 +276,3 @@ git commit -m "Ensure drawer shows active submenu only on mobile"
   - Docs not shown.
 - Mobile:
   - Drawer includes primary tabs + active submenu + Docs.
-
