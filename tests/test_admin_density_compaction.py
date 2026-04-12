@@ -11,6 +11,14 @@ def read_static_html(name: str) -> str:
 def test_admin_density_overrides_define_compact_tokens():
     html = read_static_html("index.html")
     admin_root_block = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
+    admin_grid_selectors = [
+        "body[data-shell-mode=\"admin\"] .grid",
+        "body[data-shell-mode=\"admin\"] .grid-3",
+        "body[data-shell-mode=\"admin\"] .grid-6",
+        "body[data-shell-mode=\"admin\"] .home-edit-grid-6",
+        "body[data-shell-mode=\"admin\"] .home-search-grid-top",
+        "body[data-shell-mode=\"admin\"] .home-search-grid-bottom",
+    ]
     assert 'body[data-shell-mode="admin"] input,' in html
     assert 'body[data-shell-mode="admin"] label' in html
     assert 'body[data-shell-mode="admin"] .btn' in html
@@ -21,6 +29,13 @@ def test_admin_density_overrides_define_compact_tokens():
     assert "--compact-font-size: 0.82rem;" in admin_root_block
     assert "--compact-gap: 6px;" in admin_root_block
     assert "--compact-line-height: 1.25;" in admin_root_block
+    for selector in admin_grid_selectors:
+        selector_token = f"{selector},"
+        if selector_token not in html:
+            selector_token = f"{selector} {{"
+        assert selector_token in html
+        selector_block = html.split(selector_token, 1)[1].split("}", 1)[0]
+        assert "gap: var(--compact-gap);" in selector_block
 
 
 def test_direct_register_uses_two_grid_rows_for_all_fields():
