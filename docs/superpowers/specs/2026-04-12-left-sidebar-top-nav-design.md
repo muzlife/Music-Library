@@ -16,7 +16,8 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 ## Design Summary
 - Introduce a **left sidebar** for top-level navigation only.
 - Keep **sub-tabs** in the main content area (right side) exactly where they are.
-- Minimize the top header to retain only lightweight context/actions.
+- Minimize the top header to retain only lightweight context/actions
+  (page context label + existing help/utility buttons; no new header features).
 - On narrow screens, the sidebar collapses to **icon-only** and then to a **hidden overlay** to maximize content space.
 
 ## Layout Structure
@@ -25,7 +26,7 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 - Top-level nav items: Dashboard / Media / Collectibles / Ops
 - Header row minimized (context label + utility actions only)
 
-### Medium (<= 1080px)
+### Medium (761–1199px)
 - Sidebar becomes **icon-only**
 - Width reduced to ~**56–64px** to maximize content
 - Each icon retains tooltip + aria-label
@@ -39,17 +40,21 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 - Only top-level nav moves; sub-tabs remain in the right content column.
 - Active top-level item is highlighted in the sidebar.
 - Sidebar collapse state is automatic based on breakpoints (no manual toggle).
+- If the menu grows beyond available height, the sidebar scrolls (no clipping).
+- Deep links still highlight the active top-level item even when the drawer is closed.
 
 ## Accessibility
-- Icon-only mode includes `aria-label` and tooltip text.
-- Drawer mode traps focus and closes on `Esc`.
+- Icon-only mode includes `aria-label`, tooltip text, and `aria-current="page"` on the active item.
+- Tooltips appear on hover and keyboard focus.
+- Drawer mode traps focus and closes on `Esc` or scrim click; focus returns to the menu button.
 
 ## Acceptance Criteria
-1. Top-level navigation is rendered in a left sidebar in desktop view.
+1. Top-level navigation is rendered in a left sidebar in desktop view (>=1200px).
 2. Sub-tabs remain in their current positions in the main content area.
-3. At <=1080px, the sidebar collapses to icon-only without reducing content width.
+3. At 761–1199px, the sidebar collapses to icon-only (56–64px wide) with tooltips.
 4. At <=760px, the sidebar is hidden by default and accessible via a menu button.
-5. No regression to existing tab behavior and routing.
+5. The content area is only reduced by the sidebar width (no additional width loss).
+6. No regression to existing tab behavior and routing.
 
 ## Testing/Verification
 - Visual check at 1440px, 1080px, 760px.
