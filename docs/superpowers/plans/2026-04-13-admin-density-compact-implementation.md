@@ -150,11 +150,11 @@
   Expected: PASS
 
 - [ ] **Step 2: Visual spot-check list**
-  - Media Register (direct + API lookup)
-  - Media Manage (inline edit block)
-  - Collectibles Register + Manage
-  - Ops/Integration forms (admin shell)
-  - Admin Dashboard panels
+  - Media Register (direct + API lookup): `관리 > 미디어 > 등록/수집`
+  - Media Manage (inline edit block): `관리 > 미디어 > 관리`
+  - Collectibles Register + Manage: `관리 > 컬렉터블`
+  - Ops/Integration forms (admin shell): `관리 > 운영/연계`
+  - Admin Dashboard panels: `관리 > 대시보드`
 
 - [ ] **Step 2: Commit if test-only adjustments were required**
 
