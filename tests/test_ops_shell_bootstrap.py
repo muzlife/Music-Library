@@ -8164,8 +8164,10 @@ def test_sidebar_responsive_states_defined():
 def test_sidebar_drawer_menu_button_accessibility():
     html = read_static_html("index.html")
     assert "data-nav-drawer-toggle" in html
-    assert 'aria-label="Open navigation"' in html
-    assert "data-nav-tooltip" in html
+    toggle_index = html.index("data-nav-drawer-toggle")
+    toggle_slice = html[max(0, toggle_index - 200) : toggle_index + 200]
+    assert 'aria-label="Open navigation"' in toggle_slice
+    assert "data-nav-tooltip" in toggle_slice
     assert "role=\"dialog\"" in html
     assert 'aria-modal="true"' in html
     drawer_block = html.split('class="primary-side-drawer', 1)[1]
