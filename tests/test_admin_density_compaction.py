@@ -19,8 +19,12 @@ def test_admin_density_overrides_define_compact_tokens():
 def test_direct_register_uses_two_grid_rows_for_all_fields():
     html = read_static_html("index.html")
     block = html.split('data-i18n="media.register.direct.title"', 1)[1].split('id="quickSizeGroup"', 1)[0]
-    assert block.count('class="grid-12"') == 2
-    assert 'id="quickItemName"' in block and 'span-4' in block
+    assert 'id="quickRegisterCoreRowA"' in block
+    assert 'id="quickRegisterCoreRowB"' in block
+    assert "quick-register-compact-row--primary" in block
+    assert "quick-register-compact-row--secondary" in block
+    assert block.count("quick-register-compact-row--") == 2
+    assert 'id="quickItemName"' in block
 
 
 def test_manage_edit_grids_use_grid12_mapping():
@@ -41,7 +45,7 @@ def test_manage_edit_grids_use_grid12_mapping():
     assert 'id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6"' in html
     assert 'id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6"' in html
     assert 'id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid"' in html
-    assert html.count('data-grid="home-product-grid"') == 5
+    assert html.count('data-grid="home-product-grid"') == 2
     assert "home-edit-grid-6 home-product-grid" not in html
 
 
