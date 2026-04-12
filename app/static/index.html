@@ -1134,7 +1134,7 @@
     }
 
     .goods-search-compact-row--secondary {
-      grid-template-columns: repeat(6, minmax(120px, 1fr)) auto;
+      grid-template-columns: repeat(6, minmax(110px, 1fr)) minmax(220px, 1.35fr);
     }
 
     .goods-register-compact-row--primary {
@@ -1218,6 +1218,13 @@
       align-items: center;
       gap: 6px;
       margin-top: 10px;
+    }
+
+    .goods-search-actions > .btn,
+    .goods-search-actions > .icon-btn,
+    .goods-search-actions > .icon-symbol-btn {
+      flex: 1;
+      min-width: 110px;
     }
 
     .goods-search-compact-row--secondary .goods-search-actions {

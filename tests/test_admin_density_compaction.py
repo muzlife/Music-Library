@@ -132,3 +132,14 @@ def test_search_list_label_id_chip_is_non_button():
     assert '<span class="home-master-member-preview-code">' in block
     assert "home-master-member-preview-code-btn" not in block
     assert '<button class="home-master-member-preview-code"' not in block
+
+
+def test_collectibles_search_action_width_rules():
+    html = read_static_html("index.html")
+    assert (
+        "grid-template-columns: repeat(6, minmax(110px, 1fr)) minmax(220px, 1.35fr);" in html
+        or "grid-template-columns: repeat(6, minmax(110px, 1fr)) minmax(200px, 1.35fr);" in html
+    )
+    action_block = html.split(".goods-search-actions > .btn", 1)[1].split("}", 1)[0]
+    assert "flex: 1;" in action_block
+    assert "min-width: 110px;" in action_block
