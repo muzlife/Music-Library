@@ -28,7 +28,10 @@
 ```python
 def test_collectibles_search_action_width_rules():
     html = read_static_html("index.html")
-    assert "grid-template-columns: repeat(6, minmax(110px, 1fr)) minmax(220px, 1.35fr);" in html
+    assert (
+        "grid-template-columns: repeat(6, minmax(110px, 1fr)) minmax(220px, 1.35fr);" in html
+        or "grid-template-columns: repeat(6, minmax(110px, 1fr)) minmax(200px, 1.35fr);" in html
+    )
     action_block = html.split(".goods-search-actions > .btn", 1)[1].split("}", 1)[0]
     assert "flex: 1;" in action_block
     assert "min-width: 110px;" in action_block
@@ -58,7 +61,17 @@ In the CSS block that defines `.goods-search-compact-row--secondary`, change to:
 }
 ```
 
-- [ ] **Step 2: Expand search/clear buttons in the action cluster**
+- [ ] **Step 2: Check for overflow between 1080px and 1440px**
+
+If the collectibles search card shows horizontal scroll at desktop widths,
+reduce the action column minimum to 200px:
+```css
+.goods-search-compact-row--secondary {
+  grid-template-columns: repeat(6, minmax(110px, 1fr)) minmax(200px, 1.35fr);
+}
+```
+
+- [ ] **Step 3: Expand search/clear buttons in the action cluster**
 
 Add/adjust the rule for the action buttons:
 ```css
@@ -70,7 +83,7 @@ Add/adjust the rule for the action buttons:
 }
 ```
 
-- [ ] **Step 3: Run the test to confirm it passes**
+- [ ] **Step 4: Run the test to confirm it passes**
 
 Run:
 ```bash
@@ -78,7 +91,7 @@ pytest -q tests/test_admin_density_compaction.py::test_collectibles_search_actio
 ```
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add /Volumes/Works/07.hahahoho/app/static/index.html \
