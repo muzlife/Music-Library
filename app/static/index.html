@@ -6474,10 +6474,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: nowrap;
-      min-height: 38px;
-      padding: 0 10px;
+      min-height: 34px;
+      padding: 0 8px;
       border-radius: 999px;
       background: rgba(255,255,255,0.84);
       box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
@@ -6520,10 +6520,10 @@
 
     .dashboard-slot-rack-surface {
       display: grid;
-      gap: 8px;
+      gap: 6px;
       min-height: 280px;
-      padding: 16px 18px 18px;
-      border-radius: 22px;
+      padding: 12px 14px 14px;
+      border-radius: 18px;
       background: rgba(255,255,255,0.92);
       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
       position: relative;
@@ -6545,7 +6545,8 @@
 
     .dashboard-slot-surface-tools {
       display: grid;
-      gap: 8px;
+      gap: 6px;
+      position: relative;
     }
 
     .dashboard-surface-dock {
@@ -6617,7 +6618,7 @@
       position: relative;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
@@ -6625,11 +6626,27 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 14px;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 12px;
       background: rgba(255,255,255,0.78);
       box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .dashboard-selected-item-meta--overlay {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      right: 14px;
+      z-index: 4;
+      pointer-events: none;
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    .dashboard-selected-item-meta--overlay .dashboard-slot-actionbtn {
+      display: none !important;
     }
 
     .dashboard-selected-item-meta-text {
@@ -6640,9 +6657,9 @@
 
     .dashboard-selected-sort-artist-row {
       display: none;
-      margin-top: 6px;
-      column-gap: 14px;
-      row-gap: 4px;
+      margin-top: 2px;
+      column-gap: 10px;
+      row-gap: 3px;
       align-items: center;
       grid-template-columns: minmax(240px, 1.4fr) auto minmax(220px, 0.9fr) minmax(260px, 1fr);
       grid-template-areas:
@@ -6725,14 +6742,14 @@
     .dashboard-slot-viewtools {
       display: inline-grid;
       justify-items: end;
-      gap: 6px;
+      gap: 4px;
     }
 
     .dashboard-slot-viewportbar {
       display: flex;
       justify-content: flex-start;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       margin: 0;
     }
 
@@ -6763,7 +6780,7 @@
     .dashboard-slot-viewbar {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       flex-wrap: wrap;
     }
 
@@ -8722,19 +8739,19 @@
     }
 
     .dashboard-cabinet-detail {
-      margin-top: 10px;
+      margin-top: 6px;
       border-top: 1px solid #dbe3ec;
-      padding-top: 10px;
+      padding-top: 6px;
       display: grid;
-      gap: 10px;
+      gap: 6px;
       align-content: start;
     }
 
     .dashboard-cabinet-stage {
       display: grid;
-      gap: 10px;
-      padding: 16px;
-      border-radius: 28px;
+      gap: 6px;
+      padding: 10px 12px 12px;
+      border-radius: 20px;
       border: 1px solid #d7dde5;
       background:
         linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,247,0.94));
@@ -9050,8 +9067,8 @@
       align-items: center;
       justify-content: space-between;
       gap: 6px;
-      margin-top: 4px;
-      margin-bottom: 6px;
+      margin-top: 2px;
+      margin-bottom: 4px;
     }
 
     .dashboard-selection-actions {
@@ -10867,7 +10884,6 @@
                 <div class="dashboard-slot-surface-tools">
                   <div id="homeDashSelectedItemMeta" class="dashboard-selected-item-meta" style="display:none;">
                     <div id="homeDashSelectedItemMetaText" class="dashboard-selected-item-meta-text compact-line"></div>
-                    <button id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n-title="dashboard.selection.action.edit_selected" data-i18n-aria-label="dashboard.selection.action.edit_selected" data-i18n="dashboard.selection.action.edit_short">편집</button>
                   </div>
                   <div id="homeDashSelectedSortArtistRow" class="dashboard-selected-sort-artist-row">
                     <label class="dashboard-selected-sort-artist-label mini" for="homeDashSelectedSortArtistName" data-i18n="dashboard.selection.sort_artist.label">정렬 아티스트명 (마스터)</label>
@@ -10925,6 +10941,7 @@
                             </button>
                           </div>
                           <div class="dashboard-selection-actions dashboard-selection-actions--primary">
+                            <button id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n-title="dashboard.selection.action.edit_selected" data-i18n-aria-label="dashboard.selection.action.edit_selected" data-i18n="dashboard.selection.action.edit_short">편집</button>
                             <button id="homeDashSlotBulkBtn" class="btn ghost tiny dashboard-slot-actionbtn" type="button" title="일괄 수정" aria-label="일괄 수정" data-slot-action="bulk" data-i18n-title="dashboard.selection.action.bulk" data-i18n-aria-label="dashboard.selection.action.bulk">
                               <span data-i18n="dashboard.selection.action.bulk_short">일괄</span>
                             </button>
@@ -14642,6 +14659,7 @@
     let homeDashboardSlotShelfScrollLeft = 0;
     let homeDashboardSlotPageSizeOverride = "";
     let homeDashboardSlotViewMode = DASHBOARD_SLOT_DEFAULT_VIEW_MODE;
+    let homeDashboardHoveredItemId = null;
     let homeDashboardSlotAttentionTimer = null;
     let homeDashboardSlotSelectedIds = new Set();
     let homeDashboardSlotSelectionSnapshot = [];
@@ -29346,6 +29364,7 @@
         return;
       }
       homeDashboardSlotViewMode = next;
+      homeDashboardHoveredItemId = null;
       resetDashboardSlotPage();
       resetDashboardWorkbenchPage();
       syncDashboardSlotViewButtons();
@@ -29750,10 +29769,9 @@
         .filter((row) => homeDashboardSlotSelectedIds.has(Number(row?.id || 0)));
     }
 
-    function dashboardSelectedSlotIndexHint() {
-      const selectedRow = getDashboardSingleSelectedRow();
-      if (!selectedRow) return "";
-      const selectedId = Number(selectedRow?.id || 0);
+    function dashboardSlotIndexHintForRow(targetRow) {
+      const selectedId = Number(targetRow?.id || 0);
+      if (!selectedId) return "";
       const currentRows = Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : [];
       const currentIdx = currentRows.findIndex((row) => Number(row?.id || 0) === selectedId);
       if (currentIdx >= 0) return dashboardSelectionPositionNumber(currentIdx + 1);
@@ -29763,10 +29781,38 @@
       return "";
     }
 
+    function dashboardSelectedSlotIndexHint() {
+      return dashboardSlotIndexHintForRow(getDashboardSingleSelectedRow());
+    }
+
+    function dashboardSlotHoverMetaOverlayEnabled() {
+      if (getDashboardSelectionSourceKind() !== "SLOT") return false;
+      if (!(homeDashboardSlotViewMode === "THUMB" || homeDashboardSlotViewMode === "SHELF")) return false;
+      return typeof window !== "undefined"
+        && typeof window.matchMedia === "function"
+        && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    }
+
+    function getDashboardHoveredSlotRow() {
+      const hoveredId = Number(homeDashboardHoveredItemId || 0);
+      if (hoveredId <= 0) return null;
+      const rows = Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : [];
+      return rows.find((row) => Number(row?.id || 0) === hoveredId) || null;
+    }
+
     function renderDashboardSelectedItemMeta() {
       const el = $("homeDashSelectedItemMeta");
       const textEl = $("homeDashSelectedItemMetaText");
       if (!el) return;
+      const selectionSourceKind = getDashboardSelectionSourceKind();
+      const useOverlay = dashboardSlotHoverMetaOverlayEnabled();
+      el.classList.toggle("dashboard-selected-item-meta--overlay", useOverlay);
+      if (selectionSourceKind === "SLOT") {
+        el.style.display = "none";
+        if (textEl) textEl.textContent = "";
+        syncDashboardSelectedSortArtistEditor();
+        return;
+      }
       const row = getDashboardSingleSelectedRow();
       if (!row) {
         el.style.display = "none";
@@ -29775,7 +29821,7 @@
         return;
       }
       const title = getDashboardSelectableTitle(row);
-      const orderHint = dashboardSelectedSlotIndexHint();
+      const orderHint = dashboardSlotIndexHintForRow(row);
       const released = dashboardItemReleasedText(row);
       const labelCat = dashboardItemLabelCatalogText(row);
       const sortArtist = String(row?.master_sort_artist_name || "").trim();
@@ -31552,6 +31598,7 @@
       const metaEl = $("homeDashSlotItemsMeta");
       const root = $("homeDashSlotItems");
       if (!titleEl || !metaEl || !root) return;
+      homeDashboardHoveredItemId = null;
       root.classList.remove(
         "dashboard-slot-pagegrid",
         "dashboard-slot-pagegrid--lp",
@@ -44387,6 +44434,37 @@
       if (isShellReadOnly()) return;
       if (e.target.closest("[data-dashboard-selectable-id]")) return;
       startDashboardPointerSelection(e, "SLOT");
+    });
+    $("homeDashSlotItems").addEventListener("pointerover", (e) => {
+      if (!dashboardSlotHoverMetaOverlayEnabled()) return;
+      const row = e.target.closest("[data-dashboard-owned-item-id]");
+      const hoveredId = Number(row?.getAttribute("data-dashboard-owned-item-id") || 0);
+      const nextId = hoveredId > 0 ? hoveredId : null;
+      if (homeDashboardHoveredItemId === nextId) return;
+      homeDashboardHoveredItemId = nextId;
+      renderDashboardSelectedItemMeta();
+    });
+    $("homeDashSlotItems").addEventListener("pointerleave", () => {
+      if (!dashboardSlotHoverMetaOverlayEnabled()) return;
+      if (homeDashboardHoveredItemId === null) return;
+      homeDashboardHoveredItemId = null;
+      renderDashboardSelectedItemMeta();
+    });
+    $("homeDashSlotItems").addEventListener("focusin", (e) => {
+      if (!dashboardSlotHoverMetaOverlayEnabled()) return;
+      const row = e.target.closest("[data-dashboard-owned-item-id]");
+      const focusedId = Number(row?.getAttribute("data-dashboard-owned-item-id") || 0);
+      const nextId = focusedId > 0 ? focusedId : null;
+      if (homeDashboardHoveredItemId === nextId) return;
+      homeDashboardHoveredItemId = nextId;
+      renderDashboardSelectedItemMeta();
+    });
+    $("homeDashSlotItems").addEventListener("focusout", (e) => {
+      if (!dashboardSlotHoverMetaOverlayEnabled()) return;
+      const nextRow = e.relatedTarget?.closest?.("[data-dashboard-owned-item-id]") || null;
+      const nextId = Number(nextRow?.getAttribute?.("data-dashboard-owned-item-id") || 0);
+      homeDashboardHoveredItemId = nextId > 0 ? nextId : null;
+      renderDashboardSelectedItemMeta();
     });
     $("homeDashSlotItems").addEventListener("click", (e) => {
       if (shouldSuppressDashboardSelectionClick()) {
