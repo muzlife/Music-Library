@@ -165,6 +165,10 @@
       color: #0f766e;
     }
 
+    .primary-side-toggle {
+      display: none;
+    }
+
     body[data-shell-mode="ops"] .primary-side-nav-slot {
       display: none;
     }
@@ -218,6 +222,10 @@
 
       .primary-side-nav-slot {
         display: none;
+      }
+
+      .primary-side-toggle {
+        display: inline-flex;
       }
     }
 
@@ -10872,7 +10880,7 @@
               <button type="button" data-primary-subnav-action="ops:account">계정</button>
               <button type="button" data-primary-subnav-action="ops:providers">연동/API 설정</button>
               <button type="button" data-primary-subnav-action="ops:export">백업/내보내기</button>
-              <button type="button" data-primary-subnav-action="ops:meta_sync">메타 동기화</button>
+              <button type="button" data-primary-subnav-action="ops:metasync">메타 동기화</button>
             </div>
           </div>
           <div class="primary-side-docs" data-primary-docs style="display:none;">
@@ -10958,6 +10966,7 @@
       </div>
       <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
         <span id="appSessionInfo" class="chip" style="display:none;"></span>
+        <button id="shellNavToggleBtn" class="tab-btn primary-side-toggle" type="button" aria-label="Open navigation" aria-controls="primarySideDrawer" aria-expanded="false" aria-haspopup="dialog">메뉴</button>
         <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.admin">관리</button>
         <button id="tabCameraBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.camera">카메라</button>
         <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;" data-i18n="utility.reset_defaults" data-i18n-title="utility.reset_defaults_title">기본값 초기화</button>
@@ -13976,7 +13985,6 @@
       <div class="subtabs">
         <button id="opsCabinetTabBtn" class="subtab-btn active" type="button" data-i18n="ops.subtab.cabinet">장식장</button>
         <button id="opsSlotTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.slot">슬롯</button>
-        <button id="opsCameraTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.camera">카메라</button>
         <button id="opsExceptionTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.exception">예외 큐</button>
         <button id="opsAccountTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.account">계정</button>
         <button id="opsProviderTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.providers">연동/API 설정</button>
@@ -24406,6 +24414,151 @@
       $("opsHomeHero")?.classList.remove("ops-home-hero--compact");
     }
 
+    const PRIMARY_NAV_ITEMS = [
+      { id: "home", btn: "tabHomeBtn" },
+      { id: "media", btn: "tabMediaBtn" },
+      { id: "collectibles", btn: "tabCollectiblesBtn" },
+      { id: "ops", btn: "tabOpsBtn" },
+      { id: "camera", btn: "tabCameraNavBtn" },
+    ];
+    const primaryNavDrawerMedia = window.matchMedia("(max-width: 760px)");
+    const primaryNavDrawerState = {
+      open: false,
+    };
+
+    function primaryNavElements() {
+      return {
+        nav: document.querySelector(".primary-side-nav"),
+        tabs: $("adminTabs"),
+        subnav: document.querySelector("[data-primary-subnav]"),
+        docs: document.querySelector("[data-primary-docs]"),
+        toggle: $("shellNavToggleBtn"),
+        drawer: $("primarySideDrawer"),
+        panel: $("primarySideDrawerPanel"),
+      };
+    }
+
+    function normalizePrimaryNavTab(tab) {
+      const requested = String(tab || "").trim().toLowerCase();
+      if (["search", "manage", "register", "source", "media"].includes(requested)) return "media";
+      if (["goods", "collectibles"].includes(requested)) return "collectibles";
+      if (["home", "ops", "camera"].includes(requested)) return requested;
+      return "";
+    }
+
+    function syncPrimarySubnavActiveState(activePrimary = "") {
+      const subnav = document.querySelector("[data-primary-subnav]");
+      const docs = document.querySelector("[data-primary-docs]");
+      if (docs) {
+        docs.style.display = currentShellMode() === "admin" && isAdminSession(appAuthSession) ? "grid" : "none";
+      }
+      if (currentShellMode() !== "admin" || !isAdminSession(appAuthSession)) {
+        if (subnav) subnav.style.display = "none";
+        return;
+      }
+      document.querySelectorAll("[data-primary-subnav-group]").forEach((group) => {
+        const match = group.getAttribute("data-primary-subnav-group") === activePrimary;
+        group.style.display = match ? "grid" : "none";
+      });
+      if (subnav) subnav.style.display = ["media", "collectibles", "ops"].includes(activePrimary) ? "grid" : "none";
+
+      const setActive = (selector) => {
+        document.querySelectorAll("[data-primary-subnav-action]").forEach((btn) => btn.classList.remove("active"));
+        const target = document.querySelector(`[data-primary-subnav-action="${selector}"]`);
+        if (target) target.classList.add("active");
+      };
+      if (activePrimary === "media") setActive(`media:${mediaMode}`);
+      if (activePrimary === "collectibles") setActive(`collectibles:${goodsMode}`);
+      if (activePrimary === "ops") {
+        const opsMap = {
+          opsCabinetTabBtn: "cabinet",
+          opsSlotTabBtn: "slot",
+          opsExceptionTabBtn: "exception",
+          opsAccountTabBtn: "account",
+          opsProviderTabBtn: "providers",
+          opsExportTabBtn: "export",
+          opsMetaSyncTabBtn: "metasync",
+        };
+        const activeOpsBtn = document.querySelector("#tabOps .subtab-btn.active");
+        const key = opsMap[activeOpsBtn?.id] || "cabinet";
+        setActive(`ops:${key}`);
+      }
+    }
+
+    function syncPrimaryNavActiveState(tab = "") {
+      const explicitTab = normalizePrimaryNavTab(tab);
+      const derivedTab = PRIMARY_NAV_ITEMS.find(({ btn }) => $(btn)?.classList.contains("active"))?.id || "home";
+      const activeTab = explicitTab || derivedTab;
+      PRIMARY_NAV_ITEMS.forEach(({ id, btn }) => {
+        const button = $(btn);
+        if (!button) return;
+        if (currentShellMode() === "admin" && id === activeTab) {
+          button.setAttribute("aria-current", "page");
+        } else {
+          button.removeAttribute("aria-current");
+        }
+      });
+      syncPrimarySubnavActiveState(activeTab);
+    }
+
+    function isPrimaryNavDrawerMode() {
+      return primaryNavDrawerMedia.matches;
+    }
+
+    function closePrimaryNavDrawer(options = {}) {
+      const { drawer, toggle } = primaryNavElements();
+      if (!drawer || !toggle) return;
+      primaryNavDrawerState.open = false;
+      drawer.classList.remove("open");
+      drawer.hidden = true;
+      document.body.classList.remove("nav-drawer-open");
+      toggle.setAttribute("aria-expanded", "false");
+      if (options.restoreFocus === false) return;
+      requestAnimationFrame(() => {
+        toggle.focus();
+      });
+    }
+
+    function openPrimaryNavDrawer() {
+      if (!isPrimaryNavDrawerMode() || currentShellMode() !== "admin") return;
+      const { drawer, panel, toggle } = primaryNavElements();
+      if (!drawer || !panel || !toggle) return;
+      primaryNavDrawerState.open = true;
+      drawer.hidden = false;
+      drawer.classList.add("open");
+      document.body.classList.add("nav-drawer-open");
+      toggle.setAttribute("aria-expanded", "true");
+      requestAnimationFrame(() => {
+        panel.focus();
+      });
+    }
+
+    function togglePrimaryNavDrawer() {
+      if (primaryNavDrawerState.open) {
+        closePrimaryNavDrawer();
+        return;
+      }
+      openPrimaryNavDrawer();
+    }
+
+    function syncPrimaryNavLayout() {
+      const { nav, tabs, subnav, docs, toggle, panel } = primaryNavElements();
+      if (!nav || !tabs || !subnav || !docs || !toggle || !panel) return;
+      if (isPrimaryNavDrawerMode()) {
+        if (tabs.parentElement !== panel) panel.appendChild(tabs);
+        if (subnav.parentElement !== panel) panel.appendChild(subnav);
+        if (docs.parentElement !== panel) panel.appendChild(docs);
+      } else {
+        if (tabs.parentElement !== nav) nav.appendChild(tabs);
+        if (subnav.parentElement !== nav) nav.appendChild(subnav);
+        if (docs.parentElement !== nav) nav.appendChild(docs);
+        if (primaryNavDrawerState.open) {
+          closePrimaryNavDrawer({ restoreFocus: false });
+        }
+      }
+      toggle.setAttribute("aria-expanded", primaryNavDrawerState.open ? "true" : "false");
+    }
+
     const pageHelpDrawerState = {
       open: false,
       helpId: "",
@@ -24550,6 +24703,7 @@
       setTextIfPresent("shellCabinetsBtn", t("nav.cabinets"));
       setTextIfPresent("shellAdminBtn", t("utility.admin"));
       setTextIfPresent("tabCameraBtn", t("utility.camera"));
+      setTextIfPresent("tabCameraNavBtn", t("utility.camera"));
       setTextIfPresent("appPrefsResetBtn", t("utility.reset_defaults"));
       $("appPrefsResetBtn")?.setAttribute("title", t("utility.reset_defaults_title"));
       setTextIfPresent("appLogoutBtn", t("utility.logout"));
@@ -24566,13 +24720,17 @@
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
+      setDisplayIfPresent("shellNavToggleBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
+      setDisplayIfPresent("tabCameraNavBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("appSessionInfo", "none");
       setDisplayIfPresent("appPrefsResetBtn", "none");
       setDisplayIfPresent("appLogoutBtn", "none");
-      setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
+      setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "grid" : "none");
       syncShellButtons();
       syncShellDensityClasses();
       syncShellUtilityRowSizing();
+      syncPrimaryNavLayout();
+      syncPrimaryNavActiveState();
       syncShellReadonlyState();
     }
 
@@ -24663,6 +24821,7 @@
         { id: "home", btn: "tabHomeBtn", panel: "tabHome" },
         { id: "simple", btn: "tabSimpleBtn", panel: "tabSimple" },
         { id: "camera", btn: "tabCameraBtn", panel: "tabCamera" },
+        { id: "camera", btn: "tabCameraNavBtn", panel: "tabCamera" },
         { id: "media", btn: "tabMediaBtn", panel: "tabMedia" },
         { id: "collectibles", btn: "tabCollectiblesBtn", panel: "tabCollectibles" },
         { id: "ops", btn: "tabOpsBtn", panel: "tabOps" }
@@ -24694,6 +24853,7 @@
         }
       }
       syncShellDensityClasses();
+      syncPrimaryNavActiveState(nextTab);
     }
 
     function switchSubTab(group, tab, options = {}) {
@@ -24708,7 +24868,6 @@
         ],
         ops: [
           { id: "cabinet", btn: "opsCabinetTabBtn", panel: "opsCabinetPanel" },
-          { id: "camera", btn: "opsCameraTabBtn", panel: "opsCameraPanel" },
           { id: "slot", btn: "opsSlotTabBtn", panel: "opsSlotPanel" },
           { id: "exception", btn: "opsExceptionTabBtn", panel: "opsExceptionPanel" },
           { id: "account", btn: "opsAccountTabBtn", panel: "opsAccountPanel" },
@@ -24730,6 +24889,7 @@
       if (remember) {
         saveRoleScopedValue(APP_SUBTAB_MEMORY_KEY, `${group}:${tab}`);
       }
+      syncPrimaryNavActiveState();
     }
 
     function switchMediaMode(mode, options = {}) {
@@ -24738,6 +24898,7 @@
         : "search";
       mediaMode = nextMode;
       syncMediaModeUi();
+      syncPrimaryNavActiveState();
       if (options.remember !== false) {
         saveRoleScopedValue(APP_SUBTAB_MEMORY_KEY, `media:${nextMode}`);
       }
@@ -41120,6 +41281,7 @@
         : "search";
       goodsMode = nextMode;
       syncGoodsModeUi();
+      syncPrimaryNavActiveState();
     }
 
     function syncGoodsModeUi() {
@@ -43591,9 +43753,41 @@
       }
     }
 
+    primaryNavDrawerMedia.addEventListener("change", syncPrimaryNavLayout);
+    document.addEventListener("click", (e) => {
+      if (e.target.closest("[data-nav-drawer-close]")) {
+        closePrimaryNavDrawer();
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !primaryNavDrawerState.open) return;
+      e.preventDefault();
+      closePrimaryNavDrawer();
+    });
+    document.addEventListener("click", (e) => {
+      const button = e.target.closest("[data-primary-subnav-action]");
+      if (!button) return;
+      const action = String(button.getAttribute("data-primary-subnav-action") || "");
+      const [section, key] = action.split(":");
+      if (section === "media") openAdminConsole(key);
+      if (section === "collectibles") {
+        openAdminConsole("collectibles");
+        switchGoodsMode(key);
+      }
+      if (section === "ops") {
+        openAdminConsole("ops");
+        switchSubTab("ops", key);
+      }
+      if (primaryNavDrawerState.open) {
+        closePrimaryNavDrawer({ restoreFocus: false });
+      }
+    });
+
+    $("shellNavToggleBtn")?.addEventListener("click", togglePrimaryNavDrawer);
     $("tabHomeBtn").addEventListener("click", () => openAdminConsole("home"));
     $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabCameraBtn").addEventListener("click", () => switchMainTab("camera"));
+    $("tabCameraNavBtn")?.addEventListener("click", () => openAdminConsole("camera"));
     $("tabMediaBtn").addEventListener("click", () => openAdminConsole("media"));
     $("tabCollectiblesBtn").addEventListener("click", () => openAdminConsole("collectibles"));
     $("shellCabinetsBtn").addEventListener("click", () => switchShellMode("cabinets"));
@@ -43870,10 +44064,6 @@
       await loadPurchaseImportCandidates(queueId);
     });
     $("opsCabinetTabBtn").addEventListener("click", () => switchSubTab("ops", "cabinet"));
-    $("opsCameraTabBtn").addEventListener("click", async () => {
-      switchSubTab("ops", "camera");
-      await loadOpsCameras({ silent: true });
-    });
     $("opsProviderTabBtn")?.addEventListener("click", async () => {
       switchSubTab("ops", "providers");
       await loadOpsProviderSettings();
