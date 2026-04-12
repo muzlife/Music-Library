@@ -10222,7 +10222,6 @@
       .grid-12 { grid-template-columns: 1fr; }
       .grid-12 > * { grid-column: auto; }
       .grid-12--from-6 > * { grid-column: auto; }
-      body[data-shell-mode="admin"] .compact-stack-actions--equal { grid-template-columns: 1fr; }
       .admin-shell-hero h1 {
         font-size: 1.3rem;
       }
@@ -10279,6 +10278,7 @@
       .source-workbench-toolbar { grid-template-columns: 1fr; }
       .source-workbench-search-adjust { grid-template-columns: 1fr; }
       .source-workbench-candidate { grid-template-columns: 1fr; }
+      body[data-shell-mode="admin"] .compact-stack-actions--equal { grid-template-columns: 1fr; }
       .source-workbench-candidate-actions { justify-items: start; }
       .source-workbench-candidate-actions .btn { width: auto; }
       .source-workbench-diff-review { padding: 10px; }
@@ -11757,85 +11757,85 @@
           </div>
         </div>
 
-        <div id="homeProductRelationSection" style="display:none;">
-          <details id="homeProductRelationDetails" class="home-manage-secondary-block" style="margin-top:10px;">
-            <summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.product_relation.title">상품 관계</summary>
-            <p class="mini home-manage-secondary-note" style="margin-top:8px;" data-i18n="media.manage.product_relation.subtitle">마스터, 시리즈, 박스세트, 연관 발매를 함께 관리</p>
-            <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
+        <section id="homeProductRelationSection" class="goods-map-section" style="margin-top:10px; display:none;">
+          <div class="result-head" style="margin-bottom:0;">
+            <strong data-i18n="media.manage.product_relation.title">상품 관계</strong>
+            <span class="mini" data-i18n="media.manage.product_relation.subtitle">마스터, 시리즈, 박스세트, 연관 발매를 함께 관리</span>
+          </div>
+          <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
 
-            <div class="goods-map-section compact-stack" style="grid-template-columns: 1fr;">
-              <div class="compact-stack-grid">
-                <div class="result-head span-2" style="margin-bottom:0;">
-                  <strong data-i18n="media.manage.product_relation.block.master">마스터 하위</strong>
-                  <span class="mini" data-i18n="media.manage.product_relation.block.master_note">기존 앨범 마스터 연계를 기준으로 표시합니다.</span>
-                </div>
-                <div id="homeProductRelationMasterList" class="goods-chip-list span-2"></div>
+          <div class="goods-map-section compact-stack" style="grid-template-columns: 1fr;">
+            <div class="compact-stack-grid">
+              <div class="result-head span-2" style="margin-bottom:0;">
+                <strong data-i18n="media.manage.product_relation.block.master">마스터 하위</strong>
+                <span class="mini" data-i18n="media.manage.product_relation.block.master_note">기존 앨범 마스터 연계를 기준으로 표시합니다.</span>
+              </div>
+              <div id="homeProductRelationMasterList" class="goods-chip-list span-2"></div>
+            </div>
+          </div>
+
+          <div class="goods-map-section compact-stack">
+            <div class="compact-stack-grid">
+              <div class="result-head span-2" style="margin-bottom:0;">
+                <strong data-i18n="media.manage.product_relation.block.series">시리즈 소속</strong>
+              </div>
+              <div id="homeProductRelationSeriesList" class="goods-chip-list span-2"></div>
+              <div class="span-2">
+                <label for="homeProductRelationSeriesQuery" class="mini" data-i18n="media.manage.product_relation.field.series_query.label">시리즈명</label>
+                <input id="homeProductRelationSeriesQuery" data-i18n-placeholder="media.manage.product_relation.field.series_query.placeholder" placeholder="예: Blue Note 70th" />
               </div>
             </div>
-
-            <div class="goods-map-section compact-stack">
-              <div class="compact-stack-grid">
-                <div class="result-head span-2" style="margin-bottom:0;">
-                  <strong data-i18n="media.manage.product_relation.block.series">시리즈 소속</strong>
-                </div>
-                <div id="homeProductRelationSeriesList" class="goods-chip-list span-2"></div>
-                <div class="span-2">
-                  <label for="homeProductRelationSeriesQuery" class="mini" data-i18n="media.manage.product_relation.field.series_query.label">시리즈명</label>
-                  <input id="homeProductRelationSeriesQuery" data-i18n-placeholder="media.manage.product_relation.field.series_query.placeholder" placeholder="예: Blue Note 70th" />
-                </div>
-              </div>
-              <div class="compact-stack-actions">
-                <button id="homeProductRelationSeriesSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
-                <button id="homeProductRelationCreateGroupBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.create_series">시리즈 생성</button>
-              </div>
-              <div id="homeProductRelationSeriesResults" class="goods-target-results span-2"></div>
+            <div class="compact-stack-actions">
+              <button id="homeProductRelationSeriesSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
+              <button id="homeProductRelationCreateGroupBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.create_series">시리즈 생성</button>
             </div>
+            <div id="homeProductRelationSeriesResults" class="goods-target-results span-2"></div>
+          </div>
 
-            <div class="goods-map-section compact-stack">
-              <div class="compact-stack-grid">
-                <div class="result-head span-2" style="margin-bottom:0;">
-                  <strong data-i18n="media.manage.product_relation.block.release">박스세트 / 연관 발매</strong>
-                </div>
-                <div id="homeProductRelationReleaseList" class="goods-chip-list span-2"></div>
-                <div>
-                  <label for="homeProductRelationType" class="mini" data-i18n="media.manage.product_relation.field.relation_type.label">관계 타입</label>
-                  <select id="homeProductRelationType">
-                    <option value="BOX_MEMBER_OF" data-i18n="media.manage.product_relation.type.box_member_of">박스 구성품</option>
-                    <option value="RELATED_RELEASE" data-i18n="media.manage.product_relation.type.related_release">연관 발매</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="homeProductRelationNote" class="mini" data-i18n="media.manage.product_relation.field.note.label">관계 메모</label>
-                  <input id="homeProductRelationNote" data-i18n-placeholder="media.manage.product_relation.field.note.placeholder" placeholder="선택 메모" />
-                </div>
-                <div class="span-2">
-                  <label for="homeProductRelationReleaseQuery" class="mini" data-i18n="media.manage.product_relation.field.release_query.label">상품 검색</label>
-                  <input id="homeProductRelationReleaseQuery" data-i18n-placeholder="media.manage.product_relation.field.release_query.placeholder" placeholder="예: 박스세트명 / 연관 발매명" />
-                </div>
+          <div class="goods-map-section compact-stack">
+            <div class="compact-stack-grid">
+              <div class="result-head span-2" style="margin-bottom:0;">
+                <strong data-i18n="media.manage.product_relation.block.release">박스세트 / 연관 발매</strong>
               </div>
-              <div class="compact-stack-actions">
-                <button id="homeProductRelationSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
+              <div id="homeProductRelationReleaseList" class="goods-chip-list span-2"></div>
+              <div>
+                <label for="homeProductRelationType" class="mini" data-i18n="media.manage.product_relation.field.relation_type.label">관계 타입</label>
+                <select id="homeProductRelationType">
+                  <option value="BOX_MEMBER_OF" data-i18n="media.manage.product_relation.type.box_member_of">박스 구성품</option>
+                  <option value="RELATED_RELEASE" data-i18n="media.manage.product_relation.type.related_release">연관 발매</option>
+                </select>
               </div>
-              <div id="homeProductRelationReleaseResults" class="goods-target-results span-2"></div>
-            </div>
-
-            <div class="goods-map-section compact-stack" style="grid-template-columns: 1fr;">
-              <div class="compact-stack-grid">
-                <div class="result-head span-2" style="margin-bottom:0;">
-                  <strong data-i18n="media.manage.product_relation.block.components">박스 구성품</strong>
-                </div>
-                <div id="homeProductRelationComponentList" class="goods-target-results span-2"></div>
+              <div>
+                <label for="homeProductRelationNote" class="mini" data-i18n="media.manage.product_relation.field.note.label">관계 메모</label>
+                <input id="homeProductRelationNote" data-i18n-placeholder="media.manage.product_relation.field.note.placeholder" placeholder="선택 메모" />
+              </div>
+              <div class="span-2">
+                <label for="homeProductRelationReleaseQuery" class="mini" data-i18n="media.manage.product_relation.field.release_query.label">상품 검색</label>
+                <input id="homeProductRelationReleaseQuery" data-i18n-placeholder="media.manage.product_relation.field.release_query.placeholder" placeholder="예: 박스세트명 / 연관 발매명" />
               </div>
             </div>
-
-            <div class="compact-stack" style="margin-top:6px;">
-              <div id="homeProductRelationStatus" class="status span-2"></div>
-              <div class="compact-stack-actions span-2">
-                <button id="homeProductRelationSaveBtn" class="btn ghost" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
-              </div>
+            <div class="compact-stack-actions">
+              <button id="homeProductRelationSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
             </div>
-          </details>
-        </div>
+            <div id="homeProductRelationReleaseResults" class="goods-target-results span-2"></div>
+          </div>
+
+          <div class="goods-map-section compact-stack" style="grid-template-columns: 1fr;">
+            <div class="compact-stack-grid">
+              <div class="result-head span-2" style="margin-bottom:0;">
+                <strong data-i18n="media.manage.product_relation.block.components">박스 구성품</strong>
+              </div>
+              <div id="homeProductRelationComponentList" class="goods-target-results span-2"></div>
+            </div>
+          </div>
+
+          <div class="compact-stack" style="margin-top:6px;">
+            <div id="homeProductRelationStatus" class="status span-2"></div>
+            <div class="compact-stack-actions span-2">
+              <button id="homeProductRelationSaveBtn" class="btn ghost" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
+            </div>
+          </div>
+        </section>
 
         <div id="homeEditorActionBlock">
         <div id="homeEditorActionRow" class="row home-manage-actions-right" style="margin-top:12px;">
@@ -11845,18 +11845,18 @@
         <div id="homeEditStatus" class="status"></div>
         </div>
 
-        <div id="homeMasterGoodsSection" style="display:none;">
-          <details id="homeMasterGoodsDetails" class="home-manage-secondary-block" style="margin-top:10px;">
-            <summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.collectibles.title">연계 컬렉터블</summary>
-            <div class="compact-stack-grid">
-              <div class="home-goods-zone-kicker span-2" data-i18n="media.manage.collectibles.kicker">컬렉터블 전용 영역</div>
-              <div class="mini home-goods-zone-note span-2" data-i18n="media.manage.collectibles.note">음반/상품 편집 구역과 분리된 연계 컬렉터블 목록입니다.</div>
-              <div id="homeMasterGoodsList" class="related-list span-2"></div>
+        <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack" style="display:none;">
+          <div class="compact-stack-grid">
+            <div class="home-goods-zone-kicker span-2" data-i18n="media.manage.collectibles.kicker">컬렉터블 전용 영역</div>
+            <div class="mini home-goods-zone-note span-2" data-i18n="media.manage.collectibles.note">음반/상품 편집 구역과 분리된 연계 컬렉터블 목록입니다.</div>
+            <div class="section-divider span-2" style="margin-top:8px;">
+              <h2 data-i18n="media.manage.collectibles.title">연계 컬렉터블</h2>
             </div>
-            <div class="compact-stack-actions">
-              <div id="homeMasterGoodsActionMount"></div>
-            </div>
-          </details>
+            <div id="homeMasterGoodsList" class="related-list span-2"></div>
+          </div>
+          <div class="compact-stack-actions compact-stack-actions--equal">
+            <div id="homeMasterGoodsActionMount"></div>
+          </div>
         </div>
 
         <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack">
@@ -12365,60 +12365,52 @@
             </section>
 
             <section id="goodsManageProductLinksSection" class="goods-map-section">
-              <details id="goodsManageMappingsDetails" class="ops-compact-extra-fields">
-                <summary data-i18n="collectibles.manage.map.summary">공통 매핑(선택)</summary>
-                <div class="ops-compact-extra-fields-body">
-                  <div class="mini" data-i18n="collectibles.manage.map.note">카테고리와 무관한 공통 연결입니다. 필요할 때만 마스터, 아티스트, 레이블을 추가하세요.</div>
-
-                  <div class="goods-map-section" style="margin-top:8px;">
-                    <div class="result-head" style="margin-bottom:0;">
-                      <strong data-i18n="collectibles.manage.map.album_master.title">마스터 매핑</strong>
-                      <span class="mini" data-i18n="collectibles.manage.map.album_master.subtitle">선택적으로 여러 개 연결</span>
-                    </div>
-                    <div id="goodsAlbumMasterMapList" class="goods-chip-list"></div>
-                    <div id="goodsManageAlbumMasterControls" class="compact-stack" style="margin-top:8px;">
-                      <input id="goodsManageAlbumMasterQuery" data-i18n-placeholder="collectibles.manage.map.album_master.query.placeholder" placeholder="앨범명 / 아티스트명 검색" />
-                      <div class="compact-stack-actions">
-                        <button id="goodsManageAlbumMasterSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.album_master.action.search">조회</button>
-                      </div>
-                    </div>
-                    <div id="goodsManageAlbumMasterResults" class="goods-target-results"></div>
-                  </div>
-
-                  <div class="goods-map-section">
-                    <div class="result-head" style="margin-bottom:0;">
-                      <strong data-i18n="collectibles.manage.map.artist.title">아티스트 매핑</strong>
-                      <span class="mini" data-i18n="collectibles.manage.map.artist.subtitle">문자열 기준</span>
-                    </div>
-                    <div id="goodsArtistMapList" class="goods-chip-list"></div>
-                    <div id="goodsManageArtistControls" class="compact-stack" style="margin-top:8px;">
-                      <input id="goodsManageArtistName" data-i18n-placeholder="collectibles.manage.map.artist.placeholder" placeholder="예: 산울림" />
-                      <div class="compact-stack-actions">
-                        <button id="goodsManageArtistAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.artist.action.add">추가</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="goods-map-section">
-                    <div class="result-head" style="margin-bottom:0;">
-                      <strong data-i18n="collectibles.manage.map.label.title">레이블 매핑</strong>
-                      <span class="mini" data-i18n="collectibles.manage.map.label.subtitle">문자열 기준</span>
-                    </div>
-                    <div id="goodsLabelMapList" class="goods-chip-list"></div>
-                    <div id="goodsManageLabelControls" class="compact-stack" style="margin-top:8px;">
-                      <input id="goodsManageLabelName" data-i18n-placeholder="collectibles.manage.map.label.placeholder" placeholder="예: 서울음반" />
-                      <div class="compact-stack-actions">
-                        <button id="goodsManageLabelAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.label.action.add">추가</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="row">
-                    <button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_mappings">매핑 저장</button>
-                  </div>
-                  <div id="goodsManageMappingStatus" class="status"></div>
+              <div class="result-head" style="margin-bottom:0;">
+                <strong data-i18n="collectibles.manage.map.album_master.title">마스터 매핑</strong>
+                <span class="mini" data-i18n="collectibles.manage.map.album_master.subtitle">선택적으로 여러 개 연결</span>
+              </div>
+              <div id="goodsAlbumMasterMapList" class="goods-chip-list"></div>
+              <div id="goodsManageAlbumMasterControls" class="compact-stack" style="margin-top:8px;">
+                <input id="goodsManageAlbumMasterQuery" data-i18n-placeholder="collectibles.manage.map.album_master.query.placeholder" placeholder="앨범명 / 아티스트명 검색" />
+                <div class="compact-stack-actions">
+                  <button id="goodsManageAlbumMasterSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.album_master.action.search">조회</button>
                 </div>
-              </details>
+              </div>
+              <div id="goodsManageAlbumMasterResults" class="goods-target-results"></div>
+            </div>
+
+            <div class="goods-map-section">
+              <div class="result-head" style="margin-bottom:0;">
+                <strong data-i18n="collectibles.manage.map.artist.title">아티스트 매핑</strong>
+                <span class="mini" data-i18n="collectibles.manage.map.artist.subtitle">문자열 기준</span>
+              </div>
+              <div id="goodsArtistMapList" class="goods-chip-list"></div>
+              <div id="goodsManageArtistControls" class="compact-stack" style="margin-top:8px;">
+                <input id="goodsManageArtistName" data-i18n-placeholder="collectibles.manage.map.artist.placeholder" placeholder="예: 산울림" />
+                <div class="compact-stack-actions">
+                  <button id="goodsManageArtistAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.artist.action.add">추가</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="goods-map-section">
+              <div class="result-head" style="margin-bottom:0;">
+                <strong data-i18n="collectibles.manage.map.label.title">레이블 매핑</strong>
+                <span class="mini" data-i18n="collectibles.manage.map.label.subtitle">문자열 기준</span>
+              </div>
+              <div id="goodsLabelMapList" class="goods-chip-list"></div>
+              <div id="goodsManageLabelControls" class="compact-stack" style="margin-top:8px;">
+                <input id="goodsManageLabelName" data-i18n-placeholder="collectibles.manage.map.label.placeholder" placeholder="예: 서울음반" />
+                <div class="compact-stack-actions">
+                  <button id="goodsManageLabelAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.label.action.add">추가</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_mappings">매핑 저장</button>
+            </div>
+            <div id="goodsManageMappingStatus" class="status"></div>
             </section>
 
             <section id="goodsManageCollectibleLinksSection" class="goods-map-section">
@@ -12541,33 +12533,23 @@
                   <label for="goodsRegisterName" data-i18n="collectibles.register.field.name.label">컬렉터블명</label>
                   <input id="goodsRegisterName" data-i18n-placeholder="collectibles.register.field.name.placeholder" placeholder="예: 산울림 투어 포스터" />
                 </div>
+                <div>
+                  <label for="goodsRegisterAlbumMasterId" data-i18n="collectibles.register.field.album_master_id.label">연계 마스터 ID(선택)</label>
+                  <input id="goodsRegisterAlbumMasterId" type="number" min="1" />
+                </div>
+                <div>
+                  <label for="goodsRegisterArtistNames" data-i18n="collectibles.register.field.artist_names.label">연계 아티스트명(쉼표 구분)</label>
+                  <input id="goodsRegisterArtistNames" data-i18n-placeholder="collectibles.register.field.artist_names.placeholder" placeholder="예: 산울림, 김창완" />
+                </div>
+                <div>
+                  <label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>
+                  <input id="goodsRegisterLabelNames" data-i18n-placeholder="collectibles.register.field.label_names.placeholder" placeholder="예: 서울음반, 서라벌레코드" />
+                </div>
                 <div class="ops-compact-form-actions">
                   <button id="goodsRegisterSaveBtn" class="btn" type="button" data-i18n="collectibles.register.save">컬렉터블 등록</button>
                 </div>
               </div>
             </div>
-            <details id="goodsRegisterMappingDetails" class="ops-compact-extra-fields goods-extra-fields">
-              <summary data-i18n="collectibles.register.mapping.summary">기본 매핑(선택)</summary>
-              <div class="ops-compact-extra-fields-body">
-                <div class="mini" data-i18n="collectibles.register.mapping.note">카테고리와 무관한 공통 연결입니다. 필요하면 생성 시점에 기본 마스터, 아티스트, 레이블을 함께 넣습니다.</div>
-                <div class="ops-compact-form-grid goods-register-compact-grid" style="margin-top:8px;">
-                  <div class="ops-compact-form-row goods-register-compact-row--secondary">
-                    <div>
-                      <label for="goodsRegisterAlbumMasterId" data-i18n="collectibles.register.field.album_master_id.label">연계 마스터 ID(선택)</label>
-                      <input id="goodsRegisterAlbumMasterId" type="number" min="1" />
-                    </div>
-                    <div>
-                      <label for="goodsRegisterArtistNames" data-i18n="collectibles.register.field.artist_names.label">연계 아티스트명(쉼표 구분)</label>
-                      <input id="goodsRegisterArtistNames" data-i18n-placeholder="collectibles.register.field.artist_names.placeholder" placeholder="예: 산울림, 김창완" />
-                    </div>
-                    <div>
-                      <label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>
-                      <input id="goodsRegisterLabelNames" data-i18n-placeholder="collectibles.register.field.label_names.placeholder" placeholder="예: 서울음반, 서라벌레코드" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </details>
             <details id="goodsRegisterExtraFields" class="ops-compact-extra-fields goods-extra-fields">
               <summary>추가 정보</summary>
               <div class="ops-compact-extra-fields-body goods-form-grid">
@@ -13142,12 +13124,12 @@
       <summary data-i18n="manual.register_purchase.summary">구매 내역 가져오기 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
         <ol>
-          <li data-i18n="manual.register_purchase.item1">주문 페이지 원문을 붙여넣거나 파일로 올려 구매 목록을 한 번에 들여오고 싶을 때 이 화면을 엽니다.</li>
-          <li data-i18n="manual.register_purchase.item2">Amazon / eBay / Aladin / YES24 주문 페이지 원문 또는 파일(`.mhtml`, `.html`, `.txt`)을 넣고 `미리보기`로 파싱 결과를 먼저 확인합니다.</li>
+          <li data-i18n="manual.register_purchase.item1">주문 파일로 구매 목록을 한 번에 들여오고 싶을 때 이 화면을 엽니다.</li>
+          <li data-i18n="manual.register_purchase.item2">Amazon / eBay / Sailmusic 주문 파일(`.mhtml`, `.html`, `.txt`)을 올리고 `미리보기`로 파싱 결과를 먼저 확인합니다.</li>
           <li data-i18n="manual.register_purchase.item3">이상이 없으면 `수입 큐 저장`으로 대기열에 넣고, 큐에서 `후보 조회` 또는 `후보 일괄 조회`로 외부 메타 후보를 붙입니다.</li>
           <li data-i18n="manual.register_purchase.item4">후보를 확인한 뒤 `후보로 생성`으로 메타를 치환해 등록하고, 후보가 맞지 않을 때만 원문 그대로 생성합니다.</li>
         </ol>
-        <div class="manual-block-note" data-i18n="manual.register_purchase.note">붙여넣기와 파일 업로드를 모두 기본 경로로 지원하고, Gmail 자동 수집은 선택 기능으로만 남깁니다.</div>
+        <div class="manual-block-note" data-i18n="manual.register_purchase.note">파일 업로드를 기본으로 쓰고, 붙여넣기 입력은 보조 수단으로만 남깁니다.</div>
       </div>
     </details>
     <div class="layout">
@@ -13156,26 +13138,26 @@
           <h2><span data-i18n="media.register.purchase.title">구매 내역 가져오기</span></h2>
           <button class="page-help-trigger" type="button" data-page-help-open="register-purchase" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
         </div>
-        <p class="sub" data-i18n="media.register.purchase.subtitle">주문 페이지 원문을 붙여넣거나 파일로 올려 라이브러리 수입 큐로 연결합니다.</p>
+        <p class="sub" data-i18n="media.register.purchase.subtitle">주문 페이지 파일을 바로 라이브러리 수입 큐로 연결합니다.</p>
         <div class="grid-6">
           <div class="span-3">
-            <label for="purchaseImportFile" data-i18n="media.register.purchase.field.file.label">주문 페이지 파일(선택)</label>
+            <label for="purchaseImportFile" data-i18n="media.register.purchase.field.file.label">주문 파일</label>
             <input id="purchaseImportFile" type="file" accept=".mhtml,.mht,.html,.htm,.txt" />
             <div id="purchaseImportFileInfo" class="mini muted" style="margin-top:4px;" data-i18n="media.register.purchase.status.file_none">선택된 파일 없음</div>
           </div>
           <div class="span-3">
             <label data-i18n="media.register.purchase.field.auto_detect.label">자동 판별</label>
-            <div class="compact-line" data-i18n="media.register.purchase.field.auto_detect.note">구매처와 구매일은 붙여넣기 원문 또는 업로드한 파일 내용에서 자동 추출합니다.</div>
+            <div class="compact-line" data-i18n="media.register.purchase.field.auto_detect.note">구매처와 구매일은 업로드한 파일 내용에서 자동 추출합니다.</div>
           </div>
         </div>
         <input id="purchaseImportSourceType" type="hidden" value="FILE_UPLOAD" />
         <details class="manual-block manual-block--page-help" style="margin-top:8px;">
-          <summary data-i18n="media.register.purchase.field.manual.summary">원문 붙여넣기 / 추가 정보</summary>
+          <summary data-i18n="media.register.purchase.field.manual.summary">직접 붙여넣기 / 추가 정보(보조)</summary>
           <div class="manual-block-body">
             <div class="grid-6">
               <div class="span-2">
                 <label for="purchaseImportEmailFrom" data-i18n="media.register.purchase.field.email_from.label">발신자(선택)</label>
-                <input id="purchaseImportEmailFrom" data-i18n-placeholder="media.register.purchase.field.email_from.placeholder" placeholder="예: orders@example.com" />
+                <input id="purchaseImportEmailFrom" data-i18n-placeholder="media.register.purchase.field.email_from.placeholder" placeholder="예: sailmusic@naver.com" />
               </div>
               <div class="span-2">
                 <label for="purchaseImportEmailSubject" data-i18n="media.register.purchase.field.email_subject.label">메일 제목(선택)</label>
@@ -13241,8 +13223,6 @@
               <option value="SAILMUSIC">Sailmusic</option>
               <option value="AMAZON">Amazon</option>
               <option value="EBAY">eBay</option>
-              <option value="ALADIN">알라딘</option>
-              <option value="YES24">YES24</option>
               <option value="OTHER" data-i18n="common.other">기타</option>
             </select>
           </div>
@@ -13335,7 +13315,7 @@
           </div>
           <div>
             <label for="csvCreatedBy" data-i18n="media.register.batch.field.created_by.label">등록자</label>
-            <input id="csvCreatedBy" data-i18n-placeholder="media.register.batch.field.created_by.placeholder" placeholder="예: operator01" />
+            <input id="csvCreatedBy" data-i18n-placeholder="media.register.batch.field.created_by.placeholder" placeholder="예: jingun" />
           </div>
         </div>
         <div style="margin-top:10px;">
@@ -14130,7 +14110,7 @@
           <div class="grid-6" style="margin-top:8px;">
             <div>
               <label for="opsAuthUsername" data-i18n="ops.account.field.username.label">아이디</label>
-              <input id="opsAuthUsername" data-i18n-placeholder="ops.account.field.username.placeholder" placeholder="예: operator01" />
+              <input id="opsAuthUsername" data-i18n-placeholder="ops.account.field.username.placeholder" placeholder="예: kinolifecom" />
             </div>
             <div>
               <label for="opsAuthPassword" data-i18n="ops.account.field.password.label">비밀번호</label>
@@ -15888,7 +15868,7 @@
         "media.register.api_lookup.field.artist.placeholder": "예: 산울림",
         "media.register.api_lookup.action.query_search": "조건 조회",
         "media.register.purchase.title": "구매 내역 가져오기",
-        "media.register.purchase.field.file.label": "주문 페이지 파일(선택)",
+        "media.register.purchase.field.file.label": "주문 파일",
         "media.register.purchase.field.auto_detect.label": "자동 판별",
         "media.register.purchase.action.preview": "미리보기",
         "media.register.purchase.action.save_queue": "수입 큐 저장",
@@ -16266,7 +16246,7 @@
         "ops.account.title": "관리자 / 현장 운영자 계정",
         "ops.account.intro": "기본 계정은 읽기 전용입니다. 여기서 만드는 관리 계정은 로그인 후 바로 사용 가능합니다.",
         "ops.account.field.username.label": "아이디",
-        "ops.account.field.username.placeholder": "예: operator01",
+        "ops.account.field.username.placeholder": "예: kinolifecom",
         "ops.account.field.password.label": "비밀번호",
         "ops.account.field.password.placeholder": "새 비밀번호 또는 초기 비밀번호",
         "ops.account.field.role.label": "권한",
@@ -16498,11 +16478,11 @@
         "manual.register_direct.item4": "등록 후 위치가 필요하면 `대시보드`, 상세 수정이 필요하면 `미디어 > 관리`로 이어갑니다.",
         "manual.register_direct.note": "속도를 우선하는 등록 화면입니다. 처음부터 모든 메타를 다 채우기보다, 먼저 생성 후 보강하는 흐름이 가장 효율적입니다.",
         "manual.register_purchase.summary": "구매 내역 가져오기 페이지 활용 매뉴얼",
-        "manual.register_purchase.item1": "주문 페이지 원문을 붙여넣거나 파일로 올려 구매 목록을 한 번에 들여오고 싶을 때 이 화면을 엽니다.",
-        "manual.register_purchase.item2": "Amazon / eBay / Aladin / YES24 주문 페이지 원문 또는 파일(`.mhtml`, `.html`, `.txt`)을 넣고 `미리보기`로 파싱 결과를 먼저 확인합니다.",
+        "manual.register_purchase.item1": "주문 파일로 구매 목록을 한 번에 들여오고 싶을 때 이 화면을 엽니다.",
+        "manual.register_purchase.item2": "Amazon / eBay / Sailmusic 주문 파일(`.mhtml`, `.html`, `.txt`)을 올리고 `미리보기`로 파싱 결과를 먼저 확인합니다.",
         "manual.register_purchase.item3": "이상이 없으면 `수입 큐 저장`으로 대기열에 넣고, 큐에서 `후보 조회` 또는 `후보 일괄 조회`로 외부 메타 후보를 붙입니다.",
         "manual.register_purchase.item4": "후보를 확인한 뒤 `후보로 생성`으로 메타를 치환해 등록하고, 후보가 맞지 않을 때만 원문 그대로 생성합니다.",
-        "manual.register_purchase.note": "붙여넣기와 파일 업로드를 모두 기본 경로로 지원하고, Gmail 자동 수집은 선택 기능으로만 남깁니다.",
+        "manual.register_purchase.note": "파일 업로드를 기본으로 쓰고, 붙여넣기 입력은 보조 수단으로만 남깁니다.",
         "manual.register_batch.summary": "대량 등록 페이지 활용 매뉴얼",
         "manual.register_batch.item1": "한 번에 많은 목록을 올려 초기 입력을 끝내야 할 때 이 화면을 엽니다.",
         "manual.register_batch.item2": "CSV를 업로드하기 전에 `discogs_release_id`, 장식장명/열/칸 같은 확정값이 있는지 먼저 확인합니다.",
@@ -16581,7 +16561,7 @@
         "help.source.workbench": "직접 등록 뒤 메타가 부족한 상품을 Discogs, ManiaDB, Aladin 후보로 보강하는 작업대입니다. 소스 미연결, 곡 정보 부족, 커버 부족 같은 예외를 정리할 때 가장 자주 사용합니다.",
         "help.register.direct": "최소 정보만 빠르게 넣어 보유 상품을 등록하는 화면입니다. 초기 대량 정리에서 속도를 우선할 때 쓰고, 자세한 메타는 이후 소스 보강이나 미디어 > 관리에서 채우는 흐름이 좋습니다.",
         "help.register.api_lookup": "첫 스캔은 조회, 같은 바코드 재스캔이나 Enter는 확정 저장을 위한 작업대입니다. Discogs 우선, 국내 구보는 ManiaDB 보강을 기본으로 사용합니다.",
-        "help.register.purchase_import": "Amazon / eBay / Aladin / YES24 주문 페이지 원문이나 파일(MHTML/HTML/TXT)을 넣어 구매 정보를 큐로 가져오는 화면입니다. 먼저 미리보기로 파싱 결과를 확인하고, 수입 큐에 저장한 다음, 큐에서 보유 상품 생성으로 확정 등록합니다.",
+        "help.register.purchase_import": "Amazon / eBay / Sailmusic 주문 파일(MHTML/HTML/TXT)을 올려 구매 정보를 큐로 가져오는 화면입니다. 먼저 미리보기로 파싱 결과를 확인하고, 수입 큐에 저장한 다음, 큐에서 보유 상품 생성으로 확정 등록합니다.",
         "help.register.csv_import": "엑셀이나 CSV로 정리한 목록을 한 번에 올리는 영역입니다. 초기 대량 입력에 가장 효율적이며, 장식장명/열/칸이나 Discogs release_id가 있으면 검수 부담을 크게 줄일 수 있습니다.",
         "help.collectibles.overview": "컬렉터블은 음반과 분리된 독립 관리 대상으로 등록합니다. 필요할 때만 앨범 마스터, 아티스트, 레이블과 선택적으로 연결합니다.",
         "help.ops.system_status": "운영자가 서버가 살아있는지 바로 확인하는 영역입니다. 앱 헬스체크, 메타 동기화 상태, 외부 접속 주소, 로그 위치를 한 번에 보여줍니다. 접속 이상이 있으면 여기 상태와 launchd 로그부터 확인하면 됩니다.",
@@ -16628,8 +16608,6 @@
         "collectibles.manage.map.album_master.subtitle": '연결할 앨범 마스터를 검색해 추가합니다.',
         "collectibles.manage.map.album_master.query.placeholder": '예: 김윤아',
         "collectibles.manage.map.album_master.action.search": '마스터 검색',
-        "collectibles.manage.map.summary": '공통 매핑(선택)',
-        "collectibles.manage.map.note": '카테고리와 무관한 공통 연결입니다. 필요할 때만 마스터, 아티스트, 레이블을 추가하세요.',
         "collectibles.manage.map.artist.title": '아티스트 매핑',
         "collectibles.manage.map.artist.subtitle": '이 컬렉터블과 연결할 아티스트명을 추가합니다.',
         "collectibles.manage.map.artist.placeholder": '예: 김윤아',
@@ -16640,8 +16618,6 @@
         "collectibles.manage.map.label.action.add": '레이블 추가',
         "collectibles.manage.action.save_mappings": '매핑 저장',
         "collectibles.register.intro": '컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.',
-        "collectibles.register.mapping.summary": '기본 매핑(선택)',
-        "collectibles.register.mapping.note": '카테고리와 무관한 공통 연결입니다. 필요하면 생성 시점에 기본 마스터, 아티스트, 레이블을 함께 넣습니다.',
         "collectibles.register.field.category.label": '카테고리',
         "collectibles.register.field.quantity.label": '수량',
         "collectibles.register.field.status.label": '상태',
@@ -16694,12 +16670,12 @@
         "media.register.api_lookup.placement.empty_body": '장식장 규격과 도메인을 먼저 확인하세요.',
         "media.register.api_lookup.confirm.idle": '조회 후 등록 대기',
         "media.register.api_lookup.results.title": '조회 결과',
-        "media.register.purchase.subtitle": '주문 페이지 원문을 붙여넣거나 파일로 올려 라이브러리 수입 큐로 연결합니다.',
-        "media.register.purchase.field.auto_detect.note": '구매처와 구매일은 붙여넣기 원문 또는 업로드한 파일 내용에서 자동 추출합니다.',
+        "media.register.purchase.subtitle": '구매 파일을 읽어 원문은 그대로 보이고, 후보 조회 시에만 검색용 값으로 분리합니다.',
+        "media.register.purchase.field.auto_detect.note": '파일 형식을 먼저 추정하고, 필요하면 수동 입력값으로 보정합니다.',
         "media.register.purchase.action.reset": '입력 비우기',
-        "media.register.purchase.field.manual.summary": '원문 붙여넣기 / 추가 정보',
+        "media.register.purchase.field.manual.summary": '원문에서 자동 판별이 어려운 경우 아래 수동 입력을 함께 사용합니다.',
         "media.register.purchase.field.email_from.label": '발신자(선택)',
-        "media.register.purchase.field.email_from.placeholder": '예: orders@example.com',
+        "media.register.purchase.field.email_from.placeholder": '예: orders@ebay.com',
         "media.register.purchase.field.email_subject.label": '메일 제목(선택)',
         "media.register.purchase.field.email_subject.placeholder": '예: Your order has shipped',
         "media.register.purchase.field.source_ref.label": '원문 참조값(선택)',
@@ -16711,7 +16687,7 @@
         "media.register.batch.note.sample": '샘플 CSV 형식을 먼저 확인한 뒤 업로드하세요.',
         "media.register.batch.field.default_category.label": '기본 카테고리(옵션)',
         "media.register.batch.field.created_by.label": '등록자',
-        "media.register.batch.field.created_by.placeholder": '예: operator01',
+        "media.register.batch.field.created_by.placeholder": '예: kinolifecom',
         "media.register.review.title": '검수 큐',
         "manual.register_master.summary": '마스터 정리 페이지 활용 매뉴얼',
         "media.register.master.title": '앨범 마스터 묶기',
@@ -18338,7 +18314,7 @@
         "media.register.api_lookup.field.artist.placeholder": "e.g. Sanullim",
         "media.register.api_lookup.action.query_search": "Search by Criteria",
         "media.register.purchase.title": "Import Purchase History",
-        "media.register.purchase.field.file.label": "Order Page File (Optional)",
+        "media.register.purchase.field.file.label": "Order File",
         "media.register.purchase.field.auto_detect.label": "Auto Detect",
         "media.register.purchase.action.preview": "Preview",
         "media.register.purchase.action.save_queue": "Save to Import Queue",
@@ -18716,7 +18692,7 @@
         "ops.account.title": "Admin / Operator Accounts",
         "ops.account.intro": "Default accounts are read-only. Accounts created here are available immediately after login.",
         "ops.account.field.username.label": "Username",
-        "ops.account.field.username.placeholder": "e.g. operator01",
+        "ops.account.field.username.placeholder": "e.g. kinolifecom",
         "ops.account.field.password.label": "Password",
         "ops.account.field.password.placeholder": "New or initial password",
         "ops.account.field.role.label": "Role",
@@ -18948,11 +18924,11 @@
         "manual.register_direct.item4": "Move to `Dashboard` when placement is needed and to `Media > Manage` when detailed edits are needed.",
         "manual.register_direct.note": "This registration screen prioritizes speed. It is usually more efficient to create first and enrich later than to fill every field upfront.",
         "manual.register_purchase.summary": "Purchase Import Guide",
-        "manual.register_purchase.item1": "Open this screen when you want to bring in a purchase list by pasting an order page or uploading its file in one pass.",
-        "manual.register_purchase.item2": "Paste or upload Amazon / eBay / Aladin / YES24 order pages (`.mhtml`, `.html`, `.txt`) and inspect the parsed preview first.",
+        "manual.register_purchase.item1": "Open this screen when you want to bring in a purchase list from order files in one pass.",
+        "manual.register_purchase.item2": "Upload Amazon / eBay / Sailmusic order files (`.mhtml`, `.html`, `.txt`) and inspect the parsed preview first.",
         "manual.register_purchase.item3": "If the preview looks right, save it to the import queue, then attach external metadata candidates from the queue with `Lookup Candidates` or `Fetch All Candidates`.",
         "manual.register_purchase.item4": "After reviewing candidates, use `Create from Candidate` to replace metadata and register, and only create from the raw line when no candidate fits.",
-        "manual.register_purchase.note": "Support both paste and file upload as first-class paths, and keep Gmail auto intake as an optional add-on only.",
+        "manual.register_purchase.note": "Treat file upload as the primary path and keep pasted raw text only as a backup path.",
         "manual.register_batch.summary": "Batch Registration Guide",
         "manual.register_batch.item1": "Open this screen when you need to finish initial input for many items at once.",
         "manual.register_batch.item2": "Before uploading CSV, confirm whether fixed values such as `discogs_release_id`, cabinet name, row, and slot are already available.",
@@ -19031,7 +19007,7 @@
         "help.source.workbench": "Use this workbench to enrich items with missing metadata after direct registration. It is the most common place to resolve missing source links, missing track data, and missing covers with Discogs, ManiaDB, or Aladin candidates.",
         "help.register.direct": "Use this screen to register owned items quickly with only the minimum required fields. It works best when speed matters during early intake and richer metadata can be filled later in Source Enrichment or Media > Manage.",
         "help.register.api_lookup": "The first barcode scan runs lookup, and rescanning the same barcode or pressing Enter confirms the save. Discogs is preferred first, with ManiaDB used as the domestic supplement path.",
-        "help.register.purchase_import": "Paste or upload Amazon / eBay / Aladin / YES24 order pages (MHTML/HTML/TXT) here to turn purchases into queue entries. Check the parsed preview first, save to the import queue, then confirm registration from queue candidates.",
+        "help.register.purchase_import": "Upload Amazon / eBay / Sailmusic order files (MHTML/HTML/TXT) here to turn purchases into queue entries. Check the parsed preview first, save to the import queue, then confirm registration from queue candidates.",
         "help.register.csv_import": "Use this area to upload spreadsheet or CSV inventories in one pass. It is most effective for initial bulk intake, and confirmed values such as cabinet name, row, slot, or Discogs release ID significantly reduce later review work.",
         "help.collectibles.overview": "Register collectibles as independent managed items separate from media. Link them to album masters, artists, or labels only when those relationships are actually needed.",
         "help.ops.system_status": "This area lets operators confirm right away that the service is alive. It shows app health, metadata sync status, external access URLs, and log paths in one place, so it is the first place to check when access looks wrong.",
@@ -19078,8 +19054,6 @@
         "collectibles.manage.map.album_master.subtitle": 'Search and add the album master to connect.',
         "collectibles.manage.map.album_master.query.placeholder": 'e.g. Kim Yuna',
         "collectibles.manage.map.album_master.action.search": 'Search Master',
-        "collectibles.manage.map.summary": 'Shared Mapping (Optional)',
-        "collectibles.manage.map.note": 'These links apply regardless of category. Add masters, artists, or labels only when needed.',
         "collectibles.manage.map.artist.title": 'Artist Mapping',
         "collectibles.manage.map.artist.subtitle": 'Add artist names linked to this collectible.',
         "collectibles.manage.map.artist.placeholder": 'e.g. Kim Yuna',
@@ -19090,8 +19064,6 @@
         "collectibles.manage.map.label.action.add": 'Add Label',
         "collectibles.manage.action.save_mappings": 'Save Mappings',
         "collectibles.register.intro": 'Register the collectible as an independent record first, then add default mappings if needed.',
-        "collectibles.register.mapping.summary": 'Default Mapping (Optional)',
-        "collectibles.register.mapping.note": 'These links apply regardless of category. Add the default master, artist, or label at creation time only when needed.',
         "collectibles.register.field.category.label": 'Category',
         "collectibles.register.field.quantity.label": 'Quantity',
         "collectibles.register.field.status.label": 'Status',
@@ -19144,12 +19116,12 @@
         "media.register.api_lookup.placement.empty_body": 'Check cabinet size group and domain first.',
         "media.register.api_lookup.confirm.idle": 'Waiting to register after lookup',
         "media.register.api_lookup.results.title": 'Lookup Results',
-        "media.register.purchase.subtitle": 'Paste an order page or upload its file to send it straight into the library import queue.',
-        "media.register.purchase.field.auto_detect.note": 'Detect the vendor and purchase date from either pasted raw content or uploaded files.',
+        "media.register.purchase.subtitle": 'Keep the raw listing text in the queue and split it into search fields only when you look up candidates.',
+        "media.register.purchase.field.auto_detect.note": 'Detect the file type first, then fall back to manual metadata when needed.',
         "media.register.purchase.action.reset": 'Clear Input',
-        "media.register.purchase.field.manual.summary": 'Paste Raw Content / Extra Fields',
+        "media.register.purchase.field.manual.summary": 'Use the manual fields below when auto-detection is not enough.',
         "media.register.purchase.field.email_from.label": 'Sender (optional)',
-        "media.register.purchase.field.email_from.placeholder": 'e.g. orders@example.com',
+        "media.register.purchase.field.email_from.placeholder": 'e.g. orders@ebay.com',
         "media.register.purchase.field.email_subject.label": 'Email Subject (optional)',
         "media.register.purchase.field.email_subject.placeholder": 'e.g. Your order has shipped',
         "media.register.purchase.field.source_ref.label": 'Source Reference (optional)',
@@ -19161,7 +19133,7 @@
         "media.register.batch.note.sample": 'Check the sample CSV shape before uploading.',
         "media.register.batch.field.default_category.label": 'Default Category (optional)',
         "media.register.batch.field.created_by.label": 'Created By',
-        "media.register.batch.field.created_by.placeholder": 'e.g. operator01',
+        "media.register.batch.field.created_by.placeholder": 'e.g. kinolifecom',
         "media.register.review.title": 'Review Queue',
         "manual.register_master.summary": 'Master Cleanup Manual',
         "media.register.master.title": 'Group Album Masters',
@@ -20804,7 +20776,7 @@
         "media.register.api_lookup.field.artist.placeholder": "例: サヌリム",
         "media.register.api_lookup.action.query_search": "条件照会",
         "media.register.purchase.title": "購入履歴を取り込む",
-        "media.register.purchase.field.file.label": "注文ページファイル（任意）",
+        "media.register.purchase.field.file.label": "注文ファイル",
         "media.register.purchase.field.auto_detect.label": "自動判別",
         "media.register.purchase.action.preview": "プレビュー",
         "media.register.purchase.action.save_queue": "インポートキューに保存",
@@ -21178,7 +21150,7 @@
         "ops.account.title": "管理者 / 現場運用アカウント",
         "ops.account.intro": "基本アカウントは読み取り専用です。ここで作成した管理アカウントはログイン後すぐ使えます。",
         "ops.account.field.username.label": "ID",
-        "ops.account.field.username.placeholder": "例: operator01",
+        "ops.account.field.username.placeholder": "例: kinolifecom",
         "ops.account.field.password.label": "パスワード",
         "ops.account.field.password.placeholder": "新しいパスワードまたは初期パスワード",
         "ops.account.field.role.label": "権限",
@@ -21410,11 +21382,11 @@
         "manual.register_direct.item4": "登録後に位置指定が必要なら `ダッシュボード`、詳細修正が必要なら `メディア > 管理` へ進みます。",
         "manual.register_direct.note": "この登録画面は速度を優先します。最初から全メタを埋めるより、先に作成してあとで補強する流れが最も効率的です。",
         "manual.register_purchase.summary": "購入履歴取り込みページ利用ガイド",
-        "manual.register_purchase.item1": "注文ページ原文を貼り付けるか、ファイルを上げて購入一覧を一括取り込みしたいときにこの画面を開きます。",
-        "manual.register_purchase.item2": "Amazon / eBay / Aladin / YES24 の注文ページ原文またはファイル（`.mhtml`, `.html`, `.txt`）を入れ、まず `プレビュー` で解析結果を確認します。",
+        "manual.register_purchase.item1": "注文ファイルから購入一覧を一括で取り込みたいときにこの画面を開きます。",
+        "manual.register_purchase.item2": "Amazon / eBay / Sailmusic の注文ファイル（`.mhtml`, `.html`, `.txt`）を上げて、まず `プレビュー` で解析結果を確認します。",
         "manual.register_purchase.item3": "問題なければ `インポートキュー保存` で待機列に入れ、キューで `候補照会` または `候補一括照会` により外部メタ候補を付けます。",
         "manual.register_purchase.item4": "候補を確認したあと `候補から生成` でメタを置き換えて登録し、候補が合わない場合だけ原文のまま生成します。",
-        "manual.register_purchase.note": "貼り付けとファイルアップロードをどちらも基本経路として扱い、Gmail自動取り込みは任意機能としてのみ残します。",
+        "manual.register_purchase.note": "ファイルアップロードを基本経路とし、貼り付け入力は補助手段としてのみ残します。",
         "manual.register_batch.summary": "大量登録ページ利用ガイド",
         "manual.register_batch.item1": "一度に多くの一覧を上げて初期入力を終えたいときにこの画面を開きます。",
         "manual.register_batch.item2": "CSVを上げる前に、`discogs_release_id` やキャビネット名・列・スロットのような確定値があるか先に確認します。",
@@ -21493,7 +21465,7 @@
         "help.source.workbench": "直接登録のあとにメタが不足した商品を Discogs、ManiaDB、Aladin の候補で補強する作業台です。ソース未連結、曲情報不足、カバー不足のような例外整理で最もよく使います。",
         "help.register.direct": "最小限の情報だけを素早く入れて所蔵商品を登録する画面です。初期整理で速度を優先したいときに向いており、詳しいメタは後でソース補強やメディア > 管理で埋めます。",
         "help.register.api_lookup": "最初のバーコード読み取りは照会、同じバーコードの再スキャンや Enter は確定保存のための作業台です。Discogs を優先し、国内旧譜は ManiaDB 補強を基本として使います。",
-        "help.register.purchase_import": "Amazon / eBay / Aladin / YES24 の注文ページ原文またはファイル（MHTML/HTML/TXT）を入れて購入情報をキューに取り込む画面です。まずプレビューで解析結果を確認し、インポートキュー保存のあとキューから所蔵商品生成で確定登録します。",
+        "help.register.purchase_import": "Amazon / eBay / Sailmusic の注文ファイル（MHTML/HTML/TXT）を上げて購入情報をキューに取り込む画面です。まずプレビューで解析結果を確認し、インポートキュー保存のあとキューから所蔵商品生成で確定登録します。",
         "help.register.csv_import": "表計算や CSV に整理した一覧を一度に上げる領域です。初期の大量入力に最も効率的で、キャビネット名・列・スロットや Discogs release ID のような確定値があると後続の検収負担を大きく減らせます。",
         "help.collectibles.overview": "コレクタブルは音源と分離した独立管理対象として登録します。必要なときだけアルバムマスター、アーティスト、レーベルへ選択的に連携します。",
         "help.ops.system_status": "運用者がサーバーの生存状態をすぐ確認するための領域です。アプリヘルスチェック、メタ同期状態、外部接続URL、ログ位置を一度に見せるので、接続異常があればまずここから確認します。",
@@ -21540,8 +21512,6 @@
         "collectibles.manage.map.album_master.subtitle": '連携するアルバムマスターを検索して追加します。',
         "collectibles.manage.map.album_master.query.placeholder": '例: キム・ユナ',
         "collectibles.manage.map.album_master.action.search": 'マスター検索',
-        "collectibles.manage.map.summary": '共通マッピング（任意）',
-        "collectibles.manage.map.note": 'カテゴリに関係なく使う共通連携です。必要なときだけマスター、アーティスト、レーベルを追加します。',
         "collectibles.manage.map.artist.title": 'アーティストマッピング',
         "collectibles.manage.map.artist.subtitle": 'このコレクタブルに紐づけるアーティスト名を追加します。',
         "collectibles.manage.map.artist.placeholder": '例: キム・ユナ',
@@ -21552,8 +21522,6 @@
         "collectibles.manage.map.label.action.add": 'レーベル追加',
         "collectibles.manage.action.save_mappings": 'マッピング保存',
         "collectibles.register.intro": 'コレクタブルを独立レコードとして先に登録し、必要なら作成時に基本マッピングを一緒に追加します。',
-        "collectibles.register.mapping.summary": '基本マッピング（任意）',
-        "collectibles.register.mapping.note": 'カテゴリに関係なく使う共通連携です。必要なら作成時に基本マスター、アーティスト、レーベルを一緒に追加します。',
         "collectibles.register.field.category.label": 'カテゴリ',
         "collectibles.register.field.quantity.label": '数量',
         "collectibles.register.field.status.label": '状態',
@@ -21606,12 +21574,12 @@
         "media.register.api_lookup.placement.empty_body": 'キャビネット規格とドメインを先に確認してください。',
         "media.register.api_lookup.confirm.idle": '照会後の登録待機',
         "media.register.api_lookup.results.title": '照会結果',
-        "media.register.purchase.subtitle": '注文ページ原文を貼り付けるか、ファイルを上げてライブラリの取り込みキューへつなげます。',
-        "media.register.purchase.field.auto_detect.note": '購入先と購入日は、貼り付け原文またはアップロードしたファイル内容から自動抽出します。',
+        "media.register.purchase.subtitle": 'キュー一覧には原文タイトルをそのまま残し、候補照会時だけ検索用フィールドへ分離します。',
+        "media.register.purchase.field.auto_detect.note": 'まずファイル形式を推定し、必要に応じて手動入力で補正します。',
         "media.register.purchase.action.reset": '入力をクリア',
-        "media.register.purchase.field.manual.summary": '原文貼り付け / 追加情報',
+        "media.register.purchase.field.manual.summary": '自動判別が難しい場合は以下の手動入力も併用します。',
         "media.register.purchase.field.email_from.label": '送信者(任意)',
-        "media.register.purchase.field.email_from.placeholder": '例: orders@example.com',
+        "media.register.purchase.field.email_from.placeholder": '例: orders@ebay.com',
         "media.register.purchase.field.email_subject.label": 'メール件名(任意)',
         "media.register.purchase.field.email_subject.placeholder": '例: Your order has shipped',
         "media.register.purchase.field.source_ref.label": '原文参照値(任意)',
@@ -21623,7 +21591,7 @@
         "media.register.batch.note.sample": 'サンプルCSV形式を先に確認してからアップロードしてください。',
         "media.register.batch.field.default_category.label": '既定カテゴリ(任意)',
         "media.register.batch.field.created_by.label": '登録者',
-        "media.register.batch.field.created_by.placeholder": '例: operator01',
+        "media.register.batch.field.created_by.placeholder": '例: kinolifecom',
         "media.register.review.title": '検収キュー',
         "manual.register_master.summary": 'マスター整理ページ利用ガイド',
         "media.register.master.title": 'アルバムマスターを束ねる',
@@ -27567,8 +27535,6 @@
       if (code === "SAILMUSIC") return "Sailmusic";
       if (code === "AMAZON") return "Amazon";
       if (code === "EBAY") return "eBay";
-      if (code === "ALADIN") return "알라딘";
-      if (code === "YES24") return "YES24";
       return code || t("media.register.purchase.vendor.other");
     }
 
@@ -35499,10 +35465,6 @@
       );
     }
 
-    function collapseHomeLinkedCollectiblesDetails() {
-      if ($("homeMasterGoodsDetails")) $("homeMasterGoodsDetails").open = false;
-    }
-
     function resetHomeMasterLookupUi(opts = {}) {
       const clearInputs = Boolean(opts.clearInputs);
       homeMasterInfo = null;
@@ -35748,8 +35710,6 @@
       homeOwnedItemRelationView = null;
       homeOwnedItemRelationMasterEntries = [];
       homeOwnedItemEditableRelations = [];
-      collapseHomeLinkedCollectiblesDetails();
-      collapseHomeProductRelationDetails();
       homeLoadedMusicDetail = null;
       clearHomeMetaCandidates();
       syncHomeLinkedSourceText();
@@ -38448,13 +38408,7 @@
 
     async function applyHomeEditorDetail(data, requestSeq = 0) {
       if (requestSeq && !isActiveHomeEditRequest(requestSeq)) return;
-      const nextSelectedItemId = Number(data.id || 0);
-      const previousSelectedItemId = Number(homeSelectedItemId || 0);
-      homeSelectedItemId = nextSelectedItemId;
-      if (nextSelectedItemId !== previousSelectedItemId) {
-        collapseHomeLinkedCollectiblesDetails();
-        collapseHomeProductRelationDetails();
-      }
+      homeSelectedItemId = Number(data.id);
       homeInlineEditorCollapsed = false;
       homeSelectedSourceCode = data.source_code || null;
       homeSelectedSourceExternalId = data.source_external_id || null;
@@ -38879,10 +38833,6 @@
       `).join("");
     }
 
-    function collapseHomeProductRelationDetails() {
-      if ($("homeProductRelationDetails")) $("homeProductRelationDetails").open = false;
-    }
-
     function renderHomeProductRelationSection() {
       const categoryCode = String($("editCategory")?.value || "").trim().toUpperCase();
       const isMusic = MUSIC_CATEGORIES.has(categoryCode);
@@ -39172,15 +39122,11 @@
         homeSelectedMasterId = $("editLinkedAlbumMasterId").value.trim()
           ? Number($("editLinkedAlbumMasterId").value)
           : null;
-        try {
-          await refreshHomeManageContext(ownedItemId, {
-            keepMasterContext: Boolean(homeSelectedMasterId),
-            masterId: homeSelectedMasterId,
-            reloadMaster: Boolean(homeSelectedMasterId),
-          });
-        } catch (err) {
-          console.warn("saveHomeEditedItem post-save refresh failed", err);
-        }
+        await refreshHomeManageContext(ownedItemId, {
+          keepMasterContext: Boolean(homeSelectedMasterId),
+          masterId: homeSelectedMasterId,
+          reloadMaster: Boolean(homeSelectedMasterId),
+        });
         refreshHomeDashboardInBackground();
         refreshHomeSearchInBackground();
         refreshOpsExceptionInBackground();
@@ -40850,7 +40796,6 @@
       $("goodsRegisterAlbumMasterId").value = "";
       $("goodsRegisterArtistNames").value = "";
       $("goodsRegisterLabelNames").value = "";
-      if ($("goodsRegisterMappingDetails")) $("goodsRegisterMappingDetails").open = false;
       if (!options.preserveStatus) {
         setStatus("goodsRegisterStatusLine", "", "");
       }
@@ -41086,7 +41031,6 @@
       setValueIfPresent("goodsManageLabelName", "");
       setValueIfPresent("goodsManageCollectibleQuery", "");
       setValueIfPresent("goodsManageRelationNote", "");
-      if ($("goodsManageMappingsDetails")) $("goodsManageMappingsDetails").open = false;
       if ($("goodsManageCategory")) $("goodsManageCategory").value = "POSTER";
       if ($("goodsManageStatus")) $("goodsManageStatus").value = "ACTIVE";
       if ($("goodsManageSizeGroup")) $("goodsManageSizeGroup").value = "GOODS";
@@ -41102,13 +41046,8 @@
     }
 
     function applyGoodsManageItem(data) {
-      const nextGoodsItemId = Number(data?.id || 0) || null;
-      const previousGoodsItemId = Number(goodsSelectedItemId || 0) || null;
-      goodsSelectedItemId = nextGoodsItemId;
+      goodsSelectedItemId = Number(data?.id || 0) || null;
       goodsSelectedItem = data && typeof data === "object" ? data : null;
-      if (nextGoodsItemId !== previousGoodsItemId && $("goodsManageMappingsDetails")) {
-        $("goodsManageMappingsDetails").open = false;
-      }
       goodsManageAlbumMasterMappings = Array.isArray(data?.album_master_mappings)
         ? data.album_master_mappings.map((row) => ({
             album_master_id: Number(row.album_master_id || 0),
@@ -41473,9 +41412,6 @@
       }
       if (artist) {
         $("goodsRegisterArtistNames").value = artist;
-      }
-      if ((masterId > 0 || artist) && $("goodsRegisterMappingDetails")) {
-        $("goodsRegisterMappingDetails").open = true;
       }
       setStatus(
         "goodsRegisterStatusLine",
