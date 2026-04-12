@@ -60,6 +60,167 @@
       margin: 8px auto 16px;
     }
 
+    .primary-shell {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .primary-shell-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .primary-side-nav-slot {
+      width: 220px;
+      flex: 0 0 220px;
+    }
+
+    .primary-side-nav {
+      position: sticky;
+      top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid #dbe7e1;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06);
+    }
+
+    .primary-side-nav__list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .primary-side-nav .tab-btn {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 7px 10px;
+      border-radius: 10px;
+    }
+
+    .primary-side-subnav {
+      display: grid;
+      gap: 10px;
+    }
+
+    .primary-side-subnav__group {
+      display: grid;
+      gap: 4px;
+    }
+
+    .primary-side-subnav__label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .primary-side-subnav button {
+      border: 1px solid #e2e8f0;
+      background: rgba(255,255,255,0.86);
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      border-radius: 9px;
+      text-align: left;
+      color: #1e293b;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .primary-side-subnav button.active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #f0fdfa;
+    }
+
+    .primary-side-docs {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .primary-side-docs__label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .primary-side-docs a {
+      font-size: 0.78rem;
+      color: #475569;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .primary-side-docs a:hover {
+      color: #0f766e;
+    }
+
+    body[data-shell-mode="ops"] .primary-side-nav-slot {
+      display: none;
+    }
+
+    body[data-shell-mode="ops"] .primary-shell {
+      display: block;
+    }
+
+    .primary-side-drawer {
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+    }
+
+    .primary-side-drawer__overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.32);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .primary-side-drawer__panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: min(320px, 86vw);
+      background: #fff;
+      padding: 18px;
+      box-shadow: -12px 0 24px rgba(15, 23, 42, 0.2);
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+      display: grid;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .primary-side-drawer.open .primary-side-drawer__overlay {
+      opacity: 1;
+    }
+
+    .primary-side-drawer.open .primary-side-drawer__panel {
+      transform: translateX(0);
+    }
+
+    @media (max-width: 760px) {
+      .primary-shell {
+        display: block;
+      }
+
+      .primary-side-nav-slot {
+        display: none;
+      }
+    }
+
     .hero {
       background: linear-gradient(130deg, #0f766e, #155e75);
       color: #f0fdfa;
@@ -10679,6 +10840,50 @@
 </head>
 <body data-shell-mode="ops" data-shell-readonly="true">
   <div class="wrap">
+    <div class="primary-shell">
+      <div class="primary-side-nav-slot" data-primary-nav-slot>
+        <nav class="primary-side-nav" aria-label="Primary">
+          <div id="adminTabs" class="tabs primary-side-nav__list" style="display:none;">
+            <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
+            <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
+            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
+            <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
+            <button id="tabCameraNavBtn" class="tab-btn" type="button" data-i18n="utility.camera">카메라</button>
+          </div>
+          <div class="primary-side-subnav" data-primary-subnav style="display:none;">
+            <div class="primary-side-subnav__group" data-primary-subnav-group="media">
+              <span class="primary-side-subnav__label">미디어</span>
+              <button type="button" data-primary-subnav-action="media:search">검색</button>
+              <button type="button" data-primary-subnav-action="media:manage">관리</button>
+              <button type="button" data-primary-subnav-action="media:register">등록</button>
+              <button type="button" data-primary-subnav-action="media:source">소스</button>
+            </div>
+            <div class="primary-side-subnav__group" data-primary-subnav-group="collectibles">
+              <span class="primary-side-subnav__label">컬렉터블</span>
+              <button type="button" data-primary-subnav-action="collectibles:search">검색</button>
+              <button type="button" data-primary-subnav-action="collectibles:manage">관리</button>
+              <button type="button" data-primary-subnav-action="collectibles:register">등록</button>
+            </div>
+            <div class="primary-side-subnav__group" data-primary-subnav-group="ops">
+              <span class="primary-side-subnav__label">운영/연계</span>
+              <button type="button" data-primary-subnav-action="ops:cabinet">장식장</button>
+              <button type="button" data-primary-subnav-action="ops:slot">슬롯</button>
+              <button type="button" data-primary-subnav-action="ops:exception">예외 큐</button>
+              <button type="button" data-primary-subnav-action="ops:account">계정</button>
+              <button type="button" data-primary-subnav-action="ops:providers">연동/API 설정</button>
+              <button type="button" data-primary-subnav-action="ops:export">백업/내보내기</button>
+              <button type="button" data-primary-subnav-action="ops:meta_sync">메타 동기화</button>
+            </div>
+          </div>
+          <div class="primary-side-docs" data-primary-docs style="display:none;">
+            <span class="primary-side-docs__label">Docs</span>
+            <a href="/tool-docs/erd-summary" target="_blank" rel="noreferrer">ERD 요약</a>
+            <a href="/tool-docs/erd-detail" target="_blank" rel="noreferrer">ERD 상세</a>
+            <a href="/tool-docs/manual" target="_blank" rel="noreferrer">툴 활용 매뉴얼</a>
+          </div>
+        </nav>
+      </div>
+      <div class="primary-shell-main">
     <header id="appHero" class="hero admin-shell-hero admin-shell-hero--nav-only">
       <div class="admin-shell-hero-main">
         <div class="admin-shell-hero-head">
@@ -10697,12 +10902,6 @@
           </div>
         </div>
         <div class="shell-header-row admin-shell-row">
-          <div id="adminTabs" class="tabs" style="display:none;">
-            <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
-            <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
-            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
-            <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
-          </div>
           <div id="adminUtilityMainMount" class="utility-main-mount"></div>
         </div>
       </div>
@@ -10767,6 +10966,10 @@
       </div>
     </div>
 
+    <div id="primarySideDrawer" class="primary-side-drawer" hidden>
+      <div class="primary-side-drawer__overlay" data-nav-drawer-close></div>
+      <div id="primarySideDrawerPanel" class="primary-side-drawer__panel" role="dialog" aria-modal="true" tabindex="-1"></div>
+    </div>
     <div id="pageHelpOverlay" class="page-help-overlay" hidden></div>
     <aside id="pageHelpDrawer" class="page-help-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="pageHelpTitle" data-i18n-aria-label="page_help.dialog_label">
       <div class="page-help-drawer-head">
@@ -14588,6 +14791,10 @@
   </div>
 
   <div id="shellBarcodeToast" class="shell-barcode-toast" aria-live="polite"></div>
+
+      </div>
+    </div>
+  </div>
 
   <script>
     const MUSIC_CATEGORIES = new Set(["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"]);
