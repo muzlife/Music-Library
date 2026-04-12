@@ -73,6 +73,7 @@
     - `padding: var(--compact-control-pad)` (or row-appropriate variants)
     - `font-size: var(--compact-font-size)`
     - `line-height: var(--compact-line-height)`
+  - Include **non-`.btn` buttons** that appear in admin UI (e.g. `.tab-btn`, `.dashboard-slot-viewbtn`, `.page-help-trigger`) so they match the 32px baseline.
 
 - [ ] **Step 3: Apply compact gap and padding**
   - Update admin-scoped grid/flex gaps to `var(--compact-gap)`:
@@ -106,7 +107,9 @@
 - Optional: `tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Verify core 2-row blocks**
-  - Inspect these sections in `app/static/index.html`:
+  - **Verification method:** open the admin UI at **1320px width** and confirm the fields render as **two rows** per block.
+    - If using Chrome CDP, set viewport width to 1320 and take a screenshot for each block.
+  - Inspect these sections:
     - `quickRegisterCoreRowA/B` (미디어 > 직접 등록)
     - `goodsRegisterCoreRowA/B` (컬렉터블 등록)
     - `homeEditProductCoreRowA/B` (미디어 관리 > 수정)
@@ -146,6 +149,13 @@
   ```
   Expected: PASS
 
+- [ ] **Step 2: Visual spot-check list**
+  - Media Register (direct + API lookup)
+  - Media Manage (inline edit block)
+  - Collectibles Register + Manage
+  - Ops/Integration forms (admin shell)
+  - Admin Dashboard panels
+
 - [ ] **Step 2: Commit if test-only adjustments were required**
 
   ```bash
@@ -155,11 +165,14 @@
 
 ---
 
+## Exception Log (if any)
+- Record any **approved 3-row exceptions** here with the reason and the affected block.
+
 ## Notes for Visual Verification
 - After code changes, visually verify:
-  - Admin forms show consistent 32px height controls
+  - Admin forms show consistent 32px height controls (including non-`.btn` buttons)
   - Search/clear/save buttons align with input height
-  - Core sections display in two rows
+  - Core sections display in two rows (or logged exceptions)
   - Operator/ops read-only UI is unchanged
 
 (If needed, use Chrome CDP to capture screenshots after enabling remote debugging.)
