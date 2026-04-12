@@ -11,6 +11,11 @@ def read_static_html(name: str) -> str:
 def test_admin_density_overrides_define_compact_tokens():
     html = read_static_html("index.html")
     admin_root_block = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
+    admin_input_block = html.split(
+        'body[data-shell-mode="admin"] input,\n    body[data-shell-mode="admin"] select,\n    body[data-shell-mode="admin"] textarea {',
+        1,
+    )[1].split("}", 1)[0]
+    admin_btn_block = html.split('body[data-shell-mode="admin"] .btn {', 1)[1].split("}", 1)[0]
     admin_grid_selectors = [
         "body[data-shell-mode=\"admin\"] .grid",
         "body[data-shell-mode=\"admin\"] .grid-3",
@@ -29,6 +34,10 @@ def test_admin_density_overrides_define_compact_tokens():
     assert "--compact-font-size: 0.82rem;" in admin_root_block
     assert "--compact-gap: 6px;" in admin_root_block
     assert "--compact-line-height: 1.25;" in admin_root_block
+    assert "min-height: var(--compact-control-height);" in admin_input_block
+    assert "padding: var(--compact-control-pad);" in admin_input_block
+    assert "min-height: var(--compact-control-height);" in admin_btn_block
+    assert "padding: var(--compact-control-pad);" in admin_btn_block
     for selector in admin_grid_selectors:
         selector_token = f"{selector},"
         if selector_token not in html:
