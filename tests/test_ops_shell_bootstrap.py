@@ -8152,13 +8152,14 @@ def test_primary_navigation_moves_to_left_sidebar():
 
 def test_sidebar_responsive_states_defined():
     html = read_static_html("index.html")
-    assert "@media (max-width: 1199px)" in html
+    assert "@media (min-width: 761px) and (max-width: 1199px)" in html
     assert "@media (max-width: 760px)" in html
     assert "primary-side-nav--icon" in html
     assert "primary-side-drawer" in html
-    icon_chunk = html.split("@media (max-width: 1199px)", 1)[1]
+    icon_chunk = html.split("@media (min-width: 761px) and (max-width: 1199px)", 1)[1]
     icon_chunk = icon_chunk.split("@media", 1)[0]
     assert "primary-side-nav--icon" in icon_chunk
+    assert ".primary-side-nav--icon .tab-btn" in icon_chunk
 
 
 def test_sidebar_drawer_menu_button_accessibility():
