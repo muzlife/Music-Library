@@ -6,8 +6,8 @@ Date: 2026-04-13
 Rebuild the **management UI navigation** so that all menus live exclusively in the left sidebar with a hierarchical accordion. The **body should show only management information** (panels and content) without any menu chips/tabs. The **operations UI remains unchanged**. The navigation must always keep one top-level section open, and opening a section auto-selects its first subtab. ERD/Manual links are moved into the Ops main panel body.
 
 ## Scope
-- **In scope**: Admin/management screens only.
-- **Out of scope**: Operator/ops pages, backend routes, data model changes.
+- **In scope**: Admin/management shell screens (the admin UI that includes Dashboard, Media, Collectibles, Ops/Integration).
+- **Out of scope**: Operator/ops UI screens (read-only ops home and operator views), backend routes, data model changes.
 
 ## Goals
 1. Maximize vertical space for management content by removing body menus.
@@ -31,6 +31,7 @@ Subtabs (default is first item):
 - **Media**: Search / Manage / Register·Collect / Source Enhance
 - **Collectibles**: Search / Manage / Register
 - **Ops/Integration**: System Status / Cabinet / Slot / Camera / Exception Queue / Accounts / Providers / Export / Meta Sync
+- **Dashboard**: Leaf item (single implicit subtab “Overview”).
 
 Behavior rules:
 - Clicking a top-level section **opens it** and **auto-selects its first subtab**.
@@ -38,6 +39,7 @@ Behavior rules:
 - A top-level section is **never fully closed** (one always open).
 - Active state is shown **only in the left sidebar** (top + sub item).
 - Body shows **no menu elements** (tabs/chips/subtabs) – content only.
+- Initial load respects existing state: if a tab/subtab is already active (deep link, restore, or saved state), keep it. Auto-select first subtab only when the user switches to a different top-level section that has no active child yet.
 
 ## Layout & Visual Behavior
 - Left sidebar is a fixed column; body uses remaining width.
@@ -49,15 +51,19 @@ Behavior rules:
 - Sidebar items are keyboard focusable.
 - Active items use both color and weight.
 - `aria-current` is set on active items.
+- Accordion uses `aria-expanded` + `aria-controls` on top-level buttons; hidden submenus are not focusable.
+- Body menus hidden from layout **and** assistive tech (`display: none` / `aria-hidden`), so they do not duplicate navigation semantics.
 
 ## Error/Edge Handling
 - “admin access required” warnings remain as normal body content.
 - Hiding body menus must not collapse spacing or break scrolling.
+- Preserve current admin UI state on navigation: active top/subtab, current filters, selections, unsaved edits, and scroll position where feasible.
 
 ## Implementation Notes
 - Prefer reusing existing state logic by binding sidebar actions to the same tab/subtab handlers.
 - For body menus, apply `display: none` or a specific “admin-hide-menu” utility class.
 - The Ops ERD/Manual block should render in the Ops main panel, above system status.
+- Docs block includes the existing admin links: **ERD Summary**, **ERD Detail**, **Tool Manual** (localized labels preserved). Language toggle stays in header.
 
 ## Acceptance Criteria
 - Management screens show **no in-body navigation menus**.
@@ -66,4 +72,6 @@ Behavior rules:
 - Exactly one top-level section open at all times.
 - ERD/Manual links visible at top of Ops main panel.
 - Operator/ops pages outside management remain unchanged.
-
+- Deep links or previously selected subtabs are respected on load (no unwanted reset).
+- Dashboard behaves as a leaf item with a single implicit subtab.
+- Hidden body menus are not focusable/announced by assistive tech.
