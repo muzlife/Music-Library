@@ -60,6 +60,7 @@ def test_collector_relation_compact_stack_helpers():
 
 def test_compact_stack_actions_control_height_rules():
     html = read_static_html("index.html")
+    linked_goods = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions" in html
     assert "--compact-control-height" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"file\"]):not([type=\"hidden\"])" in html
@@ -69,6 +70,9 @@ def test_compact_stack_actions_control_height_rules():
     assert ".compact-stack-actions .btn.tiny" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
     assert "min-height: var(--compact-control-height);" in html
+    assert 'class="compact-stack-actions compact-stack-actions--equal"' in linked_goods
+    assert ".compact-stack-actions--equal {" in html
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in html.split(".compact-stack-actions--equal", 1)[1]
     assert ".compact-stack-actions textarea" not in html
     assert ".compact-stack-actions input[type=\"checkbox\"]" not in html
     assert ".compact-stack-actions input[type=\"radio\"]" not in html
