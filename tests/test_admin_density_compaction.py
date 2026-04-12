@@ -70,11 +70,14 @@ def test_compact_stack_actions_control_height_rules():
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn.tiny" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
     assert "min-height: var(--compact-control-height);" in html
-    assert "compact-stack-actions--equal" in linked_goods
+    assert 'class="compact-stack-actions compact-stack-actions--equal"' in linked_goods
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal > *" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal button" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal .btn" in html
     assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in html.split(".compact-stack-actions--equal", 1)[1]
-    assert "min-width: 0;" in html.split(".compact-stack-actions--equal", 1)[1]
-    assert "width: 100%;" in html.split(".compact-stack-actions--equal", 1)[1]
+    assert "min-width: 0;" in html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal > *", 1)[1]
+    assert "width: 100%;" in html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal button", 1)[1]
     assert ".compact-stack-actions textarea" not in html
     assert ".compact-stack-actions input[type=\"checkbox\"]" not in html
     assert ".compact-stack-actions input[type=\"radio\"]" not in html
