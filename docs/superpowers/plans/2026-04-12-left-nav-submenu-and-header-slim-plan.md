@@ -42,7 +42,18 @@
 <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">
 ```
 
-- [ ] **Step 2: Remove docs links from header utility**
+- [ ] **Step 2: Add/verify CSS for nav-only headers**
+
+```css
+.admin-shell-hero--nav-only,
+.ops-home-hero--nav-only { padding: 6px 10px; border-radius: 14px; }
+.admin-shell-hero--nav-only .admin-shell-copy,
+.ops-home-hero--nav-only .ops-home-hero-copy,
+.admin-shell-hero--nav-only .admin-shell-hero-art,
+.ops-home-hero--nav-only .ops-home-hero-art { display: none; }
+```
+
+- [ ] **Step 3: Remove docs links from header utility**
 
 ```html
 <div class="shell-utility-tools shell-utility-tools--meta">
@@ -51,7 +62,7 @@
 </div>
 ```
 
-- [ ] **Step 3: Restrict utility buttons in header**
+- [ ] **Step 4: Restrict utility buttons in header**
   - Keep: `shellAdminBtn`, `shellOpsHomeBtn`, `shellLocaleSelect`, `tabCameraBtn` (**ops mode only**), `shellNavToggleBtn` (admin mobile only)
   - Hide: `appPrefsResetBtn`, `appSessionInfo`, `appLogoutBtn` in header row
 
@@ -62,12 +73,12 @@ setDisplayIfPresent("appSessionInfo", "none");
 setDisplayIfPresent("tabCameraBtn", currentShellMode() === "ops" ? "inline-flex" : "none");
 ```
 
-- [ ] **Step 4: Manual verification**
+- [ ] **Step 5: Manual verification**
   - Admin mode: only language + “hahahoho” button visible in header.
   - Ops mode: only language + “관리” button + camera button visible in header.
   - Mobile admin: menu toggle remains visible.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add app/static/index.html
@@ -137,6 +148,7 @@ git commit -m "Slim header utilities to language and ops/admin controls"
 - [ ] **Step 4: Manual verification**
   - Admin mode: submenu appears under active primary tab; docs appear at bottom.
   - Ops mode: left nav hidden → docs hidden.
+  - Primary tab order: Dashboard → Media → Collectibles → Ops → Camera.
 
 - [ ] **Step 5: Commit**
 
