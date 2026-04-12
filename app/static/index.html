@@ -34,6 +34,8 @@
       --danger: #b91c1c;
       --ok: #0a7f43;
       --shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+      --admin-side-nav-width: 240px;
+      --admin-side-nav-gap: 20px;
       --radius: 14px;
       --action-btn-size: 40px;
       --action-icon-size: 16px;
@@ -58,6 +60,119 @@
     .wrap {
       width: min(1320px, 96vw);
       margin: 8px auto 16px;
+    }
+
+    body[data-shell-mode="admin"] .wrap {
+      width: min(1320px, calc(96vw - var(--admin-side-nav-width) - var(--admin-side-nav-gap)));
+      margin: 8px auto 16px calc(var(--admin-side-nav-width) + var(--admin-side-nav-gap));
+    }
+
+    body[data-shell-mode="admin"] #adminTabs {
+      display: none !important;
+    }
+
+    body[data-shell-mode="admin"] .goods-mode-tabs,
+    body[data-shell-mode="admin"] .subtabs {
+      display: none;
+    }
+
+    .admin-side-nav {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      width: var(--admin-side-nav-width);
+      display: none;
+      z-index: 20;
+    }
+
+    body[data-shell-mode="admin"] .admin-side-nav {
+      display: block;
+    }
+
+    .admin-side-nav-card {
+      background: var(--paper);
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .admin-side-nav-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .admin-side-nav-button {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 700;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .admin-side-nav-button.active {
+      border-color: var(--brand);
+      color: var(--brand);
+      background: var(--brand-soft);
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12);
+    }
+
+    .admin-side-nav-submenu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-left: 12px;
+      margin-left: 6px;
+      border-left: 1px dashed #d3dde7;
+    }
+
+    .admin-side-nav-submenu--nested {
+      margin-left: 0;
+      padding-left: 14px;
+    }
+
+    .admin-side-nav-subitem {
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 8px 10px;
+      text-align: left;
+      color: #334155;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .admin-side-nav-subitem.active {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1d4ed8;
+    }
+
+    .ops-docs-block {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #dbe3ec;
+      background: #f8fafc;
+    }
+
+    .ops-docs-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
     .hero {
@@ -10108,6 +10223,15 @@
         grid-auto-columns: max-content;
       }
       .layout { grid-template-columns: 1fr; }
+      body[data-shell-mode="admin"] .admin-side-nav {
+        position: static;
+        width: min(640px, 96vw);
+        margin: 8px auto 0;
+      }
+      body[data-shell-mode="admin"] .wrap {
+        width: min(1320px, 96vw);
+        margin: 8px auto 16px;
+      }
       .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .grid-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .grid-12 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
@@ -10713,11 +10837,6 @@
 
     <div id="shellUtilityBar" class="shell-utility" style="display:none;">
       <div class="shell-utility-tools shell-utility-tools--meta">
-        <div class="shell-doc-links admin-shell-docs">
-          <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
-          <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
-          <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
-        </div>
         <label class="shell-locale-picker" for="shellLocaleSelect">
           <span id="shellLocaleLabel" data-i18n="utility.language">언어</span>
           <select id="shellLocaleSelect" aria-label="language selector">
@@ -10736,6 +10855,51 @@
         <button id="shellOpsHomeBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.ops_home_short">hahahoho</button>
       </div>
     </div>
+
+    <aside id="adminSideNav" class="admin-side-nav" aria-label="관리 메뉴" data-i18n-aria-label="shell.admin.nav.aria">
+      <div class="admin-side-nav-card">
+        <div class="admin-side-nav-group">
+          <button class="admin-side-nav-button admin-side-nav-button--leaf" type="button" data-admin-nav="home" data-i18n="nav.dashboard">대시보드</button>
+        </div>
+        <div class="admin-side-nav-group">
+          <button class="admin-side-nav-button" type="button" data-admin-nav="media" aria-expanded="false" aria-controls="adminNavMedia" data-i18n="nav.media">미디어</button>
+          <div id="adminNavMedia" class="admin-side-nav-submenu" hidden>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:search" data-i18n="media.mode.search">검색</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:manage" data-i18n="media.mode.manage">관리</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register" data-i18n="media.mode.register">등록/수집</button>
+            <div class="admin-side-nav-submenu admin-side-nav-submenu--nested" data-admin-subgroup="media:register" hidden>
+              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:collect" data-i18n="media.register.subtab.direct">직접 등록</button>
+              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:purchase" data-i18n="media.register.subtab.purchase">구매 내역</button>
+              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:batch" data-i18n="media.register.subtab.batch">대량 등록</button>
+              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:master" data-i18n="media.register.subtab.master">마스터 정리</button>
+            </div>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:source" data-i18n="media.mode.source">소스 보강</button>
+          </div>
+        </div>
+        <div class="admin-side-nav-group">
+          <button class="admin-side-nav-button" type="button" data-admin-nav="collectibles" aria-expanded="false" aria-controls="adminNavCollectibles" data-i18n="nav.collectibles">컬렉터블</button>
+          <div id="adminNavCollectibles" class="admin-side-nav-submenu" hidden>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:search" data-i18n="collectibles.mode.search">컬렉터블 검색</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:manage" data-i18n="collectibles.mode.manage">컬렉터블 관리</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:register" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
+          </div>
+        </div>
+        <div class="admin-side-nav-group">
+          <button class="admin-side-nav-button" type="button" data-admin-nav="ops" aria-expanded="false" aria-controls="adminNavOps" data-i18n="nav.ops">운영/연계</button>
+          <div id="adminNavOps" class="admin-side-nav-submenu" hidden>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:system" data-i18n="ops.system.title">시스템 상태</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:cabinet" data-i18n="ops.subtab.cabinet">장식장</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:slot" data-i18n="ops.subtab.slot">슬롯</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:camera" data-i18n="ops.subtab.camera">카메라</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:exception" data-i18n="ops.subtab.exception">예외 큐</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:account" data-i18n="ops.subtab.account">계정</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:providers" data-i18n="ops.subtab.providers">연동/API 설정</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:export" data-i18n="ops.subtab.export">백업/내보내기</button>
+            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:metasync" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
+          </div>
+        </div>
+      </div>
+    </aside>
 
     <div id="pageHelpOverlay" class="page-help-overlay" hidden></div>
     <aside id="pageHelpDrawer" class="page-help-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="pageHelpTitle" data-i18n-aria-label="page_help.dialog_label">
@@ -13708,6 +13872,7 @@
     </div>
 
     <div id="tabOps" class="tab-panel">
+      <div id="opsSystemPanel" class="subtab-panel active">
       <section class="card" style="margin-bottom:8px;">
         <div class="page-help-title-row">
           <h2><span data-i18n="ops.system.title">시스템 상태</span></h2>
@@ -13726,6 +13891,17 @@
             <div class="manual-block-note" data-i18n="manual.ops.note">이 탭은 운영 기반을 다루는 곳입니다. 개별 상품 메타 수정이나 위치 이동은 다른 탭에서 처리하는 흐름이 더 안전합니다.</div>
           </div>
         </details>
+        <div id="opsDocsBlock" class="ops-docs-block">
+          <div class="ops-docs-copy">
+            <strong data-i18n="shell.admin.docs_summary">문서 / ERD / 활용 매뉴얼</strong>
+            <div class="mini" data-i18n="shell.admin.docs_body">운영자용 요약, 개발자용 상세, 화면별 사용 순서를 바로 엽니다.</div>
+          </div>
+          <div class="shell-doc-links admin-shell-docs">
+            <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
+            <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
+            <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
+          </div>
+        </div>
         <div class="dashboard-selection-toolbar" style="margin-top:8px;">
         <div id="opsSystemStatusSummary" class="dashboard-selection-summary" data-i18n="ops.system.summary.idle">상태 확인 전</div>
           <div class="dashboard-selection-actions">
@@ -13740,8 +13916,10 @@
         <div id="opsQaStatusPaths" class="mini muted" style="margin-top:4px;"></div>
         <div id="opsQaRemainingList" class="mini muted" style="margin-top:4px;"></div>
       </section>
+      </div>
       <div class="subtabs">
-        <button id="opsCabinetTabBtn" class="subtab-btn active" type="button" data-i18n="ops.subtab.cabinet">장식장</button>
+        <button id="opsSystemTabBtn" class="subtab-btn active" type="button" hidden style="display:none;" data-i18n="ops.system.title">시스템 상태</button>
+        <button id="opsCabinetTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.cabinet">장식장</button>
         <button id="opsSlotTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.slot">슬롯</button>
         <button id="opsCameraTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.camera">카메라</button>
         <button id="opsExceptionTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.exception">예외 큐</button>
@@ -13750,7 +13928,7 @@
         <button id="opsExportTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.export">백업/내보내기</button>
         <button id="opsMetaSyncTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
       </div>
-      <div id="opsCabinetPanel" class="subtab-panel active">
+      <div id="opsCabinetPanel" class="subtab-panel">
       <details class="manual-block page-help-source" data-page-help-source="ops-cabinet" hidden>
         <summary data-i18n="manual.ops.cabinet.summary">장식장 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -24334,6 +24512,7 @@
       syncShellDensityClasses();
       syncShellUtilityRowSizing();
       syncShellReadonlyState();
+      syncAdminSidebarNav();
     }
 
     function openAdminConsole(tab = "home", options = {}) {
@@ -24454,6 +24633,138 @@
         }
       }
       syncShellDensityClasses();
+      syncAdminSidebarNav();
+    }
+
+    function activeAdminMainTab() {
+      if ($("tabMedia")?.classList.contains("active")) return "media";
+      if ($("tabCollectibles")?.classList.contains("active")) return "collectibles";
+      if ($("tabOps")?.classList.contains("active")) return "ops";
+      if ($("tabHome")?.classList.contains("active")) return "home";
+      return "home";
+    }
+
+    function activeRegisterSubtab() {
+      if ($("registerPurchasePanel")?.classList.contains("active")) return "purchase";
+      if ($("registerBatchPanel")?.classList.contains("active")) return "batch";
+      if ($("registerMasterPanel")?.classList.contains("active")) return "master";
+      return "collect";
+    }
+
+    function activeOpsSubtab() {
+      if ($("opsSystemPanel")?.classList.contains("active")) return "system";
+      if ($("opsSlotPanel")?.classList.contains("active")) return "slot";
+      if ($("opsCameraPanel")?.classList.contains("active")) return "camera";
+      if ($("opsExceptionPanel")?.classList.contains("active")) return "exception";
+      if ($("opsAccountPanel")?.classList.contains("active")) return "account";
+      if ($("opsProviderPanel")?.classList.contains("active")) return "providers";
+      if ($("opsExportPanel")?.classList.contains("active")) return "export";
+      if ($("opsMetaSyncPanel")?.classList.contains("active")) return "metasync";
+      return "cabinet";
+    }
+
+    function resolveActiveAdminSubnavKey() {
+      const main = activeAdminMainTab();
+      if (main === "media") {
+        if (mediaMode === "register") {
+          return `media:register:${activeRegisterSubtab()}`;
+        }
+        return `media:${mediaMode || "search"}`;
+      }
+      if (main === "collectibles") {
+        return `collectibles:${goodsMode || "search"}`;
+      }
+      if (main === "ops") {
+        return `ops:${activeOpsSubtab()}`;
+      }
+      return "home:overview";
+    }
+
+    function syncAdminSidebarNav() {
+      const nav = $("adminSideNav");
+      if (!nav) return;
+      if (currentShellMode() !== "admin") {
+        nav.setAttribute("hidden", "hidden");
+        return;
+      }
+      nav.removeAttribute("hidden");
+      const activeMain = activeAdminMainTab();
+      const activeSub = resolveActiveAdminSubnavKey();
+      const topButtons = nav.querySelectorAll("[data-admin-nav]");
+      topButtons.forEach((btn) => {
+        const id = String(btn.getAttribute("data-admin-nav") || "").trim();
+        const isActive = id === activeMain;
+        btn.classList.toggle("active", isActive);
+        if (btn.classList.contains("admin-side-nav-button--leaf")) {
+          btn.setAttribute("aria-current", isActive ? "page" : "false");
+          return;
+        }
+        const controls = btn.getAttribute("aria-controls");
+        const submenu = controls ? $(controls) : null;
+        btn.setAttribute("aria-expanded", String(Boolean(isActive && submenu)));
+        if (submenu) submenu.hidden = !isActive;
+      });
+      const subButtons = nav.querySelectorAll("[data-admin-subnav]");
+      subButtons.forEach((btn) => {
+        const key = String(btn.getAttribute("data-admin-subnav") || "").trim();
+        const isExact = key === activeSub;
+        const isRegisterParent = key === "media:register" && activeSub.startsWith("media:register:");
+        btn.classList.toggle("active", isExact || isRegisterParent);
+        btn.setAttribute("aria-current", isExact ? "page" : "false");
+      });
+      const registerNested = nav.querySelector("[data-admin-subgroup=\"media:register\"]");
+      if (registerNested) {
+        registerNested.hidden = !(activeMain === "media" && activeSub.startsWith("media:register"));
+      }
+    }
+
+    function routeAdminSideNavTop(targetId) {
+      const currentMain = activeAdminMainTab();
+      if (targetId === currentMain) return;
+      if (targetId === "home") {
+        openAdminConsole("home");
+        return;
+      }
+      if (targetId === "media") {
+        openAdminConsole("media", { mediaMode: "search" });
+        return;
+      }
+      if (targetId === "collectibles") {
+        openAdminConsole("collectibles");
+        switchGoodsMode("search");
+        return;
+      }
+      if (targetId === "ops") {
+        openAdminConsole("ops");
+        switchSubTab("ops", "system");
+      }
+    }
+
+    function routeAdminSideNavSubnav(targetKey) {
+      const parts = String(targetKey || "").trim().split(":");
+      if (parts[0] === "home") {
+        openAdminConsole("home");
+        return;
+      }
+      if (parts[0] === "media") {
+        const mode = parts[1] || "search";
+        if (mode === "register") {
+          openAdminConsole("media", { mediaMode: "register" });
+          switchSubTab("register", parts[2] || "collect");
+          return;
+        }
+        openAdminConsole("media", { mediaMode: mode });
+        return;
+      }
+      if (parts[0] === "collectibles") {
+        openAdminConsole("collectibles");
+        switchGoodsMode(parts[1] || "search");
+        return;
+      }
+      if (parts[0] === "ops") {
+        openAdminConsole("ops");
+        switchSubTab("ops", parts[1] || "system");
+      }
     }
 
     function switchSubTab(group, tab, options = {}) {
@@ -24467,6 +24778,7 @@
           { id: "track", btn: "registerTrackTabBtn", panel: "registerTrackPanel" },
         ],
         ops: [
+          { id: "system", btn: "opsSystemTabBtn", panel: "opsSystemPanel" },
           { id: "cabinet", btn: "opsCabinetTabBtn", panel: "opsCabinetPanel" },
           { id: "camera", btn: "opsCameraTabBtn", panel: "opsCameraPanel" },
           { id: "slot", btn: "opsSlotTabBtn", panel: "opsSlotPanel" },
@@ -24490,6 +24802,7 @@
       if (remember) {
         saveRoleScopedValue(APP_SUBTAB_MEMORY_KEY, `${group}:${tab}`);
       }
+      syncAdminSidebarNav();
     }
 
     function switchMediaMode(mode, options = {}) {
@@ -24501,6 +24814,7 @@
       if (options.remember !== false) {
         saveRoleScopedValue(APP_SUBTAB_MEMORY_KEY, `media:${nextMode}`);
       }
+      syncAdminSidebarNav();
     }
 
     function syncMediaModeUi() {
@@ -24516,6 +24830,7 @@
         $(item.btn)?.classList.toggle("active", active);
         $(item.panel)?.classList.toggle("active", active);
       }
+      syncAdminSidebarNav();
     }
 
     function applyRouteSelectedShellMode(mode) {
@@ -40880,6 +41195,7 @@
         : "search";
       goodsMode = nextMode;
       syncGoodsModeUi();
+      syncAdminSidebarNav();
     }
 
     function syncGoodsModeUi() {
@@ -40896,6 +41212,7 @@
       const hasSelection = Boolean(goodsSelectedItem && Number(goodsSelectedItemId || 0) > 0);
       setDisplayIfPresent("goodsManageEmptyState", hasSelection ? "none" : "block");
       setDisplayIfPresent("goodsManageContent", hasSelection ? "block" : "none");
+      syncAdminSidebarNav();
     }
 
     function goodsMappingAlbumMasterLabel(row) {
@@ -43360,6 +43677,27 @@
     $("shellAdminBtn").addEventListener("click", () => switchShellMode("admin"));
     $("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabOpsBtn").addEventListener("click", () => openAdminConsole("ops"));
+    $("adminSideNav")?.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-admin-nav], [data-admin-subnav]");
+      if (!target) return;
+      event.preventDefault();
+      const navId = target.getAttribute("data-admin-nav");
+      const subKey = target.getAttribute("data-admin-subnav");
+      if (navId) {
+        routeAdminSideNavTop(navId);
+        return;
+      }
+      if (subKey) {
+        routeAdminSideNavSubnav(subKey);
+      }
+    });
+    $("adminSideNav")?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const target = event.target.closest("[data-admin-nav], [data-admin-subnav]");
+      if (!target) return;
+      event.preventDefault();
+      target.click();
+    });
     $("opsSystemStatusReloadBtn")?.addEventListener("click", loadOpsSystemStatus);
     $("opsAutoBackupSaveBtn")?.addEventListener("click", saveOpsBackupSettings);
     $("opsRestoreDbBtn")?.addEventListener("click", restoreOpsDatabase);
