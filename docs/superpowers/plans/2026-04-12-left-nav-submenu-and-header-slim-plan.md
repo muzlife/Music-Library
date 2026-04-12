@@ -149,6 +149,7 @@ git commit -m "Slim header utilities to language and ops/admin controls"
   - Admin mode: submenu appears under active primary tab; docs appear at bottom.
   - Ops mode: left nav hidden → docs hidden.
   - Primary tab order: Dashboard → Media → Collectibles → Ops → Camera.
+  - Docs links open in a new tab and match existing `/tool-docs/*` targets.
 
 - [ ] **Step 5: Commit**
 
