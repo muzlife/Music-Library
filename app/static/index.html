@@ -24556,9 +24556,8 @@
     }
 
     function syncShellDensityClasses() {
-      const mode = currentShellMode();
-      $("appHero")?.classList.toggle("admin-shell-hero--compact", mode === "admin");
-      $("opsHomeHero")?.classList.toggle("ops-home-hero--compact", mode !== "admin");
+      $("appHero")?.classList.remove("admin-shell-hero--compact");
+      $("opsHomeHero")?.classList.remove("ops-home-hero--compact");
     }
 
     const pageHelpDrawerState = {

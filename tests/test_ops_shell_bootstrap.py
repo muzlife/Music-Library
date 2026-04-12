@@ -2853,12 +2853,15 @@ def test_index_admin_hero_embeds_admin_menu_inside_header_shell():
     assert 'class="admin-shell-hero-main"' in block
     assert 'class="shell-header-row admin-shell-row"' in block
     assert 'class="admin-shell-hero-side"' in block
-    assert 'id="adminTabs"' in block
-    assert block.index('class="shell-header-row admin-shell-row"') < block.index('id="adminTabs"')
+    assert 'id="adminTabs"' not in block
     side_block = block.split('<div class="admin-shell-hero-side">', 1)[1].split('</div>\n        </div>\n        <div class="shell-header-row admin-shell-row">', 1)[0]
     assert 'id="adminUtilityMount"' in side_block
     row_block = block.split('<div class="shell-header-row admin-shell-row">', 1)[1].split('</div>\n      </div>\n    </header>', 1)[0]
     assert 'id="adminUtilityMainMount"' in row_block
+    nav_start = '<nav class="primary-side-nav'
+    assert nav_start in html
+    nav_block = html.split(nav_start, 1)[1].split("</nav>", 1)[0]
+    assert 'id="adminTabs"' in nav_block
 
 
 def test_index_admin_hero_compacts_copy_to_tab_spacing():
