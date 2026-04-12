@@ -24,17 +24,17 @@ Update the secondary-row grid columns to allocate more space to actions:
 - From: `repeat(6, minmax(120px, 1fr)) auto`
 - To: `repeat(6, minmax(110px, 1fr)) minmax(220px, 1.35fr)`
 
+**Implementation detail:** Update the desktop rule for
+` .goods-search-compact-row--secondary `
+in `/Volumes/Works/07.hahahoho/app/static/index.html` (CSS section).
+
 ### Action buttons (search/clear)
 Inside `.goods-search-actions`:
-- Ensure the container can stretch buttons across the available width.
+- Keep the container as a flex row.
 - Make both buttons equal width with a minimum width for legibility.
 
 Proposed CSS (scoped to collectibles search rules):
 ```css
-.goods-search-actions {
-  justify-content: stretch;
-}
-
 .goods-search-actions > .btn,
 .goods-search-actions > .icon-btn,
 .goods-search-actions > .icon-symbol-btn {
@@ -46,13 +46,17 @@ Proposed CSS (scoped to collectibles search rules):
 ## Responsive Behavior
 - At 1080px and 760px breakpoints, existing stacking rules remain unchanged.
 - The action cluster should stack naturally with the row when the grid collapses.
+- Between desktop and 1080px, there should be no horizontal scroll in the
+  collectibles search card. If overflow appears, reduce the action column
+  minimum (e.g., 200px) before changing breakpoints.
 
 ## Acceptance Criteria
-1. In Collectibles Search secondary row, the action column is visibly wider than before.
-2. Search and Clear buttons appear wider and of equal width.
-3. No overlap or layout break at 1080px and 760px widths.
-4. No changes outside Collectibles Search.
+1. In Collectibles Search secondary row, the action column minimum width is 220px.
+2. Search and Clear buttons are equal width and each has at least 110px width.
+3. No overlap or layout break at 1440px, 1080px, and 760px widths.
+4. No horizontal scrolling in the collectibles search card between desktop and 1080px.
+5. No changes outside Collectibles Search.
 
 ## Testing/Verification
-- Visual check at 1080px and 760px widths in Collectibles Search.
+- Visual check at 1440px, 1080px, and 760px widths in Collectibles Search.
 - Confirm no regression in other sections of the collectibles screen.
