@@ -3144,8 +3144,6 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "min-width: 68px;" in locale_select_block
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
     assert utility_block.index('class="shell-utility-tools shell-utility-tools--meta"') < utility_block.index('class="shell-utility-main shell-utility-main--actions"')
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert utility_block.index('class="shell-doc-links admin-shell-docs"') < utility_block.index('class="shell-locale-picker"')
     assert utility_block.index('id="appSessionInfo"') < utility_block.index('id="appLogoutBtn"')
 
 
@@ -4724,7 +4722,8 @@ def test_collectibles_and_ops_primary_controls_use_i18n_keys():
     assert 'id="goodsManageEmptyState" class="card admin-manage-empty-state active"' in html
     assert 'data-i18n="collectibles.manage.empty_title"' in html
     assert 'data-i18n="collectibles.manage.empty_body"' in html
-    assert 'id="opsCabinetTabBtn" class="subtab-btn active" type="button" data-i18n="ops.subtab.cabinet"' in html
+    assert 'id="opsSystemTabBtn" class="subtab-btn active" type="button" hidden style="display:none;" data-i18n="ops.system.title"' in html
+    assert 'id="opsCabinetTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.cabinet"' in html
     assert 'id="opsSlotTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.slot"' in html
     assert 'id="opsCameraTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.camera"' in html
     assert 'id="opsExceptionTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.exception"' in html
