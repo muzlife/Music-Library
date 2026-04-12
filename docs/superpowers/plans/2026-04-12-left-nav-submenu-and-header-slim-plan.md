@@ -52,13 +52,14 @@
 ```
 
 - [ ] **Step 3: Restrict utility buttons in header**
-  - Keep: `shellAdminBtn`, `shellOpsHomeBtn`, `shellLocaleSelect`, `tabCameraBtn` (ops mode only), `shellNavToggleBtn` (admin mobile only)
+  - Keep: `shellAdminBtn`, `shellOpsHomeBtn`, `shellLocaleSelect`, `tabCameraBtn` (**ops mode only**), `shellNavToggleBtn` (admin mobile only)
   - Hide: `appPrefsResetBtn`, `appSessionInfo`, `appLogoutBtn` in header row
 
 ```js
 setDisplayIfPresent("appLogoutBtn", "none");
 setDisplayIfPresent("appPrefsResetBtn", "none");
 setDisplayIfPresent("appSessionInfo", "none");
+setDisplayIfPresent("tabCameraBtn", currentShellMode() === "ops" ? "inline-flex" : "none");
 ```
 
 - [ ] **Step 4: Manual verification**
@@ -222,6 +223,12 @@ git commit -m "Wire left nav submenus to existing tab flows"
   - Ensure `PRIMARY_NAV_ITEMS` and `normalizePrimaryNavTab()` include `"camera"`.
 
 - [ ] **Step 2: Remove camera from ops subtab line**
+  - Remove `opsCameraTabBtn` markup from `tabOps` subtabs
+  - Remove associated JS event listener:
+
+```js
+// remove opsCameraTabBtn click handler and related code branch
+```
 
 ```html
 <!-- Remove -->
