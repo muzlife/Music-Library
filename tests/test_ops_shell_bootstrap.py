@@ -8130,3 +8130,30 @@ def test_index_inline_script_parses_without_syntax_error():
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_primary_navigation_moves_to_left_sidebar():
+    html = read_static_html("index.html")
+    assert "primary-side-nav" in html
+    assert "nav.dashboard" in html
+    assert "nav.media" in html
+    assert "nav.collectibles" in html
+    assert "nav.ops" in html
+    assert 'aria-current="page"' in html
+
+
+def test_sidebar_responsive_states_defined():
+    html = read_static_html("index.html")
+    assert "@media (max-width: 1199px)" in html
+    assert "@media (max-width: 760px)" in html
+    assert "primary-side-nav--icon" in html
+    assert "primary-side-drawer" in html
+
+
+def test_sidebar_drawer_menu_button_accessibility():
+    html = read_static_html("index.html")
+    assert "data-nav-drawer-toggle" in html
+    assert 'aria-label="Open navigation"' in html
+    assert "data-nav-tooltip" in html
+    assert "role=\"dialog\"" in html
+    assert 'aria-modal="true"' in html
