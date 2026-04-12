@@ -54,14 +54,15 @@
 ## Implementation Notes
 - `app/static/index.html` 내 좌측 네비게이션에 서브 메뉴 컨테이너 추가
 - 서브 메뉴 활성/표시 상태는 기존 `mediaMode`, `goodsMode`, `switchSubTab` 상태를 기준으로 계산
-- 상단 유틸에서 `tabCameraBtn` 제거 후 좌측 네비게이션으로 이동
+- **관리 모드** 상단 유틸에서 `tabCameraBtn` 제거 후 좌측 네비게이션으로 이동
 - `shellUtilityBar`의 ERD/매뉴얼 링크를 좌측 네비게이션 하단으로 이동
 - 헤더는 `admin-shell-hero--nav-only`, `ops-home-hero--nav-only` 스타일로 슬림화
 
 ## Success Criteria
 - 좌측 네비게이션에 서브 메뉴가 표시되고 클릭 시 올바른 탭으로 이동한다.
 - 헤더는 언어/운영·관리 버튼만 보이고 높이가 축소된다.
-- 카메라 메뉴가 좌측 네비게이션에 고정되어 상단 유틸에서 사라진다.
+- 관리 모드에서는 카메라 메뉴가 좌측 네비게이션에 고정된다.
+- 운영 모드에서는 카메라 버튼이 상단 유틸에 유지된다.
 - ERD 요약/상세/매뉴얼 링크가 좌측 네비게이션 하단에 표시된다.
 
 ## Test Checklist
