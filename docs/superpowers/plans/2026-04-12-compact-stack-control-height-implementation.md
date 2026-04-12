@@ -37,6 +37,8 @@ def test_compact_stack_actions_control_height_rules():
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn.tiny" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
     assert "min-height: var(--compact-control-height);" in html
+    assert ".compact-stack-actions--equal" in html
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in html
     assert ".compact-stack-actions textarea" not in html
     assert ".compact-stack-actions input[type=\"checkbox\"]" not in html
     assert ".compact-stack-actions input[type=\"radio\"]" not in html
@@ -92,6 +94,22 @@ body[data-shell-mode="admin"] .compact-stack-actions .btn.tiny {
   line-height: 1.1;
 }
 
+body[data-shell-mode="admin"] .compact-stack-actions--equal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+
+body[data-shell-mode="admin"] .compact-stack-actions--equal > * {
+  min-width: 0;
+}
+
+body[data-shell-mode="admin"] .compact-stack-actions--equal button,
+body[data-shell-mode="admin"] .compact-stack-actions--equal .btn {
+  width: 100%;
+}
+
 body[data-shell-mode="admin"] .compact-stack-actions .compact-line {
   min-height: var(--compact-control-height);
   display: flex;
@@ -99,7 +117,17 @@ body[data-shell-mode="admin"] .compact-stack-actions .compact-line {
 }
 ```
 
-- [ ] **Step 3: Run test to verify pass**
+- [ ] **Step 3: Apply equal-width modifier in markup**
+
+In `app/static/index.html`, add `compact-stack-actions--equal` to the linked goods “등록 방식” row container so the text box and button are equal width:
+
+```html
+<div class="compact-stack-actions compact-stack-actions--equal">
+  ...
+</div>
+```
+
+- [ ] **Step 4: Run test to verify pass**
 
 Run:
 ```bash
@@ -107,7 +135,7 @@ pytest -q tests/test_admin_density_compaction.py::test_compact_stack_actions_con
 ```
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add /Volumes/Works/07.hahahoho/app/static/index.html \
