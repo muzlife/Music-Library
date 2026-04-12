@@ -48,10 +48,11 @@ Proposed CSS (scoped to collectibles search rules):
 - The action cluster should stack naturally with the row when the grid collapses.
 - Between desktop and 1080px, there should be no horizontal scroll in the
   collectibles search card. If overflow appears, reduce the action column
-  minimum (e.g., 200px) before changing breakpoints.
+  minimum to 200px before changing breakpoints.
 
 ## Acceptance Criteria
-1. In Collectibles Search secondary row, the action column minimum width is 220px.
+1. In desktop grid layout (>= 1080px), the action column minimum width is 220px.
+   If overflow occurs between 1080px and 1440px, the minimum may be reduced to 200px.
 2. Search and Clear buttons are equal width and each has at least 110px width.
 3. No overlap or layout break at 1440px, 1080px, and 760px widths.
 4. No horizontal scrolling in the collectibles search card between desktop and 1080px.
