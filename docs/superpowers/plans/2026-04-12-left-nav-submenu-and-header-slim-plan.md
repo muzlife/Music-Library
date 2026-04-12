@@ -205,12 +205,36 @@ function syncPrimarySubnavActiveState() {
   });
   const subnav = document.querySelector("[data-primary-subnav]");
   if (subnav) subnav.style.display = ["media", "collectibles", "ops"].includes(activePrimary) ? "grid" : "none";
-  // set active buttons for media/goods/ops based on current state
+  const setActive = (selector) => {
+    document.querySelectorAll("[data-primary-subnav-action]").forEach((btn) => btn.classList.remove("active"));
+    const target = document.querySelector(`[data-primary-subnav-action=\"${selector}\"]`);
+    if (target) target.classList.add("active");
+  };
+  if (activePrimary === "media") setActive(`media:${mediaMode}`);
+  if (activePrimary === "collectibles") setActive(`collectibles:${goodsMode}`);
+  if (activePrimary === "ops") {
+    const opsMap = {
+      opsCabinetTabBtn: "cabinet",
+      opsSlotTabBtn: "slot",
+      opsExceptionTabBtn: "exception",
+      opsAccountTabBtn: "account",
+      opsProviderTabBtn: "providers",
+      opsExportTabBtn: "export",
+      opsMetaSyncTabBtn: "meta_sync",
+    };
+    const activeOpsBtn = document.querySelector("#tabOps .subtab-btn.active");
+    const key = opsMap[activeOpsBtn?.id] || "cabinet";
+    setActive(`ops:${key}`);
+  }
 }
 ```
 
 - [ ] **Step 4: Tie sync into existing flow**
-  - Call `syncPrimarySubnavActiveState()` from `syncPrimaryNavActiveState()` and after `switchSubTab` calls.
+  - Call `syncPrimarySubnavActiveState()` from `syncPrimaryNavActiveState()`.
+  - Call `syncPrimarySubnavActiveState()` at the end of:
+    - `openAdminConsole(...)`
+    - `switchGoodsMode(...)`
+    - `switchSubTab(...)`
 
 - [ ] **Step 5: Manual verification**
   - Clicking submenu switches to correct panel.
