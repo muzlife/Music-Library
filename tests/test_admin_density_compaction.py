@@ -10,10 +10,17 @@ def read_static_html(name: str) -> str:
 
 def test_admin_density_overrides_define_compact_tokens():
     html = read_static_html("index.html")
+    admin_root_block = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
     assert 'body[data-shell-mode="admin"] input,' in html
     assert 'body[data-shell-mode="admin"] label' in html
     assert 'body[data-shell-mode="admin"] .btn' in html
     assert 'body[data-shell-mode="admin"] .section-divider' in html
+    assert "--compact-control-height: 32px;" in admin_root_block
+    assert "--compact-control-pad: 6px 10px;" in admin_root_block
+    assert "--compact-label-size: 0.72rem;" in admin_root_block
+    assert "--compact-font-size: 0.82rem;" in admin_root_block
+    assert "--compact-gap: 6px;" in admin_root_block
+    assert "--compact-line-height: 1.25;" in admin_root_block
 
 
 def test_direct_register_uses_two_grid_rows_for_all_fields():
@@ -62,6 +69,18 @@ def test_compact_stack_actions_control_height_rules():
     html = read_static_html("index.html")
     linked_goods = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions" in html
+    compact_action_input_block = html.split(
+        'body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),',
+        1,
+    )[1].split("}", 1)[0]
+    compact_action_button_block = html.split(
+        'body[data-shell-mode="admin"] .compact-stack-actions button,',
+        1,
+    )[1].split("}", 1)[0]
+    compact_equal_block = html.split(
+        "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal",
+        1,
+    )[1].split("}", 1)[0]
     assert "--compact-control-height" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"file\"]):not([type=\"hidden\"])" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions select" in html
@@ -69,16 +88,18 @@ def test_compact_stack_actions_control_height_rules():
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn.tiny" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
-    assert "min-height: var(--compact-control-height);" in html
+    assert "min-height: var(--compact-control-height);" in compact_action_input_block
+    assert "min-height: var(--compact-control-height);" in compact_action_button_block
     assert 'class="compact-stack-actions compact-stack-actions--equal"' in linked_goods
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal > *" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal button" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal .btn" in html
-    equal_block = html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal", 1)[1].split("}", 1)[0]
+    equal_block = compact_equal_block
     equal_child_block = html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal > *", 1)[1].split("}", 1)[0]
     equal_button_block = html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal button", 1)[1].split("}", 1)[0]
     assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in equal_block
+    assert "gap: var(--compact-gap);" in equal_block
     assert "min-width: 0;" in equal_child_block
     assert "width: 100%;" in equal_button_block
     block_760 = html.split("@media (max-width: 760px)", 1)[1].split("@media", 1)[0]
