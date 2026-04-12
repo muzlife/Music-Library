@@ -16,6 +16,18 @@ def test_admin_density_overrides_define_compact_tokens():
         1,
     )[1].split("}", 1)[0]
     admin_btn_block = html.split('body[data-shell-mode="admin"] .btn {', 1)[1].split("}", 1)[0]
+    admin_non_btn_selectors = [
+        "body[data-shell-mode=\"admin\"] .tab-btn",
+        "body[data-shell-mode=\"admin\"] .dashboard-slot-viewbtn",
+        "body[data-shell-mode=\"admin\"] .page-help-trigger",
+    ]
+    admin_compact_gap_selectors = [
+        "body[data-shell-mode=\"admin\"] .ops-compact-form-grid",
+        "body[data-shell-mode=\"admin\"] .ops-compact-form-row",
+        "body[data-shell-mode=\"admin\"] .compact-stack",
+        "body[data-shell-mode=\"admin\"] .compact-stack-grid",
+        "body[data-shell-mode=\"admin\"] .compact-stack-actions",
+    ]
     admin_grid_selectors = [
         "body[data-shell-mode=\"admin\"] .grid",
         "body[data-shell-mode=\"admin\"] .grid-3",
@@ -38,7 +50,18 @@ def test_admin_density_overrides_define_compact_tokens():
     assert "padding: var(--compact-control-pad);" in admin_input_block
     assert "min-height: var(--compact-control-height);" in admin_btn_block
     assert "padding: var(--compact-control-pad);" in admin_btn_block
+    for selector in admin_non_btn_selectors:
+        non_btn_block = html.split(f'{selector} {{', 1)[1].split("}", 1)[0]
+        assert "min-height: var(--compact-control-height);" in non_btn_block
+        assert "padding: var(--compact-control-pad);" in non_btn_block
     for selector in admin_grid_selectors:
+        selector_token = f"{selector},"
+        if selector_token not in html:
+            selector_token = f"{selector} {{"
+        assert selector_token in html
+        selector_block = html.split(selector_token, 1)[1].split("}", 1)[0]
+        assert "gap: var(--compact-gap);" in selector_block
+    for selector in admin_compact_gap_selectors:
         selector_token = f"{selector},"
         if selector_token not in html:
             selector_token = f"{selector} {{"
