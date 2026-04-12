@@ -60,147 +60,6 @@
       margin: 8px auto 16px;
     }
 
-    .primary-shell {
-      display: grid;
-      grid-template-columns: 200px minmax(0, 1fr);
-      gap: 16px;
-      align-items: start;
-    }
-
-    .primary-shell-main {
-      min-width: 0;
-    }
-
-    .primary-side-nav-slot {
-      min-width: 0;
-      position: relative;
-    }
-
-    .primary-side-nav {
-      width: 200px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px 10px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.86);
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 8px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      overscroll-behavior: contain;
-      scrollbar-gutter: stable;
-      max-height: calc(100vh - 32px);
-    }
-
-    .primary-side-nav__list {
-      display: grid;
-      gap: 6px;
-    }
-
-    .primary-side-nav .tab-btn {
-      position: relative;
-      width: 100%;
-      justify-content: flex-start;
-      padding: 10px 12px;
-      border-radius: 12px;
-      font-weight: 600;
-      text-align: left;
-    }
-
-    .primary-side-nav .tab-btn.same-as-home {
-      width: 100%;
-      padding-left: 12px;
-      padding-right: 12px;
-    }
-
-    .primary-side-nav .tab-btn.active,
-    .primary-side-nav .tab-btn[aria-current="page"] {
-      background: rgba(15, 118, 110, 0.12);
-      color: #0f766e;
-    }
-
-    .primary-side-toggle {
-      display: none;
-    }
-
-    .primary-side-drawer {
-      position: fixed;
-      inset: 0;
-      display: none;
-      z-index: 1200;
-    }
-
-    .primary-side-drawer:not([hidden]) {
-      display: block;
-    }
-
-    .primary-side-drawer__scrim {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.45);
-      opacity: 0;
-      transition: opacity 200ms ease;
-    }
-
-    .primary-side-drawer__panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: min(78vw, 280px);
-      background: rgba(248, 250, 252, 0.98);
-      border-right: 1px solid rgba(148, 163, 184, 0.3);
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
-      transform: translateX(-100%);
-      transition: transform 220ms ease;
-      padding: 12px 10px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      overscroll-behavior: contain;
-      scrollbar-gutter: stable;
-    }
-
-    .primary-side-drawer__panel .primary-side-nav__list {
-      display: grid;
-      gap: 6px;
-    }
-
-    .primary-side-drawer__panel .tab-btn {
-      width: 100%;
-      justify-content: flex-start;
-      padding: 10px 12px;
-      border-radius: 12px;
-      font-weight: 600;
-      text-align: left;
-    }
-
-    .primary-side-drawer__panel .tab-btn.same-as-home {
-      width: 100%;
-      padding-left: 12px;
-      padding-right: 12px;
-    }
-
-    .primary-side-drawer__panel .tab-btn.active,
-    .primary-side-drawer__panel .tab-btn[aria-current="page"] {
-      background: rgba(15, 118, 110, 0.12);
-      color: #0f766e;
-    }
-
-    .primary-side-drawer.open .primary-side-drawer__scrim {
-      opacity: 1;
-    }
-
-    .primary-side-drawer.open .primary-side-drawer__panel {
-      transform: translateX(0);
-    }
-
-    body.nav-drawer-open {
-      overflow: hidden;
-    }
-
     .hero {
       background: linear-gradient(130deg, #0f766e, #155e75);
       color: #f0fdfa;
@@ -647,17 +506,6 @@
 
     .admin-shell-hero--compact .admin-shell-row {
       margin-top: 2px;
-    }
-
-    .admin-shell-hero--compact .shell-utility-tools--meta,
-    .ops-home-hero--compact .shell-utility-tools--meta {
-      display: none;
-    }
-
-    .admin-shell-hero--compact .shell-utility-main,
-    .ops-home-hero--compact .shell-utility-main {
-      padding-top: 0;
-      border-top: 0;
     }
 
     .home-master-danger-zone {
@@ -1883,24 +1731,6 @@
       box-sizing: border-box;
     }
 
-    .primary-shell-main > .doc-hub,
-    .primary-shell-main > .tab-panel.page-column,
-    .primary-shell-main > .tab-panel.page-column > .card,
-    .primary-shell-main > .tab-panel.page-column > .subtabs,
-    .primary-shell-main > .tab-panel.page-column > .subtab-panel,
-    .primary-shell-main > .tab-panel.page-column > .page-column,
-    .primary-shell-main > .tab-panel.page-column > .subtab-panel > .manual-block,
-    .primary-shell-main > .tab-panel.page-column > .subtab-panel > .layout,
-    .primary-shell-main > .tab-panel.page-column > .subtab-panel > .card,
-    .primary-shell-main > .tab-panel.page-column > .subtab-panel > .page-column,
-    .primary-shell-main > .tab-panel.page-column > .subtab-panel > .subtabs {
-      width: 100%;
-      max-width: none;
-      margin-left: 0;
-      margin-right: 0;
-      box-sizing: border-box;
-    }
-
     .card {
       background: var(--paper);
       border: 1px solid var(--line);
@@ -2632,10 +2462,6 @@
       display: none;
     }
 
-    .ops-home-hero--compact .ops-home-hero-kicker {
-      display: none;
-    }
-
     .ops-home-hero--compact .ops-home-hero-side {
       gap: 2px;
     }
@@ -2645,11 +2471,17 @@
     }
 
     .ops-home-hero--compact .ops-home-hero-copy h1 {
-      font-size: 1.16rem;
+      font-size: 1.2rem;
     }
 
     .ops-home-hero--compact .ops-home-hero-copy p {
-      display: none;
+      display: block;
+      font-size: 0.74rem;
+      line-height: 1.2;
+      max-width: 52ch;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .operator-card-stack {
@@ -10394,80 +10226,7 @@
       .home-edit-info-split.with-track { grid-template-columns: 1fr; }
     }
 
-    @media (min-width: 761px) and (max-width: 1199px) {
-      .primary-shell {
-        grid-template-columns: 64px minmax(0, 1fr);
-        gap: 12px;
-      }
-      .primary-side-nav {
-        width: 64px;
-        padding: 10px 8px;
-      }
-      .primary-side-nav__list {
-        gap: 8px;
-      }
-      .primary-side-nav .tab-btn {
-        min-height: 44px;
-        padding: 10px 0;
-        justify-content: center;
-        border-radius: 14px;
-        font-size: 0;
-        line-height: 0;
-        overflow: visible;
-      }
-      .primary-side-nav .tab-btn.same-as-home {
-        padding-left: 0;
-        padding-right: 0;
-      }
-      .primary-side-nav .tab-btn[data-nav-icon]::before {
-        content: attr(data-nav-icon);
-        font-size: 0.88rem;
-        line-height: 1;
-        font-weight: 800;
-        color: currentColor;
-      }
-      .primary-side-nav .tab-btn[data-nav-tooltip]::after {
-        content: attr(aria-label);
-        position: absolute;
-        top: 50%;
-        left: calc(100% + 10px);
-        transform: translateY(-50%) translateX(-4px);
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.92);
-        color: #f8fafc;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-        font-size: 0.74rem;
-        line-height: 1.1;
-        font-weight: 700;
-        white-space: nowrap;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 140ms ease, transform 140ms ease;
-        z-index: 2;
-      }
-      .primary-side-nav .tab-btn[data-nav-tooltip]:hover::after,
-      .primary-side-nav .tab-btn[data-nav-tooltip]:focus-visible::after {
-        opacity: 1;
-        transform: translateY(-50%) translateX(0);
-      }
-    }
-
     @media (max-width: 760px) {
-      .primary-shell {
-        grid-template-columns: minmax(0, 1fr);
-      }
-      .primary-side-nav-slot {
-        display: none;
-      }
-      .primary-side-toggle {
-        display: inline-flex;
-      }
-      .primary-side-drawer__panel {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
       .admin-shell-hero {
         gap: 10px;
         padding: 14px;
@@ -10885,18 +10644,6 @@
 </head>
 <body data-shell-mode="ops" data-shell-readonly="true">
   <div class="wrap">
-    <div class="primary-shell">
-      <div class="primary-side-nav-slot" data-primary-nav-slot>
-        <nav class="primary-side-nav primary-side-nav--icon" aria-label="Primary">
-          <div id="adminTabs" class="tabs primary-side-nav__list" style="display:none;">
-            <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard" data-i18n-aria-label="nav.dashboard" aria-label="대시보드" aria-current="page" data-nav-icon="D" data-nav-tooltip>대시보드</button>
-            <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media" data-i18n-aria-label="nav.media" aria-label="미디어" data-nav-icon="M" data-nav-tooltip>미디어</button>
-            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles" data-i18n-aria-label="nav.collectibles" aria-label="컬렉터블" data-nav-icon="C" data-nav-tooltip>컬렉터블</button>
-            <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops" data-i18n-aria-label="nav.ops" aria-label="운영/연계" data-nav-icon="O" data-nav-tooltip>운영/연계</button>
-          </div>
-        </nav>
-      </div>
-      <div class="primary-shell-main">
     <header id="appHero" class="hero admin-shell-hero">
       <div class="admin-shell-hero-main">
         <div class="admin-shell-hero-head">
@@ -10915,6 +10662,12 @@
           </div>
         </div>
         <div class="shell-header-row admin-shell-row">
+          <div id="adminTabs" class="tabs" style="display:none;">
+            <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
+            <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
+            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
+            <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
+          </div>
           <div id="adminUtilityMainMount" class="utility-main-mount"></div>
         </div>
       </div>
@@ -10976,7 +10729,6 @@
       </div>
       <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
         <span id="appSessionInfo" class="chip" style="display:none;"></span>
-        <button id="shellNavToggleBtn" class="tab-btn primary-side-toggle" type="button" data-nav-drawer-toggle aria-label="Open navigation" aria-controls="primarySideDrawer" aria-expanded="false" aria-haspopup="dialog" data-nav-tooltip>Menu</button>
         <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.admin">관리</button>
         <button id="tabCameraBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.camera">카메라</button>
         <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;" data-i18n="utility.reset_defaults" data-i18n-title="utility.reset_defaults_title">기본값 초기화</button>
@@ -14745,12 +14497,6 @@
         <div id="shelfRelatedStatus" class="status"></div>
         <div id="shelfRelatedList" class="related-list"></div>
       </section>
-    </div>
-      </div>
-    </div>
-    <div id="primarySideDrawer" class="primary-side-drawer" role="dialog" aria-modal="true" aria-label="Primary navigation" hidden>
-      <div class="primary-side-drawer__scrim" data-nav-drawer-close></div>
-      <div id="primarySideDrawerPanel" class="primary-side-drawer__panel" data-nav-drawer-panel tabindex="-1"></div>
     </div>
   </div>
 
@@ -24411,143 +24157,6 @@
       document.body.dataset.shellReadonly = isShellReadOnly(mode) ? "true" : "false";
     }
 
-    const PRIMARY_NAV_ITEMS = [
-      { id: "home", btn: "tabHomeBtn" },
-      { id: "media", btn: "tabMediaBtn" },
-      { id: "collectibles", btn: "tabCollectiblesBtn" },
-      { id: "ops", btn: "tabOpsBtn" },
-    ];
-    const primaryNavDrawerMedia = window.matchMedia("(max-width: 760px)");
-    const primaryNavDrawerState = {
-      open: false,
-    };
-
-    function primaryNavElements() {
-      return {
-        nav: document.querySelector(".primary-side-nav"),
-        tabs: $("adminTabs"),
-        toggle: $("shellNavToggleBtn"),
-        drawer: $("primarySideDrawer"),
-        panel: $("primarySideDrawerPanel"),
-      };
-    }
-
-    function normalizePrimaryNavTab(tab) {
-      const requested = String(tab || "").trim().toLowerCase();
-      if (["search", "manage", "register", "source", "media"].includes(requested)) return "media";
-      if (["goods", "collectibles"].includes(requested)) return "collectibles";
-      if (["home", "ops"].includes(requested)) return requested;
-      return "";
-    }
-
-    function syncPrimaryNavActiveState(tab = "") {
-      const explicitTab = normalizePrimaryNavTab(tab);
-      const derivedTab = PRIMARY_NAV_ITEMS.find(({ btn }) => $(btn)?.classList.contains("active"))?.id || "home";
-      const activeTab = explicitTab || derivedTab;
-      PRIMARY_NAV_ITEMS.forEach(({ id, btn }) => {
-        const button = $(btn);
-        if (!button) return;
-        if (currentShellMode() === "admin" && id === activeTab) {
-          button.setAttribute("aria-current", "page");
-        } else {
-          button.removeAttribute("aria-current");
-        }
-      });
-    }
-
-    function primaryNavFocusableElements(root) {
-      if (!root) return [];
-      return Array.from(root.querySelectorAll(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )).filter((el) => !el.hidden && el.getAttribute("aria-hidden") !== "true" && (el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0));
-    }
-
-    function isPrimaryNavDrawerMode() {
-      return primaryNavDrawerMedia.matches;
-    }
-
-    function closePrimaryNavDrawer(options = {}) {
-      const { drawer, toggle } = primaryNavElements();
-      if (!drawer || !toggle) return;
-      primaryNavDrawerState.open = false;
-      drawer.classList.remove("open");
-      drawer.hidden = true;
-      document.body.classList.remove("nav-drawer-open");
-      toggle.setAttribute("aria-expanded", "false");
-      if (options.restoreFocus === false) return;
-      requestAnimationFrame(() => {
-        toggle.focus();
-      });
-    }
-
-    function openPrimaryNavDrawer() {
-      if (!isPrimaryNavDrawerMode() || currentShellMode() !== "admin") return;
-      const { drawer, panel, toggle } = primaryNavElements();
-      if (!drawer || !panel || !toggle) return;
-      primaryNavDrawerState.open = true;
-      drawer.hidden = false;
-      drawer.classList.add("open");
-      document.body.classList.add("nav-drawer-open");
-      toggle.setAttribute("aria-expanded", "true");
-      requestAnimationFrame(() => {
-        const focusTarget = primaryNavFocusableElements(panel)[0] || panel;
-        focusTarget.focus();
-      });
-    }
-
-    function togglePrimaryNavDrawer() {
-      if (primaryNavDrawerState.open) {
-        closePrimaryNavDrawer();
-        return;
-      }
-      openPrimaryNavDrawer();
-    }
-
-    function syncPrimaryNavLayout() {
-      const { nav, tabs, toggle, panel } = primaryNavElements();
-      if (!nav || !tabs || !toggle || !panel) return;
-      if (isPrimaryNavDrawerMode()) {
-        if (tabs.parentElement !== panel) {
-          panel.appendChild(tabs);
-        }
-      } else {
-        if (tabs.parentElement !== nav) {
-          nav.appendChild(tabs);
-        }
-        if (primaryNavDrawerState.open) {
-          closePrimaryNavDrawer({ restoreFocus: false });
-        }
-      }
-      toggle.setAttribute("aria-expanded", primaryNavDrawerState.open ? "true" : "false");
-    }
-
-    function handlePrimaryNavDrawerKeydown(e) {
-      if (!primaryNavDrawerState.open) return;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closePrimaryNavDrawer();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const { panel } = primaryNavElements();
-      if (!panel) return;
-      const focusable = primaryNavFocusableElements(panel);
-      if (!focusable.length) {
-        e.preventDefault();
-        panel.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-
     function syncShellButtons() {
       const mode = currentShellMode();
       $("tabSimpleBtn")?.classList.toggle("active", mode === "ops");
@@ -24556,9 +24165,8 @@
     }
 
     function syncShellDensityClasses() {
-      const mode = currentShellMode();
-      $("appHero")?.classList.toggle("admin-shell-hero--compact", mode === "admin");
-      $("opsHomeHero")?.classList.toggle("ops-home-hero--compact", mode !== "admin");
+      $("appHero")?.classList.remove("admin-shell-hero--compact");
+      $("opsHomeHero")?.classList.remove("ops-home-hero--compact");
     }
 
     const pageHelpDrawerState = {
@@ -24721,17 +24329,11 @@
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
-      setDisplayIfPresent("shellNavToggleBtn", authenticated && isAdmin && mode === "admin" ? "" : "none");
       setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       syncShellButtons();
-      syncPrimaryNavLayout();
-      syncPrimaryNavActiveState();
       syncShellDensityClasses();
       syncShellUtilityRowSizing();
       syncShellReadonlyState();
-      if (mode !== "admin" && primaryNavDrawerState.open) {
-        closePrimaryNavDrawer({ restoreFocus: false });
-      }
     }
 
     function openAdminConsole(tab = "home", options = {}) {
@@ -24833,7 +24435,6 @@
         btn.classList.toggle("active", active);
         panel.classList.toggle("active", active);
       }
-      syncPrimaryNavActiveState(nextTab);
       if (remember) {
         saveRoleScopedValue(APP_MAIN_TAB_MEMORY_KEY, nextTab);
       }
@@ -24853,9 +24454,6 @@
         }
       }
       syncShellDensityClasses();
-      if (primaryNavDrawerState.open && currentShellMode() === "admin") {
-        closePrimaryNavDrawer();
-      }
     }
 
     function switchSubTab(group, tab, options = {}) {
@@ -43762,15 +43360,6 @@
     $("shellAdminBtn").addEventListener("click", () => switchShellMode("admin"));
     $("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabOpsBtn").addEventListener("click", () => openAdminConsole("ops"));
-    $("shellNavToggleBtn")?.addEventListener("click", () => togglePrimaryNavDrawer());
-    $("adminTabs")?.addEventListener("click", (e) => {
-      const button = e.target.closest(".tab-btn");
-      if (!button || !primaryNavDrawerState.open) return;
-      requestAnimationFrame(() => {
-        closePrimaryNavDrawer();
-      });
-    });
-    document.querySelector("[data-nav-drawer-close]")?.addEventListener("click", () => closePrimaryNavDrawer());
     $("opsSystemStatusReloadBtn")?.addEventListener("click", loadOpsSystemStatus);
     $("opsAutoBackupSaveBtn")?.addEventListener("click", saveOpsBackupSettings);
     $("opsRestoreDbBtn")?.addEventListener("click", restoreOpsDatabase);
@@ -45790,16 +45379,10 @@
         }
       }
     });
-    document.addEventListener("keydown", handlePrimaryNavDrawerKeydown);
     $("shellLocaleSelect").addEventListener("change", (e) => {
       applyLocale(e.target.value);
       applyShellNavigation(appAuthSession);
     });
-    if (typeof primaryNavDrawerMedia.addEventListener === "function") {
-      primaryNavDrawerMedia.addEventListener("change", syncPrimaryNavLayout);
-    } else if (typeof primaryNavDrawerMedia.addListener === "function") {
-      primaryNavDrawerMedia.addListener(syncPrimaryNavLayout);
-    }
     $("resetFormBtn").addEventListener("click", resetForm);
     $("category").addEventListener("change", () => {
       const c = $("category").value;
