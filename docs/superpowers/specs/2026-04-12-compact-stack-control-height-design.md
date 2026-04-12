@@ -13,7 +13,7 @@ Unify the vertical height of inputs and buttons inside `.compact-stack-actions` 
 - Redesign spacing or typography globally.
 
 ## Design Approach
-Introduce a scoped control-height token and apply it only inside `body[data-shell-mode="admin"] .compact-stack-actions` (admin shell) to avoid side effects outside admin/manage views.
+Introduce a scoped control-height token and apply it only inside `body[data-shell-mode="admin"] .compact-stack-actions` (admin shell) to avoid side effects outside `body[data-shell-mode="admin"]`.
 
 ### CSS tokens
 - Admin/manage mode: `--compact-control-height: 28px`
@@ -41,6 +41,7 @@ Within `body[data-shell-mode="admin"] .compact-stack-actions`:
 - Within any admin-shell `.compact-stack-actions` container, input/select fields and buttons appear same height.
 - `.compact-line` aligns to the same single-line height but can grow with wrapped content.
 - No change to control sizes outside `body[data-shell-mode="admin"] .compact-stack-actions`.
+- `textarea` and `input[type=checkbox|radio|file|hidden]` remain unaffected by the new alignment rules.
 - 1080px and 760px widths render without overlap or clipping.
 
 ## Risks / Mitigations
