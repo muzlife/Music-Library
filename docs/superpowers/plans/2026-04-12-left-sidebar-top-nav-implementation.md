@@ -29,11 +29,11 @@
 def test_primary_navigation_moves_to_left_sidebar():
     html = read_static_html("index.html")
     assert "primary-side-nav" in html
-    assert "primary-side-nav" in html
     assert "nav.dashboard" in html
     assert "nav.media" in html
     assert "nav.collectibles" in html
     assert "nav.ops" in html
+    assert "aria-current=\"page\"" in html
 
 
 def test_sidebar_responsive_states_defined():
@@ -48,6 +48,9 @@ def test_sidebar_drawer_menu_button_accessibility():
     html = read_static_html("index.html")
     assert "data-nav-drawer-toggle" in html
     assert "aria-label=\"Open navigation\"" in html
+    assert "data-nav-tooltip" in html
+    assert "role=\"dialog\"" in html
+    assert "aria-modal=\"true\"" in html
 ```
 
 - [ ] **Step 2: Run tests to verify failure**
@@ -83,7 +86,15 @@ Wrap the existing shell header + tab panels in a new two-column container:
 
 Move the four top-level buttons (Dashboard/Media/Collectibles/Ops) into the sidebar nav list.
 
-- [ ] **Step 3: Add CSS for sidebar widths and icon-only state**
+- [ ] **Step 3: Wire active state and semantics**
+
+Ensure the active top-level item gets `aria-current="page"` and an active style that still reads in icon-only mode.
+
+- [ ] **Step 4: Minimize header footprint**
+
+Reduce the header to a compact context label plus help and notifications/user menu if present.
+
+- [ ] **Step 5: Add CSS for sidebar widths and icon-only state**
 
 Add desktop sidebar width and icon-only collapse state for 761–1199px:
 ```css
@@ -95,9 +106,27 @@ Add desktop sidebar width and icon-only collapse state for 761–1199px:
 }
 ```
 
-- [ ] **Step 4: Add drawer mode for <=760px**
+- [ ] **Step 6: Add icon-only labels and tooltips**
 
-Implement hidden drawer + menu button:
+Ensure nav items provide `aria-label` and a keyboard-focus tooltip in icon-only mode
+using a `data-nav-tooltip` attribute and CSS that shows the tooltip on hover + focus-visible.
+
+- [ ] **Step 7: Allow sidebar overflow scrolling**
+
+Set `overflow-y: auto` on the sidebar so tall menus stay usable.
+
+- [ ] **Step 8: Add drawer mode for <=760px**
+
+Implement hidden drawer + scrim + menu button placement, with explicit dialog semantics:
+```html
+<div class="primary-side-drawer" role="dialog" aria-modal="true" aria-label="Primary navigation">
+  <div class="primary-side-drawer__scrim" data-nav-drawer-close></div>
+  <div class="primary-side-drawer__panel">
+    <!-- nav buttons -->
+  </div>
+</div>
+```
+
 ```css
 @media (max-width: 760px) {
   .primary-shell { grid-template-columns: 1fr; }
@@ -106,11 +135,11 @@ Implement hidden drawer + menu button:
 }
 ```
 
-- [ ] **Step 5: Add JS to toggle drawer**
+- [ ] **Step 9: Add JS to toggle drawer**
 
-Add a small script to open/close drawer, lock body scroll, and return focus to toggle button.
+Add a small script to open/close drawer, lock body scroll, close on Esc/scrim, close on selection, focus trap inside drawer, and return focus to toggle button.
 
-- [ ] **Step 6: Run tests to verify pass**
+- [ ] **Step 10: Run tests to verify pass**
 
 Run:
 ```bash
@@ -118,7 +147,7 @@ pytest -q tests/test_ops_shell_bootstrap.py::test_primary_navigation_moves_to_le
 ```
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add /Volumes/Works/07.hahahoho/app/static/index.html \
@@ -143,7 +172,8 @@ Expected: PASS (note: repo has unrelated failures; document any pre-existing fai
 Verify at 1440px, 1200px, 1199px, 1080px, 761px, 760px:
 - Sidebar renders left and does not push sub-tabs out of main content.
 - Icon-only mode shows tooltips + aria-labels.
-- Drawer opens/closes, locks scroll, and returns focus.
+- Drawer opens/closes, locks scroll, traps focus, closes on Esc/scrim, and returns focus.
+- Sidebar overflow scroll works when nav list exceeds viewport height.
 
 - [ ] **Step 3: Commit any follow-ups**
 
