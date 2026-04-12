@@ -17,7 +17,7 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 - Introduce a **left sidebar** for top-level navigation only.
 - Keep **sub-tabs** in the main content area (right side) exactly where they are.
 - Minimize the top header to retain only lightweight context/actions
-  (page context label + existing help/utility buttons; no new header features).
+  (page context label + help + notifications/user menu if present; no new header features).
 - On narrow screens, the sidebar collapses to **icon-only** and then to a **hidden overlay** to maximize content space.
 
 ## Layout Structure
@@ -44,9 +44,12 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 - Deep links still highlight the active top-level item even when the drawer is closed.
 
 ## Accessibility
+- Menu button has `aria-label="Open navigation"` and visible focus.
+- Drawer uses `role="dialog"` + `aria-modal="true"` and returns focus to the menu button on close.
 - Icon-only mode includes `aria-label`, tooltip text, and `aria-current="page"` on the active item.
 - Tooltips appear on hover and keyboard focus.
 - Drawer mode traps focus and closes on `Esc` or scrim click; focus returns to the menu button.
+- Background scroll is locked while the drawer is open.
 
 ## Acceptance Criteria
 1. Top-level navigation is rendered in a left sidebar in desktop view (>=1200px).
@@ -57,7 +60,7 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 6. No regression to existing tab behavior and routing.
 
 ## Testing/Verification
-- Visual check at 1440px, 1080px, 760px.
+- Visual check at 1440px, 1200px, 1199px, 1080px, 761px, 760px.
 - Verify tab switching still opens correct main panels.
 - Confirm sub-tabs remain unchanged.
 - Keyboard navigation in icon-only + drawer modes.
