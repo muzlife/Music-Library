@@ -39,7 +39,7 @@ Behavior rules:
 - A top-level section is **never fully closed** (one always open).
 - Active state is shown **only in the left sidebar** (top + sub item).
 - Body shows **no menu elements** (tabs/chips/subtabs) – content only.
-- Initial load respects existing state: if a tab/subtab is already active (deep link, restore, or saved state), keep it. Auto-select first subtab only when the user switches to a different top-level section that has no active child yet.
+- Initial load respects existing state with precedence: **deep link/route** > **saved state** > **default first subtab**. Auto-select first subtab only when the user switches to a different top-level section that has no active child yet.
 
 ## Layout & Visual Behavior
 - Left sidebar is a fixed column; body uses remaining width.
@@ -53,17 +53,19 @@ Behavior rules:
 - `aria-current` is set on active items.
 - Accordion uses `aria-expanded` + `aria-controls` on top-level buttons; hidden submenus are not focusable.
 - Body menus hidden from layout **and** assistive tech (`display: none` / `aria-hidden`), so they do not duplicate navigation semantics.
+- Keyboard: `Tab` moves through visible top-level items and their visible children. `Enter`/`Space` on a top-level item opens it (and selects its default child if needed). `Enter`/`Space` on a child activates that subtab.
 
 ## Error/Edge Handling
 - “admin access required” warnings remain as normal body content.
 - Hiding body menus must not collapse spacing or break scrolling.
-- Preserve current admin UI state on navigation: active top/subtab, current filters, selections, unsaved edits, and scroll position where feasible.
+- Preserve current admin UI state on navigation: active top/subtab, current filters, selections, and unsaved edits. Scroll behavior should follow the **current implementation** (no new scroll-reset logic introduced).
 
 ## Implementation Notes
 - Prefer reusing existing state logic by binding sidebar actions to the same tab/subtab handlers.
 - For body menus, apply `display: none` or a specific “admin-hide-menu” utility class.
-- The Ops ERD/Manual block should render in the Ops main panel, above system status.
+- The Ops ERD/Manual block should render in **Ops/Integration > System Status** view, above the system status content.
 - Docs block includes the existing admin links: **ERD Summary**, **ERD Detail**, **Tool Manual** (localized labels preserved). Language toggle stays in header.
+- Responsive: On narrow widths where the sidebar collapses to a rail or drawer, the hierarchy must still be accessible. Opening the drawer shows top-level items with expandable children; one top-level section expanded at a time; selecting a top-level section without an active child auto-selects its first child.
 
 ## Acceptance Criteria
 - Management screens show **no in-body navigation menus**.
@@ -73,5 +75,5 @@ Behavior rules:
 - ERD/Manual links visible at top of Ops main panel.
 - Operator/ops pages outside management remain unchanged.
 - Deep links or previously selected subtabs are respected on load (no unwanted reset).
-- Dashboard behaves as a leaf item with a single implicit subtab.
+- Dashboard behaves as a leaf item with a single implicit subtab, and counts as the “open” section when active.
 - Hidden body menus are not focusable/announced by assistive tech.
