@@ -2321,9 +2321,10 @@
     }
 
     body[data-shell-mode="admin"] .btn.tiny {
-      min-height: 26px;
-      padding: 0 8px;
-      font-size: 0.66rem;
+      min-height: var(--compact-control-height);
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
     }
 
     body[data-shell-mode="admin"] .tab-btn {
@@ -2342,6 +2343,8 @@
 
     body[data-shell-mode="admin"] .page-help-trigger {
       min-height: var(--compact-control-height);
+      width: auto;
+      min-width: var(--compact-control-height);
       padding: var(--compact-control-pad);
       font-size: var(--compact-font-size);
       line-height: var(--compact-line-height);
