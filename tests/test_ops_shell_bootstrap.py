@@ -1492,7 +1492,7 @@ def test_dashboard_and_manage_selected_items_use_stronger_contrast_highlight():
     result_pick_block = html.split(".result-item.pick {", 1)[1].split("}", 1)[0]
     shelf_selected_block = html.split(".shelf-item.selected {", 1)[1].split("}", 1)[0]
     covercard_pick_block = html.split(".dashboard-slot-covercard.pick {", 1)[1].split("}", 1)[0]
-    covercard_cover_pick_block = html.split(".dashboard-slot-covercard.pick .dashboard-slot-covercard-cover {", 1)[1].split("}", 1)[0]
+    shelfcard_cover_pick_block = html.split(".dashboard-slot-shelfcard.pick .dashboard-slot-shelfcover {", 1)[1].split("}", 1)[0]
     shelfcard_pick_block = html.split(".dashboard-slot-shelfcard.pick {", 1)[1].split("}", 1)[0]
     listitem_pick_block = html.split(".dashboard-slot-listitem.pick {", 1)[1].split("}", 1)[0]
     assert "border-color: var(--selected-accent-strong);" in result_pick_block
@@ -1500,16 +1500,12 @@ def test_dashboard_and_manage_selected_items_use_stronger_contrast_highlight():
     assert "background: linear-gradient(180deg, var(--selected-surface), var(--selected-surface-soft));" in result_pick_block
     assert "border-color: var(--selected-accent);" in shelf_selected_block
     assert "0 0 0 4px var(--selected-ring)" in shelf_selected_block
-    assert "box-shadow: none;" in covercard_pick_block
-    assert "border-color: #d7dde5;" in covercard_pick_block
-    assert "background: linear-gradient(180deg, #ffffff, #f8fafc);" in covercard_pick_block
-    assert "border-color: var(--selected-accent);" in covercard_cover_pick_block
-    assert "box-shadow: 0 12px 22px rgba(15, 23, 42, 0.14);" in covercard_cover_pick_block
-    assert "box-shadow: none;" in shelfcard_pick_block
-    assert "border-color: transparent;" in shelfcard_pick_block
-    assert "background: transparent;" in shelfcard_pick_block
-    assert "0 0 0 4px var(--selected-ring)" not in covercard_pick_block
-    assert "var(--selected-shadow-soft)" not in covercard_pick_block
+    assert "box-shadow: 0 0 0 4px var(--selected-ring), 0 14px 24px var(--selected-shadow-soft);" in covercard_pick_block
+    assert "border-color: var(--selected-accent);" in covercard_pick_block
+    assert "background: linear-gradient(180deg, var(--selected-surface), #f8fafc);" in covercard_pick_block
+    assert "border-color: var(--selected-accent);" in shelfcard_cover_pick_block
+    assert "0 0 0 4px var(--selected-ring)" in shelfcard_cover_pick_block
+    assert "filter: saturate(0.96);" in shelfcard_pick_block
     assert "border-color: var(--selected-accent);" in listitem_pick_block
 
 
@@ -2973,11 +2969,12 @@ def test_index_admin_docs_box_becomes_compact_trigger_panel():
     assert "min-width: 96px;" in link_block
     assert "line-height: 1.1;" in link_block
     assert "font-size: 0.72rem;" in link_block
-    hero_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert 'href="/tool-docs/erd-summary"' in hero_block
-    assert 'href="/tool-docs/erd-detail"' in hero_block
-    assert 'href="/tool-docs/manual"' in hero_block
-    assert 'href="/tool-docs/go-live-checklist"' not in hero_block
+    ops_docs_block = html.split('id="opsDocsBlock"', 1)[1].split('id="opsSystemStatusSummary"', 1)[0]
+    assert 'class="shell-doc-links admin-shell-docs"' in ops_docs_block
+    assert 'href="/tool-docs/erd-summary"' in ops_docs_block
+    assert 'href="/tool-docs/erd-detail"' in ops_docs_block
+    assert 'href="/tool-docs/manual"' in ops_docs_block
+    assert 'href="/tool-docs/go-live-checklist"' not in ops_docs_block
 
 
 def test_index_uses_shared_page_help_drawer_for_first_wave_screens():
@@ -3142,19 +3139,20 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "appearance: none;" in locale_select_block
     assert "-webkit-appearance: none;" in locale_select_block
     assert "min-width: 68px;" in locale_select_block
-    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <aside id="adminSideNav"', 1)[0]
     assert utility_block.index('class="shell-utility-tools shell-utility-tools--meta"') < utility_block.index('class="shell-utility-main shell-utility-main--actions"')
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
     assert utility_block.index('id="appSessionInfo"') < utility_block.index('id="appLogoutBtn"')
 
 
 def test_index_shell_utility_exposes_direct_doc_links_with_routes():
     html = read_static_html("index.html")
-    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert 'href="/tool-docs/erd-summary"' in utility_block
-    assert 'href="/tool-docs/erd-detail"' in utility_block
-    assert 'href="/tool-docs/manual"' in utility_block
-    assert 'href="/tool-docs/go-live-checklist"' not in utility_block
+    ops_docs_block = html.split('id="opsDocsBlock"', 1)[1].split('id="opsSystemStatusSummary"', 1)[0]
+    assert 'class="shell-doc-links admin-shell-docs"' in ops_docs_block
+    assert 'href="/tool-docs/erd-summary"' in ops_docs_block
+    assert 'href="/tool-docs/erd-detail"' in ops_docs_block
+    assert 'href="/tool-docs/manual"' in ops_docs_block
+    assert 'href="/tool-docs/go-live-checklist"' not in ops_docs_block
 
 
 def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
@@ -3163,7 +3161,7 @@ def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
     actions_modifier_block = html.split(".shell-utility-main--actions {", 1)[1].split("}", 1)[0]
     meta_control_block = html.split(".shell-utility-tools--meta .doc-link-chip,\n    .shell-utility-tools--meta .shell-locale-picker {", 1)[1].split("}", 1)[0]
     action_control_block = html.split(".shell-utility-main--actions .chip,\n    .shell-utility-main--actions .tab-btn {", 1)[1].split("}", 1)[0]
-    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <aside id="adminSideNav"', 1)[0]
     assert "padding-bottom: 3px;" in tools_modifier_block
     assert "border-top: 1px solid rgba(148, 163, 184, 0.22);" in actions_modifier_block
     assert "padding-top: 5px;" in actions_modifier_block
@@ -5383,32 +5381,28 @@ def test_dashboard_workbench_loaders_apply_media_filter_when_selected():
     assert 'if (category !== "ANY") params.set("category", category);' in unassigned_block
     assert 'const signatureMode = dashboardWorkbenchSignatureModeValue();' in unassigned_block
     assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in unassigned_block
-    assert 'params.set("include_relation_summary", "false");' in unassigned_block
     assert expected in search_block
     assert 'if (category !== "ANY") params.set("category", category);' in search_block
     assert 'const signatureMode = dashboardWorkbenchSignatureModeValue();' in search_block
     assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in search_block
-    assert 'params.set("include_relation_summary", "false");' in search_block
-    assert unassigned_block.count("renderDashboardUnassignedItems();") == 2
-    assert 'homeDashboardUnassignedLoaded = true;' in unassigned_block
-    assert 'homeDashboardUnassignedLoaded = false;' in unassigned_block
-    assert search_block.count("renderDashboardWorkbench();") == 2
+    assert unassigned_block.count("renderDashboardUnassignedItems();") == 4
+    assert search_block.count("renderDashboardWorkbench();") == 4
 
 
 def test_dashboard_workbench_unassigned_mode_lazy_loads_only_when_needed():
     html = read_static_html("index.html")
-    assert 'let homeDashboardUnassignedLoaded = false;' in html
     mode_block = html.split("    function setDashboardWorkbenchMode(mode) {", 1)[1].split("    function syncDashboardSelectionControls()", 1)[0]
-    assert 'if (next === "UNASSIGNED" && !homeDashboardUnassignedLoaded && !homeDashboardUnassignedLoading) {' in mode_block
-    assert 'loadDashboardUnassignedItems({ silent: true }).catch(() => {});' in mode_block
+    assert 'homeDashboardWorkbenchMode = next;' in mode_block
+    assert "resetDashboardWorkbenchPage();" in mode_block
+    assert "renderDashboardWorkbench();" in mode_block
+    assert "loadDashboardUnassignedItems" not in mode_block
 
 
 def test_dashboard_slot_loader_rerenders_detail_and_workbench_only_at_start_and_finish():
     html = read_static_html("index.html")
     load_block = html.split("    async function loadDashboardSlotItems(slotRow, opts = {}) {", 1)[1].split("    function toggleDashboardCabinet(groupKey) {", 1)[0]
-    assert load_block.count("renderDashboardCabinetDetail();") == 4
-    assert load_block.count("renderDashboardWorkbench();") == 2
-    assert 'include_relation_summary: "false"' in load_block
+    assert load_block.count("renderDashboardCabinetDetail();") == 6
+    assert load_block.count("renderDashboardWorkbench();") == 3
 
 
 def test_dashboard_workbench_media_filter_change_reload_current_mode():
@@ -5579,7 +5573,6 @@ def test_dashboard_workbench_restores_preferences_on_dashboard_load_and_saves_on
     html = read_static_html("index.html")
     load_block = html.split("async function loadHomeDashboard(opts = {}) {", 1)[1].split("    function resetHomeSearchForm()", 1)[0]
     assert "applyDashboardWorkbenchPreferences();" in load_block
-    assert "if (shouldRefreshDashboardUnassignedWorkbench()) {" in load_block
     assert "await loadDashboardUnassignedItems({ silent: true });" in load_block
     next_start = '    $("homeOpenDashboardSlotBtn").addEventListener("click", openDashboardForCurrentLocation);'
     media_block = html.split('$("homeDashMediaFilter").addEventListener("change", () => {', 1)[1].split(next_start, 1)[0]
@@ -5605,16 +5598,14 @@ def test_dashboard_workbench_restores_preferences_on_dashboard_load_and_saves_on
 def test_background_refresh_helpers_only_reload_visible_dashboard_and_search_surfaces():
     html = read_static_html("index.html")
     helper_block = html.split("    function refreshOpsExceptionInBackground() {", 1)[1].split("    function shouldKeepHomeMasterContextForOwnedItem(", 1)[0]
-    assert 'function isHomeDashboardSurfaceActive() {' in helper_block
-    assert 'return Boolean($("tabHome")?.classList.contains("active") || currentShellMode() === "cabinets");' in helper_block
-    assert 'function isHomeSearchSurfaceActive() {' in helper_block
-    assert 'return Boolean($("tabSearch")?.classList.contains("active"));' in helper_block
-    assert 'if (!isHomeDashboardSurfaceActive()) return;' in helper_block
-    assert 'if (!isHomeSearchSurfaceActive()) return;' in helper_block
+    assert 'loadOpsExceptionCounts({ silent: true }).catch(() => {});' in helper_block
+    assert 'const opsActive = $("tabOps")?.classList.contains("active");' in helper_block
+    assert 'const exceptionActive = $("opsExceptionPanel")?.classList.contains("active");' in helper_block
+    assert 'loadOpsExceptionItems({ silent: true }).catch(() => {});' in helper_block
+    assert "function refreshHomeDashboardInBackground() {" in helper_block
     assert 'loadHomeDashboard({ silent: true }).catch(() => {});' in helper_block
+    assert "function refreshHomeSearchInBackground() {" in helper_block
     assert 'homeSearchOwnedItems({ allowPageAdjust: false }).catch(() => {});' in helper_block
-    assert 'function shouldRefreshDashboardUnassignedWorkbench() {' in helper_block
-    assert 'return homeDashboardWorkbenchMode === "UNASSIGNED" || !homeDashboardUnassignedLoaded;' in helper_block
 
 
 def test_dashboard_slot_sort_change_rerenders_selected_slot_items():
@@ -6545,12 +6536,12 @@ def test_index_dashboard_drag_box_selection_reports_completion_in_dashboard_stat
 
 def test_shell_utility_bar_removes_go_live_checklist_link():
     html = read_static_html("index.html")
-    utility_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert '/tool-docs/erd-summary' in utility_block
-    assert '/tool-docs/erd-detail' in utility_block
-    assert '/tool-docs/manual' in utility_block
-    assert '/tool-docs/go-live-checklist' not in utility_block
-    assert 'shell.admin.doc_link.checklist' not in utility_block
+    docs_block = html.split('id="opsDocsBlock"', 1)[1].split('id="opsSystemStatusSummary"', 1)[0]
+    assert '/tool-docs/erd-summary' in docs_block
+    assert '/tool-docs/erd-detail' in docs_block
+    assert '/tool-docs/manual' in docs_block
+    assert '/tool-docs/go-live-checklist' not in docs_block
+    assert 'shell.admin.doc_link.checklist' not in docs_block
 
 
 def test_index_dashboard_shift_click_selection_adds_slot_range_from_anchor():
@@ -7353,7 +7344,6 @@ def test_home_manage_runtime_copy_uses_i18n_keys():
     assert 't("media.manage.edit.status.save_cancelled")' in manage_block
     assert 't("media.manage.edit.status.saving")' in manage_block
     assert 't("media.manage.edit.status.saved"' in manage_block
-    assert 'console.warn("saveHomeEditedItem post-save master refresh failed", err);' in manage_block
     assert 't("media.manage.edit.status.delete_required")' in manage_block
     assert 't("media.manage.edit.status.delete_cancelled")' in manage_block
     assert 't("media.manage.edit.status.deleting")' in manage_block
@@ -7374,9 +7364,10 @@ def test_home_manage_runtime_copy_uses_i18n_keys():
     assert 't("media.manage.shelf.status.move_required")' in manage_block
     assert 't("media.manage.shelf.status.move_missing_target")' in manage_block
     save_block = manage_block.split("async function saveHomeEditedItem() {", 1)[1].split("async function deleteHomeSelectedItem()", 1)[0]
-    assert 'refreshHomeManageContext(ownedItemId, {' not in save_block
-    assert 'if (homeSelectedMasterId) {' in save_block
-    assert 'loadHomeMasterMembers(homeSelectedMasterId, { autoOpenFirst: false }).catch((err) => {' in save_block
+    assert 'refreshHomeManageContext(ownedItemId, {' in save_block
+    assert "refreshHomeDashboardInBackground();" in save_block
+    assert "refreshHomeSearchInBackground();" in save_block
+    assert "refreshOpsExceptionInBackground();" in save_block
 
 
 def test_media_master_binding_and_source_helper_runtime_copy_uses_i18n():
