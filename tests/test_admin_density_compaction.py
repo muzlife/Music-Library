@@ -58,6 +58,22 @@ def test_collector_relation_compact_stack_helpers():
     assert ".compact-stack { grid-template-columns: 1fr; }" in block_1080
 
 
+def test_compact_stack_actions_control_height_rules():
+    html = read_static_html("index.html")
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions" in html
+    assert "--compact-control-height" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions input:not([type=\"checkbox\"])" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions select" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions button" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
+    assert ".compact-stack-actions textarea" not in html
+    assert ".compact-stack-actions input[type=\"checkbox\"]" not in html
+    assert ".compact-stack-actions input[type=\"radio\"]" not in html
+    assert ".compact-stack-actions input[type=\"file\"]" not in html
+    assert ".compact-stack-actions input[type=\"hidden\"]" not in html
+
+
 def test_collector_relation_blocks_use_compact_stack():
     html = read_static_html("index.html")
     goods_section = html.split('id="homeMasterGoodsSection"', 1)[1].split('id="homeLinkedGoodsPanel"', 1)[0]
