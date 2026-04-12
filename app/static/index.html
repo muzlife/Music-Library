@@ -227,6 +227,8 @@
       .primary-side-toggle {
         display: inline-flex;
       }
+
+      body[data-shell-mode="admin"] .compact-stack-actions--equal { grid-template-columns: 1fr; }
     }
 
     .hero {
@@ -10860,34 +10862,34 @@
           </div>
           <div class="primary-side-subnav" data-primary-subnav style="display:none;">
             <div class="primary-side-subnav__group" data-primary-subnav-group="media">
-              <span class="primary-side-subnav__label">미디어</span>
-              <button type="button" data-primary-subnav-action="media:search">검색</button>
-              <button type="button" data-primary-subnav-action="media:manage">관리</button>
-              <button type="button" data-primary-subnav-action="media:register">등록</button>
-              <button type="button" data-primary-subnav-action="media:source">소스</button>
+              <span class="primary-side-subnav__label" data-i18n="nav.media">미디어</span>
+              <button type="button" data-primary-subnav-action="media:search" data-i18n="media.mode.search">검색</button>
+              <button type="button" data-primary-subnav-action="media:manage" data-i18n="media.mode.manage">관리</button>
+              <button type="button" data-primary-subnav-action="media:register" data-i18n="media.mode.register">등록/수집</button>
+              <button type="button" data-primary-subnav-action="media:source" data-i18n="media.mode.source">소스 보강</button>
             </div>
             <div class="primary-side-subnav__group" data-primary-subnav-group="collectibles">
-              <span class="primary-side-subnav__label">컬렉터블</span>
-              <button type="button" data-primary-subnav-action="collectibles:search">검색</button>
-              <button type="button" data-primary-subnav-action="collectibles:manage">관리</button>
-              <button type="button" data-primary-subnav-action="collectibles:register">등록</button>
+              <span class="primary-side-subnav__label" data-i18n="nav.collectibles">컬렉터블</span>
+              <button type="button" data-primary-subnav-action="collectibles:search" data-i18n="collectibles.mode.search">컬렉터블 검색</button>
+              <button type="button" data-primary-subnav-action="collectibles:manage" data-i18n="collectibles.mode.manage">컬렉터블 관리</button>
+              <button type="button" data-primary-subnav-action="collectibles:register" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
             </div>
             <div class="primary-side-subnav__group" data-primary-subnav-group="ops">
-              <span class="primary-side-subnav__label">운영/연계</span>
-              <button type="button" data-primary-subnav-action="ops:cabinet">장식장</button>
-              <button type="button" data-primary-subnav-action="ops:slot">슬롯</button>
-              <button type="button" data-primary-subnav-action="ops:exception">예외 큐</button>
-              <button type="button" data-primary-subnav-action="ops:account">계정</button>
-              <button type="button" data-primary-subnav-action="ops:providers">연동/API 설정</button>
-              <button type="button" data-primary-subnav-action="ops:export">백업/내보내기</button>
-              <button type="button" data-primary-subnav-action="ops:metasync">메타 동기화</button>
+              <span class="primary-side-subnav__label" data-i18n="nav.ops">운영/연계</span>
+              <button type="button" data-primary-subnav-action="ops:cabinet" data-i18n="ops.subtab.cabinet">장식장</button>
+              <button type="button" data-primary-subnav-action="ops:slot" data-i18n="ops.subtab.slot">슬롯</button>
+              <button type="button" data-primary-subnav-action="ops:exception" data-i18n="ops.subtab.exception">예외 큐</button>
+              <button type="button" data-primary-subnav-action="ops:account" data-i18n="ops.subtab.account">계정</button>
+              <button type="button" data-primary-subnav-action="ops:providers" data-i18n="ops.subtab.providers">연동/API 설정</button>
+              <button type="button" data-primary-subnav-action="ops:export" data-i18n="ops.subtab.export">백업/내보내기</button>
+              <button type="button" data-primary-subnav-action="ops:metasync" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
             </div>
           </div>
           <div class="primary-side-docs" data-primary-docs style="display:none;">
-            <span class="primary-side-docs__label">Docs</span>
-            <a href="/tool-docs/erd-summary" target="_blank" rel="noreferrer">ERD 요약</a>
-            <a href="/tool-docs/erd-detail" target="_blank" rel="noreferrer">ERD 상세</a>
-            <a href="/tool-docs/manual" target="_blank" rel="noreferrer">툴 활용 매뉴얼</a>
+            <span class="primary-side-docs__label" data-i18n="shell.admin.docs_label">문서</span>
+            <a href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
+            <a href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
+            <a href="/tool-docs/manual" target="_blank" rel="noreferrer" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
           </div>
         </nav>
       </div>
@@ -14951,6 +14953,7 @@
         "shell.admin.kicker": "Admin Backstage",
         "shell.admin.title": "라이브러리 관리/운영 콘솔",
         "shell.admin.subtitle": "메타 관리, 배치 운영, 소스 보강을 한 화면에서 정리합니다.",
+        "shell.admin.docs_label": "문서",
         "shell.admin.docs_summary": "문서 / ERD / 활용 매뉴얼",
         "shell.admin.docs_body": "운영자용 요약, 개발자용 상세, 화면별 사용 순서를 바로 엽니다.",
         "shell.admin.doc_link.erd_summary": "ERD 요약",
@@ -17423,6 +17426,7 @@
         "shell.admin.kicker": "Admin Backstage",
         "shell.admin.title": "Library Admin Console",
         "shell.admin.subtitle": "Manage metadata, placement operations, and source enrichment in one console.",
+        "shell.admin.docs_label": "Docs",
         "shell.admin.docs_summary": "Docs / ERD / Manuals",
         "shell.admin.docs_body": "Open the operator summary, developer detail, and step-by-step guidance for each screen.",
         "shell.admin.doc_link.erd_summary": "ERD Summary",
@@ -19895,6 +19899,7 @@
         "shell.admin.kicker": "Admin Backstage",
         "shell.admin.title": "ライブラリ管理コンソール",
         "shell.admin.subtitle": "メタ管理、配置運用、ソース補強をひとつの画面で整理します。",
+        "shell.admin.docs_label": "ドキュメント",
         "shell.admin.docs_summary": "ドキュメント / ERD / マニュアル",
         "shell.admin.docs_body": "運用者向け要約、開発者向け詳細、画面ごとの利用手順をここから開きます。",
         "shell.admin.doc_link.erd_summary": "ERD 要約",

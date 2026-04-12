@@ -212,13 +212,13 @@ def test_index_auth_failure_fallback_hides_full_ui_until_session_loads():
     assert 'setDisplayIfPresent("appHero", authenticated && isAdmin && mode === "admin" ? "block" : "none");' in html
     assert 'setDisplayIfPresent("opsHomeHero", authenticated && mode !== "admin" ? "grid" : "none");' in html
     assert 'setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");' in html
-    assert 'setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");' in html
+    assert 'setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "grid" : "none");' in html
     assert "appAuthSessionResolved = true;" in html
 
 
 def test_index_uses_shell_utility_mounts_for_ops_and_admin_headers():
     html = read_static_html("index.html")
-    assert '<header id="appHero" class="hero admin-shell-hero">' in html
+    assert '<header id="appHero" class="hero admin-shell-hero admin-shell-hero--nav-only">' in html
     assert 'id="adminUtilityMount"' in html
     assert 'id="adminUtilityMainMount"' in html
     assert 'id="opsUtilityMount"' in html
@@ -2497,8 +2497,8 @@ def test_ops_home_context_panel_compacts_mini_map_floor_label_width():
 
 def test_index_admin_hero_moves_docs_to_upper_right_and_removes_metric_chips():
     html = read_static_html("index.html")
-    hero_start = '<header id="appHero" class="hero admin-shell-hero">'
-    ops_start = '    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">'
+    hero_start = '<header id="appHero" class="hero admin-shell-hero admin-shell-hero--nav-only">'
+    ops_start = '    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">'
     assert hero_start in html
     assert ops_start in html
     block = html.split(hero_start, 1)[1].split(ops_start, 1)[0]
@@ -2521,7 +2521,7 @@ def test_index_admin_hero_moves_docs_to_upper_right_and_removes_metric_chips():
 
 def test_index_ops_home_hero_removes_quick_focus_chips():
     html = read_static_html("index.html")
-    ops_start = '    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">'
+    ops_start = '    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">'
     utility_start = '    <div id="shellUtilityBar" class="shell-utility" style="display:none;">'
     assert ops_start in html
     assert utility_start in html
@@ -2767,8 +2767,8 @@ def test_index_ops_subtab_order_places_slots_before_camera():
     html = read_static_html("index.html")
     cabinet_idx = html.index('id="opsCabinetTabBtn"')
     slot_idx = html.index('id="opsSlotTabBtn"')
-    camera_idx = html.index('id="opsCameraTabBtn"')
-    assert cabinet_idx < slot_idx < camera_idx
+    assert cabinet_idx < slot_idx
+    assert 'id="opsCameraTabBtn"' not in html
 
 
 def test_index_load_storage_slots_no_longer_calls_removed_camera_cabinet_renderer():
@@ -2856,20 +2856,21 @@ def test_index_ops_home_header_is_ops_only_and_admin_hero_stays_separate():
 
 def test_index_admin_hero_embeds_admin_menu_inside_header_shell():
     html = read_static_html("index.html")
-    hero_start = '<header id="appHero" class="hero admin-shell-hero">'
-    ops_start = '    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">'
+    hero_start = '<header id="appHero" class="hero admin-shell-hero admin-shell-hero--nav-only">'
+    ops_start = '    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">'
     assert hero_start in html
     assert ops_start in html
     block = html.split(hero_start, 1)[1].split(ops_start, 1)[0]
     assert 'class="admin-shell-hero-main"' in block
     assert 'class="shell-header-row admin-shell-row"' in block
     assert 'class="admin-shell-hero-side"' in block
-    assert 'id="adminTabs"' in block
-    assert block.index('class="shell-header-row admin-shell-row"') < block.index('id="adminTabs"')
+    assert 'id="adminTabs"' not in block
     side_block = block.split('<div class="admin-shell-hero-side">', 1)[1].split('</div>\n        </div>\n        <div class="shell-header-row admin-shell-row">', 1)[0]
     assert 'id="adminUtilityMount"' in side_block
     row_block = block.split('<div class="shell-header-row admin-shell-row">', 1)[1].split('</div>\n      </div>\n    </header>', 1)[0]
     assert 'id="adminUtilityMainMount"' in row_block
+    nav_block = html.split('<nav class="primary-side-nav"', 1)[1].split("</nav>", 1)[0]
+    assert 'id="adminTabs"' in nav_block
 
 
 def test_index_admin_hero_compacts_copy_to_tab_spacing():
@@ -2963,21 +2964,18 @@ def test_index_ops_home_header_uses_admin_width_tokens():
 
 def test_index_admin_docs_box_becomes_compact_trigger_panel():
     html = read_static_html("index.html")
-    docs_block = html.split(".admin-shell-docs {", 1)[1].split("}", 1)[0]
-    link_block = html.split(".admin-shell-docs .doc-link-chip {", 1)[1].split("}", 1)[0]
-    assert "width: auto;" in docs_block
-    assert "justify-content: flex-end;" in docs_block
+    docs_block = html.split(".primary-side-docs {", 1)[1].split("}", 1)[0]
+    link_block = html.split(".primary-side-docs a {", 1)[1].split("}", 1)[0]
+    assert "border-top: 1px solid #e2e8f0;" in docs_block
+    assert "display: grid;" in docs_block
     assert "gap: 6px;" in docs_block
-    assert "padding: 3px 8px;" in link_block
-    assert "min-height: 24px;" in link_block
-    assert "min-width: 96px;" in link_block
-    assert "line-height: 1.1;" in link_block
-    assert "font-size: 0.72rem;" in link_block
-    hero_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert 'href="/tool-docs/erd-summary"' in hero_block
-    assert 'href="/tool-docs/erd-detail"' in hero_block
-    assert 'href="/tool-docs/manual"' in hero_block
-    assert 'href="/tool-docs/go-live-checklist"' not in hero_block
+    assert "font-size: 0.78rem;" in link_block
+    assert "font-weight: 700;" in link_block
+    nav_block = html.split('<div class="primary-side-docs"', 1)[1].split("</div>", 1)[0]
+    assert 'href="/tool-docs/erd-summary"' in nav_block
+    assert 'href="/tool-docs/erd-detail"' in nav_block
+    assert 'href="/tool-docs/manual"' in nav_block
+    assert 'href="/tool-docs/go-live-checklist"' not in nav_block
 
 
 def test_index_uses_shared_page_help_drawer_for_first_wave_screens():
@@ -3097,7 +3095,6 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     utility_chip_block = html.split(".shell-utility .chip {", 1)[1].split("}", 1)[0]
     utility_btn_block = html.split(".shell-utility .tab-btn {", 1)[1].split("}", 1)[0]
     locale_block = html.split(".shell-locale-picker {", 1)[1].split("}", 1)[0]
-    docs_link_block = html.split(".admin-shell-docs .doc-link-chip {", 1)[1].split("}", 1)[0]
     locale_select_block = html.split(".shell-locale-picker select {", 1)[1].split("}", 1)[0]
     assert "align-self: stretch;" in utility_mount_block
     assert "min-height: 100%;" in utility_mount_block
@@ -3136,27 +3133,21 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "font-size: 0.72rem;" in locale_block
     assert "font-weight: 700;" in locale_block
     assert "min-width: 96px;" in locale_block
-    assert "padding: 3px 8px;" in docs_link_block
-    assert "min-height: 24px;" in docs_link_block
-    assert "min-width: 96px;" in docs_link_block
     assert "appearance: none;" in locale_select_block
     assert "-webkit-appearance: none;" in locale_select_block
     assert "min-width: 68px;" in locale_select_block
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
     assert utility_block.index('class="shell-utility-tools shell-utility-tools--meta"') < utility_block.index('class="shell-utility-main shell-utility-main--actions"')
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert utility_block.index('class="shell-doc-links admin-shell-docs"') < utility_block.index('class="shell-locale-picker"')
     assert utility_block.index('id="appSessionInfo"') < utility_block.index('id="appLogoutBtn"')
 
 
 def test_index_shell_utility_exposes_direct_doc_links_with_routes():
     html = read_static_html("index.html")
-    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert 'href="/tool-docs/erd-summary"' in utility_block
-    assert 'href="/tool-docs/erd-detail"' in utility_block
-    assert 'href="/tool-docs/manual"' in utility_block
-    assert 'href="/tool-docs/go-live-checklist"' not in utility_block
+    nav_block = html.split('<div class="primary-side-docs"', 1)[1].split("</div>", 1)[0]
+    assert 'href="/tool-docs/erd-summary"' in nav_block
+    assert 'href="/tool-docs/erd-detail"' in nav_block
+    assert 'href="/tool-docs/manual"' in nav_block
+    assert 'href="/tool-docs/go-live-checklist"' not in nav_block
 
 
 def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
@@ -3216,8 +3207,8 @@ def test_index_shell_utility_no_longer_mounts_page_help_into_header():
 
 def test_index_admin_hero_includes_music_domain_visuals():
     html = read_static_html("index.html")
-    hero_start = '<header id="appHero" class="hero admin-shell-hero">'
-    ops_start = '    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">'
+    hero_start = '<header id="appHero" class="hero admin-shell-hero admin-shell-hero--nav-only">'
+    ops_start = '    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">'
     assert hero_start in html
     assert ops_start in html
     block = html.split(hero_start, 1)[1].split(ops_start, 1)[0]
@@ -3429,7 +3420,7 @@ def test_index_admin_utility_bar_shows_hahahoho_only_for_admin_and_places_it_las
     assert open_admin_start in html
     utility_block = html.split(utility_start, 1)[1].split(admin_tabs_start, 1)[0]
     nav_block = html.split(nav_start, 1)[1].split(open_admin_start, 1)[0]
-    ops_block = html.split('    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">', 1)[1].split(utility_start, 1)[0]
+    ops_block = html.split('    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">', 1)[1].split(utility_start, 1)[0]
     assert 'id="shellOpsHomeBtn"' in utility_block
     assert ">hahahoho</button>" in utility_block
     assert utility_block.index('id="appLogoutBtn"') < utility_block.index('id="shellOpsHomeBtn"')
@@ -4726,7 +4717,6 @@ def test_collectibles_and_ops_primary_controls_use_i18n_keys():
     assert 'data-i18n="collectibles.manage.empty_body"' in html
     assert 'id="opsCabinetTabBtn" class="subtab-btn active" type="button" data-i18n="ops.subtab.cabinet"' in html
     assert 'id="opsSlotTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.slot"' in html
-    assert 'id="opsCameraTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.camera"' in html
     assert 'id="opsExceptionTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.exception"' in html
     assert 'id="opsAccountTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.account"' in html
     assert 'id="opsProviderTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.providers"' in html
@@ -6546,12 +6536,12 @@ def test_index_dashboard_drag_box_selection_reports_completion_in_dashboard_stat
 
 def test_shell_utility_bar_removes_go_live_checklist_link():
     html = read_static_html("index.html")
-    utility_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert '/tool-docs/erd-summary' in utility_block
-    assert '/tool-docs/erd-detail' in utility_block
-    assert '/tool-docs/manual' in utility_block
-    assert '/tool-docs/go-live-checklist' not in utility_block
-    assert 'shell.admin.doc_link.checklist' not in utility_block
+    nav_block = html.split('<div class="primary-side-docs"', 1)[1].split("</div>", 1)[0]
+    assert '/tool-docs/erd-summary' in nav_block
+    assert '/tool-docs/erd-detail' in nav_block
+    assert '/tool-docs/manual' in nav_block
+    assert '/tool-docs/go-live-checklist' not in nav_block
+    assert 'shell.admin.doc_link.checklist' not in nav_block
 
 
 def test_index_dashboard_shift_click_selection_adds_slot_range_from_anchor():
@@ -7862,7 +7852,7 @@ def test_dashboard_workbench_sort_artist_save_skips_auto_scroll_once():
 
 def test_index_ops_home_header_moves_page_help_to_operator_panel_header():
     html = read_static_html("index.html")
-    hero_start = 'id="opsHomeHero" class="ops-home-hero" style="display:none;"'
+    hero_start = 'id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;"'
     tab_home_start = '\n    <div id="tabHome" class="tab-panel active">'
     assert hero_start in html
     assert tab_home_start in html
@@ -7881,7 +7871,7 @@ def test_index_ops_home_header_moves_page_help_to_operator_panel_header():
 
 def test_index_ops_home_places_utility_mount_in_top_right_hero_side():
     html = read_static_html("index.html")
-    hero_start = '    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">'
+    hero_start = '    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">'
     utility_start = '    <div id="shellUtilityBar" class="shell-utility" style="display:none;">'
     assert hero_start in html
     assert utility_start in html
