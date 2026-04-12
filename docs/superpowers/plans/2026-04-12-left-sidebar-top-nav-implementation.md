@@ -1,0 +1,153 @@
+# Left Sidebar Primary Navigation Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Move the top-level navigation into a left sidebar with responsive collapse (icon-only and drawer) while keeping sub-tabs in the main content area.
+
+**Architecture:** Update `app/static/index.html` layout structure to wrap the current header + content in a two-column shell (sidebar + main). Add CSS rules for desktop/sidebar widths and responsive icon-only + drawer behaviors. Add minimal JS to control drawer open/close state and accessibility focus handling. Expand tests in `tests/test_ops_shell_bootstrap.py` to assert new sidebar structure, button semantics, and breakpoints.
+
+**Tech Stack:** HTML/CSS/JS in `app/static/index.html`, pytest in `tests/test_ops_shell_bootstrap.py`.
+
+---
+
+## File Map
+
+**Modify:**
+- `/Volumes/Works/07.hahahoho/app/static/index.html`
+- `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+
+---
+
+### Task 1: Add Failing Tests for Left Sidebar Navigation
+
+**Files:**
+- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+
+- [ ] **Step 1: Add failing tests**
+
+```python
+def test_primary_navigation_moves_to_left_sidebar():
+    html = read_static_html("index.html")
+    assert "primary-side-nav" in html
+    assert "primary-side-nav" in html
+    assert "nav.dashboard" in html
+    assert "nav.media" in html
+    assert "nav.collectibles" in html
+    assert "nav.ops" in html
+
+
+def test_sidebar_responsive_states_defined():
+    html = read_static_html("index.html")
+    assert "@media (max-width: 1199px)" in html
+    assert "@media (max-width: 760px)" in html
+    assert "primary-side-nav--icon" in html
+    assert "primary-side-drawer" in html
+
+
+def test_sidebar_drawer_menu_button_accessibility():
+    html = read_static_html("index.html")
+    assert "data-nav-drawer-toggle" in html
+    assert "aria-label=\"Open navigation\"" in html
+```
+
+- [ ] **Step 2: Run tests to verify failure**
+
+Run:
+```bash
+pytest -q tests/test_ops_shell_bootstrap.py::test_primary_navigation_moves_to_left_sidebar
+```
+Expected: FAIL (sidebar structure not yet present).
+
+---
+
+### Task 2: Implement Left Sidebar Layout + Responsive Behavior
+
+**Files:**
+- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
+
+- [ ] **Step 1: Add structural wrapper**
+
+Wrap the existing shell header + tab panels in a new two-column container:
+```html
+<div class="primary-shell">
+  <nav class="primary-side-nav" aria-label="Primary">
+    <!-- top-level nav buttons -->
+  </nav>
+  <div class="primary-shell-main">
+    <!-- existing header + tabs content -->
+  </div>
+</div>
+```
+
+- [ ] **Step 2: Move top-level nav buttons into sidebar**
+
+Move the four top-level buttons (Dashboard/Media/Collectibles/Ops) into the sidebar nav list.
+
+- [ ] **Step 3: Add CSS for sidebar widths and icon-only state**
+
+Add desktop sidebar width and icon-only collapse state for 761–1199px:
+```css
+.primary-shell { display: grid; grid-template-columns: 200px minmax(0, 1fr); }
+.primary-side-nav { width: 200px; }
+@media (max-width: 1199px) {
+  .primary-shell { grid-template-columns: 64px minmax(0, 1fr); }
+  .primary-side-nav--icon { width: 64px; }
+}
+```
+
+- [ ] **Step 4: Add drawer mode for <=760px**
+
+Implement hidden drawer + menu button:
+```css
+@media (max-width: 760px) {
+  .primary-shell { grid-template-columns: 1fr; }
+  .primary-side-nav { display: none; }
+  .primary-side-drawer { display: block; }
+}
+```
+
+- [ ] **Step 5: Add JS to toggle drawer**
+
+Add a small script to open/close drawer, lock body scroll, and return focus to toggle button.
+
+- [ ] **Step 6: Run tests to verify pass**
+
+Run:
+```bash
+pytest -q tests/test_ops_shell_bootstrap.py::test_primary_navigation_moves_to_left_sidebar
+```
+Expected: PASS.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add /Volumes/Works/07.hahahoho/app/static/index.html \
+        /Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
+git commit -m "style: move primary nav to left sidebar"
+```
+
+---
+
+### Task 3: Verification
+
+- [ ] **Step 1: Run focused test set**
+
+Run:
+```bash
+pytest -q tests/test_ops_shell_bootstrap.py
+```
+Expected: PASS (note: repo has unrelated failures; document any pre-existing fails).
+
+- [ ] **Step 2: Manual visual checks**
+
+Verify at 1440px, 1200px, 1199px, 1080px, 761px, 760px:
+- Sidebar renders left and does not push sub-tabs out of main content.
+- Icon-only mode shows tooltips + aria-labels.
+- Drawer opens/closes, locks scroll, and returns focus.
+
+- [ ] **Step 3: Commit any follow-ups**
+
+```bash
+git status -sb
+```
+Commit any fixes with a small follow-up message.
