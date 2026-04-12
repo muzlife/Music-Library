@@ -10273,6 +10273,7 @@
       .operator-form-grid { grid-template-columns: 1fr; }
       .operator-form-grid .span-2 { grid-column: auto; }
       .grid, .grid-3, .grid-6, .home-edit-grid-6 { grid-template-columns: 1fr; }
+      body[data-shell-mode="admin"] .compact-stack-actions--equal { grid-template-columns: 1fr; }
       .admin-barcode-intake-bar { grid-template-columns: 1fr; }
       .meta-search-grid, .meta-search-fields-3 { grid-template-columns: 1fr; }
       .source-workbench-toolbar { grid-template-columns: 1fr; }
@@ -11870,7 +11871,7 @@
               <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
             </div>
           </div>
-          <div class="compact-stack-actions">
+          <div class="compact-stack-actions compact-stack-actions--equal">
             <div>
               <label data-i18n="media.manage.collectibles.field.register_method">등록 방식</label>
               <div class="compact-line" data-i18n="media.manage.collectibles.register_method.body">`컬렉터블 > 컬렉터블 등록`으로 이동해 기본 정보와 매핑을 함께 입력합니다.</div>
@@ -13137,7 +13138,7 @@
           <h2><span data-i18n="media.register.purchase.title">구매 내역 가져오기</span></h2>
           <button class="page-help-trigger" type="button" data-page-help-open="register-purchase" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
         </div>
-        <p class="sub" data-i18n="media.register.purchase.subtitle">주문 페이지 파일을 바로 라이브러리 수입 큐로 연결합니다.</p>
+        <p class="sub" data-i18n="media.register.purchase.subtitle">주문 페이지 원문을 붙여넣거나 파일로 올려 라이브러리 수입 큐로 연결합니다.</p>
         <div class="grid-6">
           <div class="span-3">
             <label for="purchaseImportFile" data-i18n="media.register.purchase.field.file.label">주문 파일</label>
@@ -13222,6 +13223,8 @@
               <option value="SAILMUSIC">Sailmusic</option>
               <option value="AMAZON">Amazon</option>
               <option value="EBAY">eBay</option>
+              <option value="ALADIN">알라딘</option>
+              <option value="YES24">YES24</option>
               <option value="OTHER" data-i18n="common.other">기타</option>
             </select>
           </div>
@@ -14109,7 +14112,7 @@
           <div class="grid-6" style="margin-top:8px;">
             <div>
               <label for="opsAuthUsername" data-i18n="ops.account.field.username.label">아이디</label>
-              <input id="opsAuthUsername" data-i18n-placeholder="ops.account.field.username.placeholder" placeholder="예: kinolifecom" />
+              <input id="opsAuthUsername" data-i18n-placeholder="ops.account.field.username.placeholder" placeholder="예: operator01" />
             </div>
             <div>
               <label for="opsAuthPassword" data-i18n="ops.account.field.password.label">비밀번호</label>
@@ -16245,7 +16248,7 @@
         "ops.account.title": "관리자 / 현장 운영자 계정",
         "ops.account.intro": "기본 계정은 읽기 전용입니다. 여기서 만드는 관리 계정은 로그인 후 바로 사용 가능합니다.",
         "ops.account.field.username.label": "아이디",
-        "ops.account.field.username.placeholder": "예: kinolifecom",
+        "ops.account.field.username.placeholder": "예: operator01",
         "ops.account.field.password.label": "비밀번호",
         "ops.account.field.password.placeholder": "새 비밀번호 또는 초기 비밀번호",
         "ops.account.field.role.label": "권한",
@@ -16669,7 +16672,7 @@
         "media.register.api_lookup.placement.empty_body": '장식장 규격과 도메인을 먼저 확인하세요.',
         "media.register.api_lookup.confirm.idle": '조회 후 등록 대기',
         "media.register.api_lookup.results.title": '조회 결과',
-        "media.register.purchase.subtitle": '구매 파일을 읽어 원문은 그대로 보이고, 후보 조회 시에만 검색용 값으로 분리합니다.',
+        "media.register.purchase.subtitle": '주문 페이지 원문을 붙여넣거나 파일로 올려 라이브러리 수입 큐로 연결합니다.',
         "media.register.purchase.field.auto_detect.note": '파일 형식을 먼저 추정하고, 필요하면 수동 입력값으로 보정합니다.',
         "media.register.purchase.action.reset": '입력 비우기',
         "media.register.purchase.field.manual.summary": '원문에서 자동 판별이 어려운 경우 아래 수동 입력을 함께 사용합니다.',
@@ -16686,7 +16689,7 @@
         "media.register.batch.note.sample": '샘플 CSV 형식을 먼저 확인한 뒤 업로드하세요.',
         "media.register.batch.field.default_category.label": '기본 카테고리(옵션)',
         "media.register.batch.field.created_by.label": '등록자',
-        "media.register.batch.field.created_by.placeholder": '예: kinolifecom',
+        "media.register.batch.field.created_by.placeholder": '예: operator01',
         "media.register.review.title": '검수 큐',
         "manual.register_master.summary": '마스터 정리 페이지 활용 매뉴얼',
         "media.register.master.title": '앨범 마스터 묶기',
@@ -18691,7 +18694,7 @@
         "ops.account.title": "Admin / Operator Accounts",
         "ops.account.intro": "Default accounts are read-only. Accounts created here are available immediately after login.",
         "ops.account.field.username.label": "Username",
-        "ops.account.field.username.placeholder": "e.g. kinolifecom",
+        "ops.account.field.username.placeholder": "e.g. operator01",
         "ops.account.field.password.label": "Password",
         "ops.account.field.password.placeholder": "New or initial password",
         "ops.account.field.role.label": "Role",
@@ -19115,7 +19118,7 @@
         "media.register.api_lookup.placement.empty_body": 'Check cabinet size group and domain first.',
         "media.register.api_lookup.confirm.idle": 'Waiting to register after lookup',
         "media.register.api_lookup.results.title": 'Lookup Results',
-        "media.register.purchase.subtitle": 'Keep the raw listing text in the queue and split it into search fields only when you look up candidates.',
+        "media.register.purchase.subtitle": 'Paste an order page or upload a file to send it into the library import queue.',
         "media.register.purchase.field.auto_detect.note": 'Detect the file type first, then fall back to manual metadata when needed.',
         "media.register.purchase.action.reset": 'Clear Input',
         "media.register.purchase.field.manual.summary": 'Use the manual fields below when auto-detection is not enough.',
@@ -19132,7 +19135,7 @@
         "media.register.batch.note.sample": 'Check the sample CSV shape before uploading.',
         "media.register.batch.field.default_category.label": 'Default Category (optional)',
         "media.register.batch.field.created_by.label": 'Created By',
-        "media.register.batch.field.created_by.placeholder": 'e.g. kinolifecom',
+        "media.register.batch.field.created_by.placeholder": 'e.g. operator01',
         "media.register.review.title": 'Review Queue',
         "manual.register_master.summary": 'Master Cleanup Manual',
         "media.register.master.title": 'Group Album Masters',
@@ -21149,7 +21152,7 @@
         "ops.account.title": "管理者 / 現場運用アカウント",
         "ops.account.intro": "基本アカウントは読み取り専用です。ここで作成した管理アカウントはログイン後すぐ使えます。",
         "ops.account.field.username.label": "ID",
-        "ops.account.field.username.placeholder": "例: kinolifecom",
+        "ops.account.field.username.placeholder": "例: operator01",
         "ops.account.field.password.label": "パスワード",
         "ops.account.field.password.placeholder": "新しいパスワードまたは初期パスワード",
         "ops.account.field.role.label": "権限",
@@ -21573,7 +21576,7 @@
         "media.register.api_lookup.placement.empty_body": 'キャビネット規格とドメインを先に確認してください。',
         "media.register.api_lookup.confirm.idle": '照会後の登録待機',
         "media.register.api_lookup.results.title": '照会結果',
-        "media.register.purchase.subtitle": 'キュー一覧には原文タイトルをそのまま残し、候補照会時だけ検索用フィールドへ分離します。',
+        "media.register.purchase.subtitle": '注文ページ原文を貼り付けるかファイルをアップロードして、ライブラリ取込キューへ送ります。',
         "media.register.purchase.field.auto_detect.note": 'まずファイル形式を推定し、必要に応じて手動入力で補正します。',
         "media.register.purchase.action.reset": '入力をクリア',
         "media.register.purchase.field.manual.summary": '自動判別が難しい場合は以下の手動入力も併用します。',
@@ -21590,7 +21593,7 @@
         "media.register.batch.note.sample": 'サンプルCSV形式を先に確認してからアップロードしてください。',
         "media.register.batch.field.default_category.label": '既定カテゴリ(任意)',
         "media.register.batch.field.created_by.label": '登録者',
-        "media.register.batch.field.created_by.placeholder": '例: kinolifecom',
+        "media.register.batch.field.created_by.placeholder": '例: operator01',
         "media.register.review.title": '検収キュー',
         "manual.register_master.summary": 'マスター整理ページ利用ガイド',
         "media.register.master.title": 'アルバムマスターを束ねる',
