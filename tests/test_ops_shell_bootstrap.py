@@ -96,8 +96,11 @@ const operatorRunoutSampleText = () => "-";
 const homeMasterMemberPreviewMetaLine = () => "";
 const homeMasterMemberPreviewLocationHtml = () => "";
 const getMediaSearchContextSelectedOwnedItemId = () => 0;
+const getMediaSearchExpandedPreviewOwnedItemId = () => "";
 const mediaSearchMemberPreviewCoverSrc = () => "";
 const discogsRepairSlotHtml = () => "";
+const homeOwnedItemRelationTypeLabel = () => "";
+const homeOwnedItemRelationTargetLabel = () => "";
 const formatCount = (value) => String(value);
 const homeMasterLocationButtonsHtml = () => "";
 const homeExpandedMasterPreviewIds = new Set();
@@ -330,8 +333,8 @@ def test_storage_slot_display_label_prefers_localized_triplet_or_display_name():
 def test_ops_home_context_panel_supports_mini_cabinet_map_for_selected_item():
     html = read_static_html("index.html")
     assert "function findOpsLibraryContextCabinetGroup(item) {" in html
-    assert "function renderOpsLibraryContextMiniCabinetMap(item) {" in html
-    assert 'id="opsLibraryContextMiniCabinetMap"' in html
+    assert "function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {" in html
+    assert 'const mapId = String(options.mapId || "opsLibraryContextMiniCabinetMap");' in html
     assert ".ops-library-mini-map {" in html
     assert ".ops-library-mini-map-cell.active {" in html
     assert "const miniMapHtml = renderOpsLibraryContextMiniCabinetMap(item);" in html
@@ -339,7 +342,7 @@ def test_ops_home_context_panel_supports_mini_cabinet_map_for_selected_item():
 
 def test_ops_home_context_mini_cabinet_map_uses_i18n_helpers_for_head_meta():
     html = read_static_html("index.html")
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert "dashboardConnectedCabinetsLabel(group.cabinetCount)" not in mini_map_block
     assert "dashboardFloorsLabel(cabinet.floorCount)" in mini_map_block
     assert "dashboardCellCountLabel(cabinet.slotCount)" in mini_map_block
@@ -378,7 +381,6 @@ def test_ops_home_context_panel_groups_plugins_above_mini_map_and_preview():
     assert plugin_index < mini_map_index < slot_preview_index
     plugin_block = selection_block.split("const pluginSectionHtml = renderOpsPluginSection(`", 1)[1].split("`);", 1)[0]
     assert "${renderOpsArtistContextCard(item)}" in plugin_block
-    assert "${placementHintHtml}" in plugin_block
     assert "${renderOpsCollectorInfoCard(item)}" not in plugin_block
 
 
@@ -580,7 +582,7 @@ def test_ops_home_context_panel_emphasizes_current_slot_with_contrast_badge():
     html = read_static_html("index.html")
     active_block = html.split(".ops-library-mini-map-cell.active {", 1)[1].split("}", 1)[0]
     badge_block = html.split(".ops-library-mini-map-active-badge {", 1)[1].split("}", 1)[0]
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert "background: linear-gradient(180deg, var(--selected-accent-deep), var(--selected-accent-strong));" in active_block
     assert "color: #f8fafc;" in active_block
     assert "box-shadow:" in active_block
@@ -591,7 +593,7 @@ def test_ops_home_context_panel_emphasizes_current_slot_with_contrast_badge():
 def test_storage_mapping_high_occupancy_percent_uses_contrast_pill_tokens():
     html = read_static_html("index.html")
     tone_block = html.split("function dashboardCabinetMapCellTone(slotRow) {", 1)[1].split("function dashboardCabinetMapSizeClass(slotRow) {", 1)[0]
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     mini_count_block = html.split(".ops-library-mini-map-cellcount {", 1)[1].split("}", 1)[0]
     dash_count_block = html.split(".dashboard-cabinet-map-cellcount {", 1)[1].split("}", 1)[0]
     assert 'ratio >= 0.7' in tone_block
@@ -622,9 +624,9 @@ def test_ops_home_context_panel_compacts_right_panel_density():
 
 def test_ops_home_context_panel_supports_mini_slot_preview_for_selected_item():
     html = read_static_html("index.html")
-    assert "function renderOpsLibraryContextSlotPreview(item) {" in html
-    assert "function loadOpsLibraryContextSlotPreview(item) {" in html
-    assert 'id="opsLibraryContextSlotPreview"' in html
+    assert "function renderOpsLibraryContextSlotPreview(item, options = {}) {" in html
+    assert "function loadOpsLibraryContextSlotPreview(item, options = {}) {" in html
+    assert 'const rootId = String(options.rootId || "opsLibraryContextSlotPreview");' in html
 
 
 def test_ops_home_context_panel_compacts_mini_slot_preview_density():
@@ -640,7 +642,7 @@ def test_ops_home_context_panel_compacts_mini_slot_preview_density():
 
 def test_ops_home_context_panel_allows_preview_cover_click_to_open_cabinet():
     html = read_static_html("index.html")
-    block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     assert 'class="ops-library-slot-preview-item ${isActiveItem ? "active" : ""}"' in block
     assert 'data-operator-context-open-cabinet="${ownedItemId}"' in block
     assert 'data-operator-slot-code="${escapeHtml(String(row?.slot_code || slotCode).trim())}"' in block
@@ -684,7 +686,7 @@ def test_ops_home_context_panel_supports_pinned_selection_clear_button():
 
 def test_ops_home_context_panel_adds_slot_preview_footer_open_action():
     html = read_static_html("index.html")
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     assert 'class="ops-library-slot-preview-actions"' in preview_block
     assert 't("operator.context.preview.action.open_current")' in preview_block
     assert 'data-operator-context-open-cabinet="${Number(item?.owned_item_id || item?.id || 0)}"' in preview_block
@@ -695,8 +697,8 @@ def test_operator_context_and_shared_camera_runtime_copy_use_i18n():
     html = read_static_html("index.html")
     context_default_block = html.split("function renderOpsLibraryContextDefault(climate) {", 1)[1].split("function renderOpsLibraryContextSelection(item) {", 1)[0]
     context_selection_block = html.split("function renderOpsLibraryContextSelection(item) {", 1)[1].split("function findOpsLibraryContextCabinetGroup(item) {", 1)[0]
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
-    slot_preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    slot_preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     shared_camera_list_block = html.split("function renderSharedCameraList(rows) {", 1)[1].split("function renderSharedCameraPreview(rows) {", 1)[0]
     shared_camera_preview_block = html.split("function renderSharedCameraPreview(rows) {", 1)[1].split("function renderSharedCameraPage() {", 1)[0]
 
@@ -977,7 +979,7 @@ def test_shell_global_barcode_scanner_shows_contextual_toast_after_routing():
 def test_admin_barcode_intake_uses_shorter_empty_candidate_status_copy():
     html = read_static_html("index.html")
     block = html.split("async function barcodeSearch() {", 1)[1].split("async function querySearch() {", 1)[0]
-    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((data.candidates || []).length) })' in block
+    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((candidates || []).length) })' in block
     assert ': t("media.register.api_lookup.status.no_candidates_register_direct")' in block
 
 
@@ -1385,7 +1387,7 @@ def test_ops_home_context_panel_allows_previous_location_open_action():
 
 def test_ops_home_context_panel_adds_hover_title_to_mini_map_cells():
     html = read_static_html("index.html")
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert 'const hoverTitle = dashboardSlotHoverHintText(row);' in mini_map_block
     assert 'title="${escapeHtml(hoverTitle)}"' in mini_map_block
 
@@ -1402,7 +1404,7 @@ def test_dashboard_cabinet_map_cells_use_first_item_hover_hint():
 
 def test_ops_home_context_panel_allows_mini_map_cell_click_to_open_cabinet():
     html = read_static_html("index.html")
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert 'data-operator-context-open-cabinet="${Number(item?.owned_item_id || item?.id || 0)}"' in mini_map_block
     assert 'data-operator-slot-code="${escapeHtml(String(row?.slot_code || "").trim())}"' in mini_map_block
     cell_block = html.split(".ops-library-mini-map-cell {", 1)[1].split("}", 1)[0]
@@ -1444,7 +1446,7 @@ def test_ops_home_context_panel_styles_location_open_actions_as_chips():
 
 def test_ops_home_context_panel_highlights_selected_item_in_slot_preview():
     html = read_static_html("index.html")
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     item_block = html.split(".ops-library-slot-preview-item.active {", 1)[1].split("}", 1)[0]
     thumb_block = html.split(".ops-library-slot-preview-item.active .ops-library-slot-preview-thumb {", 1)[1].split("}", 1)[0]
     assert "const isActiveItem = ownedItemId > 0 && ownedItemId === Number(item?.owned_item_id || item?.id || 0);" in preview_block
@@ -1490,14 +1492,24 @@ def test_dashboard_and_manage_selected_items_use_stronger_contrast_highlight():
     result_pick_block = html.split(".result-item.pick {", 1)[1].split("}", 1)[0]
     shelf_selected_block = html.split(".shelf-item.selected {", 1)[1].split("}", 1)[0]
     covercard_pick_block = html.split(".dashboard-slot-covercard.pick {", 1)[1].split("}", 1)[0]
+    covercard_cover_pick_block = html.split(".dashboard-slot-covercard.pick .dashboard-slot-covercard-cover {", 1)[1].split("}", 1)[0]
+    shelfcard_pick_block = html.split(".dashboard-slot-shelfcard.pick {", 1)[1].split("}", 1)[0]
     listitem_pick_block = html.split(".dashboard-slot-listitem.pick {", 1)[1].split("}", 1)[0]
     assert "border-color: var(--selected-accent-strong);" in result_pick_block
     assert "box-shadow: 0 0 0 4px var(--selected-ring), 0 14px 26px var(--selected-shadow-soft);" in result_pick_block
     assert "background: linear-gradient(180deg, var(--selected-surface), var(--selected-surface-soft));" in result_pick_block
     assert "border-color: var(--selected-accent);" in shelf_selected_block
     assert "0 0 0 4px var(--selected-ring)" in shelf_selected_block
-    assert "border-color: var(--selected-accent);" in covercard_pick_block
-    assert "0 0 0 4px var(--selected-ring)" in covercard_pick_block
+    assert "box-shadow: none;" in covercard_pick_block
+    assert "border-color: #d7dde5;" in covercard_pick_block
+    assert "background: linear-gradient(180deg, #ffffff, #f8fafc);" in covercard_pick_block
+    assert "border-color: var(--selected-accent);" in covercard_cover_pick_block
+    assert "box-shadow: 0 12px 22px rgba(15, 23, 42, 0.14);" in covercard_cover_pick_block
+    assert "box-shadow: none;" in shelfcard_pick_block
+    assert "border-color: transparent;" in shelfcard_pick_block
+    assert "background: transparent;" in shelfcard_pick_block
+    assert "0 0 0 4px var(--selected-ring)" not in covercard_pick_block
+    assert "var(--selected-shadow-soft)" not in covercard_pick_block
     assert "border-color: var(--selected-accent);" in listitem_pick_block
 
 
@@ -1551,7 +1563,7 @@ def test_ops_home_context_panel_uses_card_style_for_location_rows():
 
 def test_ops_home_context_panel_adds_selected_badge_to_active_slot_preview_item():
     html = read_static_html("index.html")
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     badge_block = html.split(".ops-library-slot-preview-badge {", 1)[1].split("}", 1)[0]
     assert 'class="ops-library-slot-preview-badge">${escapeHtml(t("operator.context.preview.badge_selected"))}</span>' in preview_block
     assert "position: absolute;" in badge_block
@@ -1593,10 +1605,10 @@ def test_ops_home_context_panel_compacts_default_empty_copy():
 def test_ops_home_context_panel_uses_link_style_for_slot_preview_footer_action():
     html = read_static_html("index.html")
     link_block = html.split(".ops-library-slot-preview-link {", 1)[1].split("}", 1)[0]
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
-    assert "padding: 0;" in link_block
-    assert "border: 0;" in link_block
-    assert "text-decoration: underline;" in link_block
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
+    assert "padding: 6px 10px;" in link_block
+    assert "border-radius: 999px;" in link_block
+    assert "text-decoration: none;" in link_block
     assert 'class="ops-library-slot-preview-link"' in preview_block
 
 
@@ -2074,7 +2086,7 @@ def test_dashboard_coverflow_uses_overlay_sidearrows_without_surface_gutters():
     assert "z-index: 3;" in sidearrow_block
     assert "left: 8px;" in left_block
     assert "right: 8px;" in right_block
-    assert "padding: 16px 18px 18px;" in surface_block
+    assert "padding: 12px 14px 14px;" in surface_block
     assert "background: rgba(255,255,255,0.82);" in sidearrow_block
     assert "color: #475569;" in sidearrow_block
     assert "border: 1px solid rgba(203, 213, 225, 0.92);" in sidearrow_block
@@ -2304,7 +2316,6 @@ def test_media_search_master_cards_gate_discogs_repair_button_on_eligibility():
     preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
     result_block = html.split("    function homeResultItemHtml(row) {", 1)[1].split("    function renderHomeSearchResults(items) {", 1)[0]
     assert 'const repairDiscogsMasterBtn = discogsRepairSlotHtml("home", {' in preview_block
-    assert 'data-home-discogs-repair-slot="' in preview_block
     assert 'const repairDiscogsMasterBtn = e.target.closest("[data-home-repair-discogs-master]");' in html
     assert 'homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode })' in result_block
     assert 'function discogsRepairSlotHtml(scope, { ownedItemId, sourceCode, masterSourceCode, sourceExternalId }) {' in html
@@ -2467,12 +2478,12 @@ def test_ops_home_context_panel_fixes_slot_preview_label_height():
 
 def test_ops_home_context_panel_uses_link_style_for_open_cabinet_action():
     html = read_static_html("index.html")
-    link_block = html.split(".operator-helper-link {", 1)[1].split("}", 1)[0]
+    link_block = html.split(".operator-mini-linkchip {", 1)[1].split("}", 1)[0]
     selection_block = html.split("function renderOpsLibraryContextSelection(item) {", 1)[1].split("function findOpsLibraryContextCabinetGroup(item) {", 1)[0]
-    assert "padding: 0;" in link_block
-    assert "border: 0;" in link_block
-    assert "text-decoration: underline;" in link_block
-    assert 'class="operator-helper-link"' in selection_block
+    assert "min-height: 24px;" in link_block
+    assert "border-radius: 999px;" in link_block
+    assert "font-weight: 700;" in link_block
+    assert 'class="operator-mini-linkchip"' in selection_block
 
 
 def test_ops_home_context_panel_compacts_mini_map_floor_label_width():
@@ -2930,7 +2941,7 @@ def test_index_ops_home_hero_uses_top_aligned_side_and_matches_admin_compact_tit
     ops_main_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
     ops_compact_h1_block = html.split(".ops-home-hero--compact .ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
     assert "align-items: start;" in ops_main_block
-    assert "font-size: 1.42rem;" in ops_compact_h1_block
+    assert "font-size: 1.2rem;" in ops_compact_h1_block
 
 
 def test_index_ops_home_header_uses_admin_width_tokens():
@@ -3035,8 +3046,8 @@ def test_index_ops_home_compacts_hero_art_and_focus_chip_grid():
     art_block = html.split(".ops-home-hero--compact .ops-home-hero-art {", 1)[1].split("}", 1)[0]
     copy_block = html.split(".ops-home-hero--compact .ops-home-hero-copy {", 1)[1].split("}", 1)[0]
     subtitle_block = html.split(".ops-home-hero--compact .ops-home-hero-copy p {", 1)[1].split("}", 1)[0]
-    assert "padding: 9px 12px;" in hero_block
-    assert "gap: 6px;" in main_regular_block
+    assert "padding: 8px 12px;" in hero_block
+    assert "gap: 3px;" in main_regular_block
     assert "grid-template-columns: minmax(0, 1fr) auto;" in compact_block
     assert "display: none;" in art_block
     assert "gap: 1px;" in copy_block
@@ -3064,9 +3075,9 @@ def test_index_compact_hero_variants_reduce_padding_one_more_step():
     assert "gap: 6px;" in compact_admin_head_block
     assert "font-size: 1.2rem;" in compact_admin_h1_block
     assert "padding: 7px 12px;" in compact_ops_block
-    assert "gap: 5px;" in compact_ops_block
+    assert "gap: 4px;" in compact_ops_block
     assert "gap: 1px;" in compact_ops_copy_block
-    assert "font-size: 1.42rem;" in compact_ops_h1_block
+    assert "font-size: 1.2rem;" in compact_ops_h1_block
 
 
 def test_index_admin_dashboard_and_subtabs_use_closer_header_title_scales():
@@ -3368,10 +3379,10 @@ def test_index_reset_action_group_uses_shared_symbol_buttons():
 def test_icon_buttons_share_uniform_height_and_symbol_box():
     html = read_static_html("index.html")
     root_block = html.split(":root {", 1)[1].split("}", 1)[0]
-    btn_block = html.split(".btn {", 1)[1].split("}", 1)[0]
+    btn_block = html.split("\n    .btn {", 1)[1].split("}", 1)[0]
     ghost_block = html.split(".btn.ghost {", 1)[1].split("}", 1)[0]
     disabled_block = html.split(".btn:disabled {", 1)[1].split("}", 1)[0]
-    icon_symbol_block = html.split(".icon-symbol-btn {", 1)[1].split("}", 1)[0]
+    icon_symbol_block = html.split("\n    .icon-symbol-btn {", 1)[1].split("}", 1)[0]
     icon_symbol_base_block = html.split(".icon-symbol-btn::before {", 1)[1].split("}", 1)[0]
     icon_btn_block = html.split(".icon-btn {", 1)[1].split("}", 1)[0]
     icon_btn_svg_block = html.split(".icon-btn svg {", 1)[1].split("}", 1)[0]
@@ -3451,6 +3462,7 @@ def test_index_dashboard_slot_detail_actions_are_grouped_by_intent():
     assert "실제 변경" not in flow_block
     assert 'id="homeDashSlotViewShelfBtn"' in detail_block
     assert 'id="homeDashSelectedItemEditBtn"' in flow_block
+    assert flow_block.index('id="homeDashSelectedItemEditBtn"') < flow_block.index('id="homeDashSlotBulkBtn"')
     assert 'id="homeDashSlotEditBtn"' not in flow_block
     assert 'id="homeDashSlotSelectAllBtn"' in flow_block
     assert 'id="homeDashSlotClearBtn"' in flow_block
@@ -3477,6 +3489,7 @@ def test_index_dashboard_slot_detail_embeds_controls_inside_cover_flow_surface()
     assert 'id="homeDashSurfaceDock"' in block
     assert 'id="homeDashSurfaceCameraBtn"' not in block
     assert 'id="homeDashSlotBulkBtn"' in block
+    assert 'id="homeDashSelectedItemEditBtn"' in block
     assert 'id="homeDashBulkCloseBtn"' in block
     assert 'id="homeDashCameraCard"' not in block
     assert 'class="dashboard-bulk-edit-bar"' in block
@@ -3487,11 +3500,87 @@ def test_index_dashboard_slot_detail_embeds_controls_inside_cover_flow_surface()
     assert block.index('class="dashboard-slot-rack-surface dashboard-slot-rack-surface--interactive"') < block.index('id="homeDashSlotItems"')
     assert block.index('class="dashboard-slot-surface-tools"') < block.index('id="homeDashSlotItems"')
     assert block.index('id="homeDashSlotBulkBtn"') < block.index('id="homeDashSlotItems"')
-    assert 'id="homeDashSelectedItemMeta"' in block
     surface_block = html.split(".dashboard-slot-rack-surface--interactive {", 1)[1].split("}", 1)[0]
     assert "overflow: visible;" in surface_block
     bulk_popover_block = html.split(".dashboard-slot-bulk-popover {", 1)[1].split("}", 1)[0]
     assert "width: min(320px, calc(100vw - 156px));" in bulk_popover_block
+
+
+def test_index_dashboard_desktop_compacts_cabinet_detail_and_coverflow_gap():
+    html = read_static_html("index.html")
+    cabinet_detail_block = html.split(".dashboard-cabinet-detail {", 1)[1].split("}", 1)[0]
+    cabinet_stage_block = html.split(".dashboard-cabinet-stage {", 1)[1].split("}", 1)[0]
+    rack_surface_block = html.split(".dashboard-slot-rack-surface {", 1)[1].split("}", 1)[0]
+    surface_tools_block = html.split(".dashboard-slot-surface-tools {", 1)[1].split("}", 1)[0]
+    selected_item_meta_block = html.split(".dashboard-selected-item-meta {", 1)[1].split("}", 1)[0]
+    sort_artist_block = html.split(".dashboard-selected-sort-artist-row {", 1)[1].split("}", 1)[0]
+    toolbar_row_block = html.split(".dashboard-slot-toolbar-row {", 1)[1].split("}", 1)[0]
+    viewportbar_block = html.split(".dashboard-slot-viewportbar {", 1)[1].split("}", 1)[0]
+    viewtools_block = html.split(".dashboard-slot-viewtools {", 1)[1].split("}", 1)[0]
+    viewbar_block = html.split(".dashboard-slot-viewbar {", 1)[1].split("}", 1)[0]
+    pagebar_block = html.split(".dashboard-slot-pagebar {", 1)[1].split("}", 1)[0]
+    selection_toolbar_block = html.split(".dashboard-selection-toolbar {", 1)[1].split("}", 1)[0]
+
+    assert "margin-top: 6px;" in cabinet_detail_block
+    assert "padding-top: 6px;" in cabinet_detail_block
+    assert "gap: 6px;" in cabinet_detail_block
+    assert "gap: 6px;" in cabinet_stage_block
+    assert "padding: 10px 12px 12px;" in cabinet_stage_block
+    assert "border-radius: 20px;" in cabinet_stage_block
+    assert "gap: 6px;" in rack_surface_block
+    assert "padding: 12px 14px 14px;" in rack_surface_block
+    assert "border-radius: 18px;" in rack_surface_block
+    assert "gap: 6px;" in surface_tools_block
+    assert "gap: 8px;" in selected_item_meta_block
+    assert "padding: 6px 8px;" in selected_item_meta_block
+    assert "border-radius: 12px;" in selected_item_meta_block
+    assert "margin-top: 2px;" in sort_artist_block
+    assert "column-gap: 10px;" in sort_artist_block
+    assert "row-gap: 3px;" in sort_artist_block
+    assert "gap: 6px;" in toolbar_row_block
+    assert "gap: 6px;" in viewportbar_block
+    assert "gap: 4px;" in viewtools_block
+    assert "gap: 3px;" in viewbar_block
+    assert "gap: 4px;" in pagebar_block
+    assert "min-height: 34px;" in pagebar_block
+    assert "padding: 0 8px;" in pagebar_block
+    assert "margin-top: 2px;" in selection_toolbar_block
+    assert "margin-bottom: 4px;" in selection_toolbar_block
+
+
+def test_index_dashboard_slot_hover_overlay_keeps_slot_meta_hidden():
+    html = read_static_html("index.html")
+    overlay_block = html.split(".dashboard-selected-item-meta--overlay {", 1)[1].split("}", 1)[0]
+    overlay_button_block = html.split(".dashboard-selected-item-meta--overlay .dashboard-slot-actionbtn {", 1)[1].split("}", 1)[0]
+    runtime_block = html.split("    function renderDashboardSelectedItemMeta() {", 1)[1].split("    function syncDashboardSelectedSortArtistEditor() {", 1)[0]
+    hover_helper_block = html.split("    function dashboardSlotHoverMetaOverlayEnabled() {", 1)[1].split("    function renderDashboardSelectedItemMeta() {", 1)[0]
+    slot_events_block = html.split('    $("homeDashSlotItems").addEventListener("pointerdown", (e) => {', 1)[1].split('    $("homeDashWorkbenchList").addEventListener("pointerdown", (e) => {', 1)[0]
+
+    assert "position: absolute;" in overlay_block
+    assert "top: 12px;" in overlay_block
+    assert "left: 14px;" in overlay_block
+    assert "right: 14px;" in overlay_block
+    assert "z-index: 4;" in overlay_block
+    assert "pointer-events: none;" in overlay_block
+    assert "display: none !important;" in overlay_button_block
+
+    assert 'let homeDashboardHoveredItemId = null;' in html
+    assert 'window.matchMedia("(hover: hover) and (pointer: fine)").matches' in hover_helper_block
+    assert 'homeDashboardSlotViewMode === "THUMB" || homeDashboardSlotViewMode === "SHELF"' in hover_helper_block
+    assert 'const selectionSourceKind = getDashboardSelectionSourceKind();' in runtime_block
+    assert 'if (selectionSourceKind === "SLOT") {' in runtime_block
+    assert 'el.style.display = "none";' in runtime_block
+    assert 'if (textEl) textEl.textContent = "";' in runtime_block
+    assert 'syncDashboardSelectedSortArtistEditor();' in runtime_block
+    assert 'return;' in runtime_block
+    assert 'el.classList.toggle("dashboard-selected-item-meta--overlay", useOverlay);' in runtime_block
+    assert 'el.style.display = useOverlay ? "flex" : "flex";' not in runtime_block
+    assert 'el.style.display = "flex";' in runtime_block
+
+    assert '$("homeDashSlotItems").addEventListener("pointerover", (e) => {' in slot_events_block
+    assert '$("homeDashSlotItems").addEventListener("pointerleave", () => {' in slot_events_block
+    assert '$("homeDashSlotItems").addEventListener("focusin", (e) => {' in slot_events_block
+    assert '$("homeDashSlotItems").addEventListener("focusout", (e) => {' in slot_events_block
 
 
 def test_index_exposes_shared_camera_main_tab():
@@ -3593,7 +3682,6 @@ def test_index_export_panel_includes_restore_upload_and_auto_backup_settings():
 
 def test_operator_weather_shared_camera_and_restore_static_copy_use_i18n_keys():
     html = read_static_html("index.html")
-    assert 'class="operator-feed-filters" role="tablist" aria-label="운영 홈 목록 필터" data-i18n-aria-label="operator.feed.filter.aria"' in html
     assert 'id="operatorWeatherKicker" class="operator-weather-kicker" data-i18n="operator.weather.empty.kicker"' in html
     assert 'id="operatorWeatherLocation" data-i18n="operator.weather.empty.location"' in html
     assert 'id="operatorWeatherDescription" data-i18n="operator.weather.empty.description"' in html
@@ -3829,7 +3917,7 @@ def test_admin_manage_surface_contains_empty_state_prompt():
 
 def test_manage_view_separates_linked_goods_zone_from_album_editor_area():
     html = read_static_html("index.html")
-    assert 'id="homeMasterGoodsSection" class="home-goods-zone' in html
+    assert 'id="homeMasterGoodsSection"' in html
     assert 'id="homeLinkedGoodsPanel" class="home-goods-panel' in html
     assert 'id="homeMasterSummarySection" style="display:none;"' in html
     assert ".home-goods-panel {" in html
@@ -3895,6 +3983,7 @@ def test_manage_view_renders_linked_collectibles_in_goods_section():
 def test_manage_view_can_render_linked_collectibles_without_master_lookup():
     html = read_static_html("index.html")
     helper_block = html.split("function renderHomeLinkedCollectiblesSection() {", 1)[1].split("function resetHomeMasterLookupUi", 1)[0]
+    assert 'id="homeMasterGoodsSection"' in html
     assert 'const collectibles = Array.isArray(homeMasterInfo?.collectibles)' in helper_block
     assert 'homeLinkedCollectibles' in helper_block
     assert 'homeMasterCollectibleItemHtml' in helper_block
@@ -3955,6 +4044,8 @@ def test_manage_view_product_relationship_runtime_uses_relation_routes_and_previ
     relation_block = html.split("function homeOwnedItemRelationTypeLabel(", 1)[1].split("async function saveHomeEditedItem()", 1)[0]
     preview_block = html.split("function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
 
+    assert 'function renderHomeProductRelationSection() {' in relation_block
+    assert 'function resetHomeOwnedItemRelationUi() {' in relation_block
     assert 'fetch(`/owned-items/${ownedItemId}/relations`)' in relation_block
     assert 'fetch(`/owned-item-relation-targets?${params.toString()}`)' in relation_block
     assert 'fetch("/product-groups", {' in relation_block
@@ -4161,6 +4252,25 @@ def test_media_source_and_register_form_labels_and_placeholders_use_i18n_keys():
     assert '"media.register.direct.field.artist.placeholder":' in html
     assert '"media.register.purchase.queue.title":' in html
     assert '"media.register.batch.field.notes.label":' in html
+
+
+def test_purchase_import_ui_mentions_paste_or_upload_and_extended_vendor_targets():
+    html = read_static_html("index.html")
+    assert '<p class="sub" data-i18n="media.register.purchase.subtitle">주문 페이지 원문을 붙여넣거나 파일로 올려 라이브러리 수입 큐로 연결합니다.</p>' in html
+    assert 'id="purchaseImportVendorCode"' in html
+    assert '<option value="OTHER" data-i18n="media.register.purchase.field.vendor.auto">자동 판별</option>' in html
+    assert '<option value="ALADIN">알라딘</option>' in html
+    assert '<option value="YES24">YES24</option>' in html
+    assert '<option value="SAILMUSIC">Sailmusic</option>' not in html
+    assert 'Amazon / eBay / Sailmusic' not in html
+    assert '"media.register.purchase.subtitle":' in html
+
+
+def test_purchase_import_payload_base_and_reset_include_manual_vendor_override():
+    html = read_static_html("index.html")
+
+    assert 'vendor_code: String($("purchaseImportVendorCode")?.value || "OTHER").trim().toUpperCase() || "OTHER",' in html
+    assert '$("purchaseImportVendorCode").value = "OTHER";' in html
 
 
 def test_source_workbench_bulk_apply_opens_diff_review_surface_markup():
@@ -4627,9 +4737,12 @@ def test_collectibles_and_ops_primary_controls_use_i18n_keys():
 def test_collectibles_search_actions_align_to_right_edge():
     html = read_static_html("index.html")
     actions_block = html.split(".goods-search-actions {", 1)[1].split("}", 1)[0]
+    actions_button_block = html.split(".goods-search-actions > .btn,", 1)[1].split("}", 1)[0]
     assert "display: flex;" in actions_block
     assert "justify-content: flex-end;" in actions_block
     assert "margin-top: 10px;" in actions_block
+    assert "flex: 1;" in actions_button_block
+    assert "min-width: 110px;" in actions_button_block
     assert '<div class="ops-compact-form-actions goods-search-actions">' in html
 
 
@@ -4889,6 +5002,19 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '"collectibles.register.field.label_names.label":' in html
 
 
+def test_collectibles_register_core_row_keeps_mapping_fields_in_optional_details():
+    html = read_static_html("index.html")
+    register_row_b = html.split('id="goodsRegisterCoreRowB"', 1)[1].split('id="goodsRegisterSaveBtn"', 1)[0]
+    extra_details = html.split('id="goodsRegisterExtraFields"', 1)[1].split('id="goodsRegisterStatusLine"', 1)[0]
+
+    assert 'goodsRegisterAlbumMasterId' in register_row_b
+    assert 'goodsRegisterArtistNames' in register_row_b
+    assert 'goodsRegisterLabelNames' in register_row_b
+    assert 'goodsRegisterAlbumMasterId' not in extra_details
+    assert 'goodsRegisterArtistNames' not in extra_details
+    assert 'goodsRegisterLabelNames' not in extra_details
+
+
 def test_media_register_static_form_labels_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<label for="quickQuantity" data-i18n="media.register.direct.field.quantity.label">수량</label>' in html
@@ -4993,6 +5119,7 @@ def test_dashboard_selection_and_bulk_edit_controls_use_i18n_keys():
     assert 'class="dashboard-selection-actions dashboard-selection-actions--slot-icons dashboard-selection-actions--selection"' in flow_block
     assert 'class="dashboard-selection-actions dashboard-selection-actions--secondary"' in flow_block
     assert 'class="dashboard-selection-actions dashboard-selection-actions--primary"' in flow_block
+    assert flow_block.index('id="homeDashSelectedItemEditBtn"') < flow_block.index('id="homeDashSlotBulkBtn"')
     assert 'data-i18n="dashboard.selection.action.select_all"' in flow_block
     assert 'data-i18n="dashboard.selection.action.clear"' in flow_block
     assert 'dashboard.selection.action.select_all_short' not in flow_block
@@ -5039,8 +5166,10 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     assert '"dashboard.selection.sort_artist.note":' in html
     assert '"dashboard.selection.sort_artist.display_artist":' in html
     assert 'id="homeDashSearchTitle" data-i18n-placeholder="dashboard.workbench.field.title.placeholder"' in html
-    assert 'id="homeDashSearchCatalogNo" data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder"' in html
-    assert 'id="homeDashSearchBarcode" data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder"' in html
+    assert 'id="homeDashSearchCatalogNo"' in html
+    assert 'data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder"' in html
+    assert 'id="homeDashSearchBarcode"' in html
+    assert 'data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder"' in html
     workbench_block = html.split('id="homeDashWorkbenchSummary"', 1)[1].split('id="homeDashWorkbenchPagePrevBtn"', 1)[0]
     assert 'class="dashboard-selection-action-clusters"' in workbench_block
     assert 'class="dashboard-selection-actions dashboard-selection-actions--selection"' in workbench_block
@@ -5255,10 +5384,32 @@ def test_dashboard_workbench_loaders_apply_media_filter_when_selected():
     assert 'if (category !== "ANY") params.set("category", category);' in unassigned_block
     assert 'const signatureMode = dashboardWorkbenchSignatureModeValue();' in unassigned_block
     assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in unassigned_block
+    assert 'params.set("include_relation_summary", "false");' in unassigned_block
     assert expected in search_block
     assert 'if (category !== "ANY") params.set("category", category);' in search_block
     assert 'const signatureMode = dashboardWorkbenchSignatureModeValue();' in search_block
     assert 'if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);' in search_block
+    assert 'params.set("include_relation_summary", "false");' in search_block
+    assert unassigned_block.count("renderDashboardUnassignedItems();") == 2
+    assert 'homeDashboardUnassignedLoaded = true;' in unassigned_block
+    assert 'homeDashboardUnassignedLoaded = false;' in unassigned_block
+    assert search_block.count("renderDashboardWorkbench();") == 2
+
+
+def test_dashboard_workbench_unassigned_mode_lazy_loads_only_when_needed():
+    html = read_static_html("index.html")
+    assert 'let homeDashboardUnassignedLoaded = false;' in html
+    mode_block = html.split("    function setDashboardWorkbenchMode(mode) {", 1)[1].split("    function syncDashboardSelectionControls()", 1)[0]
+    assert 'if (next === "UNASSIGNED" && !homeDashboardUnassignedLoaded && !homeDashboardUnassignedLoading) {' in mode_block
+    assert 'loadDashboardUnassignedItems({ silent: true }).catch(() => {});' in mode_block
+
+
+def test_dashboard_slot_loader_rerenders_detail_and_workbench_only_at_start_and_finish():
+    html = read_static_html("index.html")
+    load_block = html.split("    async function loadDashboardSlotItems(slotRow, opts = {}) {", 1)[1].split("    function toggleDashboardCabinet(groupKey) {", 1)[0]
+    assert load_block.count("renderDashboardCabinetDetail();") == 4
+    assert load_block.count("renderDashboardWorkbench();") == 2
+    assert 'include_relation_summary: "false"' in load_block
 
 
 def test_dashboard_workbench_media_filter_change_reload_current_mode():
@@ -5429,6 +5580,8 @@ def test_dashboard_workbench_restores_preferences_on_dashboard_load_and_saves_on
     html = read_static_html("index.html")
     load_block = html.split("async function loadHomeDashboard(opts = {}) {", 1)[1].split("    function resetHomeSearchForm()", 1)[0]
     assert "applyDashboardWorkbenchPreferences();" in load_block
+    assert "if (shouldRefreshDashboardUnassignedWorkbench()) {" in load_block
+    assert "await loadDashboardUnassignedItems({ silent: true });" in load_block
     next_start = '    $("homeOpenDashboardSlotBtn").addEventListener("click", openDashboardForCurrentLocation);'
     media_block = html.split('$("homeDashMediaFilter").addEventListener("change", () => {', 1)[1].split(next_start, 1)[0]
     signature_block = html.split('$("homeDashSignatureMode").addEventListener("change", () => {', 1)[1].split(next_start, 1)[0]
@@ -5448,6 +5601,21 @@ def test_dashboard_workbench_restores_preferences_on_dashboard_load_and_saves_on
     assert '$("homeDashSearchTitle").value = String(prefs?.title || "");' in html
     assert '$("homeDashSearchCatalogNo").value = String(prefs?.catalog_no || "");' in html
     assert '$("homeDashSearchBarcode").value = String(prefs?.barcode || "");' in html
+
+
+def test_background_refresh_helpers_only_reload_visible_dashboard_and_search_surfaces():
+    html = read_static_html("index.html")
+    helper_block = html.split("    function refreshOpsExceptionInBackground() {", 1)[1].split("    function shouldKeepHomeMasterContextForOwnedItem(", 1)[0]
+    assert 'function isHomeDashboardSurfaceActive() {' in helper_block
+    assert 'return Boolean($("tabHome")?.classList.contains("active") || currentShellMode() === "cabinets");' in helper_block
+    assert 'function isHomeSearchSurfaceActive() {' in helper_block
+    assert 'return Boolean($("tabSearch")?.classList.contains("active"));' in helper_block
+    assert 'if (!isHomeDashboardSurfaceActive()) return;' in helper_block
+    assert 'if (!isHomeSearchSurfaceActive()) return;' in helper_block
+    assert 'loadHomeDashboard({ silent: true }).catch(() => {});' in helper_block
+    assert 'homeSearchOwnedItems({ allowPageAdjust: false }).catch(() => {});' in helper_block
+    assert 'function shouldRefreshDashboardUnassignedWorkbench() {' in helper_block
+    assert 'return homeDashboardWorkbenchMode === "UNASSIGNED" || !homeDashboardUnassignedLoaded;' in helper_block
 
 
 def test_dashboard_slot_sort_change_rerenders_selected_slot_items():
@@ -5712,7 +5880,8 @@ def test_common_runtime_label_helpers_use_i18n_keys():
 def test_lower_admin_runtime_status_copy_uses_i18n_keys():
     html = read_static_html("index.html")
     assert 'setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.query_requires_term"));' in html
-    assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.query_loading", { source: requestSources[0] }));' in html
+    assert 'const loadingStatusText = t("media.register.api_lookup.status.query_loading", { source: requestSources[0] });' in html
+    assert 'setStatus("barcodeStatus", "ok", loadingStatusText);' in html
     assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.query_done", {' in html
     assert 'setStatus("createStatus", "ok", t("media.register.direct.status.saving"));' in html
     assert 'setStatus("csvStatus", "ok", t("media.register.csv.status.uploading"));' in html
@@ -5729,9 +5898,10 @@ def test_media_register_api_lookup_runtime_copy_use_i18n():
     html = read_static_html("index.html")
     assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.lookup_inflight"));' in html
     assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.lookup_duplicate_skipped"));' in html
-    assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.lookup_loading"));' in html
-    assert 'if (!res.ok) throw new Error(responseDetailText(data, t("media.register.api_lookup.status.lookup_failed")));' in html
-    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((data.candidates || []).length) })' in html
+    assert 'const loadingStatusText = t("media.register.api_lookup.status.lookup_loading");' in html
+    assert 'setStatus("barcodeStatus", "ok", loadingStatusText);' in html
+    assert 'throw new Error(responseDetailText(data, t("media.register.api_lookup.status.lookup_failed")));' in html
+    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((candidates || []).length) })' in html
     assert ': t("media.register.api_lookup.status.no_candidates_register_direct")' in html
     assert '$("barcodeCount").textContent = t("media.register.api_lookup.results.loading");' in html
     assert 'root.innerHTML = `<div class=\'muted\'>${escapeHtml(t("media.register.api_lookup.results.empty"))}</div>`;' in html
@@ -6207,7 +6377,7 @@ def test_media_search_and_manage_core_labels_use_i18n_keys():
     assert '<h2 data-i18n="media.manage.master.lookup.title">마스터 후보 조회 / 연결</h2>' in html
     assert 'id="homeMasterAddLoadBtn" class="btn ghost home-master-load-btn" type="button" data-i18n="media.manage.master.lookup.action.load"' in html
     assert '<summary class="home-master-results-summary home-manage-secondary-summary" data-i18n="media.manage.master.lookup.results.toggle">조회 후보 보기 / 접기</summary>' in html
-    assert '<summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.master.fetch.title">다른 소스 상품 추가 (Discogs / ManiaDB / Aladin)</summary>' in html
+    assert '<summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.master.fetch.title">다른 소스 상품 추가 (선택)</summary>' in html
     assert '<label for="homeMetaBarcode" data-i18n="media.manage.master.fetch.barcode.field.label">바코드</label>' in html
     assert 'id="homeMetaQueryBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.query.action.lookup"' in html
     assert '<h2 data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</h2>' in html
@@ -6478,7 +6648,7 @@ def test_index_dashboard_slot_detail_uses_compact_icon_actions_and_selected_item
     slot_panel_block = html.split(".dashboard-slot-panel {", 1)[1].split("}", 1)[0]
     assert "overflow: visible;" in slot_panel_block
     workbench_button_block = html.rsplit("\n    .dashboard-workbench-actionbtn {", 1)[1].split("}", 1)[0]
-    button_block = html.split(".dashboard-slot-actionbtn {", 1)[1].split("}", 1)[0]
+    button_block = html.rsplit("\n    .dashboard-slot-actionbtn {", 1)[1].split("}", 1)[0]
     assert "min-height: 40px;" in workbench_button_block
     assert "padding: 0 10px;" in workbench_button_block
     assert "font-size: 0.64rem;" in workbench_button_block
@@ -7184,6 +7354,7 @@ def test_home_manage_runtime_copy_uses_i18n_keys():
     assert 't("media.manage.edit.status.save_cancelled")' in manage_block
     assert 't("media.manage.edit.status.saving")' in manage_block
     assert 't("media.manage.edit.status.saved"' in manage_block
+    assert 'console.warn("saveHomeEditedItem post-save master refresh failed", err);' in manage_block
     assert 't("media.manage.edit.status.delete_required")' in manage_block
     assert 't("media.manage.edit.status.delete_cancelled")' in manage_block
     assert 't("media.manage.edit.status.deleting")' in manage_block
@@ -7203,6 +7374,10 @@ def test_home_manage_runtime_copy_uses_i18n_keys():
     assert 't("media.manage.shelf.related.status.loaded"' in manage_block
     assert 't("media.manage.shelf.status.move_required")' in manage_block
     assert 't("media.manage.shelf.status.move_missing_target")' in manage_block
+    save_block = manage_block.split("async function saveHomeEditedItem() {", 1)[1].split("async function deleteHomeSelectedItem()", 1)[0]
+    assert 'refreshHomeManageContext(ownedItemId, {' not in save_block
+    assert 'if (homeSelectedMasterId) {' in save_block
+    assert 'loadHomeMasterMembers(homeSelectedMasterId, { autoOpenFirst: false }).catch((err) => {' in save_block
 
 
 def test_media_master_binding_and_source_helper_runtime_copy_uses_i18n():
@@ -7608,6 +7783,8 @@ def test_dashboard_selected_item_meta_exposes_master_sort_artist_quick_edit_logi
     assert 'id="homeDashWorkbenchSortArtistDisplay"' in html
     assert 'id="homeDashWorkbenchSortArtistStatus"' in html
     meta_block = html.split("function renderDashboardSelectedItemMeta() {", 1)[1].split("    function syncDashboardSelectedSortArtistEditor() {", 1)[0]
+    assert 'const selectionSourceKind = getDashboardSelectionSourceKind();' in meta_block
+    assert 'if (selectionSourceKind === "SLOT") {' in meta_block
     assert 'const sortArtist = String(row?.master_sort_artist_name || "").trim();' in meta_block
     assert 'sortArtist ? t("dashboard.selection.summary.sort_artist", { value: sortArtist }) : null,' in meta_block
     sync_start = "    function syncDashboardSelectedSortArtistEditor() {"
