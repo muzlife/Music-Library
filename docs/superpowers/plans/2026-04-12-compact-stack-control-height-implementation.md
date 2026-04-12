@@ -18,12 +18,12 @@
 
 ---
 
-### Task 1: Add Regression Test for Scoped Control Height Rules
+### Task 1: Expand Existing Regression Test for Scoped Control Height Rules
 
 **Files:**
 - Modify: `/Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Expand the existing failing test**
 
 ```python
 def test_compact_stack_actions_control_height_rules():
@@ -37,8 +37,10 @@ def test_compact_stack_actions_control_height_rules():
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn.tiny" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
     assert "min-height: var(--compact-control-height);" in html
-    assert ".compact-stack-actions--equal" in html
-    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in html
+    linked_goods = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
+    assert 'class="compact-stack-actions compact-stack-actions--equal"' in linked_goods
+    assert ".compact-stack-actions--equal {" in html
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in html.split(".compact-stack-actions--equal", 1)[1]
     assert ".compact-stack-actions textarea" not in html
     assert ".compact-stack-actions input[type=\"checkbox\"]" not in html
     assert ".compact-stack-actions input[type=\"radio\"]" not in html
