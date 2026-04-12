@@ -24,7 +24,7 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 ### Desktop (>= 1200px)
 - Left sidebar width: **180–200px**
 - Top-level nav items: Dashboard / Media / Collectibles / Ops
-- Header row minimized (context label + utility actions only)
+- Header row minimized (page context label + help + notifications/user menu if present)
 
 ### Medium (761–1199px)
 - Sidebar becomes **icon-only**
@@ -48,7 +48,7 @@ Move the top-level navigation (Dashboard / Media / Collectibles / Ops) into a le
 - Drawer uses `role="dialog"` + `aria-modal="true"` and returns focus to the menu button on close.
 - Icon-only mode includes `aria-label`, tooltip text, and `aria-current="page"` on the active item.
 - Tooltips appear on hover and keyboard focus.
-- Drawer mode traps focus and closes on `Esc` or scrim click; focus returns to the menu button.
+- Drawer mode traps focus and closes on `Esc` or scrim click.
 - Background scroll is locked while the drawer is open.
 
 ## Acceptance Criteria
