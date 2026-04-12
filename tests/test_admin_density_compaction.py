@@ -81,6 +81,8 @@ def test_compact_stack_actions_control_height_rules():
     assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in equal_block
     assert "min-width: 0;" in equal_child_block
     assert "width: 100%;" in equal_button_block
+    block_760 = html.split("@media (max-width: 760px)", 1)[1].split("@media", 1)[0]
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal { grid-template-columns: 1fr; }" in block_760
     assert ".compact-stack-actions textarea" not in html
     assert ".compact-stack-actions input[type=\"checkbox\"]" not in html
     assert ".compact-stack-actions input[type=\"radio\"]" not in html
