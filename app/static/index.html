@@ -2281,21 +2281,26 @@
     }
 
     body[data-shell-mode="admin"] {
-      --compact-control-height: 28px;
+      --compact-control-height: 32px;
+      --compact-control-pad: 6px 10px;
+      --compact-label-size: 0.72rem;
+      --compact-font-size: 0.82rem;
+      --compact-gap: 6px;
+      --compact-line-height: 1.25;
     }
 
     body[data-shell-mode="admin"] label {
-      font-size: 0.68rem;
+      font-size: var(--compact-label-size);
       margin-bottom: 1px;
     }
 
     body[data-shell-mode="admin"] input,
     body[data-shell-mode="admin"] select,
     body[data-shell-mode="admin"] textarea {
-      min-height: 28px;
-      padding: 2px 6px;
-      font-size: 0.86rem;
-      line-height: 1.1;
+      min-height: var(--compact-control-height);
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
     }
 
     body[data-shell-mode="admin"] input[type="checkbox"],
@@ -2309,9 +2314,10 @@
     }
 
     body[data-shell-mode="admin"] .btn {
-      min-height: 32px;
-      padding: 0 10px;
-      font-size: 0.86rem;
+      min-height: var(--compact-control-height);
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
     }
 
     body[data-shell-mode="admin"] .btn.tiny {
@@ -2320,24 +2326,48 @@
       font-size: 0.66rem;
     }
 
+    body[data-shell-mode="admin"] .tab-btn {
+      min-height: var(--compact-control-height);
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
+    }
+
+    body[data-shell-mode="admin"] .dashboard-slot-viewbtn {
+      min-height: var(--compact-control-height);
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
+    }
+
+    body[data-shell-mode="admin"] .page-help-trigger {
+      min-height: var(--compact-control-height);
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
+    }
+
     body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
     body[data-shell-mode="admin"] .compact-stack-actions select {
       min-height: var(--compact-control-height);
-      padding: 2px 6px;
-      line-height: 1.1;
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
     }
 
     body[data-shell-mode="admin"] .compact-stack-actions button,
     body[data-shell-mode="admin"] .compact-stack-actions .btn {
       min-height: var(--compact-control-height);
-      padding: 2px 8px;
-      line-height: 1.1;
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
     }
 
     body[data-shell-mode="admin"] .compact-stack-actions .btn.tiny {
       min-height: var(--compact-control-height);
-      padding: 2px 8px;
-      line-height: 1.1;
+      padding: var(--compact-control-pad);
+      font-size: var(--compact-font-size);
+      line-height: var(--compact-line-height);
     }
 
     body[data-shell-mode="admin"] .compact-stack-actions .compact-line {
@@ -2349,7 +2379,7 @@
     body[data-shell-mode="admin"] .compact-stack-actions--equal {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 6px;
+      gap: var(--compact-gap);
       align-items: center;
     }
 
@@ -2363,12 +2393,12 @@
     }
 
     body[data-shell-mode="admin"] .section-divider {
-      margin: 6px 0 4px;
+      margin: var(--compact-gap) 0 4px;
       padding-top: 4px;
     }
 
     body[data-shell-mode="admin"] .card {
-      padding: 6px;
+      padding: var(--compact-gap);
     }
 
     body[data-shell-mode="admin"] .grid,
@@ -2377,7 +2407,20 @@
     body[data-shell-mode="admin"] .home-edit-grid-6,
     body[data-shell-mode="admin"] .home-search-grid-top,
     body[data-shell-mode="admin"] .home-search-grid-bottom {
-      gap: 4px;
+      gap: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] .ops-compact-form-grid,
+    body[data-shell-mode="admin"] .ops-compact-form-row,
+    body[data-shell-mode="admin"] .compact-stack,
+    body[data-shell-mode="admin"] .compact-stack-grid,
+    body[data-shell-mode="admin"] .compact-stack-actions {
+      gap: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] .ops-compact-extra-fields {
+      margin-top: var(--compact-gap);
+      padding: var(--compact-gap) calc(var(--compact-gap) + 2px);
     }
 
     .row {
