@@ -1,7 +1,7 @@
 # Compact Stack Control Height Alignment Design
 
 ## Summary
-Unify the vertical height of inputs and buttons inside `.compact-stack-actions` by aligning everything to the input field height. This removes the visual mismatch seen in the “등록 방식” row and similar action rows across the admin/manage UI.
+Unify the vertical height of inputs and buttons inside `.compact-stack-actions` by aligning everything to the input field height. This removes the visual mismatch seen in the “등록 방식” row and similar action rows across admin/manage views only.
 
 ## Goals
 - Make input/select/button heights match within `.compact-stack-actions`.
@@ -13,17 +13,17 @@ Unify the vertical height of inputs and buttons inside `.compact-stack-actions` 
 - Redesign spacing or typography globally.
 
 ## Design Approach
-Introduce a scoped control-height token and apply it only inside `.compact-stack-actions` to avoid side effects.
+Introduce a scoped control-height token and apply it only inside `body[data-shell-mode="admin"] .compact-stack-actions` to avoid side effects outside admin/manage views.
 
 ### CSS tokens
-- Default: `--compact-control-height: 30px`
-- Admin mode: `--compact-control-height: 28px`
+- Admin/manage mode: `--compact-control-height: 28px`
 
 ### Scoped rules
-Within `.compact-stack-actions`:
-- `input`, `select`, `textarea` get `min-height` and consistent padding
+Within `body[data-shell-mode="admin"] .compact-stack-actions`:
+- `input` (excluding checkbox/radio/file/hidden), `select` get `min-height` and consistent padding
 - `button`, `.btn` use `min-height` and padding tuned to match input height
-- `.compact-line` is vertically centered and uses the same `min-height`
+- `.compact-line` is vertically centered and uses the same `min-height` for single-line alignment
+  - It may grow vertically when content wraps
 
 ### Layout intent
 - Buttons should be visually the same height as adjacent inputs.
@@ -31,14 +31,15 @@ Within `.compact-stack-actions`:
 - Preserve existing horizontal spacing and alignment.
 
 ## Affected Areas
-- All `.compact-stack-actions` blocks, including:
+- All admin/manage `.compact-stack-actions` blocks, including:
   - Collector/linked goods registration method row
   - Product relation action rows
-  - Any other compact-stack action groups
+  - Collectibles manage mapping/action rows
 
 ## Acceptance Criteria
-- Within any `.compact-stack-actions` container, input fields and buttons appear same height.
-- No change to control sizes outside `.compact-stack-actions`.
+- Within any admin/manage `.compact-stack-actions` container, input fields and buttons appear same height.
+- `.compact-line` aligns to the same single-line height but can grow with wrapped content.
+- No change to control sizes outside `body[data-shell-mode="admin"] .compact-stack-actions`.
 - 1080px and 760px widths render without overlap or clipping.
 
 ## Risks / Mitigations
@@ -47,4 +48,8 @@ Within `.compact-stack-actions`:
 
 ## Verification
 - Add a regression test in `tests/test_admin_density_compaction.py` to assert presence of the new scoped CSS rules.
-- Manual visual check at 1080px and 760px on admin/manage views.
+- Add a negative assertion that global input/button sizing is unchanged (no unscoped selector).
+- Manual visual check at 1080px and 760px on admin/manage views:
+  - Linked goods “등록 방식”
+  - Product relation action rows
+  - Collectibles manage mapping/action rows
