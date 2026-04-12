@@ -66,9 +66,9 @@ body[data-shell-mode="admin"] {
 }
 ```
 
-- [ ] **Step 2: Add scoped rules for compact-stack-actions**
+- [ ] **Step 2: Add scoped rules for compact-stack-actions (after admin .btn overrides)**
 
-Add rules near `.compact-stack-actions`:
+Place the scoped rules **after** the admin `.btn` / `.btn.tiny` overrides (so they win the cascade), or explicitly add an override for `.compact-stack-actions .btn.tiny`. Prefer placing the block after the admin overrides to keep specificity low and predictable.
 ```css
 body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
 body[data-shell-mode="admin"] .compact-stack-actions select {
@@ -79,6 +79,12 @@ body[data-shell-mode="admin"] .compact-stack-actions select {
 
 body[data-shell-mode="admin"] .compact-stack-actions button,
 body[data-shell-mode="admin"] .compact-stack-actions .btn {
+  min-height: var(--compact-control-height);
+  padding: 2px 8px;
+  line-height: 1.1;
+}
+
+body[data-shell-mode="admin"] .compact-stack-actions .btn.tiny {
   min-height: var(--compact-control-height);
   padding: 2px 8px;
   line-height: 1.1;
