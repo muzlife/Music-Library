@@ -8140,6 +8140,14 @@ def test_primary_navigation_moves_to_left_sidebar():
     assert "nav.collectibles" in html
     assert "nav.ops" in html
     assert 'aria-current="page"' in html
+    nav_block = html.split('<nav class="primary-side-nav', 1)[1]
+    nav_block = '<nav class="primary-side-nav' + nav_block
+    nav_block = nav_block.split("</nav>", 1)[0]
+    assert "nav.dashboard" in nav_block
+    assert "nav.media" in nav_block
+    assert "nav.collectibles" in nav_block
+    assert "nav.ops" in nav_block
+    assert 'aria-current="page"' in nav_block
 
 
 def test_sidebar_responsive_states_defined():
@@ -8148,6 +8156,9 @@ def test_sidebar_responsive_states_defined():
     assert "@media (max-width: 760px)" in html
     assert "primary-side-nav--icon" in html
     assert "primary-side-drawer" in html
+    icon_chunk = html.split("@media (max-width: 1199px)", 1)[1]
+    icon_chunk = icon_chunk.split("@media", 1)[0]
+    assert "primary-side-nav--icon" in icon_chunk
 
 
 def test_sidebar_drawer_menu_button_accessibility():
@@ -8157,3 +8168,8 @@ def test_sidebar_drawer_menu_button_accessibility():
     assert "data-nav-tooltip" in html
     assert "role=\"dialog\"" in html
     assert 'aria-modal="true"' in html
+    drawer_block = html.split('class="primary-side-drawer', 1)[1]
+    drawer_block = 'class="primary-side-drawer' + drawer_block
+    drawer_block = drawer_block.split(">", 1)[0]
+    assert "role=\"dialog\"" in drawer_block
+    assert 'aria-modal="true"' in drawer_block
