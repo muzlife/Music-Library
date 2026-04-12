@@ -508,6 +508,41 @@
       margin-top: 2px;
     }
 
+    .admin-shell-hero--nav-only,
+    .ops-home-hero--nav-only {
+      margin: 6px 0 8px;
+      padding: 6px 10px;
+      border-radius: 14px;
+      gap: 6px;
+    }
+
+    .admin-shell-hero--nav-only::before,
+    .admin-shell-hero--nav-only::after,
+    .ops-home-hero--nav-only::before,
+    .ops-home-hero--nav-only::after {
+      display: none;
+    }
+
+    .admin-shell-hero--nav-only .admin-shell-copy,
+    .ops-home-hero--nav-only .ops-home-hero-copy,
+    .admin-shell-hero--nav-only .admin-shell-hero-art,
+    .ops-home-hero--nav-only .ops-home-hero-art,
+    .admin-shell-hero--nav-only .admin-shell-hero-side,
+    .ops-home-hero--nav-only .ops-home-hero-side,
+    .admin-shell-hero--nav-only .admin-shell-kicker,
+    .ops-home-hero--nav-only .ops-home-hero-kicker,
+    .admin-shell-hero--nav-only h1,
+    .ops-home-hero--nav-only h1,
+    .admin-shell-hero--nav-only p,
+    .ops-home-hero--nav-only p {
+      display: none;
+    }
+
+    .admin-shell-hero--nav-only .admin-shell-row,
+    .ops-home-hero--nav-only .shell-header-row {
+      margin-top: 0;
+    }
+
     .home-master-danger-zone {
       margin-top: 10px;
       padding: 12px 14px;
@@ -10644,7 +10679,7 @@
 </head>
 <body data-shell-mode="ops" data-shell-readonly="true">
   <div class="wrap">
-    <header id="appHero" class="hero admin-shell-hero">
+    <header id="appHero" class="hero admin-shell-hero admin-shell-hero--nav-only">
       <div class="admin-shell-hero-main">
         <div class="admin-shell-hero-head">
           <div class="admin-shell-copy">
@@ -10673,7 +10708,7 @@
       </div>
     </header>
 
-    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">
+    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">
       <div class="ops-home-hero-main">
         <div class="ops-home-hero-copy">
           <span class="ops-home-hero-kicker" data-i18n="shell.ops.kicker">Operator Home</span>
@@ -10713,11 +10748,6 @@
 
     <div id="shellUtilityBar" class="shell-utility" style="display:none;">
       <div class="shell-utility-tools shell-utility-tools--meta">
-        <div class="shell-doc-links admin-shell-docs">
-          <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
-          <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
-          <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
-        </div>
         <label class="shell-locale-picker" for="shellLocaleSelect">
           <span id="shellLocaleLabel" data-i18n="utility.language">언어</span>
           <select id="shellLocaleSelect" aria-label="language selector">
@@ -24325,10 +24355,13 @@
       setDisplayIfPresent("adminUtilityMainMount", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       setDisplayIfPresent("opsUtilityMainMount", authenticated && mode !== "admin" ? "flex" : "none");
       setDisplayIfPresent("tabSimpleBtn", authenticated ? "inline-flex" : "none");
-      setDisplayIfPresent("tabCameraBtn", authenticated ? "inline-flex" : "none");
+      setDisplayIfPresent("tabCameraBtn", authenticated && mode !== "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
+      setDisplayIfPresent("appSessionInfo", "none");
+      setDisplayIfPresent("appPrefsResetBtn", "none");
+      setDisplayIfPresent("appLogoutBtn", "none");
       setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       syncShellButtons();
       syncShellDensityClasses();
