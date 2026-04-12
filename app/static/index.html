@@ -60,177 +60,6 @@
       margin: 8px auto 16px;
     }
 
-    .primary-shell {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .primary-shell-main {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .primary-side-nav-slot {
-      width: 220px;
-      flex: 0 0 220px;
-    }
-
-    .primary-side-nav {
-      position: sticky;
-      top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 12px;
-      border-radius: 16px;
-      border: 1px solid #dbe7e1;
-      background: rgba(255,255,255,0.92);
-      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06);
-    }
-
-    .primary-side-nav__list {
-      display: grid;
-      gap: 6px;
-    }
-
-    .primary-side-nav .tab-btn {
-      width: 100%;
-      justify-content: flex-start;
-      text-align: left;
-      padding: 7px 10px;
-      border-radius: 10px;
-    }
-
-    .primary-side-subnav {
-      display: grid;
-      gap: 10px;
-    }
-
-    .primary-side-subnav__group {
-      display: grid;
-      gap: 4px;
-    }
-
-    .primary-side-subnav__label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #64748b;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .primary-side-subnav button {
-      border: 1px solid #e2e8f0;
-      background: rgba(255,255,255,0.86);
-      font-size: 0.82rem;
-      padding: 6px 10px;
-      border-radius: 9px;
-      text-align: left;
-      color: #1e293b;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .primary-side-subnav button.active {
-      background: #0f766e;
-      border-color: #0f766e;
-      color: #f0fdfa;
-    }
-
-    .primary-side-docs {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid #e2e8f0;
-      display: grid;
-      gap: 6px;
-    }
-
-    .primary-side-docs__label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #64748b;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .primary-side-docs a {
-      font-size: 0.78rem;
-      color: #475569;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .primary-side-docs a:hover {
-      color: #0f766e;
-    }
-
-    .primary-side-toggle {
-      display: none;
-    }
-
-    body[data-shell-mode="ops"] .primary-side-nav-slot {
-      display: none;
-    }
-
-    body[data-shell-mode="ops"] .primary-shell {
-      display: block;
-    }
-
-    .primary-side-drawer {
-      position: fixed;
-      inset: 0;
-      z-index: 3000;
-    }
-
-    .primary-side-drawer__overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.32);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    .primary-side-drawer__panel {
-      position: absolute;
-      top: 0;
-      right: 0;
-      height: 100%;
-      width: min(320px, 86vw);
-      background: #fff;
-      padding: 18px;
-      box-shadow: -12px 0 24px rgba(15, 23, 42, 0.2);
-      transform: translateX(100%);
-      transition: transform 0.2s ease;
-      display: grid;
-      gap: 12px;
-      overflow-y: auto;
-    }
-
-    .primary-side-drawer.open .primary-side-drawer__overlay {
-      opacity: 1;
-    }
-
-    .primary-side-drawer.open .primary-side-drawer__panel {
-      transform: translateX(0);
-    }
-
-    @media (max-width: 760px) {
-      .primary-shell {
-        display: block;
-      }
-
-      .primary-side-nav-slot {
-        display: none;
-      }
-
-      .primary-side-toggle {
-        display: inline-flex;
-      }
-
-      body[data-shell-mode="admin"] .compact-stack-actions--equal { grid-template-columns: 1fr; }
-    }
-
     .hero {
       background: linear-gradient(130deg, #0f766e, #155e75);
       color: #f0fdfa;
@@ -677,41 +506,6 @@
 
     .admin-shell-hero--compact .admin-shell-row {
       margin-top: 2px;
-    }
-
-    .admin-shell-hero--nav-only,
-    .ops-home-hero--nav-only {
-      margin: 6px 0 8px;
-      padding: 6px 10px;
-      border-radius: 14px;
-      gap: 6px;
-    }
-
-    .admin-shell-hero--nav-only::before,
-    .admin-shell-hero--nav-only::after,
-    .ops-home-hero--nav-only::before,
-    .ops-home-hero--nav-only::after {
-      display: none;
-    }
-
-    .admin-shell-hero--nav-only .admin-shell-copy,
-    .ops-home-hero--nav-only .ops-home-hero-copy,
-    .admin-shell-hero--nav-only .admin-shell-hero-art,
-    .ops-home-hero--nav-only .ops-home-hero-art,
-    .admin-shell-hero--nav-only .admin-shell-hero-side,
-    .ops-home-hero--nav-only .ops-home-hero-side,
-    .admin-shell-hero--nav-only .admin-shell-kicker,
-    .ops-home-hero--nav-only .ops-home-hero-kicker,
-    .admin-shell-hero--nav-only h1,
-    .ops-home-hero--nav-only h1,
-    .admin-shell-hero--nav-only p,
-    .ops-home-hero--nav-only p {
-      display: none;
-    }
-
-    .admin-shell-hero--nav-only .admin-shell-row,
-    .ops-home-hero--nav-only .shell-header-row {
-      margin-top: 0;
     }
 
     .home-master-danger-zone {
@@ -10850,51 +10644,7 @@
 </head>
 <body data-shell-mode="ops" data-shell-readonly="true">
   <div class="wrap">
-    <div class="primary-shell">
-      <div class="primary-side-nav-slot" data-primary-nav-slot>
-        <nav class="primary-side-nav" aria-label="Primary">
-          <div id="adminTabs" class="tabs primary-side-nav__list" style="display:none;">
-            <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
-            <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
-            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
-            <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
-            <button id="tabCameraNavBtn" class="tab-btn" type="button" data-i18n="utility.camera">카메라</button>
-          </div>
-          <div class="primary-side-subnav" data-primary-subnav style="display:none;">
-            <div class="primary-side-subnav__group" data-primary-subnav-group="media">
-              <span class="primary-side-subnav__label" data-i18n="nav.media">미디어</span>
-              <button type="button" data-primary-subnav-action="media:search" data-i18n="media.mode.search">검색</button>
-              <button type="button" data-primary-subnav-action="media:manage" data-i18n="media.mode.manage">관리</button>
-              <button type="button" data-primary-subnav-action="media:register" data-i18n="media.mode.register">등록/수집</button>
-              <button type="button" data-primary-subnav-action="media:source" data-i18n="media.mode.source">소스 보강</button>
-            </div>
-            <div class="primary-side-subnav__group" data-primary-subnav-group="collectibles">
-              <span class="primary-side-subnav__label" data-i18n="nav.collectibles">컬렉터블</span>
-              <button type="button" data-primary-subnav-action="collectibles:search" data-i18n="collectibles.mode.search">컬렉터블 검색</button>
-              <button type="button" data-primary-subnav-action="collectibles:manage" data-i18n="collectibles.mode.manage">컬렉터블 관리</button>
-              <button type="button" data-primary-subnav-action="collectibles:register" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
-            </div>
-            <div class="primary-side-subnav__group" data-primary-subnav-group="ops">
-              <span class="primary-side-subnav__label" data-i18n="nav.ops">운영/연계</span>
-              <button type="button" data-primary-subnav-action="ops:cabinet" data-i18n="ops.subtab.cabinet">장식장</button>
-              <button type="button" data-primary-subnav-action="ops:slot" data-i18n="ops.subtab.slot">슬롯</button>
-              <button type="button" data-primary-subnav-action="ops:exception" data-i18n="ops.subtab.exception">예외 큐</button>
-              <button type="button" data-primary-subnav-action="ops:account" data-i18n="ops.subtab.account">계정</button>
-              <button type="button" data-primary-subnav-action="ops:providers" data-i18n="ops.subtab.providers">연동/API 설정</button>
-              <button type="button" data-primary-subnav-action="ops:export" data-i18n="ops.subtab.export">백업/내보내기</button>
-              <button type="button" data-primary-subnav-action="ops:metasync" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
-            </div>
-          </div>
-          <div class="primary-side-docs" data-primary-docs style="display:none;">
-            <span class="primary-side-docs__label" data-i18n="shell.admin.docs_label">문서</span>
-            <a href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
-            <a href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
-            <a href="/tool-docs/manual" target="_blank" rel="noreferrer" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
-          </div>
-        </nav>
-      </div>
-      <div class="primary-shell-main">
-    <header id="appHero" class="hero admin-shell-hero admin-shell-hero--nav-only">
+    <header id="appHero" class="hero admin-shell-hero">
       <div class="admin-shell-hero-main">
         <div class="admin-shell-hero-head">
           <div class="admin-shell-copy">
@@ -10912,12 +10662,18 @@
           </div>
         </div>
         <div class="shell-header-row admin-shell-row">
+          <div id="adminTabs" class="tabs" style="display:none;">
+            <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
+            <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
+            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
+            <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
+          </div>
           <div id="adminUtilityMainMount" class="utility-main-mount"></div>
         </div>
       </div>
     </header>
 
-    <section id="opsHomeHero" class="ops-home-hero ops-home-hero--nav-only" style="display:none;">
+    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">
       <div class="ops-home-hero-main">
         <div class="ops-home-hero-copy">
           <span class="ops-home-hero-kicker" data-i18n="shell.ops.kicker">Operator Home</span>
@@ -10957,6 +10713,11 @@
 
     <div id="shellUtilityBar" class="shell-utility" style="display:none;">
       <div class="shell-utility-tools shell-utility-tools--meta">
+        <div class="shell-doc-links admin-shell-docs">
+          <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
+          <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
+          <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
+        </div>
         <label class="shell-locale-picker" for="shellLocaleSelect">
           <span id="shellLocaleLabel" data-i18n="utility.language">언어</span>
           <select id="shellLocaleSelect" aria-label="language selector">
@@ -10968,7 +10729,6 @@
       </div>
       <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
         <span id="appSessionInfo" class="chip" style="display:none;"></span>
-        <button id="shellNavToggleBtn" class="tab-btn primary-side-toggle" type="button" aria-label="Open navigation" aria-controls="primarySideDrawer" aria-expanded="false" aria-haspopup="dialog">메뉴</button>
         <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.admin">관리</button>
         <button id="tabCameraBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.camera">카메라</button>
         <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;" data-i18n="utility.reset_defaults" data-i18n-title="utility.reset_defaults_title">기본값 초기화</button>
@@ -10977,10 +10737,6 @@
       </div>
     </div>
 
-    <div id="primarySideDrawer" class="primary-side-drawer" hidden>
-      <div class="primary-side-drawer__overlay" data-nav-drawer-close></div>
-      <div id="primarySideDrawerPanel" class="primary-side-drawer__panel" role="dialog" aria-modal="true" tabindex="-1"></div>
-    </div>
     <div id="pageHelpOverlay" class="page-help-overlay" hidden></div>
     <aside id="pageHelpDrawer" class="page-help-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="pageHelpTitle" data-i18n-aria-label="page_help.dialog_label">
       <div class="page-help-drawer-head">
@@ -13987,6 +13743,7 @@
       <div class="subtabs">
         <button id="opsCabinetTabBtn" class="subtab-btn active" type="button" data-i18n="ops.subtab.cabinet">장식장</button>
         <button id="opsSlotTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.slot">슬롯</button>
+        <button id="opsCameraTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.camera">카메라</button>
         <button id="opsExceptionTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.exception">예외 큐</button>
         <button id="opsAccountTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.account">계정</button>
         <button id="opsProviderTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.providers">연동/API 설정</button>
@@ -14802,10 +14559,6 @@
 
   <div id="shellBarcodeToast" class="shell-barcode-toast" aria-live="polite"></div>
 
-      </div>
-    </div>
-  </div>
-
   <script>
     const MUSIC_CATEGORIES = new Set(["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"]);
     const SOURCE_MANAGED_CODES = new Set(["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"]);
@@ -14953,7 +14706,6 @@
         "shell.admin.kicker": "Admin Backstage",
         "shell.admin.title": "라이브러리 관리/운영 콘솔",
         "shell.admin.subtitle": "메타 관리, 배치 운영, 소스 보강을 한 화면에서 정리합니다.",
-        "shell.admin.docs_label": "문서",
         "shell.admin.docs_summary": "문서 / ERD / 활용 매뉴얼",
         "shell.admin.docs_body": "운영자용 요약, 개발자용 상세, 화면별 사용 순서를 바로 엽니다.",
         "shell.admin.doc_link.erd_summary": "ERD 요약",
@@ -17426,7 +17178,6 @@
         "shell.admin.kicker": "Admin Backstage",
         "shell.admin.title": "Library Admin Console",
         "shell.admin.subtitle": "Manage metadata, placement operations, and source enrichment in one console.",
-        "shell.admin.docs_label": "Docs",
         "shell.admin.docs_summary": "Docs / ERD / Manuals",
         "shell.admin.docs_body": "Open the operator summary, developer detail, and step-by-step guidance for each screen.",
         "shell.admin.doc_link.erd_summary": "ERD Summary",
@@ -19899,7 +19650,6 @@
         "shell.admin.kicker": "Admin Backstage",
         "shell.admin.title": "ライブラリ管理コンソール",
         "shell.admin.subtitle": "メタ管理、配置運用、ソース補強をひとつの画面で整理します。",
-        "shell.admin.docs_label": "ドキュメント",
         "shell.admin.docs_summary": "ドキュメント / ERD / マニュアル",
         "shell.admin.docs_body": "運用者向け要約、開発者向け詳細、画面ごとの利用手順をここから開きます。",
         "shell.admin.doc_link.erd_summary": "ERD 要約",
@@ -24419,151 +24169,6 @@
       $("opsHomeHero")?.classList.remove("ops-home-hero--compact");
     }
 
-    const PRIMARY_NAV_ITEMS = [
-      { id: "home", btn: "tabHomeBtn" },
-      { id: "media", btn: "tabMediaBtn" },
-      { id: "collectibles", btn: "tabCollectiblesBtn" },
-      { id: "ops", btn: "tabOpsBtn" },
-      { id: "camera", btn: "tabCameraNavBtn" },
-    ];
-    const primaryNavDrawerMedia = window.matchMedia("(max-width: 760px)");
-    const primaryNavDrawerState = {
-      open: false,
-    };
-
-    function primaryNavElements() {
-      return {
-        nav: document.querySelector(".primary-side-nav"),
-        tabs: $("adminTabs"),
-        subnav: document.querySelector("[data-primary-subnav]"),
-        docs: document.querySelector("[data-primary-docs]"),
-        toggle: $("shellNavToggleBtn"),
-        drawer: $("primarySideDrawer"),
-        panel: $("primarySideDrawerPanel"),
-      };
-    }
-
-    function normalizePrimaryNavTab(tab) {
-      const requested = String(tab || "").trim().toLowerCase();
-      if (["search", "manage", "register", "source", "media"].includes(requested)) return "media";
-      if (["goods", "collectibles"].includes(requested)) return "collectibles";
-      if (["home", "ops", "camera"].includes(requested)) return requested;
-      return "";
-    }
-
-    function syncPrimarySubnavActiveState(activePrimary = "") {
-      const subnav = document.querySelector("[data-primary-subnav]");
-      const docs = document.querySelector("[data-primary-docs]");
-      if (docs) {
-        docs.style.display = currentShellMode() === "admin" && isAdminSession(appAuthSession) ? "grid" : "none";
-      }
-      if (currentShellMode() !== "admin" || !isAdminSession(appAuthSession)) {
-        if (subnav) subnav.style.display = "none";
-        return;
-      }
-      document.querySelectorAll("[data-primary-subnav-group]").forEach((group) => {
-        const match = group.getAttribute("data-primary-subnav-group") === activePrimary;
-        group.style.display = match ? "grid" : "none";
-      });
-      if (subnav) subnav.style.display = ["media", "collectibles", "ops"].includes(activePrimary) ? "grid" : "none";
-
-      const setActive = (selector) => {
-        document.querySelectorAll("[data-primary-subnav-action]").forEach((btn) => btn.classList.remove("active"));
-        const target = document.querySelector(`[data-primary-subnav-action="${selector}"]`);
-        if (target) target.classList.add("active");
-      };
-      if (activePrimary === "media") setActive(`media:${mediaMode}`);
-      if (activePrimary === "collectibles") setActive(`collectibles:${goodsMode}`);
-      if (activePrimary === "ops") {
-        const opsMap = {
-          opsCabinetTabBtn: "cabinet",
-          opsSlotTabBtn: "slot",
-          opsExceptionTabBtn: "exception",
-          opsAccountTabBtn: "account",
-          opsProviderTabBtn: "providers",
-          opsExportTabBtn: "export",
-          opsMetaSyncTabBtn: "metasync",
-        };
-        const activeOpsBtn = document.querySelector("#tabOps .subtab-btn.active");
-        const key = opsMap[activeOpsBtn?.id] || "cabinet";
-        setActive(`ops:${key}`);
-      }
-    }
-
-    function syncPrimaryNavActiveState(tab = "") {
-      const explicitTab = normalizePrimaryNavTab(tab);
-      const derivedTab = PRIMARY_NAV_ITEMS.find(({ btn }) => $(btn)?.classList.contains("active"))?.id || "home";
-      const activeTab = explicitTab || derivedTab;
-      PRIMARY_NAV_ITEMS.forEach(({ id, btn }) => {
-        const button = $(btn);
-        if (!button) return;
-        if (currentShellMode() === "admin" && id === activeTab) {
-          button.setAttribute("aria-current", "page");
-        } else {
-          button.removeAttribute("aria-current");
-        }
-      });
-      syncPrimarySubnavActiveState(activeTab);
-    }
-
-    function isPrimaryNavDrawerMode() {
-      return primaryNavDrawerMedia.matches;
-    }
-
-    function closePrimaryNavDrawer(options = {}) {
-      const { drawer, toggle } = primaryNavElements();
-      if (!drawer || !toggle) return;
-      primaryNavDrawerState.open = false;
-      drawer.classList.remove("open");
-      drawer.hidden = true;
-      document.body.classList.remove("nav-drawer-open");
-      toggle.setAttribute("aria-expanded", "false");
-      if (options.restoreFocus === false) return;
-      requestAnimationFrame(() => {
-        toggle.focus();
-      });
-    }
-
-    function openPrimaryNavDrawer() {
-      if (!isPrimaryNavDrawerMode() || currentShellMode() !== "admin") return;
-      const { drawer, panel, toggle } = primaryNavElements();
-      if (!drawer || !panel || !toggle) return;
-      primaryNavDrawerState.open = true;
-      drawer.hidden = false;
-      drawer.classList.add("open");
-      document.body.classList.add("nav-drawer-open");
-      toggle.setAttribute("aria-expanded", "true");
-      requestAnimationFrame(() => {
-        panel.focus();
-      });
-    }
-
-    function togglePrimaryNavDrawer() {
-      if (primaryNavDrawerState.open) {
-        closePrimaryNavDrawer();
-        return;
-      }
-      openPrimaryNavDrawer();
-    }
-
-    function syncPrimaryNavLayout() {
-      const { nav, tabs, subnav, docs, toggle, panel } = primaryNavElements();
-      if (!nav || !tabs || !subnav || !docs || !toggle || !panel) return;
-      if (isPrimaryNavDrawerMode()) {
-        if (tabs.parentElement !== panel) panel.appendChild(tabs);
-        if (subnav.parentElement !== panel) panel.appendChild(subnav);
-        if (docs.parentElement !== panel) panel.appendChild(docs);
-      } else {
-        if (tabs.parentElement !== nav) nav.appendChild(tabs);
-        if (subnav.parentElement !== nav) nav.appendChild(subnav);
-        if (docs.parentElement !== nav) nav.appendChild(docs);
-        if (primaryNavDrawerState.open) {
-          closePrimaryNavDrawer({ restoreFocus: false });
-        }
-      }
-      toggle.setAttribute("aria-expanded", primaryNavDrawerState.open ? "true" : "false");
-    }
-
     const pageHelpDrawerState = {
       open: false,
       helpId: "",
@@ -24708,7 +24313,6 @@
       setTextIfPresent("shellCabinetsBtn", t("nav.cabinets"));
       setTextIfPresent("shellAdminBtn", t("utility.admin"));
       setTextIfPresent("tabCameraBtn", t("utility.camera"));
-      setTextIfPresent("tabCameraNavBtn", t("utility.camera"));
       setTextIfPresent("appPrefsResetBtn", t("utility.reset_defaults"));
       $("appPrefsResetBtn")?.setAttribute("title", t("utility.reset_defaults_title"));
       setTextIfPresent("appLogoutBtn", t("utility.logout"));
@@ -24721,21 +24325,14 @@
       setDisplayIfPresent("adminUtilityMainMount", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       setDisplayIfPresent("opsUtilityMainMount", authenticated && mode !== "admin" ? "flex" : "none");
       setDisplayIfPresent("tabSimpleBtn", authenticated ? "inline-flex" : "none");
-      setDisplayIfPresent("tabCameraBtn", authenticated && mode !== "admin" ? "inline-flex" : "none");
+      setDisplayIfPresent("tabCameraBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
-      setDisplayIfPresent("shellNavToggleBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
-      setDisplayIfPresent("tabCameraNavBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
-      setDisplayIfPresent("appSessionInfo", "none");
-      setDisplayIfPresent("appPrefsResetBtn", "none");
-      setDisplayIfPresent("appLogoutBtn", "none");
-      setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "grid" : "none");
+      setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       syncShellButtons();
       syncShellDensityClasses();
       syncShellUtilityRowSizing();
-      syncPrimaryNavLayout();
-      syncPrimaryNavActiveState();
       syncShellReadonlyState();
     }
 
@@ -24826,7 +24423,6 @@
         { id: "home", btn: "tabHomeBtn", panel: "tabHome" },
         { id: "simple", btn: "tabSimpleBtn", panel: "tabSimple" },
         { id: "camera", btn: "tabCameraBtn", panel: "tabCamera" },
-        { id: "camera", btn: "tabCameraNavBtn", panel: "tabCamera" },
         { id: "media", btn: "tabMediaBtn", panel: "tabMedia" },
         { id: "collectibles", btn: "tabCollectiblesBtn", panel: "tabCollectibles" },
         { id: "ops", btn: "tabOpsBtn", panel: "tabOps" }
@@ -24858,7 +24454,6 @@
         }
       }
       syncShellDensityClasses();
-      syncPrimaryNavActiveState(nextTab);
     }
 
     function switchSubTab(group, tab, options = {}) {
@@ -24873,6 +24468,7 @@
         ],
         ops: [
           { id: "cabinet", btn: "opsCabinetTabBtn", panel: "opsCabinetPanel" },
+          { id: "camera", btn: "opsCameraTabBtn", panel: "opsCameraPanel" },
           { id: "slot", btn: "opsSlotTabBtn", panel: "opsSlotPanel" },
           { id: "exception", btn: "opsExceptionTabBtn", panel: "opsExceptionPanel" },
           { id: "account", btn: "opsAccountTabBtn", panel: "opsAccountPanel" },
@@ -24894,7 +24490,6 @@
       if (remember) {
         saveRoleScopedValue(APP_SUBTAB_MEMORY_KEY, `${group}:${tab}`);
       }
-      syncPrimaryNavActiveState();
     }
 
     function switchMediaMode(mode, options = {}) {
@@ -24903,7 +24498,6 @@
         : "search";
       mediaMode = nextMode;
       syncMediaModeUi();
-      syncPrimaryNavActiveState();
       if (options.remember !== false) {
         saveRoleScopedValue(APP_SUBTAB_MEMORY_KEY, `media:${nextMode}`);
       }
@@ -41286,7 +40880,6 @@
         : "search";
       goodsMode = nextMode;
       syncGoodsModeUi();
-      syncPrimaryNavActiveState();
     }
 
     function syncGoodsModeUi() {
@@ -43758,41 +43351,9 @@
       }
     }
 
-    primaryNavDrawerMedia.addEventListener("change", syncPrimaryNavLayout);
-    document.addEventListener("click", (e) => {
-      if (e.target.closest("[data-nav-drawer-close]")) {
-        closePrimaryNavDrawer();
-      }
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape" || !primaryNavDrawerState.open) return;
-      e.preventDefault();
-      closePrimaryNavDrawer();
-    });
-    document.addEventListener("click", (e) => {
-      const button = e.target.closest("[data-primary-subnav-action]");
-      if (!button) return;
-      const action = String(button.getAttribute("data-primary-subnav-action") || "");
-      const [section, key] = action.split(":");
-      if (section === "media") openAdminConsole(key);
-      if (section === "collectibles") {
-        openAdminConsole("collectibles");
-        switchGoodsMode(key);
-      }
-      if (section === "ops") {
-        openAdminConsole("ops");
-        switchSubTab("ops", key);
-      }
-      if (primaryNavDrawerState.open) {
-        closePrimaryNavDrawer({ restoreFocus: false });
-      }
-    });
-
-    $("shellNavToggleBtn")?.addEventListener("click", togglePrimaryNavDrawer);
     $("tabHomeBtn").addEventListener("click", () => openAdminConsole("home"));
     $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabCameraBtn").addEventListener("click", () => switchMainTab("camera"));
-    $("tabCameraNavBtn")?.addEventListener("click", () => openAdminConsole("camera"));
     $("tabMediaBtn").addEventListener("click", () => openAdminConsole("media"));
     $("tabCollectiblesBtn").addEventListener("click", () => openAdminConsole("collectibles"));
     $("shellCabinetsBtn").addEventListener("click", () => switchShellMode("cabinets"));
@@ -44069,6 +43630,10 @@
       await loadPurchaseImportCandidates(queueId);
     });
     $("opsCabinetTabBtn").addEventListener("click", () => switchSubTab("ops", "cabinet"));
+    $("opsCameraTabBtn").addEventListener("click", async () => {
+      switchSubTab("ops", "camera");
+      await loadOpsCameras({ silent: true });
+    });
     $("opsProviderTabBtn")?.addEventListener("click", async () => {
       switchSubTab("ops", "providers");
       await loadOpsProviderSettings();
