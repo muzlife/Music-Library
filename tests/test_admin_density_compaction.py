@@ -62,7 +62,7 @@ def test_compact_stack_actions_control_height_rules():
     html = read_static_html("index.html")
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions" in html
     assert "--compact-control-height" in html
-    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions input:not([type=\"checkbox\"])" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"file\"]):not([type=\"hidden\"])" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions select" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions button" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn" in html
