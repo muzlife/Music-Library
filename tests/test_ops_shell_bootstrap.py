@@ -2881,9 +2881,12 @@ def test_index_admin_hero_compacts_copy_to_tab_spacing():
     art_block = html.split("\n    .admin-shell-hero-art {\n", 1)[1].split("}", 1)[0]
     header_row_block = html.split(".shell-header-row {", 1)[1].split("}", 1)[0]
     tab_btn_block = html.split("\n    .tab-btn {\n", 1)[1].split("}", 1)[0]
-    assert "padding: 8px 12px;" in hero_block
+    assert "margin: 6px 0 8px;" in hero_block
+    assert "padding: 6px 10px;" in hero_block
+    assert "border-radius: 16px;" in hero_block
     assert "gap: 3px;" in main_block
-    assert "align-items: start;" in head_block
+    assert "grid-template-columns: minmax(0, 1fr) auto;" in head_block
+    assert "align-items: center;" in head_block
     assert "gap: 6px;" in head_block
     assert "gap: 1px;" in copy_block
     assert "gap: 3px;" in side_block
@@ -2907,9 +2910,9 @@ def test_index_ops_home_hero_matches_admin_shell_spacing_tokens():
     ops_h1_block = html.split(".ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
     admin_art_block = html.split(".admin-shell-hero-art {", 2)[2].split("}", 1)[0]
     ops_art_block = html.split(".ops-home-hero-art {", 1)[1].split("}", 1)[0]
-    assert "padding: 8px 12px;" in admin_hero_block
+    assert "padding: 6px 10px;" in admin_hero_block
     assert "padding: 8px 12px;" in ops_hero_block
-    assert "border-radius: 22px;" in admin_hero_block
+    assert "border-radius: 16px;" in admin_hero_block
     assert "border-radius: 22px;" in ops_hero_block
     assert "gap: 3px;" in admin_main_block
     assert "gap: 3px;" in ops_main_block
@@ -2953,7 +2956,8 @@ def test_index_ops_home_header_uses_admin_width_tokens():
     ops_subtitle_block = html.split(".ops-home-hero-copy p {", 1)[1].split("}", 1)[0]
     admin_grid = [line.strip() for line in admin_head_block.splitlines() if "grid-template-columns:" in line][0]
     ops_grid = [line.strip() for line in ops_main_block.splitlines() if "grid-template-columns:" in line][0]
-    assert admin_grid == ops_grid
+    assert admin_grid == "grid-template-columns: minmax(0, 1fr) auto;"
+    assert ops_grid == "grid-template-columns: minmax(0, 1.12fr) minmax(220px, 0.88fr);"
     assert "max-width: 56ch;" in admin_copy_block
     assert "max-width: 56ch;" in ops_copy_block
     assert "max-width: 52ch;" in admin_subtitle_block
@@ -6313,7 +6317,9 @@ def test_operator_title_side_meta_uses_small_runout_sized_text():
 def test_media_search_and_manage_core_labels_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<strong data-i18n="media.title">미디어</strong>' in html
-    assert '<div class="mini" data-i18n="media.subtitle">검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다.</div>' in html
+    assert '<strong data-i18n="media.title">미디어</strong><span class="section-help-dot" tabindex="0" data-help-key="help.media.summary">?</span>' in html
+    assert 'data-i18n="media.subtitle"' not in html
+    assert html.count('"help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다."') == 3
     assert 'id="mediaSearchModeBtn" class="subtab-btn active" type="button" data-i18n="media.mode.search"' in html
     assert 'id="mediaManageModeBtn" class="subtab-btn" type="button" data-i18n="media.mode.manage"' in html
     assert 'id="mediaRegisterModeBtn" class="subtab-btn" type="button" data-i18n="media.mode.register"' in html
