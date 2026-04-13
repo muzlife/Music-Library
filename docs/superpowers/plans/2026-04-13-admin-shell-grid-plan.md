@@ -110,15 +110,13 @@ git commit -m "test: define admin shell grid + ops removal expectations"
 **Files:**
 - Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
 
-- [ ] **Step 1: Move header/nav nodes to be direct grid items**
+- [ ] **Step 1: Move admin header/nav nodes to be direct grid items**
 
-Move these nodes so they are direct children of `.wrap`:
+Move these nodes so they are direct children of `.wrap` (admin-only grid items):
 - `#appHero`
-- `#opsHomeHero`
-- `#shellUtilityBar`
 - `#adminSideNav`
 
-This ensures the grid placement rules apply to header/nav/content.
+Keep `#opsHomeHero` and `#shellUtilityBar` in their current structure to avoid ops layout changes.
 
 - [ ] **Step 2: Update admin `.wrap` grid and remove left margin**
 
@@ -163,7 +161,7 @@ body[data-shell-mode="admin"] .primary-shell {
 }
 ```
 
-- [ ] **Step 5: Remove nav fixed positioning + top offset**
+- [ ] **Step 5: Remove nav fixed positioning + top offset + header height dependency**
 
 ```css
 .admin-side-nav {
@@ -171,14 +169,25 @@ body[data-shell-mode="admin"] .primary-shell {
   top: auto;
   left: auto;
 }
+
+/* remove header height dependency (no longer needed in grid) */
+:root { --admin-shell-header-height: auto; }
 ```
 
-- [ ] **Step 6: Run tests from Task 1**
+- [ ] **Step 6: Verify no redundant menu rendering inside content**
+
+Ensure existing admin-only rules still hide in-content menus:
+```
+body[data-shell-mode=\"admin\"] .goods-mode-tabs,
+body[data-shell-mode=\"admin\"] .subtabs { display: none; }
+```
+
+- [ ] **Step 7: Run tests from Task 1**
 
 Run: same pytest command from Task 1.
 Expected: PASS for grid and nav placement checks (ops removal still failing until Task 4).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add app/static/index.html
@@ -192,7 +201,17 @@ git commit -m "feat: move admin shell to header+nav+content grid"
 **Files:**
 - Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
 
-- [ ] **Step 1: Add sessionStorage helpers**
+- [ ] **Step 1: Confirm existing admin nav helpers and reuse**
+
+Audit these helpers (already present today) and confirm names before edits:
+- `syncAdminSidebarNav`
+- `activeAdminMainTab`
+- `resolveActiveAdminSubnavKey`
+- `collapseAdminSideNavAccordions`
+
+If any are missing or renamed, add minimal equivalents before proceeding.
+
+- [ ] **Step 2: Add sessionStorage helpers**
 
 ```js
 const ADMIN_NAV_STATE_KEY = "adminNavOpen";
@@ -204,7 +223,7 @@ function writeAdminNavState(value) {
 }
 ```
 
-- [ ] **Step 2: Update `syncAdminSidebarNav()` to respect stored open state and deep-link**
+- [ ] **Step 3: Update `syncAdminSidebarNav()` to respect stored open state and deep-link**
 
 ```js
 const storedMain = readAdminNavState();
@@ -216,7 +235,7 @@ const targetMain = activeSub ? activeMain : (storedMain || activeMain);
 const mainToOpen = activeSub ? activeMain : targetMain;
 ```
 
-- [ ] **Step 3: When top-level buttons are clicked, store the open state**
+- [ ] **Step 4: When top-level buttons are clicked, store the open state**
 
 ```js
 if (navId) {
@@ -226,7 +245,7 @@ if (navId) {
 }
 ```
 
-- [ ] **Step 4: Add icon-only rail styles**
+- [ ] **Step 5: Add icon-only rail styles**
 
 ```css
 :root { --admin-side-nav-icon-width: 56px; }
@@ -252,7 +271,7 @@ if (navId) {
 }
 ```
 
-- [ ] **Step 5: Add `data-admin-nav-icon` attributes to top buttons**
+- [ ] **Step 6: Add `data-admin-nav-icon` attributes to top buttons**
 
 ```html
 <button class="admin-side-nav-button" data-admin-nav="media" data-admin-nav-icon="M" ...>미디어</button>
@@ -260,7 +279,7 @@ if (navId) {
 <button class="admin-side-nav-button" data-admin-nav="ops" data-admin-nav-icon="O" ...>운영/연계</button>
 ```
 
-- [ ] **Step 6: Add a media query toggle hook in JS**
+- [ ] **Step 7: Add a media query toggle hook in JS**
 
 ```js
 const adminNav = $("adminSideNav");
@@ -273,12 +292,21 @@ navMql.addEventListener("change", syncAdminNavIconMode);
 syncAdminNavIconMode();
 ```
 
-- [ ] **Step 7: Run tests**
+- [ ] **Step 8: Verify IA + ARIA expectations**
+
+Add/confirm these attributes in markup:\n
+- Parent buttons include `aria-expanded` + `aria-controls`.\n
+- Child buttons are focusable only when expanded.\n
+- Submenu mapping matches the spec list.\n
+
+Add a test to assert all parent items exist:\n
+\n```python\n\ndef test_admin_nav_contains_all_parent_groups():\n    html = read_static_html(\"index.html\")\n    for label in [\"nav.dashboard\", \"nav.media\", \"nav.collectibles\", \"nav.ops\"]:\n        assert f'data-i18n=\"{label}\"' in html\n```\n+
+- [ ] **Step 9: Run tests**
 
 Run: pytest command from Task 1.
 Expected: PASS for icon rail assertion and new storage logic (string checks only).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add app/static/index.html
