@@ -227,7 +227,56 @@ If any are missing or renamed, add minimal equivalents before proceeding.
 
 - [ ] **Step 2: Ensure left-menu IA + child styling match spec**
 
-Update `#adminSideNav` markup to match the spec’s parent/child mapping exactly, and ensure child items are smaller and indented (via `.admin-side-nav-subitem`). If any labels or groupings are off, correct the HTML before behavior changes.
+Update `#adminSideNav` markup to match the spec’s parent/child mapping exactly, and ensure child items are smaller and indented (via `.admin-side-nav-subitem`). If any labels or groupings are off, correct the HTML before behavior changes. Use this exact structure:
+
+```html
+<div class="admin-side-nav-group">
+  <button class="admin-side-nav-button admin-side-nav-button--leaf" type="button" data-admin-nav="home" data-i18n="nav.dashboard">대시보드</button>
+</div>
+<div class="admin-side-nav-group">
+  <button class="admin-side-nav-button" type="button" data-admin-nav="media" aria-expanded="false" aria-controls="adminNavMedia" data-i18n="nav.media">미디어</button>
+  <div id="adminNavMedia" class="admin-side-nav-submenu" hidden>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:search" data-i18n="media.mode.search">검색</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:manage" data-i18n="media.mode.manage">관리</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register" data-i18n="media.mode.register">등록/수집</button>
+    <div class="admin-side-nav-submenu admin-side-nav-submenu--nested" data-admin-subgroup="media:register" hidden>
+      <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:collect" data-i18n="media.register.subtab.direct">직접 등록</button>
+      <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:purchase" data-i18n="media.register.subtab.purchase">구매 내역</button>
+      <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:batch" data-i18n="media.register.subtab.batch">대량 등록</button>
+      <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:master" data-i18n="media.register.subtab.master">마스터 정리</button>
+    </div>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:source" data-i18n="media.mode.source">소스 보강</button>
+  </div>
+</div>
+<div class="admin-side-nav-group">
+  <button class="admin-side-nav-button" type="button" data-admin-nav="collectibles" aria-expanded="false" aria-controls="adminNavCollectibles" data-i18n="nav.collectibles">컬렉터블</button>
+  <div id="adminNavCollectibles" class="admin-side-nav-submenu" hidden>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:search" data-i18n="collectibles.mode.search">컬렉터블 검색</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:manage" data-i18n="collectibles.mode.manage">컬렉터블 관리</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:register" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
+  </div>
+</div>
+<div class="admin-side-nav-group">
+  <button class="admin-side-nav-button" type="button" data-admin-nav="ops" aria-expanded="false" aria-controls="adminNavOps" data-i18n="nav.ops">운영/연계</button>
+  <div id="adminNavOps" class="admin-side-nav-submenu" hidden>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:system" data-i18n="ops.system.title">시스템 상태</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:cabinet" data-i18n="ops.subtab.cabinet">장식장</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:slot" data-i18n="ops.subtab.slot">슬롯</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:camera" data-i18n="ops.subtab.camera">카메라</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:exception" data-i18n="ops.subtab.exception">예외 큐</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:account" data-i18n="ops.subtab.account">계정</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:providers" data-i18n="ops.subtab.providers">연동/API 설정</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:export" data-i18n="ops.subtab.export">백업/내보내기</button>
+    <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:metasync" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
+    <div class="admin-side-nav-submenu admin-side-nav-submenu--docs">
+      <span class="admin-side-nav-subtitle" data-i18n="shell.admin.docs_summary">문서 / ERD / 활용 매뉴얼</span>
+      <a class="admin-side-nav-subitem" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
+      <a class="admin-side-nav-subitem" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
+      <a class="admin-side-nav-subitem" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
+    </div>
+  </div>
+</div>
+```
 
 - [ ] **Step 3: Add sessionStorage helpers**
 
@@ -263,38 +312,38 @@ if (navId) {
 }
 ```
 
-- [ ] **Step 6: Add icon-only rail styles**
+- [ ] **Step 6: Add icon-only rail styles (reuse existing icon-rail patterns)**
 
 ```css
 :root { --admin-side-nav-icon-width: 56px; }
 
 @media (max-width: 1080px) {
-  body[data-shell-mode="admin"] #adminSideNav.admin-side-nav--icon {
+  body[data-shell-mode="admin"] #adminSideNav.primary-side-nav--icon {
     width: var(--admin-side-nav-icon-width);
   }
-  body[data-shell-mode="admin"] #adminSideNav.admin-side-nav--icon .admin-side-nav-button,
-  body[data-shell-mode="admin"] #adminSideNav.admin-side-nav--icon .admin-side-nav-subitem {
+  body[data-shell-mode="admin"] #adminSideNav.primary-side-nav--icon .admin-side-nav-button,
+  body[data-shell-mode="admin"] #adminSideNav.primary-side-nav--icon .admin-side-nav-subitem {
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
     font-size: 0;
   }
-  body[data-shell-mode="admin"] #adminSideNav.admin-side-nav--icon .admin-side-nav-button::before {
-    content: attr(data-admin-nav-icon);
+  body[data-shell-mode="admin"] #adminSideNav.primary-side-nav--icon .admin-side-nav-button::before {
+    content: attr(data-nav-icon);
     font-size: 0.78rem;
   }
-  body[data-shell-mode="admin"] #adminSideNav.admin-side-nav--icon .admin-side-nav-submenu {
+  body[data-shell-mode="admin"] #adminSideNav.primary-side-nav--icon .admin-side-nav-submenu {
     display: none !important;
   }
 }
 ```
 
-- [ ] **Step 7: Add `data-admin-nav-icon` attributes to top buttons**
+- [ ] **Step 7: Add `data-nav-icon` attributes to top buttons**
 
 ```html
-<button class="admin-side-nav-button" data-admin-nav="media" data-admin-nav-icon="M" ...>미디어</button>
-<button class="admin-side-nav-button" data-admin-nav="collectibles" data-admin-nav-icon="C" ...>컬렉터블</button>
-<button class="admin-side-nav-button" data-admin-nav="ops" data-admin-nav-icon="O" ...>운영/연계</button>
+<button class="admin-side-nav-button" data-admin-nav="media" data-nav-icon="M" ...>미디어</button>
+<button class="admin-side-nav-button" data-admin-nav="collectibles" data-nav-icon="C" ...>컬렉터블</button>
+<button class="admin-side-nav-button" data-admin-nav="ops" data-nav-icon="O" ...>운영/연계</button>
 ```
 
 - [ ] **Step 8: Add a media query toggle hook in JS**
@@ -304,7 +353,7 @@ const adminNav = $("adminSideNav");
 const navMql = window.matchMedia("(max-width: 1080px)");
 function syncAdminNavIconMode() {
   if (!adminNav) return;
-  adminNav.classList.toggle("admin-side-nav--icon", navMql.matches);
+  adminNav.classList.toggle("primary-side-nav--icon", navMql.matches);
 }
 navMql.addEventListener("change", syncAdminNavIconMode);
 syncAdminNavIconMode();
@@ -474,6 +523,12 @@ pytest /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_op
 ```
 
 Expected: PASS.
+
+- [ ] Manual checks (admin UI):
+  - Keyboard: Tab through parent menu buttons, confirm `aria-expanded` updates and children become focusable only when expanded.
+  - Persistence: Expand a parent, navigate to another admin subpage, verify parent remains open (same tab).
+  - Deep-link: Open a URL that routes directly to a child subpage; verify its parent opens.
+  - Icon rail: Resize <=1080px; confirm nav collapses to icon-only and submenu is hidden.
 
 ---
 
