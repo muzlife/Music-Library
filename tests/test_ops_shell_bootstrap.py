@@ -4040,6 +4040,7 @@ def test_manage_view_renders_linked_collectibles_in_goods_section():
     assert '"media.manage.related_versions.summary":' in html
     assert 't("media.manage.related_versions.summary"' in render_block
     success_block = render_block.split('setDisplayIfPresent("homeMasterSummarySection", "block");', 1)[1]
+    success_block = success_block.split("syncHomeMasterCorrectionEditor();", 1)[0]
     assert "renderHomeLinkedCollectiblesSection();" in success_block
 
 
