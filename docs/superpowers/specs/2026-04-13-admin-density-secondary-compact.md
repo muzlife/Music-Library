@@ -38,29 +38,30 @@ Continue the admin-only density tightening to keep core management forms at two 
     - `.ops-library-context-head`, `.ops-library-context-head-actions`
     - `.operator-mini-list` (current location line)
     - `.ops-artist-context-card`, `.ops-artist-context-media`, `.ops-artist-context-image`
-    - `.ops-library-mini-map`, `.ops-library-slot-preview` (if present)
-- Tighten vertical spacing and keep key lines on single rows where possible:
-  - Reduce `#adminSearchContextBody` internal gap/padding (admin-only override).
-  - Keep `.ops-library-context-head` actions on one row if possible (admin-only gap adjustments).
-  - Reduce artist image footprint **only inside the admin search context panel** (e.g., 104px → 88px), updating the matching grid template columns for `.ops-artist-context-card.has-image`.
+- Tighten vertical spacing without changing behavior or forcing nowrap:
+  - Reduce `#adminSearchContextBody` internal `gap`/`padding` (admin-only override).
+  - Reduce `.ops-library-context-head` / `.ops-library-context-head-actions` gap (admin-only override); keep existing `flex-wrap` behavior.
+  - Reduce artist image footprint **only inside the admin search context panel** (e.g., 104px → 88px) and update the matching grid template columns for `.ops-artist-context-card.has-image` in admin scope.
+- Optional (only if needed to eliminate excessive vertical whitespace): reduce outer margin/gap on `.ops-library-mini-map` and `.ops-library-slot-preview` **without** changing their internal layout.
 - No changes to data fields, labels, or behavior; only layout/spacing in admin search context.
 
 ### R4. Consistent Compact Tokens
-- Use existing admin compact tokens and `var(--compact-gap)` for spacing when adjusting gaps.
+- Use existing admin compact tokens defined under `body[data-shell-mode="admin"]`:\n  `--compact-control-height`, `--compact-control-pad`, `--compact-font-size`, `--compact-line-height`, `--compact-gap`.\n- Use `var(--compact-gap)` (or the nearest existing compact token) for new admin-only spacing overrides.
 - Do not introduce new tokens.
 
-### R5. Tests
+### R5. Tests + Manual Check
 - Add/extend tests in `tests/test_admin_density_compaction.py` to assert:
   - Admin-only spacing overrides for the blocks in R2.
   - Two-row structure for `#homeEditProductCoreRowA/B` and `#goodsManageCoreRowA/B` at 1320px (via existing row markers and grid templates).
   - Presence of compact gap usage on any new admin-only grid rules introduced.
   - Admin search context panel compaction rules exist under `body[data-shell-mode="admin"]` (e.g., `#adminSearchContextBody` spacing override and artist image size override in admin scope).
+- Manual verification (visual): at **1320px width**, confirm the two-row blocks stay at two rows and the admin search context panel is visibly tighter while preserving wrapping behavior.
 
 ---
 
 ## Acceptance Criteria
-- Admin pages remain two-row for the specified compact blocks at 1320px width.
-- Admin search context panel is visibly denser with a smaller artist image and tighter spacing in the header/actions and location line.
+- Admin pages remain two-row for the specified compact blocks at **1320px width** (manual visual check completed).
+- Admin search context panel is visibly denser with a smaller artist image and tighter spacing in header/actions and location line, without changing content or behavior.
 - Operator/ops pages unchanged.
 - Tests pass:
   - `pytest tests/test_admin_density_compaction.py -v`
