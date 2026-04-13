@@ -2428,6 +2428,80 @@
       padding: var(--compact-gap) calc(var(--compact-gap) + 2px);
     }
 
+    body[data-shell-mode="admin"] #homeEditMusicMetaFieldsB {
+      margin-top: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] #homeEditMusicMetaFieldsC {
+      margin-top: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] #homeEditTrackListWrap {
+      margin-top: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] #homeEditorStandaloneMount {
+      margin-top: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] #homeEditorActionRow {
+      margin-top: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] #homeMasterAddActionRow {
+      margin-top: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] .source-meta-summary {
+      margin-bottom: var(--compact-gap);
+      padding: 6px 8px;
+    }
+
+    body[data-shell-mode="admin"] .source-meta-summary-head {
+      margin-bottom: 3px;
+      gap: 6px;
+    }
+
+    body[data-shell-mode="admin"] .source-meta-summary .compact-line {
+      margin-top: 3px;
+      gap: 4px 6px;
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody {
+      padding: 10px;
+      gap: var(--compact-gap);
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody .ops-library-context-head {
+      gap: 6px;
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody .ops-library-context-head-actions {
+      gap: 4px;
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody .ops-plugin-section {
+      padding: 8px;
+      gap: 6px;
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody .ops-plugin-section-cards {
+      gap: 6px;
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-card {
+      padding: 8px;
+      gap: 6px;
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-card.has-image {
+      grid-template-columns: 88px minmax(0, 1fr);
+    }
+
+    body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-media {
+      width: 88px;
+    }
+
     .row {
       display: flex;
       gap: 5px;
@@ -11973,7 +12047,7 @@
           <div id="homeLocationSlotList" class="home-location-slot-list" style="display:none;"></div>
         </div>
 
-        <div id="homeEditorStandaloneMount" style="margin-top:10px;"></div>
+        <div id="homeEditorStandaloneMount"></div>
 
         <div id="homeEditMusicBox" class="music-box" style="display:none;">
           <div id="homeEditMusicSourceSummary" class="source-meta-summary">
@@ -12000,7 +12074,7 @@
               <input id="editMediaType" data-i18n-placeholder="media.manage.field.media_type.placeholder" placeholder="예: Vinyl / CD / Cassette" />
             </div>
           </div>
-          <div id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6" style="margin-top:6px;">
+          <div id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6">
             <div class="span-2">
               <label for="editLabelName" data-i18n="media.manage.field.label_name.label">레이블</label>
               <input id="editLabelName" data-i18n-placeholder="media.manage.field.label_name.placeholder" placeholder="예: Ecole de Gorae" />
@@ -12028,7 +12102,7 @@
               <input id="editSpeedRpm" type="number" min="1" />
             </div>
           </div>
-          <div id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6" style="margin-top:6px;">
+          <div id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6">
             <div class="span-2">
               <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
               <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." />
@@ -12038,7 +12112,7 @@
               <input id="editStyles" data-i18n-placeholder="media.manage.field.styles.placeholder" placeholder="예: K-Rock, Prog Rock" />
             </div>
           </div>
-          <div id="homeEditTrackListWrap" style="margin-top:6px;">
+          <div id="homeEditTrackListWrap">
             <label for="editTrackList" data-i18n="media.manage.field.track_list.label">곡 리스트 (한 줄에 1곡)</label>
             <textarea id="editTrackList"></textarea>
           </div>
@@ -12360,7 +12434,7 @@
         </section>
 
         <div id="homeEditorActionBlock">
-        <div id="homeEditorActionRow" class="row home-manage-actions-right" style="margin-top:12px;">
+        <div id="homeEditorActionRow" class="row home-manage-actions-right">
           <button id="homeEditSaveBtn" class="btn" data-i18n="media.manage.product.action.save">수정 저장</button>
           <button id="homeEditDeleteBtn" class="btn ghost" type="button" data-i18n="media.manage.product.action.delete">삭제</button>
         </div>
@@ -12529,7 +12603,7 @@
           <input id="homeMasterAddCatalogNo" type="hidden" />
           <input id="homeMasterAddBarcode" type="hidden" />
           <button id="homeMasterAddResetBtn" type="button" hidden aria-hidden="true"></button>
-          <div id="homeMasterAddActionRow" class="row home-manage-actions-right" style="margin-top:8px;">
+          <div id="homeMasterAddActionRow" class="row home-manage-actions-right">
             <button id="homeMasterAddLoadBtn" class="btn ghost home-master-load-btn" type="button" data-i18n="media.manage.master.lookup.action.load">조회</button>
           </div>
           <div id="homeMasterAddStatus" class="status"></div>
