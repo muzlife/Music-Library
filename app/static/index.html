@@ -25297,6 +25297,20 @@
       }
     }
 
+    function collapseAdminSideNavAccordions(activeId) {
+      const nav = $("adminSideNav");
+      if (!nav) return;
+      nav.querySelectorAll("[data-admin-nav]").forEach((btn) => {
+        const id = String(btn.getAttribute("data-admin-nav") || "").trim();
+        if (btn.classList.contains("admin-side-nav-button--leaf")) return;
+        const controls = btn.getAttribute("aria-controls");
+        const submenu = controls ? $(controls) : null;
+        const isActive = id === activeId;
+        btn.setAttribute("aria-expanded", String(Boolean(isActive && submenu)));
+        if (submenu) submenu.hidden = !isActive;
+      });
+    }
+
     function routeAdminSideNavTop(targetId) {
       const currentMain = activeAdminMainTab();
       if (targetId === currentMain) return;
@@ -44272,6 +44286,7 @@
       const navId = target.getAttribute("data-admin-nav");
       const subKey = target.getAttribute("data-admin-subnav");
       if (navId) {
+        collapseAdminSideNavAccordions(navId);
         routeAdminSideNavTop(navId);
         return;
       }
