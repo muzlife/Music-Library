@@ -254,20 +254,38 @@ def test_index_admin_shell_grid_uses_header_and_body_rows():
     assert "display: grid;" in wrap_block
     assert "grid-template-rows: auto minmax(0, 1fr);" in wrap_block
     assert "grid-template-columns: var(--admin-side-nav-width) minmax(0, 1fr);" in wrap_block
+    assert "gap: var(--admin-side-nav-gap);" in wrap_block
+    assert "width: 100%;" in wrap_block
+    assert "margin: 8px 12px 16px;" in wrap_block
+    assert "height: 100dvh;" in wrap_block
+    assert "min-height: 100vh;" in wrap_block
+    assert "overflow: hidden;" in wrap_block
 
     hero_block = html.split('body[data-shell-mode="admin"] #appHero {', 1)[1].split("}", 1)[0]
     assert "grid-column: 1 / -1;" in hero_block
     assert "grid-row: 1;" in hero_block
+    assert "position: static;" in hero_block
+    assert "top: auto;" in hero_block
 
     nav_block = html.split('body[data-shell-mode="admin"] #adminSideNav {', 1)[1].split("}", 1)[0]
     assert "grid-column: 1;" in nav_block
     assert "grid-row: 2;" in nav_block
+    assert "align-self: stretch;" in nav_block
     assert "overflow-y: auto;" in nav_block
+    assert "min-height: 0;" in nav_block
+    assert "max-height: 100%;" in nav_block
 
     main_block = html.split('body[data-shell-mode="admin"] .primary-shell {', 1)[1].split("}", 1)[0]
     assert "grid-column: 2;" in main_block
     assert "grid-row: 2;" in main_block
+    assert "min-width: 0;" in main_block
     assert "overflow-y: auto;" in main_block
+    assert "min-height: 0;" in main_block
+    assert "max-height: 100%;" in main_block
+    nav_frame_block = html.split(".admin-side-nav {", 1)[1].split("}", 1)[0]
+    assert "position: static;" in nav_frame_block
+    assert "top: auto;" in nav_frame_block
+    assert "left: auto;" in nav_frame_block
 
 
 def test_index_defines_ops_home_header_markup_and_copy():
