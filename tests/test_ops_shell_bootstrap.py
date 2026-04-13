@@ -2949,6 +2949,7 @@ def test_index_ops_home_hero_uses_top_aligned_side_and_matches_admin_compact_tit
 def test_index_ops_home_header_uses_admin_width_tokens():
     html = read_static_html("index.html")
     admin_head_block = html.split(".admin-shell-hero-head {", 1)[1].split("}", 1)[0]
+    admin_scoped_head_block = html.split('body[data-shell-mode="admin"] .admin-shell-hero-head {', 1)[1].split("}", 1)[0]
     admin_copy_block = html.split(".admin-shell-copy {", 1)[1].split("}", 1)[0]
     admin_subtitle_block = html.split(".admin-shell-hero p {", 1)[1].split("}", 1)[0]
     ops_main_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
@@ -2956,8 +2957,10 @@ def test_index_ops_home_header_uses_admin_width_tokens():
     ops_subtitle_block = html.split(".ops-home-hero-copy p {", 1)[1].split("}", 1)[0]
     admin_grid = [line.strip() for line in admin_head_block.splitlines() if "grid-template-columns:" in line][0]
     ops_grid = [line.strip() for line in ops_main_block.splitlines() if "grid-template-columns:" in line][0]
-    assert admin_grid == "grid-template-columns: minmax(0, 1fr) auto;"
+    assert admin_grid == "grid-template-columns: minmax(0, 1.12fr) minmax(220px, 0.88fr);"
     assert ops_grid == "grid-template-columns: minmax(0, 1.12fr) minmax(220px, 0.88fr);"
+    assert "grid-template-columns: minmax(0, 1fr) auto;" in admin_scoped_head_block
+    assert "align-items: center;" in admin_scoped_head_block
     assert "max-width: 56ch;" in admin_copy_block
     assert "max-width: 56ch;" in ops_copy_block
     assert "max-width: 52ch;" in admin_subtitle_block
