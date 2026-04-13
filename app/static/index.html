@@ -34,8 +34,8 @@
       --danger: #b91c1c;
       --ok: #0a7f43;
       --shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
-      --admin-side-nav-width: 220px;
-      --admin-side-nav-gap: 16px;
+      --admin-side-nav-width: 200px;
+      --admin-side-nav-gap: 12px;
       --radius: 14px;
       --action-btn-size: 40px;
       --action-icon-size: 16px;
@@ -232,7 +232,7 @@
 
     .admin-side-nav {
       position: fixed;
-      top: 12px;
+      top: calc(var(--admin-shell-header-height) + 12px);
       left: 12px;
       width: var(--admin-side-nav-width);
       display: none;
@@ -244,20 +244,20 @@
     }
 
     .admin-side-nav-card {
-      background: transparent;
-      border-radius: 0;
-      padding: 0;
-      border: 0;
-      box-shadow: none;
+      background: rgba(255,255,255,0.92);
+      border-radius: 14px;
+      padding: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 6px;
     }
 
     .admin-side-nav-group {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .admin-side-nav-button {
@@ -265,9 +265,10 @@
       border-radius: 14px;
       border: 1px solid #cbd5e1;
       background: #fff;
-      padding: 10px 12px;
+      padding: 8px 10px;
       text-align: left;
       font-weight: 700;
+      font-size: 0.86rem;
       color: var(--ink);
       cursor: pointer;
     }
@@ -282,9 +283,9 @@
     .admin-side-nav-submenu {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding-left: 12px;
-      margin-left: 6px;
+      gap: 4px;
+      padding-left: 10px;
+      margin-left: 4px;
       border-left: 1px dashed #d3dde7;
     }
 
@@ -294,8 +295,8 @@
     }
 
     .admin-side-nav-submenu--docs {
-      margin-top: 8px;
-      padding-top: 8px;
+      margin-top: 6px;
+      padding-top: 6px;
       border-top: 1px dashed #d3dde7;
     }
 
@@ -312,10 +313,11 @@
       border-radius: 10px;
       border: 1px solid transparent;
       background: transparent;
-      padding: 8px 10px;
+      padding: 6px 8px;
       text-align: left;
       color: #334155;
       cursor: pointer;
+      font-size: 0.78rem;
       font-weight: 600;
       text-decoration: none;
     }
@@ -584,10 +586,10 @@
     }
 
     .admin-shell-hero {
-      margin: 8px 0 6px;
-      padding: 8px 12px;
+      margin: 6px 0 8px;
+      padding: 6px 10px;
       border: 1px solid #d7e5df;
-      border-radius: 22px;
+      border-radius: 16px;
       background:
         radial-gradient(circle at top left, rgba(254, 240, 138, 0.22), transparent 30%),
         radial-gradient(circle at top right, rgba(187, 247, 208, 0.22), transparent 34%),
@@ -639,9 +641,9 @@
 
     .admin-shell-hero-head {
       display: grid;
-      grid-template-columns: minmax(0, 1.12fr) minmax(220px, 0.88fr);
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 6px;
-      align-items: start;
+      align-items: center;
     }
 
     .admin-shell-copy {
@@ -719,6 +721,11 @@
       font-size: 0.88rem;
       line-height: 1.4;
       max-width: 52ch;
+    }
+
+    body[data-shell-mode="admin"] .admin-shell-kicker,
+    body[data-shell-mode="admin"] .admin-shell-hero p {
+      display: none;
     }
 
     .admin-shell-docs {
@@ -2281,6 +2288,7 @@
     }
 
     body[data-shell-mode="admin"] {
+      --admin-shell-header-height: 56px;
       --compact-control-height: 32px;
       --compact-control-pad: 6px 10px;
       --compact-label-size: 0.72rem;
@@ -11859,8 +11867,7 @@
       <section class="card">
         <div class="result-head" style="margin-bottom:0;">
           <div>
-            <strong data-i18n="media.title">미디어</strong>
-            <div class="mini" data-i18n="media.subtitle">검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다.</div>
+            <strong data-i18n="media.title">미디어</strong><span class="section-help-dot" tabindex="0" data-help-key="help.media.summary">?</span>
           </div>
         </div>
         <div class="goods-mode-tabs" role="tablist" aria-label="미디어 화면 모드" data-i18n-aria-label="media.mode.aria" style="margin-top:12px;">
@@ -15891,7 +15898,7 @@
         "operator.weather.status.load_failed": "날씨 정보를 불러오지 못했습니다.",
         "operator.weather.updated.at": "{time} 기준",
         "media.title": "미디어",
-        "media.subtitle": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다.",
+        "help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다.",
         "media.mode.aria": "미디어 화면 모드",
         "media.mode.search": "검색",
         "media.mode.manage": "관리",
@@ -18339,7 +18346,7 @@
         "operator.weather.status.load_failed": "Failed to load weather information",
         "operator.weather.updated.at": "Updated {time}",
         "media.title": "Media",
-        "media.subtitle": "Keep search, management, registration/import, and source enrichment in one flow.",
+        "help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다.",
         "media.mode.aria": "Media screen modes",
         "media.mode.search": "Search",
         "media.mode.manage": "Manage",
@@ -20807,7 +20814,7 @@
         "operator.weather.status.load_failed": "天気情報を読み込めませんでした",
         "operator.weather.updated.at": "{time}基準",
         "media.title": "メディア",
-        "media.subtitle": "検索、管理、登録/取込、ソース補強をひとつの流れで扱います。",
+        "help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다.",
         "media.mode.aria": "メディア画面モード",
         "media.mode.search": "検索",
         "media.mode.manage": "管理",
