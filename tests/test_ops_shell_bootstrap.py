@@ -4039,7 +4039,8 @@ def test_manage_view_renders_linked_collectibles_in_goods_section():
     assert "const collectibles = Array.isArray(homeMasterInfo.collectibles) ? homeMasterInfo.collectibles : [];" in render_block
     assert '"media.manage.related_versions.summary":' in html
     assert 't("media.manage.related_versions.summary"' in render_block
-    assert "renderHomeLinkedCollectiblesSection();" in render_block
+    success_block = render_block.split('setDisplayIfPresent("homeMasterSummarySection", "block");', 1)[1]
+    assert "renderHomeLinkedCollectiblesSection();" in success_block
 
 
 def test_manage_view_can_render_linked_collectibles_without_master_lookup():
