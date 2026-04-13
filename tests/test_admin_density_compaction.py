@@ -351,4 +351,8 @@ def test_media_section_intro_moves_to_help_tooltip():
 def test_admin_side_nav_click_collapses_other_sections():
     html = read_static_html("index.html")
     handler_block = html.split('$("adminSideNav")?.addEventListener("click"', 1)[1].split("});", 1)[0]
-    assert "collapseAdminSideNavAccordions" in handler_block
+    collapse_index = handler_block.find("collapseAdminSideNavAccordions")
+    route_index = handler_block.find("routeAdminSideNavTop")
+    assert collapse_index != -1
+    assert route_index != -1
+    assert collapse_index < route_index
