@@ -109,6 +109,7 @@ git commit -m "test: define admin shell grid + ops removal expectations"
 
 **Files:**
 - Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Move admin header/nav nodes to be direct grid items**
 
@@ -211,7 +212,11 @@ Audit these helpers (already present today) and confirm names before edits:
 
 If any are missing or renamed, add minimal equivalents before proceeding.
 
-- [ ] **Step 2: Add sessionStorage helpers**
+- [ ] **Step 2: Ensure left-menu IA + child styling match spec**
+
+Update `#adminSideNav` markup to match the spec’s parent/child mapping exactly, and ensure child items are smaller and indented (via `.admin-side-nav-subitem`). If any labels or groupings are off, correct the HTML before behavior changes.
+
+- [ ] **Step 3: Add sessionStorage helpers**
 
 ```js
 const ADMIN_NAV_STATE_KEY = "adminNavOpen";
@@ -223,7 +228,7 @@ function writeAdminNavState(value) {
 }
 ```
 
-- [ ] **Step 3: Update `syncAdminSidebarNav()` to respect stored open state and deep-link**
+- [ ] **Step 4: Update `syncAdminSidebarNav()` to respect stored open state and deep-link**
 
 ```js
 const storedMain = readAdminNavState();
@@ -235,7 +240,7 @@ const targetMain = activeSub ? activeMain : (storedMain || activeMain);
 const mainToOpen = activeSub ? activeMain : targetMain;
 ```
 
-- [ ] **Step 4: When top-level buttons are clicked, store the open state**
+- [ ] **Step 5: When top-level buttons are clicked, store the open state**
 
 ```js
 if (navId) {
@@ -245,7 +250,7 @@ if (navId) {
 }
 ```
 
-- [ ] **Step 5: Add icon-only rail styles**
+- [ ] **Step 6: Add icon-only rail styles**
 
 ```css
 :root { --admin-side-nav-icon-width: 56px; }
@@ -271,7 +276,7 @@ if (navId) {
 }
 ```
 
-- [ ] **Step 6: Add `data-admin-nav-icon` attributes to top buttons**
+- [ ] **Step 7: Add `data-admin-nav-icon` attributes to top buttons**
 
 ```html
 <button class="admin-side-nav-button" data-admin-nav="media" data-admin-nav-icon="M" ...>미디어</button>
@@ -279,7 +284,7 @@ if (navId) {
 <button class="admin-side-nav-button" data-admin-nav="ops" data-admin-nav-icon="O" ...>운영/연계</button>
 ```
 
-- [ ] **Step 7: Add a media query toggle hook in JS**
+- [ ] **Step 8: Add a media query toggle hook in JS**
 
 ```js
 const adminNav = $("adminSideNav");
@@ -292,7 +297,7 @@ navMql.addEventListener("change", syncAdminNavIconMode);
 syncAdminNavIconMode();
 ```
 
-- [ ] **Step 8: Verify IA + ARIA expectations**
+- [ ] **Step 9: Verify IA + ARIA expectations**
 
 Add/confirm these attributes in markup:\n
 - Parent buttons include `aria-expanded` + `aria-controls`.\n
@@ -301,15 +306,15 @@ Add/confirm these attributes in markup:\n
 
 Add a test to assert all parent items exist:\n
 \n```python\n\ndef test_admin_nav_contains_all_parent_groups():\n    html = read_static_html(\"index.html\")\n    for label in [\"nav.dashboard\", \"nav.media\", \"nav.collectibles\", \"nav.ops\"]:\n        assert f'data-i18n=\"{label}\"' in html\n```\n+
-- [ ] **Step 9: Run tests**
+- [ ] **Step 10: Run tests**
 
 Run: pytest command from Task 1.
 Expected: PASS for icon rail assertion and new storage logic (string checks only).
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-git add app/static/index.html
+git add app/static/index.html tests/test_ops_shell_bootstrap.py
 git commit -m "feat: persist admin nav accordion + icon rail"
 ```
 
