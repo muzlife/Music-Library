@@ -2927,9 +2927,9 @@ def test_index_ops_home_hero_matches_admin_shell_spacing_tokens():
     ops_h1_block = html.split(".ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
     admin_art_block = html.split(".admin-shell-hero-art {", 2)[2].split("}", 1)[0]
     ops_art_block = html.split(".ops-home-hero-art {", 1)[1].split("}", 1)[0]
-    assert "padding: 6px 10px;" in admin_hero_block
+    assert "padding: 8px 12px;" in admin_hero_block
     assert "padding: 8px 12px;" in ops_hero_block
-    assert "border-radius: 16px;" in admin_hero_block
+    assert "border-radius: 22px;" in admin_hero_block
     assert "border-radius: 22px;" in ops_hero_block
     assert "gap: 3px;" in admin_main_block
     assert "gap: 3px;" in ops_main_block
