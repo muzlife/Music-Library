@@ -69,7 +69,7 @@ def test_index_admin_shell_grid_uses_header_and_body_rows():
 
 def test_ops_home_hides_primary_side_nav_slot():
     html = read_static_html("index.html")
-    ops_block = html.split('body[data-shell-mode="ops"] .primary-side-nav-slot {', 1)[1].split("}", 1)[0]
+    ops_block = html.split('body[data-shell-mode="ops"] #opsHomeLayout .primary-side-nav-slot {', 1)[1].split("}", 1)[0]
     assert "display: none;" in ops_block
 
 
@@ -129,7 +129,9 @@ body[data-shell-mode="admin"] .wrap {
   gap: var(--admin-side-nav-gap);
   width: 100%;
   margin: 8px 12px 16px;
+  height: 100dvh;
   min-height: 100vh;
+  overflow: hidden;
 }
 ```
 
@@ -139,6 +141,11 @@ body[data-shell-mode="admin"] .wrap {
 body[data-shell-mode="admin"] #appHero {
   grid-column: 1 / -1;
   grid-row: 1;
+}
+
+body[data-shell-mode="admin"] #appHero {
+  position: static;
+  top: auto;
 }
 ```
 
@@ -150,6 +157,7 @@ body[data-shell-mode="admin"] #adminSideNav {
   grid-row: 2;
   align-self: stretch;
   overflow-y: auto;
+  min-height: 0;
   max-height: 100%;
 }
 
@@ -158,6 +166,7 @@ body[data-shell-mode="admin"] .primary-shell {
   grid-row: 2;
   min-width: 0;
   overflow-y: auto;
+  min-height: 0;
   max-height: 100%;
 }
 ```
@@ -425,7 +434,7 @@ git commit -m "feat: add section description toggles"
 - [ ] **Step 1: Hide ops left nav slot**
 
 ```css
-body[data-shell-mode="ops"] .primary-side-nav-slot {
+body[data-shell-mode="ops"] #opsHomeLayout .primary-side-nav-slot {
   display: none;
 }
 ```
