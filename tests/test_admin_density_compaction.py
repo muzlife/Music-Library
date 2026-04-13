@@ -19,8 +19,8 @@ def test_admin_density_overrides_define_compact_tokens():
     admin_non_btn_compact_selectors = [
         "body[data-shell-mode=\"admin\"] .tab-btn",
         "body[data-shell-mode=\"admin\"] .dashboard-slot-viewbtn",
-        "body[data-shell-mode=\"admin\"] .page-help-trigger",
     ]
+    admin_help_trigger_selector = "body[data-shell-mode=\"admin\"] .page-help-trigger"
     admin_compact_gap_selectors = [
         "body[data-shell-mode=\"admin\"] .ops-compact-form-grid",
         "body[data-shell-mode=\"admin\"] .ops-compact-form-row",
@@ -60,6 +60,12 @@ def test_admin_density_overrides_define_compact_tokens():
         assert "padding: var(--compact-control-pad);" in non_btn_block
         assert "font-size: var(--compact-font-size);" in non_btn_block
         assert "line-height: var(--compact-line-height);" in non_btn_block
+    help_trigger_block = html.split(f'{admin_help_trigger_selector} {{', 1)[1].split("}", 1)[0]
+    assert "min-height: var(--compact-control-height);" in help_trigger_block
+    assert "width: var(--compact-control-height);" in help_trigger_block
+    assert "min-width: var(--compact-control-height);" in help_trigger_block
+    assert "padding: 0;" in help_trigger_block
+    assert "font-size: 0;" in help_trigger_block
     for selector in admin_grid_selectors:
         selector_token = f"{selector},"
         if selector_token not in html:
