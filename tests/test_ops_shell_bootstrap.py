@@ -1568,7 +1568,7 @@ def test_ops_home_context_panel_adds_selected_badge_to_active_slot_preview_item(
 
 def test_ops_home_context_panel_compacts_selection_header_copy():
     html = read_static_html("index.html")
-    head_block = html.split(".ops-library-context-head {", 1)[1].split("}", 1)[0]
+    head_block = html.split("\n    .ops-library-context-head {", 1)[1].split("}", 1)[0]
     copy_block = html.split(".ops-library-context-head-copy {", 1)[1].split("}", 1)[0]
     subtitle_block = html.split(".ops-library-context-subtitle {", 1)[1].split("}", 1)[0]
     selection_block = html.split("function renderOpsLibraryContextSelection(item) {", 1)[1].split("function findOpsLibraryContextCabinetGroup(item) {", 1)[0]
