@@ -34,9 +34,6 @@
       --danger: #b91c1c;
       --ok: #0a7f43;
       --shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
-      --admin-side-nav-width: 200px;
-      --admin-side-nav-gap: 12px;
-      --admin-shell-header-height: auto;
       --radius: 14px;
       --action-btn-size: 40px;
       --action-icon-size: 16px;
@@ -61,146 +58,6 @@
     .wrap {
       width: min(1320px, 96vw);
       margin: 8px auto 16px;
-    }
-
-    body[data-shell-mode="admin"] .wrap {
-      display: grid;
-      grid-template-columns: var(--admin-side-nav-width) minmax(0, 1fr);
-      grid-template-rows: auto minmax(0, 1fr);
-      gap: var(--admin-side-nav-gap);
-      width: 100%;
-      margin: 8px 12px 16px;
-      height: 100dvh;
-      min-height: 100vh;
-      overflow: hidden;
-    }
-
-    body[data-shell-mode="admin"] #appHero {
-      grid-column: 1 / -1;
-      grid-row: 1;
-      position: static;
-      top: auto;
-    }
-
-    body[data-shell-mode="admin"] #adminSideNav {
-      grid-column: 1;
-      grid-row: 2;
-      align-self: stretch;
-      overflow-y: auto;
-      min-height: 0;
-      max-height: 100%;
-    }
-
-    body[data-shell-mode="admin"] .primary-shell {
-      grid-column: 2;
-      grid-row: 2;
-      min-width: 0;
-      overflow-y: auto;
-      min-height: 0;
-      max-height: 100%;
-    }
-
-    .admin-side-nav {
-      position: static;
-      top: auto;
-      left: auto;
-      width: var(--admin-side-nav-width);
-      display: none;
-      z-index: 20;
-    }
-
-    body[data-shell-mode="admin"] .admin-side-nav {
-      display: block;
-    }
-
-    .admin-side-nav-card {
-      background: rgba(255,255,255,0.92);
-      border-radius: 14px;
-      padding: 8px;
-      border: 1px solid rgba(148, 163, 184, 0.32);
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .admin-side-nav-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .admin-side-nav-button {
-      width: 100%;
-      border-radius: 14px;
-      border: 1px solid #cbd5e1;
-      background: #fff;
-      padding: 8px 10px;
-      text-align: left;
-      font-weight: 700;
-      font-size: 0.86rem;
-      color: var(--ink);
-      cursor: pointer;
-    }
-
-    .admin-side-nav-button.active {
-      border-color: var(--brand);
-      color: var(--brand);
-      background: var(--brand-soft);
-      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12);
-    }
-
-    .admin-side-nav-submenu {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding-left: 10px;
-      margin-left: 4px;
-      border-left: 1px dashed #d3dde7;
-    }
-
-    .admin-side-nav-submenu--nested {
-      margin-left: 0;
-      padding-left: 14px;
-    }
-
-    .admin-side-nav-submenu--docs {
-      margin-top: 6px;
-      padding-top: 6px;
-      border-top: 1px dashed #d3dde7;
-    }
-
-    .admin-side-nav-subtitle {
-      font-size: 0.72rem;
-      color: #64748b;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-
-    .admin-side-nav-subitem {
-      display: flex;
-      align-items: center;
-      border-radius: 10px;
-      border: 1px solid transparent;
-      background: transparent;
-      padding: 6px 8px;
-      text-align: left;
-      color: #334155;
-      cursor: pointer;
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .admin-side-nav-subitem.active {
-      background: #eff6ff;
-      border-color: #bfdbfe;
-      color: #1d4ed8;
-    }
-
-    body[data-shell-mode="admin"] .goods-mode-tabs,
-    body[data-shell-mode="admin"] .subtabs {
-      display: none;
     }
 
     .hero {
@@ -2149,13 +2006,6 @@
       font-size: 0.66rem;
     }
 
-    body[data-shell-mode="admin"] :is(.home-search-action, .ops-compact-form-actions, .admin-barcode-intake-meta-actions, .row.action-row-trailing-primary) > .btn,
-    body[data-shell-mode="admin"] :is(.home-search-action, .ops-compact-form-actions, .admin-barcode-intake-meta-actions, .row.action-row-trailing-primary) > .icon-btn,
-    body[data-shell-mode="admin"] :is(.home-search-action, .ops-compact-form-actions, .admin-barcode-intake-meta-actions, .row.action-row-trailing-primary) > .icon-symbol-btn {
-      min-height: var(--compact-control-height);
-      height: var(--compact-control-height);
-    }
-
     body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
     body[data-shell-mode="admin"] .compact-stack-actions select {
       min-height: var(--compact-control-height);
@@ -3146,13 +2996,6 @@
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
-    }
-
-    .operator-search-actions > .btn,
-    .operator-search-actions > .icon-btn,
-    .operator-search-actions > .icon-symbol-btn {
-      min-height: 52px;
-      height: 52px;
     }
 
     .operator-searchbar input {
@@ -6991,14 +6834,9 @@
     }
 
     .dashboard-slot-covercard.pick {
-      box-shadow: none;
-      border-color: #d7dde5;
-      background: linear-gradient(180deg, #ffffff, #f8fafc);
-    }
-
-    .dashboard-slot-covercard.pick .dashboard-slot-covercard-cover {
+      box-shadow: 0 0 0 4px var(--selected-ring), 0 14px 24px var(--selected-shadow-soft);
       border-color: var(--selected-accent);
-      box-shadow: 0 12px 22px rgba(15, 23, 42, 0.14);
+      background: linear-gradient(180deg, var(--selected-surface), #f8fafc);
     }
 
     .dashboard-slot-covercard-cover {
@@ -7558,14 +7396,12 @@
     .dashboard-slot-shelfcard.pick .dashboard-slot-shelfcover {
       box-shadow:
         0 14px 18px rgba(15, 23, 42, 0.14),
-        6px 0 10px rgba(15, 23, 42, 0.08);
+        6px 0 10px rgba(15, 23, 42, 0.08),
+        0 0 0 4px var(--selected-ring);
       border-color: var(--selected-accent);
     }
 
     .dashboard-slot-shelfcard.pick {
-      box-shadow: none;
-      border-color: transparent;
-      background: transparent;
       --shelf-scale: 1;
       transform: none;
       z-index: 1;
@@ -10837,71 +10673,6 @@
       </div>
     </header>
 
-    <aside id="adminSideNav" class="admin-side-nav" aria-label="관리 메뉴" data-i18n-aria-label="shell.admin.nav.aria">
-      <div class="admin-side-nav-card">
-        <div class="admin-side-nav-group">
-          <button class="admin-side-nav-button admin-side-nav-button--leaf" type="button" data-admin-nav="home" data-i18n="nav.dashboard">대시보드</button>
-        </div>
-        <div class="admin-side-nav-group">
-          <button class="admin-side-nav-button" type="button" data-admin-nav="media" aria-expanded="false" aria-controls="adminNavMedia" data-i18n="nav.media">미디어</button>
-          <div id="adminNavMedia" class="admin-side-nav-submenu" hidden>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:search" data-i18n="media.mode.search">검색</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:manage" data-i18n="media.mode.manage">관리</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register" data-i18n="media.mode.register">등록/수집</button>
-            <div class="admin-side-nav-submenu admin-side-nav-submenu--nested" data-admin-subgroup="media:register" hidden>
-              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:collect" data-i18n="media.register.subtab.direct">직접 등록</button>
-              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:purchase" data-i18n="media.register.subtab.purchase">구매 내역</button>
-              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:batch" data-i18n="media.register.subtab.batch">대량 등록</button>
-              <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:register:master" data-i18n="media.register.subtab.master">마스터 정리</button>
-            </div>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="media:source" data-i18n="media.mode.source">소스 보강</button>
-          </div>
-        </div>
-        <div class="admin-side-nav-group">
-          <button class="admin-side-nav-button" type="button" data-admin-nav="collectibles" aria-expanded="false" aria-controls="adminNavCollectibles" data-i18n="nav.collectibles">컬렉터블</button>
-          <div id="adminNavCollectibles" class="admin-side-nav-submenu" hidden>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:search" data-i18n="collectibles.mode.search">컬렉터블 검색</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:manage" data-i18n="collectibles.mode.manage">컬렉터블 관리</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="collectibles:register" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
-          </div>
-        </div>
-        <div class="admin-side-nav-group">
-          <button class="admin-side-nav-button" type="button" data-admin-nav="ops" aria-expanded="false" aria-controls="adminNavOps" data-i18n="nav.ops">운영/연계</button>
-          <div id="adminNavOps" class="admin-side-nav-submenu" hidden>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:system" data-i18n="ops.system.title">시스템 상태</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:cabinet" data-i18n="ops.subtab.cabinet">장식장</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:slot" data-i18n="ops.subtab.slot">슬롯</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:camera" data-i18n="ops.subtab.camera">카메라</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:exception" data-i18n="ops.subtab.exception">예외 큐</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:account" data-i18n="ops.subtab.account">계정</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:providers" data-i18n="ops.subtab.providers">연동/API 설정</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:export" data-i18n="ops.subtab.export">백업/내보내기</button>
-            <button class="admin-side-nav-subitem" type="button" data-admin-subnav="ops:metasync" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
-            <div class="admin-side-nav-submenu admin-side-nav-submenu--docs">
-              <span class="admin-side-nav-subtitle" data-i18n="shell.admin.docs_summary">문서 / ERD / 활용 매뉴얼</span>
-              <a class="admin-side-nav-subitem" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
-              <a class="admin-side-nav-subitem" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
-              <a class="admin-side-nav-subitem" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <div class="primary-shell">
-    <div id="pageHelpOverlay" class="page-help-overlay" hidden></div>
-    <aside id="pageHelpDrawer" class="page-help-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="pageHelpTitle" data-i18n-aria-label="page_help.dialog_label">
-      <div class="page-help-drawer-head">
-        <div class="page-help-drawer-copy">
-          <strong id="pageHelpTitle"></strong>
-        </div>
-        <button id="pageHelpCloseBtn" class="btn ghost tiny page-help-close icon-symbol-btn icon-symbol-btn--close" type="button" data-page-help-close data-i18n="common.close">닫기</button>
-      </div>
-      <div id="pageHelpBody" class="page-help-drawer-body">
-        <div class="mini muted" data-i18n="page_help.empty">이 페이지 도움말을 찾지 못했습니다.</div>
-      </div>
-    </aside>
-
     <section id="opsHomeHero" class="ops-home-hero" style="display:none;">
       <div class="ops-home-hero-main">
         <div class="ops-home-hero-copy">
@@ -10965,6 +10736,19 @@
         <button id="shellOpsHomeBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.ops_home_short">hahahoho</button>
       </div>
     </div>
+
+    <div id="pageHelpOverlay" class="page-help-overlay" hidden></div>
+    <aside id="pageHelpDrawer" class="page-help-drawer" hidden role="dialog" aria-modal="true" aria-labelledby="pageHelpTitle" data-i18n-aria-label="page_help.dialog_label">
+      <div class="page-help-drawer-head">
+        <div class="page-help-drawer-copy">
+          <strong id="pageHelpTitle"></strong>
+        </div>
+        <button id="pageHelpCloseBtn" class="btn ghost tiny page-help-close icon-symbol-btn icon-symbol-btn--close" type="button" data-page-help-close data-i18n="common.close">닫기</button>
+      </div>
+      <div id="pageHelpBody" class="page-help-drawer-body">
+        <div class="mini muted" data-i18n="page_help.empty">이 페이지 도움말을 찾지 못했습니다.</div>
+      </div>
+    </aside>
 
     <div id="tabHome" class="tab-panel active">
       <section id="homeDashboardCard" class="card dashboard-screen">
@@ -11408,7 +11192,7 @@
                     <button id="operatorLookupBtn" class="btn secondary icon-btn" type="button" data-i18n-title="operator.lookup.action.run" data-i18n-aria-label="operator.lookup.action.run" title="조회" aria-label="조회">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                     </button>
-                    <button id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset"></button>
+                    <button id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="operator.lookup.action.reset" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset">비우기</button>
                   </div>
                 </div>
               </div>
@@ -12376,7 +12160,6 @@
       </div>
     </div>
 
-    </div>
   </div>
 
   <div class="wrap">
@@ -12499,7 +12282,7 @@
                   <button id="goodsSearchRunBtn" class="btn secondary icon-btn" type="button" data-i18n-title="common.search" data-i18n-aria-label="common.search" title="검색" aria-label="검색">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                   </button>
-                  <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>
+                  <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear">비우기</button>
                 </div>
               </div>
             </div>
@@ -12813,7 +12596,6 @@
         </div>
       </section>
     </div>
-    </div>
   </div>
 
   <div class="wrap">
@@ -12967,7 +12749,7 @@
           </div>
           <div class="ops-compact-form-actions">
             <button id="quickCreateBtn" class="btn" data-i18n="media.register.direct.action.save">직접 등록 저장</button>
-            <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>
+            <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset">직접 등록 폼 초기화</button>
           </div>
         </div>
         <details id="quickRegisterExtraFields" class="ops-compact-extra-fields" style="margin-top:8px;">
@@ -13056,10 +12838,6 @@
               <input id="queryCatalog" tabindex="3" data-i18n-placeholder="media.register.api_lookup.field.catalog.placeholder" placeholder="예: OL-1234" />
             </div>
           </div>
-        <div style="margin-top:6px;">
-          <label for="querySourceRef" data-i18n="media.register.api_lookup.field.source_ref.label">참조 ID / URL(선택)</label>
-          <input id="querySourceRef" data-i18n-placeholder="media.register.api_lookup.field.source_ref.placeholder" placeholder="예: Discogs release URL 또는 master:2712345" />
-        </div>
         <div class="row admin-barcode-intake-meta-actions">
           <button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>
         </div>
@@ -13355,7 +13133,7 @@
 
         <div class="row" style="margin-top:12px;">
           <button id="createOwnedBtn" class="btn" data-i18n="media.register.detail.action.save">등록 저장</button>
-          <button id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"></button>
+          <button id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n="media.register.detail.action.reset" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset">폼 초기화</button>
         </div>
         <div id="createStatus" class="status"></div>
         </div>
@@ -13433,7 +13211,7 @@
         <div class="row" style="margin-top:10px;">
           <button id="purchaseImportPreviewBtn" class="btn secondary" type="button" data-i18n="media.register.purchase.action.preview">미리보기</button>
           <button id="purchaseImportSaveBtn" class="btn" type="button" data-i18n="media.register.purchase.action.save_queue">수입 큐 저장</button>
-          <button id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>
+          <button id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset">입력 비우기</button>
         </div>
         <div id="purchaseImportStatus" class="status"></div>
 
@@ -13752,12 +13530,6 @@
           <input id="masterLimit" type="number" min="1" max="50" value="10" />
         </div>
       </div>
-      <div class="grid" style="margin-top:8px;">
-        <div>
-          <label for="masterSourceRef" data-i18n="media.register.master.field.source_ref.label">참조 ID / URL(선택)</label>
-          <input id="masterSourceRef" data-i18n-placeholder="media.register.master.field.source_ref.placeholder" placeholder="예: Discogs release URL 또는 album:121785" />
-        </div>
-      </div>
       <div class="row" style="margin-top:10px;">
         <button id="masterSearchBtn" class="btn secondary" data-i18n="media.register.master.action.search">마스터 검색</button>
         <button id="masterGroupLoadBtn" class="btn ghost" type="button" data-i18n="media.register.master.action.load_groups">저장된 마스터 묶음 보기</button>
@@ -13784,7 +13556,7 @@
           <input id="masterVariantBarcode" data-i18n-placeholder="media.register.master.field.variant_barcode.placeholder" placeholder="예: 8809338405141" />
         </div>
         <div class="row" style="align-items:end;">
-          <button id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"></button>
+          <button id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n="media.register.master.action.reset_filters" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters">초기화</button>
         </div>
       </div>
       <div class="row" style="margin-top:6px;justify-content:space-between;align-items:center;">
@@ -14065,7 +13837,7 @@
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsCabinetDeleteBtn" class="btn ghost" type="button" data-i18n="ops.cabinet.action.delete">장식장 삭제</button>
-            <button id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>
+            <button id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset">입력 초기화</button>
             <button id="opsCabinetSaveBtn" class="btn" type="button" data-i18n="ops.cabinet.action.save">장식장 생성</button>
           </div>
           <div id="opsCabinetModeHint" class="mini muted" style="margin-top:6px;" data-i18n="ops.cabinet.mode_hint">신규 장식장을 만들 때는 전체 구조를 입력하고 `장식장 생성`을 누르세요.</div>
@@ -14176,7 +13948,7 @@
           </details>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsCameraDeleteBtn" class="btn ghost" type="button" data-i18n="ops.camera.action.delete">카메라 삭제</button>
-            <button id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>
+            <button id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.camera.action.reset" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset">입력 초기화</button>
             <button id="opsCameraSaveBtn" class="btn" type="button" data-i18n="ops.camera.action.save">카메라 저장</button>
           </div>
           <div id="opsCameraStatus" class="status"></div>
@@ -14246,7 +14018,7 @@
             </div>
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
-            <button id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"></button>
+            <button id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.slot.action.reset" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset">입력 초기화</button>
             <button id="opsSlotReloadBtn" class="btn ghost" type="button" data-i18n="ops.slot.action.reload">목록 새로고침</button>
             <button id="opsSlotSaveBtn" class="btn" type="button" data-i18n="ops.slot.action.save">슬롯 저장</button>
           </div>
@@ -14395,7 +14167,7 @@
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsAuthDeleteBtn" class="btn ghost" type="button" data-i18n="ops.account.action.delete">계정 삭제</button>
-            <button id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>
+            <button id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.account.action.reset" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset">입력 초기화</button>
             <button id="opsAuthReloadBtn" class="btn ghost" type="button" data-i18n="ops.account.action.reload">목록 새로고침</button>
             <button id="opsAuthSaveBtn" class="btn" type="button" data-i18n="ops.account.action.save">계정 저장</button>
           </div>
@@ -14513,7 +14285,7 @@
             </section>
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
-            <button id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset"></button>
+            <button id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n="ops.providers.action.reset" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset">설정 다시 불러오기</button>
           </div>
           <div id="opsProviderStatus" class="status"></div>
           <div class="mini muted" style="margin-top:8px;" data-i18n="ops.providers.outro">빈 secret 입력칸은 기존 값을 유지합니다. 현재 설정 여부는 아래 상태 문구와 placeholder로 확인할 수 있습니다.</div>
@@ -14895,7 +14667,6 @@
     let homeDashboardUnassignedItems = [];
     let homeDashSurfacePanel = "";
     let homeDashboardUnassignedLoading = false;
-    let homeDashboardUnassignedLoaded = false;
     let homeDashboardUnassignedSelectedIds = new Set();
     let homeDashboardUnassignedSelectionAnchorId = 0;
     let homeDashboardSearchItems = [];
@@ -16926,8 +16697,6 @@
         "media.register.api_lookup.field.title.placeholder": '예: 제13집',
         "media.register.api_lookup.field.catalog.label": '카탈로그번호',
         "media.register.api_lookup.field.catalog.placeholder": '예: JCDS-0649',
-        "media.register.api_lookup.field.source_ref.label": '참조 ID / URL(선택)',
-        "media.register.api_lookup.field.source_ref.placeholder": '예: Discogs release URL 또는 master:2712345',
         "media.register.api_lookup.candidate.title": '후보 확인',
         "media.register.api_lookup.candidate.subtitle": '외부 소스 후보를 비교하고 등록할 상품을 선택합니다.',
         "media.register.api_lookup.candidate.empty_title": '조회된 후보가 없습니다.',
@@ -16965,8 +16734,6 @@
         "media.register.master.field.query.label": '마스터 검색어',
         "media.register.master.field.query.placeholder": '예: 산울림 11집',
         "media.register.master.field.limit.label": '조회 수',
-        "media.register.master.field.source_ref.label": '참조 ID / URL(선택)',
-        "media.register.master.field.source_ref.placeholder": '예: Discogs release URL 또는 album:121785',
         "media.register.master.action.search": '마스터 검색',
         "media.register.master.action.load_groups": '기존 그룹 불러오기',
         "media.register.master.section.candidates": '마스터 후보',
@@ -17068,7 +16835,6 @@
         "media.register.master.state.variants_prompt": "버전을 불러오세요.",
         "media.register.master.state.candidates_empty": "마스터 후보가 없습니다.",
         "media.register.master.status.query_required": "마스터 검색어를 입력하세요.",
-        "media.register.master.status.direct_source_requires_explicit_source": "참조 ID / URL로 직접 조회할 때는 마스터 소스를 먼저 선택하세요.",
         "media.register.master.status.searching": "마스터 검색 중...",
         "media.register.master.status.search_failed": "마스터 검색 실패",
         "media.register.master.status.search_complete": "검색 완료: {count}",
@@ -17212,7 +16978,6 @@
         "media.register.api_lookup.status.category_mismatch_hint": "후보는 있지만 현재 카테고리 {category} 필터에 걸려 숨겨졌습니다. 감지된 매체: {detected}",
         "media.register.api_lookup.status.category_mismatch_autofix": "현재 카테고리 {category} 대신 감지된 매체 {detected}로 맞춰 결과를 표시했습니다.",
         "media.register.api_lookup.status.query_requires_term": "조건 조회는 아티스트/상품명/카탈로그번호 중 1개 이상 필요합니다.",
-        "media.register.api_lookup.status.direct_source_requires_explicit_source": "참조 ID / URL로 직접 조회할 때는 소스를 먼저 선택하세요.",
         "media.register.api_lookup.status.slot_selection_required": "장식장/열/칸을 모두 선택하세요.",
         "media.register.api_lookup.status.slot_not_found": "선택한 장식장/열/칸 슬롯을 찾지 못했습니다.",
         "media.register.api_lookup.status.query_loading": "조건 조회 중... ({source})",
@@ -19380,8 +19145,6 @@
         "media.register.api_lookup.field.title.placeholder": 'e.g. Vol. 13',
         "media.register.api_lookup.field.catalog.label": 'Catalog No.',
         "media.register.api_lookup.field.catalog.placeholder": 'e.g. JCDS-0649',
-        "media.register.api_lookup.field.source_ref.label": 'Reference ID / URL (optional)',
-        "media.register.api_lookup.field.source_ref.placeholder": 'e.g. Discogs release URL or master:2712345',
         "media.register.api_lookup.candidate.title": 'Review Candidates',
         "media.register.api_lookup.candidate.subtitle": 'Compare external candidates and choose the item to register.',
         "media.register.api_lookup.candidate.empty_title": 'No candidates found.',
@@ -19419,8 +19182,6 @@
         "media.register.master.field.query.label": 'Master Query',
         "media.register.master.field.query.placeholder": 'e.g. Sanullim Vol. 11',
         "media.register.master.field.limit.label": 'Rows',
-        "media.register.master.field.source_ref.label": 'Reference ID / URL (optional)',
-        "media.register.master.field.source_ref.placeholder": 'e.g. Discogs release URL or album:121785',
         "media.register.master.action.search": 'Search Masters',
         "media.register.master.action.load_groups": 'Load Existing Groups',
         "media.register.master.section.candidates": 'Master Candidates',
@@ -19522,7 +19283,6 @@
         "media.register.master.state.variants_prompt": "Load versions to continue.",
         "media.register.master.state.candidates_empty": "No master candidates found.",
         "media.register.master.status.query_required": "Enter a master query.",
-        "media.register.master.status.direct_source_requires_explicit_source": "Choose a master source before using a reference ID or URL.",
         "media.register.master.status.searching": "Searching masters...",
         "media.register.master.status.search_failed": "Failed to search masters",
         "media.register.master.status.search_complete": "Search complete: {count}",
@@ -19666,7 +19426,6 @@
         "media.register.api_lookup.status.category_mismatch_hint": "Candidates exist, but the current {category} category filter is hiding them. Detected media: {detected}",
         "media.register.api_lookup.status.category_mismatch_autofix": "Showing results with detected media {detected} instead of the current {category} category.",
         "media.register.api_lookup.status.query_requires_term": "Provide at least one of artist, item title, or catalog number to search by criteria.",
-        "media.register.api_lookup.status.direct_source_requires_explicit_source": "Choose an explicit source before using a reference ID or URL.",
         "media.register.api_lookup.status.slot_selection_required": "Select a cabinet, column, and slot.",
         "media.register.api_lookup.status.slot_not_found": "Could not find the selected cabinet / column / slot.",
         "media.register.api_lookup.status.query_loading": "Searching by criteria... ({source})",
@@ -21846,8 +21605,6 @@
         "media.register.api_lookup.field.title.placeholder": '例: 第13集',
         "media.register.api_lookup.field.catalog.label": 'カタログ番号',
         "media.register.api_lookup.field.catalog.placeholder": '例: JCDS-0649',
-        "media.register.api_lookup.field.source_ref.label": '参照ID / URL(任意)',
-        "media.register.api_lookup.field.source_ref.placeholder": '例: Discogs release URL または master:2712345',
         "media.register.api_lookup.candidate.title": '候補確認',
         "media.register.api_lookup.candidate.subtitle": '外部ソース候補を比較し、登録する商品を選びます。',
         "media.register.api_lookup.candidate.empty_title": '候補がありません。',
@@ -21885,8 +21642,6 @@
         "media.register.master.field.query.label": 'マスター検索語',
         "media.register.master.field.query.placeholder": '例: サヌリム 11集',
         "media.register.master.field.limit.label": '表示数',
-        "media.register.master.field.source_ref.label": '参照ID / URL(任意)',
-        "media.register.master.field.source_ref.placeholder": '例: Discogs release URL または album:121785',
         "media.register.master.action.search": 'マスター検索',
         "media.register.master.action.load_groups": '既存グループ読み込み',
         "media.register.master.section.candidates": 'マスター候補',
@@ -21988,7 +21743,6 @@
         "media.register.master.state.variants_prompt": "バージョンを読み込んでください。",
         "media.register.master.state.candidates_empty": "マスター候補がありません。",
         "media.register.master.status.query_required": "マスター検索語を入力してください。",
-        "media.register.master.status.direct_source_requires_explicit_source": "参照ID / URLで直接照会するときは、先にマスターソースを選択してください。",
         "media.register.master.status.searching": "マスターを検索中...",
         "media.register.master.status.search_failed": "マスター検索に失敗しました",
         "media.register.master.status.search_complete": "検索完了: {count}",
@@ -22132,7 +21886,6 @@
         "media.register.api_lookup.status.category_mismatch_hint": "候補はありますが、現在のカテゴリ {category} フィルタで隠れています。検出メディア: {detected}",
         "media.register.api_lookup.status.category_mismatch_autofix": "現在のカテゴリ {category} の代わりに、検出メディア {detected} に合わせて結果を表示しました。",
         "media.register.api_lookup.status.query_requires_term": "条件照会にはアーティスト名、商品名、カタログ番号のうち1つ以上が必要です。",
-        "media.register.api_lookup.status.direct_source_requires_explicit_source": "参照ID / URLで直接照会するときは、先に検索ソースを選択してください。",
         "media.register.api_lookup.status.slot_selection_required": "キャビネット / 列 / スロットをすべて選択してください。",
         "media.register.api_lookup.status.slot_not_found": "選択したキャビネット / 列 / スロットが見つかりませんでした。",
         "media.register.api_lookup.status.query_loading": "条件照会中... ({source})",
@@ -30157,9 +29910,6 @@
       homeDashboardWorkbenchMode = next;
       resetDashboardWorkbenchPage();
       renderDashboardWorkbench();
-      if (next === "UNASSIGNED" && !homeDashboardUnassignedLoaded && !homeDashboardUnassignedLoading) {
-        loadDashboardUnassignedItems({ silent: true }).catch(() => {});
-      }
     }
 
     function syncDashboardSelectionControls() {
@@ -31275,7 +31025,6 @@
 
     async function loadDashboardUnassignedItems(opts = {}) {
       const silent = Boolean(opts?.silent);
-      let errorMessage = "";
       try {
         homeDashboardUnassignedLoading = true;
         resetDashboardWorkbenchPage();
@@ -31288,7 +31037,6 @@
           sort: "DISPLAY",
           limit: "300",
         });
-        params.set("include_relation_summary", "false");
         if (category !== "ANY") params.set("category", category);
         if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);
         const res = await fetch(`/owned-items?${params.toString()}`);
@@ -31303,22 +31051,19 @@
           }
         }
         homeDashboardUnassignedSelectedIds = nextSelected;
-        homeDashboardUnassignedLoaded = true;
+        renderDashboardUnassignedItems();
       } catch (err) {
         homeDashboardUnassignedItems = [];
-        homeDashboardUnassignedLoaded = false;
-        errorMessage = err.message;
+        renderDashboardUnassignedItems();
+        if (!silent) setStatus("homeDashboardStatus", "err", err.message);
       } finally {
         homeDashboardUnassignedLoading = false;
         renderDashboardUnassignedItems();
-        if (!silent && errorMessage) setStatus("homeDashboardStatus", "err", errorMessage);
       }
     }
 
     async function loadDashboardSearchItems(opts = {}) {
       const silent = Boolean(opts?.silent);
-      let errorMessage = "";
-      let completionMessage = "";
       try {
         homeDashboardWorkbenchMode = "SEARCH";
         homeDashboardSearchLoading = true;
@@ -31330,7 +31075,6 @@
           sort: "DISPLAY",
           limit: "100",
         });
-        params.set("include_relation_summary", "false");
         const category = String($("homeDashMediaFilter")?.value || "ANY").trim().toUpperCase() || "ANY";
         const signatureMode = dashboardWorkbenchSignatureModeValue();
         const artist = $("homeDashSearchArtist")?.value.trim() || "";
@@ -31354,18 +31098,18 @@
         }
         homeDashboardSearchSelectedIds = nextSelected;
         homeDashboardWorkbenchMode = "SEARCH";
+        renderDashboardWorkbench();
         if (!silent) {
-          completionMessage = t("dashboard.workbench.status.search_complete", { count: formatCount(homeDashboardSearchItems.length) });
+          setStatus("homeDashboardStatus", "ok", t("dashboard.workbench.status.search_complete", { count: formatCount(homeDashboardSearchItems.length) }));
           $("homeDashWorkbenchList")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       } catch (err) {
         homeDashboardSearchItems = [];
-        errorMessage = err.message;
+        renderDashboardWorkbench();
+        if (!silent) setStatus("homeDashboardStatus", "err", err.message);
       } finally {
         homeDashboardSearchLoading = false;
         renderDashboardWorkbench();
-        if (!silent && errorMessage) setStatus("homeDashboardStatus", "err", errorMessage);
-        else if (!silent && completionMessage) setStatus("homeDashboardStatus", "ok", completionMessage);
       }
     }
 
@@ -32542,16 +32286,11 @@
       try {
         homeDashboardSlotItemsLoading = true;
         renderDashboardCabinetDetail();
-        renderDashboardWorkbench();
         if (!silent) {
           setStatus("homeDashboardStatus", "ok", t("dashboard.slot.status.loading", { slot: storageSlotDisplayLabel(slotRow) }));
         }
         const requestedSlotCode = slotCode;
-        const params = new URLSearchParams({
-          limit: "300",
-          include_relation_summary: "false",
-        });
-        const res = await fetch(`/storage-slots/${slotId}/owned-items?${params.toString()}`);
+        const res = await fetch(`/storage-slots/${slotId}/owned-items?limit=300`);
         const data = await safeJson(res);
         if (!res.ok) throw new Error(responseDetailText(data, t("dashboard.slot.status.load_failed")));
         if (homeDashboardSelectedSlotCode !== requestedSlotCode) return;
@@ -32564,17 +32303,21 @@
         }
         homeDashboardSlotSelectedIds = nextSelected;
         updateDashboardSlotSelectionSnapshot();
+        renderDashboardCabinetDetail();
         if (!silent) {
           setStatus("homeDashboardStatus", "ok", t("dashboard.slot.status.load_complete", {
             slot: storageSlotDisplayLabel(slotRow),
             count: countWithUnit(homeDashboardSlotItems.length),
           }));
         }
+        renderDashboardWorkbench();
       } catch (err) {
         homeDashboardSlotItems = [];
         homeDashboardSlotItemsSlotCode = null;
         resetDashboardSlotPage();
         resetDashboardSlotSelection();
+        renderDashboardCabinetDetail();
+        renderDashboardWorkbench();
         if (!silent) setStatus("homeDashboardStatus", "err", err.message);
       } finally {
         homeDashboardSlotItemsLoading = false;
@@ -33933,26 +33676,12 @@
       }
     }
 
-    function isHomeDashboardSurfaceActive() {
-      return Boolean($("tabHome")?.classList.contains("active") || currentShellMode() === "cabinets");
-    }
-
-    function isHomeSearchSurfaceActive() {
-      return Boolean($("tabSearch")?.classList.contains("active"));
-    }
-
     function refreshHomeDashboardInBackground() {
-      if (!isHomeDashboardSurfaceActive()) return;
       loadHomeDashboard({ silent: true }).catch(() => {});
     }
 
     function refreshHomeSearchInBackground() {
-      if (!isHomeSearchSurfaceActive()) return;
       homeSearchOwnedItems({ allowPageAdjust: false }).catch(() => {});
-    }
-
-    function shouldRefreshDashboardUnassignedWorkbench() {
-      return homeDashboardWorkbenchMode === "UNASSIGNED" || !homeDashboardUnassignedLoaded;
     }
 
     function shouldKeepHomeMasterContextForOwnedItem(ownedItemId) {
@@ -35986,9 +35715,7 @@
         renderDashboardSlotCards(data.by_slot, data.in_collection_items);
         applyDashboardWorkbenchPreferences();
         phase = "unassigned";
-        if (shouldRefreshDashboardUnassignedWorkbench()) {
-          await loadDashboardUnassignedItems({ silent: true });
-        }
+        await loadDashboardUnassignedItems({ silent: true });
         if (currentShellMode() === "cabinets" && pendingOpsCabinetSelection) {
           phase = "cabinet-route";
           await applyPendingOpsCabinetSelection({ silent: true });
@@ -39468,11 +39195,11 @@
         homeSelectedMasterId = $("editLinkedAlbumMasterId").value.trim()
           ? Number($("editLinkedAlbumMasterId").value)
           : null;
-        if (homeSelectedMasterId) {
-          loadHomeMasterMembers(homeSelectedMasterId, { autoOpenFirst: false }).catch((err) => {
-            console.warn("saveHomeEditedItem post-save master refresh failed", err);
-          });
-        }
+        await refreshHomeManageContext(ownedItemId, {
+          keepMasterContext: Boolean(homeSelectedMasterId),
+          masterId: homeSelectedMasterId,
+          reloadMaster: Boolean(homeSelectedMasterId),
+        });
         refreshHomeDashboardInBackground();
         refreshHomeSearchInBackground();
         refreshOpsExceptionInBackground();
@@ -40001,7 +39728,6 @@
       $("queryArtist").value = "";
       $("queryTitle").value = "";
       $("queryCatalog").value = "";
-      $("querySourceRef").value = "";
       selectedCandidate = null;
       syncMusicVisibility();
       setStatus("createStatus", "ok", "");
@@ -42096,28 +41822,10 @@
       };
     }
 
-    function detectDirectMetadataLookupSource(value) {
-      const text = String(value || "").trim();
-      if (!text) return null;
-      if (/discogs\.com\//i.test(text) || /api\.discogs\.com\//i.test(text) || /^(?:release|master):/i.test(text)) return "DISCOGS";
-      if (/maniadb\.com\//i.test(text) || /^album:/i.test(text)) return "MANIADB";
-      if (/musicbrainz\.org\//i.test(text)) return "MUSICBRAINZ";
-      return null;
-    }
-
     async function querySearch() {
       const selectedSource = String($("metaSourceFilter").value || "AUTO").trim().toUpperCase() || "AUTO";
-      const directSourceQuery = $("querySourceRef").value.trim() || null;
-      const detectedDirectSource = detectDirectMetadataLookupSource(directSourceQuery);
-      const effectiveSource = detectedDirectSource || selectedSource;
-      if (directSourceQuery && effectiveSource === "AUTO") {
-        renderRegisterLookupProviderStatusBadges([]);
-        setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.direct_source_requires_explicit_source"));
-        return;
-      }
-      const requestSources = directSourceQuery ? [effectiveSource] : buildRegisterLookupSourceCandidates(selectedSource);
+      const requestSources = buildRegisterLookupSourceCandidates(selectedSource);
       const payload = {
-        query: directSourceQuery,
         category: $("category").value,
         artist_or_brand: $("queryArtist").value.trim() || null,
         title: $("queryTitle").value.trim() || null,
@@ -42126,7 +41834,7 @@
       };
       const requestedCategory = payload.category;
 
-      const hasAny = payload.query || payload.artist_or_brand || payload.title || payload.catalog_no;
+      const hasAny = payload.artist_or_brand || payload.title || payload.catalog_no;
       if (!hasAny) {
         renderRegisterLookupProviderStatusBadges([]);
         setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.query_requires_term"));
@@ -42606,23 +42314,15 @@
     }
 
     async function searchAlbumMasters() {
-      const selectedSource = String($("masterSource").value || "AUTO").trim().toUpperCase() || "AUTO";
-      const directSourceQuery = $("masterSourceRef").value.trim();
-      const detectedDirectSource = detectDirectMetadataLookupSource(directSourceQuery);
-      const effectiveSource = detectedDirectSource || selectedSource;
-      const query = directSourceQuery || $("masterQuery").value.trim();
+      const query = $("masterQuery").value.trim();
       const loadingStatusText = t("media.register.master.status.searching");
       if (!query) {
         setStatus("masterSearchStatus", "err", t("media.register.master.status.query_required"));
         return;
       }
-      if (directSourceQuery && effectiveSource === "AUTO") {
-        setStatus("masterSearchStatus", "err", t("media.register.master.status.direct_source_requires_explicit_source"));
-        return;
-      }
 
       const payload = {
-        source: effectiveSource,
+        source: $("masterSource").value,
         query,
         limit: Math.max(1, Math.min(50, Number($("masterLimit").value || 10)))
       };
@@ -45490,14 +45190,12 @@
     $("queryArtist").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
     $("queryTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
     $("queryCatalog").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
-    $("querySourceRef").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
     $("querySearchBtn").addEventListener("click", querySearch);
     $("createOwnedBtn").addEventListener("click", createOwnedItem);
     $("csvUploadBtn").addEventListener("click", uploadCsv);
     $("queueLoadBtn").addEventListener("click", loadReviewQueue);
     $("ownedLoadBtn").addEventListener("click", loadOwnedItems);
     $("masterSearchBtn").addEventListener("click", searchAlbumMasters);
-    $("masterSourceRef").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); searchAlbumMasters(); } });
     $("masterVariantsBtn").addEventListener("click", () => loadMasterVariants({ resetPage: true }));
     $("masterVariantResetBtn").addEventListener("click", () => {
       resetMasterVariantPager({ clearInputs: true });
