@@ -86,7 +86,7 @@ def test_admin_removes_linked_collectibles_panel():
 def test_admin_nav_icon_rail_at_1080():
     html = read_static_html("index.html")
     block_1080 = html.split("@media (max-width: 1080px)", 1)[1].split("@media", 1)[0]
-    assert "body[data-shell-mode=\"admin\"] #adminSideNav.admin-side-nav--icon" in block_1080
+    assert "body[data-shell-mode=\"admin\"] #adminSideNav.primary-side-nav--icon" in block_1080
     assert "width: var(--admin-side-nav-icon-width);" in block_1080
 ```
 
@@ -341,6 +341,7 @@ if (navId) {
 - [ ] **Step 7: Add `data-nav-icon` attributes to top buttons**
 
 ```html
+<button class="admin-side-nav-button admin-side-nav-button--leaf" data-admin-nav="home" data-nav-icon="D" ...>대시보드</button>
 <button class="admin-side-nav-button" data-admin-nav="media" data-nav-icon="M" ...>미디어</button>
 <button class="admin-side-nav-button" data-admin-nav="collectibles" data-nav-icon="C" ...>컬렉터블</button>
 <button class="admin-side-nav-button" data-admin-nav="ops" data-nav-icon="O" ...>운영/연계</button>
@@ -525,6 +526,8 @@ pytest /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_op
 Expected: PASS.
 
 - [ ] Manual checks (admin UI):
+  - Header is static (not sticky) while nav/content scroll independently.
+  - Description toggles default-collapsed and expand/collapse changes layout.
   - Keyboard: Tab through parent menu buttons, confirm `aria-expanded` updates and children become focusable only when expanded.
   - Persistence: Expand a parent, navigate to another admin subpage, verify parent remains open (same tab).
   - Deep-link: Open a URL that routes directly to a child subpage; verify its parent opens.
