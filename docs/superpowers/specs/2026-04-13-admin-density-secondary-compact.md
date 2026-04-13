@@ -38,6 +38,7 @@ Continue the admin-only density tightening to keep core management forms at two 
   - Nested context elements rendered by `renderMediaSearchContextSelection`:
     - `.ops-library-context-head`, `.ops-library-context-head-actions`
     - `.operator-mini-list` (current location line)
+    - `.ops-plugin-section`, `.ops-plugin-section-cards` (artist context wrapper)
     - `.ops-artist-context-card`, `.ops-artist-context-media`, `.ops-artist-context-image`
 - Tighten vertical spacing without changing behavior or forcing nowrap:
   - Reduce `#adminSearchContextBody` internal `gap`/`padding` (admin-only override).
@@ -46,7 +47,13 @@ Continue the admin-only density tightening to keep core management forms at two 
 - No changes to data fields, labels, or behavior; only layout/spacing in admin search context.
 
 ### R4. Consistent Compact Tokens
-- Use existing admin compact tokens defined under `body[data-shell-mode="admin"]`:\n  `--compact-control-height`, `--compact-control-pad`, `--compact-font-size`, `--compact-line-height`, `--compact-gap`.\n- Use `var(--compact-gap)` (or the nearest existing compact token) for new admin-only spacing overrides.
+- Use existing admin compact tokens defined under `body[data-shell-mode="admin"]`:
+  - `--compact-control-height`
+  - `--compact-control-pad`
+  - `--compact-font-size`
+  - `--compact-line-height`
+  - `--compact-gap`
+- Use `var(--compact-gap)` (or the nearest existing compact token) for new admin-only spacing overrides.
 - Do not introduce new tokens.
 
 ### R5. Tests + Manual Check
@@ -55,6 +62,7 @@ Continue the admin-only density tightening to keep core management forms at two 
   - Two-row structure for `#homeEditProductCoreRowA/B` and `#goodsManageCoreRowA/B` at 1320px (via existing row markers and grid templates).
   - Presence of compact gap usage on any new admin-only grid rules introduced.
   - Admin search context panel compaction rules exist under `body[data-shell-mode="admin"]` (e.g., `#adminSearchContextBody` spacing override and artist image size override in admin scope).
+  - Admin search context plugin wrapper spacing overrides are present for `.ops-plugin-section` / `.ops-plugin-section-cards` in admin scope.
 - Manual verification (visual): at **1320px width**, confirm the two-row blocks stay at two rows and the admin search context panel is visibly tighter while preserving wrapping behavior.
 
 ---
