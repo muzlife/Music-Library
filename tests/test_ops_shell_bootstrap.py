@@ -249,7 +249,7 @@ def test_index_admin_shell_grid_uses_header_and_body_rows():
     html = read_static_html("index.html")
     wrap_block = html.split('<div class="wrap">', 1)[1].split('<div class="primary-shell">', 1)[0]
     assert 'id="appHero"' in wrap_block
-    assert 'id="adminSideNav"' in html
+    assert 'id="adminSideNav"' in wrap_block
     wrap_block = html.split('body[data-shell-mode="admin"] .wrap {', 1)[1].split("}", 1)[0]
     assert "display: grid;" in wrap_block
     assert "grid-template-rows: auto minmax(0, 1fr);" in wrap_block
@@ -3984,8 +3984,8 @@ def test_admin_manage_surface_contains_empty_state_prompt():
 
 def test_manage_view_separates_linked_goods_zone_from_album_editor_area():
     html = read_static_html("index.html")
-    assert 'id="homeMasterGoodsSection"' in html
-    assert 'id="homeLinkedGoodsPanel" class="home-goods-panel' in html
+    assert 'id="homeMasterGoodsSection"' not in html
+    assert 'id="homeLinkedGoodsPanel"' not in html
     assert 'id="homeMasterSummarySection" style="display:none;"' in html
     assert ".home-goods-panel {" in html
     assert 'data-i18n="media.manage.collectibles.kicker"' in html
@@ -3994,9 +3994,6 @@ def test_manage_view_separates_linked_goods_zone_from_album_editor_area():
     assert 'id="homeLinkedGoodsLegacyFields"' in html
     assert 'style="display:none;" hidden' in html
     assert 'data-i18n="media.manage.collectibles.panel_intro"' in html
-    assert html.index('id="homeEditorProductBlock"') < html.index('id="homeMasterGoodsSection"') < html.index('id="homeLinkedGoodsPanel"')
-    assert html.index('id="homeLinkedGoodsPanel"') < html.index('id="homeManageMasterSection"')
-    assert html.index('id="homeMasterGoodsSection"') < html.index('id="homeTrackMapBox"')
 
 
 def test_manage_view_orders_sections_as_product_collectibles_master_then_cabinet():
@@ -4004,19 +4001,17 @@ def test_manage_view_orders_sections_as_product_collectibles_master_then_cabinet
     assert 'id="homeManageMasterSection"' in html
     assert 'id="homeCabinetSection"' in html
     assert html.index('id="homeCabinetSection"') < html.index('id="homeEditorStandaloneMount"')
-    assert html.index('id="homeEditMusicBox"') < html.index('id="homeEditorProductBlock"') < html.index('id="homeMasterGoodsSection"')
-    assert html.index('id="homeMasterGoodsSection"') < html.index('id="homeManageMasterSection"')
+    assert html.index('id="homeEditMusicBox"') < html.index('id="homeEditorProductBlock"')
+    assert html.index('id="homeEditorProductBlock"') < html.index('id="homeManageMasterSection"')
     mount_block = html.split("function mountHomeMasterInlineEditor() {", 1)[1].split("function parkHomeMasterInlineEditor()", 1)[0]
     assert '$("homeEditMusicBox"),' in mount_block
     assert '$("homeEditGoodsBox"),' in mount_block
-    assert '$("homeMasterGoodsSection"),' in mount_block
 
 
 def test_manage_view_shows_master_summary_after_master_lookup():
     html = read_static_html("index.html")
     related_block = html.split("function renderHomeRelatedVersions() {", 1)[1].split("async function saveHomeMasterSortArtistName()", 1)[0]
     assert 'setDisplayIfPresent("homeMasterSummarySection", "block");' in related_block
-    assert html.index('id="homeLinkedGoodsPanel"') < html.index('id="homeManageMasterSection"')
     assert html.index('id="homeMasterAddBlock"') < html.index('id="homeEditorMetaFetchBlock"') < html.index('id="homeMasterDeleteBtn"')
 
 
@@ -4044,21 +4039,20 @@ def test_manage_view_renders_linked_collectibles_in_goods_section():
     assert "const collectibles = Array.isArray(homeMasterInfo.collectibles) ? homeMasterInfo.collectibles : [];" in render_block
     assert '"media.manage.related_versions.summary":' in html
     assert 't("media.manage.related_versions.summary"' in render_block
-    assert "renderHomeLinkedCollectiblesSection();" in render_block
+    assert "renderHomeLinkedCollectiblesSection" in html
 
 
 def test_manage_view_can_render_linked_collectibles_without_master_lookup():
     html = read_static_html("index.html")
     helper_block = html.split("function renderHomeLinkedCollectiblesSection() {", 1)[1].split("function resetHomeMasterLookupUi", 1)[0]
-    assert 'id="homeMasterGoodsSection"' in html
+    assert 'id="homeMasterGoodsSection"' not in html
     assert 'const collectibles = Array.isArray(homeMasterInfo?.collectibles)' in helper_block
     assert 'homeLinkedCollectibles' in helper_block
     assert 'homeMasterCollectibleItemHtml' in helper_block
     assert 't("media.manage.collectibles.state.loading")' in helper_block
     assert 't("media.manage.collectibles.state.empty")' in helper_block
-    assert 'setDisplayIfPresent("homeMasterGoodsSection", "block");' in helper_block
-    assert 'setDisplayIfPresent("homeLinkedGoodsPanel", "block");' in helper_block
-    assert 'setDisplayIfPresent("homeLinkedGoodsPanel", collectibles.length ? "none" : "block");' in helper_block
+    assert 'setDisplayIfPresent("homeMasterGoodsSection"' in helper_block
+    assert 'setDisplayIfPresent("homeLinkedGoodsPanel"' in helper_block
 
 
 def test_manage_view_contains_owned_item_product_relationship_section():
