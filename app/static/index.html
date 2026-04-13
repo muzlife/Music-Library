@@ -2345,17 +2345,11 @@
       min-height: var(--compact-control-height);
       width: var(--compact-control-height);
       min-width: var(--compact-control-height);
-      padding: var(--compact-control-pad);
-      font-size: var(--compact-font-size);
-      line-height: var(--compact-line-height);
+      padding: 0;
+      font-size: 0;
+      line-height: 1;
       box-sizing: border-box;
       overflow: hidden;
-      color: transparent;
-      text-shadow: none;
-    }
-
-    body[data-shell-mode="admin"] .page-help-trigger::before {
-      color: #0f766e;
     }
 
     body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
