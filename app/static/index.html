@@ -10837,70 +10837,6 @@
       </div>
     </header>
 
-    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">
-      <div class="ops-home-hero-main">
-        <div class="ops-home-hero-copy">
-          <span class="ops-home-hero-kicker" data-i18n="shell.ops.kicker">Operator Home</span>
-          <h1 data-i18n="shell.ops.title">라이브러리 운영 홈</h1>
-          <p data-i18n="shell.ops.subtitle">현장 조회, 위치 확인, 최근 흐름을 한 화면에서 정리합니다.</p>
-        </div>
-        <div class="ops-home-hero-side">
-          <div id="opsUtilityMount" class="utility-mount"></div>
-          <div class="ops-home-hero-art" aria-hidden="true">
-            <span class="ops-home-record ops-home-record--a"></span>
-            <span class="ops-home-record ops-home-record--b"></span>
-            <span class="ops-home-note ops-home-note--one">♪</span>
-            <span class="ops-home-note ops-home-note--two">♬</span>
-          </div>
-        </div>
-      </div>
-      <details class="manual-block page-help-source ops-home-manual" data-page-help-source="ops-home" hidden>
-        <summary data-i18n="manual.ops_home.summary">운영 홈 활용 매뉴얼</summary>
-        <div class="manual-block-body">
-          <ol>
-            <li data-i18n="manual.ops_home.item1">상품 보유 여부나 현재 위치를 빠르게 확인해야 할 때 이 화면을 엽니다.</li>
-            <li data-i18n="manual.ops_home.item2">곡명, 아티스트명, 상품명, 바코드, 견출지 ID로 먼저 상품을 조회합니다.</li>
-            <li data-i18n="manual.ops_home.item3">현재 위치와 직전 위치를 확인해 장식장 동선을 판단합니다.</li>
-            <li data-i18n="manual.ops_home.item4">수정이나 재배치가 필요하면 관리자만 상단 관리로 이동합니다.</li>
-          </ol>
-          <div class="manual-block-note" data-i18n="manual.ops_home.note">운영 홈은 조회 전용입니다. 상품 수정, 이동, 등록/삭제는 관리에서만 처리합니다.</div>
-        </div>
-      </details>
-      <div class="shell-header-row ops-home-shell-row">
-        <div id="shellTabs" class="tabs" style="display:none;">
-          <button id="tabSimpleBtn" class="tab-btn active" type="button" data-i18n="nav.ops_home">운영 홈</button>
-          <button id="shellCabinetsBtn" class="tab-btn" type="button" data-i18n="nav.cabinets">장식장</button>
-        </div>
-        <div id="opsUtilityMainMount" class="utility-main-mount"></div>
-      </div>
-    </section>
-
-    <div id="shellUtilityBar" class="shell-utility" style="display:none;">
-      <div class="shell-utility-tools shell-utility-tools--meta">
-        <div class="shell-doc-links admin-shell-docs">
-          <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
-          <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
-          <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
-        </div>
-        <label class="shell-locale-picker" for="shellLocaleSelect">
-          <span id="shellLocaleLabel" data-i18n="utility.language">언어</span>
-          <select id="shellLocaleSelect" aria-label="language selector">
-                <option value="ko" data-i18n="locale.option.ko">한국어</option>
-            <option value="en">EN</option>
-            <option value="ja">日本語</option>
-          </select>
-        </label>
-      </div>
-      <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
-        <span id="appSessionInfo" class="chip" style="display:none;"></span>
-        <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.admin">관리</button>
-        <button id="tabCameraBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.camera">카메라</button>
-        <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;" data-i18n="utility.reset_defaults" data-i18n-title="utility.reset_defaults_title">기본값 초기화</button>
-        <button id="appLogoutBtn" class="tab-btn" type="button" data-i18n="utility.logout">로그아웃</button>
-        <button id="shellOpsHomeBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.ops_home_short">hahahoho</button>
-      </div>
-    </div>
-
     <aside id="adminSideNav" class="admin-side-nav" aria-label="관리 메뉴" data-i18n-aria-label="shell.admin.nav.aria">
       <div class="admin-side-nav-card">
         <div class="admin-side-nav-group">
@@ -10965,6 +10901,70 @@
         <div class="mini muted" data-i18n="page_help.empty">이 페이지 도움말을 찾지 못했습니다.</div>
       </div>
     </aside>
+
+    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">
+      <div class="ops-home-hero-main">
+        <div class="ops-home-hero-copy">
+          <span class="ops-home-hero-kicker" data-i18n="shell.ops.kicker">Operator Home</span>
+          <h1 data-i18n="shell.ops.title">라이브러리 운영 홈</h1>
+          <p data-i18n="shell.ops.subtitle">현장 조회, 위치 확인, 최근 흐름을 한 화면에서 정리합니다.</p>
+        </div>
+        <div class="ops-home-hero-side">
+          <div id="opsUtilityMount" class="utility-mount"></div>
+          <div class="ops-home-hero-art" aria-hidden="true">
+            <span class="ops-home-record ops-home-record--a"></span>
+            <span class="ops-home-record ops-home-record--b"></span>
+            <span class="ops-home-note ops-home-note--one">♪</span>
+            <span class="ops-home-note ops-home-note--two">♬</span>
+          </div>
+        </div>
+      </div>
+      <details class="manual-block page-help-source ops-home-manual" data-page-help-source="ops-home" hidden>
+        <summary data-i18n="manual.ops_home.summary">운영 홈 활용 매뉴얼</summary>
+        <div class="manual-block-body">
+          <ol>
+            <li data-i18n="manual.ops_home.item1">상품 보유 여부나 현재 위치를 빠르게 확인해야 할 때 이 화면을 엽니다.</li>
+            <li data-i18n="manual.ops_home.item2">곡명, 아티스트명, 상품명, 바코드, 견출지 ID로 먼저 상품을 조회합니다.</li>
+            <li data-i18n="manual.ops_home.item3">현재 위치와 직전 위치를 확인해 장식장 동선을 판단합니다.</li>
+            <li data-i18n="manual.ops_home.item4">수정이나 재배치가 필요하면 관리자만 상단 관리로 이동합니다.</li>
+          </ol>
+          <div class="manual-block-note" data-i18n="manual.ops_home.note">운영 홈은 조회 전용입니다. 상품 수정, 이동, 등록/삭제는 관리에서만 처리합니다.</div>
+        </div>
+      </details>
+      <div class="shell-header-row ops-home-shell-row">
+        <div id="shellTabs" class="tabs" style="display:none;">
+          <button id="tabSimpleBtn" class="tab-btn active" type="button" data-i18n="nav.ops_home">운영 홈</button>
+          <button id="shellCabinetsBtn" class="tab-btn" type="button" data-i18n="nav.cabinets">장식장</button>
+        </div>
+        <div id="opsUtilityMainMount" class="utility-main-mount"></div>
+      </div>
+    </section>
+
+    <div id="shellUtilityBar" class="shell-utility" style="display:none;">
+      <div class="shell-utility-tools shell-utility-tools--meta">
+        <div class="shell-doc-links admin-shell-docs">
+          <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
+          <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
+          <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
+        </div>
+        <label class="shell-locale-picker" for="shellLocaleSelect">
+          <span id="shellLocaleLabel" data-i18n="utility.language">언어</span>
+          <select id="shellLocaleSelect" aria-label="language selector">
+                <option value="ko" data-i18n="locale.option.ko">한국어</option>
+            <option value="en">EN</option>
+            <option value="ja">日本語</option>
+          </select>
+        </label>
+      </div>
+      <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
+        <span id="appSessionInfo" class="chip" style="display:none;"></span>
+        <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.admin">관리</button>
+        <button id="tabCameraBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.camera">카메라</button>
+        <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;" data-i18n="utility.reset_defaults" data-i18n-title="utility.reset_defaults_title">기본값 초기화</button>
+        <button id="appLogoutBtn" class="tab-btn" type="button" data-i18n="utility.logout">로그아웃</button>
+        <button id="shellOpsHomeBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.ops_home_short">hahahoho</button>
+      </div>
+    </div>
 
     <div id="tabHome" class="tab-panel active">
       <section id="homeDashboardCard" class="card dashboard-screen">
