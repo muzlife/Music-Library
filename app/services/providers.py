@@ -1619,12 +1619,6 @@ def _normalize_maniadb_image_url(url: str | None, album_id: str | None = None, v
         return None
     normalized = re.sub(r"/images/album_t(?:/\d+)?/", "/images/album/", cleaned)
     normalized = normalized.replace("/images/album_t/", "/images/album/")
-    lower = normalized.lower()
-    if album_id and variant_seq:
-        if re.search(rf"{re.escape(str(album_id))}_{re.escape(str(variant_seq))}_f\\.jpg$", lower):
-            return _maniadb_variant_cover_url(album_id, variant_seq, "f") or normalized
-        if re.search(rf"{re.escape(str(album_id))}_{re.escape(str(variant_seq))}_b\\.jpg$", lower):
-            return _maniadb_variant_cover_url(album_id, variant_seq, "b") or normalized
     return normalized
 
 
@@ -1669,16 +1663,13 @@ def _parse_maniadb_release_legend(
     external_id = f"{album_id}:{variant_seq}" if variant_seq else album_id
     format_name = _infer_format_from_text(fmt_match.group(1) if fmt_match else None)
     title = album_title or f"Album {album_id}"
-    cover_image_url = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+    cover_image_url: str | None = None
     image_items: list[dict[str, Any]] = []
     track_list: list[str] = []
 
     if block_html:
         raw_image_items = _maniadb_image_items_from_block(block_html)
         seen_image_urls: set[str] = set()
-        if cover_image_url:
-            image_items.append({"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url})
-            seen_image_urls.add(cover_image_url)
         for image in raw_image_items:
             raw_uri = _pick_first_text(image.get("uri"))
             normalized_uri = _normalize_maniadb_image_url(raw_uri, album_id=album_id, variant_seq=variant_seq)
@@ -1686,12 +1677,21 @@ def _parse_maniadb_release_legend(
                 continue
             expected_token = f"{album_id}_{variant_seq}_".lower() if album_id and variant_seq else ""
             if expected_token and expected_token not in normalized_uri.lower():
-                continue
+                match = re.search(r"/(\d+)_([0-9]+)_[fb]\.jpg$", normalized_uri.lower())
+                if match:
+                    file_album_id = match.group(1).lstrip("0") or "0"
+                    file_seq = match.group(2).lstrip("0") or "0"
+                    if str(file_album_id) != str(album_id).lstrip("0") or str(file_seq) != str(variant_seq).lstrip("0"):
+                        continue
+                else:
+                    continue
             image_type = _pick_first_text(image.get("type")) or ("추가" if image_items else "앞면")
             image_items.append({"type": image_type, "uri": normalized_uri, "uri150": normalized_uri})
             seen_image_urls.add(normalized_uri)
         if image_items and not cover_image_url:
             cover_image_url = _pick_first_text(image_items[0].get("uri"))
+        if not image_items:
+            cover_image_url = _maniadb_variant_cover_url(album_id, variant_seq, "f")
 
         track_block_match = re.search(r'<td\s+class="tracks">(.*?)</td>', block_html, re.IGNORECASE | re.DOTALL)
         if track_block_match:
@@ -1700,6 +1700,10 @@ def _parse_maniadb_release_legend(
             track_list = [t for t in (_clean_html_text(tok) for tok in tokens) if t]
     elif cover_image_url:
         image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
+    else:
+        cover_image_url = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+        if cover_image_url:
+            image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
 
     return {
         "source": "MANIADB",
