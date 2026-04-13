@@ -314,3 +314,41 @@ def test_ops_system_docs_block_present():
     assert 'data-tool-doc-key="erd-summary"' in block
     assert 'data-tool-doc-key="erd-detail"' in block
     assert 'data-tool-doc-key="manual"' in block
+
+
+def test_admin_header_menu_split_compact_nav_tokens():
+    html = read_static_html("index.html")
+    root_block = html.split(":root {", 1)[1].split("}", 1)[0]
+    assert "--admin-side-nav-width: 200px;" in root_block
+    assert "--admin-side-nav-gap: 12px;" in root_block
+
+    admin_root = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
+    assert "--admin-shell-header-height: 56px;" in admin_root
+
+    nav_block = html.split(".admin-side-nav {", 1)[1].split("}", 1)[0]
+    assert "top: calc(var(--admin-shell-header-height) + 12px);" in nav_block
+    assert "position: fixed;" in nav_block
+
+    card_block = html.split(".admin-side-nav-card {", 1)[1].split("}", 1)[0]
+    assert "background:" in card_block
+    assert "padding:" in card_block
+    assert "border:" in card_block
+
+    button_block = html.split(".admin-side-nav-button {", 1)[1].split("}", 1)[0]
+    subitem_block = html.split(".admin-side-nav-subitem {", 1)[1].split("}", 1)[0]
+    assert "font-size: 0.86rem;" in button_block
+    assert "font-size: 0.78rem;" in subitem_block
+
+
+def test_media_section_intro_moves_to_help_tooltip():
+    html = read_static_html("index.html")
+    media_block = html.split('id="tabMedia"', 1)[1].split('id="tabSearch"', 1)[0]
+    assert 'data-i18n="media.subtitle"' not in media_block
+    assert 'data-help-key="help.media.summary"' in media_block
+    assert html.count('"help.media.summary":') == 3
+
+
+def test_admin_side_nav_click_collapses_other_sections():
+    html = read_static_html("index.html")
+    handler_block = html.split('$("adminSideNav")?.addEventListener("click"', 1)[1].split("});", 1)[0]
+    assert "collapseAdminSideNavAccordions" in handler_block
