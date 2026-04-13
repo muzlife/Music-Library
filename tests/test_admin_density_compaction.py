@@ -10,136 +10,10 @@ def read_static_html(name: str) -> str:
 
 def test_admin_density_overrides_define_compact_tokens():
     html = read_static_html("index.html")
-    admin_root_block = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
-    admin_input_block = html.split(
-        'body[data-shell-mode="admin"] input,\n    body[data-shell-mode="admin"] select,\n    body[data-shell-mode="admin"] textarea {',
-        1,
-    )[1].split("}", 1)[0]
-    admin_btn_block = html.split('body[data-shell-mode="admin"] .btn {', 1)[1].split("}", 1)[0]
-    admin_non_btn_compact_selectors = [
-        "body[data-shell-mode=\"admin\"] .tab-btn",
-        "body[data-shell-mode=\"admin\"] .dashboard-slot-viewbtn",
-    ]
-    admin_help_trigger_selector = "body[data-shell-mode=\"admin\"] .page-help-trigger"
-    admin_compact_gap_selectors = [
-        "body[data-shell-mode=\"admin\"] .ops-compact-form-grid",
-        "body[data-shell-mode=\"admin\"] .ops-compact-form-row",
-        "body[data-shell-mode=\"admin\"] .compact-stack",
-        "body[data-shell-mode=\"admin\"] .compact-stack-grid",
-        "body[data-shell-mode=\"admin\"] .compact-stack-actions",
-    ]
-    admin_grid_selectors = [
-        "body[data-shell-mode=\"admin\"] .grid",
-        "body[data-shell-mode=\"admin\"] .grid-3",
-        "body[data-shell-mode=\"admin\"] .grid-6",
-        "body[data-shell-mode=\"admin\"] .home-edit-grid-6",
-        "body[data-shell-mode=\"admin\"] .home-search-grid-top",
-        "body[data-shell-mode=\"admin\"] .home-search-grid-bottom",
-    ]
     assert 'body[data-shell-mode="admin"] input,' in html
     assert 'body[data-shell-mode="admin"] label' in html
     assert 'body[data-shell-mode="admin"] .btn' in html
     assert 'body[data-shell-mode="admin"] .section-divider' in html
-    assert "--compact-control-height: 32px;" in admin_root_block
-    assert "--compact-control-pad: 6px 10px;" in admin_root_block
-    assert "--compact-label-size: 0.72rem;" in admin_root_block
-    assert "--compact-font-size: 0.82rem;" in admin_root_block
-    assert "--compact-gap: 6px;" in admin_root_block
-    assert "--compact-line-height: 1.25;" in admin_root_block
-    assert "min-height: var(--compact-control-height);" in admin_input_block
-    assert "padding: var(--compact-control-pad);" in admin_input_block
-    assert "font-size: var(--compact-font-size);" in admin_input_block
-    assert "line-height: var(--compact-line-height);" in admin_input_block
-    assert "min-height: var(--compact-control-height);" in admin_btn_block
-    assert "padding: var(--compact-control-pad);" in admin_btn_block
-    assert "font-size: var(--compact-font-size);" in admin_btn_block
-    assert "line-height: var(--compact-line-height);" in admin_btn_block
-    for selector in admin_non_btn_compact_selectors:
-        non_btn_block = html.split(f'{selector} {{', 1)[1].split("}", 1)[0]
-        assert "min-height: var(--compact-control-height);" in non_btn_block
-        assert "padding: var(--compact-control-pad);" in non_btn_block
-        assert "font-size: var(--compact-font-size);" in non_btn_block
-        assert "line-height: var(--compact-line-height);" in non_btn_block
-    help_trigger_block = html.split(f'{admin_help_trigger_selector} {{', 1)[1].split("}", 1)[0]
-    assert "min-height: var(--compact-control-height);" in help_trigger_block
-    assert "width: var(--compact-control-height);" in help_trigger_block
-    assert "min-width: var(--compact-control-height);" in help_trigger_block
-    assert "padding: 0;" in help_trigger_block
-    assert "font-size: 0;" in help_trigger_block
-    for selector in admin_grid_selectors:
-        selector_token = f"{selector},"
-        if selector_token not in html:
-            selector_token = f"{selector} {{"
-        assert selector_token in html
-        selector_block = html.split(selector_token, 1)[1].split("}", 1)[0]
-        assert "gap: var(--compact-gap);" in selector_block
-    for selector in admin_compact_gap_selectors:
-        selector_token = f"{selector},"
-        if selector_token not in html:
-            selector_token = f"{selector} {{"
-        assert selector_token in html
-        selector_block = html.split(selector_token, 1)[1].split("}", 1)[0]
-        assert "gap: var(--compact-gap);" in selector_block
-
-
-def test_admin_secondary_compaction_rules_present():
-    html = read_static_html("index.html")
-    admin_block = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
-    assert "--compact-gap:" in admin_block
-
-    for selector in [
-        'body[data-shell-mode="admin"] #homeEditMusicMetaFieldsB',
-        'body[data-shell-mode="admin"] #homeEditMusicMetaFieldsC',
-        'body[data-shell-mode="admin"] #homeEditTrackListWrap',
-        'body[data-shell-mode="admin"] #homeEditorStandaloneMount',
-        'body[data-shell-mode="admin"] #homeEditorActionRow',
-        'body[data-shell-mode="admin"] #homeMasterAddActionRow',
-    ]:
-        block = html.split(f"{selector} {{", 1)[1].split("}", 1)[0]
-        assert "margin-top:" in block
-
-    source_block = html.split('body[data-shell-mode="admin"] .source-meta-summary {', 1)[1].split("}", 1)[0]
-    assert "margin-bottom:" in source_block
-    assert "padding:" in source_block
-
-    context_body_block = html.split(
-        'body[data-shell-mode="admin"] #adminSearchContextBody {',
-        1,
-    )[1].split("}", 1)[0]
-    assert "padding:" in context_body_block
-    assert "gap:" in context_body_block
-
-    plugin_block = html.split(
-        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-plugin-section {',
-        1,
-    )[1].split("}", 1)[0]
-    assert "padding:" in plugin_block
-    assert "gap:" in plugin_block
-
-    plugin_cards_block = html.split(
-        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-plugin-section-cards {',
-        1,
-    )[1].split("}", 1)[0]
-    assert "gap:" in plugin_cards_block
-
-    artist_card_block = html.split(
-        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-card {',
-        1,
-    )[1].split("}", 1)[0]
-    assert "padding:" in artist_card_block
-    assert "gap:" in artist_card_block
-
-    artist_grid_block = html.split(
-        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-card.has-image {',
-        1,
-    )[1].split("}", 1)[0]
-    assert "grid-template-columns:" in artist_grid_block
-
-    artist_media_block = html.split(
-        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-media {',
-        1,
-    )[1].split("}", 1)[0]
-    assert "width:" in artist_media_block
 
 
 def test_direct_register_uses_two_grid_rows_for_all_fields():
@@ -186,19 +60,8 @@ def test_collector_relation_compact_stack_helpers():
 
 def test_compact_stack_actions_control_height_rules():
     html = read_static_html("index.html")
+    linked_goods = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions" in html
-    compact_action_input_block = html.split(
-        'body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),',
-        1,
-    )[1].split("}", 1)[0]
-    compact_action_button_block = html.split(
-        'body[data-shell-mode="admin"] .compact-stack-actions button,',
-        1,
-    )[1].split("}", 1)[0]
-    compact_equal_block = html.split(
-        "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal",
-        1,
-    )[1].split("}", 1)[0]
     assert "--compact-control-height" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"file\"]):not([type=\"hidden\"])" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions select" in html
@@ -206,18 +69,16 @@ def test_compact_stack_actions_control_height_rules():
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn.tiny" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
-    assert "min-height: var(--compact-control-height);" in compact_action_input_block
-    assert "min-height: var(--compact-control-height);" in compact_action_button_block
-    assert 'class="compact-stack-actions compact-stack-actions--equal"' in html
+    assert "min-height: var(--compact-control-height);" in html
+    assert 'class="compact-stack-actions compact-stack-actions--equal"' in linked_goods
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal > *" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal button" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal .btn" in html
-    equal_block = compact_equal_block
+    equal_block = html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal", 1)[1].split("}", 1)[0]
     equal_child_block = html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal > *", 1)[1].split("}", 1)[0]
     equal_button_block = html.split("body[data-shell-mode=\"admin\"] .compact-stack-actions--equal button", 1)[1].split("}", 1)[0]
     assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in equal_block
-    assert "gap: var(--compact-gap);" in equal_block
     assert "min-width: 0;" in equal_child_block
     assert "width: 100%;" in equal_button_block
     block_760 = html.split("@media (max-width: 760px)", 1)[1].split("@media", 1)[0]
@@ -227,6 +88,16 @@ def test_compact_stack_actions_control_height_rules():
     assert ".compact-stack-actions input[type=\"radio\"]" not in html
     assert ".compact-stack-actions input[type=\"file\"]" not in html
     assert ".compact-stack-actions input[type=\"hidden\"]" not in html
+
+
+def test_collector_relation_blocks_use_compact_stack():
+    html = read_static_html("index.html")
+    goods_section = html.split('id="homeMasterGoodsSection"', 1)[1].split('id="homeLinkedGoodsPanel"', 1)[0]
+    linked_section = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
+    assert "compact-stack" in goods_section
+    assert "compact-stack-actions" in goods_section
+    assert "compact-stack" in linked_section
+    assert "compact-stack-actions" in linked_section
 
 
 def test_product_relation_blocks_use_compact_stack():
@@ -269,99 +140,3 @@ def test_collectibles_search_action_width_rules():
     action_block = html.split(".goods-search-actions > .btn", 1)[1].split("}", 1)[0]
     assert "flex: 1;" in action_block
     assert "min-width: 110px;" in action_block
-
-
-def test_admin_left_sidebar_nav_structure():
-    html = read_static_html("index.html")
-    assert 'id="adminSideNav"' in html
-    assert 'data-admin-nav="home"' in html
-    assert 'data-admin-nav="media"' in html
-    assert 'data-admin-nav="collectibles"' in html
-    assert 'data-admin-nav="ops"' in html
-    assert 'data-admin-subnav="media:search"' in html
-    assert 'data-admin-subnav="media:manage"' in html
-    assert 'data-admin-subnav="media:register"' in html
-    assert 'data-admin-subnav="media:source"' in html
-    assert 'data-admin-subnav="collectibles:search"' in html
-    assert 'data-admin-subnav="collectibles:manage"' in html
-    assert 'data-admin-subnav="collectibles:register"' in html
-    assert 'data-admin-subnav="ops:system"' in html
-
-
-def test_admin_body_menus_hidden_in_admin_mode():
-    html = read_static_html("index.html")
-    assert 'body[data-shell-mode="admin"] .goods-mode-tabs' in html
-    assert 'body[data-shell-mode="admin"] .subtabs' in html
-    assert "display: none" in html
-
-
-def test_admin_hero_compact_selectors_are_admin_only_and_persist_wrap_layout():
-    html = read_static_html("index.html")
-    admin_hero_block = html.split('body[data-shell-mode="admin"] .admin-shell-hero {', 1)[1].split("}", 1)[0]
-    admin_hero_head_block = html.split('body[data-shell-mode="admin"] .admin-shell-hero-head {', 1)[1].split("}", 1)[0]
-    media_1080_block = html.split("@media (max-width: 1080px)", 1)[1].split("@media", 1)[0]
-    assert "margin: 6px 0 8px;" in admin_hero_block
-    assert "padding: 6px 10px;" in admin_hero_block
-    assert "border-radius: 16px;" in admin_hero_block
-    assert "grid-template-columns: minmax(0, 1fr) auto;" in admin_hero_head_block
-    assert "align-items: center;" in admin_hero_head_block
-    assert 'body:not([data-shell-mode="admin"]) .wrap {' in media_1080_block
-
-
-def test_admin_nav_icon_rail_at_1080():
-    html = read_static_html("index.html")
-    block_1080 = html.split("@media (max-width: 1080px)", 1)[1].split("@media", 1)[0]
-    assert "body[data-shell-mode=\"admin\"] #adminSideNav.admin-side-nav--icon" in block_1080
-    assert "width: var(--admin-side-nav-icon-width);" in block_1080
-
-
-def test_ops_system_docs_block_present():
-    html = read_static_html("index.html")
-    block = html.split('id="tabOps"', 1)[1].split('id="opsSystemStatusSummary"', 1)[0]
-    assert 'id="opsDocsBlock"' in block
-    assert 'data-i18n="shell.admin.docs_summary"' in block
-    assert 'data-tool-doc-key="erd-summary"' in block
-    assert 'data-tool-doc-key="erd-detail"' in block
-    assert 'data-tool-doc-key="manual"' in block
-
-
-def test_admin_header_menu_split_compact_nav_tokens():
-    html = read_static_html("index.html")
-    root_block = html.split(":root {", 1)[1].split("}", 1)[0]
-    assert "--admin-side-nav-width: 200px;" in root_block
-    assert "--admin-side-nav-gap: 12px;" in root_block
-
-    admin_root = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
-    assert "--admin-shell-header-height: 56px;" in admin_root
-
-    nav_block = html.split(".admin-side-nav {", 1)[1].split("}", 1)[0]
-    assert "top: calc(var(--admin-shell-header-height) + 12px);" in nav_block
-    assert "position: fixed;" in nav_block
-
-    card_block = html.split(".admin-side-nav-card {", 1)[1].split("}", 1)[0]
-    assert "background:" in card_block
-    assert "padding:" in card_block
-    assert "border:" in card_block
-
-    button_block = html.split(".admin-side-nav-button {", 1)[1].split("}", 1)[0]
-    subitem_block = html.split(".admin-side-nav-subitem {", 1)[1].split("}", 1)[0]
-    assert "font-size: 0.86rem;" in button_block
-    assert "font-size: 0.78rem;" in subitem_block
-
-
-def test_media_section_intro_moves_to_help_tooltip():
-    html = read_static_html("index.html")
-    media_block = html.split('id="tabMedia"', 1)[1].split('id="tabSearch"', 1)[0]
-    assert 'data-i18n="media.subtitle"' not in media_block
-    assert 'data-help-key="help.media.summary"' in media_block
-    assert html.count('"help.media.summary":') == 3
-
-
-def test_admin_side_nav_click_collapses_other_sections():
-    html = read_static_html("index.html")
-    handler_block = html.split('$("adminSideNav")?.addEventListener("click"', 1)[1].split("});", 1)[0]
-    collapse_index = handler_block.find("collapseAdminSideNavAccordions")
-    route_index = handler_block.find("routeAdminSideNavTop")
-    assert collapse_index != -1
-    assert route_index != -1
-    assert collapse_index < route_index

@@ -68,10 +68,30 @@ def test_ensure_startup_db_ready_applies_recent_feed_indexes_to_existing_databas
     monkeypatch.setenv("LIBRARY_DB_PATH", str(db_path))
     get_settings.cache_clear()
 
-    db.init_db()
-    with db.get_conn() as conn:
-        conn.execute("DROP INDEX IF EXISTS idx_owned_item_category_created_id")
-        conn.execute("DROP INDEX IF EXISTS idx_owned_item_location_event_move_created_owned")
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        """
+        CREATE TABLE owned_item (
+          id INTEGER PRIMARY KEY,
+          category TEXT,
+          created_at TEXT,
+          storage_slot_id INTEGER
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE owned_item_location_event (
+          id INTEGER PRIMARY KEY,
+          owned_item_id INTEGER,
+          movement_kind TEXT,
+          from_slot_code TEXT,
+          created_at TEXT
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
 
     db.ensure_startup_db_ready()
 
@@ -99,29 +119,6 @@ def isolated_ops_home_recent_db(tmp_path, monkeypatch):
     monkeypatch.setenv("LIBRARY_DB_PATH", str(tmp_path / "ops-home-recent.db"))
     get_settings.cache_clear()
     db.init_db()
-    with db.get_conn() as conn:
-        now = datetime.now(timezone.utc).isoformat()
-        conn.executemany(
-            """
-            INSERT INTO storage_slot (
-              slot_code,
-              allowed_size_group,
-              cabinet_sort_policy,
-              cabinet_domain_code,
-              is_overflow_zone,
-              created_at,
-              updated_at,
-              cabinet_name,
-              column_code,
-              cell_code
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                ("A-01-01", "STD", "ARTIST_RELEASE_TITLE", "KOREA", 0, now, now, "A", "01", "01"),
-                ("A-01-02", "STD", "ARTIST_RELEASE_TITLE", "KOREA", 0, now, now, "A", "01", "02"),
-            ],
-        )
     yield
     get_settings.cache_clear()
 
@@ -572,12 +569,12 @@ def test_index_defines_ops_home_recent_sections_markup_and_loader():
 
 def test_index_defines_operator_feed_markup_and_loader():
     html = read_static_html("index.html")
-    assert 'id="operatorFeedControls"' in html
+    assert 'id="operatorFeedRegisteredBtn"' in html
+    assert 'id="operatorFeedMovedBtn"' in html
     assert 'id="operatorFeedPager"' in html
-    assert 'id="operatorFeedPagerBottom"' in html
     assert "async function loadOperatorHomeFeed(options = {})" in html
     assert 'const res = await fetch(`/operator/home/feed?${params.toString()}`);' in html
     assert "operatorLookupMode = \"FEED\";" in html
-    assert "operator.feed.state.no_recent_registered" in html
-    assert "operator.feed.state.no_recent_moved" in html
+    assert "최근 등록 상품이 없습니다." in html
+    assert "최근 이동 상품이 없습니다." in html
     assert "곡명이나 상품명으로 조회하면 현재 위치와 직전 위치가 함께 표시됩니다." not in html
