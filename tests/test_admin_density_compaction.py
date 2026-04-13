@@ -140,37 +140,3 @@ def test_collectibles_search_action_width_rules():
     action_block = html.split(".goods-search-actions > .btn", 1)[1].split("}", 1)[0]
     assert "flex: 1;" in action_block
     assert "min-width: 110px;" in action_block
-
-
-def test_admin_left_sidebar_nav_structure():
-    html = read_static_html("index.html")
-    assert 'id="adminSideNav"' in html
-    assert 'data-admin-nav="home"' in html
-    assert 'data-admin-nav="media"' in html
-    assert 'data-admin-nav="collectibles"' in html
-    assert 'data-admin-nav="ops"' in html
-    assert 'data-admin-subnav="media:search"' in html
-    assert 'data-admin-subnav="media:manage"' in html
-    assert 'data-admin-subnav="media:register"' in html
-    assert 'data-admin-subnav="media:source"' in html
-    assert 'data-admin-subnav="collectibles:search"' in html
-    assert 'data-admin-subnav="collectibles:manage"' in html
-    assert 'data-admin-subnav="collectibles:register"' in html
-    assert 'data-admin-subnav="ops:system"' in html
-
-
-def test_admin_body_menus_hidden_in_admin_mode():
-    html = read_static_html("index.html")
-    assert 'body[data-shell-mode="admin"] .goods-mode-tabs' in html
-    assert 'body[data-shell-mode="admin"] .subtabs' in html
-    assert "display: none" in html
-
-
-def test_ops_system_docs_block_present():
-    html = read_static_html("index.html")
-    block = html.split('id="tabOps"', 1)[1].split('id="opsSystemStatusSummary"', 1)[0]
-    assert 'id="opsDocsBlock"' in block
-    assert 'data-i18n="shell.admin.docs_summary"' in block
-    assert 'data-tool-doc-key="erd-summary"' in block
-    assert 'data-tool-doc-key="erd-detail"' in block
-    assert 'data-tool-doc-key="manual"' in block
