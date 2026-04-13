@@ -119,6 +119,10 @@ Move these nodes so they are direct children of `.wrap` (admin-only grid items):
 
 Keep `#opsHomeHero` and `#shellUtilityBar` in their current structure to avoid ops layout changes.
 
+- [ ] **Step 1.1: Confirm `.primary-shell` wraps admin content**
+
+Verify `.primary-shell` already wraps the main admin content. If it does not exist, introduce it so Task 1 tests and grid placement apply correctly.
+
 - [ ] **Step 2: Update admin `.wrap` grid and remove left margin**
 
 ```css
@@ -195,7 +199,7 @@ body[data-shell-mode=\"admin\"] .subtabs { display: none; }
 - [ ] **Step 7: Run tests from Task 1**
 
 Run: same pytest command from Task 1.
-Expected: PASS for grid and nav placement checks (ops removal still failing until Task 4).
+Expected: PASS for grid/nav placement checks. Icon-rail test still fails until Task 3; ops-removal tests still fail until Task 5.
 
 - [ ] **Step 8: Commit**
 
@@ -312,6 +316,7 @@ Add/confirm these attributes in markup:\n
 - Parent buttons include `aria-expanded` + `aria-controls`.\n
 - Child buttons are focusable only when expanded.\n
 - Submenu mapping matches the spec list.\n
+- Parent buttons include `aria-label` that reflects expand/collapse (e.g., “미디어 메뉴 펼치기/접기”).\n
 
 Add a test to assert all parent items exist:\n
 \n```python\n\ndef test_admin_nav_contains_all_parent_groups():\n    html = read_static_html(\"index.html\")\n    for label in [\"nav.dashboard\", \"nav.media\", \"nav.collectibles\", \"nav.ops\"]:\n        assert f'data-i18n=\"{label}\"' in html\n```\n+
