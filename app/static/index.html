@@ -586,10 +586,10 @@
     }
 
     .admin-shell-hero {
-      margin: 6px 0 8px;
-      padding: 6px 10px;
+      margin: 8px 0 6px;
+      padding: 8px 12px;
       border: 1px solid #d7e5df;
-      border-radius: 16px;
+      border-radius: 22px;
       background:
         radial-gradient(circle at top left, rgba(254, 240, 138, 0.22), transparent 30%),
         radial-gradient(circle at top right, rgba(187, 247, 208, 0.22), transparent 34%),
@@ -641,8 +641,19 @@
 
     .admin-shell-hero-head {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1.12fr) minmax(220px, 0.88fr);
       gap: 6px;
+      align-items: start;
+    }
+
+    body[data-shell-mode="admin"] .admin-shell-hero {
+      margin: 6px 0 8px;
+      padding: 6px 10px;
+      border-radius: 16px;
+    }
+
+    body[data-shell-mode="admin"] .admin-shell-hero-head {
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
     }
 
@@ -10558,7 +10569,7 @@
         width: min(640px, 96vw);
         margin: 8px auto 0;
       }
-      body[data-shell-mode="admin"] .wrap {
+      body:not([data-shell-mode="admin"]) .wrap {
         width: min(1320px, 96vw);
         margin: 8px auto 16px;
       }
