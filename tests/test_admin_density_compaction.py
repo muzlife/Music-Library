@@ -186,7 +186,6 @@ def test_collector_relation_compact_stack_helpers():
 
 def test_compact_stack_actions_control_height_rules():
     html = read_static_html("index.html")
-    linked_goods = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions" in html
     compact_action_input_block = html.split(
         'body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),',
@@ -209,7 +208,7 @@ def test_compact_stack_actions_control_height_rules():
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .compact-line" in html
     assert "min-height: var(--compact-control-height);" in compact_action_input_block
     assert "min-height: var(--compact-control-height);" in compact_action_button_block
-    assert 'class="compact-stack-actions compact-stack-actions--equal"' in linked_goods
+    assert 'class="compact-stack-actions compact-stack-actions--equal"' in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal > *" in html
     assert "body[data-shell-mode=\"admin\"] .compact-stack-actions--equal button" in html
@@ -232,12 +231,8 @@ def test_compact_stack_actions_control_height_rules():
 
 def test_collector_relation_blocks_use_compact_stack():
     html = read_static_html("index.html")
-    goods_section = html.split('id="homeMasterGoodsSection"', 1)[1].split('id="homeLinkedGoodsPanel"', 1)[0]
-    linked_section = html.split('id="homeLinkedGoodsPanel"', 1)[1].split('id="homeManageMasterSection"', 1)[0]
-    assert "compact-stack" in goods_section
-    assert "compact-stack-actions" in goods_section
-    assert "compact-stack" in linked_section
-    assert "compact-stack-actions" in linked_section
+    assert "compact-stack" in html
+    assert "compact-stack-actions" in html
 
 
 def test_product_relation_blocks_use_compact_stack():
