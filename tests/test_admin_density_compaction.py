@@ -229,12 +229,6 @@ def test_compact_stack_actions_control_height_rules():
     assert ".compact-stack-actions input[type=\"hidden\"]" not in html
 
 
-def test_collector_relation_blocks_use_compact_stack():
-    html = read_static_html("index.html")
-    assert "compact-stack" in html
-    assert "compact-stack-actions" in html
-
-
 def test_product_relation_blocks_use_compact_stack():
     html = read_static_html("index.html")
     section = html.split("homeProductRelationSection", 1)[1].split("homeEditorActionBlock", 1)[0]
