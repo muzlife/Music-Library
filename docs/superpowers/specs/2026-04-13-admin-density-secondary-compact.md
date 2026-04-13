@@ -1,7 +1,7 @@
 # Admin Density Secondary Compaction Spec
 
 **Goal**
-Continue the admin-only density tightening to keep core management forms at two rows wherever possible (1320px baseline), reduce vertical whitespace in edit/detail areas, and compact the right-side detail panel (artist image + temperature/humidity + location lines). Operator/ops UI must remain unchanged.
+Continue the admin-only density tightening to keep core management forms at two rows wherever possible (1320px baseline), reduce vertical whitespace in edit/detail areas, and compact the admin search context panel (artist image + current location line). Operator/ops UI must remain unchanged.
 
 **Scope**
 - Admin shell only (`body[data-shell-mode="admin"]`).
@@ -21,7 +21,7 @@ Continue the admin-only density tightening to keep core management forms at two 
 - For admin-only compact form grids, ensure primary/secondary rows remain at two rows at 1320px width:
   - `#homeEditProductCoreRowA/B` (미디어 관리 상품 정보)
   - `#goodsManageCoreRowA/B` (컬렉터블 관리)
-- If any row overflows to 3+ lines at 1320px, adjust `grid-template-columns` or `grid-column` spans minimally to restore two rows without hiding fields.
+- If any row overflows to 3+ lines at 1320px, adjust `grid-template-columns` or `grid-column` spans minimally to restore two rows without hiding fields. Tests should assert the structural grid/row markers; visual two-row confirmation is manual.
 
 ### R2. Vertical Density Tightening (Admin Only)
 - Reduce admin-only vertical whitespace in edit/detail areas by minimizing margins/padding (admin override only):
@@ -29,6 +29,7 @@ Continue the admin-only density tightening to keep core management forms at two 
   - `#homeEditTrackListWrap`
   - `#homeEditMusicSourceSummary*` block stack (main/sub/extra/ops)
   - `#homeEditorActionRow` and `#homeMasterAddActionRow`
+- Inline `style="margin-top:..."` on these blocks may be removed or replaced with admin-scoped CSS (admin-only). Avoid introducing `!important` unless removing inline styles is not feasible.
 - Keep the overall hierarchy and grouping; only tighten spacing.
 
 ### R3. Admin Search Context Panel Compaction (Admin Only)
@@ -42,7 +43,6 @@ Continue the admin-only density tightening to keep core management forms at two 
   - Reduce `#adminSearchContextBody` internal `gap`/`padding` (admin-only override).
   - Reduce `.ops-library-context-head` / `.ops-library-context-head-actions` gap (admin-only override); keep existing `flex-wrap` behavior.
   - Reduce artist image footprint **only inside the admin search context panel** (e.g., 104px → 88px) and update the matching grid template columns for `.ops-artist-context-card.has-image` in admin scope.
-- Optional (only if needed to eliminate excessive vertical whitespace): reduce outer margin/gap on `.ops-library-mini-map` and `.ops-library-slot-preview` **without** changing their internal layout.
 - No changes to data fields, labels, or behavior; only layout/spacing in admin search context.
 
 ### R4. Consistent Compact Tokens
