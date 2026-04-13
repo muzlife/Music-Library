@@ -2873,9 +2873,10 @@ def test_index_admin_hero_embeds_admin_menu_inside_header_shell():
 
 def test_index_admin_hero_compacts_copy_to_tab_spacing():
     html = read_static_html("index.html")
-    hero_block = html.split(".admin-shell-hero {", 1)[1].split("}", 1)[0]
+    hero_block = html.split('body[data-shell-mode="admin"] .admin-shell-hero {', 1)[1].split("}", 1)[0]
     main_block = html.split(".admin-shell-hero-main {", 1)[1].split("}", 1)[0]
-    head_block = html.split(".admin-shell-hero-head {", 1)[1].split("}", 1)[0]
+    base_head_block = html.split(".admin-shell-hero-head {", 1)[1].split("}", 1)[0]
+    head_block = html.split('body[data-shell-mode="admin"] .admin-shell-hero-head {', 1)[1].split("}", 1)[0]
     copy_block = html.split(".admin-shell-copy {", 1)[1].split("}", 1)[0]
     side_block = html.split(".admin-shell-hero-side {", 1)[1].split("}", 1)[0]
     art_block = html.split("\n    .admin-shell-hero-art {\n", 1)[1].split("}", 1)[0]
@@ -2887,7 +2888,7 @@ def test_index_admin_hero_compacts_copy_to_tab_spacing():
     assert "gap: 3px;" in main_block
     assert "grid-template-columns: minmax(0, 1fr) auto;" in head_block
     assert "align-items: center;" in head_block
-    assert "gap: 6px;" in head_block
+    assert "gap: 6px;" in base_head_block
     assert "gap: 1px;" in copy_block
     assert "gap: 3px;" in side_block
     assert "min-height: 44px;" in art_block
@@ -6322,7 +6323,9 @@ def test_media_search_and_manage_core_labels_use_i18n_keys():
     assert '<strong data-i18n="media.title">미디어</strong>' in html
     assert '<strong data-i18n="media.title">미디어</strong><span class="section-help-dot" tabindex="0" data-help-key="help.media.summary">?</span>' in html
     assert 'data-i18n="media.subtitle"' not in html
-    assert html.count('"help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다."') == 3
+    assert html.count('"help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다."') == 1
+    assert html.count('"help.media.summary": "Search, manage, register/collect, and source enrichment in one flow."') == 1
+    assert html.count('"help.media.summary": "検索、管理、登録/収集、ソース補強を一つの流れにまとめています。"') == 1
     assert 'id="mediaSearchModeBtn" class="subtab-btn active" type="button" data-i18n="media.mode.search"' in html
     assert 'id="mediaManageModeBtn" class="subtab-btn" type="button" data-i18n="media.mode.manage"' in html
     assert 'id="mediaRegisterModeBtn" class="subtab-btn" type="button" data-i18n="media.mode.register"' in html
