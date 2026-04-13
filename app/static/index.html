@@ -10553,7 +10553,7 @@
         grid-auto-columns: max-content;
       }
       .layout { grid-template-columns: 1fr; }
-      body[data-shell-mode="admin"] .admin-side-nav {
+      body:not([data-shell-mode="admin"]) .admin-side-nav {
         position: static;
         width: min(640px, 96vw);
         margin: 8px auto 0;
@@ -10754,7 +10754,7 @@
         flex-direction: column;
         gap: 8px;
       }
-      .admin-shell-hero {
+      body:not([data-shell-mode="admin"]) .admin-shell-hero {
         gap: 10px;
         padding: 14px;
       }
@@ -10776,7 +10776,7 @@
       .admin-shell-hero h1 {
         font-size: 1.3rem;
       }
-      .admin-shell-hero-head {
+      body:not([data-shell-mode="admin"]) .admin-shell-hero-head {
         grid-template-columns: 1fr;
         gap: 10px;
       }
