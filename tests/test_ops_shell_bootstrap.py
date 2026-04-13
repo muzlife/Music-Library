@@ -15,8 +15,8 @@ def read_static_html(name: str) -> str:
 def split_i18n_bundles_for_test(html: str) -> tuple[str, str, str]:
     payload = html.split("const I18N_MESSAGES = {", 1)[1]
 
-    ko_match = re.search(r"\n\s*ko:\s*{(.*)\n\s*en:\s*{", payload, re.S)
-    en_match = re.search(r"\n\s*en:\s*{(.*)\n\s*ja:\s*{", payload, re.S)
+    ko_match = re.search(r"\n\s*ko:\s*{(.*?)\n\s*en:\s*{", payload, re.S)
+    en_match = re.search(r"\n\s*en:\s*{(.*?)\n\s*ja:\s*{", payload, re.S)
     ja_match = re.search(r"\n\s*ja:\s*{(.*)\n\s*};", payload, re.S)
     assert ko_match, "ko i18n bundle not found"
     assert en_match, "en i18n bundle not found"
