@@ -63,6 +63,13 @@ mkdir -p /Users/<user>/apps/hahahoho-prod/runtime/{data,uploads,logs,backups,imp
 mkdir -p /Users/<user>/apps/hahahoho-qa/runtime/{data,uploads,logs,backups,imports}
 ```
 
+반복 작업을 줄이려면 아래 보조 스크립트를 바로 써도 됩니다.
+
+```bash
+./deploy/scripts/bootstrap_macos_runtime.sh prod /Users/<user>/apps/hahahoho-prod
+./deploy/scripts/bootstrap_macos_runtime.sh qa /Users/<user>/apps/hahahoho-qa
+```
+
 ## 3. Python / 가상환경 준비
 
 각 서버에서 저장소를 별도 체크아웃한 뒤 가상환경을 만듭니다.
@@ -118,6 +125,13 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.muzlife.library-prod
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.muzlife.library-qa.plist
 ```
 
+보조 스크립트로 plist를 렌더링/설치하려면:
+
+```bash
+./deploy/scripts/install_launchd_service.sh prod /Users/<user>/apps/hahahoho-prod
+./deploy/scripts/install_launchd_service.sh qa /Users/<user>/apps/hahahoho-qa
+```
+
 재기동/반영:
 
 ```bash
@@ -151,6 +165,13 @@ cloudflared tunnel route dns <QA_TUNNEL_ID> qa.library.muzlife.com
 
 ```bash
 cloudflared service install
+```
+
+템플릿을 실제 설정 파일로 렌더링하려면:
+
+```bash
+./deploy/scripts/render_cloudflare_tunnel_config.sh prod <PROD_TUNNEL_ID> ~/.cloudflared/library-prod.yml
+./deploy/scripts/render_cloudflare_tunnel_config.sh qa <QA_TUNNEL_ID> ~/.cloudflared/library-qa.yml
 ```
 
 운영/QA 각각 해당 맥에서 자신의 tunnel 설정 파일을 사용하도록 맞춥니다.
@@ -217,6 +238,12 @@ cp /Users/<user>/apps/hahahoho-qa/runtime/imports/library-<ts>.db \
 tar -xzf /Users/<user>/apps/hahahoho-qa/runtime/imports/uploads-<ts>.tgz \
   -C /Users/<user>/apps/hahahoho-qa/runtime
 launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
+```
+
+보조 스크립트를 쓰면:
+
+```bash
+./deploy/scripts/restore_backup_to_qa.sh /Users/<user>/apps/hahahoho-qa /tmp/library-<ts>.db /tmp/uploads-<ts>.tgz
 ```
 
 주의:
@@ -319,3 +346,7 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 - [QA launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-qa.plist)
 - [운영 Cloudflare Tunnel 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/cloudflare/library-prod-config.yml)
 - [QA Cloudflare Tunnel 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/cloudflare/library-qa-config.yml)
+- [런타임 준비 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/bootstrap_macos_runtime.sh)
+- [launchd 설치 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/install_launchd_service.sh)
+- [Cloudflare 설정 렌더 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/render_cloudflare_tunnel_config.sh)
+- [QA 복원 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/restore_backup_to_qa.sh)
