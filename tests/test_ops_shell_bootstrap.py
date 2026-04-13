@@ -12,6 +12,22 @@ def read_static_html(name: str) -> str:
     return (STATIC_DIR / name).read_text(encoding="utf-8")
 
 
+def split_i18n_bundles_for_test(html: str) -> tuple[str, str, str]:
+    payload = html.split("const I18N_MESSAGES = {", 1)[1]
+
+    ko_match = re.search(r"\n\s*ko:\s*{(.*)\n\s*en:\s*{", payload, re.S)
+    en_match = re.search(r"\n\s*en:\s*{(.*)\n\s*ja:\s*{", payload, re.S)
+    ja_match = re.search(r"\n\s*ja:\s*{(.*)\n\s*};", payload, re.S)
+    assert ko_match, "ko i18n bundle not found"
+    assert en_match, "en i18n bundle not found"
+    assert ja_match, "ja i18n bundle not found"
+    return (
+        ko_match.group(1),
+        en_match.group(1),
+        ja_match.group(1),
+    )
+
+
 def extract_inline_scripts(html: str) -> list[str]:
     return re.findall(r"<script>(.*?)</script>", html, re.S)
 
@@ -6323,9 +6339,10 @@ def test_media_search_and_manage_core_labels_use_i18n_keys():
     assert '<strong data-i18n="media.title">미디어</strong>' in html
     assert '<strong data-i18n="media.title">미디어</strong><span class="section-help-dot" tabindex="0" data-help-key="help.media.summary">?</span>' in html
     assert 'data-i18n="media.subtitle"' not in html
-    assert html.count('"help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다."') == 1
-    assert html.count('"help.media.summary": "Search, manage, register/collect, and source enrichment in one flow."') == 1
-    assert html.count('"help.media.summary": "検索、管理、登録/収集、ソース補強を一つの流れにまとめています。"') == 1
+    ko_block, en_block, ja_block = split_i18n_bundles_for_test(html)
+    assert '"help.media.summary": "검색, 관리, 등록/수집, 소스 보강을 한 흐름으로 묶습니다."' in ko_block
+    assert '"help.media.summary": "Search, manage, register/collect, and source enrichment in one flow."' in en_block
+    assert '"help.media.summary": "検索、管理、登録/収集、ソース補強を一つの流れにまとめています。"' in ja_block
     assert 'id="mediaSearchModeBtn" class="subtab-btn active" type="button" data-i18n="media.mode.search"' in html
     assert 'id="mediaManageModeBtn" class="subtab-btn" type="button" data-i18n="media.mode.manage"' in html
     assert 'id="mediaRegisterModeBtn" class="subtab-btn" type="button" data-i18n="media.mode.register"' in html
