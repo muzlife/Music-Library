@@ -82,6 +82,66 @@ def test_admin_density_overrides_define_compact_tokens():
         assert "gap: var(--compact-gap);" in selector_block
 
 
+def test_admin_secondary_compaction_rules_present():
+    html = read_static_html("index.html")
+    admin_block = html.split('body[data-shell-mode="admin"] {', 1)[1].split("}", 1)[0]
+    assert "--compact-gap:" in admin_block
+
+    for selector in [
+        'body[data-shell-mode="admin"] #homeEditMusicMetaFieldsB',
+        'body[data-shell-mode="admin"] #homeEditMusicMetaFieldsC',
+        'body[data-shell-mode="admin"] #homeEditTrackListWrap',
+        'body[data-shell-mode="admin"] #homeEditorStandaloneMount',
+        'body[data-shell-mode="admin"] #homeEditorActionRow',
+        'body[data-shell-mode="admin"] #homeMasterAddActionRow',
+    ]:
+        block = html.split(f"{selector} {{", 1)[1].split("}", 1)[0]
+        assert "margin-top:" in block
+
+    source_block = html.split('body[data-shell-mode="admin"] .source-meta-summary {', 1)[1].split("}", 1)[0]
+    assert "margin-bottom:" in source_block
+    assert "padding:" in source_block
+
+    context_body_block = html.split(
+        'body[data-shell-mode="admin"] #adminSearchContextBody {',
+        1,
+    )[1].split("}", 1)[0]
+    assert "padding:" in context_body_block
+    assert "gap:" in context_body_block
+
+    plugin_block = html.split(
+        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-plugin-section {',
+        1,
+    )[1].split("}", 1)[0]
+    assert "padding:" in plugin_block
+    assert "gap:" in plugin_block
+
+    plugin_cards_block = html.split(
+        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-plugin-section-cards {',
+        1,
+    )[1].split("}", 1)[0]
+    assert "gap:" in plugin_cards_block
+
+    artist_card_block = html.split(
+        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-card {',
+        1,
+    )[1].split("}", 1)[0]
+    assert "padding:" in artist_card_block
+    assert "gap:" in artist_card_block
+
+    artist_grid_block = html.split(
+        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-card.has-image {',
+        1,
+    )[1].split("}", 1)[0]
+    assert "grid-template-columns:" in artist_grid_block
+
+    artist_media_block = html.split(
+        'body[data-shell-mode="admin"] #adminSearchContextBody .ops-artist-context-media {',
+        1,
+    )[1].split("}", 1)[0]
+    assert "width:" in artist_media_block
+
+
 def test_direct_register_uses_two_grid_rows_for_all_fields():
     html = read_static_html("index.html")
     block = html.split('data-i18n="media.register.direct.title"', 1)[1].split('id="quickSizeGroup"', 1)[0]
