@@ -245,11 +245,55 @@ def test_index_uses_shell_utility_mounts_for_ops_and_admin_headers():
     assert 'id="shellAdminBtn"' in html
 
 
+def test_index_admin_shell_grid_uses_header_and_body_rows():
+    html = read_static_html("index.html")
+    wrap_block = html.split('<div class="wrap">', 1)[1].split('<div class="primary-shell">', 1)[0]
+    assert 'id="appHero"' in wrap_block
+    assert 'id="adminSideNav"' in html
+    wrap_block = html.split('body[data-shell-mode="admin"] .wrap {', 1)[1].split("}", 1)[0]
+    assert "display: grid;" in wrap_block
+    assert "grid-template-rows: auto minmax(0, 1fr);" in wrap_block
+    assert "grid-template-columns: var(--admin-side-nav-width) minmax(0, 1fr);" in wrap_block
+
+    hero_block = html.split('body[data-shell-mode="admin"] #appHero {', 1)[1].split("}", 1)[0]
+    assert "grid-column: 1 / -1;" in hero_block
+    assert "grid-row: 1;" in hero_block
+
+    nav_block = html.split('body[data-shell-mode="admin"] #adminSideNav {', 1)[1].split("}", 1)[0]
+    assert "grid-column: 1;" in nav_block
+    assert "grid-row: 2;" in nav_block
+    assert "overflow-y: auto;" in nav_block
+
+    main_block = html.split('body[data-shell-mode="admin"] .primary-shell {', 1)[1].split("}", 1)[0]
+    assert "grid-column: 2;" in main_block
+    assert "grid-row: 2;" in main_block
+    assert "overflow-y: auto;" in main_block
+
+
 def test_index_defines_ops_home_header_markup_and_copy():
     html = read_static_html("index.html")
     assert 'id="opsHomeHero"' in html
     assert "라이브러리 운영 홈" in html
     assert "현장 조회, 위치 확인, 최근 흐름을 한 화면에서 정리합니다." in html
+
+
+def test_ops_home_hides_primary_side_nav_slot():
+    html = read_static_html("index.html")
+    ops_block = html.split('body[data-shell-mode="ops"] .primary-side-nav-slot {', 1)[1].split("}", 1)[0]
+    assert "display: none;" in ops_block
+
+
+def test_admin_removes_linked_collectibles_panel():
+    html = read_static_html("index.html")
+    assert 'id="homeMasterGoodsSection"' not in html
+    assert 'id="homeLinkedGoodsPanel"' not in html
+
+
+def test_admin_nav_icon_rail_at_1080():
+    html = read_static_html("index.html")
+    block_1080 = html.split("@media (max-width: 1080px)", 1)[1].split("@media", 1)[0]
+    assert "body[data-shell-mode=\"admin\"] #adminSideNav.admin-side-nav--icon" in block_1080
+    assert "width: var(--admin-side-nav-icon-width);" in block_1080
 
 
 def test_ops_home_hybrid_layout_has_context_panel_shell():

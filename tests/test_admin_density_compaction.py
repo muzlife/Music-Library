@@ -319,6 +319,13 @@ def test_admin_hero_compact_selectors_are_admin_only_and_persist_wrap_layout():
     assert 'body:not([data-shell-mode="admin"]) .wrap {' in media_1080_block
 
 
+def test_admin_nav_icon_rail_at_1080():
+    html = read_static_html("index.html")
+    block_1080 = html.split("@media (max-width: 1080px)", 1)[1].split("@media", 1)[0]
+    assert "body[data-shell-mode=\"admin\"] #adminSideNav.admin-side-nav--icon" in block_1080
+    assert "width: var(--admin-side-nav-icon-width);" in block_1080
+
+
 def test_ops_system_docs_block_present():
     html = read_static_html("index.html")
     block = html.split('id="tabOps"', 1)[1].split('id="opsSystemStatusSummary"', 1)[0]
