@@ -306,6 +306,19 @@ def test_admin_body_menus_hidden_in_admin_mode():
     assert "display: none" in html
 
 
+def test_admin_hero_compact_selectors_are_admin_only_and_persist_wrap_layout():
+    html = read_static_html("index.html")
+    admin_hero_block = html.split('body[data-shell-mode="admin"] .admin-shell-hero {', 1)[1].split("}", 1)[0]
+    admin_hero_head_block = html.split('body[data-shell-mode="admin"] .admin-shell-hero-head {', 1)[1].split("}", 1)[0]
+    media_1080_block = html.split("@media (max-width: 1080px)", 1)[1].split("@media", 1)[0]
+    assert "margin: 6px 0 8px;" in admin_hero_block
+    assert "padding: 6px 10px;" in admin_hero_block
+    assert "border-radius: 16px;" in admin_hero_block
+    assert "grid-template-columns: minmax(0, 1fr) auto;" in admin_hero_head_block
+    assert "align-items: center;" in admin_hero_head_block
+    assert 'body:not([data-shell-mode="admin"]) .wrap {' in media_1080_block
+
+
 def test_ops_system_docs_block_present():
     html = read_static_html("index.html")
     block = html.split('id="tabOps"', 1)[1].split('id="opsSystemStatusSummary"', 1)[0]
