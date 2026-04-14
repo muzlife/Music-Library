@@ -3046,13 +3046,14 @@ def test_index_extends_shared_page_help_drawer_to_second_wave_screens():
 
 def test_index_ops_home_compacts_hero_art_and_focus_chip_grid():
     html = read_static_html("index.html")
-    hero_block = html.split(".ops-home-hero {", 1)[1].split("}", 1)[0]
+    hero_block = html.split(".ops-home-hero--compact {", 1)[1].split("}", 1)[0]
     main_regular_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
     compact_block = html.split(".ops-home-hero--compact .ops-home-hero-main {", 1)[1].split("}", 1)[0]
     art_block = html.split(".ops-home-hero--compact .ops-home-hero-art {", 1)[1].split("}", 1)[0]
     copy_block = html.split(".ops-home-hero--compact .ops-home-hero-copy {", 1)[1].split("}", 1)[0]
     subtitle_block = html.split(".ops-home-hero--compact .ops-home-hero-copy p {", 1)[1].split("}", 1)[0]
-    assert "padding: 8px 12px;" in hero_block
+    assert "padding: var(--shell-density-hero-padding);" in hero_block
+    assert "gap: var(--shell-density-hero-gap);" in hero_block
     assert "gap: 3px;" in main_regular_block
     assert "grid-template-columns: minmax(0, 1fr) auto;" in compact_block
     assert "display: none;" in art_block
