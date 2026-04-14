@@ -340,14 +340,58 @@ QA 주간 sync job 설치/적용:
 
 운영은 짧은 점검 시간을 허용하는 전제로 갑니다.
 
+### 10-1. 수동 원칙
+
 1. 사용자에게 짧은 점검 공지
-2. 운영 M1에서 배포 직전 백업 생성
-3. QA에서 통과한 같은 커밋 체크아웃
+2. 운영 2018 서버에서 배포 직전 백업 생성
+3. QA에서 통과한 같은 커밋만 운영으로 올림
 4. 필요 시 의존성 설치
 5. 운영 앱 재기동
 6. 헬스체크
 7. 핵심 동선 수동 확인
 8. 점검 종료
+
+### 10-2. 비개발자용 GitHub Actions 운영 배포
+
+권장 방식은 앱 안에서 직접 배포하지 않고, `QA 확인 -> GitHub Actions 수동 실행`으로 운영 승격하는 것입니다.
+
+필수 전제:
+
+1. QA 장비(M4)에 `self-hosted`, `macOS` 라벨의 GitHub Actions runner가 실행 중이어야 합니다.
+2. runner 사용자에게 `matia@macmini2018.local` SSH 접속 권한이 있어야 합니다.
+3. 저장소 Variables에 아래 값이 있어야 합니다.
+4. GitHub `production` environment 승인 규칙을 켜서 비개발자가 `Run workflow` 후 승인만 할 수 있게 두는 것이 좋습니다.
+
+```text
+PROD_SSH_TARGET=matia@macmini2018.local
+PROD_APP_ROOT=/Users/matia/apps/hahahoho-prod
+PROD_SSH_KEY_PATH=/Users/jingunpark/.ssh/id_ed25519_kanu
+PROD_LAUNCHD_LABEL=com.muzlife.library-prod
+PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
+```
+
+실행 순서:
+
+1. GitHub 저장소 `Actions`
+2. `Deploy Production`
+3. 브랜치 또는 QA에서 확인한 ref 선택
+4. `qa_verified=yes` 유지
+5. 필요하면 `install_requirements` 선택
+6. `Run workflow`
+
+워크플로가 하는 일:
+
+1. 운영 2018 서버 SSH 연결 확인
+2. 운영 `daily-db` 사전 백업
+3. 저장소 내용을 운영 앱 루트로 `rsync`
+4. 필요 시 `pip install -r requirements.txt`
+5. `launchctl kickstart`로 운영 앱 재기동
+6. 운영 로컬 `/health` 확인
+
+관련 자산:
+
+- [GitHub Actions workflow](/Volumes/Works/07.hahahoho/.github/workflows/deploy-production.yml)
+- [운영 배포 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/deploy_to_prod.sh)
 
 권장 점검 항목:
 
