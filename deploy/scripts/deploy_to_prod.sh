@@ -60,7 +60,7 @@ echo "[1/5] Verify remote SSH connectivity"
 ssh_exec "echo ok-prod >/dev/null"
 
 echo "[2/5] Create pre-deploy DB backup on prod"
-ssh_exec "cd '${PROD_APP_ROOT}' && ./deploy/scripts/backup_daily_db.sh '${PROD_APP_ROOT}' >/dev/null"
+ssh_exec "cd '${PROD_APP_ROOT}' && /bin/bash ./deploy/scripts/backup_daily_db.sh '${PROD_APP_ROOT}' >/dev/null"
 
 echo "[3/5] Sync repository contents to prod"
 rsync -av \
