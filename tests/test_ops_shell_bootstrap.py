@@ -3101,7 +3101,7 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     utility_main_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]
     utility_tools_block = html.split(".shell-utility-tools {", 1)[1].split("}", 1)[0]
     utility_chip_block = html.split(".shell-utility .chip {", 1)[1].split("}", 1)[0]
-    utility_btn_block = html.split(".shell-utility .tab-btn {", 1)[1].split("}", 1)[0]
+    utility_btn_block = html.split('body[data-shell-density="compact"] .shell-utility .tab-btn {', 1)[1].split("}", 1)[0]
     locale_block = html.split(".shell-locale-picker {", 1)[1].split("}", 1)[0]
     docs_link_block = html.split(".admin-shell-docs .doc-link-chip {", 1)[1].split("}", 1)[0]
     locale_select_block = html.split(".shell-locale-picker select {", 1)[1].split("}", 1)[0]
@@ -3125,13 +3125,12 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "min-height: 26px;" in utility_chip_block
     assert "font-size: 0.84rem;" in utility_chip_block
     assert "font-weight: 700;" in utility_chip_block
-    assert "padding: 4px 9px;" in utility_btn_block
-    assert "min-height: 26px;" in utility_btn_block
-    assert "font-size: 0.84rem;" in utility_btn_block
+    assert "min-height: var(--shell-density-utility-height);" in utility_btn_block
+    assert "font-size: var(--shell-density-utility-font);" in utility_btn_block
     utility_override_block = html.split("#shellUtilityBar .chip,\n    #shellUtilityBar .tab-btn {", 1)[1].split("}", 1)[0]
-    assert "min-height: 26px;" in utility_override_block
-    assert "padding: 4px 9px;" in utility_override_block
-    assert "font-size: 0.84rem;" in utility_override_block
+    assert "min-height: var(--shell-density-utility-height, 26px);" in utility_override_block
+    assert "padding: var(--shell-density-utility-padding, 4px 9px);" in utility_override_block
+    assert "font-size: var(--shell-density-utility-font, 0.84rem);" in utility_override_block
     assert "font-weight: 700;" in utility_override_block
     tools_block = html.split(".shell-utility-tools {", 1)[1].split("}", 1)[0]
     main_row_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]
@@ -3205,6 +3204,7 @@ def test_index_sync_shell_utility_row_sizing_normalizes_right_side_controls():
     assert "function syncShellUtilityRowSizing() {" in html
     block = html.split("function syncShellUtilityRowSizing() {", 1)[1].split("    function resetReadOnlyShellState() {", 1)[0]
     assert 'const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "tabCameraBtn", "appPrefsResetBtn", "appLogoutBtn", "shellOpsHomeBtn"];' in block
+    assert 'if (document.body?.dataset?.shellDensity === "compact") return;' in block
     assert 'el.style.minHeight = "26px";' in block
     assert 'el.style.padding = "4px 9px";' in block
     assert 'el.style.fontSize = "0.84rem";' in block
