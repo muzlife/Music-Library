@@ -3076,12 +3076,12 @@ def test_index_compact_hero_variants_reduce_padding_one_more_step():
     compact_ops_block = html.split(".ops-home-hero--compact {", 1)[1].split("}", 1)[0]
     compact_ops_copy_block = html.split(".ops-home-hero--compact .ops-home-hero-copy {", 1)[1].split("}", 1)[0]
     compact_ops_h1_block = html.split(".ops-home-hero--compact .ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
-    assert "padding: 7px 12px;" in compact_admin_block
-    assert "gap: 4px;" in compact_admin_block
+    assert "padding: var(--shell-density-hero-padding);" in compact_admin_block
+    assert "gap: var(--shell-density-hero-gap);" in compact_admin_block
     assert "gap: 6px;" in compact_admin_head_block
     assert "font-size: 1.2rem;" in compact_admin_h1_block
-    assert "padding: 7px 12px;" in compact_ops_block
-    assert "gap: 4px;" in compact_ops_block
+    assert "padding: var(--shell-density-hero-padding);" in compact_ops_block
+    assert "gap: var(--shell-density-hero-gap);" in compact_ops_block
     assert "gap: 1px;" in compact_ops_copy_block
     assert "font-size: 1.2rem;" in compact_ops_h1_block
 
@@ -3122,15 +3122,15 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "display: inline-flex;" in utility_chip_block
     assert "align-items: center;" in utility_chip_block
     assert "padding: 4px 9px;" in utility_chip_block
-    assert "min-height: 26px;" in utility_chip_block
-    assert "font-size: 0.84rem;" in utility_chip_block
+    assert "min-height: 28px;" in utility_chip_block
+    assert "font-size: 0.76rem;" in utility_chip_block
     assert "font-weight: 700;" in utility_chip_block
     assert "min-height: var(--shell-density-utility-height);" in utility_btn_block
     assert "font-size: var(--shell-density-utility-font);" in utility_btn_block
     utility_override_block = html.split("#shellUtilityBar .chip,\n    #shellUtilityBar .tab-btn {", 1)[1].split("}", 1)[0]
-    assert "min-height: var(--shell-density-utility-height, 26px);" in utility_override_block
+    assert "min-height: var(--shell-density-utility-height, 28px);" in utility_override_block
     assert "padding: var(--shell-density-utility-padding, 4px 9px);" in utility_override_block
-    assert "font-size: var(--shell-density-utility-font, 0.84rem);" in utility_override_block
+    assert "font-size: var(--shell-density-utility-font, 0.76rem);" in utility_override_block
     assert "font-weight: 700;" in utility_override_block
     tools_block = html.split(".shell-utility-tools {", 1)[1].split("}", 1)[0]
     main_row_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]

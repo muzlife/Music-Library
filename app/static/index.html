@@ -134,6 +134,11 @@
       min-height: 68px;
     }
 
+    body[data-shell-density="compact"] .shell-utility {
+      min-height: 56px;
+      gap: 2px;
+    }
+
     .shell-utility-main {
       display: inline-flex;
       align-items: center;
@@ -146,6 +151,11 @@
       justify-self: end;
     }
 
+    body[data-shell-density="compact"] .shell-utility-main {
+      padding-top: 3px;
+      gap: 3px;
+    }
+
     .shell-utility-tools {
       margin-left: 0;
       display: inline-flex;
@@ -155,6 +165,11 @@
       padding-bottom: 4px;
       flex-wrap: wrap;
       justify-self: end;
+    }
+
+    body[data-shell-density="compact"] .shell-utility-tools {
+      padding-bottom: 3px;
+      gap: 3px;
     }
 
     .shell-utility-tools--meta {
@@ -169,12 +184,12 @@
     body[data-shell-density="compact"] {
       --shell-density-tab-height: 28px;
       --shell-density-tab-font: 0.76rem;
-      --shell-density-utility-height: 26px;
-      --shell-density-utility-font: 0.74rem;
+      --shell-density-utility-height: 28px;
+      --shell-density-utility-font: 0.76rem;
       --shell-density-utility-padding: 4px 9px;
-      --shell-density-hero-padding: 7px 12px;
+      --shell-density-hero-padding: 6px 11px;
       --shell-density-hero-radius: 16px;
-      --shell-density-hero-gap: 4px;
+      --shell-density-hero-gap: 3px;
     }
 
     .shell-locale-picker {
@@ -224,8 +239,8 @@
       background: rgba(255,255,255,0.92);
       box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
       padding: 4px 9px;
-      min-height: 26px;
-      font-size: 0.84rem;
+      min-height: 28px;
+      font-size: 0.76rem;
       font-weight: 700;
       line-height: 1.2;
     }
@@ -239,6 +254,7 @@
     body[data-shell-density="compact"] .shell-utility .tab-btn {
       min-height: var(--shell-density-utility-height);
       font-size: var(--shell-density-utility-font);
+      padding: var(--shell-density-utility-padding);
     }
 
     .shell-utility .tab-btn {
@@ -503,9 +519,9 @@
 
     .admin-shell-hero--compact {
       margin: 8px 0 6px;
-      padding: 7px 12px;
+      padding: var(--shell-density-hero-padding);
       border-radius: 16px;
-      gap: 4px;
+      gap: var(--shell-density-hero-gap);
     }
 
     .admin-shell-hero--compact::before,
@@ -699,9 +715,9 @@
 
     #shellUtilityBar .chip,
     #shellUtilityBar .tab-btn {
-      min-height: var(--shell-density-utility-height, 26px);
+      min-height: var(--shell-density-utility-height, 28px);
       padding: var(--shell-density-utility-padding, 4px 9px);
-      font-size: var(--shell-density-utility-font, 0.84rem);
+      font-size: var(--shell-density-utility-font, 0.76rem);
       font-weight: 700;
       line-height: 1.2;
     }
@@ -2488,8 +2504,8 @@
 
     .ops-home-hero--compact {
       margin: 8px 0 6px;
-      gap: 4px;
-      padding: 7px 12px;
+      gap: var(--shell-density-hero-gap);
+      padding: var(--shell-density-hero-padding);
       border-radius: 16px;
     }
 
