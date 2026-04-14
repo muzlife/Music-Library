@@ -171,6 +171,7 @@
       --shell-density-tab-font: 0.76rem;
       --shell-density-utility-height: 26px;
       --shell-density-utility-font: 0.74rem;
+      --shell-density-utility-padding: 4px 9px;
       --shell-density-hero-padding: 7px 12px;
       --shell-density-hero-radius: 16px;
       --shell-density-hero-gap: 4px;
@@ -698,9 +699,9 @@
 
     #shellUtilityBar .chip,
     #shellUtilityBar .tab-btn {
-      min-height: 26px;
-      padding: 4px 9px;
-      font-size: 0.84rem;
+      min-height: var(--shell-density-utility-height, 26px);
+      padding: var(--shell-density-utility-padding, 4px 9px);
+      font-size: var(--shell-density-utility-font, 0.84rem);
       font-weight: 700;
       line-height: 1.2;
     }
@@ -24298,6 +24299,7 @@
 
     function syncShellUtilityRowSizing() {
       const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "tabCameraBtn", "appPrefsResetBtn", "appLogoutBtn", "shellOpsHomeBtn"];
+      if (document.body?.dataset?.shellDensity === "compact") return;
       utilityRowSelectors.forEach((id) => {
         const el = $(id);
         if (!el) return;
