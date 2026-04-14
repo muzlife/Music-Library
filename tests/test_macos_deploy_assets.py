@@ -13,6 +13,8 @@ LAUNCHD_SCRIPT = ROOT / "deploy" / "scripts" / "install_launchd_service.sh"
 CLOUDFLARE_SCRIPT = ROOT / "deploy" / "scripts" / "render_cloudflare_tunnel_config.sh"
 RESTORE_SCRIPT = ROOT / "deploy" / "scripts" / "restore_backup_to_qa.sh"
 RUN_API_SCRIPT = ROOT / "scripts" / "run_api.sh"
+DEPLOY_PROD_SCRIPT = ROOT / "deploy" / "scripts" / "deploy_to_prod.sh"
+DEPLOY_PROD_WORKFLOW = ROOT / ".github" / "workflows" / "deploy-production.yml"
 INSTALL_BACKUP_JOBS_SCRIPT = ROOT / "deploy" / "scripts" / "install_backup_launchd_jobs.sh"
 BOOTSTRAP_BACKUP_JOBS_SCRIPT = ROOT / "deploy" / "scripts" / "bootstrap_backup_launchd_jobs.sh"
 GCS_PREFLIGHT_SCRIPT = ROOT / "deploy" / "scripts" / "gcs_backup_preflight.sh"
@@ -105,6 +107,26 @@ def test_restore_backup_script_copies_db_and_extracts_uploads(tmp_path: Path):
 def test_launchd_runtime_entrypoint_script_exists():
     assert RUN_API_SCRIPT.exists()
     assert os.access(RUN_API_SCRIPT, os.X_OK)
+
+
+def test_prod_deploy_script_exists_and_is_executable():
+    assert DEPLOY_PROD_SCRIPT.exists()
+    assert os.access(DEPLOY_PROD_SCRIPT, os.X_OK)
+    text = DEPLOY_PROD_SCRIPT.read_text("utf-8")
+    assert "./deploy/scripts/backup_daily_db.sh" in text
+    assert "launchctl kickstart -k" in text
+    assert "curl --fail --silent --show-error" in text
+
+
+def test_prod_deploy_workflow_declares_manual_self_hosted_production_deploy():
+    text = DEPLOY_PROD_WORKFLOW.read_text("utf-8")
+    assert "workflow_dispatch:" in text
+    assert "environment: production" in text
+    assert "self-hosted" in text
+    assert "macOS" in text
+    assert "muzlife-qa" in text
+    assert "./deploy/scripts/deploy_to_prod.sh" in text
+    assert "qa_verified" in text
 
 
 def test_backup_launchd_install_script_renders_three_jobs(tmp_path: Path):
