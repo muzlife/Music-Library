@@ -22,6 +22,17 @@ DRIVE_PREFLIGHT_SCRIPT = ROOT / "deploy" / "scripts" / "drive_backup_preflight.s
 BACKUP_DAILY_PLIST = ROOT / "deploy" / "templates" / "launchd" / "com.muzlife.backup-daily-db.plist"
 BACKUP_WEEKLY_PLIST = ROOT / "deploy" / "templates" / "launchd" / "com.muzlife.backup-weekly-full.plist"
 QA_SYNC_WEEKLY_PLIST = ROOT / "deploy" / "templates" / "launchd" / "com.muzlife.qa-sync-weekly.plist"
+BACKUP_SCRIPT_PATHS = (
+    ROOT / "deploy" / "scripts" / "backup_daily_db.sh",
+    ROOT / "deploy" / "scripts" / "backup_weekly_full.sh",
+    ROOT / "deploy" / "scripts" / "upload_backup_to_gcs.sh",
+    ROOT / "deploy" / "scripts" / "sync_prod_backup_to_qa.sh",
+    ROOT / "deploy" / "scripts" / "install_backup_launchd_jobs.sh",
+    ROOT / "deploy" / "scripts" / "bootstrap_backup_launchd_jobs.sh",
+    ROOT / "deploy" / "scripts" / "gcs_backup_preflight.sh",
+    ROOT / "deploy" / "scripts" / "drive_backup_preflight.sh",
+    ROOT / "deploy" / "scripts" / "mirror_backup_to_drive.sh",
+)
 
 
 def test_bootstrap_script_creates_runtime_dirs_and_env(tmp_path: Path):
@@ -171,6 +182,12 @@ def test_prod_deploy_workflow_declares_manual_self_hosted_production_deploy():
     assert "muzlife-qa" in text
     assert "./deploy/scripts/deploy_to_prod.sh" in text
     assert "qa_verified" in text
+
+
+def test_backup_shell_scripts_are_executable():
+    for script_path in BACKUP_SCRIPT_PATHS:
+        assert script_path.exists()
+        assert os.access(script_path, os.X_OK)
 
 
 def test_backup_launchd_install_script_renders_three_jobs(tmp_path: Path):
