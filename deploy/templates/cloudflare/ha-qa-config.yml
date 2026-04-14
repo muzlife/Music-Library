@@ -2,6 +2,6 @@ tunnel: __CLOUDFLARE_TUNNEL_ID__
 credentials-file: /Users/__USER__/.cloudflared/__CLOUDFLARE_TUNNEL_ID__.json
 
 ingress:
-  - hostname: qa-library.muzlife.com
-    service: http://127.0.0.1:8100
+  - hostname: qa-ha.muzlife.com
+    service: http://127.0.0.1:18123
   - service: http_status:404
