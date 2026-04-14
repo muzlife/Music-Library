@@ -81,6 +81,8 @@ rsync -av \
   "${ROOT_DIR}/" \
   "${PROD_SSH_TARGET}:${PROD_APP_ROOT}/"
 
+ssh_exec "find '${PROD_APP_ROOT}/deploy/scripts' -maxdepth 1 -name '*.sh' -exec chmod +x {} + && chmod +x '${PROD_APP_ROOT}/scripts/run_api.sh'"
+
 if [[ "${REMOTE_INSTALL_REQUIREMENTS}" == "1" ]]; then
   echo "[4/5] Install remote Python dependencies"
   ssh_exec "cd '${PROD_APP_ROOT}' && if [[ -x .venv/bin/python3 ]]; then .venv/bin/python3 -m pip install -r requirements.txt >/dev/null; else python3 -m pip install -r requirements.txt >/dev/null; fi"
@@ -89,7 +91,7 @@ else
 fi
 
 echo "[5/5] Restart prod app and verify health"
-ssh_exec "launchctl kickstart -k gui/\$(id -u)/${PROD_LAUNCHD_LABEL}"
+ssh_exec "launchctl bootout gui/\$(id -u)/${PROD_LAUNCHD_LABEL} >/dev/null 2>&1 || true; launchctl bootstrap gui/\$(id -u) \"\$HOME/Library/LaunchAgents/${PROD_LAUNCHD_LABEL}.plist\""
 ssh_exec "for attempt in 1 2 3 4 5 6 7 8 9 10; do curl --fail --silent --show-error '${PROD_HEALTHCHECK_URL}' >/dev/null && exit 0; sleep 2; done; exit 1"
 
 printf 'Deploy complete: branch=%s sha=%s target=%s app_root=%s\n' \
