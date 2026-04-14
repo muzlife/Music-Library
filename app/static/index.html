@@ -10779,6 +10779,7 @@
       </div>
       <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
         <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.admin">관리</button>
+        <span id="appSessionInfo" class="chip" style="display:none;"></span>
         <button id="appLogoutBtn" class="tab-btn" type="button" data-i18n="utility.logout">로그아웃</button>
       </div>
     </div>
@@ -24305,7 +24306,7 @@
     }
 
     function syncShellUtilityRowSizing() {
-      const utilityRowSelectors = ["shellAdminBtn", "appLogoutBtn"];
+      const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "appLogoutBtn"];
       if (document.body?.dataset?.shellDensity === "compact") return;
       utilityRowSelectors.forEach((id) => {
         const el = $(id);

@@ -3149,7 +3149,9 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
     assert utility_block.index('class="shell-utility-tools shell-utility-tools--meta"') < utility_block.index('class="shell-utility-main shell-utility-main--actions"')
     assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
-    assert 'id="appSessionInfo"' not in utility_block
+    assert 'id="appSessionInfo"' in utility_block
+    assert utility_block.index('id="shellAdminBtn"') < utility_block.index('id="appSessionInfo"')
+    assert utility_block.index('id="appSessionInfo"') < utility_block.index('id="appLogoutBtn"')
 
 
 def test_index_shell_utility_exposes_direct_doc_links_with_routes():
@@ -3197,7 +3199,7 @@ def test_index_sync_shell_utility_row_sizing_normalizes_right_side_controls():
     html = read_static_html("index.html")
     assert "function syncShellUtilityRowSizing() {" in html
     block = html.split("function syncShellUtilityRowSizing() {", 1)[1].split("    function resetReadOnlyShellState() {", 1)[0]
-    assert 'const utilityRowSelectors = ["shellAdminBtn", "appLogoutBtn"];' in block
+    assert 'const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "appLogoutBtn"];' in block
     assert 'if (document.body?.dataset?.shellDensity === "compact") return;' in block
     assert 'el.style.minHeight = "26px";' in block
     assert 'el.style.padding = "4px 9px";' in block
