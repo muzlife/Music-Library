@@ -2936,6 +2936,12 @@ def test_index_shell_density_sync_clears_compact_header_classes_to_keep_shell_he
     assert "syncShellDensityClasses();" in switch_block
 
 
+def test_index_shell_compact_density_flag_present():
+    html = read_static_html("index.html")
+    assert 'data-shell-density="compact"' in html
+    assert 'document.body.dataset.shellDensity = "compact";' in html
+
+
 def test_index_ops_home_hero_uses_top_aligned_side_and_matches_admin_compact_title_scale():
     html = read_static_html("index.html")
     ops_main_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
