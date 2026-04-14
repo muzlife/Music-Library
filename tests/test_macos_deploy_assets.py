@@ -109,6 +109,50 @@ def test_launchd_runtime_entrypoint_script_exists():
     assert os.access(RUN_API_SCRIPT, os.X_OK)
 
 
+def test_run_api_script_loads_unquoted_env_values_with_spaces(tmp_path: Path):
+    app_root = tmp_path / "hahahoho-prod"
+    scripts_dir = app_root / "scripts"
+    python_bin = app_root / ".venv" / "bin"
+    capture_path = tmp_path / "captured-drive-path.txt"
+    drive_dir = tmp_path / "Google Drive" / "library_backup"
+
+    scripts_dir.mkdir(parents=True)
+    python_bin.mkdir(parents=True)
+    drive_dir.mkdir(parents=True)
+
+    run_api_copy = scripts_dir / "run_api.sh"
+    run_api_copy.write_text(RUN_API_SCRIPT.read_text("utf-8"), "utf-8")
+    os.chmod(run_api_copy, 0o755)
+
+    fake_python = python_bin / "python3"
+    fake_python.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "printf '%s\\n' \"$GOOGLE_DRIVE_BACKUP_DIR\" > \"$RUN_API_CAPTURE\"",
+            ]
+        )
+        + "\n",
+        "utf-8",
+    )
+    os.chmod(fake_python, 0o755)
+
+    (app_root / ".env.local").write_text(
+        f"GOOGLE_DRIVE_BACKUP_DIR={drive_dir}\n",
+        "utf-8",
+    )
+
+    subprocess.run(
+        [str(run_api_copy)],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path)),
+    )
+
+    assert capture_path.read_text("utf-8").strip() == str(drive_dir)
+
+
 def test_prod_deploy_script_exists_and_is_executable():
     assert DEPLOY_PROD_SCRIPT.exists()
     assert os.access(DEPLOY_PROD_SCRIPT, os.X_OK)

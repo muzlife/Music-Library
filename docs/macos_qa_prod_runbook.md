@@ -211,7 +211,7 @@ curl -I http://127.0.0.1:8100/health
 권장 환경 변수:
 
 ```env
-GOOGLE_DRIVE_BACKUP_DIR=/Users/<user>/Library/CloudStorage/GoogleDrive-<account>/My Drive/LibraryBackups/prod
+GOOGLE_DRIVE_BACKUP_DIR="/Users/<user>/Library/CloudStorage/GoogleDrive-<account>/My Drive/LibraryBackups/prod"
 ```
 
 적용 전 점검:
