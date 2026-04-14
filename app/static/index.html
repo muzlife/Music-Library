@@ -10768,11 +10768,6 @@
 
     <div id="shellUtilityBar" class="shell-utility" style="display:none;">
       <div class="shell-utility-tools shell-utility-tools--meta">
-        <div class="shell-doc-links admin-shell-docs">
-          <a class="doc-link-chip" href="/tool-docs/erd-summary" target="_blank" rel="noreferrer" data-tool-doc-key="erd-summary" data-i18n="shell.admin.doc_link.erd_summary">ERD 요약</a>
-          <a class="doc-link-chip" href="/tool-docs/erd-detail" target="_blank" rel="noreferrer" data-tool-doc-key="erd-detail" data-i18n="shell.admin.doc_link.erd_detail">ERD 상세</a>
-          <a class="doc-link-chip" href="/tool-docs/manual" target="_blank" rel="noreferrer" data-tool-doc-key="manual" data-i18n="shell.admin.doc_link.manual">툴 활용 매뉴얼</a>
-        </div>
         <label class="shell-locale-picker" for="shellLocaleSelect">
           <span id="shellLocaleLabel" data-i18n="utility.language">언어</span>
           <select id="shellLocaleSelect" aria-label="language selector">
@@ -10783,12 +10778,8 @@
         </label>
       </div>
       <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
-        <span id="appSessionInfo" class="chip" style="display:none;"></span>
         <button id="shellAdminBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.admin">관리</button>
-        <button id="tabCameraBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.camera">카메라</button>
-        <button id="appPrefsResetBtn" class="tab-btn" type="button" title="현재 역할의 기본 탭과 기본 예외 필터를 초기화합니다." style="display:none;" data-i18n="utility.reset_defaults" data-i18n-title="utility.reset_defaults_title">기본값 초기화</button>
         <button id="appLogoutBtn" class="tab-btn" type="button" data-i18n="utility.logout">로그아웃</button>
-        <button id="shellOpsHomeBtn" class="tab-btn" type="button" style="display:none;" data-i18n="utility.ops_home_short">hahahoho</button>
       </div>
     </div>
 
@@ -24314,7 +24305,7 @@
     }
 
     function syncShellUtilityRowSizing() {
-      const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "tabCameraBtn", "appPrefsResetBtn", "appLogoutBtn", "shellOpsHomeBtn"];
+      const utilityRowSelectors = ["shellAdminBtn", "appLogoutBtn"];
       if (document.body?.dataset?.shellDensity === "compact") return;
       utilityRowSelectors.forEach((id) => {
         const el = $(id);
@@ -24369,11 +24360,7 @@
       setTextIfPresent("tabSimpleBtn", t("nav.ops_home"));
       setTextIfPresent("shellCabinetsBtn", t("nav.cabinets"));
       setTextIfPresent("shellAdminBtn", t("utility.admin"));
-      setTextIfPresent("tabCameraBtn", t("utility.camera"));
-      setTextIfPresent("appPrefsResetBtn", t("utility.reset_defaults"));
-      $("appPrefsResetBtn")?.setAttribute("title", t("utility.reset_defaults_title"));
       setTextIfPresent("appLogoutBtn", t("utility.logout"));
-      setTextIfPresent("shellOpsHomeBtn", t("utility.ops_home_short"));
       placeShellUtilityBar(mode);
       setDisplayIfPresent("appHero", authenticated && isAdmin && mode === "admin" ? "block" : "none");
       setDisplayIfPresent("opsHomeHero", authenticated && mode !== "admin" ? "grid" : "none");
@@ -24382,10 +24369,8 @@
       setDisplayIfPresent("adminUtilityMainMount", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       setDisplayIfPresent("opsUtilityMainMount", authenticated && mode !== "admin" ? "flex" : "none");
       setDisplayIfPresent("tabSimpleBtn", authenticated ? "inline-flex" : "none");
-      setDisplayIfPresent("tabCameraBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");
-      setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       syncShellButtons();
       syncShellDensityClasses();
@@ -43410,12 +43395,10 @@
 
     $("tabHomeBtn").addEventListener("click", () => openAdminConsole("home"));
     $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
-    $("tabCameraBtn").addEventListener("click", () => switchMainTab("camera"));
     $("tabMediaBtn").addEventListener("click", () => openAdminConsole("media"));
     $("tabCollectiblesBtn").addEventListener("click", () => openAdminConsole("collectibles"));
     $("shellCabinetsBtn").addEventListener("click", () => switchShellMode("cabinets"));
     $("shellAdminBtn").addEventListener("click", () => switchShellMode("admin"));
-    $("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabOpsBtn").addEventListener("click", () => openAdminConsole("ops"));
     $("opsSystemStatusReloadBtn")?.addEventListener("click", loadOpsSystemStatus);
     $("opsAutoBackupSaveBtn")?.addEventListener("click", saveOpsBackupSettings);
@@ -43426,7 +43409,7 @@
     $("opsExportOwnedBtn")?.addEventListener("click", downloadOpsOwnedCsv);
     $("opsExportMasterBtn")?.addEventListener("click", downloadOpsMasterCsv);
     $("appLogoutBtn").addEventListener("click", logoutAppSession);
-    $("appPrefsResetBtn").addEventListener("click", async () => {
+    $("appPrefsResetBtn")?.addEventListener("click", async () => {
       clearCurrentRoleDefaultPreferences();
       renderOpsExceptionPresetOptions();
       setStatus("opsExceptionStatus", "ok", t("ops.exception.status.reset_defaults"));

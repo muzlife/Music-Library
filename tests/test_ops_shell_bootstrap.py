@@ -2979,11 +2979,9 @@ def test_index_admin_docs_box_becomes_compact_trigger_panel():
     assert "min-width: 96px;" in link_block
     assert "line-height: 1.1;" in link_block
     assert "font-size: 0.72rem;" in link_block
-    hero_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert 'href="/tool-docs/erd-summary"' in hero_block
-    assert 'href="/tool-docs/erd-detail"' in hero_block
-    assert 'href="/tool-docs/manual"' in hero_block
-    assert 'href="/tool-docs/go-live-checklist"' not in hero_block
+    utility_start = '    <div id="shellUtilityBar" class="shell-utility" style="display:none;">'
+    utility_block = html.split(utility_start, 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
 
 
 def test_index_uses_shared_page_help_drawer_for_first_wave_screens():
@@ -3150,19 +3148,14 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "min-width: 68px;" in locale_select_block
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
     assert utility_block.index('class="shell-utility-tools shell-utility-tools--meta"') < utility_block.index('class="shell-utility-main shell-utility-main--actions"')
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert utility_block.index('class="shell-doc-links admin-shell-docs"') < utility_block.index('class="shell-locale-picker"')
-    assert utility_block.index('id="appSessionInfo"') < utility_block.index('id="appLogoutBtn"')
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
+    assert 'id="appSessionInfo"' not in utility_block
 
 
 def test_index_shell_utility_exposes_direct_doc_links_with_routes():
     html = read_static_html("index.html")
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert 'href="/tool-docs/erd-summary"' in utility_block
-    assert 'href="/tool-docs/erd-detail"' in utility_block
-    assert 'href="/tool-docs/manual"' in utility_block
-    assert 'href="/tool-docs/go-live-checklist"' not in utility_block
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
 
 
 def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
@@ -3204,7 +3197,7 @@ def test_index_sync_shell_utility_row_sizing_normalizes_right_side_controls():
     html = read_static_html("index.html")
     assert "function syncShellUtilityRowSizing() {" in html
     block = html.split("function syncShellUtilityRowSizing() {", 1)[1].split("    function resetReadOnlyShellState() {", 1)[0]
-    assert 'const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "tabCameraBtn", "appPrefsResetBtn", "appLogoutBtn", "shellOpsHomeBtn"];' in block
+    assert 'const utilityRowSelectors = ["shellAdminBtn", "appLogoutBtn"];' in block
     assert 'if (document.body?.dataset?.shellDensity === "compact") return;' in block
     assert 'el.style.minHeight = "26px";' in block
     assert 'el.style.padding = "4px 9px";' in block
@@ -3437,11 +3430,12 @@ def test_index_admin_utility_bar_shows_hahahoho_only_for_admin_and_places_it_las
     utility_block = html.split(utility_start, 1)[1].split(admin_tabs_start, 1)[0]
     nav_block = html.split(nav_start, 1)[1].split(open_admin_start, 1)[0]
     ops_block = html.split('    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">', 1)[1].split(utility_start, 1)[0]
-    assert 'id="shellOpsHomeBtn"' in utility_block
-    assert ">hahahoho</button>" in utility_block
-    assert utility_block.index('id="appLogoutBtn"') < utility_block.index('id="shellOpsHomeBtn"')
-    assert 'setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");' in nav_block
-    assert '$("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));' in html
+    assert 'id="shellAdminBtn"' in utility_block
+    assert 'id="appLogoutBtn"' in utility_block
+    assert utility_block.index('id="shellAdminBtn"') < utility_block.index('id="appLogoutBtn"')
+    assert 'id="shellOpsHomeBtn"' not in utility_block
+    assert 'setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");' not in nav_block
+    assert '$("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));' not in html
     assert "hahahoho" not in ops_block
 
 
@@ -6553,12 +6547,9 @@ def test_index_dashboard_drag_box_selection_reports_completion_in_dashboard_stat
 
 def test_shell_utility_bar_removes_go_live_checklist_link():
     html = read_static_html("index.html")
-    utility_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert '/tool-docs/erd-summary' in utility_block
-    assert '/tool-docs/erd-detail' in utility_block
-    assert '/tool-docs/manual' in utility_block
-    assert '/tool-docs/go-live-checklist' not in utility_block
-    assert 'shell.admin.doc_link.checklist' not in utility_block
+    utility_start = '    <div id="shellUtilityBar" class="shell-utility" style="display:none;">'
+    utility_block = html.split(utility_start, 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
 
 
 def test_index_dashboard_shift_click_selection_adds_slot_range_from_anchor():
