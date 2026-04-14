@@ -166,6 +166,16 @@
       border-top: 1px solid rgba(148, 163, 184, 0.22);
     }
 
+    body[data-shell-density="compact"] {
+      --shell-density-tab-height: 28px;
+      --shell-density-tab-font: 0.76rem;
+      --shell-density-utility-height: 26px;
+      --shell-density-utility-font: 0.74rem;
+      --shell-density-hero-padding: 7px 12px;
+      --shell-density-hero-radius: 16px;
+      --shell-density-hero-gap: 4px;
+    }
+
     .shell-locale-picker {
       display: inline-flex;
       align-items: center;
@@ -182,6 +192,11 @@
       white-space: nowrap;
       position: static;
       min-width: 96px;
+    }
+
+    body[data-shell-density="compact"] .shell-locale-picker {
+      font-size: var(--shell-density-utility-font);
+      min-height: var(--shell-density-utility-height);
     }
 
     .shell-locale-picker select {
@@ -212,6 +227,17 @@
       font-size: 0.84rem;
       font-weight: 700;
       line-height: 1.2;
+    }
+
+    body[data-shell-density="compact"] .shell-header-row .tab-btn {
+      min-height: var(--shell-density-tab-height);
+      font-size: var(--shell-density-tab-font);
+    }
+
+    body[data-shell-density="compact"] .shell-utility .chip,
+    body[data-shell-density="compact"] .shell-utility .tab-btn {
+      min-height: var(--shell-density-utility-height);
+      font-size: var(--shell-density-utility-font);
     }
 
     .shell-utility .tab-btn {
@@ -312,6 +338,12 @@
       overflow: hidden;
       position: relative;
       gap: 6px;
+    }
+
+    body[data-shell-density="compact"] .admin-shell-hero {
+      padding: var(--shell-density-hero-padding);
+      border-radius: var(--shell-density-hero-radius);
+      gap: var(--shell-density-hero-gap);
     }
 
     .admin-shell-hero::before,
@@ -2290,6 +2322,12 @@
       box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
       overflow: hidden;
       position: relative;
+    }
+
+    body[data-shell-density="compact"] .ops-home-hero {
+      padding: var(--shell-density-hero-padding);
+      border-radius: var(--shell-density-hero-radius);
+      gap: var(--shell-density-hero-gap);
     }
 
     .ops-home-hero-main {
@@ -10642,7 +10680,7 @@
 
   </style>
 </head>
-<body data-shell-mode="ops" data-shell-readonly="true">
+<body data-shell-mode="ops" data-shell-readonly="true" data-shell-density="compact">
   <div class="wrap">
     <header id="appHero" class="hero admin-shell-hero">
       <div class="admin-shell-hero-main">
@@ -24165,6 +24203,7 @@
     }
 
     function syncShellDensityClasses() {
+      document.body.dataset.shellDensity = "compact";
       $("appHero")?.classList.remove("admin-shell-hero--compact");
       $("opsHomeHero")?.classList.remove("ops-home-hero--compact");
     }
