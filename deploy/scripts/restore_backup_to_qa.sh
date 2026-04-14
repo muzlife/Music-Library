@@ -35,8 +35,15 @@ if [[ -n "${UPLOADS_TGZ}" ]]; then
     echo "Uploads archive not found: ${UPLOADS_TGZ}" >&2
     exit 1
   fi
-  mkdir -p "${QA_APP_ROOT}/runtime"
-  tar -xzf "${UPLOADS_TGZ}" -C "${QA_APP_ROOT}/runtime"
+  TARGET_UPLOADS_DIR="${QA_APP_ROOT}/app/static/uploads"
+  rm -rf "${TARGET_UPLOADS_DIR}"
+  mkdir -p "${TARGET_UPLOADS_DIR}"
+  TMP_EXTRACT_DIR="$(mktemp -d)"
+  trap 'rm -rf "${TMP_EXTRACT_DIR}"' EXIT
+  tar -xzf "${UPLOADS_TGZ}" -C "${TMP_EXTRACT_DIR}"
+  if [[ -d "${TMP_EXTRACT_DIR}/uploads" ]]; then
+    cp -R "${TMP_EXTRACT_DIR}/uploads/." "${TARGET_UPLOADS_DIR}/"
+  fi
 fi
 
 cat <<EOF

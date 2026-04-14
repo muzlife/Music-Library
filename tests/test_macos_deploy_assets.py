@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import tarfile
@@ -11,6 +12,14 @@ BOOTSTRAP_SCRIPT = ROOT / "deploy" / "scripts" / "bootstrap_macos_runtime.sh"
 LAUNCHD_SCRIPT = ROOT / "deploy" / "scripts" / "install_launchd_service.sh"
 CLOUDFLARE_SCRIPT = ROOT / "deploy" / "scripts" / "render_cloudflare_tunnel_config.sh"
 RESTORE_SCRIPT = ROOT / "deploy" / "scripts" / "restore_backup_to_qa.sh"
+RUN_API_SCRIPT = ROOT / "scripts" / "run_api.sh"
+INSTALL_BACKUP_JOBS_SCRIPT = ROOT / "deploy" / "scripts" / "install_backup_launchd_jobs.sh"
+BOOTSTRAP_BACKUP_JOBS_SCRIPT = ROOT / "deploy" / "scripts" / "bootstrap_backup_launchd_jobs.sh"
+GCS_PREFLIGHT_SCRIPT = ROOT / "deploy" / "scripts" / "gcs_backup_preflight.sh"
+DRIVE_PREFLIGHT_SCRIPT = ROOT / "deploy" / "scripts" / "drive_backup_preflight.sh"
+BACKUP_DAILY_PLIST = ROOT / "deploy" / "templates" / "launchd" / "com.muzlife.backup-daily-db.plist"
+BACKUP_WEEKLY_PLIST = ROOT / "deploy" / "templates" / "launchd" / "com.muzlife.backup-weekly-full.plist"
+QA_SYNC_WEEKLY_PLIST = ROOT / "deploy" / "templates" / "launchd" / "com.muzlife.qa-sync-weekly.plist"
 
 
 def test_bootstrap_script_creates_runtime_dirs_and_env(tmp_path: Path):
@@ -64,7 +73,7 @@ def test_cloudflare_render_script_writes_hostname_and_tunnel(tmp_path: Path):
     )
 
     text = output_path.read_text("utf-8")
-    assert "qa.library.muzlife.com" in text
+    assert "qa-library.muzlife.com" in text
     assert "tunnel-123" in text
     assert "/Users/tester/.cloudflared/tunnel-123.json" in text
 
@@ -90,4 +99,239 @@ def test_restore_backup_script_copies_db_and_extracts_uploads(tmp_path: Path):
     )
 
     assert (qa_root / "runtime" / "data" / "library.db").read_text("utf-8") == "db-bytes"
-    assert (qa_root / "runtime" / "uploads" / "cover.jpg").read_text("utf-8") == "cover"
+    assert (qa_root / "app" / "static" / "uploads" / "cover.jpg").read_text("utf-8") == "cover"
+
+
+def test_launchd_runtime_entrypoint_script_exists():
+    assert RUN_API_SCRIPT.exists()
+    assert os.access(RUN_API_SCRIPT, os.X_OK)
+
+
+def test_backup_launchd_install_script_renders_three_jobs(tmp_path: Path):
+    prod_root = tmp_path / "hahahoho-prod"
+    qa_root = tmp_path / "hahahoho-qa"
+    prod_root.mkdir()
+    qa_root.mkdir()
+    home_dir = tmp_path / "home"
+    env = dict(os.environ, HOME=str(home_dir))
+
+    subprocess.run(
+        [str(INSTALL_BACKUP_JOBS_SCRIPT), str(prod_root), str(qa_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    dest_dir = home_dir / "Library" / "LaunchAgents"
+    daily_text = (dest_dir / "com.muzlife.backup-daily-db.plist").read_text("utf-8")
+    weekly_text = (dest_dir / "com.muzlife.backup-weekly-full.plist").read_text("utf-8")
+    qa_sync_text = (dest_dir / "com.muzlife.qa-sync-weekly.plist").read_text("utf-8")
+
+    assert str(prod_root) in daily_text
+    assert str(prod_root) in weekly_text
+    assert str(prod_root / "runtime" / "backups" / "weekly-full") in qa_sync_text
+    assert str(qa_root) in qa_sync_text
+
+
+def test_backup_launchd_install_script_can_render_qa_only(tmp_path: Path):
+    home_dir = tmp_path / "home"
+    prod_root = tmp_path / "prod"
+    qa_root = tmp_path / "qa"
+    prod_backup_dir = tmp_path / "mirror" / "weekly-full"
+    prod_root.mkdir()
+    qa_root.mkdir()
+    prod_backup_dir.mkdir(parents=True)
+    env = dict(os.environ, HOME=str(home_dir))
+
+    subprocess.run(
+        [
+            str(INSTALL_BACKUP_JOBS_SCRIPT),
+            "--mode",
+            "qa",
+            "--prod-backup-dir",
+            str(prod_backup_dir),
+            str(prod_root),
+            str(qa_root),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    dest_dir = home_dir / "Library" / "LaunchAgents"
+    assert not (dest_dir / "com.muzlife.backup-daily-db.plist").exists()
+    assert not (dest_dir / "com.muzlife.backup-weekly-full.plist").exists()
+    qa_sync_path = dest_dir / "com.muzlife.qa-sync-weekly.plist"
+    assert qa_sync_path.exists()
+    assert str(prod_backup_dir) in qa_sync_path.read_text("utf-8")
+
+
+def test_backup_launchd_bootstrap_script_calls_bootstrap_and_kickstart(tmp_path: Path):
+    home_dir = tmp_path / "home"
+    dest_dir = home_dir / "Library" / "LaunchAgents"
+    dest_dir.mkdir(parents=True)
+    for filename in (
+        "com.muzlife.backup-daily-db.plist",
+        "com.muzlife.backup-weekly-full.plist",
+        "com.muzlife.qa-sync-weekly.plist",
+    ):
+        (dest_dir / filename).write_text("<plist />", "utf-8")
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    launchctl_log = tmp_path / "launchctl.log"
+    (bin_dir / "launchctl").write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "printf '%s\\n' \"$*\" >> \"$LAUNCHCTL_LOG\"",
+                "exit 0",
+            ]
+        )
+        + "\n",
+        "utf-8",
+    )
+    os.chmod(bin_dir / "launchctl", 0o755)
+    env = dict(
+        os.environ,
+        HOME=str(home_dir),
+        PATH=f"{bin_dir}:{os.environ['PATH']}",
+        LAUNCHCTL_LOG=str(launchctl_log),
+    )
+
+    subprocess.run(
+        [str(BOOTSTRAP_BACKUP_JOBS_SCRIPT)],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    log_lines = launchctl_log.read_text("utf-8").strip().splitlines()
+    assert any("bootstrap gui/" in line and "com.muzlife.backup-daily-db.plist" in line for line in log_lines)
+    assert any("bootstrap gui/" in line and "com.muzlife.backup-weekly-full.plist" in line for line in log_lines)
+    assert any("bootstrap gui/" in line and "com.muzlife.qa-sync-weekly.plist" in line for line in log_lines)
+    assert any("kickstart -k gui/" in line and "com.muzlife.backup-daily-db" in line for line in log_lines)
+    assert any("kickstart -k gui/" in line and "com.muzlife.qa-sync-weekly" in line for line in log_lines)
+
+
+def test_backup_launchd_bootstrap_script_can_start_prod_only(tmp_path: Path):
+    home_dir = tmp_path / "home"
+    dest_dir = home_dir / "Library" / "LaunchAgents"
+    dest_dir.mkdir(parents=True)
+    for filename in (
+        "com.muzlife.backup-daily-db.plist",
+        "com.muzlife.backup-weekly-full.plist",
+        "com.muzlife.qa-sync-weekly.plist",
+    ):
+        (dest_dir / filename).write_text("<plist />", "utf-8")
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    launchctl_log = tmp_path / "launchctl.log"
+    (bin_dir / "launchctl").write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "printf '%s\\n' \"$*\" >> \"$LAUNCHCTL_LOG\"",
+                "exit 0",
+            ]
+        )
+        + "\n",
+        "utf-8",
+    )
+    os.chmod(bin_dir / "launchctl", 0o755)
+    env = dict(
+        os.environ,
+        HOME=str(home_dir),
+        PATH=f"{bin_dir}:{os.environ['PATH']}",
+        LAUNCHCTL_LOG=str(launchctl_log),
+    )
+
+    subprocess.run(
+        [str(BOOTSTRAP_BACKUP_JOBS_SCRIPT), "--mode", "prod"],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    log_lines = launchctl_log.read_text("utf-8").strip().splitlines()
+    assert any("com.muzlife.backup-daily-db.plist" in line for line in log_lines)
+    assert any("com.muzlife.backup-weekly-full.plist" in line for line in log_lines)
+    assert not any("com.muzlife.qa-sync-weekly.plist" in line for line in log_lines)
+
+
+def test_gcs_backup_preflight_reports_env_and_gsutil_readiness(tmp_path: Path):
+    app_root = tmp_path / "hahahoho-prod"
+    app_root.mkdir()
+    env_file = app_root / ".env.local"
+    env_file.write_text(
+        "GCS_BACKUP_PREFIX=gs://muzlife-library-backups/prod\nGSUTIL_BIN=gsutil\n",
+        "utf-8",
+    )
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "gsutil").write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "if [[ \"$1\" == \"ls\" ]]; then exit 0; fi",
+                "exit 0",
+            ]
+        )
+        + "\n",
+        "utf-8",
+    )
+    os.chmod(bin_dir / "gsutil", 0o755)
+    env = dict(os.environ, PATH=f"{bin_dir}:{os.environ['PATH']}")
+
+    result = subprocess.run(
+        [str(GCS_PREFLIGHT_SCRIPT), str(app_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "ready"
+    assert payload["gcs_backup_prefix"] == "gs://muzlife-library-backups/prod"
+    assert payload["gsutil_bin"].endswith("gsutil")
+
+
+def test_drive_backup_preflight_reports_ready_when_google_drive_dir_is_configured(tmp_path: Path):
+    app_root = tmp_path / "hahahoho-prod"
+    drive_dir = tmp_path / "Google Drive" / "LibraryBackups"
+    app_root.mkdir()
+    drive_dir.mkdir(parents=True)
+    env_file = app_root / ".env.local"
+    env_file.write_text(
+        f"GOOGLE_DRIVE_BACKUP_DIR={drive_dir}\n",
+        "utf-8",
+    )
+
+    result = subprocess.run(
+        [str(DRIVE_PREFLIGHT_SCRIPT), str(app_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "ready"
+    assert payload["google_drive_backup_dir"] == str(drive_dir)
+
+
+def test_backup_launchd_templates_exist_and_pass_plutil():
+    for plist_path in (BACKUP_DAILY_PLIST, BACKUP_WEEKLY_PLIST, QA_SYNC_WEEKLY_PLIST):
+        assert plist_path.exists()
+        subprocess.run(
+            ["plutil", "-lint", str(plist_path)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )

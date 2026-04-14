@@ -2,9 +2,9 @@
 
 ## 개요
 
-이 문서는 `Mac mini M4`를 `QA`, `Mac mini M1`을 `운영`으로 완전히 분리해서 `qa.library.muzlife.com` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
+이 문서는 `Mac mini M4`를 `QA`, `Mac mini 2018`을 `운영`으로 완전히 분리해서 `qa-library.muzlife.com` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
 
-- QA: `https://qa.library.muzlife.com/`
+- QA: `https://qa-library.muzlife.com/`
 - 운영: `https://library.muzlife.com/`
 - 외부 진입: `Cloudflare DNS + Cloudflare Tunnel`
 - 서비스 관리: macOS `launchd`
@@ -14,7 +14,7 @@
 
 ## 1. 서버 역할 고정
 
-### 운영 서버: `Mac mini M1`
+### 운영 서버: `Mac mini 2018`
 
 - 서비스명: `library-prod`
 - 코드 루트 예시: `/Users/<user>/apps/hahahoho-prod`
@@ -28,7 +28,7 @@
 - 코드 루트 예시: `/Users/<user>/apps/hahahoho-qa`
 - 런타임 루트 예시: `/Users/<user>/apps/hahahoho-qa/runtime`
 - 로컬 앱 포트: `127.0.0.1:8100`
-- 외부 도메인: `qa.library.muzlife.com`
+- 외부 도메인: `qa-library.muzlife.com`
 
 ## 2. 디렉터리 준비
 
@@ -149,7 +149,7 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 권장 매핑:
 
 - `library.muzlife.com -> http://127.0.0.1:8000`
-- `qa.library.muzlife.com -> http://127.0.0.1:8100`
+- `qa-library.muzlife.com -> http://127.0.0.1:8100`
 
 Cloudflare 절차 예시:
 
@@ -158,7 +158,7 @@ cloudflared tunnel login
 cloudflared tunnel create library-prod
 cloudflared tunnel create library-qa
 cloudflared tunnel route dns <PROD_TUNNEL_ID> library.muzlife.com
-cloudflared tunnel route dns <QA_TUNNEL_ID> qa.library.muzlife.com
+cloudflared tunnel route dns <QA_TUNNEL_ID> qa-library.muzlife.com
 ```
 
 설정 파일을 배치한 뒤 서비스 설치:
@@ -200,6 +200,39 @@ curl -I http://127.0.0.1:8100/health
 
 목표는 `QA`가 항상 최근 운영 상태에 가까운 데이터로 검증되게 하는 것입니다.
 
+### 운영 백업 정책
+
+- 일일 DB 백업: `하루 1회`
+- 주간 FULL 백업: `주 1회`
+- 변경이 없으면: `SHA-256 fingerprint` 기준으로 스킵
+- 오프사이트: `GOOGLE_DRIVE_BACKUP_DIR`가 설정된 경우 생성본만 Google Drive 동기화 폴더로 자동 미러
+- 선택 옵션: `GCS_BACKUP_PREFIX`가 설정된 경우 생성본만 GCS 업로드
+
+권장 환경 변수:
+
+```env
+GOOGLE_DRIVE_BACKUP_DIR=/Users/<user>/Library/CloudStorage/GoogleDrive-<account>/My Drive/LibraryBackups/prod
+```
+
+적용 전 점검:
+
+```bash
+./deploy/scripts/drive_backup_preflight.sh /Users/<user>/apps/hahahoho-prod
+```
+
+선택적 GCS 환경 변수:
+
+```env
+GCS_BACKUP_PREFIX=gs://<bucket>/prod
+GSUTIL_BIN=gsutil
+```
+
+적용 전 점검:
+
+```bash
+./deploy/scripts/gcs_backup_preflight.sh /Users/<user>/apps/hahahoho-prod
+```
+
 ### 운영 M1에서 백업 생성
 
 최소 대상:
@@ -209,47 +242,67 @@ curl -I http://127.0.0.1:8100/health
 권장 대상:
 
 - `runtime/data/library.db`
-- `runtime/uploads/`
+- `app/static/uploads/`
 
 예시:
 
 ```bash
-ts=$(date +"%Y%m%d-%H%M%S")
-cp /Users/<user>/apps/hahahoho-prod/runtime/data/library.db \
-  /Users/<user>/apps/hahahoho-prod/runtime/backups/library-${ts}.db
-tar -czf /Users/<user>/apps/hahahoho-prod/runtime/backups/uploads-${ts}.tgz \
-  -C /Users/<user>/apps/hahahoho-prod/runtime uploads
+./deploy/scripts/backup_daily_db.sh /Users/<user>/apps/hahahoho-prod
+./deploy/scripts/backup_weekly_full.sh /Users/<user>/apps/hahahoho-prod
 ```
 
-### QA M4로 복사
+생성 경로:
+
+- 일일 DB: `runtime/backups/daily-db/`
+- 주간 FULL: `runtime/backups/weekly-full/`
+- 상태 메타: `runtime/backups/.state/`
+
+launchd 설치/적용:
+
+```bash
+./deploy/scripts/install_backup_launchd_jobs.sh --mode prod /Users/<user>/apps/hahahoho-prod /Users/<user>/apps/hahahoho-qa
+./deploy/scripts/bootstrap_backup_launchd_jobs.sh --mode prod
+```
+
+상태 확인:
+
+```bash
+./deploy/scripts/backup_status.sh /Users/<user>/apps/hahahoho-prod /Users/<user>/apps/hahahoho-qa
+```
+
+### QA M4로 반영
+
+QA 머신에는 운영 full backup이 미러된 로컬 디렉터리가 하나 필요합니다. 권장 예시는:
+
+```bash
+/Users/<user>/apps/hahahoho-qa/runtime/imports/prod-weekly-full
+```
 
 예시:
 
 ```bash
-rsync -av /Users/<user>/apps/hahahoho-prod/runtime/backups/library-<ts>.db <qa-user>@<qa-host>:/Users/<user>/apps/hahahoho-qa/runtime/imports/
-rsync -av /Users/<user>/apps/hahahoho-prod/runtime/backups/uploads-<ts>.tgz <qa-user>@<qa-host>:/Users/<user>/apps/hahahoho-qa/runtime/imports/
-```
-
-### QA M4에서 복원
-
-```bash
-cp /Users/<user>/apps/hahahoho-qa/runtime/imports/library-<ts>.db \
-  /Users/<user>/apps/hahahoho-qa/runtime/data/library.db
-tar -xzf /Users/<user>/apps/hahahoho-qa/runtime/imports/uploads-<ts>.tgz \
-  -C /Users/<user>/apps/hahahoho-qa/runtime
-launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
-```
-
-보조 스크립트를 쓰면:
-
-```bash
-./deploy/scripts/restore_backup_to_qa.sh /Users/<user>/apps/hahahoho-qa /tmp/library-<ts>.db /tmp/uploads-<ts>.tgz
+./deploy/scripts/sync_prod_backup_to_qa.sh \
+  /Users/<user>/apps/hahahoho-qa/runtime/imports/prod-weekly-full \
+  /Users/<user>/apps/hahahoho-qa
 ```
 
 주의:
 
 - QA의 기존 데이터는 덮어써도 되는 전제로 운영합니다.
 - QA에서 임시 테스트로 만든 데이터는 다음 복제 시 사라질 수 있습니다.
+- QA 반영 기준은 항상 `운영 latest full backup`입니다.
+- QA 반영 후 `run_deploy_preflight.sh` 검증이 실패하면 직전 QA DB/uploads 스냅샷으로 자동 롤백됩니다.
+
+QA 주간 sync job 설치/적용:
+
+```bash
+./deploy/scripts/install_backup_launchd_jobs.sh \
+  --mode qa \
+  --prod-backup-dir /Users/<user>/apps/hahahoho-qa/runtime/imports/prod-weekly-full \
+  /Users/<user>/apps/hahahoho-prod \
+  /Users/<user>/apps/hahahoho-qa
+./deploy/scripts/bootstrap_backup_launchd_jobs.sh --mode qa
+```
 
 ## 9. QA 검증 절차
 
@@ -324,7 +377,7 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 
 ## 12. 첫 구축 체크리스트
 
-1. M1 운영 디렉터리 생성
+1. Mac mini 2018 운영 디렉터리 생성
 2. M4 QA 디렉터리 생성
 3. 양쪽 `.venv` 설치
 4. 양쪽 `.env.local` 작성
@@ -349,4 +402,14 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 - [런타임 준비 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/bootstrap_macos_runtime.sh)
 - [launchd 설치 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/install_launchd_service.sh)
 - [Cloudflare 설정 렌더 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/render_cloudflare_tunnel_config.sh)
-- [QA 복원 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/restore_backup_to_qa.sh)
+- [백업 launchd 설치 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/install_backup_launchd_jobs.sh)
+- [백업 launchd bootstrap 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/bootstrap_backup_launchd_jobs.sh)
+- [GCS 백업 preflight 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/gcs_backup_preflight.sh)
+- [백업 상태 요약 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/backup_status.sh)
+- [일일 DB 백업 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/backup_daily_db.sh)
+- [주간 FULL 백업 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/backup_weekly_full.sh)
+- [GCS 업로드 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/upload_backup_to_gcs.sh)
+- [QA 주간 반영 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/sync_prod_backup_to_qa.sh)
+- [일일 DB 백업 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-daily-db.plist)
+- [주간 FULL 백업 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-weekly-full.plist)
+- [QA 주간 반영 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.qa-sync-weekly.plist)
