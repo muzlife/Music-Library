@@ -5230,6 +5230,9 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     assert '"dashboard.selection.sort_artist.label":' in html
     assert '"dashboard.selection.sort_artist.note":' in html
     assert '"dashboard.selection.sort_artist.display_artist":' in html
+    assert '"dashboard.selection.sort_artist.display_artist": "원본 표시명: {value}"' in html
+    assert '"dashboard.selection.sort_artist.display_artist": "Original display: {value}"' in html
+    assert '"dashboard.selection.sort_artist.display_artist": "元の表示名: {value}"' in html
     assert 'id="homeDashSearchTitle" data-i18n-placeholder="dashboard.workbench.field.title.placeholder"' in html
     assert 'id="homeDashSearchCatalogNo"' in html
     assert 'data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder"' in html

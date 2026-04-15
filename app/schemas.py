@@ -697,7 +697,38 @@ class AlbumMasterMergeResponse(BaseModel):
     target_album_master_id: int
     moved_member_count: int = 0
     target_member_count: int = 0
+    merge_history_id: int | None = None
     merged: bool = True
+
+
+class AlbumMasterMergeHistoryItem(BaseModel):
+    id: int
+    source_album_master_id: int
+    target_album_master_id: int
+    source_code: str | None = None
+    source_master_id: str | None = None
+    source_title: str | None = None
+    source_artist_or_brand: str | None = None
+    target_title: str | None = None
+    target_artist_or_brand: str | None = None
+    moved_member_count: int = 0
+    target_member_count: int = 0
+    source_owned_item_ids: list[int] = Field(default_factory=list)
+    overlap_owned_item_ids: list[int] = Field(default_factory=list)
+    merged_by: str | None = None
+    created_at: str | None = None
+    rolled_back_at: str | None = None
+    rolled_back_by: str | None = None
+    rollback_available: bool = False
+    rollback_blocked_reason: str | None = None
+
+
+class AlbumMasterMergeRollbackResponse(BaseModel):
+    merge_history_id: int
+    source_album_master_id: int
+    target_album_master_id: int
+    restored_member_count: int = 0
+    rolled_back: bool = True
 
 
 class OwnedItemAutoMasterResponse(BaseModel):
@@ -970,6 +1001,7 @@ class OwnedItemListItem(BaseModel):
     released_date: str | None = None
     master_title: str | None = None
     master_artist_or_brand: str | None = None
+    master_sort_artist_name: str | None = None
     master_release_year: int | None = None
     barcode: str | None = None
     label_name: str | None = None

@@ -54,7 +54,9 @@ from .schemas import (
     AlbumMasterImportVariantsRequest,
     AlbumMasterImportVariantsResponse,
     AlbumMasterListItem,
+    AlbumMasterMergeHistoryItem,
     AlbumMasterMergeRequest,
+    AlbumMasterMergeRollbackResponse,
     AlbumMasterMergeResponse,
     AlbumMasterSearchRequest,
     AlbumMasterSearchResponse,
@@ -8097,6 +8099,7 @@ def get_album_master_duplicates(
 
 @app.post("/album-masters/{album_master_id}/merge", response_model=AlbumMasterMergeResponse)
 def merge_album_master(
+    request: Request,
     album_master_id: int,
     payload: AlbumMasterMergeRequest,
 ) -> AlbumMasterMergeResponse:
@@ -8111,12 +8114,14 @@ def merge_album_master(
             target_album_master_id=target_id,
             moved_member_count=0,
             target_member_count=len(count_rows),
+            merge_history_id=None,
             merged=False,
         )
     try:
         result = db.merge_album_masters(
             source_album_master_id=source_id,
             target_album_master_id=target_id,
+            merged_by=_read_auth_username(request),
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -8128,8 +8133,28 @@ def merge_album_master(
         target_album_master_id=int(result.get("target_album_master_id") or target_id),
         moved_member_count=int(result.get("moved_member_count") or 0),
         target_member_count=int(result.get("target_member_count") or 0),
+        merge_history_id=int(result["merge_history_id"]) if result.get("merge_history_id") is not None else None,
         merged=True,
     )
+
+
+@app.get("/album-masters/merge-history", response_model=list[AlbumMasterMergeHistoryItem])
+def get_album_master_merge_history(
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[AlbumMasterMergeHistoryItem]:
+    rows = db.list_album_master_merge_history(limit=limit)
+    return [AlbumMasterMergeHistoryItem(**row) for row in rows]
+
+
+@app.post("/album-masters/merge-history/latest/rollback", response_model=AlbumMasterMergeRollbackResponse)
+def rollback_latest_album_master_merge(request: Request) -> AlbumMasterMergeRollbackResponse:
+    try:
+        result = db.rollback_latest_album_master_merge(rolled_back_by=_read_auth_username(request))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return AlbumMasterMergeRollbackResponse(**result)
 
 
 @app.get("/discogs/identity", response_model=DiscogsIdentityResponse)

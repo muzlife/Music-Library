@@ -1416,6 +1416,24 @@ def init_db() -> None:
               FOREIGN KEY (album_master_id) REFERENCES album_master(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS album_master_merge_history (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              source_album_master_id INTEGER NOT NULL,
+              target_album_master_id INTEGER NOT NULL,
+              source_master_snapshot_json TEXT NOT NULL DEFAULT '{{}}',
+              target_master_snapshot_json TEXT NOT NULL DEFAULT '{{}}',
+              source_member_links_json TEXT NOT NULL DEFAULT '[]',
+              source_external_refs_json TEXT NOT NULL DEFAULT '[]',
+              overlap_owned_item_ids_json TEXT NOT NULL DEFAULT '[]',
+              moved_member_count INTEGER NOT NULL DEFAULT 0,
+              target_member_count INTEGER NOT NULL DEFAULT 0,
+              merged_by TEXT,
+              created_at TEXT NOT NULL,
+              target_updated_at_after_merge TEXT,
+              rolled_back_at TEXT,
+              rolled_back_by TEXT
+            );
+
             CREATE TABLE IF NOT EXISTS customer_track_request (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               requested_track TEXT NOT NULL,
@@ -1492,6 +1510,7 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_album_master_member_owned ON album_master_member (owned_item_id);
             CREATE INDEX IF NOT EXISTS idx_album_master_external_ref_master ON album_master_external_ref (album_master_id);
             CREATE INDEX IF NOT EXISTS idx_album_master_external_ref_lookup ON album_master_external_ref (source_code, source_master_id);
+            CREATE INDEX IF NOT EXISTS idx_album_master_merge_history_created ON album_master_merge_history (created_at DESC, id DESC);
             CREATE INDEX IF NOT EXISTS idx_goods_item_category_name ON goods_item (category, goods_name);
             CREATE INDEX IF NOT EXISTS idx_goods_item_storage_slot ON goods_item (storage_slot_id, status);
             CREATE INDEX IF NOT EXISTS idx_goods_item_album_master_map_goods ON goods_item_album_master_map (goods_item_id, album_master_id);
@@ -1839,6 +1858,33 @@ def _ensure_album_master_external_ref_table(conn: sqlite3.Connection) -> None:
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_album_master_external_ref_lookup ON album_master_external_ref (source_code, source_master_id)"
+    )
+
+
+def _ensure_album_master_merge_history_table(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS album_master_merge_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          source_album_master_id INTEGER NOT NULL,
+          target_album_master_id INTEGER NOT NULL,
+          source_master_snapshot_json TEXT NOT NULL DEFAULT '{}',
+          target_master_snapshot_json TEXT NOT NULL DEFAULT '{}',
+          source_member_links_json TEXT NOT NULL DEFAULT '[]',
+          source_external_refs_json TEXT NOT NULL DEFAULT '[]',
+          overlap_owned_item_ids_json TEXT NOT NULL DEFAULT '[]',
+          moved_member_count INTEGER NOT NULL DEFAULT 0,
+          target_member_count INTEGER NOT NULL DEFAULT 0,
+          merged_by TEXT,
+          created_at TEXT NOT NULL,
+          target_updated_at_after_merge TEXT,
+          rolled_back_at TEXT,
+          rolled_back_by TEXT
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_album_master_merge_history_created ON album_master_merge_history (created_at DESC, id DESC)"
     )
 
 
@@ -2227,6 +2273,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
 def _apply_migrations(conn: sqlite3.Connection) -> None:
     _migrate_album_master_allow_manual(conn)
     _ensure_album_master_external_ref_table(conn)
+    _ensure_album_master_merge_history_table(conn)
     _ensure_purchase_import_queue_table(conn)
     _migrate_purchase_import_queue_allow_file_upload(conn)
     _migrate_storage_slot_allow_goods(conn)
@@ -4695,6 +4742,10 @@ def _owned_item_select_query() -> str:
         mid.artist_or_brand,
         mid.release_year,
         mid.released_date,
+        am.title AS master_title,
+        am.artist_or_brand AS master_artist_or_brand,
+        am.sort_artist_name AS master_sort_artist_name,
+        am.release_year AS master_release_year,
         mid.barcode,
         mid.label_name,
         mid.catalog_no,
@@ -4765,6 +4816,7 @@ def _owned_item_select_query() -> str:
       FROM owned_item oi
       LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
       LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+      LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
       LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
     """
 
@@ -6713,23 +6765,410 @@ def list_duplicate_album_masters(album_master_id: int, limit: int = 20) -> list[
     return [dict(row) for row in rows]
 
 
-def merge_album_masters(source_album_master_id: int, target_album_master_id: int) -> dict[str, int]:
-    source_id = int(source_album_master_id or 0)
-    target_id = int(target_album_master_id or 0)
-    if source_id <= 0 or target_id <= 0:
-        raise ValueError("source/target album_master_id must be positive")
+def _json_loads_or_default(raw: Any, default: Any) -> Any:
+    if raw in (None, ""):
+        return default
+    try:
+        parsed = json.loads(str(raw))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return default
+    return parsed
 
-    with get_conn() as conn:
-        target_exists = conn.execute(
+
+def _snapshot_album_master_record(row: sqlite3.Row | dict[str, Any] | None) -> dict[str, Any]:
+    if row is None:
+        return {}
+    data = dict(row)
+    return {
+        "id": int(data.get("id") or 0),
+        "source_code": str(data.get("source_code") or "").strip(),
+        "source_master_id": str(data.get("source_master_id") or "").strip(),
+        "title": str(data.get("title") or "").strip(),
+        "artist_or_brand": str(data.get("artist_or_brand") or "").strip() or None,
+        "sort_artist_name": str(data.get("sort_artist_name") or "").strip() or None,
+        "domain_code": _normalize_domain_code_value(data.get("domain_code")),
+        "release_year": int(data["release_year"]) if data.get("release_year") not in (None, "") else None,
+        "raw_json": str(data.get("raw_json") or "{}"),
+        "created_at": str(data.get("created_at") or "").strip(),
+        "updated_at": str(data.get("updated_at") or "").strip(),
+    }
+
+
+def _snapshot_member_link_records(rows: list[sqlite3.Row] | list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for row in rows or []:
+        data = dict(row)
+        owned_item_id = int(data.get("owned_item_id") or 0)
+        if owned_item_id <= 0:
+            continue
+        out.append(
+            {
+                "owned_item_id": owned_item_id,
+                "linked_album_master_id": int(data["linked_album_master_id"]) if data.get("linked_album_master_id") not in (None, "") else None,
+                "created_at": str(data.get("created_at") or "").strip() or utc_now_iso(),
+            }
+        )
+    return out
+
+
+def _snapshot_external_ref_records(rows: list[sqlite3.Row] | list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for row in rows or []:
+        data = dict(row)
+        ref_id = int(data.get("id") or 0)
+        if ref_id <= 0:
+            continue
+        out.append(
+            {
+                "id": ref_id,
+                "source_code": str(data.get("source_code") or "").strip(),
+                "source_master_id": str(data.get("source_master_id") or "").strip(),
+                "title_hint": str(data.get("title_hint") or "").strip() or None,
+                "artist_or_brand_hint": str(data.get("artist_or_brand_hint") or "").strip() or None,
+                "release_year": int(data["release_year"]) if data.get("release_year") not in (None, "") else None,
+                "raw_json": str(data.get("raw_json") or "{}"),
+                "created_at": str(data.get("created_at") or "").strip() or utc_now_iso(),
+                "updated_at": str(data.get("updated_at") or "").strip() or utc_now_iso(),
+            }
+        )
+    return out
+
+
+def _album_master_merge_history_record(
+    conn: sqlite3.Connection,
+    row: sqlite3.Row | dict[str, Any],
+    latest_open_history_id: int | None = None,
+) -> dict[str, Any]:
+    data = dict(row)
+    source_snapshot = _json_loads_or_default(data.get("source_master_snapshot_json"), {})
+    target_snapshot = _json_loads_or_default(data.get("target_master_snapshot_json"), {})
+    source_member_links = _json_loads_or_default(data.get("source_member_links_json"), [])
+    source_external_refs = _json_loads_or_default(data.get("source_external_refs_json"), [])
+    overlap_owned_item_ids = [int(v) for v in _json_loads_or_default(data.get("overlap_owned_item_ids_json"), []) if int(v) > 0]
+
+    history_id = int(data.get("id") or 0)
+    source_id = int(data.get("source_album_master_id") or 0)
+    target_id = int(data.get("target_album_master_id") or 0)
+    moved_owned_item_ids = [int(item.get("owned_item_id") or 0) for item in source_member_links if int(item.get("owned_item_id") or 0) > 0]
+    rolled_back_at = str(data.get("rolled_back_at") or "").strip() or None
+    rollback_available = False
+    rollback_blocked_reason = None
+
+    if rolled_back_at:
+        rollback_blocked_reason = "already rolled back"
+    elif latest_open_history_id is not None and history_id != latest_open_history_id:
+        rollback_blocked_reason = "only the latest merge can be rolled back"
+    else:
+        target_row = conn.execute(
             """
-            SELECT id
+            SELECT id, source_code, source_master_id, title, artist_or_brand, sort_artist_name, domain_code, release_year, raw_json, created_at, updated_at
             FROM album_master
             WHERE id = ?
             LIMIT 1
             """,
             (target_id,),
         ).fetchone()
-        if target_exists is None:
+        if target_row is None:
+            rollback_blocked_reason = "rollback unavailable: target master is missing"
+        else:
+            target_updated_at_after_merge = str(data.get("target_updated_at_after_merge") or "").strip() or None
+            current_target_updated_at = str(target_row["updated_at"] or "").strip() or None
+            if target_updated_at_after_merge and current_target_updated_at != target_updated_at_after_merge:
+                rollback_blocked_reason = "rollback unavailable: target master changed after merge"
+            elif conn.execute("SELECT id FROM album_master WHERE id = ? LIMIT 1", (source_id,)).fetchone() is not None:
+                rollback_blocked_reason = "rollback unavailable: source master id is already in use"
+            elif conn.execute(
+                """
+                SELECT id
+                FROM album_master
+                WHERE source_code = ? AND source_master_id = ?
+                LIMIT 1
+                """,
+                (
+                    str(source_snapshot.get("source_code") or "").strip(),
+                    str(source_snapshot.get("source_master_id") or "").strip(),
+                ),
+            ).fetchone() is not None:
+                rollback_blocked_reason = "rollback unavailable: source master key is already reused"
+            else:
+                placeholders = ",".join("?" for _ in moved_owned_item_ids)
+                if moved_owned_item_ids and placeholders:
+                    current_owned_rows = conn.execute(
+                        f"""
+                        SELECT id, linked_album_master_id
+                        FROM owned_item
+                        WHERE id IN ({placeholders})
+                        """,
+                        moved_owned_item_ids,
+                    ).fetchall()
+                    current_owned_map = {int(item["id"]): int(item["linked_album_master_id"] or 0) for item in current_owned_rows}
+                    if sorted(current_owned_map.keys()) != sorted(moved_owned_item_ids):
+                        rollback_blocked_reason = "rollback unavailable: moved items are missing"
+                    elif any(current_owned_map.get(item_id) != target_id for item_id in moved_owned_item_ids):
+                        rollback_blocked_reason = "rollback unavailable: moved items changed after merge"
+                if rollback_blocked_reason is None and source_external_refs:
+                    ref_ids = [int(item.get("id") or 0) for item in source_external_refs if int(item.get("id") or 0) > 0]
+                    if ref_ids:
+                        placeholders = ",".join("?" for _ in ref_ids)
+                        current_ref_rows = conn.execute(
+                            f"""
+                            SELECT id, album_master_id
+                            FROM album_master_external_ref
+                            WHERE id IN ({placeholders})
+                            """,
+                            ref_ids,
+                        ).fetchall()
+                        current_ref_map = {int(item["id"]): int(item["album_master_id"] or 0) for item in current_ref_rows}
+                        if sorted(current_ref_map.keys()) != sorted(ref_ids):
+                            rollback_blocked_reason = "rollback unavailable: source refs changed after merge"
+                        elif any(current_ref_map.get(ref_id) != target_id for ref_id in ref_ids):
+                            rollback_blocked_reason = "rollback unavailable: source refs changed after merge"
+                if rollback_blocked_reason is None:
+                    rollback_available = True
+
+    return {
+        "id": history_id,
+        "source_album_master_id": source_id,
+        "target_album_master_id": target_id,
+        "source_code": str(source_snapshot.get("source_code") or "").strip() or None,
+        "source_master_id": str(source_snapshot.get("source_master_id") or "").strip() or None,
+        "source_title": str(source_snapshot.get("title") or "").strip() or None,
+        "source_artist_or_brand": str(source_snapshot.get("artist_or_brand") or "").strip() or None,
+        "target_title": str(target_snapshot.get("title") or "").strip() or None,
+        "target_artist_or_brand": str(target_snapshot.get("artist_or_brand") or "").strip() or None,
+        "moved_member_count": int(data.get("moved_member_count") or 0),
+        "target_member_count": int(data.get("target_member_count") or 0),
+        "source_owned_item_ids": moved_owned_item_ids,
+        "overlap_owned_item_ids": overlap_owned_item_ids,
+        "merged_by": str(data.get("merged_by") or "").strip() or None,
+        "created_at": str(data.get("created_at") or "").strip() or None,
+        "rolled_back_at": rolled_back_at,
+        "rolled_back_by": str(data.get("rolled_back_by") or "").strip() or None,
+        "rollback_available": rollback_available,
+        "rollback_blocked_reason": rollback_blocked_reason,
+    }
+
+
+def _latest_open_album_master_merge_history_id(conn: sqlite3.Connection) -> int | None:
+    row = conn.execute(
+        """
+        SELECT id
+        FROM album_master_merge_history
+        WHERE rolled_back_at IS NULL
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    history_id = int(row["id"] or 0) if row else 0
+    return history_id or None
+
+
+def list_album_master_merge_history(limit: int = 10) -> list[dict[str, Any]]:
+    resolved_limit = max(1, min(int(limit or 10), 50))
+    with get_conn() as conn:
+        latest_open_history_id = _latest_open_album_master_merge_history_id(conn)
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM album_master_merge_history
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?
+            """,
+            (resolved_limit,),
+        ).fetchall()
+        return [
+            _album_master_merge_history_record(conn, row, latest_open_history_id=latest_open_history_id)
+            for row in rows
+        ]
+
+
+def rollback_latest_album_master_merge(rolled_back_by: str | None = None) -> dict[str, Any]:
+    normalized_actor = str(rolled_back_by or "").strip() or None
+    with get_conn() as conn:
+        history_row = conn.execute(
+            """
+            SELECT *
+            FROM album_master_merge_history
+            WHERE rolled_back_at IS NULL
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        if history_row is None:
+            raise LookupError("album master merge history not found")
+
+        history_id = int(history_row["id"] or 0)
+        history_item = _album_master_merge_history_record(conn, history_row, latest_open_history_id=history_id)
+        if not history_item["rollback_available"]:
+            raise ValueError(str(history_item.get("rollback_blocked_reason") or "rollback unavailable"))
+
+        source_snapshot = _json_loads_or_default(history_row["source_master_snapshot_json"], {})
+        target_snapshot = _json_loads_or_default(history_row["target_master_snapshot_json"], {})
+        source_member_links = _json_loads_or_default(history_row["source_member_links_json"], [])
+        source_external_refs = _json_loads_or_default(history_row["source_external_refs_json"], [])
+        overlap_owned_item_ids = {
+            int(value)
+            for value in _json_loads_or_default(history_row["overlap_owned_item_ids_json"], [])
+            if int(value) > 0
+        }
+
+        source_id = int(history_row["source_album_master_id"] or 0)
+        target_id = int(history_row["target_album_master_id"] or 0)
+        source_owned_item_ids = [
+            int(item.get("owned_item_id") or 0)
+            for item in source_member_links
+            if int(item.get("owned_item_id") or 0) > 0
+        ]
+        source_ref_ids = [
+            int(item.get("id") or 0)
+            for item in source_external_refs
+            if int(item.get("id") or 0) > 0
+        ]
+        moved_non_overlap_ids = [item_id for item_id in source_owned_item_ids if item_id not in overlap_owned_item_ids]
+        rolled_back_at = utc_now_iso()
+
+        conn.execute(
+            """
+            INSERT INTO album_master
+              (id, source_code, source_master_id, title, artist_or_brand, sort_artist_name, domain_code, release_year, raw_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                source_id,
+                str(source_snapshot.get("source_code") or "").strip(),
+                str(source_snapshot.get("source_master_id") or "").strip(),
+                str(source_snapshot.get("title") or "").strip(),
+                str(source_snapshot.get("artist_or_brand") or "").strip() or None,
+                str(source_snapshot.get("sort_artist_name") or "").strip() or None,
+                _normalize_domain_code_value(source_snapshot.get("domain_code")),
+                source_snapshot.get("release_year"),
+                str(source_snapshot.get("raw_json") or "{}"),
+                str(source_snapshot.get("created_at") or "").strip() or rolled_back_at,
+                str(source_snapshot.get("updated_at") or "").strip() or rolled_back_at,
+            ),
+        )
+        conn.execute(
+            """
+            UPDATE album_master
+            SET source_code = ?,
+                source_master_id = ?,
+                title = ?,
+                artist_or_brand = ?,
+                sort_artist_name = ?,
+                domain_code = ?,
+                release_year = ?,
+                raw_json = ?,
+                created_at = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                str(target_snapshot.get("source_code") or "").strip(),
+                str(target_snapshot.get("source_master_id") or "").strip(),
+                str(target_snapshot.get("title") or "").strip(),
+                str(target_snapshot.get("artist_or_brand") or "").strip() or None,
+                str(target_snapshot.get("sort_artist_name") or "").strip() or None,
+                _normalize_domain_code_value(target_snapshot.get("domain_code")),
+                target_snapshot.get("release_year"),
+                str(target_snapshot.get("raw_json") or "{}"),
+                str(target_snapshot.get("created_at") or "").strip() or rolled_back_at,
+                str(target_snapshot.get("updated_at") or "").strip() or rolled_back_at,
+                target_id,
+            ),
+        )
+        if moved_non_overlap_ids:
+            placeholders = ",".join("?" for _ in moved_non_overlap_ids)
+            conn.execute(
+                f"""
+                DELETE FROM album_master_member
+                WHERE album_master_id = ? AND owned_item_id IN ({placeholders})
+                """,
+                [target_id, *moved_non_overlap_ids],
+            )
+        if source_member_links:
+            conn.executemany(
+                """
+                INSERT INTO album_master_member
+                  (album_master_id, owned_item_id, created_at)
+                VALUES (?, ?, ?)
+                """,
+                [
+                    (
+                        source_id,
+                        int(item.get("owned_item_id") or 0),
+                        str(item.get("created_at") or "").strip() or rolled_back_at,
+                    )
+                    for item in source_member_links
+                    if int(item.get("owned_item_id") or 0) > 0
+                ],
+            )
+        if source_member_links:
+            conn.executemany(
+                """
+                UPDATE owned_item
+                SET linked_album_master_id = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                [
+                    (
+                        int(item["linked_album_master_id"]) if item.get("linked_album_master_id") not in (None, "") else source_id,
+                        rolled_back_at,
+                        int(item.get("owned_item_id") or 0),
+                    )
+                    for item in source_member_links
+                    if int(item.get("owned_item_id") or 0) > 0
+                ],
+            )
+        if source_ref_ids:
+            placeholders = ",".join("?" for _ in source_ref_ids)
+            conn.execute(
+                f"""
+                UPDATE album_master_external_ref
+                SET album_master_id = ?, updated_at = ?
+                WHERE id IN ({placeholders})
+                """,
+                [source_id, rolled_back_at, *source_ref_ids],
+            )
+        conn.execute(
+            """
+            UPDATE album_master_merge_history
+            SET rolled_back_at = ?, rolled_back_by = ?
+            WHERE id = ?
+            """,
+            (rolled_back_at, normalized_actor, history_id),
+        )
+
+    return {
+        "merge_history_id": history_id,
+        "source_album_master_id": source_id,
+        "target_album_master_id": target_id,
+        "restored_member_count": len(source_owned_item_ids),
+        "rolled_back": True,
+    }
+
+
+def merge_album_masters(
+    source_album_master_id: int,
+    target_album_master_id: int,
+    merged_by: str | None = None,
+) -> dict[str, int | None]:
+    source_id = int(source_album_master_id or 0)
+    target_id = int(target_album_master_id or 0)
+    normalized_actor = str(merged_by or "").strip() or None
+    if source_id <= 0 or target_id <= 0:
+        raise ValueError("source/target album_master_id must be positive")
+
+    with get_conn() as conn:
+        target_row = conn.execute(
+            """
+            SELECT id, source_code, source_master_id, title, artist_or_brand, sort_artist_name, domain_code, release_year, raw_json, created_at, updated_at
+            FROM album_master
+            WHERE id = ?
+            LIMIT 1
+            """,
+            (target_id,),
+        ).fetchone()
+        if target_row is None:
             raise LookupError("target album_master not found")
 
         if source_id == target_id:
@@ -6746,11 +7185,12 @@ def merge_album_masters(source_album_master_id: int, target_album_master_id: int
                 "target_album_master_id": target_id,
                 "moved_member_count": 0,
                 "target_member_count": int(target_member_count_row["cnt"] or 0) if target_member_count_row else 0,
+                "merge_history_id": None,
             }
 
         source_row = conn.execute(
             """
-            SELECT id, title, artist_or_brand, sort_artist_name, domain_code, release_year, raw_json
+            SELECT id, source_code, source_master_id, title, artist_or_brand, sort_artist_name, domain_code, release_year, raw_json, created_at, updated_at
             FROM album_master
             WHERE id = ?
             LIMIT 1
@@ -6760,16 +7200,46 @@ def merge_album_masters(source_album_master_id: int, target_album_master_id: int
         if source_row is None:
             raise LookupError("source album_master not found")
 
-        now = utc_now_iso()
-        source_member_count_row = conn.execute(
+        source_member_rows = conn.execute(
             """
-            SELECT COUNT(*) AS cnt
-            FROM album_master_member
+            SELECT amm.owned_item_id, amm.created_at, oi.linked_album_master_id
+            FROM album_master_member amm
+            JOIN owned_item oi ON oi.id = amm.owned_item_id
             WHERE album_master_id = ?
+            ORDER BY amm.id ASC
             """,
             (source_id,),
-        ).fetchone()
-        moved_member_count = int(source_member_count_row["cnt"] or 0) if source_member_count_row else 0
+        ).fetchall()
+        source_member_links = _snapshot_member_link_records(source_member_rows)
+        source_owned_item_ids = [int(item["owned_item_id"]) for item in source_member_links if int(item["owned_item_id"]) > 0]
+        overlap_owned_item_ids: list[int] = []
+        if source_owned_item_ids:
+            placeholders = ",".join("?" for _ in source_owned_item_ids)
+            overlap_rows = conn.execute(
+                f"""
+                SELECT owned_item_id
+                FROM album_master_member
+                WHERE album_master_id = ? AND owned_item_id IN ({placeholders})
+                ORDER BY owned_item_id ASC
+                """,
+                [target_id, *source_owned_item_ids],
+            ).fetchall()
+            overlap_owned_item_ids = [int(row["owned_item_id"] or 0) for row in overlap_rows if int(row["owned_item_id"] or 0) > 0]
+        source_external_ref_rows = conn.execute(
+            """
+            SELECT id, source_code, source_master_id, title_hint, artist_or_brand_hint, release_year, raw_json, created_at, updated_at
+            FROM album_master_external_ref
+            WHERE album_master_id = ?
+            ORDER BY id ASC
+            """,
+            (source_id,),
+        ).fetchall()
+        source_external_refs = _snapshot_external_ref_records(source_external_ref_rows)
+        source_snapshot = _snapshot_album_master_record(source_row)
+        target_snapshot = _snapshot_album_master_record(target_row)
+
+        now = utc_now_iso()
+        moved_member_count = max(0, len(source_owned_item_ids) - len(overlap_owned_item_ids))
 
         conn.execute(
             """
@@ -6838,6 +7308,15 @@ def merge_album_masters(source_album_master_id: int, target_album_master_id: int
         )
         conn.execute("DELETE FROM album_master WHERE id = ?", (source_id,))
 
+        target_after_row = conn.execute(
+            """
+            SELECT id, source_code, source_master_id, title, artist_or_brand, sort_artist_name, domain_code, release_year, raw_json, created_at, updated_at
+            FROM album_master
+            WHERE id = ?
+            LIMIT 1
+            """,
+            (target_id,),
+        ).fetchone()
         target_member_count_row = conn.execute(
             """
             SELECT COUNT(*) AS cnt
@@ -6846,12 +7325,47 @@ def merge_album_masters(source_album_master_id: int, target_album_master_id: int
             """,
             (target_id,),
         ).fetchone()
+        history_cur = conn.execute(
+            """
+            INSERT INTO album_master_merge_history
+              (
+                source_album_master_id,
+                target_album_master_id,
+                source_master_snapshot_json,
+                target_master_snapshot_json,
+                source_member_links_json,
+                source_external_refs_json,
+                overlap_owned_item_ids_json,
+                moved_member_count,
+                target_member_count,
+                merged_by,
+                created_at,
+                target_updated_at_after_merge
+              )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                source_id,
+                target_id,
+                json.dumps(source_snapshot, ensure_ascii=True),
+                json.dumps(target_snapshot, ensure_ascii=True),
+                json.dumps(source_member_links, ensure_ascii=True),
+                json.dumps(source_external_refs, ensure_ascii=True),
+                json.dumps(overlap_owned_item_ids, ensure_ascii=True),
+                moved_member_count,
+                int(target_member_count_row["cnt"] or 0) if target_member_count_row else 0,
+                normalized_actor,
+                now,
+                str(target_after_row["updated_at"] or "").strip() if target_after_row else None,
+            ),
+        )
 
     return {
         "source_album_master_id": source_id,
         "target_album_master_id": target_id,
         "moved_member_count": moved_member_count,
         "target_member_count": int(target_member_count_row["cnt"] or 0) if target_member_count_row else 0,
+        "merge_history_id": int(history_cur.lastrowid or 0) or None,
     }
 
 
