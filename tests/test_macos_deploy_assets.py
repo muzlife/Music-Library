@@ -323,7 +323,10 @@ def test_prod_deploy_script_exists_and_is_executable():
     text = DEPLOY_PROD_SCRIPT.read_text("utf-8")
     assert "./deploy/scripts/backup_daily_db.sh" in text
     assert "RUN_API_VALIDATE_ONLY=1 ./scripts/run_api.sh" in text
-    assert "launchctl bootstrap gui/" in text
+    assert 'LAUNCHD_DOMAIN=\\"gui/\\$(id -u)\\"' in text
+    assert 'launchctl print \\"\\${LAUNCHD_DOMAIN}/${PROD_LAUNCHD_LABEL}\\"' in text
+    assert 'launchctl kickstart -k \\"\\${LAUNCHD_DOMAIN}/${PROD_LAUNCHD_LABEL}\\"' in text
+    assert 'launchctl bootstrap \\"\\${LAUNCHD_DOMAIN}\\"' in text
     assert "curl --fail --silent --show-error" in text
 
 
