@@ -22,6 +22,29 @@ if [[ -z "${ROLE}" || -z "${APP_ROOT}" ]]; then
   exit 1
 fi
 
+require_expected_app_root_name() {
+  local role="$1"
+  local app_root="$2"
+  local expected_name=""
+
+  case "${role}" in
+    prod)
+      expected_name="hahahoho-prod"
+      ;;
+    qa)
+      expected_name="hahahoho-qa"
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+
+  if [[ "$(basename "${app_root}")" != "${expected_name}" ]]; then
+    echo "${role} app root must end with ${expected_name}: ${app_root}" >&2
+    exit 1
+  fi
+}
+
 case "${ROLE}" in
   prod)
     TEMPLATE="${ROOT_DIR}/deploy/templates/launchd/com.muzlife.library-prod.plist"
@@ -37,6 +60,8 @@ case "${ROLE}" in
     exit 1
     ;;
 esac
+
+require_expected_app_root_name "${ROLE}" "${APP_ROOT}"
 
 DEST_DIR="${HOME}/Library/LaunchAgents"
 DEST_PATH="${DEST_DIR}/${FILENAME}"

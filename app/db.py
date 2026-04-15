@@ -1012,7 +1012,7 @@ def _default_auto_backup_dir() -> str:
 
 def _ensure_app_setting_table(conn: sqlite3.Connection) -> None:
     conn.executescript(
-        """
+        f"""
         CREATE TABLE IF NOT EXISTS app_setting (
           setting_key TEXT PRIMARY KEY,
           setting_value TEXT,
@@ -1453,7 +1453,7 @@ def init_db() -> None:
 
             CREATE TABLE IF NOT EXISTS purchase_import_queue (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
-              vendor_code TEXT NOT NULL CHECK (vendor_code IN ('SAILMUSIC', 'AMAZON', 'EBAY', 'OTHER')),
+              vendor_code TEXT NOT NULL CHECK (vendor_code IN ('{_purchase_import_vendor_check_sql()}')),
               source_type TEXT NOT NULL CHECK (source_type IN ('EMAIL_HTML', 'EMAIL_TEXT', 'FILE_UPLOAD', 'MANUAL')),
               source_ref TEXT,
               email_from TEXT,
@@ -1589,6 +1589,10 @@ def _column_exists(conn: sqlite3.Connection, table_name: str, column_name: str) 
     return any(str(row["name"]) == column_name for row in rows)
 
 
+def _purchase_import_vendor_check_sql() -> str:
+    return "', '".join(("SAILMUSIC", "AMAZON", "EBAY", "ALADIN", "YES24", "OTHER"))
+
+
 def _ensure_recent_feed_indexes(conn: sqlite3.Connection) -> None:
     if _column_exists(conn, "owned_item", "category") and _column_exists(conn, "owned_item", "created_at"):
         conn.execute(
@@ -1625,10 +1629,10 @@ def _ensure_auth_account_table(conn: sqlite3.Connection) -> None:
 
 def _ensure_purchase_import_queue_table(conn: sqlite3.Connection) -> None:
     conn.execute(
-        """
+        f"""
         CREATE TABLE IF NOT EXISTS purchase_import_queue (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          vendor_code TEXT NOT NULL CHECK (vendor_code IN ('SAILMUSIC', 'AMAZON', 'EBAY', 'OTHER')),
+          vendor_code TEXT NOT NULL CHECK (vendor_code IN ('{_purchase_import_vendor_check_sql()}')),
           source_type TEXT NOT NULL CHECK (source_type IN ('EMAIL_HTML', 'EMAIL_TEXT', 'FILE_UPLOAD', 'MANUAL')),
           source_ref TEXT,
           email_from TEXT,
@@ -1682,11 +1686,24 @@ def _purchase_import_queue_allows_file_upload(conn: sqlite3.Connection) -> bool:
     return "SOURCE_TYPE" in table_sql and "'FILE_UPLOAD'" in table_sql
 
 
+def _purchase_import_queue_allows_extended_vendors(conn: sqlite3.Connection) -> bool:
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'purchase_import_queue'"
+    ).fetchone()
+    if not row:
+        return False
+    table_sql = str(row["sql"] or "").upper()
+    return "VENDOR_CODE" in table_sql and "'ALADIN'" in table_sql and "'YES24'" in table_sql
+
+
 def _migrate_purchase_import_queue_allow_file_upload(conn: sqlite3.Connection) -> None:
     row = conn.execute(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'purchase_import_queue'"
     ).fetchone()
-    if not row or _purchase_import_queue_allows_file_upload(conn):
+    if not row or (
+        _purchase_import_queue_allows_file_upload(conn)
+        and _purchase_import_queue_allows_extended_vendors(conn)
+    ):
         return
 
     if conn.in_transaction:
@@ -1695,12 +1712,12 @@ def _migrate_purchase_import_queue_allow_file_upload(conn: sqlite3.Connection) -
     conn.execute("PRAGMA foreign_keys = OFF")
     try:
         conn.executescript(
-            """
+            f"""
             BEGIN;
             DROP TABLE IF EXISTS purchase_import_queue_new;
             CREATE TABLE purchase_import_queue_new (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
-              vendor_code TEXT NOT NULL CHECK (vendor_code IN ('SAILMUSIC', 'AMAZON', 'EBAY', 'OTHER')),
+              vendor_code TEXT NOT NULL CHECK (vendor_code IN ('{_purchase_import_vendor_check_sql()}')),
               source_type TEXT NOT NULL CHECK (source_type IN ('EMAIL_HTML', 'EMAIL_TEXT', 'FILE_UPLOAD', 'MANUAL')),
               source_ref TEXT,
               email_from TEXT,

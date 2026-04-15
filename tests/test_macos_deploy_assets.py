@@ -75,6 +75,25 @@ def test_launchd_install_script_renders_plist_into_home(tmp_path: Path):
     assert "com.muzlife.library-prod" in text
 
 
+def test_launchd_install_script_rejects_non_isolated_prod_root(tmp_path: Path):
+    app_root = tmp_path / "hahahoho"
+    app_root.mkdir()
+    home_dir = tmp_path / "home"
+    env = dict(os.environ, HOME=str(home_dir))
+
+    result = subprocess.run(
+        [str(LAUNCHD_SCRIPT), "prod", str(app_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode != 0
+    assert "hahahoho-prod" in result.stderr
+    assert not (home_dir / "Library" / "LaunchAgents" / "com.muzlife.library-prod.plist").exists()
+
+
 def test_cloudflare_render_script_writes_hostname_and_tunnel(tmp_path: Path):
     output_path = tmp_path / "library-qa.yml"
 
@@ -149,6 +168,7 @@ def test_run_api_script_loads_unquoted_env_values_with_spaces(tmp_path: Path):
     os.chmod(fake_python, 0o755)
 
     (app_root / ".env.local").write_text(
+        f"LIBRARY_DB_PATH={app_root / 'runtime' / 'data' / 'library.db'}\n"
         f"GOOGLE_DRIVE_BACKUP_DIR={drive_dir}\n",
         "utf-8",
     )
@@ -164,12 +184,146 @@ def test_run_api_script_loads_unquoted_env_values_with_spaces(tmp_path: Path):
     assert capture_path.read_text("utf-8").strip() == str(drive_dir)
 
 
+def test_run_api_script_rejects_prod_root_without_matching_library_db_path(tmp_path: Path):
+    app_root = tmp_path / "hahahoho-prod"
+    scripts_dir = app_root / "scripts"
+    python_bin = app_root / ".venv" / "bin"
+    capture_path = tmp_path / "captured-run.txt"
+
+    scripts_dir.mkdir(parents=True)
+    python_bin.mkdir(parents=True)
+
+    run_api_copy = scripts_dir / "run_api.sh"
+    run_api_copy.write_text(RUN_API_SCRIPT.read_text("utf-8"), "utf-8")
+    os.chmod(run_api_copy, 0o755)
+
+    fake_python = python_bin / "python3"
+    fake_python.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "printf 'started\\n' > \"$RUN_API_CAPTURE\"",
+            ]
+        )
+        + "\n",
+        "utf-8",
+    )
+    os.chmod(fake_python, 0o755)
+
+    (app_root / ".env.local").write_text(
+        "APP_PORT=8000\n",
+        "utf-8",
+    )
+
+    result = subprocess.run(
+        [str(run_api_copy)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path)),
+    )
+
+    assert result.returncode != 0
+    assert "LIBRARY_DB_PATH" in result.stderr
+    assert not capture_path.exists()
+
+
+def test_run_api_script_rejects_qa_root_with_prod_port_and_db_path(tmp_path: Path):
+    app_root = tmp_path / "hahahoho-qa"
+    scripts_dir = app_root / "scripts"
+    python_bin = app_root / ".venv" / "bin"
+    capture_path = tmp_path / "captured-run.txt"
+
+    scripts_dir.mkdir(parents=True)
+    python_bin.mkdir(parents=True)
+
+    run_api_copy = scripts_dir / "run_api.sh"
+    run_api_copy.write_text(RUN_API_SCRIPT.read_text("utf-8"), "utf-8")
+    os.chmod(run_api_copy, 0o755)
+
+    fake_python = python_bin / "python3"
+    fake_python.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "printf 'started\\n' > \"$RUN_API_CAPTURE\"",
+            ]
+        )
+        + "\n",
+        "utf-8",
+    )
+    os.chmod(fake_python, 0o755)
+
+    (app_root / ".env.local").write_text(
+        "APP_PORT=8000\n"
+        "LIBRARY_DB_PATH=/Users/tester/apps/hahahoho-prod/runtime/data/library.db\n",
+        "utf-8",
+    )
+
+    result = subprocess.run(
+        [str(run_api_copy)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path)),
+    )
+
+    assert result.returncode != 0
+    assert "APP_PORT" in result.stderr or "LIBRARY_DB_PATH" in result.stderr
+    assert not capture_path.exists()
+
+
+def test_run_api_script_validate_only_exits_before_python_start(tmp_path: Path):
+    app_root = tmp_path / "hahahoho-prod"
+    scripts_dir = app_root / "scripts"
+    python_bin = app_root / ".venv" / "bin"
+    capture_path = tmp_path / "captured-run.txt"
+
+    scripts_dir.mkdir(parents=True)
+    python_bin.mkdir(parents=True)
+    (app_root / "runtime" / "data").mkdir(parents=True)
+
+    run_api_copy = scripts_dir / "run_api.sh"
+    run_api_copy.write_text(RUN_API_SCRIPT.read_text("utf-8"), "utf-8")
+    os.chmod(run_api_copy, 0o755)
+
+    fake_python = python_bin / "python3"
+    fake_python.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "printf 'started\\n' > \"$RUN_API_CAPTURE\"",
+            ]
+        )
+        + "\n",
+        "utf-8",
+    )
+    os.chmod(fake_python, 0o755)
+
+    (app_root / ".env.local").write_text(
+        f"APP_PORT=8000\nLIBRARY_DB_PATH={app_root / 'runtime' / 'data' / 'library.db'}\n",
+        "utf-8",
+    )
+
+    result = subprocess.run(
+        [str(run_api_copy)],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path), RUN_API_VALIDATE_ONLY="1"),
+    )
+
+    assert result.stdout.strip() == "runtime validation ok"
+    assert not capture_path.exists()
+
+
 def test_prod_deploy_script_exists_and_is_executable():
     assert DEPLOY_PROD_SCRIPT.exists()
     assert os.access(DEPLOY_PROD_SCRIPT, os.X_OK)
     text = DEPLOY_PROD_SCRIPT.read_text("utf-8")
     assert "./deploy/scripts/backup_daily_db.sh" in text
-    assert "launchctl kickstart -k" in text
+    assert "RUN_API_VALIDATE_ONLY=1 ./scripts/run_api.sh" in text
+    assert "launchctl bootstrap gui/" in text
     assert "curl --fail --silent --show-error" in text
 
 
@@ -217,10 +371,31 @@ def test_backup_launchd_install_script_renders_three_jobs(tmp_path: Path):
     assert str(qa_root) in qa_sync_text
 
 
+def test_backup_launchd_install_script_rejects_non_isolated_roots(tmp_path: Path):
+    prod_root = tmp_path / "hahahoho"
+    qa_root = tmp_path / "qa"
+    prod_root.mkdir()
+    qa_root.mkdir()
+    home_dir = tmp_path / "home"
+    env = dict(os.environ, HOME=str(home_dir))
+
+    result = subprocess.run(
+        [str(INSTALL_BACKUP_JOBS_SCRIPT), str(prod_root), str(qa_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode != 0
+    assert "hahahoho-prod" in result.stderr or "hahahoho-qa" in result.stderr
+    assert not (home_dir / "Library" / "LaunchAgents" / "com.muzlife.backup-daily-db.plist").exists()
+
+
 def test_backup_launchd_install_script_can_render_qa_only(tmp_path: Path):
     home_dir = tmp_path / "home"
-    prod_root = tmp_path / "prod"
-    qa_root = tmp_path / "qa"
+    prod_root = tmp_path / "hahahoho-prod"
+    qa_root = tmp_path / "hahahoho-qa"
     prod_backup_dir = tmp_path / "mirror" / "weekly-full"
     prod_root.mkdir()
     qa_root.mkdir()

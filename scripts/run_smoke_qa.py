@@ -20,10 +20,10 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 ROOT = Path('/Volumes/Works/07.hahahoho')
 ENV_PATH = ROOT / '.env.local'
 QA_CSV_PATH = ROOT / 'docs' / 'qa' / 'qa_master_sheet.csv'
-EXTERNAL_BASE_URL = 'https://library.muzlife.com'
-LOCAL_BASE_URL = 'http://127.0.0.1:8000'
+EXTERNAL_BASE_URL = 'https://qa-library.muzlife.com'
+LOCAL_BASE_URL = 'http://127.0.0.1:8100'
 LOCAL_HEALTH_URL = f'{LOCAL_BASE_URL}/health'
-LAUNCHD_LABEL = 'gui/501/com.jingunpark.hahahoho-library'
+LAUNCHD_LABEL = f'gui/{os.getuid()}/com.muzlife.library-qa'
 SMOKE_IDS = [
     'AUTH-001',
     'SYS-001',

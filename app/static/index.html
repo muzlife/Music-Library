@@ -1102,10 +1102,35 @@
 
     .ops-compact-form-actions {
       display: inline-flex;
-      align-items: end;
+      align-items: stretch;
       justify-content: flex-end;
       gap: 6px;
       min-width: 0;
+    }
+
+    .ops-compact-inline-field-actions {
+      display: inline-flex;
+      align-items: stretch;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    body[data-shell-mode="admin"] .ops-compact-form-actions > button,
+    body[data-shell-mode="admin"] .ops-compact-form-actions > .btn,
+    body[data-shell-mode="admin"] .ops-compact-inline-field-actions > button,
+    body[data-shell-mode="admin"] .ops-compact-inline-field-actions > .btn {
+      min-height: var(--compact-control-height);
+      height: var(--compact-control-height);
+      padding: 2px 8px;
+      line-height: 1.1;
+      align-self: stretch;
+    }
+
+    body[data-shell-mode="admin"] .meta-search-row > button,
+    body[data-shell-mode="admin"] .meta-search-row > .btn {
+      min-height: var(--compact-control-height);
+      height: var(--compact-control-height);
+      align-self: stretch;
     }
 
     .compact-stack {
@@ -1466,6 +1491,15 @@
     .page-help-title-row strong {
       margin: 0 !important;
       line-height: 1.05;
+    }
+
+    body[data-shell-density="compact"] .page-help-title-row + .mini,
+    body[data-shell-density="compact"] #tabMedia .result-head .mini[data-i18n="media.subtitle"] {
+      display: none;
+    }
+
+    body[data-shell-density="compact"] .tab-panel .sub {
+      display: none;
     }
 
     .page-help-trigger {
@@ -4839,6 +4873,13 @@
       margin-top: 0;
     }
 
+    .meta-search-fields-4 {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 0.75fr) minmax(0, 0.75fr);
+      gap: 6px;
+      margin-top: 0;
+    }
+
     .source-workbench-toolbar {
       display: grid;
       grid-template-columns: 110px 120px 86px 86px minmax(0, 1fr);
@@ -5748,7 +5789,7 @@
 
     .purchase-import-candidate-search-row {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       margin-bottom: 8px;
       align-items: end;
@@ -10988,7 +11029,7 @@
                             </button>
                           </div>
                           <div class="dashboard-selection-actions dashboard-selection-actions--primary">
-                            <button id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n-title="dashboard.selection.action.edit_selected" data-i18n-aria-label="dashboard.selection.action.edit_selected" data-i18n="dashboard.selection.action.edit_short">편집</button>
+                            <button id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="상세 관리" aria-label="상세 관리" data-i18n-title="dashboard.selection.action.edit_selected" data-i18n-aria-label="dashboard.selection.action.edit_selected" data-i18n="dashboard.selection.action.edit_short">상세 관리</button>
                             <button id="homeDashSlotBulkBtn" class="btn ghost tiny dashboard-slot-actionbtn" type="button" title="일괄 수정" aria-label="일괄 수정" data-slot-action="bulk" data-i18n-title="dashboard.selection.action.bulk" data-i18n-aria-label="dashboard.selection.action.bulk">
                               <span data-i18n="dashboard.selection.action.bulk_short">일괄</span>
                             </button>
@@ -11090,7 +11131,7 @@
           <section class="dashboard-panel dashboard-workbench-panel">
             <div class="dashboard-panel-head">
               <h3><span data-i18n="dashboard.workbench.title">이동 작업대</span><span class="section-help-dot" tabindex="0" data-help-key="help.dashboard.workbench">?</span></h3>
-              <span id="homeDashWorkbenchMeta" class="mini" data-i18n="dashboard.workbench.meta">클릭 선택, 선택 상품 편집, 왼쪽 칸 클릭으로 이동</span>
+              <span id="homeDashWorkbenchMeta" class="mini" data-i18n="dashboard.workbench.meta">클릭 선택, 상세 관리, 왼쪽 칸 클릭으로 이동</span>
             </div>
             <div class="dashboard-workbench-toolbar">
               <div class="dashboard-workbench-sources">
@@ -11171,7 +11212,7 @@
                         <button id="homeDashWorkbenchMoveCancelBtn" class="btn ghost tiny dashboard-workbench-actionbtn" type="button" title="이동 취소" aria-label="이동 취소" data-i18n="dashboard.selection.action.cancel_move" data-i18n-title="dashboard.selection.action.cancel_move" data-i18n-aria-label="dashboard.selection.action.cancel_move" hidden>이동 취소</button>
                       </div>
                       <div class="dashboard-selection-actions dashboard-selection-actions--primary">
-                        <button id="homeDashWorkbenchEditBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n="dashboard.workbench.action.edit_selected" data-i18n-title="dashboard.workbench.action.edit_selected" data-i18n-aria-label="dashboard.workbench.action.edit_selected">선택 상품 편집</button>
+                        <button id="homeDashWorkbenchEditBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="상세 관리" aria-label="상세 관리" data-i18n="dashboard.workbench.action.edit_selected" data-i18n-title="dashboard.workbench.action.edit_selected" data-i18n-aria-label="dashboard.workbench.action.edit_selected">상세 관리</button>
                       </div>
                     </div>
                   </div>
@@ -11239,7 +11280,7 @@
                     <button id="operatorLookupBtn" class="btn secondary icon-btn" type="button" data-i18n-title="operator.lookup.action.run" data-i18n-aria-label="operator.lookup.action.run" title="조회" aria-label="조회">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                     </button>
-                    <button id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="operator.lookup.action.reset" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset">비우기</button>
+                    <button id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="operator.lookup.action.reset" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset"></button>
                   </div>
                 </div>
               </div>
@@ -11828,11 +11869,9 @@
           </div>
         </div>
 
-        <section id="homeProductRelationSection" class="goods-map-section" style="margin-top:10px; display:none;">
-          <div class="result-head" style="margin-bottom:0;">
-            <strong data-i18n="media.manage.product_relation.title">상품 관계</strong>
-            <span class="mini" data-i18n="media.manage.product_relation.subtitle">마스터, 시리즈, 박스세트, 연관 발매를 함께 관리</span>
-          </div>
+        <details id="homeProductRelationSection" class="home-manage-secondary-block goods-map-section" style="margin-top:10px;display:none;">
+          <summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.product_relation.title">상품 관계</summary>
+          <div class="mini home-master-lookup-note" data-i18n="media.manage.product_relation.subtitle">마스터, 시리즈, 박스세트, 연관 발매를 함께 관리</div>
           <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
 
           <div class="goods-map-section compact-stack" style="grid-template-columns: 1fr;">
@@ -11906,7 +11945,7 @@
               <button id="homeProductRelationSaveBtn" class="btn ghost" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
             </div>
           </div>
-        </section>
+        </details>
 
         <div id="homeEditorActionBlock">
         <div id="homeEditorActionRow" class="row home-manage-actions-right" style="margin-top:12px;">
@@ -12329,7 +12368,7 @@
                   <button id="goodsSearchRunBtn" class="btn secondary icon-btn" type="button" data-i18n-title="common.search" data-i18n-aria-label="common.search" title="검색" aria-label="검색">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                   </button>
-                  <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear">비우기</button>
+                  <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>
                 </div>
               </div>
             </div>
@@ -12796,7 +12835,7 @@
           </div>
           <div class="ops-compact-form-actions">
             <button id="quickCreateBtn" class="btn" data-i18n="media.register.direct.action.save">직접 등록 저장</button>
-            <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset">직접 등록 폼 초기화</button>
+            <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>
           </div>
         </div>
         <details id="quickRegisterExtraFields" class="ops-compact-extra-fields" style="margin-top:8px;">
@@ -12871,7 +12910,7 @@
         </div>
         <div class="admin-barcode-intake-lookup-grid">
           <div class="mini" data-i18n="media.register.api_lookup.lookup_hint">바코드가 없거나 후보 보정이 필요하면 아래 조건 조회를 함께 사용합니다. 자세한 수정은 상단 `관리` 탭에서 이어갑니다.</div>
-          <div class="meta-search-fields-3 admin-barcode-intake-meta-fields">
+          <div class="meta-search-fields-4 admin-barcode-intake-meta-fields">
             <div>
               <label for="queryArtist" data-i18n="media.register.api_lookup.field.artist.label">아티스트명</label>
               <input id="queryArtist" tabindex="1" data-i18n-placeholder="media.register.api_lookup.field.artist.placeholder" placeholder="예: 산울림" />
@@ -12884,8 +12923,12 @@
               <label for="queryCatalog" data-i18n="media.register.api_lookup.field.catalog.label">카탈로그번호</label>
               <input id="queryCatalog" tabindex="3" data-i18n-placeholder="media.register.api_lookup.field.catalog.placeholder" placeholder="예: OL-1234" />
             </div>
+            <div>
+              <label for="querySourceRef" data-i18n="media.register.api_lookup.field.source_ref.label">참조 ID / URL</label>
+              <input id="querySourceRef" tabindex="4" data-i18n-placeholder="media.register.api_lookup.field.source_ref.placeholder" placeholder="예: release:36614953" />
+            </div>
           </div>
-        <div class="row admin-barcode-intake-meta-actions">
+        <div class="row admin-barcode-intake-meta-actions ops-compact-inline-field-actions">
           <button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>
         </div>
         </div>
@@ -13180,7 +13223,7 @@
 
         <div class="row" style="margin-top:12px;">
           <button id="createOwnedBtn" class="btn" data-i18n="media.register.detail.action.save">등록 저장</button>
-          <button id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n="media.register.detail.action.reset" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset">폼 초기화</button>
+          <button id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n="media.register.detail.action.reset" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"></button>
         </div>
         <div id="createStatus" class="status"></div>
         </div>
@@ -13258,7 +13301,7 @@
         <div class="row" style="margin-top:10px;">
           <button id="purchaseImportPreviewBtn" class="btn secondary" type="button" data-i18n="media.register.purchase.action.preview">미리보기</button>
           <button id="purchaseImportSaveBtn" class="btn" type="button" data-i18n="media.register.purchase.action.save_queue">수입 큐 저장</button>
-          <button id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset">입력 비우기</button>
+          <button id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>
         </div>
         <div id="purchaseImportStatus" class="status"></div>
 
@@ -13573,6 +13616,14 @@
           <input id="masterQuery" data-i18n-placeholder="media.register.master.field.query.placeholder" placeholder="예: 산울림 13집" />
         </div>
         <div>
+          <label for="masterSourceRef" data-i18n="media.register.master.field.source_ref.label">참조 ID / URL</label>
+          <input id="masterSourceRef" data-i18n-placeholder="media.register.master.field.source_ref.placeholder" placeholder="예: master:12345 / album:1058176" />
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top:10px;">
+        <div></div>
+        <div></div>
+        <div>
           <label for="masterLimit" data-i18n="media.register.master.field.limit.label">조회 개수</label>
           <input id="masterLimit" type="number" min="1" max="50" value="10" />
         </div>
@@ -13602,8 +13653,8 @@
           <label for="masterVariantBarcode" data-i18n="media.register.master.field.variant_barcode.label">바코드 검색</label>
           <input id="masterVariantBarcode" data-i18n-placeholder="media.register.master.field.variant_barcode.placeholder" placeholder="예: 8809338405141" />
         </div>
-        <div class="row" style="align-items:end;">
-          <button id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n="media.register.master.action.reset_filters" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters">초기화</button>
+        <div class="row ops-compact-inline-field-actions" style="justify-content:flex-end;">
+          <button id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n="media.register.master.action.reset_filters" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"></button>
         </div>
       </div>
       <div class="row" style="margin-top:6px;justify-content:space-between;align-items:center;">
@@ -13680,13 +13731,28 @@
       <div id="bindMasterStatus" class="status"></div>
 
       <div class="section-divider">
-        <h2 data-i18n="media.register.master.saved_groups.title">저장된 마스터 묶음</h2>
+        <h2 data-i18n="media.register.master.merge.title">내부 마스터 병합</h2>
       </div>
-      <div id="masterGroupStatus" class="status"></div>
+      <div class="grid-3" style="margin-top:10px;">
+        <div class="span-2">
+          <label for="masterMergeQuery" data-i18n="media.register.master.merge.field.query.label">내부 album_master 검색</label>
+          <input id="masterMergeQuery" data-i18n-placeholder="media.register.master.merge.field.query.placeholder" placeholder="예: album_master_id / 앨범명 / 아티스트명" />
+        </div>
+        <div style="display:flex;align-items:end;justify-content:flex-end;gap:8px;">
+          <button id="masterMergeSearchBtn" class="btn ghost" type="button" data-i18n="media.register.master.merge.action.search">내부 마스터 검색</button>
+          <button id="masterMergeClearBtn" class="btn ghost" type="button" data-i18n="media.register.master.merge.action.clear">검색 초기화</button>
+        </div>
+      </div>
+      <p class="mini" style="margin-top:8px;" data-i18n="media.register.master.merge.subtitle">이미 저장된 내부 마스터를 검색해 다중 선택하고, 기준 마스터를 지정한 뒤 나머지를 순차 병합합니다.</p>
+      <div class="result-head" style="margin-top:8px;">
+        <strong data-i18n="media.register.master.merge.search_results.title">검색 결과</strong>
+      </div>
+      <div id="masterMergeStatus" class="status"></div>
       <div class="table-wrap" style="margin-top:10px;">
         <table>
           <thead>
             <tr>
+              <th data-i18n="media.register.master.merge.table.add">추가</th>
               <th>ID</th>
               <th>Source</th>
               <th>Master ID</th>
@@ -13696,8 +13762,63 @@
               <th data-i18n="common.table.member_count">멤버 수</th>
             </tr>
           </thead>
-          <tbody id="masterGroupBody"></tbody>
+          <tbody id="masterMergeBody">
+            <tr><td colspan="8" class="muted">내부 album_master 를 검색하세요.</td></tr>
+          </tbody>
         </table>
+      </div>
+      <div class="result-head" style="margin-top:12px;">
+        <strong data-i18n="media.register.master.merge.queue.title">병합 후보 큐</strong>
+        <span id="masterMergeSummary" class="mini" data-i18n="media.register.master.merge.summary.none_selected">선택된 병합 대상 없음</span>
+      </div>
+      <div class="row" style="margin-top:8px;justify-content:flex-end;">
+        <button id="masterMergeQueueClearBtn" class="btn ghost" type="button" data-i18n="media.register.master.merge.action.clear_queue">후보 큐 비우기</button>
+      </div>
+      <div class="table-wrap" style="margin-top:8px;">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="media.register.master.merge.table.base">대표</th>
+              <th data-i18n="media.register.master.merge.table.remove">제거</th>
+              <th>ID</th>
+              <th>Source</th>
+              <th>Master ID</th>
+              <th>Title</th>
+              <th>Artist</th>
+              <th>Year</th>
+              <th data-i18n="common.table.member_count">멤버 수</th>
+            </tr>
+          </thead>
+          <tbody id="masterMergeQueueBody">
+            <tr><td colspan="9" class="muted">병합 후보 큐가 비어 있습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="masterMergeRunBtn" class="btn" type="button" disabled data-i18n="media.register.master.merge.action.run">선택 항목 병합 실행</button>
+      </div>
+
+      <div id="masterGroupPanel" hidden style="display:none;">
+        <div class="section-divider">
+          <h2 data-i18n="media.register.master.saved_groups.title">저장된 마스터 묶음</h2>
+        </div>
+        <div id="masterGroupStatus" class="status"></div>
+        <div class="table-wrap" style="margin-top:10px;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Source</th>
+                <th>Master ID</th>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Year</th>
+                <th data-i18n="common.table.member_count">멤버 수</th>
+              </tr>
+            </thead>
+            <tbody id="masterGroupBody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -13884,7 +14005,7 @@
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsCabinetDeleteBtn" class="btn ghost" type="button" data-i18n="ops.cabinet.action.delete">장식장 삭제</button>
-            <button id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset">입력 초기화</button>
+            <button id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>
             <button id="opsCabinetSaveBtn" class="btn" type="button" data-i18n="ops.cabinet.action.save">장식장 생성</button>
           </div>
           <div id="opsCabinetModeHint" class="mini muted" style="margin-top:6px;" data-i18n="ops.cabinet.mode_hint">신규 장식장을 만들 때는 전체 구조를 입력하고 `장식장 생성`을 누르세요.</div>
@@ -13995,7 +14116,7 @@
           </details>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsCameraDeleteBtn" class="btn ghost" type="button" data-i18n="ops.camera.action.delete">카메라 삭제</button>
-            <button id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.camera.action.reset" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset">입력 초기화</button>
+            <button id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.camera.action.reset" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>
             <button id="opsCameraSaveBtn" class="btn" type="button" data-i18n="ops.camera.action.save">카메라 저장</button>
           </div>
           <div id="opsCameraStatus" class="status"></div>
@@ -14065,7 +14186,7 @@
             </div>
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
-            <button id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.slot.action.reset" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset">입력 초기화</button>
+            <button id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.slot.action.reset" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"></button>
             <button id="opsSlotReloadBtn" class="btn ghost" type="button" data-i18n="ops.slot.action.reload">목록 새로고침</button>
             <button id="opsSlotSaveBtn" class="btn" type="button" data-i18n="ops.slot.action.save">슬롯 저장</button>
           </div>
@@ -14214,7 +14335,7 @@
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsAuthDeleteBtn" class="btn ghost" type="button" data-i18n="ops.account.action.delete">계정 삭제</button>
-            <button id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.account.action.reset" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset">입력 초기화</button>
+            <button id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.account.action.reset" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>
             <button id="opsAuthReloadBtn" class="btn ghost" type="button" data-i18n="ops.account.action.reload">목록 새로고침</button>
             <button id="opsAuthSaveBtn" class="btn" type="button" data-i18n="ops.account.action.save">계정 저장</button>
           </div>
@@ -14332,7 +14453,7 @@
             </section>
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
-            <button id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n="ops.providers.action.reset" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset">설정 다시 불러오기</button>
+            <button id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n="ops.providers.action.reset" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset"></button>
           </div>
           <div id="opsProviderStatus" class="status"></div>
           <div class="mini muted" style="margin-top:8px;" data-i18n="ops.providers.outro">빈 secret 입력칸은 기존 값을 유지합니다. 현재 설정 여부는 아래 상태 문구와 placeholder로 확인할 수 있습니다.</div>
@@ -14644,6 +14765,10 @@
     let purchaseImportFileContent = "";
     let purchaseImportFileContentBase64 = "";
     let purchaseImportFileName = "";
+    let masterMergeSearchResults = [];
+    let masterMergeQueueItems = [];
+    let masterMergeBaseId = 0;
+    let masterMergeHasSearched = false;
     let selectedAlbumMaster = null;
     let masterVariantItems = [];
     let masterVariantPage = 1;
@@ -14727,6 +14852,7 @@
     let homeDashboardWorkbenchRecommendations = {};
     let homeDashboardWorkbenchMode = "UNASSIGNED";
     let sharedCameraSelectedId = null;
+    let masterOwnedItems = [];
     let opsExceptionCounts = {
       UNSLOTTED: 0,
       SOURCE_MISSING: 0,
@@ -14823,7 +14949,7 @@
         "dashboard.cover_flow.field.sort_mode.option.created_desc": "등록순",
         "dashboard.cover_flow.field.sort_mode.option.name_asc": "이름순",
         "dashboard.workbench.title": "이동 작업대",
-        "dashboard.workbench.meta": "클릭 선택, 선택 상품 편집, 이동 시작 후 왼쪽 칸 클릭",
+        "dashboard.workbench.meta": "클릭 선택, 상세 관리, 이동 시작 후 왼쪽 칸 클릭",
         "dashboard.workbench.mode.unslotted": "미배치",
         "dashboard.workbench.mode.search_results": "검색 결과",
         "dashboard.workbench.field.category.label": "미디어",
@@ -14845,7 +14971,7 @@
         "dashboard.workbench.field.title.placeholder": "상품명",
         "dashboard.workbench.field.catalog.placeholder": "카탈로그",
         "dashboard.workbench.field.barcode.placeholder": "바코드",
-        "dashboard.workbench.action.edit_selected": "선택 상품 편집",
+        "dashboard.workbench.action.edit_selected": "상세 관리",
         "dashboard.workbench.action.recommend_slot": "추천 칸",
         "dashboard.workbench.warning.badge.sort": "정렬 주의",
         "dashboard.workbench.warning.badge.domain_name_mismatch": "도메인-이름 불일치",
@@ -14875,8 +15001,8 @@
         "dashboard.workbench.tooltip.current": "현재 진열 칸 보기: {name}",
         "dashboard.workbench.tooltip.recommend": "추천 칸 보기: {name}",
         "dashboard.workbench.tooltip.recommend_with_detail": "추천 칸 보기: {name} / 후보 {detail}",
-        "dashboard.selection.action.edit_selected": "선택 상품 편집",
-        "dashboard.selection.action.edit_short": "편집",
+        "dashboard.selection.action.edit_selected": "상세 관리",
+        "dashboard.selection.action.edit_short": "상세 관리",
         "dashboard.selection.action.select": "선택",
         "dashboard.selection.action.select_short": "선택",
         "dashboard.selection.action.deselect": "선택 해제",
@@ -15949,6 +16075,8 @@
         "media.register.api_lookup.action.barcode_search": "바코드 조회",
         "media.register.api_lookup.field.artist.label": "아티스트명",
         "media.register.api_lookup.field.artist.placeholder": "예: 산울림",
+        "media.register.api_lookup.field.source_ref.label": "참조 ID / URL",
+        "media.register.api_lookup.field.source_ref.placeholder": "예: release:36614953",
         "media.register.api_lookup.action.query_search": "조건 조회",
         "media.register.purchase.title": "구매 내역 가져오기",
         "media.register.purchase.field.file.label": "주문 파일",
@@ -15997,6 +16125,7 @@
         "media.register.purchase.queue.details.loading": "후보 조회 중...",
         "media.register.purchase.queue.field.artist_override.label": "아티스트명 수정 검색",
         "media.register.purchase.queue.field.item_override.label": "상품명 수정 검색",
+        "media.register.purchase.queue.field.query_override.label": "참조 ID / URL",
         "media.register.purchase.queue.status.empty": "수입 큐가 비어 있습니다.",
         "media.register.purchase.queue.status.candidates_loading": "후보 조회 중...",
         "media.register.purchase.queue.status.candidates_summary": "후보 {count}건 · 선택 {source}",
@@ -16780,6 +16909,8 @@
         "media.register.master.field.source.label": '마스터 소스',
         "media.register.master.field.query.label": '마스터 검색어',
         "media.register.master.field.query.placeholder": '예: 산울림 11집',
+        "media.register.master.field.source_ref.label": '참조 ID / URL',
+        "media.register.master.field.source_ref.placeholder": '예: master:12345 / album:1058176',
         "media.register.master.field.limit.label": '조회 수',
         "media.register.master.action.search": '마스터 검색',
         "media.register.master.action.load_groups": '기존 그룹 불러오기',
@@ -16905,6 +17036,13 @@
         "media.register.master.bind.status.saving": "묶음 저장 중...",
         "media.register.master.bind.status.failed": "묶음 저장 실패",
         "media.register.master.bind.status.done": "저장 완료: album_master_id={album_master_id}, linked_count={linked_count}",
+        "media.register.master.bind.status.cancelled": "마스터 묶기를 취소했습니다.",
+        "media.register.master.bind.status.merge_done": "기준 마스터 반영 완료: target album_master_id={target_album_master_id}, merged_count={merged_count}",
+        "media.register.master.bind.status.merge_partial": "저장 후 병합 일부 실패: target album_master_id={target_album_master_id}, merged_count={merged_count}, failed_count={failed_count}{details}",
+        "media.register.master.bind.target.prompt": "선택한 아이템 중 이미 내부 마스터에 묶인 항목이 있습니다.\n어떤 마스터를 기준으로 병합할까요?\n\n{options}\n\n옵션 번호 또는 album_master_id를 입력하세요.\n기본값: {default_value}",
+        "media.register.master.bind.target.option.existing": "{index}) 기존 album_master_id={album_master_id} 유지 (선택 {count})",
+        "media.register.master.bind.target.option.searched": "{index}) 검색한 외부 마스터 기준 사용",
+        "media.register.master.bind.target.invalid": "기준 마스터 입력이 올바르지 않습니다.",
         "media.register.master.owned_items.title": "보유 아이템 선택",
         "media.register.master.owned_items.field.query.label": "보유 아이템 검색어",
         "media.register.master.owned_items.field.query.placeholder": "예: 산울림 13집",
@@ -16921,6 +17059,35 @@
         "media.register.master.import.status.failed": "선택 버전 신규 등록 실패",
         "media.register.master.import.status.done": "등록 완료: created {created}건, skipped {skipped}건, album_master_id={album_master_id}{notices}",
         "media.register.master.saved_groups.title": "저장된 마스터 묶음",
+        "media.register.master.merge.title": "내부 마스터 병합",
+        "media.register.master.merge.subtitle": "이미 저장된 내부 마스터를 검색해 다중 선택하고, 기준 마스터를 지정한 뒤 나머지를 순차 병합합니다.",
+        "media.register.master.merge.field.query.label": "내부 album_master 검색",
+        "media.register.master.merge.field.query.placeholder": "예: album_master_id / 앨범명 / 아티스트명",
+        "media.register.master.merge.action.search": "내부 마스터 검색",
+        "media.register.master.merge.action.clear": "검색 초기화",
+        "media.register.master.merge.action.clear_queue": "후보 큐 비우기",
+        "media.register.master.merge.action.run": "선택 항목 병합 실행",
+        "media.register.master.merge.action.add": "큐에 추가",
+        "media.register.master.merge.action.added": "추가됨",
+        "media.register.master.merge.table.base": "기준",
+        "media.register.master.merge.table.add": "추가",
+        "media.register.master.merge.table.remove": "제거",
+        "media.register.master.merge.search_results.title": "검색 결과",
+        "media.register.master.merge.queue.title": "병합 후보 큐",
+        "media.register.master.merge.summary.none_selected": "선택된 병합 대상 없음",
+        "media.register.master.merge.summary.selected": "선택 {count} / 기준 album_master_id={base_id}",
+        "media.register.master.merge.state.prompt": "내부 album_master 를 검색하세요.",
+        "media.register.master.merge.state.empty": "병합 가능한 내부 마스터가 없습니다.",
+        "media.register.master.merge.queue.state.empty": "병합 후보 큐가 비어 있습니다.",
+        "media.register.master.merge.status.loading": "내부 마스터 조회 중...",
+        "media.register.master.merge.status.loaded": "병합 대상 조회 완료: {count}",
+        "media.register.master.merge.status.failed": "내부 마스터 조회 실패",
+        "media.register.master.merge.status.no_selection": "병합할 내부 마스터를 2건 이상 선택하세요.",
+        "media.register.master.merge.status.base_required": "선택 항목 중 기준 마스터를 지정하세요.",
+        "media.register.master.merge.status.merging": "내부 마스터 병합 중... target={base_id}, source_count={count}",
+        "media.register.master.merge.status.done": "내부 마스터 병합 완료: merged {merged_count}건 / moved {moved_count}건 / target album_master_id={base_id}",
+        "media.register.master.merge.status.partial": "내부 마스터 병합 일부 실패: merged {merged_count}건 / failed {failed_count}건 / target album_master_id={base_id}{details}",
+        "media.register.master.merge.status.queue_seeded": "병합 후보 큐를 준비했습니다. 대표 마스터를 확인한 뒤 다시 저장하거나 병합을 실행하세요.",
         "media.register.master.group.status.loading": "묶음 목록 조회 중...",
         "media.register.master.group.status.loaded": "조회 완료: {count}",
         "media.register.master.group.status.failed": "묶음 목록 조회 실패",
@@ -17295,7 +17462,7 @@
         "dashboard.cover_flow.field.sort_mode.option.created_desc": "Registration",
         "dashboard.cover_flow.field.sort_mode.option.name_asc": "Name",
         "dashboard.workbench.title": "Move Workbench",
-        "dashboard.workbench.meta": "Click to select, edit selected items, then start move mode and click a slot on the left.",
+        "dashboard.workbench.meta": "Click to select, open detail manage, then start move mode and click a slot on the left.",
         "dashboard.workbench.mode.unslotted": "Unslotted",
         "dashboard.workbench.mode.search_results": "Search Results",
         "dashboard.workbench.field.artist.placeholder": "Artist",
@@ -17317,7 +17484,7 @@
         "dashboard.workbench.field.title.placeholder": "Item",
         "dashboard.workbench.field.catalog.placeholder": "Catalog No.",
         "dashboard.workbench.field.barcode.placeholder": "Barcode",
-        "dashboard.workbench.action.edit_selected": "Edit Selected Item",
+        "dashboard.workbench.action.edit_selected": "Open detail manage",
         "dashboard.workbench.action.recommend_slot": "Recommend Slot",
         "dashboard.workbench.warning.badge.sort": "Sort warning",
         "dashboard.workbench.warning.badge.domain_name_mismatch": "Domain mismatch",
@@ -17347,8 +17514,8 @@
         "dashboard.workbench.tooltip.current": "Open current slot: {name}",
         "dashboard.workbench.tooltip.recommend": "Open recommended slot: {name}",
         "dashboard.workbench.tooltip.recommend_with_detail": "Open recommended slot: {name} / candidates {detail}",
-        "dashboard.selection.action.edit_selected": "Edit selected item",
-        "dashboard.selection.action.edit_short": "Edit",
+        "dashboard.selection.action.edit_selected": "Open detail manage",
+        "dashboard.selection.action.edit_short": "Open detail manage",
         "dashboard.selection.action.select": "Select",
         "dashboard.selection.action.select_short": "Select",
         "dashboard.selection.action.deselect": "Deselect",
@@ -18397,6 +18564,8 @@
         "media.register.api_lookup.action.barcode_search": "Search Barcode",
         "media.register.api_lookup.field.artist.label": "Artist",
         "media.register.api_lookup.field.artist.placeholder": "e.g. Sanullim",
+        "media.register.api_lookup.field.source_ref.label": "Reference ID / URL",
+        "media.register.api_lookup.field.source_ref.placeholder": "e.g. release:36614953",
         "media.register.api_lookup.action.query_search": "Search by Criteria",
         "media.register.purchase.title": "Import Purchase History",
         "media.register.purchase.field.file.label": "Order File",
@@ -18445,6 +18614,7 @@
         "media.register.purchase.queue.details.loading": "Loading candidates...",
         "media.register.purchase.queue.field.artist_override.label": "Override artist lookup",
         "media.register.purchase.queue.field.item_override.label": "Override item lookup",
+        "media.register.purchase.queue.field.query_override.label": "Reference ID / URL",
         "media.register.purchase.queue.status.empty": "The import queue is empty.",
         "media.register.purchase.queue.status.candidates_loading": "Loading candidates...",
         "media.register.purchase.queue.status.candidates_summary": "{count} candidates · selected {source}",
@@ -19228,6 +19398,8 @@
         "media.register.master.field.source.label": 'Master Source',
         "media.register.master.field.query.label": 'Master Query',
         "media.register.master.field.query.placeholder": 'e.g. Sanullim Vol. 11',
+        "media.register.master.field.source_ref.label": 'Reference ID / URL',
+        "media.register.master.field.source_ref.placeholder": 'e.g. master:12345 / album:1058176',
         "media.register.master.field.limit.label": 'Rows',
         "media.register.master.action.search": 'Search Masters',
         "media.register.master.action.load_groups": 'Load Existing Groups',
@@ -19353,6 +19525,13 @@
         "media.register.master.bind.status.saving": "Saving binding...",
         "media.register.master.bind.status.failed": "Failed to save binding",
         "media.register.master.bind.status.done": "Saved: album_master_id={album_master_id}, linked_count={linked_count}",
+        "media.register.master.bind.status.cancelled": "Master binding was cancelled.",
+        "media.register.master.bind.status.merge_done": "Base master applied: target album_master_id={target_album_master_id}, merged_count={merged_count}",
+        "media.register.master.bind.status.merge_partial": "Partial merge failure after save: target album_master_id={target_album_master_id}, merged_count={merged_count}, failed_count={failed_count}{details}",
+        "media.register.master.bind.target.prompt": "Some selected items are already linked to internal masters.\nWhich master should stay as the merge target?\n\n{options}\n\nEnter an option number or album_master_id.\nDefault: {default_value}",
+        "media.register.master.bind.target.option.existing": "{index}) Keep existing album_master_id={album_master_id} (selected {count})",
+        "media.register.master.bind.target.option.searched": "{index}) Use the searched external master",
+        "media.register.master.bind.target.invalid": "Invalid base-master selection.",
         "media.register.master.owned_items.title": "Choose Owned Items",
         "media.register.master.owned_items.field.query.label": "Owned Item Query",
         "media.register.master.owned_items.field.query.placeholder": "e.g. Sanullim Vol. 13",
@@ -19369,6 +19548,35 @@
         "media.register.master.import.status.failed": "Failed to register selected versions",
         "media.register.master.import.status.done": "Registration complete: created {created}, skipped {skipped}, album_master_id={album_master_id}{notices}",
         "media.register.master.saved_groups.title": "Saved Master Groups",
+        "media.register.master.merge.title": "Internal Master Merge",
+        "media.register.master.merge.subtitle": "Search saved internal masters, multi-select them, choose a base master, then merge the rest sequentially.",
+        "media.register.master.merge.field.query.label": "Search Internal album_master",
+        "media.register.master.merge.field.query.placeholder": "e.g. album_master_id / album / artist",
+        "media.register.master.merge.action.search": "Search Internal Masters",
+        "media.register.master.merge.action.clear": "Clear Search",
+        "media.register.master.merge.action.clear_queue": "Clear Merge Queue",
+        "media.register.master.merge.action.run": "Merge Selected Masters",
+        "media.register.master.merge.action.add": "Add to Queue",
+        "media.register.master.merge.action.added": "Added",
+        "media.register.master.merge.table.base": "Base",
+        "media.register.master.merge.table.add": "Add",
+        "media.register.master.merge.table.remove": "Remove",
+        "media.register.master.merge.search_results.title": "Search Results",
+        "media.register.master.merge.queue.title": "Merge Queue",
+        "media.register.master.merge.summary.none_selected": "No merge targets selected",
+        "media.register.master.merge.summary.selected": "Selected {count} / base album_master_id={base_id}",
+        "media.register.master.merge.state.prompt": "Search internal album_master records.",
+        "media.register.master.merge.state.empty": "No internal masters available to merge.",
+        "media.register.master.merge.queue.state.empty": "The merge queue is empty.",
+        "media.register.master.merge.status.loading": "Loading internal masters...",
+        "media.register.master.merge.status.loaded": "Merge candidates loaded: {count}",
+        "media.register.master.merge.status.failed": "Failed to load internal masters",
+        "media.register.master.merge.status.no_selection": "Select at least two internal masters to merge.",
+        "media.register.master.merge.status.base_required": "Choose a base master from the selected rows.",
+        "media.register.master.merge.status.merging": "Merging internal masters... target={base_id}, source_count={count}",
+        "media.register.master.merge.status.done": "Internal master merge complete: merged {merged_count}, moved {moved_count}, target album_master_id={base_id}",
+        "media.register.master.merge.status.partial": "Internal master merge partially failed: merged {merged_count}, failed {failed_count}, target album_master_id={base_id}{details}",
+        "media.register.master.merge.status.queue_seeded": "The merge queue is ready. Review the representative master, then save again or run the merge.",
         "media.register.master.group.status.loading": "Loading saved groups...",
         "media.register.master.group.status.loaded": "Loaded groups: {count}",
         "media.register.master.group.status.failed": "Failed to load saved groups",
@@ -19767,7 +19975,7 @@
         "dashboard.cover_flow.field.sort_mode.option.created_desc": "登録順",
         "dashboard.cover_flow.field.sort_mode.option.name_asc": "名前順",
         "dashboard.workbench.title": "移動作業台",
-        "dashboard.workbench.meta": "クリックで選択し、選択商品を編集し、「移動開始」後に左側のスロットを押して移動します。",
+        "dashboard.workbench.meta": "クリックで選択し、詳細管理を開き、「移動開始」後に左側のスロットを押して移動します。",
         "dashboard.workbench.mode.unslotted": "未配置",
         "dashboard.workbench.mode.search_results": "検索結果",
         "dashboard.workbench.field.artist.placeholder": "アーティスト",
@@ -19789,7 +19997,7 @@
         "dashboard.workbench.field.title.placeholder": "商品名",
         "dashboard.workbench.field.catalog.placeholder": "カタログ",
         "dashboard.workbench.field.barcode.placeholder": "バーコード",
-        "dashboard.workbench.action.edit_selected": "選択商品を編集",
+        "dashboard.workbench.action.edit_selected": "詳細管理",
         "dashboard.workbench.action.recommend_slot": "おすすめスロット",
         "dashboard.workbench.warning.badge.sort": "整列注意",
         "dashboard.workbench.warning.badge.domain_name_mismatch": "ドメイン名不一致",
@@ -19819,8 +20027,8 @@
         "dashboard.workbench.tooltip.current": "現在のスロットを開く: {name}",
         "dashboard.workbench.tooltip.recommend": "おすすめスロットを開く: {name}",
         "dashboard.workbench.tooltip.recommend_with_detail": "おすすめスロットを開く: {name} / 候補 {detail}",
-        "dashboard.selection.action.edit_selected": "選択商品を編集",
-        "dashboard.selection.action.edit_short": "編集",
+        "dashboard.selection.action.edit_selected": "詳細管理",
+        "dashboard.selection.action.edit_short": "詳細管理",
         "dashboard.selection.action.select": "選択",
         "dashboard.selection.action.select_short": "選択",
         "dashboard.selection.action.deselect": "選択解除",
@@ -20861,6 +21069,8 @@
         "media.register.api_lookup.action.barcode_search": "バーコード照会",
         "media.register.api_lookup.field.artist.label": "アーティスト名",
         "media.register.api_lookup.field.artist.placeholder": "例: サヌリム",
+        "media.register.api_lookup.field.source_ref.label": "参照 ID / URL",
+        "media.register.api_lookup.field.source_ref.placeholder": "例: release:36614953",
         "media.register.api_lookup.action.query_search": "条件照会",
         "media.register.purchase.title": "購入履歴を取り込む",
         "media.register.purchase.field.file.label": "注文ファイル",
@@ -20909,6 +21119,7 @@
         "media.register.purchase.queue.details.loading": "候補を読み込み中...",
         "media.register.purchase.queue.field.artist_override.label": "アーティスト名修正検索",
         "media.register.purchase.queue.field.item_override.label": "商品名修正検索",
+        "media.register.purchase.queue.field.query_override.label": "参照 ID / URL",
         "media.register.purchase.queue.status.empty": "インポートキューは空です。",
         "media.register.purchase.queue.status.candidates_loading": "候補を読み込み中...",
         "media.register.purchase.queue.status.candidates_summary": "候補 {count} 件 · 選択 {source}",
@@ -21688,6 +21899,8 @@
         "media.register.master.field.source.label": 'マスターソース',
         "media.register.master.field.query.label": 'マスター検索語',
         "media.register.master.field.query.placeholder": '例: サヌリム 11集',
+        "media.register.master.field.source_ref.label": '参照 ID / URL',
+        "media.register.master.field.source_ref.placeholder": '例: master:12345 / album:1058176',
         "media.register.master.field.limit.label": '表示数',
         "media.register.master.action.search": 'マスター検索',
         "media.register.master.action.load_groups": '既存グループ読み込み',
@@ -21813,6 +22026,13 @@
         "media.register.master.bind.status.saving": "紐づけを保存中...",
         "media.register.master.bind.status.failed": "紐づけ保存に失敗しました",
         "media.register.master.bind.status.done": "保存完了: album_master_id={album_master_id}, linked_count={linked_count}",
+        "media.register.master.bind.status.cancelled": "マスター紐づけをキャンセルしました。",
+        "media.register.master.bind.status.merge_done": "基準マスター反映完了: target album_master_id={target_album_master_id}, merged_count={merged_count}",
+        "media.register.master.bind.status.merge_partial": "保存後の統合で一部失敗しました: target album_master_id={target_album_master_id}, merged_count={merged_count}, failed_count={failed_count}{details}",
+        "media.register.master.bind.target.prompt": "選択したアイテムの一部はすでに内部マスターに紐づいています。\nどのマスターを基準に統合しますか?\n\n{options}\n\nオプション番号または album_master_id を入力してください。\nデフォルト: {default_value}",
+        "media.register.master.bind.target.option.existing": "{index}) 既存 album_master_id={album_master_id} を維持 (選択 {count})",
+        "media.register.master.bind.target.option.searched": "{index}) 検索した外部マスターを基準にする",
+        "media.register.master.bind.target.invalid": "基準マスターの入力が正しくありません。",
         "media.register.master.owned_items.title": "所蔵アイテム選択",
         "media.register.master.owned_items.field.query.label": "所蔵アイテム検索語",
         "media.register.master.owned_items.field.query.placeholder": "例: サヌリム 13集",
@@ -21829,6 +22049,35 @@
         "media.register.master.import.status.failed": "選択バージョンの新規登録に失敗しました",
         "media.register.master.import.status.done": "登録完了: created {created}件, skipped {skipped}件, album_master_id={album_master_id}{notices}",
         "media.register.master.saved_groups.title": "保存済みマスターグループ",
+        "media.register.master.merge.title": "内部マスター統合",
+        "media.register.master.merge.subtitle": "保存済みの内部マスターを検索して複数選択し、基準マスターを指定して残りを順番に統合します。",
+        "media.register.master.merge.field.query.label": "内部 album_master 検索",
+        "media.register.master.merge.field.query.placeholder": "例: album_master_id / アルバム名 / アーティスト名",
+        "media.register.master.merge.action.search": "内部マスター検索",
+        "media.register.master.merge.action.clear": "検索初期化",
+        "media.register.master.merge.action.clear_queue": "候補キューを空にする",
+        "media.register.master.merge.action.run": "選択項目を統合",
+        "media.register.master.merge.action.add": "キューに追加",
+        "media.register.master.merge.action.added": "追加済み",
+        "media.register.master.merge.table.base": "基準",
+        "media.register.master.merge.table.add": "追加",
+        "media.register.master.merge.table.remove": "除外",
+        "media.register.master.merge.search_results.title": "検索結果",
+        "media.register.master.merge.queue.title": "統合候補キュー",
+        "media.register.master.merge.summary.none_selected": "選択された統合対象がありません",
+        "media.register.master.merge.summary.selected": "選択 {count} / 基準 album_master_id={base_id}",
+        "media.register.master.merge.state.prompt": "内部 album_master を検索してください。",
+        "media.register.master.merge.state.empty": "統合できる内部マスターがありません。",
+        "media.register.master.merge.queue.state.empty": "統合候補キューが空です。",
+        "media.register.master.merge.status.loading": "内部マスターを読み込み中...",
+        "media.register.master.merge.status.loaded": "統合対象の読み込み完了: {count}",
+        "media.register.master.merge.status.failed": "内部マスターの読み込みに失敗しました",
+        "media.register.master.merge.status.no_selection": "統合する内部マスターを2件以上選択してください。",
+        "media.register.master.merge.status.base_required": "選択した項目の中から基準マスターを指定してください。",
+        "media.register.master.merge.status.merging": "内部マスターを統合中... target={base_id}, source_count={count}",
+        "media.register.master.merge.status.done": "内部マスター統合完了: merged {merged_count}件 / moved {moved_count}件 / target album_master_id={base_id}",
+        "media.register.master.merge.status.partial": "内部マスター統合の一部が失敗しました: merged {merged_count}件 / failed {failed_count}件 / target album_master_id={base_id}{details}",
+        "media.register.master.merge.status.queue_seeded": "統合候補キューを準備しました。基準マスターを確認してから再度保存するか統合を実行してください。",
         "media.register.master.group.status.loading": "保存済みグループを読み込み中...",
         "media.register.master.group.status.loaded": "読み込み完了: {count}",
         "media.register.master.group.status.failed": "保存済みグループの取得に失敗しました",
@@ -22361,6 +22610,8 @@
       rerender(() => renderPurchaseImportQueue(purchaseImportQueueItems));
       rerender(() => renderBarcodeResults(registerLookupCandidates, { resetLocationState: false }));
       rerender(() => renderAlbumSearchResults(albumSearchResults));
+      rerender(() => renderMasterMergeRows(masterMergeSearchResults));
+      rerender(() => renderMasterMergeQueueRows());
       rerender(() => renderHomeSearchResults(homeSearchResults));
       rerender(() => renderHomePagination());
       rerender(() => renderHomeMetaCandidates(homeMetaCandidates));
@@ -27071,8 +27322,9 @@
           masterSourceCode: row?.linked_master_source_code,
           sourceExternalId: row?.source_external_id,
         });
-        const coverHtml = String(row.cover_image_url || "").trim()
-          ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
+        const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+        const coverHtml = coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(String(row.format_name || row.category || "-").trim() || "-");
         return `
           <div class="operator-result-item" data-operator-context-source="feed" data-operator-context-index="${index}">
@@ -27381,8 +27633,9 @@
         const currentLocationButton = hasCurrentTriplet
           ? `<button class="btn ghost tiny home-master-location-btn operator-title-side-location-btn" type="button" data-operator-open-cabinet="${ownedItemId}" data-operator-slot-code="${escapeHtml(String(row.current_slot_code || "").trim())}" data-cabinet-name="${escapeHtml(currentCabinetName)}" data-column-code="${escapeHtml(currentColumnCode)}" data-cell-code="${escapeHtml(currentCellCode)}">${escapeHtml(t("operator.feed.meta.current"))} ${escapeHtml(currentLocation)}</button>`
           : `<span class="operator-title-side-fallback">${escapeHtml(t("operator.feed.meta.current"))} ${escapeHtml(currentLocation)}</span>`;
-        const coverHtml = String(row.cover_image_url || "").trim()
-          ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
+        const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+        const coverHtml = coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(String(row.format_name || row.category || "-").trim() || "-");
         const rightButtons = [];
         if (operatorCanUseManage()) {
@@ -27524,8 +27777,9 @@
         const previousLocation = buildOperatorSlotDisplayLabel(row.previous_slot_display_snapshot, row.previous_slot_code_snapshot, "", "", "");
         const currentLive = buildOperatorSlotDisplayLabel(row.current_live_slot_display_name || row.current_slot_display_snapshot, row.current_slot_code_snapshot, "", "", "");
         const readOnlyShell = isShellReadOnly();
-        const coverHtml = String(row.cover_image_url || "").trim()
-          ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
+        const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+        const coverHtml = coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(String(row.category || "-").trim() || "-");
         return `
           <div class="operator-request-item">
@@ -27825,9 +28079,11 @@
         return {
           expanded: false,
           loading: false,
+          source: String($("purchaseImportCandidateSource")?.value || "AUTO").trim().toUpperCase() || "AUTO",
           query: "",
           artistName: "",
           itemName: "",
+          queryOverride: "",
           candidates: [],
           selectedIdx: -1,
           error: "",
@@ -27837,9 +28093,11 @@
         purchaseImportQueueCandidateState[key] = {
           expanded: false,
           loading: false,
+          source: String($("purchaseImportCandidateSource")?.value || "AUTO").trim().toUpperCase() || "AUTO",
           query: "",
           artistName: "",
           itemName: "",
+          queryOverride: "",
           candidates: [],
           selectedIdx: -1,
           error: "",
@@ -27865,8 +28123,9 @@
         subtitle: `${normalizeSourceCode(candidate?.source) || "-"}#${candidate?.external_id || "-"}`,
       });
       const galleryCount = galleryKey ? Number(imageGalleryRegistry.get(galleryKey)?.items?.length || 0) : 0;
-      const cover = candidate?.cover_image_url
-        ? `<img src="${escapeHtml(candidate.cover_image_url)}" alt="${escapeHtml(candidate.title || "")}" />`
+      const coverUrl = normalizeRenderableCoverUrl(candidate?.cover_image_url);
+      const cover = coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(candidate.title || "")}" />`
         : escapeHtml(mediaDisplayLabel(candidate?.format_name || "-"));
       const discogsLink = discogsReleaseLinkHtml(candidate?.source, candidate?.external_id, "Discogs");
       const discogsMetaHtml = buildDiscogsStandardMetaHtml(candidate, { includeOwnedCount: true, ownedCountClassName: "source-workbench-owned-pill" });
@@ -27955,12 +28214,26 @@
               ${purchaseImportAmazonMetaHtml(row)}
               <div class="purchase-import-candidate-search-row">
                 <div class="purchase-import-candidate-search-field">
+                  <label class="mini" for="purchaseImportSourceOverride-${queueId}" data-i18n="media.register.purchase.queue.field.candidate_source.label">${escapeHtml(t("media.register.purchase.queue.field.candidate_source.label"))}</label>
+                  <select id="purchaseImportSourceOverride-${queueId}" data-purchase-import-source="${queueId}">
+                    <option value="AUTO" ${String(state?.source || "AUTO").trim().toUpperCase() === "AUTO" ? "selected" : ""}>AUTO</option>
+                    <option value="DISCOGS" ${String(state?.source || "AUTO").trim().toUpperCase() === "DISCOGS" ? "selected" : ""}>DISCOGS</option>
+                    <option value="MANIADB" ${String(state?.source || "AUTO").trim().toUpperCase() === "MANIADB" ? "selected" : ""}>MANIADB</option>
+                    <option value="ALADIN" ${String(state?.source || "AUTO").trim().toUpperCase() === "ALADIN" ? "selected" : ""}>ALADIN</option>
+                    <option value="MUSICBRAINZ" ${String(state?.source || "AUTO").trim().toUpperCase() === "MUSICBRAINZ" ? "selected" : ""}>MUSICBRAINZ</option>
+                  </select>
+                </div>
+                <div class="purchase-import-candidate-search-field">
                   <label class="mini" for="purchaseImportArtistOverride-${queueId}">${escapeHtml(t("media.register.purchase.queue.field.artist_override.label"))}</label>
                   <input id="purchaseImportArtistOverride-${queueId}" type="text" value="${escapeHtml(String(state?.artistName || row?.artist_name || '').trim())}" data-purchase-import-artist="${queueId}" />
                 </div>
                 <div class="purchase-import-candidate-search-field">
                   <label class="mini" for="purchaseImportItemOverride-${queueId}">${escapeHtml(t("media.register.purchase.queue.field.item_override.label"))}</label>
                   <input id="purchaseImportItemOverride-${queueId}" type="text" value="${escapeHtml(String(state?.itemName || row?.item_name || '').trim())}" data-purchase-import-item="${queueId}" />
+                </div>
+                <div class="purchase-import-candidate-search-field">
+                  <label class="mini" for="purchaseImportQueryOverride-${queueId}">${escapeHtml(t("media.register.purchase.queue.field.query_override.label"))}</label>
+                  <input id="purchaseImportQueryOverride-${queueId}" type="text" value="${escapeHtml(String(state?.queryOverride || '').trim())}" data-purchase-import-query="${queueId}" />
                 </div>
               </div>
               ${bodyHtml}
@@ -27983,9 +28256,11 @@
           ...prevState,
           expanded: Boolean(prevState.expanded),
           loading: false,
+          source: String(prevState.source || $("purchaseImportCandidateSource")?.value || "AUTO").trim().toUpperCase() || "AUTO",
           query: String(prevState.query || "").trim(),
           artistName: String(prevState.artistName || purchaseImportParsedArtistName(row) || "").trim(),
           itemName: String(prevState.itemName || purchaseImportParsedItemName(row) || "").trim(),
+          queryOverride: String(prevState.queryOverride || "").trim(),
           candidates: prevCandidates,
           selectedIdx: prevCandidates[prevSelectedIdx] ? prevSelectedIdx : (prevCandidates.length ? 0 : -1),
           error: String(prevState.error || ""),
@@ -28198,12 +28473,15 @@
       }
       try {
         const params = new URLSearchParams();
-        params.set("source", String(lookupOpts.source || "AUTO").trim().toUpperCase() || "AUTO");
+        const source = String(lookupOpts.source ?? state.source ?? "AUTO").trim().toUpperCase() || "AUTO";
+        params.set("source", source);
         params.set("limit", String(Math.max(1, Math.min(20, Number(lookupOpts.limit || 5)))));
         const artistName = String(lookupOpts.artistName ?? state.artistName ?? "").trim();
         const itemName = String(lookupOpts.itemName ?? state.itemName ?? "").trim();
+        const queryOverride = String(lookupOpts.query ?? state.queryOverride ?? "").trim();
         if (artistName) params.set("artist_name", artistName);
         if (itemName) params.set("item_name", itemName);
+        if (queryOverride) params.set("query", queryOverride);
         const res = await fetch(`/purchase-imports/${id}/candidates?${params.toString()}`);
         const data = await safeJson(res);
         if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.queue.status.lookup_failed")));
@@ -28214,8 +28492,10 @@
             purchaseImportQueueItems[rowIndex] = data.queue_item;
           }
         }
+        state.source = source;
         state.artistName = artistName;
         state.itemName = itemName;
+        state.queryOverride = queryOverride;
         state.query = String(data.query || "").trim();
         state.candidates = Array.isArray(data.candidates) ? data.candidates.map((candidate) => cloneRegisterLookupCandidate(candidate)).filter((candidate) => candidate) : [];
         state.selectedIdx = state.candidates.length ? 0 : -1;
@@ -28286,8 +28566,10 @@
       const id = Number(queueId || 0);
       if (!id) return;
       const state = purchaseImportQueueStateFor(id);
+      if (field === "source") state.source = String(value || "AUTO").trim().toUpperCase() || "AUTO";
       if (field === "artist") state.artistName = String(value || "").trim();
       if (field === "item") state.itemName = String(value || "").trim();
+      if (field === "query") state.queryOverride = String(value || "").trim();
     }
 
     function applyPurchaseImportCandidateArtist(queueId) {
@@ -28486,7 +28768,7 @@
     }
 
     function dashboardEditItemLabel() {
-      return t("common.action.edit_item");
+      return t("media.manage.search.action.open_detail_manage");
     }
 
     function dashboardColumnCodeLabel(code) {
@@ -30329,8 +30611,9 @@
 
     function dashboardItemCoverHtml(row, title) {
       const formatLabel = mediaDisplayLabel(row?.format_name || row?.category || "-");
-      return row?.cover_image_url
-        ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
+      const coverUrl = normalizeRenderableCoverUrl(row?.cover_image_url);
+      return coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
         : escapeHtml(formatLabel);
     }
 
@@ -31209,7 +31492,8 @@
         setStatus("homeDashboardStatus", "err", t("dashboard.selection.status.select_one_item_to_edit"));
         return;
       }
-      await loadHomeItemForEdit(ownedItemId);
+      const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);
+      await openMediaSearchDetailManage(masterId, ownedItemId);
     }
 
     async function refreshDashboardSelectedSlotDetail() {
@@ -34034,8 +34318,9 @@
         const ownedItemId = Number(row.id || 0);
         const checked = opsExceptionSelectedIds.has(ownedItemId);
         const title = resolveOwnedAlbumName(row);
-        const coverHtml = row.cover_image_url
-          ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
+        const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+        const coverHtml = coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(mediaDisplayLabel(row.format_name || row.category || "-"));
         const barcodeText = String(row.barcode || "").trim();
         const locationText = row.slot_code || t("common.unslotted");
@@ -34452,8 +34737,9 @@
             subtitle: `${normalizeSourceCode(candidate.source) || "-"}#${candidate.external_id || "-"}`,
           });
           const galleryCount = galleryKey ? Number(imageGalleryRegistry.get(galleryKey)?.items?.length || 0) : 0;
-          const cover = candidate.cover_image_url
-            ? `<img src="${escapeHtml(candidate.cover_image_url)}" alt="${escapeHtml(candidate.title || "")}" />`
+          const coverUrl = normalizeRenderableCoverUrl(candidate.cover_image_url);
+          const cover = coverUrl
+            ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(candidate.title || "")}" />`
             : escapeHtml(mediaDisplayLabel(candidate.format_name || row.category || ""));
           const discogsLink = discogsReleaseLinkHtml(candidate.source, candidate.external_id, "Discogs");
           return `
@@ -35826,6 +36112,7 @@
       homeOwnedItemRelationView = null;
       homeOwnedItemRelationMasterEntries = [];
       homeOwnedItemEditableRelations = [];
+      if ($("homeProductRelationSection")) $("homeProductRelationSection").open = false;
       homeLoadedMusicDetail = null;
       clearHomeMetaCandidates();
       syncHomeLinkedSourceText();
@@ -36721,8 +37008,9 @@
     function homeResultItemHtml(row) {
       const title = resolveAlbumMasterName(row);
       const heading = homeMasterHeadingLabel(row);
-      const cover = row.cover_image_url
-        ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const cover = coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
         : escapeHtml(t("media.manage.related_versions.state.no_cover"));
       const allMemberItemsPreview = Array.isArray(row.member_items_preview)
         ? row.member_items_preview
@@ -36882,8 +37170,9 @@
       const actionBtn = isOwned
         ? `<button class="btn ghost homeMasterVariantEditBtn" data-owned-id="${primaryOwnedItemId}" type="button" style="padding:4px 10px;">${escapeHtml(t("media.manage.master.variant.action.edit"))}</button>`
         : `<button class="btn homeMasterVariantRegisterBtn" data-external-id="${escapeHtml(row.external_id || "")}" type="button" style="padding:4px 10px;">${escapeHtml(t("media.manage.master.variant.action.register"))}</button>`;
-      const cover = row.cover_image_url
-        ? `<a href="${escapeHtml(row.cover_image_url)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("media.manage.master.variant.cover_original"))}"><div class="table-cover-thumb"><img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(row.title || "cover")}" /></div></a>`
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const cover = coverUrl
+        ? `<a href="${escapeHtml(coverUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("media.manage.master.variant.cover_original"))}"><div class="table-cover-thumb"><img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(row.title || "cover")}" /></div></a>`
         : `<div class="table-cover-thumb">-</div>`;
       return `
         <div class="result-item album-result home-master-variant-result">
@@ -37710,8 +37999,9 @@
 
     function homeLocationSlotItemHtml(row, index) {
       const title = resolveOwnedAlbumName(row);
-      const cover = row.cover_image_url
-        ? `<img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(title)}" />`
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const cover = coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
         : escapeHtml(t("common.no_cover"));
       const barcodeText = String(row.barcode || "").trim();
       const labelCatText = `${row.label_name || "-"} / ${row.catalog_no || "-"}${barcodeText ? ` (${barcodeText})` : ""}`;
@@ -38666,6 +38956,7 @@
         syncHomeMasterDeleteUi();
       }
       homeSelectedItemId = Number(ownedItemId);
+      if ($("homeProductRelationSection")) $("homeProductRelationSection").open = false;
       homeLinkedCollectibles = [];
       homeLinkedCollectiblesLoading = false;
       if ($("editOwnedId")) $("editOwnedId").value = String(ownedItemId);
@@ -39771,6 +40062,7 @@
       $("queryArtist").value = "";
       $("queryTitle").value = "";
       $("queryCatalog").value = "";
+      $("querySourceRef").value = "";
       selectedCandidate = null;
       syncMusicVisibility();
       setStatus("createStatus", "ok", "");
@@ -41870,6 +42162,7 @@
       const requestSources = buildRegisterLookupSourceCandidates(selectedSource);
       const payload = {
         category: $("category").value,
+        query: $("querySourceRef").value.trim() || null,
         artist_or_brand: $("queryArtist").value.trim() || null,
         title: $("queryTitle").value.trim() || null,
         catalog_no: $("queryCatalog").value.trim() || null,
@@ -41877,7 +42170,7 @@
       };
       const requestedCategory = payload.category;
 
-      const hasAny = payload.artist_or_brand || payload.title || payload.catalog_no;
+      const hasAny = payload.query || payload.artist_or_brand || payload.title || payload.catalog_no;
       if (!hasAny) {
         renderRegisterLookupProviderStatusBadges([]);
         setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.query_requires_term"));
@@ -42196,8 +42489,9 @@
       const name = row.item_name_override || "-";
       const labelCat = `${row.label_name || "-"} / ${row.catalog_no || "-"}`;
       const trackCount = Array.isArray(row.track_list) ? row.track_list.length : 0;
-      const coverCell = row.cover_image_url
-        ? `<a href="${escapeHtml(row.cover_image_url)}" target="_blank" rel="noreferrer">${escapeHtml(t("common.action.link"))}</a>`
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const coverCell = coverUrl
+        ? `<a href="${escapeHtml(coverUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t("common.action.link"))}</a>`
         : "-";
       const sourceText = row.source_code && row.source_external_id
         ? `${row.source_code}#${row.source_external_id}`
@@ -42357,7 +42651,8 @@
     }
 
     async function searchAlbumMasters() {
-      const query = $("masterQuery").value.trim();
+      const sourceRef = $("masterSourceRef").value.trim();
+      const query = sourceRef || $("masterQuery").value.trim();
       const loadingStatusText = t("media.register.master.status.searching");
       if (!query) {
         setStatus("masterSearchStatus", "err", t("media.register.master.status.query_required"));
@@ -42367,6 +42662,8 @@
       const payload = {
         source: $("masterSource").value,
         query,
+        artist_or_brand: $("queryArtist") ? $("queryArtist").value.trim() || null : null,
+        title: $("queryTitle") ? $("queryTitle").value.trim() || null : null,
         limit: Math.max(1, Math.min(50, Number($("masterLimit").value || 10)))
       };
 
@@ -42430,8 +42727,9 @@
       const releasedDate = String(row.released_date || row.release_year || "").trim() || "-";
       const pressingCountry = String(row.pressing_country || row.country || "").trim() || "-";
       const formatItemsText = summarizeFormatItems(row.format_items, 2);
-      const cover = row.cover_image_url
-        ? `<a href="${escapeHtml(row.cover_image_url)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("media.register.master.variant.cover_original"))}"><div class="table-cover-thumb"><img src="${escapeHtml(row.cover_image_url)}" alt="${escapeHtml(row.title || "cover")}" /></div></a>`
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const cover = coverUrl
+        ? `<a href="${escapeHtml(coverUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("media.register.master.variant.cover_original"))}"><div class="table-cover-thumb"><img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(row.title || "cover")}" /></div></a>`
         : `<div class="table-cover-thumb">-</div>`;
       return `
         <tr>
@@ -42656,11 +42954,13 @@
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || t("media.register.master.owned_items.status.failed"));
 
-        $("masterOwnedBody").innerHTML = (data || []).map(masterOwnedRowHtml).join("") ||
+        masterOwnedItems = Array.isArray(data) ? data : [];
+        $("masterOwnedBody").innerHTML = masterOwnedItems.map(masterOwnedRowHtml).join("") ||
           `<tr><td colspan='6' class='muted'>${escapeHtml(t("media.register.master.owned_items.state.empty"))}</td></tr>`;
         syncMasterExceptionBanner();
-        setStatus("masterOwnedStatus", "ok", t("media.register.master.status.search_complete", { count: countWithUnit(data.length) }));
+        setStatus("masterOwnedStatus", "ok", t("media.register.master.status.search_complete", { count: countWithUnit(masterOwnedItems.length) }));
       } catch (err) {
+        masterOwnedItems = [];
         $("masterOwnedBody").innerHTML = `<tr><td colspan='6' class='muted'>${escapeHtml(t("media.register.master.owned_items.state.empty"))}</td></tr>`;
         syncMasterExceptionBanner();
         setStatus("masterOwnedStatus", "err", err.message);
@@ -42673,6 +42973,68 @@
         .filter((v) => Number.isInteger(v) && v > 0);
     }
 
+    function selectedMasterOwnedRows() {
+      const selectedIdSet = new Set(selectedMasterOwnedIds());
+      return (masterOwnedItems || []).filter((row) => selectedIdSet.has(Number(row?.id || 0)));
+    }
+
+    function promptMasterBindTargetSelection(selectedRows) {
+      const rows = Array.isArray(selectedRows) ? selectedRows : [];
+      const existingCounts = new Map();
+      for (const row of rows) {
+        const masterId = Number(row?.linked_album_master_id || 0);
+        if (masterId <= 0) continue;
+        existingCounts.set(masterId, Number(existingCounts.get(masterId) || 0) + 1);
+      }
+      if (!existingCounts.size) {
+        return { mode: "SEARCHED" };
+      }
+
+      const existingOptions = Array.from(existingCounts.entries())
+        .map(([albumMasterId, count]) => ({ album_master_id: Number(albumMasterId), count: Number(count) }))
+        .sort((a, b) => b.count - a.count || a.album_master_id - b.album_master_id);
+
+      const optionRows = existingOptions.map((row, index) => ({
+        index: index + 1,
+        mode: "EXISTING",
+        album_master_id: row.album_master_id,
+        label: t("media.register.master.bind.target.option.existing", {
+          index: index + 1,
+          album_master_id: row.album_master_id,
+          count: countWithUnit(row.count),
+        }),
+      }));
+      optionRows.push({
+        index: optionRows.length + 1,
+        mode: "SEARCHED",
+        album_master_id: 0,
+        label: t("media.register.master.bind.target.option.searched", { index: optionRows.length + 1 }),
+      });
+
+      const defaultValue = String(existingOptions[0]?.album_master_id || optionRows[0]?.index || "");
+      const rawChoice = window.prompt(t("media.register.master.bind.target.prompt", {
+        options: optionRows.map((row) => row.label).join("\n"),
+        default_value: defaultValue,
+      }), defaultValue);
+      if (rawChoice == null) return null;
+
+      const normalizedChoice = String(rawChoice || "").trim();
+      if (!normalizedChoice) return null;
+      const normalizedUpper = normalizedChoice.toUpperCase();
+      const matchedExisting = existingOptions.find((row) => String(row.album_master_id) === normalizedChoice);
+      if (matchedExisting) {
+        return { mode: "EXISTING", target_album_master_id: matchedExisting.album_master_id };
+      }
+      const matchedOption = optionRows.find((row) => String(row.index) === normalizedChoice);
+      if (matchedOption?.mode === "EXISTING") {
+        return { mode: "EXISTING", target_album_master_id: Number(matchedOption.album_master_id || 0) };
+      }
+      if ((matchedOption && matchedOption.mode === "SEARCHED") || ["S", "SEARCH", "SEARCHED", "NEW"].includes(normalizedUpper)) {
+        return { mode: "SEARCHED" };
+      }
+      throw new Error(t("media.register.master.bind.target.invalid"));
+    }
+
     async function bindAlbumMaster() {
       if (!selectedAlbumMaster) {
         setStatus("bindMasterStatus", "err", t("media.register.master.bind.status.no_master"));
@@ -42681,6 +43043,23 @@
       const ownedItemIds = selectedMasterOwnedIds();
       if (!ownedItemIds.length) {
         setStatus("bindMasterStatus", "err", t("media.register.master.bind.status.no_owned_items"));
+        return;
+      }
+      const selectedRows = selectedMasterOwnedRows();
+      const queuedMergeIds = selectedMasterMergeIds();
+      let mergeTarget = null;
+      if (queuedMergeIds.length) {
+        const queuedBaseId = normalizeMasterMergeId(masterMergeBaseId);
+        if (!queuedBaseId || !queuedMergeIds.includes(queuedBaseId)) {
+          setStatus("bindMasterStatus", "err", t("media.register.master.merge.status.base_required"));
+          return;
+        }
+        mergeTarget = { mode: "EXISTING", target_album_master_id: queuedBaseId };
+      } else {
+        mergeTarget = promptMasterBindTargetSelection(selectedRows);
+      }
+      if (!mergeTarget) {
+        setStatus("bindMasterStatus", "err", t("media.register.master.bind.status.cancelled"));
         return;
       }
 
@@ -42704,20 +43083,320 @@
         });
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || t("media.register.master.bind.status.failed"));
+        const boundAlbumMasterId = Number(data.album_master_id || 0);
+        const existingMasterIds = Array.from(new Set(
+          selectedRows
+            .map((row) => Number(row?.linked_album_master_id || 0))
+            .filter((value) => Number.isInteger(value) && value > 0)
+        ));
+        const queuedMasterIds = selectedMasterMergeIds();
+        const targetAlbumMasterId = mergeTarget.mode === "EXISTING"
+          ? Number(mergeTarget.target_album_master_id || 0)
+          : boundAlbumMasterId;
+        const mergeSourceIds = new Set(existingMasterIds);
+        for (const queuedMasterId of queuedMasterIds) mergeSourceIds.add(queuedMasterId);
+        if (boundAlbumMasterId > 0 && boundAlbumMasterId !== targetAlbumMasterId) mergeSourceIds.add(boundAlbumMasterId);
+        mergeSourceIds.delete(targetAlbumMasterId);
+
+        let mergedCount = 0;
+        const mergeFailures = [];
+        for (const sourceId of Array.from(mergeSourceIds).sort((a, b) => a - b)) {
+          try {
+            const mergeRes = await fetch(`/album-masters/${sourceId}/merge`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ target_album_master_id: targetAlbumMasterId }),
+            });
+            const mergeData = await safeJson(mergeRes);
+            if (!mergeRes.ok) throw new Error(mergeData.detail || t("media.register.direct.duplicate.merge_failed"));
+            mergedCount += Number(mergeData?.merged === false ? 0 : 1);
+          } catch (err) {
+            mergeFailures.push(`\n- ${sourceId}: ${err.message}`);
+          }
+        }
 
         setStatus(
           "bindMasterStatus",
           "ok",
           t("media.register.master.bind.status.done", {
-            album_master_id: data.album_master_id,
+            album_master_id: targetAlbumMasterId || data.album_master_id,
             linked_count: data.linked_count,
           })
         );
         masterOwnedPrefilledIds = new Set();
         syncMasterExceptionBanner();
         await loadAlbumMasterGroups();
+        if (mergeFailures.length) {
+          setStatus(
+            "bindMasterStatus",
+            "err",
+            `${t("media.register.master.bind.status.done", {
+              album_master_id: targetAlbumMasterId || data.album_master_id,
+              linked_count: data.linked_count,
+            })}\n${t("media.register.master.bind.status.merge_partial", {
+              target_album_master_id: targetAlbumMasterId || data.album_master_id,
+              merged_count: formatCount(mergedCount),
+              failed_count: formatCount(mergeFailures.length),
+              details: mergeFailures.join(""),
+            })}`
+          );
+          return;
+        }
+        if (mergedCount > 0 || (targetAlbumMasterId > 0 && targetAlbumMasterId !== boundAlbumMasterId)) {
+          setStatus(
+            "bindMasterStatus",
+            "ok",
+            `${t("media.register.master.bind.status.done", {
+              album_master_id: targetAlbumMasterId || data.album_master_id,
+              linked_count: data.linked_count,
+            })}\n${t("media.register.master.bind.status.merge_done", {
+              target_album_master_id: targetAlbumMasterId || data.album_master_id,
+              merged_count: formatCount(mergedCount),
+            })}`
+          );
+        }
       } catch (err) {
         setStatus("bindMasterStatus", "err", err.message);
+      }
+    }
+
+    function normalizeMasterMergeId(value) {
+      const id = Number(value || 0);
+      return Number.isInteger(id) && id > 0 ? id : 0;
+    }
+
+    function selectedMasterMergeIds() {
+      return (masterMergeQueueItems || [])
+        .map((row) => normalizeMasterMergeId(row?.id))
+        .filter((value) => value > 0)
+        .sort((a, b) => a - b);
+    }
+
+    function isQueuedMasterMergeId(albumMasterId) {
+      const normalizedId = normalizeMasterMergeId(albumMasterId);
+      return normalizedId > 0 && masterMergeQueueItems.some((row) => normalizeMasterMergeId(row?.id) === normalizedId);
+    }
+
+    function syncMasterMergeSelectionUi() {
+      const selectedIds = selectedMasterMergeIds();
+      const summary = $("masterMergeSummary");
+      const runBtn = $("masterMergeRunBtn");
+
+      if (masterMergeBaseId && !selectedIds.includes(masterMergeBaseId)) {
+        masterMergeBaseId = 0;
+      }
+      if (!masterMergeBaseId && selectedIds.length) {
+        masterMergeBaseId = selectedIds[0];
+      }
+
+      const ready = selectedIds.length >= 2 && masterMergeBaseId > 0 && selectedIds.includes(masterMergeBaseId);
+      if (runBtn) runBtn.disabled = !ready;
+      if (!summary) return;
+      summary.textContent = selectedIds.length
+        ? t("media.register.master.merge.summary.selected", {
+            count: countWithUnit(selectedIds.length),
+            base_id: masterMergeBaseId || "-",
+          })
+        : t("media.register.master.merge.summary.none_selected");
+    }
+
+    function masterMergeRowHtml(row) {
+      const rowId = normalizeMasterMergeId(row?.id);
+      const queued = isQueuedMasterMergeId(rowId);
+      return `
+        <tr>
+          <td><button class="btn ghost tiny" type="button" data-master-merge-add-id="${rowId}" ${queued ? "disabled" : ""}>${escapeHtml(t(queued ? "media.register.master.merge.action.added" : "media.register.master.merge.action.add"))}</button></td>
+          <td>${rowId || "-"}</td>
+          <td>${escapeHtml(String(row?.source_code || "-"))}</td>
+          <td>${escapeHtml(String(row?.source_master_id || "-"))}</td>
+          <td>${escapeHtml(String(row?.title || "-"))}</td>
+          <td>${escapeHtml(String(row?.artist_or_brand || "-"))}</td>
+          <td>${row?.release_year ?? "-"}</td>
+          <td>${Number(row?.member_count || 0)}</td>
+        </tr>
+      `;
+    }
+
+    function renderMasterMergeRows(items) {
+      masterMergeSearchResults = Array.isArray(items) ? items : [];
+      const body = $("masterMergeBody");
+      if (!body) return;
+      if (!masterMergeSearchResults.length) {
+        const emptyKey = masterMergeHasSearched
+          ? "media.register.master.merge.state.empty"
+          : "media.register.master.merge.state.prompt";
+        body.innerHTML = `<tr><td colspan='8' class='muted'>${escapeHtml(t(emptyKey))}</td></tr>`;
+        return;
+      }
+      body.innerHTML = masterMergeSearchResults.map(masterMergeRowHtml).join("");
+    }
+
+    function masterMergeQueueRowHtml(row) {
+      const rowId = normalizeMasterMergeId(row?.id);
+      const isBase = rowId > 0 && rowId === masterMergeBaseId;
+      return `
+        <tr>
+          <td><input type="radio" name="masterMergeBaseId" data-master-merge-base-id="${rowId}" ${isBase ? "checked" : ""} /></td>
+          <td><button class="btn ghost tiny" type="button" data-master-merge-remove-id="${rowId}">${escapeHtml(t("media.register.master.merge.table.remove"))}</button></td>
+          <td>${rowId || "-"}</td>
+          <td>${escapeHtml(String(row?.source_code || "-"))}</td>
+          <td>${escapeHtml(String(row?.source_master_id || "-"))}</td>
+          <td>${escapeHtml(String(row?.title || "-"))}</td>
+          <td>${escapeHtml(String(row?.artist_or_brand || "-"))}</td>
+          <td>${row?.release_year ?? "-"}</td>
+          <td>${Number(row?.member_count || 0)}</td>
+        </tr>
+      `;
+    }
+
+    function renderMasterMergeQueueRows() {
+      const body = $("masterMergeQueueBody");
+      if (!body) return;
+      if (!masterMergeQueueItems.length) {
+        body.innerHTML = `<tr><td colspan='9' class='muted'>${escapeHtml(t("media.register.master.merge.queue.state.empty"))}</td></tr>`;
+        syncMasterMergeSelectionUi();
+        return;
+      }
+      body.innerHTML = masterMergeQueueItems.map(masterMergeQueueRowHtml).join("");
+      syncMasterMergeSelectionUi();
+    }
+
+    function appendMasterMergeQueueItems(items, opts = {}) {
+      const rows = Array.isArray(items) ? items : [];
+      const preferBaseId = normalizeMasterMergeId(opts.preferBaseId);
+      let changed = false;
+      for (const row of rows) {
+        const rowId = normalizeMasterMergeId(row?.id);
+        if (rowId <= 0 || isQueuedMasterMergeId(rowId)) continue;
+        masterMergeQueueItems.push({
+          id: rowId,
+          source_code: String(row?.source_code || "-"),
+          source_master_id: String(row?.source_master_id || "-"),
+          title: String(row?.title || "-"),
+          artist_or_brand: String(row?.artist_or_brand || "-"),
+          release_year: row?.release_year ?? null,
+          member_count: Number(row?.member_count || 0),
+        });
+        changed = true;
+      }
+      if (!masterMergeBaseId && preferBaseId > 0 && isQueuedMasterMergeId(preferBaseId)) {
+        masterMergeBaseId = preferBaseId;
+      }
+      if (!masterMergeBaseId && masterMergeQueueItems.length) {
+        masterMergeBaseId = normalizeMasterMergeId(masterMergeQueueItems[0]?.id);
+      }
+      if (changed) {
+        renderMasterMergeRows(masterMergeSearchResults);
+      }
+      renderMasterMergeQueueRows();
+    }
+
+    function clearInternalAlbumMasterMergeWorkbench() {
+      masterMergeHasSearched = false;
+      masterMergeSearchResults = [];
+      masterMergeQueueItems = [];
+      masterMergeBaseId = 0;
+      if ($("masterMergeQuery")) $("masterMergeQuery").value = "";
+      setStatus("masterMergeStatus", "ok", "");
+      renderMasterMergeRows([]);
+      renderMasterMergeQueueRows();
+    }
+
+    function clearInternalAlbumMasterMergeSearch() {
+      masterMergeHasSearched = false;
+      masterMergeSearchResults = [];
+      if ($("masterMergeQuery")) $("masterMergeQuery").value = "";
+      setStatus("masterMergeStatus", "ok", "");
+      renderMasterMergeRows([]);
+    }
+
+    function clearInternalAlbumMasterMergeQueue() {
+      masterMergeQueueItems = [];
+      masterMergeBaseId = 0;
+      renderMasterMergeRows(masterMergeSearchResults);
+      renderMasterMergeQueueRows();
+    }
+
+    async function searchInternalAlbumMastersForMerge() {
+      const query = $("masterMergeQuery").value.trim();
+      const params = new URLSearchParams({ limit: "80", media_only: "true" });
+      if (query) params.set("q", query);
+
+      masterMergeHasSearched = true;
+
+      try {
+        setStatus("masterMergeStatus", "ok", t("media.register.master.merge.status.loading"));
+        const res = await fetch(`/album-masters?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.register.master.merge.status.failed"));
+        renderMasterMergeRows(Array.isArray(data) ? data : []);
+        setStatus("masterMergeStatus", "ok", t("media.register.master.merge.status.loaded", {
+          count: countWithUnit(Array.isArray(data) ? data.length : 0),
+        }));
+      } catch (err) {
+        masterMergeSearchResults = [];
+        renderMasterMergeRows([]);
+        setStatus("masterMergeStatus", "err", err.message);
+      }
+    }
+
+    async function runInternalAlbumMasterMerge() {
+      const mergeIds = selectedMasterMergeIds();
+      const baseId = normalizeMasterMergeId(masterMergeBaseId);
+      if (mergeIds.length < 2) {
+        setStatus("masterMergeStatus", "err", t("media.register.master.merge.status.no_selection"));
+        return;
+      }
+      if (!baseId || !mergeIds.includes(baseId)) {
+        setStatus("masterMergeStatus", "err", t("media.register.master.merge.status.base_required"));
+        return;
+      }
+
+      let mergedCount = 0;
+      let movedCount = 0;
+      const failures = [];
+      try {
+        setStatus("masterMergeStatus", "ok", t("media.register.master.merge.status.merging", {
+          base_id: baseId,
+          count: countWithUnit(mergeIds.length - 1),
+        }));
+        for (const sourceId of mergeIds) {
+          if (sourceId === baseId) continue;
+          try {
+            const res = await fetch(`/album-masters/${sourceId}/merge`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ target_album_master_id: baseId }),
+            });
+            const data = await safeJson(res);
+            if (!res.ok) throw new Error(data.detail || t("media.register.direct.duplicate.merge_failed"));
+            mergedCount += Number(data?.merged === false ? 0 : 1);
+            movedCount += Number(data?.moved_member_count || 0);
+          } catch (err) {
+            failures.push(`- ${sourceId}: ${err.message}`);
+          }
+        }
+        await loadAlbumMasterGroups();
+        await searchInternalAlbumMastersForMerge();
+        masterMergeQueueItems = masterMergeQueueItems.filter((row) => normalizeMasterMergeId(row?.id) === baseId);
+        masterMergeBaseId = baseId;
+        renderMasterMergeQueueRows();
+        if (failures.length) {
+          setStatus("masterMergeStatus", "err", t("media.register.master.merge.status.partial", {
+            merged_count: formatCount(mergedCount),
+            failed_count: formatCount(failures.length),
+            base_id: baseId,
+            details: `\n${failures.join("\n")}`,
+          }));
+          return;
+        }
+        setStatus("masterMergeStatus", "ok", t("media.register.master.merge.status.done", {
+          merged_count: formatCount(mergedCount),
+          moved_count: formatCount(movedCount),
+          base_id: baseId,
+        }));
+      } catch (err) {
+        setStatus("masterMergeStatus", "err", err.message);
       }
     }
 
@@ -42736,6 +43415,9 @@
     }
 
     async function loadAlbumMasterGroups() {
+      const panel = $("masterGroupPanel");
+      const body = $("masterGroupBody");
+      if (!panel || panel.hidden || !body) return;
       const source = $("masterSource").value;
       const q = $("masterQuery").value.trim();
       const params = new URLSearchParams({ limit: "80" });
@@ -42748,11 +43430,11 @@
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || t("media.register.master.group.status.failed"));
 
-        $("masterGroupBody").innerHTML = (data || []).map(albumMasterGroupRowHtml).join("") ||
+        body.innerHTML = (data || []).map(albumMasterGroupRowHtml).join("") ||
           `<tr><td colspan='7' class='muted'>${escapeHtml(t("media.register.master.group.state.empty"))}</td></tr>`;
         setStatus("masterGroupStatus", "ok", t("media.register.master.group.status.loaded", { count: countWithUnit(data.length) }));
       } catch (err) {
-        $("masterGroupBody").innerHTML = `<tr><td colspan='7' class='muted'>${escapeHtml(t("media.register.master.group.state.empty"))}</td></tr>`;
+        body.innerHTML = `<tr><td colspan='7' class='muted'>${escapeHtml(t("media.register.master.group.state.empty"))}</td></tr>`;
         setStatus("masterGroupStatus", "err", err.message);
       }
     }
@@ -43646,6 +44328,11 @@
       }
     });
     $("purchaseImportQueueBody").addEventListener("input", (e) => {
+      const sourceInput = e.target.closest("[data-purchase-import-source]");
+      if (sourceInput) {
+        updatePurchaseImportCandidateSearchText(sourceInput.getAttribute("data-purchase-import-source"), "source", sourceInput.value);
+        return;
+      }
       const artistInput = e.target.closest("[data-purchase-import-artist]");
       if (artistInput) {
         updatePurchaseImportCandidateSearchText(artistInput.getAttribute("data-purchase-import-artist"), "artist", artistInput.value);
@@ -43654,17 +44341,31 @@
       const itemInput = e.target.closest("[data-purchase-import-item]");
       if (itemInput) {
         updatePurchaseImportCandidateSearchText(itemInput.getAttribute("data-purchase-import-item"), "item", itemInput.value);
+        return;
       }
+      const queryInput = e.target.closest("[data-purchase-import-query]");
+      if (queryInput) {
+        updatePurchaseImportCandidateSearchText(queryInput.getAttribute("data-purchase-import-query"), "query", queryInput.value);
+      }
+    });
+    $("purchaseImportQueueBody").addEventListener("change", (e) => {
+      const sourceInput = e.target.closest("[data-purchase-import-source]");
+      if (!sourceInput) return;
+      updatePurchaseImportCandidateSearchText(sourceInput.getAttribute("data-purchase-import-source"), "source", sourceInput.value);
     });
     $("purchaseImportQueueBody").addEventListener("keydown", async (e) => {
       if (e.key !== "Enter") return;
+      const sourceInput = e.target.closest("[data-purchase-import-source]");
       const artistInput = e.target.closest("[data-purchase-import-artist]");
       const itemInput = e.target.closest("[data-purchase-import-item]");
-      if (!artistInput && !itemInput) return;
+      const queryInput = e.target.closest("[data-purchase-import-query]");
+      if (!sourceInput && !artistInput && !itemInput && !queryInput) return;
       e.preventDefault();
       const queueId = String(
-        artistInput?.getAttribute("data-purchase-import-artist")
+        sourceInput?.getAttribute("data-purchase-import-source")
+        || artistInput?.getAttribute("data-purchase-import-artist")
         || itemInput?.getAttribute("data-purchase-import-item")
+        || queryInput?.getAttribute("data-purchase-import-query")
         || ""
       ).trim();
       if (!queueId) return;
@@ -45231,6 +45932,7 @@
     $("queryArtist").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
     $("queryTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
     $("queryCatalog").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
+    $("querySourceRef").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
     $("querySearchBtn").addEventListener("click", querySearch);
     $("createOwnedBtn").addEventListener("click", createOwnedItem);
     $("csvUploadBtn").addEventListener("click", uploadCsv);
@@ -45268,6 +45970,42 @@
     $("masterImportVariantsBtn").addEventListener("click", importMasterVariants);
     $("masterOwnedLoadBtn").addEventListener("click", loadMasterOwnedItems);
     $("bindMasterBtn").addEventListener("click", bindAlbumMaster);
+    $("masterMergeSearchBtn").addEventListener("click", searchInternalAlbumMastersForMerge);
+    $("masterMergeClearBtn").addEventListener("click", clearInternalAlbumMasterMergeSearch);
+    $("masterMergeQueueClearBtn").addEventListener("click", clearInternalAlbumMasterMergeQueue);
+    $("masterMergeRunBtn").addEventListener("click", runInternalAlbumMasterMerge);
+    $("masterMergeQuery").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      searchInternalAlbumMastersForMerge();
+    });
+    $("masterMergeBody").addEventListener("click", (e) => {
+      const addBtn = e.target.closest("[data-master-merge-add-id]");
+      if (!addBtn) return;
+      const rowId = normalizeMasterMergeId(addBtn.getAttribute("data-master-merge-add-id"));
+      const row = masterMergeSearchResults.find((item) => normalizeMasterMergeId(item?.id) === rowId);
+      if (!row) return;
+      appendMasterMergeQueueItems([row], { preferBaseId: masterMergeBaseId || rowId });
+    });
+    $("masterMergeQueueBody").addEventListener("click", (e) => {
+      const removeBtn = e.target.closest("[data-master-merge-remove-id]");
+      if (!removeBtn) return;
+      const rowId = normalizeMasterMergeId(removeBtn.getAttribute("data-master-merge-remove-id"));
+      masterMergeQueueItems = masterMergeQueueItems.filter((row) => normalizeMasterMergeId(row?.id) !== rowId);
+      if (masterMergeBaseId === rowId) masterMergeBaseId = 0;
+      renderMasterMergeRows(masterMergeSearchResults);
+      renderMasterMergeQueueRows();
+    });
+    $("masterMergeQueueBody").addEventListener("change", (e) => {
+      const baseRadio = e.target.closest("[data-master-merge-base-id]");
+      if (baseRadio) {
+        const rowId = normalizeMasterMergeId(baseRadio.getAttribute("data-master-merge-base-id"));
+        if (rowId > 0 && isQueuedMasterMergeId(rowId)) {
+          masterMergeBaseId = rowId;
+        }
+        renderMasterMergeQueueRows();
+      }
+    });
     $("masterGroupLoadBtn").addEventListener("click", loadAlbumMasterGroups);
     $("trackMapLoadBtn").addEventListener("click", loadTrackMappings);
     $("trackMapSaveBtn").addEventListener("click", saveTrackMapping);
@@ -45447,6 +46185,7 @@
     switchSubTab("ops", "cabinet", { remember: false });
     applyShellNavigation(appAuthSession);
     applyRouteSelectedShellMode(initialShellMode);
+    clearInternalAlbumMasterMergeWorkbench();
     applyLocale(appLocale);
     syncShelfNavButtons();
     renderShelfTrack();
