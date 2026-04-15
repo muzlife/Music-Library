@@ -41,6 +41,19 @@ if [[ -z "${PROD_APP_ROOT}" || -z "${QA_APP_ROOT}" ]]; then
   exit 1
 fi
 
+require_expected_root_name() {
+  local expected_name="$1"
+  local actual_path="$2"
+
+  if [[ "$(basename "${actual_path}")" != "${expected_name}" ]]; then
+    echo "expected app root to end with ${expected_name}: ${actual_path}" >&2
+    exit 1
+  fi
+}
+
+require_expected_root_name "hahahoho-prod" "${PROD_APP_ROOT}"
+require_expected_root_name "hahahoho-qa" "${QA_APP_ROOT}"
+
 if [[ -z "${PROD_BACKUP_DIR}" ]]; then
   PROD_BACKUP_DIR="${PROD_APP_ROOT}/runtime/backups/weekly-full"
 fi

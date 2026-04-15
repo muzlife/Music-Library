@@ -65,6 +65,22 @@ def test_admin_root_redirects_to_ops(admin_client):
     assert res.headers["location"] == "/ops"
 
 
+def test_system_status_uses_forwarded_qa_host_for_external_urls(admin_client):
+    response = admin_client.get(
+        "/system/status",
+        headers={
+            "host": "qa-library.muzlife.com",
+            "x-forwarded-host": "qa-library.muzlife.com",
+            "x-forwarded-proto": "https",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["external_login_url"] == "https://qa-library.muzlife.com/login"
+    assert payload["external_health_url"] == "https://qa-library.muzlife.com/health"
+
+
 def test_authenticated_ops_serves_index_html(operator_client):
     res = operator_client.get("/ops", headers={"accept": "text/html"})
     _assert_index_shell_response(res)
@@ -719,6 +735,96 @@ def test_ingest_search_accepts_musicbrainz_source(admin_client, monkeypatch):
     assert [item["source"] for item in payload["candidates"]] == ["MUSICBRAINZ"]
 
 
+def test_ingest_search_discogs_retries_with_artist_variation_when_initial_query_is_empty(admin_client, monkeypatch):
+    calls: list[tuple[str, str]] = []
+
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+        assert barcode is None
+        calls.append((str(source), str(query)))
+        if str(source).upper() == "DISCOGS" and query == "Yun Seok Cheol Trio 나의 여름은 아직 안 끝났어":
+            return [
+                {
+                    "source": "DISCOGS",
+                    "external_id": "36614953",
+                    "title": "나의 여름은 아직 안 끝났어",
+                    "artist_or_brand": "Yun Seok Cheol Trio*",
+                    "domain_code": "KOREA",
+                    "confidence": 0.99,
+                    "raw": {},
+                }
+            ]
+        return []
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+    monkeypatch.setattr(
+        main_module,
+        "search_discogs_artist_name_variations",
+        lambda artist_name, limit=6, suppress_errors=True: ["윤석철 트리오", "Yun Seok Cheol Trio"],
+        raising=False,
+    )
+    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "DISCOGS",
+            "category": "LP",
+            "artist_or_brand": "윤석철 트리오",
+            "title": "나의 여름은 아직 안 끝났어",
+            "limit": 5,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["candidates"][0]["external_id"] == "36614953"
+    assert ("DISCOGS", "윤석철 트리오 나의 여름은 아직 안 끝났어") in calls
+    assert ("DISCOGS", "Yun Seok Cheol Trio 나의 여름은 아직 안 끝났어") in calls
+
+
+def test_ingest_search_discogs_supports_direct_release_reference(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "get_source_release_snapshot",
+        lambda source, external_id: {
+            "artist_or_brand": "Yun Seok Cheol Trio",
+            "release_year": 2024,
+            "released_date": "2024-06-12",
+            "format_name": "LP",
+            "catalog_no": "MBMC-2216",
+            "label_name": "BEATBALL MUSIC",
+            "barcode": "8809114692216",
+            "cover_image_url": "https://img.example/36614953.jpg",
+            "track_list": ["나의 여름은 아직 안 끝났어"],
+            "media_type": "Vinyl",
+            "release_type": "ALBUM",
+            "domain_code": "KOREA",
+            "genres": ["Jazz"],
+            "styles": ["Contemporary Jazz"],
+            "raw": {"title": "나의 여름은 아직 안 끝났어", "country": "South Korea"},
+        }
+        if source == "DISCOGS" and external_id == "36614953"
+        else None,
+    )
+    monkeypatch.setattr(main_module, "search_music_metadata", lambda **kwargs: (_ for _ in ()).throw(AssertionError("unexpected metadata search")))
+    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "DISCOGS",
+            "category": "LP",
+            "query": "release:36614953",
+            "limit": 5,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["query"] == "release:36614953"
+    assert [item["external_id"] for item in payload["candidates"]] == ["36614953"]
+
+
 def test_provider_search_music_metadata_supports_explicit_musicbrainz_source(monkeypatch):
     monkeypatch.setattr(
         provider_module,
@@ -738,6 +844,87 @@ def test_provider_search_music_metadata_supports_explicit_musicbrainz_source(mon
 
     assert [item["source"] for item in result] == ["MUSICBRAINZ"]
     assert [item["external_id"] for item in result] == ["mb-release-1"]
+
+
+def test_provider_search_music_metadata_retries_discogs_with_artist_variations(monkeypatch):
+    calls: list[str] = []
+
+    def fake_search_discogs_by_query(query, limit=5):
+        calls.append(str(query))
+        if query == "Yun Seok Cheol Trio 나의 여름은 아직 안끝났어":
+            return [
+                {
+                    "source": "DISCOGS",
+                    "external_id": "36614953",
+                    "title": "나의 여름은 아직 안 끝났어",
+                    "artist_or_brand": "Yun Seok Cheol Trio*",
+                    "confidence": 0.99,
+                    "raw": {},
+                }
+            ]
+        return []
+
+    monkeypatch.setattr(provider_module, "search_discogs_by_query", fake_search_discogs_by_query)
+    monkeypatch.setattr(
+        provider_module,
+        "search_discogs_artist_name_variations",
+        lambda artist_name, limit=6, suppress_errors=True: ["윤석철 트리오", "Yun Seok Cheol Trio"],
+    )
+
+    result = provider_module.search_music_metadata(
+        query="윤석철 트리오 나의 여름은 아직 안끝났어",
+        source="DISCOGS",
+        limit=5,
+        artist_or_brand="윤석철 트리오",
+        title="나의 여름은 아직 안끝났어",
+    )
+
+    assert [item["external_id"] for item in result] == ["36614953"]
+    assert calls == [
+        "윤석철 트리오 나의 여름은 아직 안끝났어",
+        "Yun Seok Cheol Trio 나의 여름은 아직 안끝났어",
+    ]
+
+
+def test_provider_search_album_master_candidates_retries_discogs_with_artist_variations(monkeypatch):
+    calls: list[str] = []
+
+    def fake_search_discogs_master_by_query(query, limit=10):
+        calls.append(str(query))
+        if query == "Yun Seok Cheol Trio 나의 여름은 아직 안끝났어":
+            return [
+                {
+                    "source": "DISCOGS",
+                    "master_external_id": "3123456",
+                    "title": "나의 여름은 아직 안 끝났어",
+                    "artist_or_brand": "Yun Seok Cheol Trio",
+                    "confidence": 0.98,
+                    "raw": {},
+                }
+            ]
+        return []
+
+    monkeypatch.setattr(provider_module, "search_discogs_master_by_query", fake_search_discogs_master_by_query)
+    monkeypatch.setattr(
+        provider_module,
+        "search_discogs_artist_name_variations",
+        lambda artist_name, limit=6, suppress_errors=True: ["윤석철 트리오", "Yun Seok Cheol Trio"],
+    )
+    monkeypatch.setattr(provider_module, "_get_album_master_candidate_preview", lambda source, master_external_id: None)
+
+    result = provider_module.search_album_master_candidates(
+        query="윤석철 트리오 나의 여름은 아직 안끝났어",
+        source="DISCOGS",
+        limit=10,
+        artist_or_brand="윤석철 트리오",
+        title="나의 여름은 아직 안끝났어",
+    )
+
+    assert [item["master_external_id"] for item in result] == ["3123456"]
+    assert calls == [
+        "윤석철 트리오 나의 여름은 아직 안끝났어",
+        "Yun Seok Cheol Trio 나의 여름은 아직 안끝났어",
+    ]
 
 
 def test_admin_can_create_goods_item_without_mappings(admin_client):
@@ -822,6 +1009,53 @@ def test_purchase_import_build_owned_item_uses_parsed_condition_pair_from_queue_
     assert payload.music_detail is not None
     assert payload.music_detail.cover_condition == "G"
     assert payload.music_detail.disc_condition == "VG+"
+
+
+def test_purchase_import_rows_for_save_defaults_blank_media_to_cd_for_aladin_and_yes24():
+    items = [
+        main_module.PurchaseImportPreviewItem(
+            row_no=1,
+            artist_name="여러 아티스트",
+            item_name="유리화 Vol. 2 - O.S.T.",
+            media_format=None,
+            quantity=1,
+            unit_price=2600,
+            line_total=2600,
+            currency_code="KRW",
+            purchase_date="2008-10-16",
+            raw_line="유리화 Vol. 2 - O.S.T.",
+            raw_payload={},
+        )
+    ]
+
+    aladin_rows = main_module._purchase_import_rows_for_save(items, vendor_code="ALADIN", email_from=None)
+    yes24_rows = main_module._purchase_import_rows_for_save(items, vendor_code="YES24", email_from=None)
+
+    assert aladin_rows[0]["media_format"] == "CD"
+    assert yes24_rows[0]["media_format"] == "CD"
+
+
+def test_purchase_import_build_owned_item_defaults_blank_aladin_media_to_cd():
+    payload = main_module._build_owned_item_from_purchase_queue_row(
+        {
+            "id": 809,
+            "vendor_code": "ALADIN",
+            "artist_name": "여러 아티스트 (Various Artists)",
+            "item_name": "유리화 Vol. 2 - O.S.T.",
+            "media_format": None,
+            "quantity": 1,
+            "unit_price": 2600,
+            "currency_code": "KRW",
+            "purchase_date": "2008-10-16",
+            "seller_name": "ALADIN",
+            "raw_payload": {},
+        }
+    )
+
+    assert payload.category == "CD"
+    assert payload.size_group == "STD"
+    assert payload.music_detail is not None
+    assert payload.music_detail.format_name == "CD"
 
 
 def test_purchase_import_preview_accepts_cp949_ebay_html_via_base64_upload_payload():
@@ -919,6 +1153,556 @@ def test_purchase_queue_candidate_query_prefers_parsed_search_fields_for_ebay():
     assert query == "The Dregs Industry Standard 1982 Rock"
 
 
+def test_purchase_import_list_accepts_yes24_vendor_rows(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "list_purchase_import_rows",
+        lambda **kwargs: [
+            {
+                "id": 816,
+                "vendor_code": "YES24",
+                "source_type": "FILE_UPLOAD",
+                "source_ref": "debug-http",
+                "email_from": None,
+                "email_subject": None,
+                "artist_name": "윤석철 트리오",
+                "item_name": "나의 여름은 아직 안끝났어",
+                "media_format": "LP",
+                "quantity": 1,
+                "unit_price": None,
+                "line_total": None,
+                "currency_code": None,
+                "purchase_date": None,
+                "seller_name": None,
+                "item_url": None,
+                "image_url": None,
+                "raw_line": None,
+                "queue_status": "PENDING",
+                "linked_owned_item_id": None,
+                "created_at": "2026-04-13T15:11:02.128993+00:00",
+                "updated_at": "2026-04-13T15:11:02.128993+00:00",
+                "raw_payload": {},
+            }
+        ],
+    )
+    monkeypatch.setattr(main_module.db, "count_purchase_import_rows", lambda **kwargs: 1)
+
+    res = admin_client.get("/purchase-imports", params={"queue_status": "PENDING", "limit": 5})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["total_count"] == 1
+    assert payload["items"][0]["vendor_code"] == "YES24"
+
+
+def test_purchase_import_candidates_accept_yes24_queue_item_vendor(admin_client, monkeypatch):
+    row = {
+        "id": 816,
+        "vendor_code": "YES24",
+        "source_type": "FILE_UPLOAD",
+        "source_ref": "debug-http",
+        "email_from": None,
+        "email_subject": None,
+        "artist_name": "윤석철 트리오",
+        "item_name": "나의 여름은 아직 안끝났어",
+        "media_format": "LP",
+        "quantity": 1,
+        "unit_price": None,
+        "line_total": None,
+        "currency_code": None,
+        "purchase_date": None,
+        "seller_name": None,
+        "item_url": None,
+        "image_url": None,
+        "raw_line": None,
+        "queue_status": "PENDING",
+        "linked_owned_item_id": None,
+        "created_at": "2026-04-13T15:11:02.128993+00:00",
+        "updated_at": "2026-04-13T15:11:02.128993+00:00",
+        "raw_payload": {},
+    }
+    monkeypatch.setattr(main_module.db, "get_purchase_import_row", lambda queue_id: dict(row) if queue_id == 816 else None)
+    monkeypatch.setattr(
+        main_module,
+        "search_music_metadata",
+        lambda **kwargs: [
+            {
+                "source": "DISCOGS",
+                "external_id": "36614953",
+                "title": "나의 여름은 아직 안 끝났어",
+                "artist_or_brand": "Yun Seok Cheol Trio*",
+                "release_year": 2024,
+                "confidence": 0.99,
+                "raw": {},
+            }
+        ],
+    )
+    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+
+    res = admin_client.get(
+        "/purchase-imports/816/candidates",
+        params={
+            "source": "DISCOGS",
+            "limit": 5,
+            "artist_name": "윤석철 트리오",
+            "item_name": "나의 여름은 아직 안끝났어",
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["queue_item"]["vendor_code"] == "YES24"
+    assert payload["candidates"][0]["external_id"] == "36614953"
+
+
+def test_purchase_import_candidates_default_blank_aladin_media_to_cd(admin_client, monkeypatch):
+    row = {
+        "id": 809,
+        "vendor_code": "ALADIN",
+        "source_type": "FILE_UPLOAD",
+        "source_ref": "aladdin.mhtml",
+        "email_from": None,
+        "email_subject": None,
+        "artist_name": "여러 아티스트 (Various Artists)",
+        "item_name": "유리화 Vol. 2 - O.S.T.",
+        "media_format": None,
+        "quantity": 1,
+        "unit_price": 2600,
+        "line_total": 2600,
+        "currency_code": "KRW",
+        "purchase_date": "2008-10-16",
+        "seller_name": "ALADIN",
+        "item_url": None,
+        "image_url": None,
+        "raw_line": None,
+        "queue_status": "PENDING",
+        "linked_owned_item_id": None,
+        "created_at": "2026-04-13T15:11:02.128993+00:00",
+        "updated_at": "2026-04-13T15:11:02.128993+00:00",
+        "raw_payload": {},
+    }
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(main_module.db, "get_purchase_import_row", lambda queue_id: dict(row) if queue_id == 809 else None)
+
+    def fake_search_music_metadata(**kwargs):
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+
+    res = admin_client.get(
+        "/purchase-imports/809/candidates",
+        params={"source": "MANIADB", "limit": 5},
+    )
+
+    assert res.status_code == 200
+    assert captured["category"] == "CD"
+
+
+def test_purchase_import_ignore_rejects_non_pending_rows(admin_client, monkeypatch):
+    row = {
+        "id": 814,
+        "queue_status": "CREATED",
+        "linked_owned_item_id": 1244,
+    }
+    monkeypatch.setattr(main_module.db, "get_purchase_import_row", lambda queue_id: dict(row) if queue_id == 814 else None)
+
+    def fail_update_purchase_import_row(*args, **kwargs):
+        raise AssertionError("update should not run for non-pending rows")
+
+    monkeypatch.setattr(main_module.db, "update_purchase_import_row", fail_update_purchase_import_row)
+
+    res = admin_client.post("/purchase-imports/814/ignore")
+
+    assert res.status_code == 400
+    assert res.json() == {"detail": "purchase import row is not pending"}
+
+
+def test_search_lookup_metadata_candidates_forwards_artist_and_title_to_provider(monkeypatch):
+    captured: dict[str, object] = {}
+
+    def fake_search_music_metadata(**kwargs):
+        captured.update(kwargs)
+        return [
+            {
+                "source": "MANIADB",
+                "external_id": "album:1058176",
+                "title": "나의 여름은 아직 안 끝났어",
+                "artist_or_brand": "윤석철 트리오",
+            }
+        ]
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    rows = main_module._search_lookup_metadata_candidates(
+        query="윤석철 트리오 나의 여름은 아직 안끝났어",
+        category="CD",
+        source="AUTO",
+        limit=5,
+        artist_or_brand="윤석철 트리오",
+        title="나의 여름은 아직 안끝났어",
+    )
+
+    assert rows[0]["source"] == "MANIADB"
+    assert captured["artist_or_brand"] == "윤석철 트리오"
+    assert captured["title"] == "나의 여름은 아직 안끝났어"
+
+
+def test_normalize_maniadb_image_url_upgrades_http_to_https():
+    url = provider_module._normalize_maniadb_image_url("http://i.maniadb.com/images/album/105/1058176_1_f.jpg")
+
+    assert url == "https://i.maniadb.com/images/album/105/1058176_1_f.jpg"
+
+
+def test_normalize_maniadb_image_url_preserves_zero_padded_variant_path():
+    url = provider_module._normalize_maniadb_image_url(
+        "http://i.maniadb.com/images/album/153/153773_01_f.jpg",
+        album_id="153773",
+        variant_seq="1",
+    )
+
+    assert url == "https://i.maniadb.com/images/album/153/153773_01_f.jpg"
+
+
+def test_parse_maniadb_release_legend_keeps_zero_padded_cover_path():
+    parsed = provider_module._parse_maniadb_release_legend(
+        '<font color="black"><strong><a href="/album/153773?o=l&amp;s=1"><img src="http://i.maniadb.com/images/music_lp.gif" border="0" alt="LP"/></a> :: 2003-12-20 :: 리버맨</strong></font>',
+        album_id="153773",
+        album_artist="김두수",
+        album_title="自由魂 [box]",
+        block_html="""
+        <div class="album-track-list">
+          <img src="http://i.maniadb.com/images/album/153/153773_01_f.jpg" />
+          <img src="http://i.maniadb.com/images/album/153/153773_01_b.jpg" />
+        </div>
+        """,
+    )
+
+    assert parsed is not None
+    assert parsed["cover_image_url"] == "https://i.maniadb.com/images/album/153/153773_01_f.jpg"
+    assert parsed["image_items"][0]["uri"] == "https://i.maniadb.com/images/album/153/153773_01_f.jpg"
+    assert parsed["image_items"][1]["uri"] == "https://i.maniadb.com/images/album/153/153773_01_b.jpg"
+
+
+def test_parse_maniadb_release_legend_keeps_legacy_variant_cover_path_order():
+    parsed = provider_module._parse_maniadb_release_legend(
+        '<font color="black"><strong><a href="/album/153773?o=l&amp;s=1"><img src="http://i.maniadb.com/images/music_lp.gif" border="0" alt="LP"/></a> :: 2003-12-20 :: 리버맨</strong></font>',
+        album_id="153773",
+        album_artist="김두수",
+        album_title="自由魂 [box]",
+        block_html="""
+        <div class="album-track-list">
+          <img src="http://i.maniadb.com/images/album/153/153773_f_1.jpg" />
+          <img src="http://i.maniadb.com/images/album/153/153773_b_1.jpg" />
+        </div>
+        """,
+    )
+
+    assert parsed is not None
+    assert parsed["cover_image_url"] == "https://i.maniadb.com/images/album/153/153773_f_1.jpg"
+    assert parsed["image_items"][0]["uri"] == "https://i.maniadb.com/images/album/153/153773_f_1.jpg"
+    assert parsed["image_items"][1]["uri"] == "https://i.maniadb.com/images/album/153/153773_b_1.jpg"
+
+
+def test_discogs_variation_fallback_skips_artist_only_false_positives_until_title_match(monkeypatch):
+    monkeypatch.setattr(
+        provider_module,
+        "search_discogs_artist_name_variations",
+        lambda artist_name, limit=6, suppress_errors=True: ["윤석철 트리오", "Yun Seok Cheol Trio"],
+    )
+
+    def fake_search_discogs_by_query(query, limit=10):
+        normalized = str(query or "").strip()
+        if normalized == "윤석철 트리오":
+            return [
+                {
+                    "source": "DISCOGS",
+                    "external_id": "24408149",
+                    "title": "LIBRARIES",
+                    "artist_or_brand": "윤석철 트리오",
+                    "confidence": 0.75,
+                }
+            ]
+        if normalized == "Yun Seok Cheol Trio":
+            return [
+                {
+                    "source": "DISCOGS",
+                    "external_id": "36614953",
+                    "title": "나의 여름은 아직 안 끝났어",
+                    "artist_or_brand": "Yun Seok Cheol Trio*",
+                    "confidence": 0.75,
+                }
+            ]
+        return []
+
+    monkeypatch.setattr(provider_module, "search_discogs_by_query", fake_search_discogs_by_query)
+
+    rows = provider_module._search_discogs_release_with_artist_variations(
+        query="윤석철 트리오 나의 여름은 아직 안끝났어",
+        artist_or_brand="윤석철 트리오",
+        title="나의 여름은 아직 안끝났어",
+        limit=10,
+    )
+
+    assert [row["external_id"] for row in rows] == ["36614953"]
+
+
+def test_resolve_release_master_reference_uses_discogs_detail_master_external_id_fallback(monkeypatch):
+    monkeypatch.setattr(provider_module, "_discogs_headers", lambda: {"Authorization": "Discogs token test"})
+    monkeypatch.setattr(
+        provider_module,
+        "_fetch_discogs_release_detail",
+        lambda external_id, headers=None, client=None: {
+            "master_external_id": "3331849",
+            "raw_detail": {
+                "title": "The World EP.Fin:Will",
+                "artists": [{"name": "Ateez (2)"}],
+                "year": 2023,
+            },
+        },
+    )
+
+    row = provider_module.resolve_release_master_reference(source="DISCOGS", external_id="29121433")
+
+    assert row == {
+        "source": "DISCOGS",
+        "master_external_id": "3331849",
+        "title": "The World EP.Fin:Will",
+        "artist_or_brand": "Ateez (2)",
+        "release_year": 2023,
+    }
+
+
+def test_purchase_import_candidates_support_direct_discogs_release_reference(admin_client, monkeypatch):
+    row = {
+        "id": 816,
+        "vendor_code": "YES24",
+        "source_type": "FILE_UPLOAD",
+        "source_ref": "debug-http",
+        "email_from": None,
+        "email_subject": None,
+        "artist_name": "윤석철 트리오",
+        "item_name": "나의 여름은 아직 안 끝났어",
+        "media_format": "LP",
+        "quantity": 1,
+        "unit_price": None,
+        "line_total": None,
+        "currency_code": None,
+        "purchase_date": None,
+        "seller_name": None,
+        "item_url": None,
+        "image_url": None,
+        "raw_line": None,
+        "queue_status": "PENDING",
+        "linked_owned_item_id": None,
+        "created_at": "2026-04-13T15:11:02.128993+00:00",
+        "updated_at": "2026-04-13T15:11:02.128993+00:00",
+        "raw_payload": {},
+    }
+    monkeypatch.setattr(main_module.db, "get_purchase_import_row", lambda queue_id: dict(row) if queue_id == 816 else None)
+    monkeypatch.setattr(
+        main_module,
+        "get_source_release_snapshot",
+        lambda source, external_id: {
+            "artist_or_brand": "Yun Seok Cheol Trio",
+            "release_year": 2024,
+            "released_date": "2024-06-12",
+            "format_name": "LP",
+            "catalog_no": "MBMC-2216",
+            "label_name": "BEATBALL MUSIC",
+            "barcode": "8809114692216",
+            "cover_image_url": "https://img.example/36614953.jpg",
+            "track_list": ["나의 여름은 아직 안 끝났어"],
+            "media_type": "Vinyl",
+            "release_type": "ALBUM",
+            "domain_code": "KOREA",
+            "genres": ["Jazz"],
+            "styles": ["Contemporary Jazz"],
+            "raw": {"title": "나의 여름은 아직 안 끝났어", "country": "South Korea"},
+        }
+        if source == "DISCOGS" and external_id == "36614953"
+        else None,
+    )
+    monkeypatch.setattr(main_module, "search_music_metadata", lambda **kwargs: (_ for _ in ()).throw(AssertionError("unexpected metadata search")))
+    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+
+    res = admin_client.get(
+        "/purchase-imports/816/candidates",
+        params={
+            "source": "DISCOGS",
+            "limit": 5,
+            "query": "https://www.discogs.com/release/36614953-Yun-Seok-Cheol-Trio",
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["query"] == "https://www.discogs.com/release/36614953-Yun-Seok-Cheol-Trio"
+    assert payload["candidates"][0]["external_id"] == "36614953"
+
+
+def test_album_master_search_supports_direct_release_reference(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "resolve_release_master_reference",
+        lambda source, external_id: {
+            "source": "DISCOGS",
+            "master_external_id": "3123456",
+            "title": "나의 여름은 아직 안 끝났어",
+            "artist_or_brand": "Yun Seok Cheol Trio",
+            "release_year": 2024,
+        }
+        if source == "DISCOGS" and external_id == "36614953"
+        else None,
+    )
+    monkeypatch.setattr(main_module, "search_album_master_candidates", lambda **kwargs: (_ for _ in ()).throw(AssertionError("unexpected master search")))
+
+    res = admin_client.post(
+        "/album-masters/search",
+        json={
+            "source": "DISCOGS",
+            "query": "release:36614953",
+            "limit": 10,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["candidates"][0]["source"] == "DISCOGS"
+    assert payload["candidates"][0]["master_external_id"] == "3123456"
+
+
+def test_album_master_search_forwards_artist_and_title_hints(admin_client, monkeypatch):
+    captured: dict[str, object] = {}
+
+    def fake_search_album_master_candidates(*, query, source="AUTO", limit=10, artist_or_brand=None, title=None):
+        captured["query"] = query
+        captured["source"] = source
+        captured["limit"] = limit
+        captured["artist_or_brand"] = artist_or_brand
+        captured["title"] = title
+        return []
+
+    monkeypatch.setattr(main_module, "search_album_master_candidates", fake_search_album_master_candidates)
+
+    res = admin_client.post(
+        "/album-masters/search",
+        json={
+            "source": "DISCOGS",
+            "query": "윤석철 트리오 나의 여름은 아직 안끝났어",
+            "artist_or_brand": "윤석철 트리오",
+            "title": "나의 여름은 아직 안끝났어",
+            "limit": 10,
+        },
+    )
+
+    assert res.status_code == 200
+    assert captured == {
+        "query": "윤석철 트리오 나의 여름은 아직 안끝났어",
+        "source": "DISCOGS",
+        "limit": 10,
+        "artist_or_brand": "윤석철 트리오",
+        "title": "나의 여름은 아직 안끝났어",
+    }
+
+
+def test_ingest_csv_forwards_artist_and_title_hints_to_discogs_lookup(admin_client, monkeypatch):
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(main_module, "validate_row_for_ingest", lambda row, default_category=None: (True, "LP", None))
+
+    def fake_search_music_metadata(
+        *,
+        barcode=None,
+        query=None,
+        category=None,
+        source="AUTO",
+        limit=5,
+        artist_or_brand=None,
+        title=None,
+    ):
+        captured["barcode"] = barcode
+        captured["query"] = query
+        captured["category"] = category
+        captured["source"] = source
+        captured["limit"] = limit
+        captured["artist_or_brand"] = artist_or_brand
+        captured["title"] = title
+        return []
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+    monkeypatch.setattr(
+        main_module,
+        "classify_candidate",
+        lambda candidates: main_module.MatchResult(
+            confidence=0.0,
+            review_status="NEEDS_REVIEW",
+            review_note=None,
+            candidate=None,
+        ),
+    )
+
+    res = admin_client.post(
+        "/ingest/csv",
+        files={
+            "file": (
+                "discogs-variation.csv",
+                "artist_or_brand,title,category\n윤석철 트리오,나의 여름은 아직 안끝났어,LP\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert res.status_code == 200
+    assert captured == {
+        "barcode": None,
+        "query": "윤석철 트리오 나의 여름은 아직 안끝났어",
+        "category": "LP",
+        "source": "AUTO",
+        "limit": 5,
+        "artist_or_brand": "윤석철 트리오",
+        "title": "나의 여름은 아직 안끝났어",
+    }
+
+
+def test_album_master_search_supports_direct_maniadb_album_reference(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "get_album_master_variants",
+        lambda source, master_external_id, limit=30, include_details=False: [
+            {
+                "source": "MANIADB",
+                "external_id": "1058176:1",
+                "title": "나의 여름은 아직 안 끝났어",
+                "artist_or_brand": "윤석철 트리오",
+                "release_year": 2024,
+                "label_name": "비트볼",
+                "catalog_no": "MBMC-2216",
+                "barcode": "8809114692216",
+            }
+        ]
+        if source == "MANIADB" and master_external_id == "1058176"
+        else [],
+    )
+    monkeypatch.setattr(main_module, "search_album_master_candidates", lambda **kwargs: (_ for _ in ()).throw(AssertionError("unexpected master search")))
+
+    res = admin_client.post(
+        "/album-masters/search",
+        json={
+            "source": "MANIADB",
+            "query": "album:1058176",
+            "limit": 10,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["candidates"][0]["source"] == "MANIADB"
+    assert payload["candidates"][0]["master_external_id"] == "1058176"
+
+
 def test_admin_can_replace_goods_item_mappings(admin_client):
     master_id = db.upsert_album_master(
         source_code="MANUAL",
@@ -977,6 +1761,45 @@ def test_admin_can_search_goods_album_master_targets(admin_client):
     payload = res.json()
     assert payload["items"][0]["album_master_id"] == master_id
     assert payload["items"][0]["title"] == "연계 대상 앨범"
+
+
+def test_bind_album_master_updates_selected_owned_items_linked_master(admin_client):
+    owned_item_ids = [
+        db.insert_owned_item(
+            {
+                "category": "CD",
+                "size_group": "STD",
+                "quantity": 1,
+                "status": "IN_COLLECTION",
+                "signature_type": "NONE",
+                "item_name_override": f"조동익 - 동경 테스트 {index}",
+            }
+        )
+        for index in (1, 2)
+    ]
+
+    res = admin_client.post(
+        "/album-masters/bind",
+        json={
+            "source": "DISCOGS",
+            "master_external_id": "bind-test-master-1",
+            "title": "동경",
+            "artist_or_brand": "조동익",
+            "release_year": 1994,
+            "owned_item_ids": owned_item_ids,
+            "replace_existing": True,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    album_master_id = int(payload["album_master_id"])
+    assert album_master_id > 0
+
+    for owned_item_id in owned_item_ids:
+        row = db.get_owned_item(owned_item_id)
+        assert row is not None
+        assert int(row["linked_album_master_id"] or 0) == album_master_id
 
 
 def test_goods_items_search_supports_status_domain_and_slot_filters(admin_client):
@@ -2233,3 +3056,79 @@ def test_startup_db_ready_recreates_collectibles_tables_for_existing_db(monkeypa
         "goods_item_artist_map",
         "goods_item_label_map",
     }
+
+
+def test_startup_db_ready_migrates_purchase_import_queue_vendor_check_for_yes24(monkeypatch, tmp_path):
+    db_path = tmp_path / "library.db"
+    monkeypatch.setenv("LIBRARY_DB_PATH", str(db_path))
+    main_module.db.get_settings.cache_clear()
+    main_module.db.init_db()
+
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("PRAGMA foreign_keys = OFF")
+        conn.execute("DROP TABLE IF EXISTS purchase_import_queue")
+        conn.execute(
+            """
+            CREATE TABLE purchase_import_queue (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              vendor_code TEXT NOT NULL CHECK (vendor_code IN ('SAILMUSIC', 'AMAZON', 'EBAY', 'OTHER')),
+              source_type TEXT NOT NULL CHECK (source_type IN ('EMAIL_HTML', 'EMAIL_TEXT', 'FILE_UPLOAD', 'MANUAL')),
+              source_ref TEXT,
+              email_from TEXT,
+              email_subject TEXT,
+              artist_name TEXT,
+              item_name TEXT NOT NULL,
+              media_format TEXT,
+              quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+              unit_price REAL,
+              line_total REAL,
+              currency_code TEXT,
+              purchase_date TEXT,
+              seller_name TEXT,
+              item_url TEXT,
+              image_url TEXT,
+              raw_line TEXT,
+              raw_payload_json TEXT NOT NULL DEFAULT '{}',
+              queue_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (queue_status IN ('PENDING', 'CREATED', 'IGNORED')),
+              linked_owned_item_id INTEGER,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              FOREIGN KEY (linked_owned_item_id) REFERENCES owned_item(id) ON DELETE SET NULL
+            )
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    main_module.db.ensure_startup_db_ready()
+
+    conn = sqlite3.connect(db_path)
+    try:
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'purchase_import_queue'"
+        ).fetchone()
+        assert row is not None
+        table_sql = str(row[0] or "").upper()
+        assert "'ALADIN'" in table_sql
+        assert "'YES24'" in table_sql
+    finally:
+        conn.close()
+
+    created_ids = main_module.db.insert_purchase_import_rows(
+        "YES24",
+        "FILE_UPLOAD",
+        [
+            {
+                "artist_name": "윤석철 트리오",
+                "item_name": "나의 여름은 아직 안끝났어",
+                "media_format": "LP",
+                "quantity": 1,
+                "raw_payload": {},
+            }
+        ],
+        source_ref="migration-test",
+    )
+
+    assert len(created_ids) == 1

@@ -31,6 +31,50 @@ load_env_file() {
   done < "${env_file}"
 }
 
+resolve_runtime_path() {
+  local raw_path="$1"
+  if [[ -z "${raw_path}" ]]; then
+    return 1
+  fi
+  case "${raw_path}" in
+    /*) printf '%s\n' "${raw_path}" ;;
+    *) printf '%s\n' "${ROOT_DIR}/${raw_path}" ;;
+  esac
+}
+
+validate_runtime_role() {
+  local root_name expected_port expected_db_path actual_db_path
+  root_name="$(basename "${ROOT_DIR}")"
+  case "${root_name}" in
+    hahahoho-prod)
+      expected_port="8000"
+      expected_db_path="${ROOT_DIR}/runtime/data/library.db"
+      ;;
+    hahahoho-qa)
+      expected_port="8100"
+      expected_db_path="${ROOT_DIR}/runtime/data/library.db"
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+
+  if [[ "${APP_PORT}" != "${expected_port}" ]]; then
+    echo "APP_PORT must be ${expected_port} for ${root_name} (current: ${APP_PORT})" >&2
+    exit 1
+  fi
+
+  if ! actual_db_path="$(resolve_runtime_path "${LIBRARY_DB_PATH:-}")"; then
+    echo "LIBRARY_DB_PATH is required for ${root_name}" >&2
+    exit 1
+  fi
+
+  if [[ "${actual_db_path}" != "${expected_db_path}" ]]; then
+    echo "LIBRARY_DB_PATH must point to ${expected_db_path} for ${root_name} (current: ${actual_db_path})" >&2
+    exit 1
+  fi
+}
+
 if [[ -f "${ENV_FILE}" ]]; then
   load_env_file "${ENV_FILE}"
 fi
@@ -39,6 +83,13 @@ cd "${ROOT_DIR}"
 
 APP_HOST="${APP_HOST:-127.0.0.1}"
 APP_PORT="${APP_PORT:-8000}"
+
+validate_runtime_role
+
+if [[ "${RUN_API_VALIDATE_ONLY:-0}" == "1" ]]; then
+  printf 'runtime validation ok\n'
+  exit 0
+fi
 
 if [[ -x "${ROOT_DIR}/.venv/bin/python3" ]]; then
   PYTHON_BIN="${ROOT_DIR}/.venv/bin/python3"

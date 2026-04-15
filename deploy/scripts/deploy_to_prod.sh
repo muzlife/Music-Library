@@ -91,6 +91,7 @@ else
 fi
 
 echo "[5/5] Restart prod app and verify health"
+ssh_exec "cd '${PROD_APP_ROOT}' && RUN_API_VALIDATE_ONLY=1 ./scripts/run_api.sh >/dev/null"
 ssh_exec "launchctl bootout gui/\$(id -u)/${PROD_LAUNCHD_LABEL} >/dev/null 2>&1 || true; launchctl bootstrap gui/\$(id -u) \"\$HOME/Library/LaunchAgents/${PROD_LAUNCHD_LABEL}.plist\""
 ssh_exec "for attempt in 1 2 3 4 5 6 7 8 9 10; do curl --fail --silent --show-error '${PROD_HEALTHCHECK_URL}' >/dev/null && exit 0; sleep 2; done; exit 1"
 

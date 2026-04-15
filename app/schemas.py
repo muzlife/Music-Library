@@ -39,7 +39,7 @@ MusicCategory = Literal["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_RE
 SourceLinkState = Literal["ANY", "MISSING", "LINKED"]
 AuthRole = Literal["ADMIN", "OPERATOR"]
 CustomerTrackRequestStatus = Literal["REQUESTED", "PLAYING", "RETURNED", "CANCELLED"]
-PurchaseImportVendor = Literal["SAILMUSIC", "AMAZON", "EBAY", "OTHER"]
+PurchaseImportVendor = Literal["SAILMUSIC", "AMAZON", "EBAY", "ALADIN", "YES24", "OTHER"]
 PurchaseImportSourceType = Literal["EMAIL_HTML", "EMAIL_TEXT", "FILE_UPLOAD", "MANUAL"]
 PurchaseImportStatus = Literal["PENDING", "CREATED", "IGNORED"]
 CabinetSortPolicy = Literal["ARTIST_RELEASE_TITLE", "LABEL_ID"]
@@ -570,6 +570,8 @@ class PurchaseImportCreateResponse(BaseModel):
 class AlbumMasterSearchRequest(BaseModel):
     source: AlbumMasterSource = "AUTO"
     query: str = Field(min_length=1, max_length=200)
+    artist_or_brand: str | None = None
+    title: str | None = None
     limit: int = Field(default=10, ge=1, le=50)
 
 
