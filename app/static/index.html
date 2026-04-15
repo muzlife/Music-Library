@@ -4422,6 +4422,79 @@
       min-width: 0;
     }
 
+    .registered-master-merge-list {
+      max-height: 360px;
+      margin-top: 10px;
+      padding-right: 2px;
+    }
+
+    .registered-master-merge-card {
+      grid-template-columns: 76px minmax(0, 1fr);
+      align-items: start;
+      gap: 10px;
+    }
+
+    .registered-master-merge-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .registered-master-merge-title {
+      margin: 0;
+      font-size: 0.96rem;
+      line-height: 1.28;
+      color: #0f172a;
+    }
+
+    .registered-master-merge-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .registered-master-merge-actions .btn {
+      min-width: 68px;
+    }
+
+    .registered-master-merge-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      color: #64748b;
+      font-size: 0.72rem;
+    }
+
+    .registered-master-merge-order-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .registered-master-merge-context-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
     .home-master-heading {
       display: inline;
       font-size: 0.96rem;
@@ -10734,6 +10807,8 @@
       .shelf-cover { width: 100%; height: 160px; }
       .album-result { grid-template-columns: 1fr; }
       .album-result-cover { width: 100%; height: 150px; }
+      .registered-master-merge-head { grid-template-columns: 1fr; }
+      .registered-master-merge-actions { justify-content: flex-start; }
     }
 
   </style>
@@ -13586,15 +13661,15 @@
       <summary data-i18n="manual.register_master.summary">마스터 정리 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
         <ol>
-          <li data-i18n="manual.register_master.step1">같은 앨범의 여러 상품을 하나의 내부 마스터로 묶어야 할 때 이 화면을 엽니다.</li>
-          <li data-i18n="manual.register_master.step2">Discogs 또는 ManiaDB 마스터를 먼저 검색합니다.</li>
-          <li data-i18n="manual.register_master.step3">마스터를 선택한 뒤 필요한 버전과 보유 아이템을 확인하고, 보유 아이템을 하나의 내부 마스터로 묶습니다.</li>
-          <li data-i18n="manual.register_master.step4">묶은 뒤에는 `미디어 > 관리`에서 결과를 확인하고, 부족한 버전은 아래 추가 흐름으로 이어갑니다.</li>
+          <li data-i18n="manual.register_master.step1">DB에 등록된 album_master를 병합해야 할 때 이 화면을 엽니다.</li>
+          <li data-i18n="manual.register_master.step2">검색창 하나로 병합 대상과 대표 마스터를 함께 찾습니다.</li>
+          <li data-i18n="manual.register_master.step3">검색 결과에서 `병합`으로 흡수 대상들을 누적하고, `대표`로 최종 마스터 하나를 지정합니다.</li>
+          <li data-i18n="manual.register_master.step4">병합 실행 후에는 결과를 다시 검색해 대표 마스터 기준으로 정리되었는지 확인합니다.</li>
         </ol>
-        <div class="manual-block-note" data-i18n="manual.register_master.note">예외 큐의 `마스터 없음`에서 넘어온 항목을 정리할 때 가장 자주 사용합니다.</div>
+        <div class="manual-block-note" data-i18n="manual.register_master.note">현재 작업 세션 안에서만 대표/병합 대상 중복이 막히며, 이후 다른 작업에서는 같은 마스터를 다시 대표나 병합 대상으로 사용할 수 있습니다.</div>
       </div>
     </details>
-    <section class="card" style="margin-top:14px;">
+    <section id="registerMasterLegacyCard" class="card" style="margin-top:14px;display:none;" hidden>
       <div class="page-help-title-row">
         <h2><span data-i18n="media.register.master.title">앨범 마스터 묶기</span></h2>
         <button class="page-help-trigger" type="button" data-page-help-open="register-master" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
@@ -13819,6 +13894,66 @@
             <tbody id="masterGroupBody"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <section id="registeredMasterMergeCard" class="card" style="margin-top:14px;">
+      <div class="page-help-title-row">
+        <h2><span data-i18n="media.register.master.workflow.title">등록 마스터 병합</span></h2>
+        <button class="page-help-trigger" type="button" data-page-help-open="register-master" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
+      </div>
+      <p class="sub" data-i18n="media.register.master.workflow.subtitle">DB에 등록된 album_master만 검색해 병합 대상으로 모은 뒤, 대표 마스터 하나로 순차 병합합니다.</p>
+
+      <div class="grid-3">
+        <div class="span-2">
+          <label for="registeredMasterMergeQuery" data-i18n="media.register.master.workflow.search.field.query.label">등록 마스터 검색</label>
+          <input id="registeredMasterMergeQuery" data-i18n-placeholder="media.register.master.workflow.search.field.query.placeholder" placeholder="예: album_master_id / 앨범명 / 아티스트명" />
+        </div>
+        <div style="display:flex;align-items:end;justify-content:flex-end;gap:8px;">
+          <button id="registeredMasterMergeSearchBtn" class="btn secondary" type="button" data-i18n="media.register.master.workflow.search.action.search">검색</button>
+          <button id="registeredMasterMergeClearBtn" class="btn ghost" type="button" data-i18n="media.register.master.workflow.search.action.clear">초기화</button>
+        </div>
+      </div>
+      <div id="registeredMasterMergeStatus" class="status"></div>
+
+      <div class="result-head" style="margin-top:12px;">
+        <strong data-i18n="media.register.master.workflow.search_results.title">검색 결과</strong>
+        <span class="mini" id="registeredMasterMergeCount" data-i18n="common.count.zero_items">0건</span>
+      </div>
+      <div id="registeredMasterMergeBody" class="result-list registered-master-merge-list">
+        <div class="muted" data-i18n="media.register.master.workflow.search.state.prompt">등록 마스터를 검색하세요.</div>
+      </div>
+
+      <div class="section-divider">
+        <h2 data-i18n="media.register.master.workflow.workspace.title">병합 영역</h2>
+      </div>
+
+      <div class="result-head" style="margin-top:10px;">
+        <strong data-i18n="media.register.master.workflow.representative.title">대표 마스터</strong>
+        <span id="registeredMasterMergeRepresentativeSummary" class="mini" data-i18n="media.register.master.workflow.representative.summary.none">선택된 대표 마스터 없음</span>
+      </div>
+      <div id="registeredMasterMergeRepresentativeBody" class="result-list registered-master-merge-list">
+        <div class="muted" data-i18n="media.register.master.workflow.representative.state.empty">대표 마스터를 선택하세요.</div>
+      </div>
+
+      <div class="result-head" style="margin-top:12px;">
+        <strong data-i18n="media.register.master.workflow.targets.title">병합 대상 마스터</strong>
+        <span id="registeredMasterMergeTargetSummary" class="mini" data-i18n="media.register.master.workflow.targets.summary.none">선택된 병합 대상 없음</span>
+      </div>
+      <div id="registeredMasterMergeTargetBody" class="result-list registered-master-merge-list">
+        <div class="muted" data-i18n="media.register.master.workflow.targets.state.empty">병합 대상 마스터가 비어 있습니다.</div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="registeredMasterMergeRunBtn" class="btn" type="button" disabled data-i18n="media.register.master.workflow.action.run">병합 실행</button>
+      </div>
+
+      <div class="result-head" style="margin-top:12px;">
+        <strong data-i18n="media.register.master.workflow.history.title">최근 병합 이력</strong>
+        <span id="registeredMasterMergeHistorySummary" class="mini" data-i18n="media.register.master.workflow.history.summary.none">최근 병합 이력 없음</span>
+      </div>
+      <div id="registeredMasterMergeHistoryBody" class="result-list registered-master-merge-list">
+        <div class="muted" data-i18n="media.register.master.workflow.history.state.empty">최근 병합 이력이 없습니다.</div>
       </div>
     </section>
 
@@ -14769,6 +14904,11 @@
     let masterMergeQueueItems = [];
     let masterMergeBaseId = 0;
     let masterMergeHasSearched = false;
+    let registeredMasterMergeSearchResults = [];
+    let registeredMasterMergeTargetItems = [];
+    let registeredMasterMergeRepresentativeItem = null;
+    let registeredMasterMergeHasSearched = false;
+    let registeredMasterMergeHistoryItems = [];
     let selectedAlbumMaster = null;
     let masterVariantItems = [];
     let masterVariantPage = 1;
@@ -15019,7 +15159,7 @@
         "dashboard.selection.action.bulk_short": "일괄",
         "dashboard.selection.sort_artist.label": "정렬 아티스트명 (마스터)",
         "dashboard.selection.sort_artist.note": "같은 마스터 상품 전체의 가나다순에 적용됩니다.",
-        "dashboard.selection.sort_artist.display_artist": "현재 표시명: {value}",
+        "dashboard.selection.sort_artist.display_artist": "원본 표시명: {value}",
         "dashboard.selection.position_number": "{index}번",
         "dashboard.bulk.title": "일괄 수정",
         "dashboard.bulk.action.close": "닫기",
@@ -16935,11 +17075,11 @@
         "common.table.status": "상태",
         "common.table.member_count": "멤버 수",
         "common.table.track_list": "곡 리스트",
-        "manual.register_master.step1": "같은 앨범의 여러 상품을 하나의 내부 마스터로 묶어야 할 때 이 화면을 엽니다.",
-        "manual.register_master.step2": "Discogs 또는 ManiaDB 마스터를 먼저 검색합니다.",
-        "manual.register_master.step3": "마스터를 선택한 뒤 필요한 버전과 보유 아이템을 확인하고, 보유 아이템을 하나의 내부 마스터로 묶습니다.",
-        "manual.register_master.step4": "묶은 뒤에는 `미디어 > 관리`에서 결과를 확인하고, 부족한 버전은 아래 추가 흐름으로 이어갑니다.",
-        "manual.register_master.note": "예외 큐의 `마스터 없음`에서 넘어온 항목을 정리할 때 가장 자주 사용합니다.",
+        "manual.register_master.step1": "DB에 등록된 album_master를 병합해야 할 때 이 화면을 엽니다.",
+        "manual.register_master.step2": "검색창 하나로 병합 대상과 대표 마스터를 함께 찾습니다.",
+        "manual.register_master.step3": "검색 결과에서 `병합`으로 흡수 대상들을 누적하고, `대표`로 최종 마스터 하나를 지정합니다.",
+        "manual.register_master.step4": "병합 실행 후에는 결과를 다시 검색해 대표 마스터 기준으로 정리되었는지 확인합니다.",
+        "manual.register_master.note": "현재 작업 세션 안에서만 대표/병합 대상 중복이 막히며, 이후 다른 작업에서는 같은 마스터를 다시 대표나 병합 대상으로 사용할 수 있습니다.",
         "media.register.detail.title": "단건 등록 (상세 선택)",
         "media.register.detail.subtitle": "조회는 관리 홈에서 처리하고, 이 화면은 등록 중심으로 사용합니다.",
         "media.register.detail.field.category.label": "카테고리",
@@ -17088,6 +17228,59 @@
         "media.register.master.merge.status.done": "내부 마스터 병합 완료: merged {merged_count}건 / moved {moved_count}건 / target album_master_id={base_id}",
         "media.register.master.merge.status.partial": "내부 마스터 병합 일부 실패: merged {merged_count}건 / failed {failed_count}건 / target album_master_id={base_id}{details}",
         "media.register.master.merge.status.queue_seeded": "병합 후보 큐를 준비했습니다. 대표 마스터를 확인한 뒤 다시 저장하거나 병합을 실행하세요.",
+        "media.register.master.workflow.title": "등록 마스터 병합",
+        "media.register.master.workflow.subtitle": "DB에 등록된 album_master만 검색해 병합 대상으로 모은 뒤, 대표 마스터 하나로 순차 병합합니다.",
+        "media.register.master.workflow.search.field.query.label": "등록 마스터 검색",
+        "media.register.master.workflow.search.field.query.placeholder": "예: album_master_id / 앨범명 / 아티스트명",
+        "media.register.master.workflow.search.action.search": "검색",
+        "media.register.master.workflow.search.action.clear": "초기화",
+        "media.register.master.workflow.search.action.target": "병합",
+        "media.register.master.workflow.search.action.target_added": "병합 추가됨",
+        "media.register.master.workflow.search.action.representative": "대표",
+        "media.register.master.workflow.search.action.representative_selected": "대표 선택됨",
+        "media.register.master.workflow.search_results.title": "검색 결과",
+        "media.register.master.workflow.search.table.merge": "병합",
+        "media.register.master.workflow.search.table.representative": "대표",
+        "media.register.master.workflow.search.state.prompt": "등록 마스터를 검색하세요.",
+        "media.register.master.workflow.search.state.empty": "검색 결과가 없습니다.",
+        "media.register.master.workflow.workspace.title": "병합 영역",
+        "media.register.master.workflow.representative.title": "대표 마스터",
+        "media.register.master.workflow.representative.summary.none": "선택된 대표 마스터 없음",
+        "media.register.master.workflow.representative.summary.selected": "대표 album_master_id={album_master_id}",
+        "media.register.master.workflow.representative.action.clear": "대표 해제",
+        "media.register.master.workflow.representative.state.empty": "대표 마스터를 선택하세요.",
+        "media.register.master.workflow.targets.title": "병합 대상 마스터",
+        "media.register.master.workflow.targets.summary.none": "선택된 병합 대상 없음",
+        "media.register.master.workflow.targets.summary.selected": "병합 대상 {count}",
+        "media.register.master.workflow.targets.table.remove": "제거",
+        "media.register.master.workflow.targets.state.empty": "병합 대상 마스터가 비어 있습니다.",
+        "media.register.master.workflow.action.run": "병합 실행",
+        "media.register.master.workflow.history.title": "최근 병합 이력",
+        "media.register.master.workflow.history.summary.none": "최근 병합 이력 없음",
+        "media.register.master.workflow.history.summary.loaded": "최근 이력 {count}",
+        "media.register.master.workflow.history.state.empty": "최근 병합 이력이 없습니다.",
+        "media.register.master.workflow.history.action.rollback": "최근 1건 되돌리기",
+        "media.register.master.workflow.history.meta.by": "{user} · {created_at}",
+        "media.register.master.workflow.history.meta.members": "moved {moved_count} / target {target_count}",
+        "media.register.master.workflow.history.meta.target": "source {source_album_master_id} → target {target_album_master_id}",
+        "media.register.master.workflow.history.meta.rollback_ready": "안전 원복 가능",
+        "media.register.master.workflow.history.meta.rollback_unavailable": "안전 원복 불가",
+        "media.register.master.workflow.history.meta.rolled_back": "원복 완료 · {user} · {rolled_back_at}",
+        "media.register.master.workflow.history.status.failed": "병합 이력 조회 실패",
+        "media.register.master.workflow.history.status.rollbacking": "최근 병합 1건을 안전 원복하는 중...",
+        "media.register.master.workflow.history.status.rollback_failed": "최근 병합 원복 실패",
+        "media.register.master.workflow.history.status.rolled_back": "최근 병합을 원복했습니다: source {source_album_master_id} / target {target_album_master_id} / restored {restored_member_count}",
+        "media.register.master.workflow.history.confirm.rollback": "최근 병합 1건을 되돌릴까요?\n\nsource album_master_id={source_album_master_id}\ntarget album_master_id={target_album_master_id}",
+        "media.register.master.workflow.status.loading": "등록 마스터 조회 중...",
+        "media.register.master.workflow.status.loaded": "등록 마스터 조회 완료: {count}",
+        "media.register.master.workflow.status.failed": "등록 마스터 조회 실패",
+        "media.register.master.workflow.status.no_representative": "대표 마스터를 먼저 선택하세요.",
+        "media.register.master.workflow.status.no_targets": "병합 대상 마스터를 하나 이상 선택하세요.",
+        "media.register.master.workflow.status.cancelled": "등록 마스터 병합을 취소했습니다.",
+        "media.register.master.workflow.status.merging": "등록 마스터 병합 중... representative={representative_id}, source_count={count}",
+        "media.register.master.workflow.status.done": "등록 마스터 병합 완료: merged {merged_count}건 / moved {moved_count}건 / representative album_master_id={representative_id}",
+        "media.register.master.workflow.status.partial": "등록 마스터 병합 일부 실패: merged {merged_count}건 / failed {failed_count}건 / representative album_master_id={representative_id}{details}",
+        "media.register.master.workflow.confirm.run": "대표 마스터로 병합할까요?\n\n대표 album_master_id={representative_id}\n병합 대상 {count}\n\n{preview}{more}",
         "media.register.master.group.status.loading": "묶음 목록 조회 중...",
         "media.register.master.group.status.loaded": "조회 완료: {count}",
         "media.register.master.group.status.failed": "묶음 목록 조회 실패",
@@ -17532,7 +17725,7 @@
         "dashboard.selection.action.bulk_short": "Bulk",
         "dashboard.selection.sort_artist.label": "Sort Artist (Master)",
         "dashboard.selection.sort_artist.note": "Applies to name ordering across every item tied to this master.",
-        "dashboard.selection.sort_artist.display_artist": "Current display: {value}",
+        "dashboard.selection.sort_artist.display_artist": "Original display: {value}",
         "dashboard.selection.position_number": "#{index}",
         "dashboard.bulk.title": "Bulk Edit",
         "dashboard.bulk.action.close": "Close",
@@ -19424,11 +19617,11 @@
         "common.table.status": "Status",
         "common.table.member_count": "Members",
         "common.table.track_list": "Track List",
-        "manual.register_master.step1": "Open this page when multiple items from the same album need to be grouped under one internal master.",
-        "manual.register_master.step2": "Search a Discogs or ManiaDB master first.",
-        "manual.register_master.step3": "Choose a master, review the needed versions and owned items, then bind the owned items under one internal master.",
-        "manual.register_master.step4": "After grouping, review the result in `Media > Manage`, then continue with the add-from-other-source flow if more versions are needed.",
-        "manual.register_master.note": "This is most commonly used when processing items that came from the `No master` exception queue.",
+        "manual.register_master.step1": "Open this page when registered album_master rows need to be merged.",
+        "manual.register_master.step2": "Use one search box to find both merge targets and the representative master.",
+        "manual.register_master.step3": "In the search results, add source masters with `Merge` and pick the final master with `Representative`.",
+        "manual.register_master.step4": "After running the merge, search again and confirm everything is consolidated under the representative master.",
+        "manual.register_master.note": "Representative/merge overlap is blocked only inside the current workspace. The same master can be reused in a later merge task.",
         "media.register.detail.title": "Single-item Registration (Detailed)",
         "media.register.detail.subtitle": "Run searches from Media > Manage; use this screen for registration-focused entry.",
         "media.register.detail.field.category.label": "Category",
@@ -19577,6 +19770,59 @@
         "media.register.master.merge.status.done": "Internal master merge complete: merged {merged_count}, moved {moved_count}, target album_master_id={base_id}",
         "media.register.master.merge.status.partial": "Internal master merge partially failed: merged {merged_count}, failed {failed_count}, target album_master_id={base_id}{details}",
         "media.register.master.merge.status.queue_seeded": "The merge queue is ready. Review the representative master, then save again or run the merge.",
+        "media.register.master.workflow.title": "Registered Master Merge",
+        "media.register.master.workflow.subtitle": "Search only DB-registered album_master rows, collect merge targets, then merge them sequentially into one representative master.",
+        "media.register.master.workflow.search.field.query.label": "Search Registered Masters",
+        "media.register.master.workflow.search.field.query.placeholder": "e.g. album_master_id / album / artist",
+        "media.register.master.workflow.search.action.search": "Search",
+        "media.register.master.workflow.search.action.clear": "Clear",
+        "media.register.master.workflow.search.action.target": "Merge",
+        "media.register.master.workflow.search.action.target_added": "Merge Added",
+        "media.register.master.workflow.search.action.representative": "Representative",
+        "media.register.master.workflow.search.action.representative_selected": "Representative Selected",
+        "media.register.master.workflow.search_results.title": "Search Results",
+        "media.register.master.workflow.search.table.merge": "Merge",
+        "media.register.master.workflow.search.table.representative": "Representative",
+        "media.register.master.workflow.search.state.prompt": "Search registered masters.",
+        "media.register.master.workflow.search.state.empty": "No registered masters found.",
+        "media.register.master.workflow.workspace.title": "Merge Workspace",
+        "media.register.master.workflow.representative.title": "Representative Master",
+        "media.register.master.workflow.representative.summary.none": "No representative master selected",
+        "media.register.master.workflow.representative.summary.selected": "Representative album_master_id={album_master_id}",
+        "media.register.master.workflow.representative.action.clear": "Clear Representative",
+        "media.register.master.workflow.representative.state.empty": "Select a representative master.",
+        "media.register.master.workflow.targets.title": "Merge Target Masters",
+        "media.register.master.workflow.targets.summary.none": "No merge targets selected",
+        "media.register.master.workflow.targets.summary.selected": "Merge targets {count}",
+        "media.register.master.workflow.targets.table.remove": "Remove",
+        "media.register.master.workflow.targets.state.empty": "The merge target list is empty.",
+        "media.register.master.workflow.action.run": "Run Merge",
+        "media.register.master.workflow.history.title": "Recent Merge History",
+        "media.register.master.workflow.history.summary.none": "No recent merge history",
+        "media.register.master.workflow.history.summary.loaded": "Recent history {count}",
+        "media.register.master.workflow.history.state.empty": "No recent merge history.",
+        "media.register.master.workflow.history.action.rollback": "Rollback Latest Merge",
+        "media.register.master.workflow.history.meta.by": "{user} · {created_at}",
+        "media.register.master.workflow.history.meta.members": "moved {moved_count} / target {target_count}",
+        "media.register.master.workflow.history.meta.target": "source {source_album_master_id} → target {target_album_master_id}",
+        "media.register.master.workflow.history.meta.rollback_ready": "Safe rollback available",
+        "media.register.master.workflow.history.meta.rollback_unavailable": "Safe rollback unavailable",
+        "media.register.master.workflow.history.meta.rolled_back": "Rolled back · {user} · {rolled_back_at}",
+        "media.register.master.workflow.history.status.failed": "Failed to load merge history",
+        "media.register.master.workflow.history.status.rollbacking": "Rolling back the latest merge safely...",
+        "media.register.master.workflow.history.status.rollback_failed": "Failed to roll back the latest merge",
+        "media.register.master.workflow.history.status.rolled_back": "Rolled back the latest merge: source {source_album_master_id} / target {target_album_master_id} / restored {restored_member_count}",
+        "media.register.master.workflow.history.confirm.rollback": "Roll back the latest merge?\n\nsource album_master_id={source_album_master_id}\ntarget album_master_id={target_album_master_id}",
+        "media.register.master.workflow.status.loading": "Loading registered masters...",
+        "media.register.master.workflow.status.loaded": "Registered masters loaded: {count}",
+        "media.register.master.workflow.status.failed": "Failed to load registered masters",
+        "media.register.master.workflow.status.no_representative": "Select a representative master first.",
+        "media.register.master.workflow.status.no_targets": "Select at least one merge target master.",
+        "media.register.master.workflow.status.cancelled": "Registered master merge cancelled.",
+        "media.register.master.workflow.status.merging": "Merging registered masters... representative={representative_id}, source_count={count}",
+        "media.register.master.workflow.status.done": "Registered master merge complete: merged {merged_count}, moved {moved_count}, representative album_master_id={representative_id}",
+        "media.register.master.workflow.status.partial": "Registered master merge partially failed: merged {merged_count}, failed {failed_count}, representative album_master_id={representative_id}{details}",
+        "media.register.master.workflow.confirm.run": "Merge into the representative master?\n\nRepresentative album_master_id={representative_id}\nMerge targets {count}\n\n{preview}{more}",
         "media.register.master.group.status.loading": "Loading saved groups...",
         "media.register.master.group.status.loaded": "Loaded groups: {count}",
         "media.register.master.group.status.failed": "Failed to load saved groups",
@@ -20045,7 +20291,7 @@
         "dashboard.selection.action.bulk_short": "一括",
         "dashboard.selection.sort_artist.label": "整列アーティスト名（マスター）",
         "dashboard.selection.sort_artist.note": "同じマスターに属する商品全体の五十音順に適用されます。",
-        "dashboard.selection.sort_artist.display_artist": "現在の表示名: {value}",
+        "dashboard.selection.sort_artist.display_artist": "元の表示名: {value}",
         "dashboard.selection.position_number": "{index}番",
         "dashboard.bulk.title": "一括修正",
         "dashboard.bulk.action.close": "閉じる",
@@ -21925,11 +22171,11 @@
         "common.table.status": "状態",
         "common.table.member_count": "メンバー数",
         "common.table.track_list": "曲リスト",
-        "manual.register_master.step1": "同じアルバムの複数商品を一つの内部マスターに束ねる必要があるときにこの画面を開きます。",
-        "manual.register_master.step2": "まず Discogs または ManiaDB のマスターを検索します。",
-        "manual.register_master.step3": "マスターを選び、必要なバージョンと所蔵商品を確認したあと、所蔵商品を一つの内部マスターへ束ねます。",
-        "manual.register_master.step4": "束ねた後は `メディア > 管理` で結果を確認し、不足するバージョンがあれば下の追加フローへ続けます。",
-        "manual.register_master.note": "例外キューの `マスターなし` から来た項目を整理するときに最もよく使います。",
+        "manual.register_master.step1": "登録済みの album_master を統合するときにこの画面を開きます。",
+        "manual.register_master.step2": "検索欄は一つで、統合対象と代表マスターの両方を探します。",
+        "manual.register_master.step3": "検索結果で `統合` を押して吸収対象を溜め、`代表` で最終マスターを一つ選びます。",
+        "manual.register_master.step4": "統合後はもう一度検索して、代表マスター基準で整理されたか確認します。",
+        "manual.register_master.note": "代表/統合対象の重複禁止は現在の作業セッション内だけに適用され、後続の別作業では同じマスターを再利用できます。",
         "media.register.detail.title": "単件登録（詳細選択）",
         "media.register.detail.subtitle": "検索は管理ホームで行い、この画面は登録中心で使います。",
         "media.register.detail.field.category.label": "カテゴリ",
@@ -22078,6 +22324,59 @@
         "media.register.master.merge.status.done": "内部マスター統合完了: merged {merged_count}件 / moved {moved_count}件 / target album_master_id={base_id}",
         "media.register.master.merge.status.partial": "内部マスター統合の一部が失敗しました: merged {merged_count}件 / failed {failed_count}件 / target album_master_id={base_id}{details}",
         "media.register.master.merge.status.queue_seeded": "統合候補キューを準備しました。基準マスターを確認してから再度保存するか統合を実行してください。",
+        "media.register.master.workflow.title": "登録マスター統合",
+        "media.register.master.workflow.subtitle": "DB に登録された album_master だけを検索し、統合対象を集めて代表マスター一つへ順番に統合します。",
+        "media.register.master.workflow.search.field.query.label": "登録マスター検索",
+        "media.register.master.workflow.search.field.query.placeholder": "例: album_master_id / アルバム名 / アーティスト名",
+        "media.register.master.workflow.search.action.search": "検索",
+        "media.register.master.workflow.search.action.clear": "初期化",
+        "media.register.master.workflow.search.action.target": "統合",
+        "media.register.master.workflow.search.action.target_added": "統合追加済み",
+        "media.register.master.workflow.search.action.representative": "代表",
+        "media.register.master.workflow.search.action.representative_selected": "代表選択済み",
+        "media.register.master.workflow.search_results.title": "検索結果",
+        "media.register.master.workflow.search.table.merge": "統合",
+        "media.register.master.workflow.search.table.representative": "代表",
+        "media.register.master.workflow.search.state.prompt": "登録マスターを検索してください。",
+        "media.register.master.workflow.search.state.empty": "検索結果がありません。",
+        "media.register.master.workflow.workspace.title": "統合ワークスペース",
+        "media.register.master.workflow.representative.title": "代表マスター",
+        "media.register.master.workflow.representative.summary.none": "選択された代表マスターがありません",
+        "media.register.master.workflow.representative.summary.selected": "代表 album_master_id={album_master_id}",
+        "media.register.master.workflow.representative.action.clear": "代表解除",
+        "media.register.master.workflow.representative.state.empty": "代表マスターを選択してください。",
+        "media.register.master.workflow.targets.title": "統合対象マスター",
+        "media.register.master.workflow.targets.summary.none": "選択された統合対象がありません",
+        "media.register.master.workflow.targets.summary.selected": "統合対象 {count}",
+        "media.register.master.workflow.targets.table.remove": "除外",
+        "media.register.master.workflow.targets.state.empty": "統合対象マスターが空です。",
+        "media.register.master.workflow.action.run": "統合実行",
+        "media.register.master.workflow.history.title": "最近の統合履歴",
+        "media.register.master.workflow.history.summary.none": "最近の統合履歴はありません",
+        "media.register.master.workflow.history.summary.loaded": "最近の履歴 {count}",
+        "media.register.master.workflow.history.state.empty": "最近の統合履歴がありません。",
+        "media.register.master.workflow.history.action.rollback": "最新1件を元に戻す",
+        "media.register.master.workflow.history.meta.by": "{user} · {created_at}",
+        "media.register.master.workflow.history.meta.members": "moved {moved_count} / target {target_count}",
+        "media.register.master.workflow.history.meta.target": "source {source_album_master_id} → target {target_album_master_id}",
+        "media.register.master.workflow.history.meta.rollback_ready": "安全に元へ戻せます",
+        "media.register.master.workflow.history.meta.rollback_unavailable": "安全に元へ戻せません",
+        "media.register.master.workflow.history.meta.rolled_back": "元に戻しました · {user} · {rolled_back_at}",
+        "media.register.master.workflow.history.status.failed": "統合履歴の取得に失敗しました",
+        "media.register.master.workflow.history.status.rollbacking": "最新の統合1件を安全に元へ戻しています...",
+        "media.register.master.workflow.history.status.rollback_failed": "最新の統合を元へ戻せませんでした",
+        "media.register.master.workflow.history.status.rolled_back": "最新の統合を元に戻しました: source {source_album_master_id} / target {target_album_master_id} / restored {restored_member_count}",
+        "media.register.master.workflow.history.confirm.rollback": "最新の統合1件を元に戻しますか？\n\nsource album_master_id={source_album_master_id}\ntarget album_master_id={target_album_master_id}",
+        "media.register.master.workflow.status.loading": "登録マスターを読み込み中...",
+        "media.register.master.workflow.status.loaded": "登録マスターの読み込み完了: {count}",
+        "media.register.master.workflow.status.failed": "登録マスターの読み込みに失敗しました",
+        "media.register.master.workflow.status.no_representative": "先に代表マスターを選択してください。",
+        "media.register.master.workflow.status.no_targets": "統合対象マスターを1件以上選択してください。",
+        "media.register.master.workflow.status.cancelled": "登録マスター統合をキャンセルしました。",
+        "media.register.master.workflow.status.merging": "登録マスターを統合中... representative={representative_id}, source_count={count}",
+        "media.register.master.workflow.status.done": "登録マスター統合完了: merged {merged_count}件 / moved {moved_count}件 / representative album_master_id={representative_id}",
+        "media.register.master.workflow.status.partial": "登録マスター統合の一部が失敗しました: merged {merged_count}件 / failed {failed_count}件 / representative album_master_id={representative_id}{details}",
+        "media.register.master.workflow.confirm.run": "代表マスターへ統合しますか？\n\n代表 album_master_id={representative_id}\n統合対象 {count}\n\n{preview}{more}",
         "media.register.master.group.status.loading": "保存済みグループを読み込み中...",
         "media.register.master.group.status.loaded": "読み込み完了: {count}",
         "media.register.master.group.status.failed": "保存済みグループの取得に失敗しました",
@@ -43400,6 +43699,454 @@
       }
     }
 
+    function normalizeRegisteredMasterMergeId(value) {
+      const id = Number(value || 0);
+      return Number.isInteger(id) && id > 0 ? id : 0;
+    }
+
+    function registeredMasterMergeTargetIds() {
+      return (registeredMasterMergeTargetItems || [])
+        .map((row) => normalizeRegisteredMasterMergeId(row?.id))
+        .filter((value) => value > 0);
+    }
+
+    function isRegisteredMasterMergeTargetId(albumMasterId) {
+      const normalizedId = normalizeRegisteredMasterMergeId(albumMasterId);
+      return normalizedId > 0 && registeredMasterMergeTargetIds().includes(normalizedId);
+    }
+
+    function registeredMasterMergeRepresentativeId() {
+      return normalizeRegisteredMasterMergeId(registeredMasterMergeRepresentativeItem?.id);
+    }
+
+    function isRegisteredMasterMergeRepresentativeId(albumMasterId) {
+      const normalizedId = normalizeRegisteredMasterMergeId(albumMasterId);
+      return normalizedId > 0 && registeredMasterMergeRepresentativeId() === normalizedId;
+    }
+
+    function registeredMasterMergeRowSnapshot(row) {
+      const rowId = normalizeRegisteredMasterMergeId(row?.id);
+      if (!rowId) return null;
+      return {
+        id: rowId,
+        source_code: String(row?.source_code || "-"),
+        source_master_id: String(row?.source_master_id || "-"),
+        title: String(row?.title || "-"),
+        artist_or_brand: String(row?.artist_or_brand || "-"),
+        release_year: row?.release_year ?? null,
+        member_count: Number(row?.member_count || 0),
+        cover_image_url: String(row?.cover_image_url || "").trim() || null,
+      };
+    }
+
+    function registeredMasterMergeHeadingLabel(row) {
+      const title = resolveAlbumMasterName(row);
+      const artist = String(row?.artist_or_brand || "").trim();
+      return artist ? `${artist} - ${title}` : title;
+    }
+
+    function registeredMasterMergeCardHtml(row, options = {}) {
+      const title = registeredMasterMergeHeadingLabel(row);
+      const rowId = normalizeRegisteredMasterMergeId(row?.id);
+      const coverUrl = normalizeRenderableCoverUrl(row?.cover_image_url);
+      const cover = coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+        : escapeHtml(t("media.manage.related_versions.state.no_cover"));
+      const actionsHtml = String(options.actionsHtml || "").trim();
+      const contextBadge = String(options.contextBadge || "").trim();
+      const order = Number(options.order || 0);
+      const orderBadge = order > 0
+        ? `<span class="registered-master-merge-order-badge">#${order}</span>`
+        : "";
+      const contextBadgeHtml = contextBadge
+        ? `<span class="registered-master-merge-context-badge">${escapeHtml(contextBadge)}</span>`
+        : "";
+      return `
+        <div class="result-item album-result registered-master-merge-card" data-registered-master-merge-row-id="${rowId}">
+          <div class="album-result-cover">${cover}</div>
+          <div class="album-result-main">
+            <div class="registered-master-merge-head">
+              <div>
+                <strong class="registered-master-merge-title">${escapeHtml(title)}</strong>
+                <div class="registered-master-merge-meta">
+                  <span class="tag">${escapeHtml(String(row?.source_code || "-"))}</span>
+                  <span class="tag alt">master ${escapeHtml(String(row?.source_master_id || "-"))}</span>
+                  <span>album_master_id: ${rowId || "-"}</span>
+                  <span>year: ${row?.release_year ?? "-"}</span>
+                  <span>${escapeHtml(t("common.table.member_count"))}: ${escapeHtml(countWithUnit(Number(row?.member_count || 0)))}</span>
+                </div>
+              </div>
+              <div class="registered-master-merge-actions">${orderBadge}${contextBadgeHtml}${actionsHtml}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function registeredMasterMergeRowHtml(row) {
+      const rowId = normalizeRegisteredMasterMergeId(row?.id);
+      const representativeId = registeredMasterMergeRepresentativeId();
+      const isTarget = isRegisteredMasterMergeTargetId(rowId);
+      const isRepresentative = isRegisteredMasterMergeRepresentativeId(rowId);
+      const representativeLocked = representativeId > 0 && representativeId !== rowId;
+      const addDisabled = isTarget || isRepresentative;
+      const representativeDisabled = representativeLocked || isRepresentative;
+      const addLabel = isTarget
+        ? t("media.register.master.workflow.search.action.target_added")
+        : t("media.register.master.workflow.search.action.target");
+      const representativeLabel = isRepresentative
+        ? t("media.register.master.workflow.search.action.representative_selected")
+        : t("media.register.master.workflow.search.action.representative");
+      const actionsHtml = `
+        <button class="btn ghost tiny" type="button" data-registered-master-merge-add-id="${rowId}" ${addDisabled ? "disabled" : ""}>${escapeHtml(addLabel)}</button>
+        <button class="btn ghost tiny" type="button" data-registered-master-merge-representative-id="${rowId}" ${representativeDisabled ? "disabled" : ""}>${escapeHtml(representativeLabel)}</button>
+      `;
+      return registeredMasterMergeCardHtml(row, { actionsHtml });
+    }
+
+    function renderRegisteredMasterMergeRows(items) {
+      registeredMasterMergeSearchResults = Array.isArray(items) ? items : [];
+      const count = $("registeredMasterMergeCount");
+      if (count) {
+        count.textContent = countWithUnit(registeredMasterMergeSearchResults.length);
+      }
+      const body = $("registeredMasterMergeBody");
+      if (!body) return;
+      if (!registeredMasterMergeSearchResults.length) {
+        const emptyKey = registeredMasterMergeHasSearched
+          ? "media.register.master.workflow.search.state.empty"
+          : "media.register.master.workflow.search.state.prompt";
+        body.innerHTML = `<div class='muted'>${escapeHtml(t(emptyKey))}</div>`;
+        return;
+      }
+      body.innerHTML = registeredMasterMergeSearchResults.map(registeredMasterMergeRowHtml).join("");
+    }
+
+    function renderRegisteredMasterMergeRepresentative() {
+      const summary = $("registeredMasterMergeRepresentativeSummary");
+      const body = $("registeredMasterMergeRepresentativeBody");
+      const representative = registeredMasterMergeRepresentativeItem;
+      const representativeId = registeredMasterMergeRepresentativeId();
+      if (summary) {
+        summary.textContent = representativeId
+          ? t("media.register.master.workflow.representative.summary.selected", {
+              album_master_id: representativeId,
+            })
+          : t("media.register.master.workflow.representative.summary.none");
+      }
+      if (!body) return;
+      if (!representativeId || !representative) {
+        body.innerHTML = `<div class='muted'>${escapeHtml(t("media.register.master.workflow.representative.state.empty"))}</div>`;
+        return;
+      }
+      const actionsHtml = `<button class="btn ghost tiny" type="button" data-registered-master-merge-clear-representative="1">${escapeHtml(t("media.register.master.workflow.representative.action.clear"))}</button>`;
+      body.innerHTML = registeredMasterMergeCardHtml(representative, {
+        actionsHtml,
+        contextBadge: t("media.register.master.workflow.search.action.representative_selected"),
+      });
+    }
+
+    function renderRegisteredMasterMergeTargets() {
+      const summary = $("registeredMasterMergeTargetSummary");
+      const body = $("registeredMasterMergeTargetBody");
+      const targetIds = registeredMasterMergeTargetIds();
+      if (summary) {
+        summary.textContent = targetIds.length
+          ? t("media.register.master.workflow.targets.summary.selected", {
+              count: countWithUnit(targetIds.length),
+            })
+          : t("media.register.master.workflow.targets.summary.none");
+      }
+      if (!body) return;
+      if (!registeredMasterMergeTargetItems.length) {
+        body.innerHTML = `<div class='muted'>${escapeHtml(t("media.register.master.workflow.targets.state.empty"))}</div>`;
+        return;
+      }
+      body.innerHTML = registeredMasterMergeTargetItems.map((row, index) => {
+        const rowId = normalizeRegisteredMasterMergeId(row?.id);
+        const actionsHtml = `<button class="btn ghost tiny" type="button" data-registered-master-merge-remove-id="${rowId}">${escapeHtml(t("media.register.master.workflow.targets.table.remove"))}</button>`;
+        return registeredMasterMergeCardHtml(row, {
+          actionsHtml,
+          order: index + 1,
+          contextBadge: t("media.register.master.workflow.search.action.target_added"),
+        });
+      }).join("");
+    }
+
+    function renderRegisteredMasterMergeHistory() {
+      const summary = $("registeredMasterMergeHistorySummary");
+      const body = $("registeredMasterMergeHistoryBody");
+      const items = Array.isArray(registeredMasterMergeHistoryItems) ? registeredMasterMergeHistoryItems : [];
+      if (summary) {
+        summary.textContent = items.length
+          ? t("media.register.master.workflow.history.summary.loaded", {
+              count: countWithUnit(items.length),
+            })
+          : t("media.register.master.workflow.history.summary.none");
+      }
+      if (!body) return;
+      if (!items.length) {
+        body.innerHTML = `<div class='muted'>${escapeHtml(t("media.register.master.workflow.history.state.empty"))}</div>`;
+        return;
+      }
+      body.innerHTML = items.map((entry, index) => {
+        const entryId = Number(entry?.id || 0);
+        const isLatest = index === 0 && !String(entry?.rolled_back_at || "").trim();
+        const rollbackAvailable = Boolean(entry?.rollback_available);
+        const rollbackBlockedReason = String(entry?.rollback_blocked_reason || "").trim();
+        const rollbackMeta = String(entry?.rolled_back_at || "").trim()
+          ? t("media.register.master.workflow.history.meta.rolled_back", {
+              rolled_back_at: formatDateTimeCompact(entry.rolled_back_at),
+              user: String(entry?.rolled_back_by || "").trim() || "-",
+            })
+          : rollbackAvailable
+            ? t("media.register.master.workflow.history.meta.rollback_ready")
+            : (rollbackBlockedReason || t("media.register.master.workflow.history.meta.rollback_unavailable"));
+        const actionsHtml = isLatest
+          ? `<button class="btn ghost tiny" type="button" data-registered-master-merge-rollback-id="${entry.id}" ${rollbackAvailable ? "" : "disabled"}>${escapeHtml(t("media.register.master.workflow.history.action.rollback"))}</button>`
+          : "";
+        return `
+          <div class="result-item registered-master-merge-history-item" data-registered-master-merge-history-id="${entryId}">
+            <div class="registered-master-merge-history-head">
+              <strong>${escapeHtml(`${String(entry?.source_title || "-")} → ${String(entry?.target_title || "-")}`)}</strong>
+              <div class="registered-master-merge-actions">${actionsHtml}</div>
+            </div>
+            <div class="registered-master-merge-history-meta">
+              <span>${escapeHtml(t("media.register.master.workflow.history.meta.by", {
+                user: String(entry?.merged_by || "").trim() || "-",
+                created_at: formatDateTimeCompact(entry?.created_at || ""),
+              }))}</span>
+              <span>${escapeHtml(t("media.register.master.workflow.history.meta.members", {
+                moved_count: countWithUnit(Number(entry?.moved_member_count || 0)),
+                target_count: countWithUnit(Number(entry?.target_member_count || 0)),
+              }))}</span>
+              <span>${escapeHtml(t("media.register.master.workflow.history.meta.target", {
+                source_album_master_id: Number(entry?.source_album_master_id || 0),
+                target_album_master_id: Number(entry?.target_album_master_id || 0),
+              }))}</span>
+              <span>${escapeHtml(rollbackMeta)}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function syncRegisteredMasterMergeUi() {
+      renderRegisteredMasterMergeRepresentative();
+      renderRegisteredMasterMergeTargets();
+      renderRegisteredMasterMergeHistory();
+      renderRegisteredMasterMergeRows(registeredMasterMergeSearchResults);
+      const runBtn = $("registeredMasterMergeRunBtn");
+      if (runBtn) {
+        runBtn.disabled = !registeredMasterMergeRepresentativeId() || !registeredMasterMergeTargetIds().length;
+      }
+    }
+
+    function addRegisteredMasterMergeTarget(row) {
+      const snapshot = registeredMasterMergeRowSnapshot(row);
+      const rowId = normalizeRegisteredMasterMergeId(snapshot?.id);
+      if (!rowId || isRegisteredMasterMergeRepresentativeId(rowId) || isRegisteredMasterMergeTargetId(rowId)) {
+        return;
+      }
+      registeredMasterMergeTargetItems.push(snapshot);
+      syncRegisteredMasterMergeUi();
+    }
+
+    function setRegisteredMasterMergeRepresentative(row) {
+      const snapshot = registeredMasterMergeRowSnapshot(row);
+      const rowId = normalizeRegisteredMasterMergeId(snapshot?.id);
+      if (!rowId || !snapshot) return;
+      registeredMasterMergeRepresentativeItem = {
+        id: rowId,
+        source_code: snapshot.source_code,
+        source_master_id: snapshot.source_master_id,
+        title: snapshot.title,
+        artist_or_brand: snapshot.artist_or_brand,
+        release_year: snapshot.release_year,
+        member_count: snapshot.member_count,
+        cover_image_url: snapshot.cover_image_url,
+      };
+      registeredMasterMergeTargetItems = registeredMasterMergeTargetItems.filter(
+        (item) => normalizeRegisteredMasterMergeId(item?.id) !== rowId
+      );
+      syncRegisteredMasterMergeUi();
+    }
+
+    function removeRegisteredMasterMergeTarget(albumMasterId) {
+      const rowId = normalizeRegisteredMasterMergeId(albumMasterId);
+      if (!rowId) return;
+      registeredMasterMergeTargetItems = registeredMasterMergeTargetItems.filter(
+        (item) => normalizeRegisteredMasterMergeId(item?.id) !== rowId
+      );
+      syncRegisteredMasterMergeUi();
+    }
+
+    function clearRegisteredMasterMergeRepresentative() {
+      registeredMasterMergeRepresentativeItem = null;
+      syncRegisteredMasterMergeUi();
+    }
+
+    function clearRegisteredMasterMergeSearch() {
+      registeredMasterMergeHasSearched = false;
+      registeredMasterMergeSearchResults = [];
+      if ($("registeredMasterMergeQuery")) $("registeredMasterMergeQuery").value = "";
+      setStatus("registeredMasterMergeStatus", "ok", "");
+      syncRegisteredMasterMergeUi();
+    }
+
+    async function searchRegisteredAlbumMastersForMerge() {
+      const query = $("registeredMasterMergeQuery").value.trim();
+      const params = new URLSearchParams({ limit: "80", media_only: "true" });
+      if (query) params.set("q", query);
+      registeredMasterMergeHasSearched = true;
+
+      try {
+        setStatus("registeredMasterMergeStatus", "ok", t("media.register.master.workflow.status.loading"));
+        const res = await fetch(`/album-masters?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.register.master.workflow.status.failed"));
+        registeredMasterMergeSearchResults = Array.isArray(data) ? data : [];
+        syncRegisteredMasterMergeUi();
+        setStatus("registeredMasterMergeStatus", "ok", t("media.register.master.workflow.status.loaded", {
+          count: countWithUnit(registeredMasterMergeSearchResults.length),
+        }));
+      } catch (err) {
+        registeredMasterMergeSearchResults = [];
+        syncRegisteredMasterMergeUi();
+        setStatus("registeredMasterMergeStatus", "err", err.message);
+      }
+    }
+
+    async function loadRegisteredMasterMergeHistory() {
+      try {
+        const res = await fetch("/album-masters/merge-history?limit=10");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.register.master.workflow.history.status.failed"));
+        registeredMasterMergeHistoryItems = Array.isArray(data) ? data : [];
+        syncRegisteredMasterMergeUi();
+      } catch (err) {
+        registeredMasterMergeHistoryItems = [];
+        syncRegisteredMasterMergeUi();
+        setStatus("registeredMasterMergeStatus", "err", err.message);
+      }
+    }
+
+    async function runRegisteredAlbumMasterMerge() {
+      const targetIds = registeredMasterMergeTargetIds();
+      const representativeId = registeredMasterMergeRepresentativeId();
+      if (!representativeId) {
+        setStatus("registeredMasterMergeStatus", "err", t("media.register.master.workflow.status.no_representative"));
+        return;
+      }
+      if (!targetIds.length) {
+        setStatus("registeredMasterMergeStatus", "err", t("media.register.master.workflow.status.no_targets"));
+        return;
+      }
+      const previewRows = registeredMasterMergeTargetItems
+        .slice(0, 5)
+        .map((row, index) => `${index + 1}. ${registeredMasterMergeHeadingLabel(row)} (album_master_id=${normalizeRegisteredMasterMergeId(row?.id)})`);
+      const remainingCount = Math.max(0, targetIds.length - previewRows.length);
+      const confirmText = t("media.register.master.workflow.confirm.run", {
+        representative_id: representativeId,
+        count: countWithUnit(targetIds.length),
+        preview: previewRows.join("\n") || "-",
+        more: remainingCount > 0
+          ? `\n+ ${countWithUnit(remainingCount)}`
+          : "",
+      });
+      if (!window.confirm(confirmText)) {
+        setStatus("registeredMasterMergeStatus", "ok", t("media.register.master.workflow.status.cancelled"));
+        return;
+      }
+
+      let mergedCount = 0;
+      let movedCount = 0;
+      const failures = [];
+      const failedIdSet = new Set();
+      try {
+        setStatus("registeredMasterMergeStatus", "ok", t("media.register.master.workflow.status.merging", {
+          representative_id: representativeId,
+          count: countWithUnit(targetIds.length),
+        }));
+        for (const sourceId of targetIds) {
+          if (sourceId === representativeId) continue;
+          try {
+            const res = await fetch(`/album-masters/${sourceId}/merge`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ target_album_master_id: representativeId }),
+            });
+            const data = await safeJson(res);
+            if (!res.ok) throw new Error(data.detail || t("media.register.direct.duplicate.merge_failed"));
+            mergedCount += Number(data?.merged === false ? 0 : 1);
+            movedCount += Number(data?.moved_member_count || 0);
+          } catch (err) {
+            failedIdSet.add(sourceId);
+            failures.push(`- ${sourceId}: ${err.message}`);
+          }
+        }
+        registeredMasterMergeTargetItems = registeredMasterMergeTargetItems.filter((item) => {
+          const rowId = normalizeRegisteredMasterMergeId(item?.id);
+          return rowId > 0 && failedIdSet.has(rowId);
+        });
+        if (registeredMasterMergeHasSearched) {
+          await searchRegisteredAlbumMastersForMerge();
+        } else {
+          syncRegisteredMasterMergeUi();
+        }
+        await loadRegisteredMasterMergeHistory();
+        if (failures.length) {
+          setStatus("registeredMasterMergeStatus", "err", t("media.register.master.workflow.status.partial", {
+            merged_count: formatCount(mergedCount),
+            failed_count: formatCount(failures.length),
+            representative_id: representativeId,
+            details: `\n${failures.join("\n")}`,
+          }));
+          return;
+        }
+        setStatus("registeredMasterMergeStatus", "ok", t("media.register.master.workflow.status.done", {
+          merged_count: formatCount(mergedCount),
+          moved_count: formatCount(movedCount),
+          representative_id: representativeId,
+        }));
+      } catch (err) {
+        setStatus("registeredMasterMergeStatus", "err", err.message);
+      }
+    }
+
+    async function rollbackLatestRegisteredAlbumMasterMerge() {
+      const latestEntry = Array.isArray(registeredMasterMergeHistoryItems) ? registeredMasterMergeHistoryItems[0] : null;
+      if (!latestEntry || !Number(latestEntry?.id || 0)) return;
+      const confirmText = t("media.register.master.workflow.history.confirm.rollback", {
+        source_album_master_id: Number(latestEntry?.source_album_master_id || 0),
+        target_album_master_id: Number(latestEntry?.target_album_master_id || 0),
+      });
+      if (!window.confirm(confirmText)) return;
+      try {
+        setStatus("registeredMasterMergeStatus", "ok", t("media.register.master.workflow.history.status.rollbacking"));
+        const res = await fetch("/album-masters/merge-history/latest/rollback", {
+          method: "POST",
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.register.master.workflow.history.status.rollback_failed"));
+        registeredMasterMergeRepresentativeItem = null;
+        registeredMasterMergeTargetItems = [];
+        if (registeredMasterMergeHasSearched) {
+          await searchRegisteredAlbumMastersForMerge();
+        } else {
+          syncRegisteredMasterMergeUi();
+        }
+        await loadRegisteredMasterMergeHistory();
+        setStatus("registeredMasterMergeStatus", "ok", t("media.register.master.workflow.history.status.rolled_back", {
+          source_album_master_id: Number(data?.source_album_master_id || 0),
+          target_album_master_id: Number(data?.target_album_master_id || 0),
+          restored_member_count: countWithUnit(Number(data?.restored_member_count || 0)),
+        }));
+      } catch (err) {
+        setStatus("registeredMasterMergeStatus", "err", err.message);
+      }
+    }
+
     function albumMasterGroupRowHtml(row) {
       return `
         <tr>
@@ -46006,6 +46753,48 @@
         renderMasterMergeQueueRows();
       }
     });
+    $("registeredMasterMergeSearchBtn").addEventListener("click", searchRegisteredAlbumMastersForMerge);
+    $("registeredMasterMergeClearBtn").addEventListener("click", clearRegisteredMasterMergeSearch);
+    $("registeredMasterMergeRunBtn").addEventListener("click", runRegisteredAlbumMasterMerge);
+    $("registeredMasterMergeQuery").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      searchRegisteredAlbumMastersForMerge();
+    });
+    $("registeredMasterMergeBody").addEventListener("click", (e) => {
+      const addBtn = e.target.closest("[data-registered-master-merge-add-id]");
+      if (addBtn) {
+        const rowId = normalizeRegisteredMasterMergeId(addBtn.getAttribute("data-registered-master-merge-add-id"));
+        const row = registeredMasterMergeSearchResults.find((item) => normalizeRegisteredMasterMergeId(item?.id) === rowId);
+        if (!row) return;
+        addRegisteredMasterMergeTarget(row);
+        return;
+      }
+      const representativeBtn = e.target.closest("[data-registered-master-merge-representative-id]");
+      if (!representativeBtn) return;
+      const rowId = normalizeRegisteredMasterMergeId(representativeBtn.getAttribute("data-registered-master-merge-representative-id"));
+      const row = registeredMasterMergeSearchResults.find((item) => normalizeRegisteredMasterMergeId(item?.id) === rowId);
+      if (!row) return;
+      setRegisteredMasterMergeRepresentative(row);
+    });
+    $("registeredMasterMergeRepresentativeBody").addEventListener("click", (e) => {
+      const clearBtn = e.target.closest("[data-registered-master-merge-clear-representative]");
+      if (!clearBtn) return;
+      clearRegisteredMasterMergeRepresentative();
+    });
+    $("registeredMasterMergeTargetBody").addEventListener("click", (e) => {
+      const removeBtn = e.target.closest("[data-registered-master-merge-remove-id]");
+      if (!removeBtn) return;
+      const rowId = normalizeRegisteredMasterMergeId(removeBtn.getAttribute("data-registered-master-merge-remove-id"));
+      removeRegisteredMasterMergeTarget(rowId);
+    });
+    $("registeredMasterMergeHistoryBody").addEventListener("click", (e) => {
+      const rollbackBtn = e.target.closest("[data-registered-master-merge-rollback-id]");
+      if (!rollbackBtn) return;
+      rollbackLatestRegisteredAlbumMasterMerge();
+    });
+    syncRegisteredMasterMergeUi();
+    loadRegisteredMasterMergeHistory();
     $("masterGroupLoadBtn").addEventListener("click", loadAlbumMasterGroups);
     $("trackMapLoadBtn").addEventListener("click", loadTrackMappings);
     $("trackMapSaveBtn").addEventListener("click", saveTrackMapping);

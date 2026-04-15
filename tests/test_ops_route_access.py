@@ -2945,6 +2945,130 @@ def test_owned_items_list_backfills_missing_released_date_from_source_snapshot(a
     assert payload[0]["released_date"] == "2003-12-20"
 
 
+def test_owned_items_list_includes_master_sort_artist_name(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "list_owned_items",
+        lambda **kwargs: [
+            {
+                "id": 642,
+                "category": "CD",
+                "size_group": "STD",
+                "preferred_storage_size_group": "STD",
+                "quantity": 1,
+                "is_second_hand": 0,
+                "signature_type": "NONE",
+                "source_code": "DISCOGS",
+                "source_external_id": "123",
+                "created_at": "2026-04-15T14:44:25+00:00",
+                "updated_at": "2026-04-15T14:44:25+00:00",
+                "status": "IN_COLLECTION",
+                "linked_album_master_id": 589,
+                "domain_code": "KOREA",
+                "artist_or_brand": "Shinhwa",
+                "master_artist_or_brand": "Shinhwa",
+                "master_sort_artist_name": "신화",
+            }
+        ],
+    )
+    monkeypatch.setattr(main_module.db, "count_owned_items", lambda **kwargs: 1)
+
+    res = admin_client.get("/owned-items", params={"category": "CD"})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload[0]["master_sort_artist_name"] == "신화"
+
+
+def test_storage_slot_owned_items_include_master_sort_artist_name(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module.db,
+        "get_storage_slot",
+        lambda storage_slot_id: {"id": storage_slot_id, "slot_code": "CD-138"},
+    )
+    monkeypatch.setattr(
+        main_module.db,
+        "list_owned_items_for_storage_slot",
+        lambda **kwargs: [
+            {
+                "id": 618,
+                "category": "CD",
+                "size_group": "STD",
+                "preferred_storage_size_group": "STD",
+                "quantity": 1,
+                "is_second_hand": 0,
+                "signature_type": "NONE",
+                "source_code": "DISCOGS",
+                "source_external_id": "456",
+                "created_at": "2026-04-15T14:44:32+00:00",
+                "updated_at": "2026-04-15T14:44:32+00:00",
+                "status": "IN_COLLECTION",
+                "storage_slot_id": 138,
+                "linked_album_master_id": 569,
+                "domain_code": "KOREA",
+                "artist_or_brand": "Sinawe",
+                "master_artist_or_brand": "Sinawe",
+                "master_sort_artist_name": "시나위",
+            }
+        ],
+    )
+
+    res = admin_client.get("/storage-slots/138/owned-items")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload[0]["master_sort_artist_name"] == "시나위"
+
+
+def test_owned_items_route_populates_master_sort_artist_name_from_db(admin_client):
+    owned_item_id = db.insert_owned_item(
+        {
+            "category": "CD",
+            "quantity": 1,
+            "size_group": "STD",
+            "status": "IN_COLLECTION",
+            "domain_code": "KOREA",
+            "item_name_override": "Brand New QA",
+            "storage_slot_id": None,
+            "music_detail": {
+                "format_name": "CD",
+                "artist_or_brand": "Shinhwa",
+                "label_name": "QA Label",
+                "catalog_no": "SH-007",
+                "barcode": "8800000091642",
+                "track_list": ["Hero"],
+                "track_items": [{"display": "1. Hero", "title": "Hero"}],
+            },
+        }
+    )
+    album_master_id = db.upsert_album_master(
+        source_code="DISCOGS",
+        source_master_id="qa-shinhwa-589",
+        title="Brand New QA",
+        artist_or_brand="Shinhwa",
+        domain_code="KOREA",
+        release_year=2004,
+        raw={},
+    )
+    db.update_album_master_sort_artist_name(album_master_id, "신화")
+    db.set_owned_item_linked_album_master(owned_item_id, album_master_id)
+
+    res = admin_client.get(
+        "/owned-items",
+        params={
+            "category": "CD",
+            "status": "IN_COLLECTION",
+            "slot_state": "UNSLOTTED",
+            "item_name": "Brand New QA",
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    target = next(item for item in payload if item["id"] == owned_item_id)
+    assert target["master_sort_artist_name"] == "신화"
+
+
 def test_admin_can_fetch_discogs_cover_preview(admin_client, monkeypatch, tmp_path):
     cover_path = tmp_path / "discogs-preview.jpg"
     expected = b"fake-discogs-cover-preview"
