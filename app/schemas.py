@@ -39,7 +39,7 @@ MusicCategory = Literal["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_RE
 SourceLinkState = Literal["ANY", "MISSING", "LINKED"]
 AuthRole = Literal["ADMIN", "OPERATOR"]
 CustomerTrackRequestStatus = Literal["REQUESTED", "PLAYING", "RETURNED", "CANCELLED"]
-PurchaseImportVendor = Literal["SAILMUSIC", "AMAZON", "EBAY", "YES24", "OTHER"]
+PurchaseImportVendor = Literal["SAILMUSIC", "AMAZON", "EBAY", "ALADIN", "YES24", "OTHER"]
 PurchaseImportSourceType = Literal["EMAIL_HTML", "EMAIL_TEXT", "FILE_UPLOAD", "MANUAL"]
 PurchaseImportStatus = Literal["PENDING", "CREATED", "IGNORED"]
 CabinetSortPolicy = Literal["ARTIST_RELEASE_TITLE", "LABEL_ID"]
@@ -570,6 +570,8 @@ class PurchaseImportCreateResponse(BaseModel):
 class AlbumMasterSearchRequest(BaseModel):
     source: AlbumMasterSource = "AUTO"
     query: str = Field(min_length=1, max_length=200)
+    artist_or_brand: str | None = None
+    title: str | None = None
     limit: int = Field(default=10, ge=1, le=50)
 
 
@@ -695,7 +697,38 @@ class AlbumMasterMergeResponse(BaseModel):
     target_album_master_id: int
     moved_member_count: int = 0
     target_member_count: int = 0
+    merge_history_id: int | None = None
     merged: bool = True
+
+
+class AlbumMasterMergeHistoryItem(BaseModel):
+    id: int
+    source_album_master_id: int
+    target_album_master_id: int
+    source_code: str | None = None
+    source_master_id: str | None = None
+    source_title: str | None = None
+    source_artist_or_brand: str | None = None
+    target_title: str | None = None
+    target_artist_or_brand: str | None = None
+    moved_member_count: int = 0
+    target_member_count: int = 0
+    source_owned_item_ids: list[int] = Field(default_factory=list)
+    overlap_owned_item_ids: list[int] = Field(default_factory=list)
+    merged_by: str | None = None
+    created_at: str | None = None
+    rolled_back_at: str | None = None
+    rolled_back_by: str | None = None
+    rollback_available: bool = False
+    rollback_blocked_reason: str | None = None
+
+
+class AlbumMasterMergeRollbackResponse(BaseModel):
+    merge_history_id: int
+    source_album_master_id: int
+    target_album_master_id: int
+    restored_member_count: int = 0
+    rolled_back: bool = True
 
 
 class OwnedItemAutoMasterResponse(BaseModel):
@@ -968,6 +1001,7 @@ class OwnedItemListItem(BaseModel):
     released_date: str | None = None
     master_title: str | None = None
     master_artist_or_brand: str | None = None
+    master_sort_artist_name: str | None = None
     master_release_year: int | None = None
     barcode: str | None = None
     label_name: str | None = None
@@ -1143,6 +1177,14 @@ class RelatedAlbumVersionsResponse(BaseModel):
     title: str | None = None
     artist_or_brand: str | None = None
     sort_artist_name: str | None = None
+    release_year: int | None = None
+    domain_code: DomainCode | None = None
+    source_release_year: int | None = None
+    source_domain_code: DomainCode | None = None
+    override_release_year: int | None = None
+    override_domain_code: DomainCode | None = None
+    override_note: str | None = None
+    has_manual_correction: bool = False
     items: list[OwnedItemListItem] = Field(default_factory=list)
 
 
@@ -1153,6 +1195,24 @@ class AlbumMasterSortArtistUpdateRequest(BaseModel):
 class AlbumMasterSortArtistUpdateResponse(BaseModel):
     album_master_id: int
     sort_artist_name: str | None = None
+
+
+class AlbumMasterCorrectionUpdateRequest(BaseModel):
+    release_year: int | None = Field(default=None, ge=1900, le=2100)
+    domain_code: DomainCode | None = None
+    override_note: str | None = None
+
+
+class AlbumMasterCorrectionUpdateResponse(BaseModel):
+    album_master_id: int
+    release_year: int | None = None
+    domain_code: DomainCode | None = None
+    source_release_year: int | None = None
+    source_domain_code: DomainCode | None = None
+    override_release_year: int | None = None
+    override_domain_code: DomainCode | None = None
+    override_note: str | None = None
+    has_manual_correction: bool = False
 
 
 class OwnedItemDetailResponse(BaseModel):

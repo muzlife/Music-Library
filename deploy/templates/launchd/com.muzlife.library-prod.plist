@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.muzlife.library-prod</string>
+
+  <key>WorkingDirectory</key>
+  <string>__APP_ROOT__</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__APP_ROOT__/scripts/run_api.sh</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>__APP_ROOT__/runtime/logs/launchd.prod.stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__APP_ROOT__/runtime/logs/launchd.prod.stderr.log</string>
+</dict>
+</plist>

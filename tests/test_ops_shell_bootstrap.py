@@ -2925,6 +2925,12 @@ def test_index_shell_density_sync_clears_compact_header_classes_to_keep_shell_he
     assert "syncShellDensityClasses();" in switch_block
 
 
+def test_index_shell_compact_density_flag_present():
+    html = read_static_html("index.html")
+    assert 'data-shell-density="compact"' in html
+    assert 'document.body.dataset.shellDensity = "compact";' in html
+
+
 def test_index_ops_home_hero_uses_top_aligned_side_and_matches_admin_compact_title_scale():
     html = read_static_html("index.html")
     ops_main_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
@@ -2962,11 +2968,9 @@ def test_index_admin_docs_box_becomes_compact_trigger_panel():
     assert "min-width: 96px;" in link_block
     assert "line-height: 1.1;" in link_block
     assert "font-size: 0.72rem;" in link_block
-    hero_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert 'href="/tool-docs/erd-summary"' in hero_block
-    assert 'href="/tool-docs/erd-detail"' in hero_block
-    assert 'href="/tool-docs/manual"' in hero_block
-    assert 'href="/tool-docs/go-live-checklist"' not in hero_block
+    utility_start = '    <div id="shellUtilityBar" class="shell-utility" style="display:none;">'
+    utility_block = html.split(utility_start, 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
 
 
 def test_index_uses_shared_page_help_drawer_for_first_wave_screens():
@@ -3029,14 +3033,15 @@ def test_index_extends_shared_page_help_drawer_to_second_wave_screens():
 
 def test_index_ops_home_compacts_hero_art_and_focus_chip_grid():
     html = read_static_html("index.html")
-    hero_block = html.split(".ops-home-hero {", 1)[1].split("}", 1)[0]
+    hero_block = html.split(".ops-home-hero--compact {", 1)[1].split("}", 1)[0]
     main_regular_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
     compact_block = html.split(".ops-home-hero--compact .ops-home-hero-main {", 1)[1].split("}", 1)[0]
     art_block = html.split(".ops-home-hero--compact .ops-home-hero-art {", 1)[1].split("}", 1)[0]
     copy_block = html.split(".ops-home-hero--compact .ops-home-hero-copy {", 1)[1].split("}", 1)[0]
     subtitle_block = html.split(".ops-home-hero--compact .ops-home-hero-copy p {", 1)[1].split("}", 1)[0]
-    assert "padding: 9px 12px;" in hero_block
-    assert "gap: 6px;" in main_regular_block
+    assert "padding: var(--shell-density-hero-padding);" in hero_block
+    assert "gap: var(--shell-density-hero-gap);" in hero_block
+    assert "gap: 3px;" in main_regular_block
     assert "grid-template-columns: minmax(0, 1fr) auto;" in compact_block
     assert "display: none;" in art_block
     assert "gap: 1px;" in copy_block
@@ -3059,14 +3064,14 @@ def test_index_compact_hero_variants_reduce_padding_one_more_step():
     compact_ops_block = html.split(".ops-home-hero--compact {", 1)[1].split("}", 1)[0]
     compact_ops_copy_block = html.split(".ops-home-hero--compact .ops-home-hero-copy {", 1)[1].split("}", 1)[0]
     compact_ops_h1_block = html.split(".ops-home-hero--compact .ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
-    assert "padding: 7px 12px;" in compact_admin_block
-    assert "gap: 4px;" in compact_admin_block
+    assert "padding: var(--shell-density-hero-padding);" in compact_admin_block
+    assert "gap: var(--shell-density-hero-gap);" in compact_admin_block
     assert "gap: 6px;" in compact_admin_head_block
     assert "font-size: 1.2rem;" in compact_admin_h1_block
-    assert "padding: 7px 12px;" in compact_ops_block
-    assert "gap: 5px;" in compact_ops_block
+    assert "padding: var(--shell-density-hero-padding);" in compact_ops_block
+    assert "gap: var(--shell-density-hero-gap);" in compact_ops_block
     assert "gap: 1px;" in compact_ops_copy_block
-    assert "font-size: 1.42rem;" in compact_ops_h1_block
+    assert "font-size: 1.2rem;" in compact_ops_h1_block
 
 
 def test_index_admin_dashboard_and_subtabs_use_closer_header_title_scales():
@@ -3084,7 +3089,7 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     utility_main_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]
     utility_tools_block = html.split(".shell-utility-tools {", 1)[1].split("}", 1)[0]
     utility_chip_block = html.split(".shell-utility .chip {", 1)[1].split("}", 1)[0]
-    utility_btn_block = html.split(".shell-utility .tab-btn {", 1)[1].split("}", 1)[0]
+    utility_btn_block = html.split('body[data-shell-density="compact"] .shell-utility .tab-btn {', 1)[1].split("}", 1)[0]
     locale_block = html.split(".shell-locale-picker {", 1)[1].split("}", 1)[0]
     docs_link_block = html.split(".admin-shell-docs .doc-link-chip {", 1)[1].split("}", 1)[0]
     locale_select_block = html.split(".shell-locale-picker select {", 1)[1].split("}", 1)[0]
@@ -3105,16 +3110,15 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "display: inline-flex;" in utility_chip_block
     assert "align-items: center;" in utility_chip_block
     assert "padding: 4px 9px;" in utility_chip_block
-    assert "min-height: 26px;" in utility_chip_block
-    assert "font-size: 0.84rem;" in utility_chip_block
+    assert "min-height: 28px;" in utility_chip_block
+    assert "font-size: 0.76rem;" in utility_chip_block
     assert "font-weight: 700;" in utility_chip_block
-    assert "padding: 4px 9px;" in utility_btn_block
-    assert "min-height: 26px;" in utility_btn_block
-    assert "font-size: 0.84rem;" in utility_btn_block
+    assert "min-height: var(--shell-density-utility-height);" in utility_btn_block
+    assert "font-size: var(--shell-density-utility-font);" in utility_btn_block
     utility_override_block = html.split("#shellUtilityBar .chip,\n    #shellUtilityBar .tab-btn {", 1)[1].split("}", 1)[0]
-    assert "min-height: 26px;" in utility_override_block
-    assert "padding: 4px 9px;" in utility_override_block
-    assert "font-size: 0.84rem;" in utility_override_block
+    assert "min-height: var(--shell-density-utility-height, 28px);" in utility_override_block
+    assert "padding: var(--shell-density-utility-padding, 4px 9px);" in utility_override_block
+    assert "font-size: var(--shell-density-utility-font, 0.76rem);" in utility_override_block
     assert "font-weight: 700;" in utility_override_block
     tools_block = html.split(".shell-utility-tools {", 1)[1].split("}", 1)[0]
     main_row_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]
@@ -3133,19 +3137,16 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "min-width: 68px;" in locale_select_block
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
     assert utility_block.index('class="shell-utility-tools shell-utility-tools--meta"') < utility_block.index('class="shell-utility-main shell-utility-main--actions"')
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert utility_block.index('class="shell-doc-links admin-shell-docs"') < utility_block.index('class="shell-locale-picker"')
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
+    assert 'id="appSessionInfo"' in utility_block
+    assert utility_block.index('id="shellAdminBtn"') < utility_block.index('id="appSessionInfo"')
     assert utility_block.index('id="appSessionInfo"') < utility_block.index('id="appLogoutBtn"')
 
 
 def test_index_shell_utility_exposes_direct_doc_links_with_routes():
     html = read_static_html("index.html")
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
-    assert 'class="shell-doc-links admin-shell-docs"' in utility_block
-    assert 'href="/tool-docs/erd-summary"' in utility_block
-    assert 'href="/tool-docs/erd-detail"' in utility_block
-    assert 'href="/tool-docs/manual"' in utility_block
-    assert 'href="/tool-docs/go-live-checklist"' not in utility_block
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
 
 
 def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
@@ -3187,7 +3188,8 @@ def test_index_sync_shell_utility_row_sizing_normalizes_right_side_controls():
     html = read_static_html("index.html")
     assert "function syncShellUtilityRowSizing() {" in html
     block = html.split("function syncShellUtilityRowSizing() {", 1)[1].split("    function resetReadOnlyShellState() {", 1)[0]
-    assert 'const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "tabCameraBtn", "appPrefsResetBtn", "appLogoutBtn", "shellOpsHomeBtn"];' in block
+    assert 'const utilityRowSelectors = ["appSessionInfo", "shellAdminBtn", "appLogoutBtn"];' in block
+    assert 'if (document.body?.dataset?.shellDensity === "compact") return;' in block
     assert 'el.style.minHeight = "26px";' in block
     assert 'el.style.padding = "4px 9px";' in block
     assert 'el.style.fontSize = "0.84rem";' in block
@@ -3354,15 +3356,17 @@ def test_index_reset_action_group_uses_shared_symbol_buttons():
     icon_reset_block = html.split(".icon-symbol-btn--reset {", 1)[1].split("}", 1)[0]
     assert "--icon-mask: url(" in icon_reset_block
     assert 'id="homeResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" data-i18n-title="media.search.action.reset_filters" data-i18n-aria-label="media.search.action.reset_filters"' in html
-    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"' in html
-    assert 'id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"' in html
-    assert 'id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n="media.register.detail.action.reset" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"' in html
-    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"' in html
-    assert 'id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n="media.register.master.action.reset_filters" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"' in html
-    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"' in html
-    assert 'id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.camera.action.reset" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"' in html
-    assert 'id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.slot.action.reset" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"' in html
-    assert 'id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.account.action.reset" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"' in html
+    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>' in html
+    assert 'id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>' in html
+    assert 'id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"></button>' in html
+    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>' in html
+    assert 'id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"></button>' in html
+    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>' in html
+    assert 'id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>' in html
+    assert 'id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"></button>' in html
+    assert 'id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>' in html
+    assert 'id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset"></button>' in html
+    assert 'id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset"></button>' in html
 
 
 def test_icon_buttons_share_uniform_height_and_symbol_box():
@@ -3419,11 +3423,12 @@ def test_index_admin_utility_bar_shows_hahahoho_only_for_admin_and_places_it_las
     utility_block = html.split(utility_start, 1)[1].split(admin_tabs_start, 1)[0]
     nav_block = html.split(nav_start, 1)[1].split(open_admin_start, 1)[0]
     ops_block = html.split('    <section id="opsHomeHero" class="ops-home-hero" style="display:none;">', 1)[1].split(utility_start, 1)[0]
-    assert 'id="shellOpsHomeBtn"' in utility_block
-    assert ">hahahoho</button>" in utility_block
-    assert utility_block.index('id="appLogoutBtn"') < utility_block.index('id="shellOpsHomeBtn"')
-    assert 'setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");' in nav_block
-    assert '$("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));' in html
+    assert 'id="shellAdminBtn"' in utility_block
+    assert 'id="appLogoutBtn"' in utility_block
+    assert utility_block.index('id="shellAdminBtn"') < utility_block.index('id="appLogoutBtn"')
+    assert 'id="shellOpsHomeBtn"' not in utility_block
+    assert 'setDisplayIfPresent("shellOpsHomeBtn", authenticated && isAdmin && mode === "admin" ? "inline-flex" : "none");' not in nav_block
+    assert '$("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));' not in html
     assert "hahahoho" not in ops_block
 
 
@@ -3725,8 +3730,8 @@ def test_goods_search_surface_contains_status_domain_and_slot_filters():
 def test_goods_manage_surface_contains_album_artist_label_mapping_sections():
     html = read_static_html("index.html")
     assert 'id="goodsAlbumMasterMapList"' in html
-    assert 'id="goodsArtistMapList"' in html
-    assert 'id="goodsLabelMapList"' in html
+    assert 'id="goodsArtistMapList"' not in html
+    assert 'id="goodsLabelMapList"' not in html
 
 
 def test_goods_manage_surface_is_split_into_basic_product_collectible_and_notes_sections():
@@ -3749,10 +3754,20 @@ def test_goods_manage_surface_uses_compact_core_and_extra_notes_layout():
 def test_goods_manage_mapping_blocks_use_compact_stack_controls():
     html = read_static_html("index.html")
     assert 'id="goodsManageAlbumMasterControls" class="compact-stack"' in html
-    assert 'id="goodsManageArtistControls" class="compact-stack"' in html
-    assert 'id="goodsManageLabelControls" class="compact-stack"' in html
+    assert 'id="goodsManageArtistControls" class="compact-stack"' not in html
+    assert 'id="goodsManageLabelControls" class="compact-stack"' not in html
     assert 'id="goodsManageCollectibleLookupControls" class="compact-stack"' in html
     assert 'id="goodsManageCollectibleComposeControls" class="compact-stack"' in html
+
+
+def test_compact_stack_actions_force_search_and_add_buttons_to_input_height():
+    html = read_static_html("index.html")
+    assert ".compact-stack-actions {" in html
+    assert "align-items: stretch;" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions button," in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn.tiny {" in html
+    assert "height: var(--compact-control-height);" in html
+    assert "box-sizing: border-box;" in html
 
 
 def test_goods_search_surface_contains_collectible_relation_filters():
@@ -4054,6 +4069,9 @@ def test_purchase_import_discogs_candidates_highlight_existing_owned_count():
     html = read_static_html("index.html")
     purchase_block = html.split("function buildPurchaseImportCandidateHtml(queueId, state, candidate, candidateIdx) {", 1)[1].split("function purchaseImportAmazonMetaHtml", 1)[0]
     assert 'buildDiscogsStandardMetaHtml(candidate, { includeOwnedCount: true, ownedCountClassName: "source-workbench-owned-pill" })' in purchase_block
+    assert 'const coverUrl = normalizeRenderableCoverUrl(candidate?.cover_image_url);' in purchase_block
+    assert 'const cover = coverUrl' in purchase_block
+    assert '? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(candidate.title || "")}" />`' in purchase_block
     css_block = html.split(".source-workbench-candidate-meta {", 1)[1].split(".source-workbench-candidate-actions {", 1)[0]
     assert ".source-workbench-owned-pill {" in html
     assert "background: #fee2e2;" in html
@@ -4067,6 +4085,7 @@ def test_purchase_import_candidate_search_inputs_share_single_inline_row():
     assert 'class="purchase-import-candidate-search-field"' in block
     assert 'for="purchaseImportArtistOverride-${queueId}"' in block
     assert 'for="purchaseImportItemOverride-${queueId}"' in block
+    assert 'for="purchaseImportQueryOverride-${queueId}"' in block
 
 
 def test_purchase_import_candidate_search_fields_submit_lookup_on_enter():
@@ -4075,6 +4094,7 @@ def test_purchase_import_candidate_search_fields_submit_lookup_on_enter():
     assert 'if (e.key !== "Enter") return;' in block
     assert 'const artistInput = e.target.closest("[data-purchase-import-artist]");' in block
     assert 'const itemInput = e.target.closest("[data-purchase-import-item]");' in block
+    assert 'const queryInput = e.target.closest("[data-purchase-import-query]");' in block
     assert 'await loadPurchaseImportCandidates(queueId);' in block
 
 
@@ -4149,6 +4169,7 @@ def test_media_source_and_register_form_labels_and_placeholders_use_i18n_keys():
     assert 'id="quickItemName" data-i18n-placeholder="media.register.direct.field.item_name.placeholder"' in html
     assert '<label for="queryArtist" data-i18n="media.register.api_lookup.field.artist.label">아티스트명</label>' in html
     assert 'id="queryArtist" tabindex="1" data-i18n-placeholder="media.register.api_lookup.field.artist.placeholder"' in html
+    assert '<label for="querySourceRef" data-i18n="media.register.api_lookup.field.source_ref.label">참조 ID / URL</label>' in html
     assert '<button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>' in html
     assert '<label for="purchaseImportFile" data-i18n="media.register.purchase.field.file.label">주문 파일</label>' in html
     assert '<label data-i18n="media.register.purchase.field.auto_detect.label">자동 판별</label>' in html
@@ -4609,7 +4630,7 @@ def test_collectibles_and_ops_primary_controls_use_i18n_keys():
     assert 'id="goodsManageModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.manage"' in html
     assert 'id="goodsRegisterModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.register"' in html
     assert 'id="goodsSearchRunBtn" class="btn secondary icon-btn" type="button" data-i18n-title="common.search" data-i18n-aria-label="common.search"' in html
-    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"' in html
+    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>' in html
     assert 'data-i18n="collectibles.search.results_heading"' in html
     assert 'id="goodsManageEmptyState" class="card admin-manage-empty-state active"' in html
     assert 'data-i18n="collectibles.manage.empty_title"' in html
@@ -4631,6 +4652,46 @@ def test_collectibles_search_actions_align_to_right_edge():
     assert "justify-content: flex-end;" in actions_block
     assert "margin-top: 10px;" in actions_block
     assert '<div class="ops-compact-form-actions goods-search-actions">' in html
+
+
+def test_form_inline_action_buttons_match_adjacent_field_height():
+    html = read_static_html("index.html")
+    actions_block = html.split(".ops-compact-form-actions {", 1)[1].split("}", 1)[0]
+    actions_button_block = html.split('body[data-shell-mode="admin"] .ops-compact-form-actions > button,', 1)[1].split("}", 1)[0]
+
+    assert "display: inline-flex;" in actions_block
+    assert "align-items: stretch;" in actions_block
+    assert "min-height: var(--compact-control-height);" in actions_button_block
+    assert "height: var(--compact-control-height);" in actions_button_block
+    assert "align-self: stretch;" in actions_button_block
+
+
+def test_inline_field_action_rows_share_adjacent_field_height():
+    html = read_static_html("index.html")
+    inline_actions_block = html.split(".ops-compact-inline-field-actions {", 1)[1].split("}", 1)[0]
+    inline_button_block = html.split('body[data-shell-mode="admin"] .ops-compact-inline-field-actions > button,', 1)[1].split("}", 1)[0]
+    meta_search_button_block = html.split('body[data-shell-mode="admin"] .meta-search-row > button,', 1)[1].split("}", 1)[0]
+
+    assert "display: inline-flex;" in inline_actions_block
+    assert "align-items: stretch;" in inline_actions_block
+    assert "min-height: var(--compact-control-height);" in inline_button_block
+    assert "height: var(--compact-control-height);" in inline_button_block
+    assert "min-height: var(--compact-control-height);" in meta_search_button_block
+    assert "height: var(--compact-control-height);" in meta_search_button_block
+    assert 'class="row admin-barcode-intake-meta-actions ops-compact-inline-field-actions"' in html
+    assert 'class="row ops-compact-inline-field-actions" style="justify-content:flex-end;"' in html
+
+
+def test_media_search_action_buttons_match_adjacent_field_height():
+    html = read_static_html("index.html")
+    home_search_action_block = html.split("body[data-shell-mode=\"admin\"] .home-search-action {", 1)[1].split("}", 1)[0]
+    home_search_button_block = html.split('body[data-shell-mode="admin"] .home-search-action > button,', 1)[1].split("}", 1)[0]
+
+    assert "align-items: stretch;" in home_search_action_block
+    assert "min-height: var(--compact-control-height);" in home_search_button_block
+    assert "height: var(--compact-control-height);" in home_search_button_block
+    assert "align-self: stretch;" in home_search_button_block
+    assert "box-sizing: border-box;" in home_search_button_block
 
 
 def test_collectibles_dynamic_status_messages_use_i18n_keys():
@@ -4689,8 +4750,7 @@ def test_collectibles_form_labels_and_placeholders_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<label for="goodsSearchQuery" data-i18n="collectibles.search.field.query.label">검색어</label>' in html
     assert 'id="goodsSearchQuery" data-i18n-placeholder="collectibles.search.field.query.placeholder"' in html
-    assert '<label for="goodsSearchArtist" data-i18n="collectibles.search.field.artist.label">연계 아티스트</label>' in html
-    assert 'id="goodsSearchArtist" data-i18n-placeholder="collectibles.search.field.artist.placeholder"' in html
+    assert 'id="goodsSearchArtist"' not in html
     assert '<label for="goodsManageName" data-i18n="collectibles.manage.field.name.label">컬렉터블명</label>' in html
     assert 'id="goodsManageName" data-i18n-placeholder="collectibles.manage.field.name.placeholder"' in html
     assert '<label for="goodsManageDescription" data-i18n="collectibles.manage.field.description.label">설명</label>' in html
@@ -4711,7 +4771,7 @@ def test_ops_core_form_labels_and_buttons_use_i18n_keys():
     assert '<label for="opsCabinetName" data-i18n="ops.cabinet.field.name.label">장식장명</label>' in html
     assert 'id="opsCabinetName" data-i18n-placeholder="ops.cabinet.field.name.placeholder"' in html
     assert 'id="opsCabinetSaveBtn" class="btn" type="button" data-i18n="ops.cabinet.action.save"' in html
-    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"' in html
+    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>' in html
 
     assert 'data-page-help-open="ops-camera"' in html
     assert '<h2><span data-i18n="ops.camera.title">공용 카메라 설정</span></h2>' in html
@@ -4866,7 +4926,7 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '<div class="goods-mode-tabs" role="tablist" aria-label="컬렉터블 화면 모드" data-i18n-aria-label="collectibles.mode.aria">' in html
     assert '<label for="goodsSearchCategory" data-i18n="collectibles.search.field.category.label">카테고리</label>' in html
     assert '<label for="goodsSearchStatusFilter" data-i18n="collectibles.search.field.status.label">상태</label>' in html
-    assert '<label for="goodsSearchLabel" data-i18n="collectibles.search.field.label.label">연계 레이블</label>' in html
+    assert 'id="goodsSearchLabel"' not in html
     assert '<label for="goodsSearchAlbumMasterId" data-i18n="collectibles.search.field.album_master_id.label">연계 마스터 ID</label>' in html
     assert '<label for="goodsSearchLinkedState" data-i18n="collectibles.search.field.linked_state.label">연계 상태</label>' in html
     assert '<label for="goodsSearchStorageSlotId" data-i18n="collectibles.search.field.slot_id.label">보관 슬롯</label>' in html
@@ -4875,9 +4935,9 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '<label for="goodsManageStatus" data-i18n="collectibles.manage.field.status.label">상태</label>' in html
     assert '<label for="goodsManageMemoryNote" data-i18n="collectibles.manage.field.memory_note.label">메모</label>' in html
     assert '<strong data-i18n="collectibles.manage.map.album_master.title">마스터 매핑</strong>' in html
-    assert '<strong data-i18n="collectibles.manage.map.artist.title">아티스트 매핑</strong>' in html
-    assert '<strong data-i18n="collectibles.manage.map.label.title">레이블 매핑</strong>' in html
-    assert '<button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_mappings">매핑 저장</button>' in html
+    assert 'data-i18n="collectibles.manage.map.artist.title"' not in html
+    assert 'data-i18n="collectibles.manage.map.label.title"' not in html
+    assert '<button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_album_master_mappings">마스터 매핑 저장</button>' in html
     assert '<div class="mini" data-i18n="collectibles.register.intro">컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.</div>' in html
     assert '<label for="goodsRegisterCategory" data-i18n="collectibles.register.field.category.label">카테고리</label>' in html
     assert '<label for="goodsRegisterQuantity" data-i18n="collectibles.register.field.quantity.label">수량</label>' in html
@@ -4886,6 +4946,7 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '<label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>' in html
     assert '"collectibles.search.field.category.label":' in html
     assert '"collectibles.manage.map.album_master.title":' in html
+    assert '"collectibles.manage.action.save_album_master_mappings":' in html
     assert '"collectibles.register.field.label_names.label":' in html
 
 
@@ -4908,7 +4969,7 @@ def test_media_register_static_form_labels_use_i18n_keys():
     assert '<strong data-i18n="media.register.api_lookup.results.title">조회 결과</strong>' in html
     assert '<label for="purchaseImportEmailFrom" data-i18n="media.register.purchase.field.email_from.label">발신자(선택)</label>' in html
     assert '<label for="purchaseImportRawContent" data-i18n="media.register.purchase.field.raw_content.label">원문 붙여넣기</label>' in html
-    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"' in html
+    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>' in html
     assert '<p class="sub" data-i18n="media.register.batch.subtitle">파일 업로드 후 자동 매칭/검수 큐 적재까지 한 번에 실행됩니다.</p>' in html
     assert '<label for="csvDefaultCategory" data-i18n="media.register.batch.field.default_category.label">기본 카테고리(옵션)</label>' in html
     assert '<label for="csvCreatedBy" data-i18n="media.register.batch.field.created_by.label">등록자</label>' in html
@@ -4925,6 +4986,7 @@ def test_media_master_cleanup_static_copy_uses_i18n_keys():
     assert '<h2><span data-i18n="media.register.master.title">앨범 마스터 묶기</span></h2>' in html
     assert '<label for="masterSource" data-i18n="media.register.master.field.source.label">마스터 소스</label>' in html
     assert '<label for="masterQuery" data-i18n="media.register.master.field.query.label">마스터 검색어</label>' in html
+    assert '<label for="masterSourceRef" data-i18n="media.register.master.field.source_ref.label">참조 ID / URL</label>' in html
     assert '<button id="masterSearchBtn" class="btn secondary" data-i18n="media.register.master.action.search">마스터 검색</button>' in html
     assert '<strong data-i18n="media.register.master.section.candidates">마스터 후보</strong>' in html
     assert '<button id="masterVariantsBtn" class="btn ghost" type="button" data-i18n="media.register.master.action.load_variants">선택 마스터 버전 불러오기</button>' in html
@@ -4948,6 +5010,16 @@ def test_operator_focus_docs_and_meta_sync_static_copy_use_i18n_keys():
     assert 'data-tool-doc-key="manual"' in html
     assert 'data-i18n="shell.admin.doc_link.checklist"' not in html
     assert '"manual.utility.summary":' in html
+
+
+def test_register_lookup_and_master_search_include_direct_source_ref_inputs():
+    html = read_static_html("index.html")
+    assert 'id="querySourceRef"' in html
+    assert 'query: $("querySourceRef").value.trim() || null,' in html
+    assert 'id="masterSourceRef"' in html
+    assert 'const sourceRef = $("masterSourceRef").value.trim();' in html
+    assert 'artist_or_brand: $("queryArtist") ? $("queryArtist").value.trim() || null : null,' in html
+    assert 'title: $("queryTitle") ? $("queryTitle").value.trim() || null : null,' in html
     assert 'data-i18n="utility.language"' in html
     assert 'data-page-help-open="ops-meta-sync"' in html
     assert '<h2><span data-i18n="ops.meta_sync.title">누락 메타 정기 동기화</span></h2>' in html
@@ -4969,6 +5041,36 @@ def test_operator_focus_docs_and_meta_sync_static_copy_use_i18n_keys():
     assert "function syncLocalizedToolDocLinks() {" in html
     apply_locale_block = html.split("function applyLocale(locale = appLocale) {", 1)[1].split("function mediaDisplayLabel", 1)[0]
     assert "syncLocalizedToolDocLinks();" in apply_locale_block
+
+
+def test_purchase_import_candidate_row_includes_per_row_source_selector():
+    html = read_static_html("index.html")
+    candidate_row_block = html.split('function renderPurchaseImportQueueDetails(row, state) {', 1)[1].split('function renderPurchaseImportQueue(items) {', 1)[0]
+    assert 'for="purchaseImportSourceOverride-${queueId}"' in candidate_row_block
+    assert 'data-i18n="media.register.purchase.queue.field.candidate_source.label"' in candidate_row_block
+    assert 'data-purchase-import-source="${queueId}"' in candidate_row_block
+    assert 'String(state?.source || "AUTO").trim().toUpperCase() === "AUTO" ? "selected" : ""' in candidate_row_block
+    assert '<option value="AUTO" ${String(state?.source || "AUTO").trim().toUpperCase() === "AUTO" ? "selected" : ""}>AUTO</option>' in candidate_row_block
+    assert '<option value="DISCOGS" ${String(state?.source || "AUTO").trim().toUpperCase() === "DISCOGS" ? "selected" : ""}>DISCOGS</option>' in candidate_row_block
+    assert '<option value="MANIADB" ${String(state?.source || "AUTO").trim().toUpperCase() === "MANIADB" ? "selected" : ""}>MANIADB</option>' in candidate_row_block
+    assert '<option value="ALADIN" ${String(state?.source || "AUTO").trim().toUpperCase() === "ALADIN" ? "selected" : ""}>ALADIN</option>' in candidate_row_block
+    assert '<option value="MUSICBRAINZ" ${String(state?.source || "AUTO").trim().toUpperCase() === "MUSICBRAINZ" ? "selected" : ""}>MUSICBRAINZ</option>' in candidate_row_block
+    queue_load_block = html.split('async function loadPurchaseImportCandidates(queueId, opts = {}) {', 1)[1].split('async function loadAllPurchaseImportCandidates() {', 1)[0]
+    assert 'const source = String(lookupOpts.source ?? state.source ?? "AUTO").trim().toUpperCase() || "AUTO";' in queue_load_block
+    assert 'params.set("source", source);' in queue_load_block
+
+
+def test_purchase_import_candidate_row_uses_single_line_search_layout():
+    html = read_static_html("index.html")
+    css_block = html.split(".purchase-import-candidate-search-row {", 1)[1].split("}", 1)[0]
+    assert "grid-template-columns: minmax(96px, 0.82fr) minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 1.08fr);" in css_block
+    candidate_row_block = html.split('function renderPurchaseImportQueueDetails(row, state) {', 1)[1].split('function renderPurchaseImportQueue(items) {', 1)[0]
+    assert 'class="purchase-import-candidate-search-field purchase-import-candidate-search-field--source"' in candidate_row_block
+    source_pos = candidate_row_block.index('for="purchaseImportSourceOverride-${queueId}"')
+    artist_pos = candidate_row_block.index('for="purchaseImportArtistOverride-${queueId}"')
+    item_pos = candidate_row_block.index('for="purchaseImportItemOverride-${queueId}"')
+    query_pos = candidate_row_block.index('for="purchaseImportQueryOverride-${queueId}"')
+    assert source_pos < artist_pos < item_pos < query_pos
 
 
 def test_dashboard_overview_actions_use_media_icon_button_pattern():
@@ -5025,7 +5127,7 @@ def test_dashboard_selection_and_bulk_edit_controls_use_i18n_keys():
 
 def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     html = read_static_html("index.html")
-    assert 'id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n-title="dashboard.selection.action.edit_selected"' in html
+    assert 'id="homeDashSelectedItemEditBtn" class="btn ghost tiny dashboard-slot-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="상세 관리" aria-label="상세 관리" data-i18n-title="dashboard.selection.action.edit_selected"' in html
     assert 'data-i18n="dashboard.selection.action.edit_short"' in html
     assert 'id="homeDashSelectedSortArtistRow"' in html
     assert 'id="homeDashSelectedSortArtistName"' in html
@@ -5038,6 +5140,9 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     assert '"dashboard.selection.sort_artist.label":' in html
     assert '"dashboard.selection.sort_artist.note":' in html
     assert '"dashboard.selection.sort_artist.display_artist":' in html
+    assert '"dashboard.selection.sort_artist.display_artist": "원본 표시명: {value}"' in html
+    assert '"dashboard.selection.sort_artist.display_artist": "Original display: {value}"' in html
+    assert '"dashboard.selection.sort_artist.display_artist": "元の表示名: {value}"' in html
     assert 'id="homeDashSearchTitle" data-i18n-placeholder="dashboard.workbench.field.title.placeholder"' in html
     assert 'id="homeDashSearchCatalogNo" data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder"' in html
     assert 'id="homeDashSearchBarcode" data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder"' in html
@@ -5046,14 +5151,43 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     assert 'class="dashboard-selection-actions dashboard-selection-actions--selection"' in workbench_block
     assert 'class="dashboard-selection-actions dashboard-selection-actions--secondary"' in workbench_block
     assert 'class="dashboard-selection-actions dashboard-selection-actions--primary"' in workbench_block
-    assert 'id="homeDashWorkbenchEditBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="선택 상품 편집" aria-label="선택 상품 편집" data-i18n="dashboard.workbench.action.edit_selected"' in html
+    assert 'id="homeDashWorkbenchEditBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--edit" type="button" title="상세 관리" aria-label="상세 관리" data-i18n="dashboard.workbench.action.edit_selected"' in html
     assert 'id="homeDashWorkbenchRecommendBtn" class="btn ghost tiny dashboard-workbench-actionbtn" type="button" data-i18n="dashboard.workbench.action.recommend_slot"' in html
     assert 'id="homeDashWorkbenchSelectAllBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--select-all" type="button" title="전체 선택" aria-label="전체 선택" data-i18n="dashboard.selection.action.select_all"' in html
     assert 'id="homeDashWorkbenchClearBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--clear-selection" type="button" title="선택 해제" aria-label="선택 해제" data-i18n="dashboard.selection.action.clear"' in html
-    assert '"dashboard.workbench.action.edit_selected":' in html
+    assert '"dashboard.workbench.action.edit_selected": "상세 관리"' in html
+    assert '"dashboard.selection.action.edit_selected": "상세 관리"' in html
+    assert '"dashboard.selection.action.edit_short": "상세 관리"' in html
     assert '"dashboard.workbench.field.title.placeholder":' in html
     assert '"dashboard.workbench.field.catalog.placeholder":' in html
     assert '"dashboard.workbench.field.barcode.placeholder":' in html
+
+
+def test_dashboard_selected_item_edit_button_opens_detail_manage_flow():
+    html = read_static_html("index.html")
+    function_block = html.split("    async function openDashboardSelectedItemForEdit() {", 1)[1].split("    async function refreshDashboardSelectedSlotDetail() {", 1)[0]
+    assert "const row = getDashboardSingleSelectedRow();" in function_block
+    assert "const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);" in function_block
+    assert "await openMediaSearchDetailManage(masterId, ownedItemId);" in function_block
+    assert "await loadHomeItemForEdit(ownedItemId);" not in function_block
+    label_block = html.split("    function dashboardEditItemLabel() {", 1)[1].split("    function dashboardColumnCodeLabel(code) {", 1)[0]
+    assert 'return t("media.manage.search.action.open_detail_manage");' in label_block
+
+
+def test_dashboard_slot_and_workbench_open_detail_manage_from_cards_and_buttons():
+    html = read_static_html("index.html")
+    helper_block = html.split("    async function openDashboardOwnedItemDetailManage(ownedItemId, sourceKind = \"SLOT\") {", 1)[1].split("    async function refreshDashboardSelectedSlotDetail() {", 1)[0]
+    assert "const row = findDashboardOwnedItemRowById(targetOwnedItemId, sourceKind);" in helper_block
+    assert "const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);" in helper_block
+    assert "await openMediaSearchDetailManage(masterId, targetOwnedItemId);" in helper_block
+
+    slot_click_block = html.split('    $("homeDashSlotItems").addEventListener("click", (e) => {', 1)[1].split('    $("homeDashWorkbenchList").addEventListener("pointerdown", (e) => {', 1)[0]
+    assert 'void openDashboardOwnedItemDetailManage(ownedItemId, "SLOT");' in slot_click_block
+    assert "selectDashboardSingleSlotItemById(ownedItemId);" not in slot_click_block
+
+    workbench_click_block = html.split('    $("homeDashWorkbenchList").addEventListener("click", (e) => {', 1)[1].split("    document.addEventListener(\"click\", (e) => {", 1)[0]
+    assert 'const source = String(editBtn.getAttribute("data-dashboard-workbench-source") || "").trim().toUpperCase();' in workbench_click_block
+    assert "void openDashboardOwnedItemDetailManage(ownedItemId, source);" in workbench_click_block
 
 
 def test_dashboard_selected_sort_artist_row_uses_aligned_grid_layout():
@@ -5790,6 +5924,25 @@ def test_cover_url_normalizer_repairs_legacy_maniadb_variant_paths_for_rendering
     assert 'applyBrokenCoverFallback(e.target);' in html
 
 
+def test_cover_url_normalizer_is_used_by_home_search_and_master_variant_cards():
+    html = read_static_html("index.html")
+    home_search_block = html.split("    function homeResultItemHtml(row) {", 1)[1].split("    function renderHomeSearchResults(items) {", 1)[0]
+    home_master_add_block = html.split("    function homeMasterAddVariantItemHtml(row) {", 1)[1].split("    function homeMasterAddVariantRowHtml(row) {", 1)[0]
+    master_variant_block = html.split("    function masterVariantRowHtml(row) {", 1)[1].split("    function renderMasterVariantRows(items) {", 1)[0]
+
+    assert 'const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);' in home_search_block
+    assert 'const cover = coverUrl' in home_search_block
+    assert '? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`' in home_search_block
+
+    assert 'const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);' in home_master_add_block
+    assert 'const cover = coverUrl' in home_master_add_block
+    assert '? `<a href="${escapeHtml(coverUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("media.manage.master.variant.cover_original"))}"><div class="table-cover-thumb"><img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(row.title || "cover")}" /></div></a>`' in home_master_add_block
+
+    assert 'const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);' in master_variant_block
+    assert 'const cover = coverUrl' in master_variant_block
+    assert '? `<a href="${escapeHtml(coverUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("media.register.master.variant.cover_original"))}"><div class="table-cover-thumb"><img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(row.title || "cover")}" /></div></a>`' in master_variant_block
+
+
 def test_api_lookup_flow_retries_recommendation_and_save_requests_instead_of_plain_fetch():
     html = read_static_html("index.html")
     assert 'const res = await fetchWithRetry("/ingest/barcode/recommend-location"' in html
@@ -5890,6 +6043,9 @@ def test_home_master_manual_correction_controls_and_save_flow_exist():
     assert '"media.manage.master.correction.field.note.label":' in html
     assert '"media.manage.master.correction.source_hint":' in html
     assert 'row.style.display = "grid";' in html
+    assert 'data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다."' in html
+    assert 'data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다."' in html
+    assert 'data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다. 이후 소스 교체나 재정렬 때 참고용으로 사용합니다."' in html
 
     save_block = html.split("    async function saveHomeMasterCorrection() {", 1)[1].split("    async function saveHomeMasterSortArtistName()", 1)[0]
     assert 'const res = await fetch(`/album-masters/${masterId}/correction`,' in save_block
@@ -6207,7 +6363,9 @@ def test_media_search_and_manage_core_labels_use_i18n_keys():
     assert '<h2 data-i18n="media.manage.master.lookup.title">마스터 후보 조회 / 연결</h2>' in html
     assert 'id="homeMasterAddLoadBtn" class="btn ghost home-master-load-btn" type="button" data-i18n="media.manage.master.lookup.action.load"' in html
     assert '<summary class="home-master-results-summary home-manage-secondary-summary" data-i18n="media.manage.master.lookup.results.toggle">조회 후보 보기 / 접기</summary>' in html
-    assert '<summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.master.fetch.title">다른 소스 상품 추가 (Discogs / ManiaDB / Aladin)</summary>' in html
+    assert '<summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.master.fetch.title">다른 소스 상품 추가 (선택)</summary>' in html
+    assert '<details id="homeProductRelationSection" class="home-manage-secondary-block goods-map-section" style="margin-top:10px;display:none;">' in html
+    assert '<summary class="home-manage-secondary-summary" style="cursor:pointer;font-weight:700;" data-i18n="media.manage.product_relation.title">상품 관계</summary>' in html
     assert '<label for="homeMetaBarcode" data-i18n="media.manage.master.fetch.barcode.field.label">바코드</label>' in html
     assert 'id="homeMetaQueryBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.query.action.lookup"' in html
     assert '<h2 data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</h2>' in html
@@ -6376,12 +6534,9 @@ def test_index_dashboard_drag_box_selection_reports_completion_in_dashboard_stat
 
 def test_shell_utility_bar_removes_go_live_checklist_link():
     html = read_static_html("index.html")
-    utility_block = html.split('<div class="shell-doc-links admin-shell-docs">', 1)[1].split("</div>", 1)[0]
-    assert '/tool-docs/erd-summary' in utility_block
-    assert '/tool-docs/erd-detail' in utility_block
-    assert '/tool-docs/manual' in utility_block
-    assert '/tool-docs/go-live-checklist' not in utility_block
-    assert 'shell.admin.doc_link.checklist' not in utility_block
+    utility_start = '    <div id="shellUtilityBar" class="shell-utility" style="display:none;">'
+    utility_block = html.split(utility_start, 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
 
 
 def test_index_dashboard_shift_click_selection_adds_slot_range_from_anchor():
@@ -6893,6 +7048,32 @@ def test_index_dashboard_cabinet_selection_uses_cover_flow_area_for_cabinet_over
     assert 'titleEl.textContent = t("dashboard.cabinet.overview_title", { title: cabinetGroup.title });' in block
     assert "root.classList.add(\"dashboard-cabinet-overview-grid\");" in block
     assert "dashboard-cabinet-overview-card" in block
+
+
+def test_index_dashboard_console_shell_roots_exist():
+    html = read_static_html("index.html")
+
+    assert 'id="homeDashboardCard" class="card dashboard-screen dashboard-console-shell"' in html
+    assert "--console-bg:" in html
+    assert "--console-panel:" in html
+
+
+def test_index_dashboard_console_layout_regions_exist():
+    html = read_static_html("index.html")
+
+    assert 'class="dashboard-topbar dashboard-console-statusbar"' in html
+    assert 'class="dashboard-hero-grid dashboard-console-telemetry"' in html
+    assert 'class="dashboard-main-grid dashboard-console-main"' in html
+    assert 'class="dashboard-panel dashboard-slot-panel dashboard-console-panel dashboard-console-panel--primary"' in html
+    assert 'class="dashboard-panel dashboard-workbench-panel dashboard-console-panel dashboard-console-panel--rail"' in html
+
+
+def test_index_dashboard_console_shell_has_scoped_responsive_rules():
+    html = read_static_html("index.html")
+
+    assert "@media (max-width: 960px) {" in html
+    assert "#homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar {" in html
+    assert "#homeDashboardCard.dashboard-console-shell .dashboard-console-main {" in html
 
 
 def test_index_dashboard_runtime_sections_use_i18n_keys():

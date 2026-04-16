@@ -1,0 +1,7 @@
+tunnel: __CLOUDFLARE_TUNNEL_ID__
+credentials-file: /Users/__USER__/.cloudflared/__CLOUDFLARE_TUNNEL_ID__.json
+
+ingress:
+  - hostname: ha.muzlife.com
+    service: http://127.0.0.1:8123
+  - service: http_status:404
