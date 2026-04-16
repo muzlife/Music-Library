@@ -48,10 +48,9 @@
       line-height: 1.3;
       color: var(--ink);
       background:
-        radial-gradient(1100px 520px at 8% -8%, rgba(191, 219, 254, 0.75) 0%, transparent 58%),
-        radial-gradient(960px 460px at 100% 0%, rgba(253, 224, 191, 0.55) 0%, transparent 50%),
-        radial-gradient(700px 400px at 50% 100%, rgba(204, 251, 241, 0.45) 0%, transparent 60%),
-        var(--bg);
+        radial-gradient(1200px 620px at 0% -12%, rgba(255, 122, 26, 0.14) 0%, transparent 54%),
+        radial-gradient(960px 520px at 100% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 46%),
+        linear-gradient(180deg, #06090d 0%, #0a1016 48%, #06090d 100%);
       min-height: 100vh;
     }
 
@@ -128,15 +127,20 @@
       align-items: start;
       align-content: space-between;
       justify-items: end;
-      gap: 3px;
+      gap: 4px;
       min-width: 0;
       width: 100%;
       min-height: 68px;
+      padding: 10px 12px;
+      border: 1px solid rgba(120, 136, 158, 0.22);
+      border-radius: 0;
+      background: rgba(13, 17, 23, 0.98);
+      box-shadow: none;
     }
 
     body[data-shell-density="compact"] .shell-utility {
       min-height: 56px;
-      gap: 2px;
+      gap: 3px;
     }
 
     .shell-utility-main {
@@ -145,7 +149,7 @@
       justify-content: flex-end;
       gap: 4px;
       padding-top: 4px;
-      border-top: 1px solid rgba(203, 213, 225, 0.7);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       min-width: 0;
       flex-wrap: wrap;
       justify-self: end;
@@ -178,7 +182,7 @@
 
     .shell-utility-main--actions {
       padding-top: 5px;
-      border-top: 1px solid rgba(148, 163, 184, 0.22);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     body[data-shell-density="compact"] {
@@ -188,7 +192,7 @@
       --shell-density-utility-font: 0.76rem;
       --shell-density-utility-padding: 4px 9px;
       --shell-density-hero-padding: 6px 11px;
-      --shell-density-hero-radius: 16px;
+      --shell-density-hero-radius: 0;
       --shell-density-hero-gap: 3px;
     }
 
@@ -198,11 +202,11 @@
       justify-content: center;
       gap: 4px;
       padding: 3px 8px;
-      border: 1px solid #d9e2e7;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(126, 148, 171, 0.18);
+      border-radius: 0;
+      background: rgba(18, 23, 29, 0.98);
       box-shadow: none;
-      color: #526275;
+      color: #eef3f8;
       font-size: 0.72rem;
       font-weight: 700;
       white-space: nowrap;
@@ -234,10 +238,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: #365450;
-      border-color: #d2dfda;
-      background: rgba(255,255,255,0.92);
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+      color: #eef3f8;
+      border-color: rgba(184, 196, 210, 0.18);
+      background: rgba(13, 17, 23, 0.98);
+      box-shadow: none;
       padding: 4px 9px;
       min-height: 28px;
       font-size: 0.76rem;
@@ -261,31 +265,31 @@
       padding: 4px 9px;
       min-height: 26px;
       font-size: 0.84rem;
-      border-color: #d2dfda;
-      background: rgba(255,255,255,0.9);
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+      border-color: rgba(184, 196, 210, 0.18);
+      background: rgba(13, 17, 23, 0.98);
+      box-shadow: none;
     }
 
     .shell-utility-tools--meta .doc-link-chip,
     .shell-utility-tools--meta .shell-locale-picker {
-      color: #64748b;
-      border-color: #d9e2e7;
-      background: rgba(248, 250, 252, 0.88);
+      color: #b3bfcc;
+      border-color: rgba(184, 196, 210, 0.14);
+      background: rgba(18, 23, 29, 0.98);
       box-shadow: none;
     }
 
     .shell-utility-main--actions .chip,
     .shell-utility-main--actions .tab-btn {
-      border-color: #c7d7d2;
-      background: rgba(255,255,255,0.96);
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+      border-color: rgba(184, 196, 210, 0.18);
+      background: rgba(18, 23, 29, 0.98);
+      box-shadow: none;
     }
 
     .shell-utility-main--actions .chip {
-      border-color: rgba(226, 232, 240, 0.4);
-      background: rgba(15, 23, 42, 0.72);
-      color: #ffffff;
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+      border-color: rgba(255, 122, 26, 0.28);
+      background: rgba(18, 23, 29, 0.98);
+      color: #eef3f8;
+      box-shadow: none;
     }
 
     .hero p {
@@ -344,14 +348,11 @@
     .admin-shell-hero {
       margin: 8px 0 6px;
       padding: 8px 12px;
-      border: 1px solid #d7e5df;
-      border-radius: 22px;
-      background:
-        radial-gradient(circle at top left, rgba(254, 240, 138, 0.22), transparent 30%),
-        radial-gradient(circle at top right, rgba(187, 247, 208, 0.22), transparent 34%),
-        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,248,0.94));
-      color: #164e63;
-      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+      border: 1px solid rgba(120, 136, 158, 0.22);
+      border-radius: 0;
+      background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));
+      color: #eef3f8;
+      box-shadow: none;
       overflow: hidden;
       position: relative;
       gap: 6px;
@@ -367,31 +368,22 @@
     .admin-shell-hero::after {
       content: "";
       position: absolute;
-      border-radius: 999px;
+      border-radius: 0;
       pointer-events: none;
-      opacity: 0.6;
+      opacity: 0.18;
     }
 
     .admin-shell-hero::before {
-      width: 128px;
-      height: 128px;
-      top: -30px;
-      right: -10px;
+      inset: 0;
       background:
-        radial-gradient(circle at center, rgba(255,255,255,0.78) 0 18%, rgba(148, 163, 184, 0.16) 18% 22%, transparent 22%),
-        radial-gradient(circle at center, rgba(15, 23, 42, 0.08) 0 44%, transparent 44%);
-      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+        linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+      background-size: 100% 18px, 18px 100%;
+      box-shadow: none;
     }
 
     .admin-shell-hero::after {
-      width: 84px;
-      height: 84px;
-      bottom: 16px;
-      right: 122px;
-      background:
-        radial-gradient(circle at center, rgba(255,255,255,0.76) 0 16%, rgba(148, 163, 184, 0.14) 16% 21%, transparent 21%),
-        radial-gradient(circle at center, rgba(15, 23, 42, 0.06) 0 44%, transparent 44%);
-      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
+      display: none;
     }
 
     .admin-shell-hero-main {
@@ -403,8 +395,8 @@
 
     .admin-shell-hero-head {
       display: grid;
-      grid-template-columns: minmax(0, 1.12fr) minmax(220px, 0.88fr);
-      gap: 6px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
       align-items: start;
     }
 
@@ -433,13 +425,13 @@
       align-items: center;
       gap: 8px;
       padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(203, 213, 225, 0.95);
-      background: rgba(255,255,255,0.82);
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+      border-radius: 4px;
+      border: 1px solid rgba(126, 148, 171, 0.18);
+      background: rgba(11, 16, 22, 0.84);
+      box-shadow: none;
       font-size: 0.78rem;
       font-weight: 700;
-      color: #334155;
+      color: #dbe7f3;
     }
 
     .admin-shell-metric-dot {
@@ -467,19 +459,19 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       font-weight: 800;
-      color: #0f766e;
+      color: #ff7a1a;
     }
 
     .admin-shell-hero h1 {
       margin: 0;
       font-size: 1.34rem;
       letter-spacing: -0.02em;
-      color: #164e63;
+      color: #eef3f8;
     }
 
     .admin-shell-hero p {
       margin: 0;
-      color: #475569;
+      color: #b3bfcc;
       font-size: 0.88rem;
       line-height: 1.4;
       max-width: 52ch;
@@ -503,9 +495,10 @@
       padding: 3px 8px;
       min-height: 24px;
       min-width: 96px;
-      border-color: #d9e2e7;
-      background: rgba(255,255,255,0.8);
-      color: #526275;
+      border-color: rgba(184, 196, 210, 0.14);
+      border-radius: 0;
+      background: rgba(18, 23, 29, 0.98);
+      color: #b3bfcc;
       box-shadow: none;
       font-size: 0.72rem;
       font-weight: 700;
@@ -513,14 +506,14 @@
     }
 
     .admin-shell-docs .doc-link-chip:hover {
-      background: rgba(255,255,255,0.92);
-      color: #365450;
+      background: rgba(18, 23, 29, 0.98);
+      color: #eef3f8;
     }
 
     .admin-shell-hero--compact {
       margin: 8px 0 6px;
       padding: var(--shell-density-hero-padding);
-      border-radius: var(--shell-density-hero-radius, 16px);
+      border-radius: var(--shell-density-hero-radius, 0);
       gap: var(--shell-density-hero-gap);
     }
 
@@ -587,14 +580,15 @@
     .admin-shell-hero-art {
       position: relative;
       min-height: 44px;
+      display: none;
     }
 
     .admin-shell-media {
       position: absolute;
       display: block;
-      border-radius: 18px;
-      border: 1px solid rgba(148, 163, 184, 0.24);
-      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.09);
+      border-radius: 6px;
+      border: 1px solid rgba(126, 148, 171, 0.2);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
     }
 
     .admin-shell-media--lp {
@@ -604,8 +598,8 @@
       right: 18px;
       transform: rotate(-7deg);
       background:
-        linear-gradient(145deg, rgba(255,255,255,0.92), rgba(226, 232, 240, 0.62)),
-        linear-gradient(135deg, #fde68a, #bfdbfe);
+        linear-gradient(145deg, rgba(255, 122, 26, 0.18), rgba(11, 16, 22, 0.92)),
+        linear-gradient(135deg, rgba(255, 122, 26, 0.3), rgba(56, 189, 248, 0.12));
     }
 
     .admin-shell-media--cd {
@@ -615,8 +609,8 @@
       bottom: -2px;
       border-radius: 999px;
       background:
-        radial-gradient(circle at center, rgba(255,255,255,0.9) 0 16%, rgba(148, 163, 184, 0.2) 16% 21%, transparent 21%),
-        linear-gradient(135deg, rgba(253, 224, 71, 0.82), rgba(125, 211, 252, 0.86));
+        radial-gradient(circle at center, rgba(255,255,255,0.42) 0 16%, rgba(148, 163, 184, 0.18) 16% 21%, transparent 21%),
+        linear-gradient(135deg, rgba(255, 122, 26, 0.4), rgba(56, 189, 248, 0.16));
     }
 
     .admin-shell-media--cassette {
@@ -626,8 +620,8 @@
       bottom: 10px;
       transform: rotate(8deg);
       background:
-        linear-gradient(145deg, rgba(255,255,255,0.94), rgba(226, 232, 240, 0.68)),
-        linear-gradient(135deg, #bbf7d0, #e9d5ff);
+        linear-gradient(145deg, rgba(255,255,255,0.08), rgba(11, 16, 22, 0.92)),
+        linear-gradient(135deg, rgba(255, 122, 26, 0.2), rgba(148, 163, 184, 0.12));
     }
 
     .admin-shell-media--cassette::before,
@@ -653,7 +647,7 @@
     .chip {
       border: 1px solid rgba(255,255,255,0.35);
       background: rgba(255,255,255,0.11);
-      border-radius: 999px;
+      border-radius: 4px;
       padding: 6px 11px;
       font-size: 0.82rem;
       color: #ecfeff;
@@ -686,11 +680,11 @@
 
     .tab-btn {
       width: auto;
-      border-radius: 999px;
-      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      border: 1px solid rgba(184, 196, 210, 0.18);
       padding: 4px 9px;
-      background: #fff;
-      color: #334155;
+      background: rgba(13, 17, 23, 0.98);
+      color: #eef3f8;
       font-size: 0.84rem;
       font-weight: 700;
       cursor: pointer;
@@ -698,6 +692,7 @@
       align-items: center;
       justify-content: center;
       text-align: center;
+      box-shadow: none;
     }
 
     .tab-btn.same-as-home {
@@ -708,9 +703,10 @@
     }
 
     .tab-btn.active {
-      border-color: #0f766e;
-      background: #ccfbf1;
-      color: #0f766e;
+      border-color: rgba(255, 122, 26, 0.55);
+      background: rgba(18, 23, 29, 0.98);
+      color: #fff4ec;
+      box-shadow: inset 0 2px 0 rgba(255, 122, 26, 0.72);
     }
 
     #shellUtilityBar .chip,
@@ -809,20 +805,21 @@
 
     .subtab-btn {
       width: auto;
-      border-radius: 999px;
-      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      border: 1px solid rgba(184, 196, 210, 0.18);
       padding: 4px 9px;
-      background: #fff;
-      color: #475569;
+      background: rgba(13, 17, 23, 0.98);
+      color: #eef3f8;
       font-size: 0.76rem;
       font-weight: 700;
       cursor: pointer;
     }
 
     .subtab-btn.active {
-      border-color: #0f766e;
-      background: #ecfeff;
-      color: #115e59;
+      border-color: rgba(255, 122, 26, 0.55);
+      background: rgba(18, 23, 29, 0.98);
+      color: #fff4ec;
+      box-shadow: inset 0 2px 0 rgba(255, 122, 26, 0.72);
     }
 
     .subtab-panel {
@@ -2371,13 +2368,10 @@
       grid-template-columns: minmax(0, 1fr);
       gap: 6px;
       padding: 8px 12px;
-      border: 1px solid #d8e4ec;
-      border-radius: 22px;
-      background:
-        radial-gradient(circle at top right, rgba(191, 219, 254, 0.52), transparent 34%),
-        radial-gradient(circle at left center, rgba(253, 224, 191, 0.28), transparent 32%),
-        linear-gradient(135deg, #f7efe3 0%, #eefbf4 55%, #edf4ff 100%);
-      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+      border: 1px solid rgba(120, 136, 158, 0.22);
+      border-radius: 0;
+      background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));
+      box-shadow: none;
       overflow: hidden;
       position: relative;
     }
@@ -2390,7 +2384,7 @@
 
     .ops-home-hero-main {
       display: grid;
-      grid-template-columns: minmax(0, 1.12fr) minmax(220px, 0.88fr);
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 3px;
       align-items: start;
     }
@@ -2400,16 +2394,16 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(transparent 0, transparent calc(100% - 1px), rgba(148, 163, 184, 0.08) calc(100% - 1px)),
+        linear-gradient(transparent 0, transparent calc(100% - 1px), rgba(148, 163, 184, 0.06) calc(100% - 1px)),
         repeating-linear-gradient(
           0deg,
-          rgba(148, 163, 184, 0.05) 0,
-          rgba(148, 163, 184, 0.05) 1px,
+          rgba(148, 163, 184, 0.04) 0,
+          rgba(148, 163, 184, 0.04) 1px,
           transparent 1px,
           transparent 18px
         );
       pointer-events: none;
-      opacity: 0.6;
+      opacity: 0.3;
     }
 
     .ops-home-hero-copy,
@@ -2436,12 +2430,12 @@
       margin: 0;
       font-size: 1.34rem;
       letter-spacing: -0.02em;
-      color: #164e63;
+      color: #eef3f8;
     }
 
     .ops-home-hero-copy p {
       margin: 0;
-      color: #475569;
+      color: #b3bfcc;
       font-size: 0.88rem;
       line-height: 1.4;
       max-width: 52ch;
@@ -2452,34 +2446,35 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       font-weight: 800;
-      color: #0f766e;
+      color: #ff7a1a;
     }
 
     .ops-home-hero-art {
       min-height: 44px;
       width: 100%;
+      display: none;
     }
 
     .ops-home-record {
       position: absolute;
-      border-radius: 18px;
+      border-radius: 6px;
       background:
-        linear-gradient(145deg, rgba(15, 23, 42, 0.08), rgba(255, 255, 255, 0.9)),
-        linear-gradient(135deg, #fef3c7, #dbeafe);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+        linear-gradient(145deg, rgba(255, 122, 26, 0.18), rgba(10, 14, 19, 0.92)),
+        linear-gradient(135deg, rgba(255, 122, 26, 0.24), rgba(56, 189, 248, 0.1));
+      border: 1px solid rgba(126, 148, 171, 0.22);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
     }
 
     .ops-home-record::before {
       content: "";
       position: absolute;
       inset: 12px;
-      border-radius: 14px;
+      border-radius: 4px;
       background:
-        radial-gradient(circle at 26% 24%, rgba(255,255,255,0.45), transparent 18%),
-        linear-gradient(135deg, rgba(15, 118, 110, 0.14), transparent 46%),
-        linear-gradient(145deg, rgba(71, 85, 105, 0.06), rgba(255,255,255,0.8));
-      border: 1px solid rgba(255,255,255,0.45);
+        radial-gradient(circle at 26% 24%, rgba(255,255,255,0.22), transparent 18%),
+        linear-gradient(135deg, rgba(255, 122, 26, 0.16), transparent 46%),
+        linear-gradient(145deg, rgba(71, 85, 105, 0.06), rgba(11, 16, 22, 0.62));
+      border: 1px solid rgba(255,255,255,0.12);
     }
 
     .ops-home-record--a {
@@ -2497,15 +2492,15 @@
       bottom: -8px;
       transform: rotate(8deg);
       background:
-        linear-gradient(145deg, rgba(15, 23, 42, 0.1), rgba(255, 255, 255, 0.92)),
-        linear-gradient(135deg, #d9f99d, #fde68a);
+        linear-gradient(145deg, rgba(15, 23, 42, 0.16), rgba(10, 14, 19, 0.92)),
+        linear-gradient(135deg, rgba(255, 122, 26, 0.2), rgba(148, 163, 184, 0.12));
     }
 
     .ops-home-note {
       position: absolute;
-      color: rgba(15, 118, 110, 0.7);
+      color: rgba(255, 122, 26, 0.78);
       font-weight: 700;
-      text-shadow: 0 8px 14px rgba(15, 23, 42, 0.08);
+      text-shadow: 0 8px 14px rgba(0, 0, 0, 0.18);
       user-select: none;
     }
 
@@ -2547,7 +2542,7 @@
       margin: 8px 0 6px;
       gap: var(--shell-density-hero-gap);
       padding: var(--shell-density-hero-padding);
-      border-radius: var(--shell-density-hero-radius, 16px);
+      border-radius: var(--shell-density-hero-radius, 0);
     }
 
     .ops-home-hero--compact .ops-home-hero-main {
@@ -4442,14 +4437,10 @@
 
     #registeredMasterMergeCard.registered-master-merge-console {
       border: 1px solid rgba(120, 136, 158, 0.24);
-      border-radius: 24px;
-      background:
-        linear-gradient(180deg, rgba(255, 122, 26, 0.05), rgba(8, 11, 16, 0) 26%),
-        linear-gradient(180deg, rgba(11, 14, 18, 0.98), rgba(10, 13, 18, 0.99)),
-        var(--console-bg);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.03),
-        0 18px 50px rgba(2, 6, 23, 0.34);
+      border-top: 2px solid rgba(255, 122, 26, 0.54);
+      border-radius: 0;
+      background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));
+      box-shadow: none;
       color: var(--console-text);
       position: relative;
       overflow: hidden;
@@ -4478,10 +4469,10 @@
     .registered-master-merge-workspace-panel,
     .registered-master-merge-log-panel {
       border: 1px solid var(--console-border);
-      border-radius: 20px;
+      border-radius: 0;
       padding: 14px;
-      background: linear-gradient(180deg, rgba(18, 23, 31, 0.97), rgba(13, 17, 23, 0.99));
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      background: rgba(18, 23, 29, 0.98);
+      box-shadow: none;
     }
 
     .registered-master-merge-commandbar {
@@ -4511,9 +4502,9 @@
 
     .registered-master-merge-commandbar-chip {
       padding: 7px 10px;
-      border-radius: 999px;
+      border-radius: 0;
       border: 1px solid rgba(137, 151, 171, 0.2);
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(18, 23, 29, 0.98);
       color: var(--console-text-dim);
       font-size: 0.72rem;
       line-height: 1.1;
@@ -4537,9 +4528,9 @@
       align-items: start;
       gap: 10px;
       border: 1px solid rgba(137, 151, 171, 0.16);
-      border-radius: 18px;
+      border-radius: 0;
       padding: 10px;
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(23, 29, 36, 0.98);
     }
 
     .registered-master-merge-head {
@@ -4585,9 +4576,34 @@
     }
 
     #registeredMasterMergeCard.registered-master-merge-console :is(input, select) {
-      background: rgba(10, 13, 18, 0.8);
+      background: rgba(10, 13, 18, 0.92);
       border-color: rgba(137, 151, 171, 0.24);
+      border-radius: 0;
       color: var(--console-text);
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console .btn {
+      border-radius: 4px;
+      border-color: rgba(126, 148, 171, 0.22);
+      background: rgba(11, 16, 22, 0.88);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    .registered-master-merge-commandbar {
+      border-top: 2px solid rgba(255, 122, 26, 0.36);
+    }
+
+    .registered-master-merge-results-panel {
+      border-top: 2px solid rgba(56, 189, 248, 0.18);
+    }
+
+    .registered-master-merge-workspace-panel {
+      border-top: 2px solid rgba(255, 122, 26, 0.24);
+    }
+
+    .registered-master-merge-log-panel {
+      border-top: 2px solid rgba(184, 196, 210, 0.16);
     }
 
     #registeredMasterMergeCard.registered-master-merge-console .section-divider {
@@ -6786,6 +6802,11 @@
       align-content: start;
     }
 
+    #homeDashboardCard.dashboard-console-shell #homeDashSlotItems:focus-visible {
+      outline: 2px solid var(--selected-accent-strong);
+      outline-offset: 4px;
+    }
+
     #homeDashSlotItems.dashboard-slot-pagegrid,
     #homeDashWorkbenchList.dashboard-slot-pagegrid {
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -7608,11 +7629,11 @@
       isolation: isolate;
       border-radius: 12px;
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 18%),
-        linear-gradient(180deg, #dbe4ef 0%, #d7e0ea 69%, #c5d0dc 69%, #b3c0cd 82%, #8a7763 82%, #746150 100%);
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 18%),
+        linear-gradient(180deg, #2f3944 0%, #2a3440 69%, #242e38 69%, #1f2932 82%, #5f554d 82%, #4f4640 100%);
       box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.45),
-        inset 0 -10px 18px rgba(92, 76, 60, 0.18);
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        inset 0 -10px 18px rgba(0, 0, 0, 0.22);
     }
 
     #homeDashSlotItems.drop-ready {
@@ -7625,8 +7646,8 @@
 
     #homeDashSlotItems.drop-ready.dashboard-slot-shelfview {
       background:
-        linear-gradient(180deg, rgba(224, 242, 254, 0.34), rgba(224, 242, 254, 0.12) 18%),
-        linear-gradient(180deg, #dbe4ef 0%, #d7e0ea 69%, #c5d0dc 69%, #b3c0cd 82%, #8a7763 82%, #746150 100%);
+        linear-gradient(180deg, rgba(56, 189, 248, 0.16), rgba(56, 189, 248, 0.05) 18%),
+        linear-gradient(180deg, #2f3944 0%, #2a3440 69%, #242e38 69%, #1f2932 82%, #5f554d 82%, #4f4640 100%);
     }
 
     #homeDashSlotItems.dashboard-slot-shelfview::before,
@@ -8271,20 +8292,494 @@
 
     #homeDashboardCard.dashboard-console-shell,
     #registeredMasterMergeCard.registered-master-merge-console {
-      --console-bg: #0b0e12;
-      --console-panel: #11161d;
-      --console-panel-soft: #171d25;
-      --console-border: rgba(137, 151, 171, 0.24);
+      --console-bg: #05080c;
+      --console-panel: #0d1218;
+      --console-panel-soft: #131a22;
+      --console-border: rgba(126, 148, 171, 0.22);
       --console-accent: #ff7a1a;
-      --console-text: #edf2f7;
-      --console-text-dim: #95a2b3;
+      --console-text: #f3f6fb;
+      --console-text-dim: #c2ccd7;
+      --console-text-muted: #8e99a7;
+    }
+
+    .admin-console-shell {
+      --admin-console-panel-bg: rgba(18, 23, 29, 0.98);
+      --admin-console-panel-bg-2: rgba(13, 17, 23, 0.98);
+      --admin-console-panel-border: rgba(137, 151, 171, 0.22);
+      --admin-console-text: #eef3f8;
+      --admin-console-text-muted: #c2ccd7;
+      --admin-console-text-meta: #8e99a7;
+      --admin-console-accent: #ff7a1a;
+      border-radius: 0;
+      color: var(--admin-console-text);
+    }
+
+    .card.admin-console-shell {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    .admin-console-shell .card {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    .admin-console-shell .manual-block {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    .admin-console-shell .table-wrap {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+    }
+
+    .admin-console-shell .result-list {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+      padding: 8px;
+    }
+
+    .admin-console-shell .result-item {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    .admin-console-shell .result-item.pick {
+      border-color: var(--selected-accent-strong);
+      background: linear-gradient(180deg, var(--selected-surface), var(--selected-surface-soft));
+      box-shadow: 0 0 0 4px var(--selected-ring), 0 14px 26px var(--selected-shadow-soft);
+    }
+
+    .admin-console-shell input,
+    .admin-console-shell select,
+    .admin-console-shell textarea {
+      background: var(--admin-console-panel-bg-2);
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    .admin-console-shell button:not(.page-help-trigger) {
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 4px;
+      background: var(--admin-console-panel-bg-2);
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    .admin-console-shell input::placeholder,
+    .admin-console-shell textarea::placeholder {
+      color: var(--admin-console-text-meta);
+    }
+
+    .admin-console-shell :is(.chip, .badge, .operator-label-chip, .operator-status-pill, .operator-mini-card) {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+      color: var(--admin-console-text-muted);
+    }
+
+    .admin-console-shell .result-head {
+      color: var(--admin-console-text);
+    }
+
+    .admin-console-shell .status,
+    .admin-console-shell .compact-line {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    .admin-console-shell .page-help-trigger {
+      min-height: 16px;
+      width: 16px;
+      min-width: 16px;
+      padding: 0;
+      border-radius: 999px;
+    }
+
+    .admin-console-shell .status.ok {
+      display: block;
+      color: var(--ok);
+      border-color: #86efac;
+      background: rgba(22, 101, 52, 0.16);
+    }
+
+    .admin-console-shell .status.err {
+      display: block;
+      color: var(--danger);
+      border-color: #fca5a5;
+      background: rgba(185, 28, 28, 0.16);
+    }
+
+    .admin-console-shell :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note) {
+      color: var(--admin-console-text-meta);
+    }
+
+    .admin-console-shell .shared-camera-list-panel,
+    .admin-console-shell .shared-camera-preview-panel {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg);
+      box-shadow: none;
+    }
+
+    .admin-console-shell .shared-camera-list-item {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 4px;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    .admin-console-shell .shared-camera-list-item.active {
+      border-color: var(--admin-console-accent);
+      box-shadow: none;
+      background: var(--admin-console-panel-bg);
+    }
+
+    .admin-console-shell .shared-camera-stream-frame {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    #opsHomeLayout.admin-console-shell {
+      gap: 14px;
+    }
+
+    #opsHomeLayout.admin-console-shell .operator-home-card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      border-radius: 0;
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+      box-shadow: none;
+    }
+
+    #opsHomeLayout.admin-console-shell .operator-weather-card {
+      padding: 10px 12px 12px;
+      border-color: var(--admin-console-panel-border);
+      border-radius: 0;
+      background: linear-gradient(180deg, var(--admin-console-panel-bg-2), var(--admin-console-panel-bg));
+      box-shadow: none;
+    }
+
+    .shared-camera-shell.admin-console-shell {
+      gap: 10px;
+    }
+
+    .shared-camera-shell.admin-console-shell .shared-camera-layout.admin-console-grid {
+      gap: 12px;
+    }
+
+    .shared-camera-shell.admin-console-shell .shared-camera-list-panel {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg-2);
+    }
+
+    .shared-camera-shell.admin-console-shell .shared-camera-preview-panel {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #tabMedia.admin-console-shell {
+      gap: 12px;
+    }
+
+    #tabMedia.admin-console-shell > .card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+    }
+
+    #tabMedia.admin-console-shell .goods-mode-tabs,
+    #tabRegister.admin-console-shell .subtabs {
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn,
+    #tabRegister.admin-console-shell .subtabs .subtab-btn {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    #tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn.active,
+    #tabRegister.admin-console-shell .subtabs .subtab-btn.active {
+      border-color: var(--admin-console-accent);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #tabSearch .admin-console-grid,
+    #tabManage .admin-console-main,
+    #tabRegister.admin-console-shell,
+    #sourceWorkbenchCard.admin-console-shell {
+      --admin-console-panel-bg: rgba(18, 23, 29, 0.98);
+      --admin-console-panel-bg-2: rgba(13, 17, 23, 0.98);
+      --admin-console-panel-border: rgba(137, 151, 171, 0.22);
+      --admin-console-text: #eef3f8;
+      --admin-console-text-muted: #c2ccd7;
+      --admin-console-text-meta: #8e99a7;
+      --admin-console-accent: #ff7a1a;
+      color: var(--admin-console-text);
+    }
+
+    #tabSearch .admin-console-grid {
+      gap: 12px;
+    }
+
+    #tabSearch .admin-console-grid > .card,
+    #tabSearch .admin-console-grid > .admin-console-secondary,
+    #tabManage .admin-console-main > .card,
+    #tabManage .admin-console-main > .manual-block,
+    #registerCollectPanel .layout > .card,
+    #registerPurchasePanel .layout > .card,
+    #registerBatchPanel .layout > .card,
+    #registerBatchPanel > .card,
+    #registerMasterPanel > .card,
+    #sourceWorkbenchCard.admin-console-shell {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    #tabSearch .admin-console-grid > .admin-console-secondary,
+    #tabManage .admin-console-main > .card,
+    #sourceWorkbenchCard.admin-console-shell {
+      padding: 12px;
+    }
+
+    #tabSearch .admin-console-grid :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
+    #tabManage .admin-console-main :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
+    #tabRegister.admin-console-shell :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
+    #sourceWorkbenchCard.admin-console-shell :is(.manual-block, .result-list, .table-wrap, .status, .compact-line) {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    #tabSearch .admin-console-grid :is(input, select, textarea),
+    #tabManage .admin-console-main :is(input, select, textarea),
+    #tabRegister.admin-console-shell :is(input, select, textarea),
+    #sourceWorkbenchCard.admin-console-shell :is(input, select, textarea) {
+      background: var(--admin-console-panel-bg-2);
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    #tabSearch .admin-console-grid button:not(.page-help-trigger),
+    #tabManage .admin-console-main button:not(.page-help-trigger),
+    #tabRegister.admin-console-shell button:not(.page-help-trigger),
+    #sourceWorkbenchCard.admin-console-shell button:not(.page-help-trigger) {
+      border: 1px solid var(--admin-console-panel-border);
+      box-shadow: none;
+    }
+
+    #tabSearch .admin-console-grid :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note),
+    #tabManage .admin-console-main :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note),
+    #tabRegister.admin-console-shell :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note),
+    #sourceWorkbenchCard.admin-console-shell :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note) {
+      color: var(--admin-console-text-meta);
+    }
+
+    #tabSearch .page-help-source,
+    #tabManage .page-help-source,
+    #tabRegister.admin-console-shell .page-help-source,
+    #sourceWorkbenchCard.admin-console-shell .page-help-source {
+      border-color: var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+    }
+
+    #registerCollectPanel,
+    #registerPurchasePanel,
+    #registerBatchPanel,
+    #registerMasterPanel {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
+    .goods-shell.admin-console-shell {
+      gap: 12px;
+      padding: 12px;
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+    }
+
+    .goods-shell.admin-console-shell .goods-surface {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
+    .goods-shell.admin-console-shell .goods-surface > .card,
+    .goods-shell.admin-console-shell .goods-surface > .manual-block {
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #tabOps.admin-console-shell {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
+    #tabOps.admin-console-shell > .card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+    }
+
+    #tabOps.admin-console-shell > .subtabs {
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #tabOps.admin-console-shell > .subtabs .subtab-btn {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    #tabOps.admin-console-shell > .subtabs .subtab-btn.active {
+      border-color: var(--admin-console-accent);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #tabOps.admin-console-shell :is(.dashboard-selection-toolbar, #opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+    }
+
+    #tabOps.admin-console-shell .dashboard-selection-toolbar {
+      padding: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #tabOps.admin-console-shell :is(#opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {
+      padding: 6px 8px;
+    }
+
+    #opsCabinetPanel,
+    #opsCameraPanel,
+    #opsSlotPanel,
+    #opsExceptionPanel,
+    #opsAccountPanel,
+    #opsProviderPanel,
+    #opsExportPanel,
+    #opsMetaSyncPanel {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
+    #tabOps .subtab-panel.admin-console-main.active {
+      display: grid;
+    }
+
+    #opsCabinetPanel > .layout > .card,
+    #opsCameraPanel > .layout > .card,
+    #opsSlotPanel > .layout > .card,
+    #opsExceptionPanel > .layout > .card,
+    #opsAccountPanel > .layout > .card,
+    #opsProviderPanel > .layout > .card,
+    #opsExportPanel > .layout > .card,
+    #opsMetaSyncPanel > .layout > .card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #opsExceptionPanel .ops-exception-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    #opsExceptionPanel .dashboard-selection-toolbar,
+    #opsExceptionPanel .ops-exception-list {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+    }
+
+    #opsExceptionPanel .dashboard-selection-toolbar {
+      padding: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #opsExceptionPanel .ops-exception-list {
+      padding: 8px;
+    }
+
+    @media (max-width: 1280px) {
+      #opsHomeLayout.admin-console-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-console-shell .shared-camera-layout {
+        grid-template-columns: 1fr;
+      }
+
+      #tabSearch .admin-console-grid {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 1120px) {
+      .admin-console-shell .goods-mode-tabs,
+      .admin-console-shell .operator-feed-controls,
+      .admin-console-shell .operator-title-line,
+      .admin-console-shell .operator-request-title,
+      .admin-console-shell .result-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
 
     .dashboard-screen {
       padding: 12px;
       background:
-        linear-gradient(180deg, rgba(15, 118, 110, 0.06), rgba(15, 23, 42, 0.02)),
-        #f8fafc;
+        linear-gradient(180deg, rgba(255, 122, 26, 0.05), rgba(255, 122, 26, 0) 22%),
+        #05080c;
     }
 
     .dashboard-topbar {
@@ -8462,14 +8957,10 @@
     #homeDashboardCard.dashboard-console-shell {
       padding: 14px;
       border: 1px solid rgba(120, 136, 158, 0.24);
-      border-radius: 24px;
-      background:
-        linear-gradient(180deg, rgba(255, 122, 26, 0.05), rgba(8, 11, 16, 0) 22%),
-        linear-gradient(180deg, rgba(11, 14, 18, 0.98), rgba(10, 13, 18, 0.99)),
-        var(--console-bg);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.03),
-        0 18px 50px rgba(2, 6, 23, 0.34);
+      border-top: 2px solid rgba(255, 122, 26, 0.54);
+      border-radius: 0;
+      background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));
+      box-shadow: none;
       color: var(--console-text);
       position: relative;
       overflow: hidden;
@@ -8497,8 +8988,9 @@
       margin-bottom: 12px;
       padding: 12px 14px;
       border: 1px solid var(--console-border);
-      border-radius: 18px;
-      background: linear-gradient(180deg, rgba(20, 26, 34, 0.92), rgba(14, 18, 24, 0.94));
+      border-top: 2px solid rgba(255, 122, 26, 0.32);
+      border-radius: 0;
+      background: rgba(18, 23, 29, 0.98);
       align-items: flex-start;
     }
 
@@ -8513,6 +9005,10 @@
       color: var(--console-text-dim);
     }
 
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-grid-info, .dashboard-cabinet-head-sub, .dashboard-cabinet-total, .dashboard-cabinet-map-floorcode, .dashboard-cabinet-map-cellmeta, .dashboard-workbench-warning-meta, .dashboard-slot-listitem-date) {
+      color: var(--console-text-muted);
+    }
+
     #homeDashboardCard.dashboard-console-shell .dashboard-console-telemetry {
       gap: 8px;
       margin-bottom: 12px;
@@ -8520,16 +9016,15 @@
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card {
       min-height: 88px;
-      border-radius: 16px;
+      border-radius: 0;
       border: 1px solid var(--console-border);
-      background: linear-gradient(180deg, rgba(23, 29, 37, 0.98), rgba(16, 20, 27, 0.98));
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      background: rgba(18, 23, 29, 0.98);
+      box-shadow: none;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-main {
-      background:
-        linear-gradient(135deg, rgba(255, 122, 26, 0.24), rgba(255, 122, 26, 0.08) 36%, rgba(17, 22, 29, 0.98) 100%),
-        linear-gradient(180deg, rgba(23, 29, 37, 0.98), rgba(16, 20, 27, 0.98));
+      background: rgba(18, 23, 29, 0.98);
+      border-top: 2px solid rgba(255, 122, 26, 0.72);
       border-color: rgba(255, 122, 26, 0.34);
     }
 
@@ -8537,8 +9032,24 @@
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-placement,
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-collector,
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-linked {
-      background: linear-gradient(180deg, rgba(23, 29, 37, 0.98), rgba(18, 23, 31, 0.98));
+      background: rgba(18, 23, 29, 0.98);
       border-color: rgba(137, 151, 171, 0.18);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-media {
+      border-top: 2px solid rgba(56, 189, 248, 0.24);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-placement {
+      border-top: 2px solid rgba(184, 196, 210, 0.22);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-collector {
+      border-top: 2px solid rgba(255, 196, 122, 0.2);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-linked {
+      border-top: 2px solid rgba(45, 212, 191, 0.2);
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card strong,
@@ -8549,29 +9060,66 @@
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-console-main {
-      grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.92fr);
+      grid-template-columns: minmax(0, 2.2fr) minmax(280px, 0.56fr);
       gap: 12px;
+    }
+
+    #homeDashboardCard.dashboard-console-shell.dashboard-console-shell--cabinet-focus .dashboard-console-main {
+      grid-template-columns: 1fr;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-console-panel {
       border: 1px solid var(--console-border);
-      border-radius: 22px;
-      background: linear-gradient(180deg, rgba(18, 23, 31, 0.97), rgba(13, 17, 23, 0.99));
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.03),
-        0 10px 24px rgba(2, 6, 23, 0.18);
+      border-radius: 0;
+      background: rgba(18, 23, 29, 0.98);
+      box-shadow: none;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--rail {
-      background:
-        linear-gradient(180deg, rgba(255, 122, 26, 0.06), rgba(255, 122, 26, 0) 18%),
-        linear-gradient(180deg, rgba(17, 22, 29, 0.98), rgba(12, 16, 22, 0.99));
+      background: rgba(21, 27, 33, 0.98);
+      border-left: 2px solid rgba(255, 122, 26, 0.22);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--primary {
+      border-top: 2px solid rgba(255, 122, 26, 0.22);
     }
 
     #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-map-shell, .dashboard-cabinet-detail, .dashboard-slot-rack-surface, .dashboard-slot-bulk-popover, .dashboard-workbench-toolbar, .dashboard-surface-dock, .dashboard-cabinet-board, .dashboard-slot-grid-panel) {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(23, 29, 36, 0.98);
       border-color: rgba(137, 151, 171, 0.14);
+      border-radius: 0;
       color: var(--console-text);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-slot-map-shell {
+      background: rgba(15, 21, 29, 0.98);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-slot-grid-panel {
+      background: rgba(16, 23, 31, 0.98);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-board {
+      background: rgba(18, 25, 33, 0.98);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map {
+      background: rgba(14, 20, 28, 0.98);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-detail {
+      background: rgba(20, 26, 34, 0.98);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-stage {
+      border-radius: 0;
+      border-color: rgba(184, 196, 210, 0.14);
+      background: rgba(18, 23, 29, 0.98);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-slot-rack-surface {
+      background: rgba(18, 24, 31, 0.98);
     }
 
     #homeDashboardCard.dashboard-console-shell :is(.dashboard-selection-summary, .dashboard-slot-pageinfo, .dashboard-slot-grid-info) {
@@ -8580,19 +9128,191 @@
 
     #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-viewbtn, .dashboard-workbench-source, .dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-slot-grid-nav, .dashboard-slot-sidearrow) {
       border-color: rgba(137, 151, 171, 0.18);
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(13, 17, 23, 0.98);
+      border-radius: 4px;
       color: var(--console-text);
     }
 
     #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-viewbtn.active, .dashboard-workbench-source.active, .dashboard-slot-covercard.pick, .dashboard-slot-shelfcard.pick, .dashboard-slot-listitem.pick) {
       border-color: rgba(255, 122, 26, 0.5);
-      box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.2);
+      background: rgba(18, 23, 29, 0.98);
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.24);
     }
 
     #homeDashboardCard.dashboard-console-shell :is(input, select) {
-      background: rgba(10, 13, 18, 0.8);
+      background: rgba(17, 22, 29, 0.98);
       border-color: rgba(137, 151, 171, 0.24);
+      border-radius: 0;
       color: var(--console-text);
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-overview-card, .dashboard-slot-covercard, .dashboard-slot-listitem, .dashboard-slot-item-row, .dashboard-surface-dock-panel, .dashboard-slot-mutation-row, .dashboard-slot-item-cover, .dashboard-slot-listitem-cover, .dashboard-slot-covercard-cover, .dashboard-slot-shelfcover) {
+      border-radius: 0;
+      background: rgba(18, 23, 29, 0.98);
+      border-color: rgba(184, 196, 210, 0.14);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-legend-chip, .dashboard-slot-flag-icon, .dashboard-slot-recentmove, .dashboard-slot-covercard-index, .dashboard-selection-box-label, .dashboard-workbench-warning-badge, .dashboard-cabinet-head-flag, .dashboard-cabinet-summary-meta span, .dashboard-detail-meta span) {
+      border-radius: 0;
+      background: rgba(18, 23, 29, 0.98);
+      border: 1px solid rgba(184, 196, 210, 0.14);
+      color: var(--console-text-dim);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(#homeDashSlotItems.dashboard-slot-shelfview, #homeDashWorkbenchList.dashboard-slot-shelfview) {
+      border-radius: 0;
+      background: linear-gradient(180deg, rgba(29, 36, 45, 0.98), rgba(22, 28, 36, 0.98));
+      box-shadow: inset 0 -2px 0 rgba(184, 196, 210, 0.12);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--primary .dashboard-slot-rack-surface {
+      padding: 10px 10px 12px;
+    }
+
+    #homeDashboardCard.dashboard-console-shell #homeDashSlotItems.dashboard-slot-shelfview,
+    #homeDashboardCard.dashboard-console-shell #homeDashWorkbenchList.dashboard-slot-shelfview {
+      padding: 14px 12px 12px 14px;
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-workbench-warning {
+      display: grid;
+      gap: 4px;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border: 1px solid rgba(184, 196, 210, 0.14);
+      border-left: 2px solid rgba(255, 122, 26, 0.72);
+      border-radius: 0;
+      background: rgba(18, 23, 29, 0.98);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-selection-box {
+      border-radius: 0;
+      border: 1px solid rgba(255, 122, 26, 0.72);
+      background: rgba(255, 122, 26, 0.05);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-slot-pagebar {
+      border-radius: 0;
+      border: 1px solid rgba(184, 196, 210, 0.14);
+      background: rgba(13, 17, 23, 0.98);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-selected-item-meta {
+      border-radius: 0;
+      border: 1px solid rgba(184, 196, 210, 0.14);
+      background: rgba(13, 17, 23, 0.98);
+      box-shadow: none;
+      color: var(--console-text);
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-toolbar-filter select, .dashboard-workbench-filter select, .dashboard-workbench-checkbox, .dashboard-slot-sidearrow:hover, .dashboard-slot-sidearrow:focus-visible) {
+      border-radius: 0;
+      background: rgba(17, 22, 29, 0.98);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-workbench-warning-action {
+      border-radius: 4px;
+      border-color: rgba(184, 196, 210, 0.18);
+      background: rgba(13, 17, 23, 0.98);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-item-action, .dashboard-surface-dock-tab) {
+      border-radius: 4px;
+      border-color: rgba(184, 196, 210, 0.18);
+      background: rgba(13, 17, 23, 0.98);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.btn, .page-help-trigger),
+    #registeredMasterMergeCard.registered-master-merge-console :is(.btn, .page-help-trigger) {
+      border-radius: 4px;
+      border: 1px solid rgba(184, 196, 210, 0.18);
+      background: rgba(13, 17, 23, 0.98);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.btn.secondary),
+    #registeredMasterMergeCard.registered-master-merge-console :is(.btn.secondary) {
+      border-color: rgba(255, 122, 26, 0.82);
+      background: rgba(255, 122, 26, 0.88);
+      color: #fff4ec;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.btn.ghost),
+    #registeredMasterMergeCard.registered-master-merge-console :is(.btn.ghost) {
+      background: rgba(13, 17, 23, 0.98);
+      color: var(--console-text);
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-overview-card strong, .dashboard-slot-covercard-title, .dashboard-slot-listitem-title, .dashboard-slot-shelftitle, .dashboard-slot-item-main strong, .dashboard-slot-map-cellcount, .dashboard-cabinet-map-cellcode) {
+      color: var(--console-text);
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-overview-card span, .dashboard-slot-covercard-sub, .dashboard-slot-covercard-note, .dashboard-slot-listitem-sub, .dashboard-slot-listitem-note, .dashboard-slot-shelfsub, .dashboard-slot-item-main, .dashboard-workbench-warning-reason) {
+      color: var(--console-text-dim);
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-board, .dashboard-cabinet-map, .dashboard-cabinet-map-cell) {
+      border-color: rgba(184, 196, 210, 0.14);
+      border-radius: 0;
+      box-shadow: none;
+      color: var(--console-text);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcover {
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcover::after {
+      display: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcard.pick .dashboard-slot-shelfcover {
+      border-color: rgba(255, 122, 26, 0.54);
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.22), 0 10px 18px rgba(0, 0, 0, 0.22);
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-selectbtn, .dashboard-slot-editbtn, .dashboard-slot-locatebtn, .dashboard-slot-covercard-check) {
+      border-radius: 4px;
+      border-color: rgba(184, 196, 210, 0.18);
+      background: rgba(13, 17, 23, 0.98);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-selectbtn.is-selected, .dashboard-slot-editbtn:hover, .dashboard-slot-locatebtn:hover, .dashboard-slot-grid-nav:hover, .dashboard-slot-grid-nav:focus-visible, .dashboard-slot-sidearrow:hover, .dashboard-slot-sidearrow:focus-visible, .dashboard-workbench-warning-action:hover, .dashboard-workbench-warning-action:focus-visible) {
+      border-color: rgba(255, 122, 26, 0.32);
+      background: rgba(18, 23, 29, 0.98);
+      color: var(--console-text);
+      box-shadow: none;
+    }
+
+    #homeDashboardCard.dashboard-console-shell :is(#homeDashSlotItems.drop-ready, #homeDashSlotItems.drop-ready.dashboard-slot-shelfview) {
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.32);
+      filter: none;
+      background: linear-gradient(180deg, rgba(23, 29, 36, 0.98), rgba(17, 22, 29, 0.98));
+    }
+
+    #homeDashboardCard.dashboard-console-shell #homeDashSlotItems.dashboard-slot-shelfview::before,
+    #homeDashboardCard.dashboard-console-shell #homeDashWorkbenchList.dashboard-slot-shelfview::before {
+      background: linear-gradient(90deg, rgba(17, 22, 29, 0.98), rgba(17, 22, 29, 0.32), transparent);
+    }
+
+    #homeDashboardCard.dashboard-console-shell #homeDashSlotItems.dashboard-slot-shelfview::after,
+    #homeDashboardCard.dashboard-console-shell #homeDashWorkbenchList.dashboard-slot-shelfview::after {
+      background: linear-gradient(270deg, rgba(17, 22, 29, 0.98), rgba(17, 22, 29, 0.32), transparent);
     }
 
     @media (max-width: 1180px) {
@@ -9183,21 +9903,24 @@
       align-items: center;
       justify-content: center;
       width: fit-content;
-      padding: 2px 5px;
-      border-radius: 999px;
-      border: 1px solid var(--tile-count-border, transparent);
-      background: var(--tile-count-bg, transparent);
+      padding: 0 0 0 7px;
+      border-left: 2px solid var(--tile-count-fg, currentColor);
+      border-radius: 0;
+      background: transparent;
       color: var(--tile-count-fg, currentColor);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+      box-shadow: none;
       font-size: 0.82rem;
       font-weight: 900;
       line-height: 1;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
     }
 
     .dashboard-cabinet-map-cellmeta {
       font-size: 0.52rem;
       color: inherit;
       line-height: 1;
+      padding-left: 9px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -11184,6 +11907,7 @@
         <div class="shell-header-row admin-shell-row">
           <div id="adminTabs" class="tabs" style="display:none;">
             <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
+            <button id="tabCameraBtn" class="tab-btn" type="button" data-i18n="nav.camera">카메라</button>
             <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
             <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
             <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
@@ -11664,8 +12388,8 @@
     </div>
 
     <div id="tabSimple" class="tab-panel">
-      <section id="opsHomeLayout" class="ops-home-layout operator-shell">
-        <div class="ops-home-main operator-shell-main">
+      <section id="opsHomeLayout" class="ops-home-layout operator-shell admin-console-shell">
+        <div class="ops-home-main operator-shell-main admin-console-main">
           <div class="operator-card-stack">
             <section class="card operator-home-card">
               <div class="operator-search-shell">
@@ -11729,7 +12453,7 @@
             </section>
           </div>
         </div>
-        <aside id="opsLibraryContextPanel" class="ops-library-context-panel operator-shell-sidebar">
+        <aside id="opsLibraryContextPanel" class="ops-library-context-panel operator-shell-sidebar admin-console-secondary">
           <section id="opsLibraryContextClimate" class="card operator-weather-card" aria-live="polite">
             <div class="operator-weather-head">
               <div id="operatorWeatherKicker" class="operator-weather-kicker" data-i18n="operator.weather.empty.kicker">오늘 날씨</div>
@@ -11764,22 +12488,22 @@
     </div>
 
     <div id="tabCamera" class="tab-panel page-column">
-      <section class="card shared-camera-shell">
+      <section class="card shared-camera-shell admin-console-shell">
         <div class="shared-camera-shell-head">
           <div>
             <h2><span data-i18n="shared_camera.preview.title">공용 카메라</span><span class="section-help-dot" tabindex="0" data-help-key="help.shared_camera.preview">?</span></h2>
             <div class="mini" data-i18n="shared_camera.preview.subtitle">카메라명과 설명을 보고 선택한 뒤, 스트림 우선·스냅샷 fallback으로 확인합니다.</div>
           </div>
         </div>
-        <div class="shared-camera-layout">
-          <aside class="shared-camera-list-panel">
+        <div class="shared-camera-layout admin-console-grid">
+          <aside class="shared-camera-list-panel admin-console-secondary">
             <div class="result-head" style="margin-bottom:0;">
               <strong data-i18n="shared_camera.list.title">카메라 목록</strong>
               <span id="sharedCameraCount" class="mini" data-i18n="common.count.zero_items">0건</span>
             </div>
             <div id="sharedCameraList" class="shared-camera-list" aria-live="polite"></div>
           </aside>
-          <section id="sharedCameraPreview" class="shared-camera-preview-panel" aria-live="polite">
+          <section id="sharedCameraPreview" class="shared-camera-preview-panel admin-console-main" aria-live="polite">
             <div class="shared-camera-preview-head">
               <div>
                 <h3 id="sharedCameraTitle" data-i18n="shared_camera.empty.title">카메라를 선택하세요</h3>
@@ -11795,7 +12519,7 @@
       </section>
     </div>
 
-    <div id="tabMedia" class="tab-panel page-column">
+    <div id="tabMedia" class="tab-panel page-column admin-console-shell">
       <section class="card">
         <div class="result-head" style="margin-bottom:0;">
           <div>
@@ -11812,8 +12536,8 @@
       </section>
     </div>
 
-    <div id="tabSearch" class="tab-panel page-column">
-      <div id="adminSearchSurface" class="admin-manage-surface active media-search-layout">
+    <div id="tabSearch" class="tab-panel page-column admin-console-shell">
+      <div id="adminSearchSurface" class="admin-manage-surface active media-search-layout admin-console-grid">
       <section id="homeSearchCard" class="card">
         <div class="page-help-title-row">
           <h2><span data-i18n="media.search.title">검색 / 리스트</span></h2>
@@ -11920,7 +12644,7 @@
           </div>
         </div>
       </section>
-      <aside id="adminSearchContextPanel" class="media-search-context-panel" style="position:sticky;top:20px;align-self:start;">
+      <aside id="adminSearchContextPanel" class="media-search-context-panel admin-console-secondary" style="position:sticky;top:20px;align-self:start;">
         <section id="adminSearchContextBody" class="card" style="position:relative;top:auto;bottom:auto;">
           <h3 data-i18n="media.search.context.title">선택한 상품</h3>
             <p class="mini muted" data-i18n="media.search.context.subtitle">상품 preview를 선택하면 현재 위치와 아티스트 컨텍스트를 여기서 확인하고 관리 화면으로 이어갈 수 있습니다.</p>
@@ -11929,8 +12653,8 @@
       </div>
     </div>
 
-    <div id="tabManage" class="tab-panel page-column">
-      <div id="adminManageSurface" class="admin-manage-surface active">
+    <div id="tabManage" class="tab-panel page-column admin-console-shell">
+      <div id="adminManageSurface" class="admin-manage-surface active admin-console-main">
         <div class="result-head page-help-panel-head">
           <div class="page-help-title-row">
             <strong data-i18n="media.mode.manage">관리</strong>
@@ -12680,7 +13404,7 @@
 
   <div class="wrap">
     <div id="tabCollectibles" class="tab-panel page-column">
-      <section class="card goods-shell">
+      <section class="card goods-shell admin-console-shell">
         <div>
           <div class="page-help-title-row">
             <h2><span data-i18n="collectibles.title">컬렉터블</span></h2>
@@ -12707,7 +13431,7 @@
           <button id="goodsRegisterModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
         </div>
 
-        <div id="goodsSearchSurface" class="goods-surface active">
+        <div id="goodsSearchSurface" class="goods-surface active admin-console-main">
           <section class="card" style="margin-top:0;">
             <div class="ops-compact-form-grid goods-search-compact-grid">
               <div class="ops-compact-form-row goods-search-compact-row--primary" data-density-role="collectibles-search-primary">
@@ -12764,22 +13488,22 @@
                   </select>
                 </div>
                 <div>
-                  <label for="goodsSearchCollectibleRelationState">컬렉터블 연계</label>
+                  <label for="goodsSearchCollectibleRelationState" data-i18n="collectibles.search.field.collectible_relation_state.label">컬렉터블 연계</label>
                   <select id="goodsSearchCollectibleRelationState">
-                    <option value="ANY">전체</option>
-                    <option value="LINKED">연계 있음</option>
-                    <option value="UNLINKED">연계 없음</option>
+                    <option value="ANY" data-i18n="collectibles.search.collectible_relation_state.any">전체</option>
+                    <option value="LINKED" data-i18n="collectibles.search.collectible_relation_state.linked">연계 있음</option>
+                    <option value="UNLINKED" data-i18n="collectibles.search.collectible_relation_state.unlinked">연계 없음</option>
                   </select>
                 </div>
                 <div>
-                  <label for="goodsSearchCollectibleRelationType">관계 타입</label>
+                  <label for="goodsSearchCollectibleRelationType" data-i18n="collectibles.search.field.collectible_relation_type.label">관계 타입</label>
                   <select id="goodsSearchCollectibleRelationType">
-                    <option value="">전체</option>
-                    <option value="SERIES">시리즈</option>
-                    <option value="VARIANT">변형</option>
-                    <option value="SET_MEMBER">세트 구성</option>
-                    <option value="RELATED">관련</option>
-                    <option value="PROMO_FOR">프로모 연계</option>
+                    <option value="" data-i18n="collectibles.search.collectible_relation_type.all">전체</option>
+                    <option value="SERIES" data-i18n="collectibles.relation_type.series">시리즈</option>
+                    <option value="VARIANT" data-i18n="collectibles.relation_type.variant">변형</option>
+                    <option value="SET_MEMBER" data-i18n="collectibles.relation_type.set_member">세트 구성</option>
+                    <option value="RELATED" data-i18n="collectibles.relation_type.related">관련</option>
+                    <option value="PROMO_FOR" data-i18n="collectibles.relation_type.promo_for">프로모 연계</option>
                   </select>
                 </div>
                 <div>
@@ -12803,7 +13527,7 @@
           </section>
         </div>
 
-        <div id="goodsManageSurface" class="goods-surface">
+        <div id="goodsManageSurface" class="goods-surface admin-console-main">
           <section id="goodsManageEmptyState" class="card admin-manage-empty-state active">
             <strong data-i18n="collectibles.manage.empty_title">먼저 컬렉터블을 선택하세요.</strong>
             <div class="mini" style="margin-top:6px;" data-i18n="collectibles.manage.empty_body">`컬렉터블 검색`에서 원하는 컬렉터블을 찾은 뒤, 여기서 위치와 매핑을 수정합니다.</div>
@@ -12918,36 +13642,36 @@
 
             <section id="goodsManageCollectibleLinksSection" class="goods-map-section">
               <div class="result-head" style="margin-bottom:0;">
-                <strong>컬렉터블 연계</strong>
-                <span class="mini">시리즈/변형/세트/프로모 관계 관리</span>
+                <strong data-i18n="collectibles.manage.map.collectible.title">컬렉터블 연계</strong>
+                <span class="mini" data-i18n="collectibles.manage.map.collectible.subtitle">시리즈/변형/세트/프로모 관계 관리</span>
               </div>
               <div id="goodsCollectibleRelationMapList" class="goods-chip-list"></div>
               <div id="goodsManageCollectibleLookupControls" class="compact-stack" style="margin-top:8px;">
-                <input id="goodsManageCollectibleQuery" placeholder="연결할 컬렉터블 검색" />
+                <input id="goodsManageCollectibleQuery" data-i18n-placeholder="collectibles.manage.map.collectible.query.placeholder" placeholder="연결할 컬렉터블 검색" />
                 <div class="compact-stack-actions">
-                  <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button">조회</button>
+                  <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.collectible.action.search">조회</button>
                 </div>
               </div>
               <div id="goodsManageCollectibleResults" class="goods-target-results"></div>
               <div id="goodsManageCollectibleComposeControls" class="compact-stack" style="margin-top:8px;">
                 <div class="compact-stack-grid">
                   <div>
-                    <label for="goodsManageRelationType">관계 타입</label>
+                    <label for="goodsManageRelationType" data-i18n="collectibles.manage.map.collectible.field.relation_type.label">관계 타입</label>
                     <select id="goodsManageRelationType">
-                      <option value="SERIES">시리즈</option>
-                      <option value="VARIANT">변형</option>
-                      <option value="SET_MEMBER">세트 구성</option>
-                      <option value="RELATED">관련</option>
-                      <option value="PROMO_FOR">프로모 연계</option>
+                      <option value="SERIES" data-i18n="collectibles.relation_type.series">시리즈</option>
+                      <option value="VARIANT" data-i18n="collectibles.relation_type.variant">변형</option>
+                      <option value="SET_MEMBER" data-i18n="collectibles.relation_type.set_member">세트 구성</option>
+                      <option value="RELATED" data-i18n="collectibles.relation_type.related">관련</option>
+                      <option value="PROMO_FOR" data-i18n="collectibles.relation_type.promo_for">프로모 연계</option>
                     </select>
                   </div>
                   <div>
-                    <label for="goodsManageRelationNote">관계 메모(선택)</label>
-                    <input id="goodsManageRelationNote" placeholder="관계 메모(선택)" />
+                    <label for="goodsManageRelationNote" data-i18n="collectibles.manage.map.collectible.field.relation_note.label">관계 메모(선택)</label>
+                    <input id="goodsManageRelationNote" data-i18n-placeholder="collectibles.manage.map.collectible.field.relation_note.placeholder" placeholder="관계 메모(선택)" />
                   </div>
                 </div>
                 <div class="compact-stack-actions">
-                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button">컬렉터블 연계 저장</button>
+                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.map.collectible.action.save">컬렉터블 연계 저장</button>
                 </div>
               </div>
               <div id="goodsManageRelationStatus" class="status"></div>
@@ -12971,7 +13695,7 @@
           </section>
         </div>
 
-        <div id="goodsRegisterSurface" class="goods-surface">
+        <div id="goodsRegisterSurface" class="goods-surface admin-console-main">
           <section class="card" style="margin-top:0;">
             <div class="mini" data-i18n="collectibles.register.intro">컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.</div>
             <div id="goodsRegisterCoreFields" class="ops-compact-form-grid goods-register-compact-grid" style="margin-top:10px;">
@@ -13079,7 +13803,7 @@
 
   <div class="wrap">
     <div id="tabSource" class="tab-panel">
-      <section id="sourceWorkbenchCard" class="card">
+      <section id="sourceWorkbenchCard" class="card admin-console-shell">
         <div class="page-help-title-row">
           <h2><span data-i18n="media.source.title">일괄 소스 보강</span></h2>
           <button class="page-help-trigger" type="button" data-page-help-open="source-workbench" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
@@ -13146,7 +13870,7 @@
       </section>
     </div>
 
-    <div id="tabRegister" class="tab-panel">
+    <div id="tabRegister" class="tab-panel admin-console-shell">
     <div class="subtabs">
       <button id="registerCollectTabBtn" class="subtab-btn active" type="button" data-i18n="media.register.subtab.direct">직접 등록</button>
       <button id="registerPurchaseTabBtn" class="subtab-btn" type="button" data-i18n="media.register.subtab.purchase">구매 내역</button>
@@ -13154,7 +13878,7 @@
       <button id="registerMasterTabBtn" class="subtab-btn" type="button" data-i18n="media.register.subtab.master">마스터 정리</button>
           <button id="registerTrackTabBtn" class="subtab-btn" type="button" hidden style="display:none;" data-i18n="media.register.mode.track_map">음원 매핑</button>
     </div>
-    <div id="registerCollectPanel" class="subtab-panel active">
+    <div id="registerCollectPanel" class="subtab-panel active admin-console-main">
     <div>
     <details class="manual-block page-help-source" data-page-help-source="register-direct" hidden>
       <summary data-i18n="manual.register_direct.summary">직접 등록 페이지 활용 매뉴얼</summary>
@@ -13626,7 +14350,7 @@
     </div>
     </div>
 
-    <div id="registerPurchasePanel" class="subtab-panel">
+    <div id="registerPurchasePanel" class="subtab-panel admin-console-main">
     <details class="manual-block page-help-source" data-page-help-source="register-purchase" hidden>
       <summary data-i18n="manual.register_purchase.summary">구매 내역 가져오기 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
@@ -13795,7 +14519,7 @@
     </div>
     </div>
 
-    <div id="registerBatchPanel" class="subtab-panel">
+    <div id="registerBatchPanel" class="subtab-panel admin-console-main">
     <details class="manual-block page-help-source" data-page-help-source="register-batch" hidden>
       <summary data-i18n="manual.register_batch.summary">대량 등록 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
@@ -13974,7 +14698,7 @@
     </section>
 
     </div>
-    <div id="registerMasterPanel" class="subtab-panel">
+    <div id="registerMasterPanel" class="subtab-panel admin-console-main">
     <details class="manual-block page-help-source" data-page-help-source="register-master" hidden>
       <summary data-i18n="manual.register_master.summary">마스터 정리 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
@@ -14344,7 +15068,7 @@
     </div>
     </div>
 
-    <div id="tabOps" class="tab-panel">
+    <div id="tabOps" class="tab-panel admin-console-shell">
       <section class="card" style="margin-bottom:8px;">
         <div class="page-help-title-row">
           <h2><span data-i18n="ops.system.title">시스템 상태</span></h2>
@@ -14387,7 +15111,7 @@
         <button id="opsExportTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.export">백업/내보내기</button>
         <button id="opsMetaSyncTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
       </div>
-      <div id="opsCabinetPanel" class="subtab-panel active">
+      <div id="opsCabinetPanel" class="subtab-panel active admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-cabinet" hidden>
         <summary data-i18n="manual.ops.cabinet.summary">장식장 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -14501,7 +15225,7 @@
       </div>
       </div>
 
-      <div id="opsCameraPanel" class="subtab-panel">
+      <div id="opsCameraPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-camera" hidden>
         <summary data-i18n="manual.ops.camera.summary">카메라 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -14610,7 +15334,7 @@
       </div>
       </div>
 
-      <div id="opsSlotPanel" class="subtab-panel">
+      <div id="opsSlotPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-slot" hidden>
         <summary data-i18n="manual.ops.slot.summary">슬롯 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -14680,7 +15404,7 @@
       </div>
       </div>
 
-      <div id="opsExceptionPanel" class="subtab-panel">
+      <div id="opsExceptionPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-exception" hidden>
         <summary data-i18n="manual.ops.exception.summary">예외 큐 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -14759,7 +15483,7 @@
       </div>
       </div>
 
-      <div id="opsAccountPanel" class="subtab-panel">
+      <div id="opsAccountPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-account" hidden>
         <summary data-i18n="manual.ops.account.summary">계정 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -14828,7 +15552,7 @@
       </div>
       </div>
 
-      <div id="opsProviderPanel" class="subtab-panel">
+      <div id="opsProviderPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-provider-settings" hidden>
         <summary data-i18n="manual.ops.providers.summary">연동/API 설정 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -14930,7 +15654,7 @@
       </div>
       </div>
 
-      <div id="opsExportPanel" class="subtab-panel">
+      <div id="opsExportPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-export" hidden>
         <summary data-i18n="manual.ops.export.summary">백업/내보내기 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15027,7 +15751,7 @@
       </div>
       </div>
 
-      <div id="opsMetaSyncPanel" class="subtab-panel">
+      <div id="opsMetaSyncPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-meta-sync" hidden>
         <summary data-i18n="manual.ops.meta_sync.summary">메타 동기화 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15345,6 +16069,7 @@
     const APP_MAIN_TAB_MEMORY_KEY = "hahahoho.mainTabByRole.v1";
     const APP_SUBTAB_MEMORY_KEY = "hahahoho.subTabByRole.v1";
     const DASHBOARD_WORKBENCH_PREFS_KEY = "hahahoho.dashboardWorkbenchPrefsByRole.v1";
+    const DASHBOARD_CABINET_SELECTION_STORAGE_KEY = "hahahoho.dashboardCabinetSelection.v1";
     const APP_LOCALE_STORAGE_KEY = "hahahoho.appLocale.v1";
     const SUPPORTED_APP_LOCALES = new Set(["ko", "en", "ja"]);
     let appLocale = "ko";
@@ -15372,6 +16097,7 @@
         "operator.focus.count.recent_move_day": "최근 {days}일 {count}건",
         "operator.focus.count.recent_registration": "30일 {count}건",
         "nav.dashboard": "대시보드",
+        "nav.camera": "카메라",
         "nav.media": "미디어",
         "nav.collectibles": "컬렉터블",
         "nav.ops": "운영/연계",
@@ -16679,6 +17405,7 @@
         "collectibles.mapping.action.connect": "연결",
         "collectibles.search.meta.quantity": "수량 {quantity}",
         "collectibles.search.meta.links": "연계 {count}건",
+        "collectibles.search.meta.collectible_relations": "컬렉터블 연계 {count}건",
         "collectibles.status.search.failed": "컬렉터블 검색 실패",
         "collectibles.manage.status.loading": "컬렉터블 정보 로드 중... goods_item_id={id}",
         "collectibles.manage.status.load_failed": "컬렉터블 상세 조회 실패",
@@ -17278,10 +18005,21 @@
         "collectibles.search.field.album_master_id.label": '연계 마스터 ID',
         "collectibles.search.field.album_master_id.placeholder": '예: 197',
         "collectibles.search.field.linked_state.label": '연계 상태',
+        "collectibles.search.field.collectible_relation_state.label": '컬렉터블 연계',
+        "collectibles.search.field.collectible_relation_type.label": '관계 타입',
         "collectibles.search.field.slot_id.label": '보관 슬롯',
         "collectibles.search.linked_state.any": '전체',
         "collectibles.search.linked_state.linked": '연계 있음',
         "collectibles.search.linked_state.unlinked": '연계 없음',
+        "collectibles.search.collectible_relation_state.any": '전체',
+        "collectibles.search.collectible_relation_state.linked": '연계 있음',
+        "collectibles.search.collectible_relation_state.unlinked": '연계 없음',
+        "collectibles.search.collectible_relation_type.all": '전체',
+        "collectibles.relation_type.series": '시리즈',
+        "collectibles.relation_type.variant": '변형',
+        "collectibles.relation_type.set_member": '세트 구성',
+        "collectibles.relation_type.related": '관련',
+        "collectibles.relation_type.promo_for": '프로모 연계',
         "collectibles.manage.field.id.label": '컬렉터블 ID',
         "collectibles.manage.field.category.label": '카테고리',
         "collectibles.manage.field.quantity.label": '수량',
@@ -17296,6 +18034,14 @@
         "collectibles.manage.map.album_master.subtitle": '연결할 앨범 마스터를 검색해 추가합니다.',
         "collectibles.manage.map.album_master.query.placeholder": '예: 김윤아',
         "collectibles.manage.map.album_master.action.search": '마스터 검색',
+        "collectibles.manage.map.collectible.title": '컬렉터블 연계',
+        "collectibles.manage.map.collectible.subtitle": '시리즈/변형/세트/프로모 관계를 관리합니다.',
+        "collectibles.manage.map.collectible.query.placeholder": '연결할 컬렉터블 검색',
+        "collectibles.manage.map.collectible.action.search": '조회',
+        "collectibles.manage.map.collectible.field.relation_type.label": '관계 타입',
+        "collectibles.manage.map.collectible.field.relation_note.label": '관계 메모(선택)',
+        "collectibles.manage.map.collectible.field.relation_note.placeholder": '관계 메모(선택)',
+        "collectibles.manage.map.collectible.action.save": '컬렉터블 연계 저장',
         "collectibles.manage.map.artist.title": '아티스트 매핑',
         "collectibles.manage.map.artist.subtitle": '이 컬렉터블과 연결할 아티스트명을 추가합니다.',
         "collectibles.manage.map.artist.placeholder": '예: 김윤아',
@@ -17939,6 +18685,7 @@
         "operator.focus.count.recent_move_day": "Last {days} days {count} items",
         "operator.focus.count.recent_registration": "Last 30 days {count} items",
         "nav.dashboard": "Dashboard",
+        "nav.camera": "Camera",
         "nav.media": "Media",
         "nav.collectibles": "Collectibles",
         "nav.ops": "Ops / Links",
@@ -19222,6 +19969,7 @@
         "collectibles.mapping.action.connect": "Connect",
         "collectibles.search.meta.quantity": "Qty {quantity}",
         "collectibles.search.meta.links": "Links {count}",
+        "collectibles.search.meta.collectible_relations": "Collectible Links {count}",
         "collectibles.status.search.failed": "Collectible search failed",
         "collectibles.manage.status.loading": "Loading collectible... goods_item_id={id}",
         "collectibles.manage.status.load_failed": "Failed to load collectible details",
@@ -19821,10 +20569,21 @@
         "collectibles.search.field.album_master_id.label": 'Linked Master ID',
         "collectibles.search.field.album_master_id.placeholder": 'e.g. 197',
         "collectibles.search.field.linked_state.label": 'Link State',
+        "collectibles.search.field.collectible_relation_state.label": 'Collectible Link State',
+        "collectibles.search.field.collectible_relation_type.label": 'Relation Type',
         "collectibles.search.field.slot_id.label": 'Storage Slot',
         "collectibles.search.linked_state.any": 'All',
         "collectibles.search.linked_state.linked": 'Linked',
         "collectibles.search.linked_state.unlinked": 'Unlinked',
+        "collectibles.search.collectible_relation_state.any": 'All',
+        "collectibles.search.collectible_relation_state.linked": 'Linked',
+        "collectibles.search.collectible_relation_state.unlinked": 'Unlinked',
+        "collectibles.search.collectible_relation_type.all": 'All',
+        "collectibles.relation_type.series": 'Series',
+        "collectibles.relation_type.variant": 'Variant',
+        "collectibles.relation_type.set_member": 'Set Member',
+        "collectibles.relation_type.related": 'Related',
+        "collectibles.relation_type.promo_for": 'Promo Link',
         "collectibles.manage.field.id.label": 'Collectible ID',
         "collectibles.manage.field.category.label": 'Category',
         "collectibles.manage.field.quantity.label": 'Quantity',
@@ -19839,6 +20598,14 @@
         "collectibles.manage.map.album_master.subtitle": 'Search and add the album master to connect.',
         "collectibles.manage.map.album_master.query.placeholder": 'e.g. Kim Yuna',
         "collectibles.manage.map.album_master.action.search": 'Search Master',
+        "collectibles.manage.map.collectible.title": 'Collectible Links',
+        "collectibles.manage.map.collectible.subtitle": 'Manage series, variant, set, and promo relationships.',
+        "collectibles.manage.map.collectible.query.placeholder": 'Search collectibles to link',
+        "collectibles.manage.map.collectible.action.search": 'Search',
+        "collectibles.manage.map.collectible.field.relation_type.label": 'Relation Type',
+        "collectibles.manage.map.collectible.field.relation_note.label": 'Relation Note (optional)',
+        "collectibles.manage.map.collectible.field.relation_note.placeholder": 'Relation Note (optional)',
+        "collectibles.manage.map.collectible.action.save": 'Save Collectible Links',
         "collectibles.manage.map.artist.title": 'Artist Mapping',
         "collectibles.manage.map.artist.subtitle": 'Add artist names linked to this collectible.',
         "collectibles.manage.map.artist.placeholder": 'e.g. Kim Yuna',
@@ -20506,6 +21273,7 @@
         "operator.focus.count.recent_move_day": "直近{days}日 {count}件",
         "operator.focus.count.recent_registration": "30日 {count}件",
         "nav.dashboard": "ダッシュボード",
+        "nav.camera": "カメラ",
         "nav.media": "メディア",
         "nav.collectibles": "コレクタブル",
         "nav.ops": "運用 / 連携",
@@ -21788,6 +22556,7 @@
         "collectibles.mapping.action.connect": "連携",
         "collectibles.search.meta.quantity": "数量 {quantity}",
         "collectibles.search.meta.links": "連携 {count}件",
+        "collectibles.search.meta.collectible_relations": "コレクタブル連携 {count}件",
         "collectibles.status.search.failed": "コレクタブル検索に失敗しました",
         "collectibles.manage.status.loading": "コレクタブル情報を読み込み中... goods_item_id={id}",
         "collectibles.manage.status.load_failed": "コレクタブル詳細の取得に失敗しました",
@@ -22376,10 +23145,21 @@
         "collectibles.search.field.album_master_id.label": '連携マスターID',
         "collectibles.search.field.album_master_id.placeholder": '例: 197',
         "collectibles.search.field.linked_state.label": '連携状態',
+        "collectibles.search.field.collectible_relation_state.label": 'コレクタブル連携',
+        "collectibles.search.field.collectible_relation_type.label": '関係タイプ',
         "collectibles.search.field.slot_id.label": '保管スロット',
         "collectibles.search.linked_state.any": 'すべて',
         "collectibles.search.linked_state.linked": '連携あり',
         "collectibles.search.linked_state.unlinked": '連携なし',
+        "collectibles.search.collectible_relation_state.any": 'すべて',
+        "collectibles.search.collectible_relation_state.linked": '連携あり',
+        "collectibles.search.collectible_relation_state.unlinked": '連携なし',
+        "collectibles.search.collectible_relation_type.all": 'すべて',
+        "collectibles.relation_type.series": 'シリーズ',
+        "collectibles.relation_type.variant": 'バリアント',
+        "collectibles.relation_type.set_member": 'セット構成',
+        "collectibles.relation_type.related": '関連',
+        "collectibles.relation_type.promo_for": 'プロモ連携',
         "collectibles.manage.field.id.label": 'コレクタブルID',
         "collectibles.manage.field.category.label": 'カテゴリ',
         "collectibles.manage.field.quantity.label": '数量',
@@ -22394,6 +23174,14 @@
         "collectibles.manage.map.album_master.subtitle": '連携するアルバムマスターを検索して追加します。',
         "collectibles.manage.map.album_master.query.placeholder": '例: キム・ユナ',
         "collectibles.manage.map.album_master.action.search": 'マスター検索',
+        "collectibles.manage.map.collectible.title": 'コレクタブル連携',
+        "collectibles.manage.map.collectible.subtitle": 'シリーズ / バリアント / セット / プロモ関係を管理します。',
+        "collectibles.manage.map.collectible.query.placeholder": '連携するコレクタブルを検索',
+        "collectibles.manage.map.collectible.action.search": '検索',
+        "collectibles.manage.map.collectible.field.relation_type.label": '関係タイプ',
+        "collectibles.manage.map.collectible.field.relation_note.label": '関係メモ（任意）',
+        "collectibles.manage.map.collectible.field.relation_note.placeholder": '関係メモ（任意）',
+        "collectibles.manage.map.collectible.action.save": 'コレクタブル連携保存',
         "collectibles.manage.map.artist.title": 'アーティストマッピング',
         "collectibles.manage.map.artist.subtitle": 'このコレクタブルに紐づけるアーティスト名を追加します。',
         "collectibles.manage.map.artist.placeholder": '例: キム・ユナ',
@@ -23262,10 +24050,12 @@
       rerender(() => renderHomeLocationInfo(homeLocationSlotItems.find((row) => Number(row?.id || 0) === Number(homeSelectedItemId || 0)) || null));
       rerender(() => renderHomeLocationSlotList());
       rerender(() => renderGoodsSearchResults());
-      rerender(() => renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems));
-      rerender(() => renderDashboardCabinetDetail());
-      rerender(() => renderDashboardWorkbench());
-      rerender(() => renderDashboardSelectionSummary());
+      if (homeDashboardBySlot.length) {
+        rerender(() => renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems));
+        rerender(() => renderDashboardCabinetDetail());
+        rerender(() => renderDashboardWorkbench());
+        rerender(() => renderDashboardSelectionSummary());
+      }
       rerender(() => renderSourceWorkbenchList());
       rerender(() => renderSourceWorkbenchQueue());
       rerender(() => renderOpsExceptionSummary());
@@ -25308,7 +26098,11 @@
         });
         return;
       }
-      if (nextMode === "cabinets" && !pendingOpsCabinetSelection) {
+      if (
+        nextMode === "cabinets"
+        && !pendingOpsCabinetSelection
+        && !String(homeDashboardSelectedCabinetKey || "").trim()
+      ) {
         homeDashboardSelectedCabinetKey = null;
         homeDashboardSelectedSlotCode = null;
         homeDashboardSlotItems = [];
@@ -32733,6 +33527,42 @@
       renderDashboardSelectionSummary();
     }
 
+    function syncDashboardConsoleFocusState(expanded) {
+      const root = $("homeDashboardCard");
+      if (!root) return;
+      root.classList.toggle("dashboard-console-shell--cabinet-focus", Boolean(expanded));
+    }
+
+    function restoreDashboardCabinetSelectionMemory() {
+      try {
+        const raw = window.sessionStorage.getItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY);
+        const parsed = JSON.parse(raw || "null");
+        const cabinetKey = String(parsed?.cabinet_key || "").trim();
+        const slotCode = String(parsed?.slot_code || "").trim();
+        if (!cabinetKey) return;
+        homeDashboardSelectedCabinetKey = cabinetKey;
+        homeDashboardSelectedSlotCode = slotCode || null;
+      } catch (_err) {
+        // ignore sessionStorage read errors
+      }
+    }
+
+    function syncDashboardCabinetSelectionMemory() {
+      try {
+        const cabinetKey = String(homeDashboardSelectedCabinetKey || "").trim();
+        const slotCode = String(homeDashboardSelectedSlotCode || "").trim();
+        if (!cabinetKey) {
+          window.sessionStorage.removeItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY);
+          return;
+        }
+        const payload = { cabinet_key: cabinetKey };
+        if (slotCode) payload.slot_code = slotCode;
+        window.sessionStorage.setItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY, JSON.stringify(payload));
+      } catch (_err) {
+        // ignore sessionStorage write errors
+      }
+    }
+
     function renderDashboardCabinetDetail() {
       const panel = $("homeDashCabinetDetail");
       const titleEl = $("homeDashCabinetTitle");
@@ -32743,6 +33573,8 @@
       const groups = buildDashboardCabinetGroups(homeDashboardBySlot);
       const group = groups.find((item) => item.key === homeDashboardSelectedCabinetKey) || null;
       if (!group) {
+        syncDashboardCabinetSelectionMemory();
+        syncDashboardConsoleFocusState(false);
         panel.style.display = "none";
         homeDashSurfacePanel = "";
         renderDashboardSurfaceDock();
@@ -32750,6 +33582,7 @@
         return;
       }
 
+      syncDashboardConsoleFocusState(true);
       panel.style.display = "grid";
       titleEl.textContent = group.title;
       floorsRoot.style.display = "none";
@@ -32772,6 +33605,8 @@
         homeDashboardSlotItems = [];
         homeDashboardSlotItemsSlotCode = null;
       }
+
+      syncDashboardCabinetSelectionMemory();
 
       if (group.isUnassigned) {
         renderDashboardSlotItems(group.rows[0] || null);
@@ -33186,11 +34021,9 @@
                         const active = slotCode && slotCode === String(homeDashboardSelectedSlotCode || "").trim();
                         const sizeClass = dashboardCabinetMapSizeClass(row);
                         const hoverTitle = dashboardSlotHoverHintText(row, group);
-                        const occupancyText = occupancy.usedText
-                          ? `${occupancy.percentText}(${occupancy.usedText})`
-                          : occupancy.percentText;
-                        const sizeGroupText = dashboardSizeGroupLabel(row?.allowed_size_group || "-");
-                        const cellMetaText = `${occupancyText} · ${sizeGroupText}`;
+                        const occupancyMetaText = occupancy.usedText
+                          ? `(${occupancy.usedText})`
+                          : "";
                         return `
                           <button
                             class="dashboard-cabinet-map-cell ${active ? "active" : ""} ${sizeClass}"
@@ -33202,7 +34035,7 @@
                           >
                             <span class="dashboard-cabinet-map-cellcode">${escapeHtml(dashboardCabinetMapCellLabel(row, group))}</span>
                             <strong class="dashboard-cabinet-map-cellcount">${escapeHtml(occupancy.percentText)}</strong>
-                            <span class="dashboard-cabinet-map-cellmeta">${escapeHtml(cellMetaText)}</span>
+                            <span class="dashboard-cabinet-map-cellmeta">${escapeHtml(occupancyMetaText)}</span>
                           </button>
                         `;
                       }).join("")}
@@ -36706,6 +37539,9 @@
         phase = "sources";
         renderDashboardSourceRows(data.by_source, data.total_items);
         phase = "slots";
+        if (!String(homeDashboardSelectedCabinetKey || "").trim()) {
+          restoreDashboardCabinetSelectionMemory();
+        }
         renderDashboardSlotCards(data.by_slot, data.in_collection_items);
         applyDashboardWorkbenchPreferences();
         phase = "unassigned";
@@ -38414,6 +39250,15 @@
       const smooth = opts.smooth !== false;
       const block = String(opts.block || "start");
       const targetRoot = slotItemsRoot || detailRoot;
+      const focusTarget = () => {
+        if (!targetRoot || typeof targetRoot.focus !== "function") return;
+        if (!targetRoot.hasAttribute("tabindex")) targetRoot.setAttribute("tabindex", "-1");
+        try {
+          targetRoot.focus({ preventScroll: true });
+        } catch {
+          try { targetRoot.focus(); } catch {}
+        }
+      };
       const scrollTarget = () => {
         if (!targetRoot) return;
         if (block === "center") {
@@ -38427,20 +39272,20 @@
       };
       if (!floorsRoot) {
         scrollTarget();
+        focusTarget();
         return;
       }
       const cell = Array.from(floorsRoot.querySelectorAll("[data-dashboard-slot-code]"))
         .find((node) => String(node.getAttribute("data-dashboard-slot-code") || "").trim() === targetSlotCode) || null;
       if (!cell) {
         scrollTarget();
+        focusTarget();
         return;
       }
       clearDashboardSlotAttention();
       scrollTarget();
+      focusTarget();
       cell.classList.add("attention");
-      try {
-        cell.focus({ preventScroll: true });
-      } catch {}
       homeDashboardSlotAttentionTimer = window.setTimeout(() => {
         cell.classList.remove("attention");
         homeDashboardSlotAttentionTimer = null;
@@ -38452,13 +39297,14 @@
       homeDashboardSlotGridFollowSelection = true;
       homeDashboardSelectedCabinetKey = dashboardCabinetKey(slotRow);
       homeDashboardSelectedSlotCode = String(slotRow.slot_code || "").trim();
+      syncDashboardCabinetSelectionMemory();
       homeDashboardSlotItems = [];
       homeDashboardSlotItemsSlotCode = null;
       resetDashboardSlotPage();
       resetDashboardSlotSelection();
       renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
       await loadDashboardSlotItems(slotRow, { silent: true });
-      focusDashboardTargetSlot(slotRow.slot_code, { block: "center" });
+      focusDashboardTargetSlot(slotRow.slot_code, { block: "end" });
       const slotLabel = storageSlotDisplayLabel(slotRow);
       const selectedWorkbenchRows = getDashboardSelectedWorkbenchRows();
       const cabinetMode = currentShellMode() === "cabinets";
@@ -41933,11 +42779,11 @@
 
     function goodsRelationTypeLabel(code) {
       const normalized = String(code || "").trim().toUpperCase();
-      if (normalized === "SERIES") return "시리즈";
-      if (normalized === "VARIANT") return "변형";
-      if (normalized === "SET_MEMBER") return "세트 구성";
-      if (normalized === "RELATED") return "관련";
-      if (normalized === "PROMO_FOR") return "프로모 연계";
+      if (normalized === "SERIES") return t("collectibles.relation_type.series");
+      if (normalized === "VARIANT") return t("collectibles.relation_type.variant");
+      if (normalized === "SET_MEMBER") return t("collectibles.relation_type.set_member");
+      if (normalized === "RELATED") return t("collectibles.relation_type.related");
+      if (normalized === "PROMO_FOR") return t("collectibles.relation_type.promo_for");
       return normalized || "-";
     }
 
@@ -42070,7 +42916,7 @@
                 <span>${escapeHtml(dashboardSizeGroupLabel(row.size_group))}</span>
                 <span>${escapeHtml(domainText)}</span>
                 <span>${escapeHtml(t("collectibles.search.meta.links", { count: formatCount(linkedCount) }))}</span>
-                <span>${escapeHtml(`컬렉터블 연계 ${formatCount(row.collectible_relation_count || collectibleRelationCount)}`)}</span>
+                <span>${escapeHtml(t("collectibles.search.meta.collectible_relations", { count: formatCount(row.collectible_relation_count || collectibleRelationCount) }))}</span>
               </div>
               ${relationBadges.length
                 ? `<div class="goods-result-meta">${relationBadges.map((badge) => `<span class="tag">${escapeHtml(badge)}</span>`).join("")}</div>`
@@ -45180,6 +46026,7 @@
     }
 
     $("tabHomeBtn").addEventListener("click", () => openAdminConsole("home"));
+    $("tabCameraBtn").addEventListener("click", () => openAdminConsole("camera"));
     $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabMediaBtn").addEventListener("click", () => openAdminConsole("media"));
     $("tabCollectiblesBtn").addEventListener("click", () => openAdminConsole("collectibles"));
@@ -46323,7 +47170,7 @@
         selectDashboardSlotRangeToId(ownedItemId);
         return;
       }
-      void openDashboardOwnedItemDetailManage(ownedItemId, "SLOT");
+      selectDashboardSingleSlotItemById(ownedItemId);
     });
     $("homeDashWorkbenchList").addEventListener("pointerdown", (e) => {
       if (isShellReadOnly()) return;
@@ -47298,6 +48145,7 @@
     appLocale = loadSavedLocale();
     const initialShellMode = shellModeFromPath();
     appShellMode = initialShellMode;
+    restoreDashboardCabinetSelectionMemory();
 
     initMediaLabelUi();
     applyFieldHelpTooltips();
