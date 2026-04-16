@@ -8467,6 +8467,46 @@
       box-shadow: none;
     }
 
+    #opsHomeLayout.admin-console-shell {
+      gap: 14px;
+    }
+
+    #opsHomeLayout.admin-console-shell .operator-home-card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      border-radius: 0;
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+      box-shadow: none;
+    }
+
+    #opsHomeLayout.admin-console-shell .operator-weather-card {
+      padding: 10px 12px 12px;
+      border-color: var(--admin-console-panel-border);
+      border-radius: 0;
+      background: linear-gradient(180deg, var(--admin-console-panel-bg-2), var(--admin-console-panel-bg));
+      box-shadow: none;
+    }
+
+    .shared-camera-shell.admin-console-shell {
+      gap: 10px;
+    }
+
+    .shared-camera-shell.admin-console-shell .shared-camera-layout.admin-console-grid {
+      gap: 12px;
+    }
+
+    .shared-camera-shell.admin-console-shell .shared-camera-list-panel {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg-2);
+    }
+
+    .shared-camera-shell.admin-console-shell .shared-camera-preview-panel {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg);
+    }
+
     @media (max-width: 1280px) {
       #opsHomeLayout.admin-console-shell {
         grid-template-columns: 1fr;
@@ -12113,7 +12153,7 @@
 
     <div id="tabSimple" class="tab-panel">
       <section id="opsHomeLayout" class="ops-home-layout operator-shell admin-console-shell">
-        <div class="ops-home-main operator-shell-main">
+        <div class="ops-home-main operator-shell-main admin-console-main">
           <div class="operator-card-stack">
             <section class="card operator-home-card">
               <div class="operator-search-shell">
@@ -12177,7 +12217,7 @@
             </section>
           </div>
         </div>
-        <aside id="opsLibraryContextPanel" class="ops-library-context-panel operator-shell-sidebar">
+        <aside id="opsLibraryContextPanel" class="ops-library-context-panel operator-shell-sidebar admin-console-secondary">
           <section id="opsLibraryContextClimate" class="card operator-weather-card" aria-live="polite">
             <div class="operator-weather-head">
               <div id="operatorWeatherKicker" class="operator-weather-kicker" data-i18n="operator.weather.empty.kicker">오늘 날씨</div>
@@ -12219,15 +12259,15 @@
             <div class="mini" data-i18n="shared_camera.preview.subtitle">카메라명과 설명을 보고 선택한 뒤, 스트림 우선·스냅샷 fallback으로 확인합니다.</div>
           </div>
         </div>
-        <div class="shared-camera-layout">
-          <aside class="shared-camera-list-panel">
+        <div class="shared-camera-layout admin-console-grid">
+          <aside class="shared-camera-list-panel admin-console-secondary">
             <div class="result-head" style="margin-bottom:0;">
               <strong data-i18n="shared_camera.list.title">카메라 목록</strong>
               <span id="sharedCameraCount" class="mini" data-i18n="common.count.zero_items">0건</span>
             </div>
             <div id="sharedCameraList" class="shared-camera-list" aria-live="polite"></div>
           </aside>
-          <section id="sharedCameraPreview" class="shared-camera-preview-panel" aria-live="polite">
+          <section id="sharedCameraPreview" class="shared-camera-preview-panel admin-console-main" aria-live="polite">
             <div class="shared-camera-preview-head">
               <div>
                 <h3 id="sharedCameraTitle" data-i18n="shared_camera.empty.title">카메라를 선택하세요</h3>
