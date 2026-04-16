@@ -7228,6 +7228,16 @@ def test_index_dashboard_console_shell_roots_exist():
     assert "--console-panel:" in html
 
 
+def test_index_dashboard_console_layout_regions_exist():
+    html = read_static_html("index.html")
+
+    assert 'class="dashboard-topbar dashboard-console-statusbar"' in html
+    assert 'class="dashboard-hero-grid dashboard-console-telemetry"' in html
+    assert 'class="dashboard-main-grid dashboard-console-main"' in html
+    assert 'class="dashboard-panel dashboard-slot-panel dashboard-console-panel dashboard-console-panel--primary"' in html
+    assert 'class="dashboard-panel dashboard-workbench-panel dashboard-console-panel dashboard-console-panel--rail"' in html
+
+
 def test_index_dashboard_runtime_sections_use_i18n_keys():
     html = read_static_html("index.html")
     assert '"dashboard.cabinet.meta.free_slots":' in html
