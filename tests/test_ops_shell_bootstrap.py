@@ -2525,15 +2525,15 @@ def test_index_ops_home_hero_removes_quick_focus_chips():
 def test_index_operator_home_search_uses_curator_shell_markup():
     html = read_static_html("index.html")
     assert 'id="opsHomeLayout"' in html
-    assert 'class="ops-home-layout operator-shell"' in html
+    assert 'class="ops-home-layout operator-shell admin-console-shell"' in html
     assert 'id="opsLibraryContextPanel"' in html
     assert 'id="opsLibraryContextClimate"' in html
     assert 'id="opsLibraryContextBody"' in html
     assert '<section class="card operator-home-card">' in html
     assert 'class="operator-search-shell"' in html
     assert 'class="operator-search-actions"' in html
-    assert 'class="ops-home-main operator-shell-main"' in html
-    assert 'class="ops-library-context-panel operator-shell-sidebar"' in html
+    assert 'class="ops-home-main operator-shell-main admin-console-main"' in html
+    assert 'class="ops-library-context-panel operator-shell-sidebar admin-console-secondary"' in html
     assert 'id="operatorLookupQuery"' in html
     assert 'id="operatorLookupBtn"' in html
     assert 'id="operatorFeedRegisteredBtn"' not in html
@@ -2542,6 +2542,15 @@ def test_index_operator_home_search_uses_curator_shell_markup():
     assert 'id="operatorWeatherStatus"' in html
     assert 'id="operatorWeatherTemperature"' in html
     assert 'id="operatorWeatherHumidity"' in html
+
+
+def test_index_operator_home_and_camera_use_console_region_markup():
+    html = read_static_html("index.html")
+    assert 'class="ops-home-main operator-shell-main admin-console-main"' in html
+    assert 'id="opsLibraryContextPanel" class="ops-library-context-panel operator-shell-sidebar admin-console-secondary"' in html
+    assert 'class="shared-camera-layout admin-console-grid"' in html
+    assert 'class="shared-camera-list-panel admin-console-secondary"' in html
+    assert 'id="sharedCameraPreview" class="shared-camera-preview-panel admin-console-main"' in html
 
 
 def test_index_ops_home_reuses_default_main_and_context_column_ratio():
