@@ -7220,6 +7220,30 @@ def test_admin_console_shell_roots_exist_outside_dashboard():
     assert 'id="tabOps" class="tab-panel admin-console-shell"' in html
 
 
+def test_media_admin_surfaces_share_console_shell_helpers():
+    html = read_static_html("index.html")
+
+    assert 'id="tabMedia" class="tab-panel page-column admin-console-shell"' in html
+    assert 'id="adminSearchSurface" class="admin-manage-surface active media-search-layout admin-console-grid"' in html
+    assert 'id="adminSearchContextPanel" class="media-search-context-panel admin-console-secondary"' in html
+    assert 'id="adminManageSurface" class="admin-manage-surface active admin-console-main"' in html
+    assert (
+        'id="tabRegister" class="tab-panel admin-console-shell"' in html
+        or 'id="tabRegister" class="tab-panel page-column admin-console-shell"' in html
+    )
+    assert (
+        'id="registerCollectPanel" class="subtab-panel active admin-console-main"' in html
+        or 'id="registerCollectPanel" class="subtab-panel admin-console-main active"' in html
+    )
+    assert 'id="registerPurchasePanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="registerBatchPanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="registerMasterPanel" class="subtab-panel admin-console-main"' in html
+    assert (
+        'id="sourceWorkbenchCard" class="card admin-console-shell"' in html
+        or 'id="sourceWorkbenchCard" class="card source-workbench-console admin-console-shell"' in html
+    )
+
+
 def test_admin_console_shell_has_shared_tokens_and_breakpoints():
     html = read_static_html("index.html")
 
