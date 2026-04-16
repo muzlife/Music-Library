@@ -3697,7 +3697,7 @@ def test_index_camera_discovery_table_keeps_only_name_ip_and_apply_columns():
 
 def test_index_camera_admin_moves_reload_action_to_list_header():
     html = read_static_html("index.html")
-    section = html.split('<div id="opsCameraPanel" class="subtab-panel">', 1)[1].split("</section>", 1)[0]
+    section = html.split('<div id="opsCameraPanel" class="subtab-panel admin-console-main">', 1)[1].split("</section>", 1)[0]
     assert '<span data-i18n="ops.camera.title">공용 카메라 설정</span>' in section
     assert 'id="opsCameraReloadBtn"' in section
     assert "저장된 카메라" in section
@@ -3707,7 +3707,7 @@ def test_index_camera_admin_moves_reload_action_to_list_header():
 
 def test_index_export_panel_includes_restore_upload_and_auto_backup_settings():
     html = read_static_html("index.html")
-    section = html.split('<div id="opsExportPanel" class="subtab-panel">', 1)[1].split('<div id="opsMetaSyncPanel"', 1)[0]
+    section = html.split('<div id="opsExportPanel" class="subtab-panel admin-console-main">', 1)[1].split('<div id="opsMetaSyncPanel"', 1)[0]
     assert 'id="opsAutoBackupEnabled"' in section
     assert 'id="opsAutoBackupIntervalMinutes"' in section
     assert 'id="opsAutoBackupScope"' in section
@@ -3771,7 +3771,7 @@ def test_index_export_panel_wires_backup_settings_and_restore_actions():
 
 def test_index_ops_provider_settings_panel_includes_metadata_provider_inputs():
     html = read_static_html("index.html")
-    section = html.split('<div id="opsProviderPanel" class="subtab-panel">', 1)[1].split('<div id="opsExportPanel"', 1)[0]
+    section = html.split('<div id="opsProviderPanel" class="subtab-panel admin-console-main">', 1)[1].split('<div id="opsExportPanel"', 1)[0]
     deepl_group = section.split('id="opsProviderDeeplAuthKey"', 1)[1].split("</section>", 1)[0]
     assert 'class="ops-provider-settings-stack"' in section
     assert 'class="ops-provider-group ops-provider-group--pair"' in section
@@ -7247,6 +7247,37 @@ def test_media_admin_surfaces_share_console_shell_helpers():
         'id="sourceWorkbenchCard" class="card admin-console-shell"' in html
         or 'id="sourceWorkbenchCard" class="card source-workbench-console admin-console-shell"' in html
     )
+
+
+def test_collectibles_and_ops_use_console_panel_grammar():
+    html = read_static_html("index.html")
+
+    assert 'class="card goods-shell admin-console-shell"' in html
+    assert 'id="goodsSearchSurface" class="goods-surface active admin-console-main"' in html
+    assert 'id="goodsManageSurface" class="goods-surface admin-console-main"' in html
+    assert 'id="goodsRegisterSurface" class="goods-surface admin-console-main"' in html
+    assert 'id="tabOps" class="tab-panel admin-console-shell"' in html
+    assert (
+        'id="opsCabinetPanel" class="subtab-panel active admin-console-main"' in html
+        or 'id="opsCabinetPanel" class="subtab-panel admin-console-main active"' in html
+    )
+    assert 'id="opsCameraPanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="opsSlotPanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="opsExceptionPanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="opsAccountPanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="opsProviderPanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="opsExportPanel" class="subtab-panel admin-console-main"' in html
+    assert 'id="opsMetaSyncPanel" class="subtab-panel admin-console-main"' in html
+
+
+def test_ops_console_status_and_exception_anchors_remain_present():
+    html = read_static_html("index.html")
+
+    assert 'id="opsSystemStatusSummary"' in html
+    assert 'id="opsSystemStatusLine"' in html
+    assert 'id="opsExceptionSummary"' in html
+    assert 'id="opsExceptionList"' in html
+    assert 'id="opsExceptionSelectionSummary"' in html
 
 
 def test_admin_console_shell_has_shared_tokens_and_breakpoints():

@@ -8634,6 +8634,122 @@
       color: var(--admin-console-text);
     }
 
+    .goods-shell.admin-console-shell {
+      gap: 12px;
+      padding: 12px;
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+    }
+
+    .goods-shell.admin-console-shell .goods-surface {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
+    .goods-shell.admin-console-shell .goods-surface > .card,
+    .goods-shell.admin-console-shell .goods-surface > .manual-block {
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #tabOps.admin-console-shell {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
+    #tabOps.admin-console-shell > .card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+    }
+
+    #tabOps.admin-console-shell > .subtabs {
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #tabOps.admin-console-shell > .subtabs .subtab-btn {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    #tabOps.admin-console-shell > .subtabs .subtab-btn.active {
+      border-color: var(--admin-console-accent);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #tabOps.admin-console-shell :is(.dashboard-selection-toolbar, #opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+    }
+
+    #tabOps.admin-console-shell .dashboard-selection-toolbar {
+      padding: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #tabOps.admin-console-shell :is(#opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {
+      padding: 6px 8px;
+    }
+
+    #opsCabinetPanel,
+    #opsCameraPanel,
+    #opsSlotPanel,
+    #opsExceptionPanel,
+    #opsAccountPanel,
+    #opsProviderPanel,
+    #opsExportPanel,
+    #opsMetaSyncPanel {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
+    #tabOps .subtab-panel.admin-console-main.active {
+      display: grid;
+    }
+
+    #opsCabinetPanel > .layout > .card,
+    #opsCameraPanel > .layout > .card,
+    #opsSlotPanel > .layout > .card,
+    #opsExceptionPanel > .layout > .card,
+    #opsAccountPanel > .layout > .card,
+    #opsProviderPanel > .layout > .card,
+    #opsExportPanel > .layout > .card,
+    #opsMetaSyncPanel > .layout > .card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #opsExceptionPanel .ops-exception-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    #opsExceptionPanel .dashboard-selection-toolbar,
+    #opsExceptionPanel .ops-exception-list {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+    }
+
+    #opsExceptionPanel .dashboard-selection-toolbar {
+      padding: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #opsExceptionPanel .ops-exception-list {
+      padding: 8px;
+    }
+
     @media (max-width: 1280px) {
       #opsHomeLayout.admin-console-shell {
         grid-template-columns: 1fr;
@@ -13326,7 +13442,7 @@
           <button id="goodsRegisterModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
         </div>
 
-        <div id="goodsSearchSurface" class="goods-surface active">
+        <div id="goodsSearchSurface" class="goods-surface active admin-console-main">
           <section class="card" style="margin-top:0;">
             <div class="ops-compact-form-grid goods-search-compact-grid">
               <div class="ops-compact-form-row goods-search-compact-row--primary" data-density-role="collectibles-search-primary">
@@ -13422,7 +13538,7 @@
           </section>
         </div>
 
-        <div id="goodsManageSurface" class="goods-surface">
+        <div id="goodsManageSurface" class="goods-surface admin-console-main">
           <section id="goodsManageEmptyState" class="card admin-manage-empty-state active">
             <strong data-i18n="collectibles.manage.empty_title">먼저 컬렉터블을 선택하세요.</strong>
             <div class="mini" style="margin-top:6px;" data-i18n="collectibles.manage.empty_body">`컬렉터블 검색`에서 원하는 컬렉터블을 찾은 뒤, 여기서 위치와 매핑을 수정합니다.</div>
@@ -13590,7 +13706,7 @@
           </section>
         </div>
 
-        <div id="goodsRegisterSurface" class="goods-surface">
+        <div id="goodsRegisterSurface" class="goods-surface admin-console-main">
           <section class="card" style="margin-top:0;">
             <div class="mini" data-i18n="collectibles.register.intro">컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.</div>
             <div id="goodsRegisterCoreFields" class="ops-compact-form-grid goods-register-compact-grid" style="margin-top:10px;">
@@ -15006,7 +15122,7 @@
         <button id="opsExportTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.export">백업/내보내기</button>
         <button id="opsMetaSyncTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
       </div>
-      <div id="opsCabinetPanel" class="subtab-panel active">
+      <div id="opsCabinetPanel" class="subtab-panel active admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-cabinet" hidden>
         <summary data-i18n="manual.ops.cabinet.summary">장식장 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15120,7 +15236,7 @@
       </div>
       </div>
 
-      <div id="opsCameraPanel" class="subtab-panel">
+      <div id="opsCameraPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-camera" hidden>
         <summary data-i18n="manual.ops.camera.summary">카메라 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15229,7 +15345,7 @@
       </div>
       </div>
 
-      <div id="opsSlotPanel" class="subtab-panel">
+      <div id="opsSlotPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-slot" hidden>
         <summary data-i18n="manual.ops.slot.summary">슬롯 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15299,7 +15415,7 @@
       </div>
       </div>
 
-      <div id="opsExceptionPanel" class="subtab-panel">
+      <div id="opsExceptionPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-exception" hidden>
         <summary data-i18n="manual.ops.exception.summary">예외 큐 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15378,7 +15494,7 @@
       </div>
       </div>
 
-      <div id="opsAccountPanel" class="subtab-panel">
+      <div id="opsAccountPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-account" hidden>
         <summary data-i18n="manual.ops.account.summary">계정 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15447,7 +15563,7 @@
       </div>
       </div>
 
-      <div id="opsProviderPanel" class="subtab-panel">
+      <div id="opsProviderPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-provider-settings" hidden>
         <summary data-i18n="manual.ops.providers.summary">연동/API 설정 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15549,7 +15665,7 @@
       </div>
       </div>
 
-      <div id="opsExportPanel" class="subtab-panel">
+      <div id="opsExportPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-export" hidden>
         <summary data-i18n="manual.ops.export.summary">백업/내보내기 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
@@ -15646,7 +15762,7 @@
       </div>
       </div>
 
-      <div id="opsMetaSyncPanel" class="subtab-panel">
+      <div id="opsMetaSyncPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-meta-sync" hidden>
         <summary data-i18n="manual.ops.meta_sync.summary">메타 동기화 페이지 활용 매뉴얼</summary>
         <div class="manual-block-body">
