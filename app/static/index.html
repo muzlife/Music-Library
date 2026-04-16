@@ -1150,7 +1150,7 @@
       display: flex;
       gap: 6px;
       justify-content: flex-end;
-      align-items: center;
+      align-items: stretch;
       flex-wrap: wrap;
     }
 
@@ -2092,19 +2092,26 @@
     body[data-shell-mode="admin"] .compact-stack-actions input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
     body[data-shell-mode="admin"] .compact-stack-actions select {
       min-height: var(--compact-control-height);
+      height: var(--compact-control-height);
       padding: 2px 6px;
       line-height: 1.1;
+      box-sizing: border-box;
+      align-self: stretch;
     }
 
     body[data-shell-mode="admin"] .compact-stack-actions button,
     body[data-shell-mode="admin"] .compact-stack-actions .btn {
       min-height: var(--compact-control-height);
+      height: var(--compact-control-height);
       padding: 2px 8px;
       line-height: 1.1;
+      box-sizing: border-box;
+      align-self: stretch;
     }
 
     body[data-shell-mode="admin"] .compact-stack-actions .btn.tiny {
       min-height: var(--compact-control-height);
+      height: var(--compact-control-height);
       padding: 2px 8px;
       line-height: 1.1;
     }
@@ -8067,6 +8074,18 @@
       align-items: end;
     }
 
+    body[data-shell-mode="admin"] .home-search-action {
+      align-items: stretch;
+    }
+
+    body[data-shell-mode="admin"] .home-search-action > button,
+    body[data-shell-mode="admin"] .home-search-action > .btn {
+      min-height: var(--compact-control-height);
+      height: var(--compact-control-height);
+      align-self: stretch;
+      box-sizing: border-box;
+    }
+
     .icon-btn {
       width: var(--action-btn-size);
       min-width: var(--action-btn-size);
@@ -11359,7 +11378,7 @@
                     <button id="operatorLookupBtn" class="btn secondary icon-btn" type="button" data-i18n-title="operator.lookup.action.run" data-i18n-aria-label="operator.lookup.action.run" title="조회" aria-label="조회">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                     </button>
-                    <button id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="operator.lookup.action.reset" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset"></button>
+                    <button id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset"></button>
                   </div>
                 </div>
               </div>
@@ -12148,11 +12167,15 @@
             <div id="homeMasterMeta" class="compact-line" style="margin-top:6px;"></div>
             <div id="homeMasterCorrectionRow" class="row" style="margin-top:6px;align-items:end;gap:8px;flex-wrap:wrap;display:none;">
               <label style="width:130px;flex:0 0 130px;">
-                <div class="mini" data-i18n="media.manage.master.correction.field.release_year.label">운영 발매연도</div>
+                <div class="dashboard-selected-sort-artist-label mini">
+                  <span data-i18n="media.manage.master.correction.field.release_year.label">운영 발매연도</span><span class="help-dot" tabindex="0" data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
+                </div>
                 <input id="homeMasterCorrectionReleaseYear" type="number" min="1900" max="2100" placeholder="예: 1978" />
               </label>
               <label style="width:160px;flex:0 0 160px;">
-                <div class="mini" data-i18n="media.manage.master.correction.field.domain_code.label">운영 도메인</div>
+                <div class="dashboard-selected-sort-artist-label mini">
+                  <span data-i18n="media.manage.master.correction.field.domain_code.label">운영 도메인</span><span class="help-dot" tabindex="0" data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
+                </div>
                 <select id="homeMasterCorrectionDomainCode">
                   <option value=""></option>
                   <option value="KOREA" data-i18n="common.domain.korea">가요</option>
@@ -12165,7 +12188,9 @@
                 </select>
               </label>
               <label style="flex:1 1 280px;">
-                <div class="mini" data-i18n="media.manage.master.correction.field.note.label">교정 메모</div>
+                <div class="dashboard-selected-sort-artist-label mini">
+                  <span data-i18n="media.manage.master.correction.field.note.label">교정 메모</span><span class="help-dot" tabindex="0" data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다. 이후 소스 교체나 재정렬 때 참고용으로 사용합니다.">?</span>
+                </div>
                 <input id="homeMasterCorrectionNote" type="text" placeholder="예: Discogs는 재반 기준, 내부 정렬은 원발매 기준" />
               </label>
               <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
@@ -12398,16 +12423,8 @@
                     <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
                   </select>
                 </div>
-                <div>
-                  <label for="goodsSearchArtist" data-i18n="collectibles.search.field.artist.label">연계 아티스트</label>
-                  <input id="goodsSearchArtist" data-i18n-placeholder="collectibles.search.field.artist.placeholder" placeholder="예: 산울림" />
-                </div>
               </div>
               <div class="ops-compact-form-row goods-search-compact-row--secondary" data-density-role="collectibles-search-secondary">
-                <div>
-                  <label for="goodsSearchLabel" data-i18n="collectibles.search.field.label.label">연계 레이블</label>
-                  <input id="goodsSearchLabel" data-i18n-placeholder="collectibles.search.field.label.placeholder" placeholder="예: 서울음반" />
-                </div>
                 <div>
                   <label for="goodsSearchAlbumMasterId" data-i18n="collectibles.search.field.album_master_id.label">연계 마스터 ID</label>
                   <input id="goodsSearchAlbumMasterId" type="number" min="1" data-i18n-placeholder="collectibles.search.field.album_master_id.placeholder" placeholder="예: 120" />
@@ -12447,7 +12464,7 @@
                   <button id="goodsSearchRunBtn" class="btn secondary icon-btn" type="button" data-i18n-title="common.search" data-i18n-aria-label="common.search" title="검색" aria-label="검색">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                   </button>
-                  <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>
+                  <button id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>
                 </div>
               </div>
             </div>
@@ -12566,38 +12583,9 @@
                 </div>
               </div>
               <div id="goodsManageAlbumMasterResults" class="goods-target-results"></div>
-            </div>
-
-            <div class="goods-map-section">
-              <div class="result-head" style="margin-bottom:0;">
-                <strong data-i18n="collectibles.manage.map.artist.title">아티스트 매핑</strong>
-                <span class="mini" data-i18n="collectibles.manage.map.artist.subtitle">문자열 기준</span>
-              </div>
-              <div id="goodsArtistMapList" class="goods-chip-list"></div>
-              <div id="goodsManageArtistControls" class="compact-stack" style="margin-top:8px;">
-                <input id="goodsManageArtistName" data-i18n-placeholder="collectibles.manage.map.artist.placeholder" placeholder="예: 산울림" />
-                <div class="compact-stack-actions">
-                  <button id="goodsManageArtistAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.artist.action.add">추가</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="goods-map-section">
-              <div class="result-head" style="margin-bottom:0;">
-                <strong data-i18n="collectibles.manage.map.label.title">레이블 매핑</strong>
-                <span class="mini" data-i18n="collectibles.manage.map.label.subtitle">문자열 기준</span>
-              </div>
-              <div id="goodsLabelMapList" class="goods-chip-list"></div>
-              <div id="goodsManageLabelControls" class="compact-stack" style="margin-top:8px;">
-                <input id="goodsManageLabelName" data-i18n-placeholder="collectibles.manage.map.label.placeholder" placeholder="예: 서울음반" />
-                <div class="compact-stack-actions">
-                  <button id="goodsManageLabelAddBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.label.action.add">추가</button>
-                </div>
-              </div>
-            </div>
 
             <div class="row">
-              <button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_mappings">매핑 저장</button>
+              <button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_album_master_mappings">마스터 매핑 저장</button>
             </div>
             <div id="goodsManageMappingStatus" class="status"></div>
             </section>
@@ -12914,7 +12902,7 @@
           </div>
           <div class="ops-compact-form-actions">
             <button id="quickCreateBtn" class="btn" data-i18n="media.register.direct.action.save">직접 등록 저장</button>
-            <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>
+            <button id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>
           </div>
         </div>
         <details id="quickRegisterExtraFields" class="ops-compact-extra-fields" style="margin-top:8px;">
@@ -13302,7 +13290,7 @@
 
         <div class="row" style="margin-top:12px;">
           <button id="createOwnedBtn" class="btn" data-i18n="media.register.detail.action.save">등록 저장</button>
-          <button id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n="media.register.detail.action.reset" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"></button>
+          <button id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"></button>
         </div>
         <div id="createStatus" class="status"></div>
         </div>
@@ -13380,7 +13368,7 @@
         <div class="row" style="margin-top:10px;">
           <button id="purchaseImportPreviewBtn" class="btn secondary" type="button" data-i18n="media.register.purchase.action.preview">미리보기</button>
           <button id="purchaseImportSaveBtn" class="btn" type="button" data-i18n="media.register.purchase.action.save_queue">수입 큐 저장</button>
-          <button id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>
+          <button id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>
         </div>
         <div id="purchaseImportStatus" class="status"></div>
 
@@ -13733,7 +13721,7 @@
           <input id="masterVariantBarcode" data-i18n-placeholder="media.register.master.field.variant_barcode.placeholder" placeholder="예: 8809338405141" />
         </div>
         <div class="row ops-compact-inline-field-actions" style="justify-content:flex-end;">
-          <button id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n="media.register.master.action.reset_filters" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"></button>
+          <button id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"></button>
         </div>
       </div>
       <div class="row" style="margin-top:6px;justify-content:space-between;align-items:center;">
@@ -14144,7 +14132,7 @@
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsCabinetDeleteBtn" class="btn ghost" type="button" data-i18n="ops.cabinet.action.delete">장식장 삭제</button>
-            <button id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>
+            <button id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>
             <button id="opsCabinetSaveBtn" class="btn" type="button" data-i18n="ops.cabinet.action.save">장식장 생성</button>
           </div>
           <div id="opsCabinetModeHint" class="mini muted" style="margin-top:6px;" data-i18n="ops.cabinet.mode_hint">신규 장식장을 만들 때는 전체 구조를 입력하고 `장식장 생성`을 누르세요.</div>
@@ -14255,7 +14243,7 @@
           </details>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsCameraDeleteBtn" class="btn ghost" type="button" data-i18n="ops.camera.action.delete">카메라 삭제</button>
-            <button id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.camera.action.reset" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>
+            <button id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>
             <button id="opsCameraSaveBtn" class="btn" type="button" data-i18n="ops.camera.action.save">카메라 저장</button>
           </div>
           <div id="opsCameraStatus" class="status"></div>
@@ -14325,7 +14313,7 @@
             </div>
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
-            <button id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.slot.action.reset" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"></button>
+            <button id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"></button>
             <button id="opsSlotReloadBtn" class="btn ghost" type="button" data-i18n="ops.slot.action.reload">목록 새로고침</button>
             <button id="opsSlotSaveBtn" class="btn" type="button" data-i18n="ops.slot.action.save">슬롯 저장</button>
           </div>
@@ -14474,7 +14462,7 @@
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
             <button id="opsAuthDeleteBtn" class="btn ghost" type="button" data-i18n="ops.account.action.delete">계정 삭제</button>
-            <button id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.account.action.reset" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>
+            <button id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>
             <button id="opsAuthReloadBtn" class="btn ghost" type="button" data-i18n="ops.account.action.reload">목록 새로고침</button>
             <button id="opsAuthSaveBtn" class="btn" type="button" data-i18n="ops.account.action.save">계정 저장</button>
           </div>
@@ -14592,7 +14580,7 @@
             </section>
           </div>
           <div class="row action-row-trailing-primary" style="margin-top:8px;">
-            <button id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n="ops.providers.action.reset" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset"></button>
+            <button id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset"></button>
           </div>
           <div id="opsProviderStatus" class="status"></div>
           <div class="mini muted" style="margin-top:8px;" data-i18n="ops.providers.outro">빈 secret 입력칸은 기존 값을 유지합니다. 현재 설정 여부는 아래 상태 문구와 placeholder로 확인할 수 있습니다.</div>
@@ -16975,6 +16963,7 @@
         "collectibles.manage.map.label.placeholder": '예: T-Entertainment',
         "collectibles.manage.map.label.action.add": '레이블 추가',
         "collectibles.manage.action.save_mappings": '매핑 저장',
+        "collectibles.manage.action.save_album_master_mappings": '마스터 매핑 저장',
         "collectibles.register.intro": '컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.',
         "collectibles.register.field.category.label": '카테고리',
         "collectibles.register.field.quantity.label": '수량',
@@ -19517,6 +19506,7 @@
         "collectibles.manage.map.label.placeholder": 'e.g. T-Entertainment',
         "collectibles.manage.map.label.action.add": 'Add Label',
         "collectibles.manage.action.save_mappings": 'Save Mappings',
+        "collectibles.manage.action.save_album_master_mappings": 'Save Master Mappings',
         "collectibles.register.intro": 'Register the collectible as an independent record first, then add default mappings if needed.',
         "collectibles.register.field.category.label": 'Category',
         "collectibles.register.field.quantity.label": 'Quantity',
@@ -22071,6 +22061,7 @@
         "collectibles.manage.map.label.placeholder": '例: T-Entertainment',
         "collectibles.manage.map.label.action.add": 'レーベル追加',
         "collectibles.manage.action.save_mappings": 'マッピング保存',
+        "collectibles.manage.action.save_album_master_mappings": 'マスター連携保存',
         "collectibles.register.intro": 'コレクタブルを独立レコードとして先に登録し、必要なら作成時に基本マッピングを一緒に追加します。',
         "collectibles.register.field.category.label": 'カテゴリ',
         "collectibles.register.field.quantity.label": '数量',
@@ -31797,6 +31788,35 @@
       }
       const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);
       await openMediaSearchDetailManage(masterId, ownedItemId);
+    }
+
+    function findDashboardOwnedItemRowById(ownedItemId, sourceKind = "SLOT") {
+      const targetOwnedItemId = Number(ownedItemId || 0);
+      if (targetOwnedItemId <= 0) return null;
+      const normalizedSourceKind = String(sourceKind || "").trim().toUpperCase();
+      if (normalizedSourceKind === "SLOT") {
+        const source = Array.isArray(homeDashboardSlotSelectionSnapshot) && homeDashboardSlotSelectionSnapshot.length
+          ? homeDashboardSlotSelectionSnapshot
+          : (Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : []);
+        return source.find((row) => Number(row?.id || 0) === targetOwnedItemId) || null;
+      }
+      if (normalizedSourceKind === "UNASSIGNED") {
+        return filterDashboardWorkbenchItems(homeDashboardUnassignedItems)
+          .find((row) => Number(row?.id || 0) === targetOwnedItemId) || null;
+      }
+      if (normalizedSourceKind === "SEARCH") {
+        return filterDashboardWorkbenchItems(homeDashboardSearchItems)
+          .find((row) => Number(row?.id || 0) === targetOwnedItemId) || null;
+      }
+      return null;
+    }
+
+    async function openDashboardOwnedItemDetailManage(ownedItemId, sourceKind = "SLOT") {
+      const targetOwnedItemId = Number(ownedItemId || 0);
+      if (targetOwnedItemId <= 0) return;
+      const row = findDashboardOwnedItemRowById(targetOwnedItemId, sourceKind);
+      const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);
+      await openMediaSearchDetailManage(masterId, targetOwnedItemId);
     }
 
     async function refreshDashboardSelectedSlotDetail() {
@@ -41566,8 +41586,6 @@
 
     function renderGoodsManageMappings() {
       renderGoodsChipList("goodsAlbumMasterMapList", goodsManageAlbumMasterMappings, "album_master");
-      renderGoodsChipList("goodsArtistMapList", goodsManageArtistMappings, "artist");
-      renderGoodsChipList("goodsLabelMapList", goodsManageLabelMappings, "label");
       renderGoodsCollectibleRelationList();
     }
 
@@ -41738,8 +41756,6 @@
       setValueIfPresent("goodsManageMemoryNote", "");
       setValueIfPresent("goodsManageImageUrls", "");
       setValueIfPresent("goodsManageAlbumMasterQuery", "");
-      setValueIfPresent("goodsManageArtistName", "");
-      setValueIfPresent("goodsManageLabelName", "");
       setValueIfPresent("goodsManageCollectibleQuery", "");
       setValueIfPresent("goodsManageRelationNote", "");
       if ($("goodsManageCategory")) $("goodsManageCategory").value = "POSTER";
@@ -41801,8 +41817,6 @@
         goodsStatusLabel(data?.status),
       ].filter((row) => row && row !== "-").join(" · ") || "-";
       $("goodsManageAlbumMasterQuery").value = "";
-      $("goodsManageArtistName").value = "";
-      $("goodsManageLabelName").value = "";
       $("goodsManageCollectibleQuery").value = "";
       $("goodsManageRelationNote").value = "";
       $("goodsManageRelationType").value = "SERIES";
@@ -41842,8 +41856,6 @@
         const params = new URLSearchParams();
         const queryText = $("goodsSearchQuery").value.trim();
         const category = $("goodsSearchCategory").value;
-        const artistName = $("goodsSearchArtist").value.trim();
-        const labelName = $("goodsSearchLabel").value.trim();
         const albumMasterId = Number($("goodsSearchAlbumMasterId").value || 0);
         const status = $("goodsSearchStatusFilter").value || "";
         const domainCode = $("goodsSearchDomainCode").value || "";
@@ -41855,8 +41867,6 @@
         if (category) params.set("category", category);
         if (status) params.set("status", status);
         if (domainCode) params.set("domain_code", domainCode);
-        if (artistName) params.set("artist_name", artistName);
-        if (labelName) params.set("label_name", labelName);
         if (albumMasterId > 0) params.set("album_master_id", String(albumMasterId));
         if (storageSlotId > 0) params.set("storage_slot_id", String(storageSlotId));
         if (linkedState) params.set("linked_state", linkedState);
@@ -44915,8 +44925,6 @@
       $("goodsSearchCategory").value = "";
       $("goodsSearchStatusFilter").value = "";
       $("goodsSearchDomainCode").value = "";
-      $("goodsSearchArtist").value = "";
-      $("goodsSearchLabel").value = "";
       $("goodsSearchAlbumMasterId").value = "";
       $("goodsSearchStorageSlotId").value = "";
       $("goodsSearchLinkedState").value = "ANY";
@@ -44925,7 +44933,7 @@
       setStatus("goodsSearchStatus", "", "");
       await loadGoodsSearchResults({ silent: true });
     });
-    ["goodsSearchQuery", "goodsSearchArtist", "goodsSearchLabel", "goodsSearchAlbumMasterId"].forEach((id) => {
+    ["goodsSearchQuery", "goodsSearchAlbumMasterId"].forEach((id) => {
       $(id).addEventListener("keydown", (e) => {
         if (e.key !== "Enter") return;
         e.preventDefault();
@@ -44950,26 +44958,6 @@
       if (e.key !== "Enter") return;
       e.preventDefault();
       searchGoodsCollectibleTargets();
-    });
-    $("goodsManageArtistAddBtn").addEventListener("click", () => {
-      addUniqueGoodsMappingValue("artist", $("goodsManageArtistName").value);
-      $("goodsManageArtistName").value = "";
-      setStatus("goodsManageMappingStatus", "", "");
-    });
-    $("goodsManageArtistName").addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return;
-      e.preventDefault();
-      $("goodsManageArtistAddBtn").click();
-    });
-    $("goodsManageLabelAddBtn").addEventListener("click", () => {
-      addUniqueGoodsMappingValue("label", $("goodsManageLabelName").value);
-      $("goodsManageLabelName").value = "";
-      setStatus("goodsManageMappingStatus", "", "");
-    });
-    $("goodsManageLabelName").addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return;
-      e.preventDefault();
-      $("goodsManageLabelAddBtn").click();
     });
     $("goodsManageAlbumMasterResults").addEventListener("click", (e) => {
       const button = e.target.closest("[data-goods-add-album-master]");
@@ -45982,7 +45970,7 @@
         e.stopPropagation();
         const ownedItemId = Number(editBtn.getAttribute("data-dashboard-slot-edit") || 0);
         if (ownedItemId > 0) {
-          loadHomeItemForEdit(ownedItemId);
+          void openDashboardOwnedItemDetailManage(ownedItemId, "SLOT");
         }
         return;
       }
@@ -45993,7 +45981,7 @@
         selectDashboardSlotRangeToId(ownedItemId);
         return;
       }
-      selectDashboardSingleSlotItemById(ownedItemId);
+      void openDashboardOwnedItemDetailManage(ownedItemId, "SLOT");
     });
     $("homeDashWorkbenchList").addEventListener("pointerdown", (e) => {
       if (isShellReadOnly()) return;
@@ -46031,8 +46019,9 @@
       if (editBtn) {
         e.stopPropagation();
         const ownedItemId = Number(editBtn.getAttribute("data-dashboard-workbench-edit") || 0);
+        const source = String(editBtn.getAttribute("data-dashboard-workbench-source") || "").trim().toUpperCase();
         if (ownedItemId > 0) {
-          loadHomeItemForEdit(ownedItemId);
+          void openDashboardOwnedItemDetailManage(ownedItemId, source);
         }
         return;
       }

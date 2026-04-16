@@ -46,6 +46,8 @@ from .config import get_settings
 from .schemas import (
     AlbumMasterBindRequest,
     AlbumMasterBindResponse,
+    AlbumMasterCorrectionUpdateRequest,
+    AlbumMasterCorrectionUpdateResponse,
     AlbumMasterDeleteResponse,
     AlbumMasterDuplicateCheckResponse,
     AlbumMasterDuplicateItem,
@@ -6409,6 +6411,18 @@ def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsR
             title=str(bound.get("title") or "").strip() or None,
             artist_or_brand=str(bound.get("artist_or_brand") or "").strip() or None,
             sort_artist_name=str(bound.get("sort_artist_name") or "").strip() or None,
+            release_year=int(bound["release_year"]) if bound.get("release_year") not in (None, "") else None,
+            domain_code=str(bound.get("domain_code") or "").strip() or None,
+            source_release_year=int(bound["source_release_year"]) if bound.get("source_release_year") not in (None, "") else None,
+            source_domain_code=str(bound.get("source_domain_code") or "").strip() or None,
+            override_release_year=int(bound["override_release_year"]) if bound.get("override_release_year") not in (None, "") else None,
+            override_domain_code=str(bound.get("override_domain_code") or "").strip() or None,
+            override_note=str(bound.get("override_note") or "").strip() or None,
+            has_manual_correction=bool(
+                bound.get("override_release_year") not in (None, "")
+                or str(bound.get("override_domain_code") or "").strip()
+                or str(bound.get("override_note") or "").strip()
+            ),
             items=_to_items(rows),
         )
 
@@ -8004,6 +8018,36 @@ def update_album_master_sort_artist_name(
     return AlbumMasterSortArtistUpdateResponse(
         album_master_id=int(updated["id"]),
         sort_artist_name=str(updated.get("sort_artist_name") or "").strip() or None,
+    )
+
+
+@app.patch("/album-masters/{album_master_id}/correction", response_model=AlbumMasterCorrectionUpdateResponse)
+def update_album_master_correction(
+    album_master_id: int,
+    payload: AlbumMasterCorrectionUpdateRequest,
+) -> AlbumMasterCorrectionUpdateResponse:
+    updated = db.update_album_master_correction(
+        album_master_id=album_master_id,
+        release_year=payload.release_year,
+        domain_code=payload.domain_code,
+        override_note=payload.override_note,
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="album_master not found")
+    return AlbumMasterCorrectionUpdateResponse(
+        album_master_id=int(updated["id"]),
+        release_year=int(updated["release_year"]) if updated.get("release_year") not in (None, "") else None,
+        domain_code=str(updated.get("domain_code") or "").strip() or None,
+        source_release_year=(
+            int(updated["source_release_year"]) if updated.get("source_release_year") not in (None, "") else None
+        ),
+        source_domain_code=str(updated.get("source_domain_code") or "").strip() or None,
+        override_release_year=(
+            int(updated["override_release_year"]) if updated.get("override_release_year") not in (None, "") else None
+        ),
+        override_domain_code=str(updated.get("override_domain_code") or "").strip() or None,
+        override_note=str(updated.get("override_note") or "").strip() or None,
+        has_manual_correction=bool(updated.get("has_manual_correction")),
     )
 
 
