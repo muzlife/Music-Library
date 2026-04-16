@@ -1,0 +1,66 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      qa_verified:
+        description: "QA 검증을 마쳤으면 yes 입력"
+        required: true
+        default: "yes"
+      install_requirements:
+        description: "운영 서버에서 requirements.txt 재설치"
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    if: ${{ inputs.qa_verified == 'yes' }}
+    runs-on:
+      - self-hosted
+      - macOS
+      - muzlife-qa
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Check out selected ref
+        uses: actions/checkout@v4
+
+      - name: Validate deploy inputs
+        run: |
+          test -n "${{ vars.PROD_SSH_TARGET }}"
+          test -n "${{ vars.PROD_APP_ROOT }}"
+
+      - name: Show release summary
+        run: |
+          echo "## Production deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "- branch: \`${GITHUB_REF_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- sha: \`${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- target: \`${{ vars.PROD_SSH_TARGET }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- app root: \`${{ vars.PROD_APP_ROOT }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy to production
+        env:
+          PROD_SSH_TARGET: ${{ vars.PROD_SSH_TARGET }}
+          PROD_APP_ROOT: ${{ vars.PROD_APP_ROOT }}
+          PROD_SSH_KEY_PATH: ${{ vars.PROD_SSH_KEY_PATH }}
+          PROD_LAUNCHD_LABEL: ${{ vars.PROD_LAUNCHD_LABEL }}
+          PROD_HEALTHCHECK_URL: ${{ vars.PROD_HEALTHCHECK_URL }}
+          REMOTE_INSTALL_REQUIREMENTS: ${{ inputs.install_requirements && '1' || '0' }}
+        run: ./deploy/scripts/deploy_to_prod.sh
+
+      - name: Mark deploy success
+        if: success()
+        run: |
+          echo "- status: success" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Mark deploy failure
+        if: failure()
+        run: |
+          echo "- status: failure" >> "$GITHUB_STEP_SUMMARY"
+          echo "- next action: rerun with previous verified ref if rollback is needed" >> "$GITHUB_STEP_SUMMARY"

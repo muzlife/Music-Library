@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import html as html_lib
+import logging
+import os
 import re
+import time
 from dataclasses import asdict, dataclass, field
 from typing import Any
 from urllib.parse import quote
@@ -10,6 +13,8 @@ import httpx
 
 from ..config import get_settings
 
+logger = logging.getLogger(__name__)
+PROVIDER_SLOW_SEC = float(os.getenv("PROVIDER_SLOW_SEC", "1.2"))
 
 @dataclass
 class Candidate:
@@ -60,12 +65,44 @@ def _normalize_text(s: str | None) -> str:
     return re.sub(r"\s+", " ", s.strip().lower())
 
 
+def _normalize_compact_text(s: str | None) -> str:
+    return re.sub(r"[\s\-\._/]+", "", _normalize_text(s))
+
+
 def _token_similarity(a: str, b: str) -> float:
     ta = set(_normalize_text(a).split())
     tb = set(_normalize_text(b).split())
     if not ta or not tb:
         return 0.0
     return len(ta & tb) / len(ta | tb)
+
+
+def _lookup_match_level(query_value: Any, candidate_value: Any) -> int:
+    query_text = _normalize_text(str(query_value or ""))
+    candidate_text = _normalize_text(str(candidate_value or ""))
+    if not query_text or not candidate_text:
+        return 0
+    if candidate_text == query_text:
+        return 3
+    if query_text in candidate_text:
+        return 2
+    query_tokens = set(query_text.split())
+    candidate_tokens = set(candidate_text.split())
+    if query_tokens and query_tokens.issubset(candidate_tokens):
+        return 1
+    return 0
+
+
+def _lookup_compact_match_level(query_value: Any, candidate_value: Any) -> int:
+    query_text = _normalize_compact_text(str(query_value or ""))
+    candidate_text = _normalize_compact_text(str(candidate_value or ""))
+    if not query_text or not candidate_text:
+        return 0
+    if candidate_text == query_text:
+        return 3
+    if query_text in candidate_text:
+        return 2
+    return 0
 
 
 def _safe_year(v: Any) -> int | None:
@@ -1021,13 +1058,29 @@ def _maniadb_search(query: str, limit: int = 5) -> list[Candidate]:
         return []
 
     with httpx.Client(timeout=15.0, follow_redirects=True) as client:
+        album_started_at = time.perf_counter()
         album_res = client.get(f"{base_url}/search/{encoded_query}/", params={"sr": "L"})
+        album_elapsed = time.perf_counter() - album_started_at
+        if album_elapsed >= PROVIDER_SLOW_SEC:
+            logger.warning(
+                "provider_slow source=MANIADB op=search_album elapsed=%.3fs query=%s",
+                album_elapsed,
+                query,
+            )
         album_res.raise_for_status()
         albums = _parse_maniadb_album_candidates(album_res.text, query=query, limit=limit, base_url=base_url)
         if len(albums) >= limit:
             return albums[:limit]
 
+        artist_started_at = time.perf_counter()
         artist_res = client.get(f"{base_url}/search/{encoded_query}/", params={"sr": "P"})
+        artist_elapsed = time.perf_counter() - artist_started_at
+        if artist_elapsed >= PROVIDER_SLOW_SEC:
+            logger.warning(
+                "provider_slow source=MANIADB op=search_artist elapsed=%.3fs query=%s",
+                artist_elapsed,
+                query,
+            )
         artist_res.raise_for_status()
         artists = _parse_maniadb_artist_candidates(
             artist_res.text,
@@ -1044,7 +1097,15 @@ def _discogs_search(params: dict[str, Any]) -> list[Candidate]:
         return []
 
     with httpx.Client(timeout=15.0) as client:
+        started_at = time.perf_counter()
         response = client.get("https://api.discogs.com/database/search", params=params, headers=headers)
+        elapsed = time.perf_counter() - started_at
+        if elapsed >= PROVIDER_SLOW_SEC:
+            logger.warning(
+                "provider_slow source=DISCOGS op=search elapsed=%.3fs query=%s",
+                elapsed,
+                params.get("q") or params.get("barcode") or "",
+            )
         response.raise_for_status()
         data = response.json()
 
@@ -1368,6 +1429,71 @@ def search_discogs_by_query(query: str, limit: int = 5) -> list[dict[str, Any]]:
     return [c.to_dict() for c in candidates]
 
 
+def search_discogs_artist_name_variations(
+    artist_name: str,
+    limit: int = 6,
+    suppress_errors: bool = True,
+) -> list[str]:
+    artist_name_s = str(artist_name or "").strip()
+    if not artist_name_s:
+        return []
+    headers = _discogs_headers()
+    if headers is None:
+        return []
+
+    variation_limit = max(1, min(int(limit or 6), 12))
+    names: list[str] = []
+    seen: set[str] = set()
+
+    def remember(value: Any) -> None:
+        text = str(value or "").strip()
+        if not text:
+            return
+        key = _normalize_text(text)
+        if not key or key in seen:
+            return
+        seen.add(key)
+        names.append(text)
+
+    remember(artist_name_s)
+
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            response = client.get(
+                "https://api.discogs.com/database/search",
+                params={"q": artist_name_s, "type": "artist", "per_page": variation_limit},
+                headers=headers,
+            )
+            response.raise_for_status()
+            data = response.json()
+            rows = data.get("results") or []
+            for row in rows:
+                resource_url = _pick_first_text(row.get("resource_url"))
+                artist_id = _pick_first_text(row.get("id"))
+                remember(row.get("title"))
+                detail = None
+                if resource_url:
+                    detail_response = client.get(resource_url, headers=headers)
+                    detail_response.raise_for_status()
+                    detail = detail_response.json()
+                elif artist_id:
+                    detail_response = client.get(f"https://api.discogs.com/artists/{artist_id}", headers=headers)
+                    detail_response.raise_for_status()
+                    detail = detail_response.json()
+                if isinstance(detail, dict):
+                    remember(detail.get("name"))
+                    for variation in detail.get("namevariations") or []:
+                        remember(variation)
+                if len(names) >= variation_limit:
+                    break
+    except httpx.HTTPError:
+        if suppress_errors:
+            return names
+        raise
+
+    return names[:variation_limit]
+
+
 def _aladin_search(query: str, limit: int = 5) -> list[Candidate]:
     settings = get_settings()
     if not settings.aladin_ttb_key:
@@ -1610,7 +1736,27 @@ def _maniadb_variant_cover_url(album_id: str, variant_seq: str | None, side: str
     side_code = "b" if str(side or "").strip().lower() == "b" else "f"
     if not group or not digits or not seq:
         return None
-    return f"http://i.maniadb.com/images/album/{group}/{digits}_{seq}_{side_code}.jpg"
+    return f"https://i.maniadb.com/images/album/{group}/{digits}_{seq}_{side_code}.jpg"
+
+
+def _maniadb_variant_image_matches(url: str | None, album_id: str | None, variant_seq: str | None) -> bool:
+    normalized_url = _clean_html_text(url)
+    digits = re.sub(r"\D", "", str(album_id or "").strip())
+    seq = re.sub(r"\D", "", str(variant_seq or "").strip())
+    if not normalized_url or not digits or not seq:
+        return False
+    lower = normalized_url.lower()
+    legacy_match = re.search(r"/(\d+)_([fb])_([0-9]+)\.jpg$", lower)
+    if legacy_match:
+        file_album_id = legacy_match.group(1).lstrip("0") or "0"
+        file_seq = legacy_match.group(3).lstrip("0") or "0"
+        return file_album_id == digits.lstrip("0") and file_seq == seq.lstrip("0")
+    current_match = re.search(r"/(\d+)_([0-9]+)_[fb]\.jpg$", lower)
+    if not current_match:
+        return False
+    file_album_id = current_match.group(1).lstrip("0") or "0"
+    file_seq = current_match.group(2).lstrip("0") or "0"
+    return file_album_id == digits.lstrip("0") and file_seq == seq.lstrip("0")
 
 
 def _normalize_maniadb_image_url(url: str | None, album_id: str | None = None, variant_seq: str | None = None) -> str | None:
@@ -1619,6 +1765,8 @@ def _normalize_maniadb_image_url(url: str | None, album_id: str | None = None, v
         return None
     normalized = re.sub(r"/images/album_t(?:/\d+)?/", "/images/album/", cleaned)
     normalized = normalized.replace("/images/album_t/", "/images/album/")
+    normalized = re.sub(r"^http://i\.maniadb\.com/", "https://i.maniadb.com/", normalized, flags=re.IGNORECASE)
+    normalized = re.sub(r"^//i\.maniadb\.com/", "https://i.maniadb.com/", normalized, flags=re.IGNORECASE)
     return normalized
 
 
@@ -1677,13 +1825,7 @@ def _parse_maniadb_release_legend(
                 continue
             expected_token = f"{album_id}_{variant_seq}_".lower() if album_id and variant_seq else ""
             if expected_token and expected_token not in normalized_uri.lower():
-                match = re.search(r"/(\d+)_([0-9]+)_[fb]\.jpg$", normalized_uri.lower())
-                if match:
-                    file_album_id = match.group(1).lstrip("0") or "0"
-                    file_seq = match.group(2).lstrip("0") or "0"
-                    if str(file_album_id) != str(album_id).lstrip("0") or str(file_seq) != str(variant_seq).lstrip("0"):
-                        continue
-                else:
+                if not _maniadb_variant_image_matches(normalized_uri, album_id, variant_seq):
                     continue
             image_type = _pick_first_text(image.get("type")) or ("추가" if image_items else "앞면")
             image_items.append({"type": image_type, "uri": normalized_uri, "uri150": normalized_uri})
@@ -1698,8 +1840,6 @@ def _parse_maniadb_release_legend(
             track_html = track_block_match.group(1)
             tokens = re.findall(r"\d+\.\s*(?:<[^>]+>\s*)*([^/<]+)", track_html)
             track_list = [t for t in (_clean_html_text(tok) for tok in tokens) if t]
-    elif cover_image_url:
-        image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
     else:
         cover_image_url = _maniadb_variant_cover_url(album_id, variant_seq, "f")
         if cover_image_url:
@@ -2132,14 +2272,224 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
     ]
 
 
-def search_album_master_candidates(query: str, source: str = "AUTO", limit: int = 10) -> list[dict[str, Any]]:
+def _discogs_metadata_artist_match_level(candidate: dict[str, Any], artist_or_brand: str | None) -> int:
+    return _lookup_match_level(artist_or_brand, candidate.get("artist_or_brand"))
+
+
+def _discogs_metadata_title_match_level(candidate: dict[str, Any], title: str | None) -> int:
+    return max(
+        _lookup_match_level(title, candidate.get("title")),
+        _lookup_compact_match_level(title, candidate.get("title")),
+    )
+
+
+def _filter_discogs_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    artist_or_brand: str | None = None,
+    title: str | None = None,
+) -> list[dict[str, Any]]:
+    narrowed = candidates
+
+    if artist_or_brand:
+        matched_artist = [candidate for candidate in narrowed if _discogs_metadata_artist_match_level(candidate, artist_or_brand) > 0]
+        if matched_artist:
+            narrowed = matched_artist
+
+    if title:
+        matched_title = [candidate for candidate in narrowed if _discogs_metadata_title_match_level(candidate, title) > 0]
+        if matched_title:
+            narrowed = matched_title
+
+    if artist_or_brand or title:
+        narrowed = sorted(
+            narrowed,
+            key=lambda candidate: (
+                _discogs_metadata_artist_match_level(candidate, artist_or_brand),
+                _discogs_metadata_title_match_level(candidate, title),
+                float(candidate.get("confidence") or 0.0),
+            ),
+            reverse=True,
+        )
+
+    return narrowed
+
+
+def _dedupe_discogs_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    id_key: str,
+    limit: int,
+    artist_or_brand: str | None = None,
+    title: str | None = None,
+) -> list[dict[str, Any]]:
+    dedup: dict[str, dict[str, Any]] = {}
+    for row in candidates:
+        candidate = dict(row)
+        candidate_id = str(candidate.get(id_key) or "").strip()
+        if not candidate_id:
+            continue
+        current = dedup.get(candidate_id)
+        if current is None or float(candidate.get("confidence") or 0.0) > float(current.get("confidence") or 0.0):
+            dedup[candidate_id] = candidate
+    merged = list(dedup.values())
+    filtered = _filter_discogs_candidates(
+        merged,
+        artist_or_brand=artist_or_brand,
+        title=title,
+    )
+    return filtered[: max(1, int(limit or 1))]
+
+
+def _search_discogs_release_with_artist_variations(
+    *,
+    query: str,
+    artist_or_brand: str | None,
+    title: str | None,
+    limit: int,
+) -> list[dict[str, Any]]:
+    artist_text = str(artist_or_brand or "").strip()
+    title_text = str(title or "").strip()
+    if not artist_text:
+        return []
+
+    variation_names = search_discogs_artist_name_variations(artist_text, limit=6, suppress_errors=True)
+    if not variation_names:
+        return []
+
+    collected: list[dict[str, Any]] = []
+    seen_queries: set[str] = {_normalize_text(query)}
+
+    def run_query(search_query: str) -> list[dict[str, Any]]:
+        normalized_query = _normalize_text(search_query)
+        if not normalized_query or normalized_query in seen_queries:
+            return []
+        seen_queries.add(normalized_query)
+        return search_discogs_by_query(search_query, limit=limit)
+
+    for variation_name in variation_names:
+        variation_text = str(variation_name or "").strip()
+        if not variation_text:
+            continue
+        query_text = " ".join(part for part in [variation_text, title_text] if part).strip()
+        results = run_query(query_text)
+        if title_text:
+            results = [candidate for candidate in results if _discogs_metadata_title_match_level(candidate, title_text) > 0]
+        else:
+            results = _filter_discogs_candidates(
+                results,
+                artist_or_brand=variation_text,
+                title=title_text,
+            )
+        if results:
+            collected.extend(results)
+            break
+
+    if not collected and title_text:
+        for variation_name in variation_names:
+            variation_text = str(variation_name or "").strip()
+            if not variation_text:
+                continue
+            results = run_query(variation_text)
+            matched = [candidate for candidate in results if _discogs_metadata_title_match_level(candidate, title_text) > 0]
+            if matched:
+                collected.extend(matched)
+                break
+
+    return _dedupe_discogs_candidates(
+        collected,
+        id_key="external_id",
+        limit=limit,
+        artist_or_brand=artist_text,
+        title=title_text,
+    )
+
+
+def _search_discogs_master_with_artist_variations(
+    *,
+    query: str,
+    artist_or_brand: str | None,
+    title: str | None,
+    limit: int,
+) -> list[dict[str, Any]]:
+    artist_text = str(artist_or_brand or "").strip()
+    title_text = str(title or "").strip()
+    if not artist_text:
+        return []
+
+    variation_names = search_discogs_artist_name_variations(artist_text, limit=6, suppress_errors=True)
+    if not variation_names:
+        return []
+
+    collected: list[dict[str, Any]] = []
+    seen_queries: set[str] = {_normalize_text(query)}
+
+    def run_query(search_query: str) -> list[dict[str, Any]]:
+        normalized_query = _normalize_text(search_query)
+        if not normalized_query or normalized_query in seen_queries:
+            return []
+        seen_queries.add(normalized_query)
+        return search_discogs_master_by_query(search_query, limit=limit)
+
+    for variation_name in variation_names:
+        variation_text = str(variation_name or "").strip()
+        if not variation_text:
+            continue
+        query_text = " ".join(part for part in [variation_text, title_text] if part).strip()
+        results = _filter_discogs_candidates(
+            run_query(query_text),
+            artist_or_brand=variation_text,
+            title=title_text,
+        )
+        if results:
+            collected.extend(results)
+            break
+
+    if not collected and title_text:
+        for variation_name in variation_names:
+            variation_text = str(variation_name or "").strip()
+            if not variation_text:
+                continue
+            results = _filter_discogs_candidates(
+                run_query(variation_text),
+                artist_or_brand=variation_text,
+                title=title_text,
+            )
+            if results:
+                collected.extend(results)
+                break
+
+    return _dedupe_discogs_candidates(
+        collected,
+        id_key="master_external_id",
+        limit=limit,
+        artist_or_brand=artist_text,
+        title=title_text,
+    )
+
+
+def search_album_master_candidates(
+    query: str,
+    source: str = "AUTO",
+    limit: int = 10,
+    artist_or_brand: str | None = None,
+    title: str | None = None,
+) -> list[dict[str, Any]]:
     source_u = (source or "AUTO").upper()
     limit_n = max(1, min(limit, 50))
     has_korean_query = bool(re.search(r"[가-힣]", query))
     candidates: list[dict[str, Any]] = []
 
     if source_u in {"AUTO", "DISCOGS"}:
-        candidates.extend(search_discogs_master_by_query(query, limit=limit_n))
+        discogs_candidates = search_discogs_master_by_query(query, limit=limit_n)
+        if not discogs_candidates and (artist_or_brand or title):
+            discogs_candidates = _search_discogs_master_with_artist_variations(
+                query=query,
+                artist_or_brand=artist_or_brand,
+                title=title,
+                limit=limit_n,
+            )
+        candidates.extend(discogs_candidates)
 
     if source_u in {"AUTO", "MANIADB"}:
         if source_u == "MANIADB" or has_korean_query:
@@ -2511,6 +2861,8 @@ def search_music_metadata(
     category: str | None = None,
     source: str = "AUTO",
     limit: int = 5,
+    artist_or_brand: str | None = None,
+    title: str | None = None,
 ) -> list[dict[str, Any]]:
     """
     Provider priority:
@@ -2527,7 +2879,15 @@ def search_music_metadata(
         if barcode:
             return search_discogs_by_barcode(barcode, limit=limit)[: max(1, limit)]
         if query:
-            return search_discogs_by_query(query, limit=limit)[: max(1, limit)]
+            discogs = search_discogs_by_query(query, limit=limit)
+            if discogs or not (artist_or_brand or title):
+                return discogs[: max(1, limit)]
+            return _search_discogs_release_with_artist_variations(
+                query=query,
+                artist_or_brand=artist_or_brand,
+                title=title,
+                limit=limit,
+            )[: max(1, limit)]
         return []
     if source_u == "ALADIN":
         if barcode:
@@ -2561,6 +2921,13 @@ def search_music_metadata(
             candidates.extend(search_musicbrainz_by_barcode(barcode, limit=max(1, limit // 2)))
     elif query:
         discogs: list[dict[str, Any]] = search_discogs_by_query(query, limit=limit)
+        if not discogs and (artist_or_brand or title):
+            discogs = _search_discogs_release_with_artist_variations(
+                query=query,
+                artist_or_brand=artist_or_brand,
+                title=title,
+                limit=limit,
+            )
         if discogs:
             candidates.extend(discogs)
         maniadb: list[dict[str, Any]] = []
@@ -2703,7 +3070,15 @@ def resolve_release_master_reference(source: str, external_id: str) -> dict[str,
             return None
         try:
             with httpx.Client(timeout=15.0) as client:
+                started_at = time.perf_counter()
                 detail = _fetch_discogs_release_detail(ext, headers=headers, client=client)
+                elapsed = time.perf_counter() - started_at
+                if elapsed >= PROVIDER_SLOW_SEC:
+                    logger.warning(
+                        "provider_slow source=DISCOGS op=release_detail elapsed=%.3fs release_id=%s",
+                        elapsed,
+                        ext,
+                    )
         except httpx.HTTPError:
             return None
         if not detail:
@@ -2718,6 +3093,8 @@ def resolve_release_master_reference(source: str, external_id: str) -> dict[str,
                 m = re.search(r"/masters/(\d+)", master_url)
                 if m:
                     master_id = str(m.group(1))
+        if not master_id:
+            master_id = str(detail.get("master_external_id") or "").strip()
         if not master_id:
             return None
 

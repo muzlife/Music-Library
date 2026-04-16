@@ -46,6 +46,8 @@ from .config import get_settings
 from .schemas import (
     AlbumMasterBindRequest,
     AlbumMasterBindResponse,
+    AlbumMasterCorrectionUpdateRequest,
+    AlbumMasterCorrectionUpdateResponse,
     AlbumMasterDeleteResponse,
     AlbumMasterDuplicateCheckResponse,
     AlbumMasterDuplicateItem,
@@ -54,7 +56,9 @@ from .schemas import (
     AlbumMasterImportVariantsRequest,
     AlbumMasterImportVariantsResponse,
     AlbumMasterListItem,
+    AlbumMasterMergeHistoryItem,
     AlbumMasterMergeRequest,
+    AlbumMasterMergeRollbackResponse,
     AlbumMasterMergeResponse,
     AlbumMasterSearchRequest,
     AlbumMasterSearchResponse,
@@ -195,6 +199,7 @@ from .services.providers import (
     get_album_master_variants_page,
     resolve_release_master_reference,
     search_album_master_candidates,
+    search_discogs_artist_name_variations,
     search_music_metadata,
 )
 
@@ -231,8 +236,28 @@ else:
     if not hasattr(schemas_module, "OpsPlacementHintResponse"):
         schemas_module.OpsPlacementHintResponse = OpsPlacementHintResponse
 
+
+class OwnedItemRelationSaveItem(BaseModel):
+    relation_type: Literal["MASTER_CHILD", "SERIES_MEMBER", "BOX_MEMBER_OF", "RELATED_RELEASE"]
+    target_kind: Literal["ALBUM_MASTER", "COPY_GROUP", "OWNED_ITEM", "PRODUCT_GROUP"]
+    target_ref: str
+    note: str | None = None
+    display_order: int | None = 0
+
+
+class OwnedItemRelationSaveRequest(BaseModel):
+    relations: list[OwnedItemRelationSaveItem] = Field(default_factory=list)
+
+
+class ProductGroupCreateRequest(BaseModel):
+    group_type: Literal["SERIES", "CAMPAIGN"] = "SERIES"
+    group_name: str = Field(min_length=1, max_length=120)
+    description: str | None = None
+
+
 app = FastAPI(title="Hahahoho Library API", version="0.1.0")
 logger = logging.getLogger(__name__)
+OWNED_ITEM_SAVE_SLOW_SEC = float(os.getenv("OWNED_ITEM_SAVE_SLOW_SEC", "0.7"))
 MUSIC_CATEGORIES = {"LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"}
 DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"}
 LEGACY_DOMAIN_CODE_MAP = {"KOREAN": "KOREA", "JPOP": "JAPAN", "OTHER": "WORLD_OTHER"}
@@ -756,6 +781,10 @@ def _normalize_lookup_text(value: Any) -> str:
     return re.sub(r"\s+", " ", text)
 
 
+def _normalize_compact_lookup_text(value: Any) -> str:
+    return re.sub(r"[\s\-\._/]+", "", _normalize_lookup_text(value))
+
+
 def _lookup_match_level(query_value: Any, candidate_value: Any) -> int:
     query_text = _normalize_lookup_text(query_value)
     candidate_text = _normalize_lookup_text(candidate_value)
@@ -773,12 +802,35 @@ def _lookup_match_level(query_value: Any, candidate_value: Any) -> int:
     return 0
 
 
+def _lookup_compact_match_level(query_value: Any, candidate_value: Any) -> int:
+    query_text = _normalize_compact_lookup_text(query_value)
+    candidate_text = _normalize_compact_lookup_text(candidate_value)
+    if not query_text or not candidate_text:
+        return 0
+    if candidate_text == query_text:
+        return 3
+    if query_text in candidate_text:
+        return 2
+    return 0
+
+
+def _candidate_artist_match_level(candidate: dict[str, Any], artist_or_brand: str | None) -> int:
+    return _lookup_match_level(artist_or_brand, candidate.get("artist_or_brand"))
+
+
+def _candidate_title_match_level(candidate: dict[str, Any], title: str | None) -> int:
+    return max(
+        _lookup_match_level(title, candidate.get("title")),
+        _lookup_compact_match_level(title, candidate.get("title")),
+    )
+
+
 def _candidate_matches_artist_filter(candidate: dict[str, Any], artist_or_brand: str | None) -> bool:
-    return _lookup_match_level(artist_or_brand, candidate.get("artist_or_brand")) > 0
+    return _candidate_artist_match_level(candidate, artist_or_brand) > 0
 
 
 def _candidate_matches_title_filter(candidate: dict[str, Any], title: str | None) -> bool:
-    return _lookup_match_level(title, candidate.get("title")) > 0
+    return _candidate_title_match_level(candidate, title) > 0
 
 
 def _filter_maniadb_candidates(
@@ -803,14 +855,311 @@ def _filter_maniadb_candidates(
         narrowed = sorted(
             narrowed,
             key=lambda candidate: (
-                _lookup_match_level(artist_or_brand, candidate.get("artist_or_brand")),
-                _lookup_match_level(title, candidate.get("title")),
+                _candidate_artist_match_level(candidate, artist_or_brand),
+                _candidate_title_match_level(candidate, title),
                 float(candidate.get("confidence") or 0.0),
             ),
             reverse=True,
         )
 
     return narrowed
+
+
+_DIRECT_MB_RELEASE_PATTERN = re.compile(
+    r"(?i)(?:^release:|musicbrainz\.org/release/)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+)
+
+
+def _parse_direct_source_reference(query: str | None, *, source: str = "AUTO") -> dict[str, str] | None:
+    text = str(query or "").strip()
+    if not text:
+        return None
+    source_u = str(source or "AUTO").strip().upper() or "AUTO"
+
+    def allows(code: str) -> bool:
+        return source_u in {"AUTO", code}
+
+    if allows("DISCOGS"):
+        release_match = re.search(r"(?i)(?:^release:|discogs\.com/release/)(\d+)", text)
+        if release_match:
+            return {"source": "DISCOGS", "kind": "release", "external_id": str(release_match.group(1))}
+        master_match = re.search(r"(?i)(?:^master:|discogs\.com/master(?:s)?/)(\d+)", text)
+        if master_match:
+            return {"source": "DISCOGS", "kind": "master", "external_id": str(master_match.group(1))}
+
+    if allows("MANIADB"):
+        album_match = re.search(r"(?i)(?:^album:|maniadb\.com/album/)(\d+(?::\d+)?)", text)
+        if album_match:
+            return {"source": "MANIADB", "kind": "album", "external_id": str(album_match.group(1))}
+
+    if allows("MUSICBRAINZ"):
+        musicbrainz_match = _DIRECT_MB_RELEASE_PATTERN.search(text)
+        if musicbrainz_match:
+            return {"source": "MUSICBRAINZ", "kind": "release", "external_id": str(musicbrainz_match.group(1))}
+
+    return None
+
+
+def _metadata_candidate_from_snapshot(source: str, external_id: str, snapshot: dict[str, Any]) -> dict[str, Any]:
+    raw = snapshot.get("raw") if isinstance(snapshot.get("raw"), dict) else {}
+    title = (
+        _clean_text(raw.get("title"))
+        or _clean_text(snapshot.get("title"))
+        or f"{str(source or '').strip().upper()} Release #{external_id}"
+    )
+    country = _clean_text(raw.get("country")) or _clean_text(snapshot.get("pressing_country"))
+    return {
+        "source": str(source or "").strip().upper(),
+        "external_id": str(external_id or "").strip(),
+        "title": title,
+        "artist_or_brand": _clean_text(snapshot.get("artist_or_brand")),
+        "release_year": snapshot.get("release_year"),
+        "released_date": _clean_text(snapshot.get("released_date")),
+        "country": country,
+        "format_name": _clean_text(snapshot.get("format_name")),
+        "barcode": _clean_text(snapshot.get("barcode")),
+        "catalog_no": _discogs_catalog_no(snapshot.get("catalog_no")),
+        "label_name": _clean_text(snapshot.get("label_name")),
+        "cover_image_url": _clean_text(snapshot.get("cover_image_url")),
+        "track_list": list(snapshot.get("track_list") or []),
+        "media_type": _clean_text(snapshot.get("media_type")),
+        "release_type": _clean_text(snapshot.get("release_type")),
+        "domain_code": _clean_text(snapshot.get("domain_code")),
+        "genres": list(snapshot.get("genres") or []),
+        "styles": list(snapshot.get("styles") or []),
+        "disc_count": snapshot.get("disc_count"),
+        "speed_rpm": snapshot.get("speed_rpm"),
+        "has_obi": snapshot.get("has_obi"),
+        "runout_matrix": list(snapshot.get("runout_matrix") or []),
+        "pressing_country": _clean_text(snapshot.get("pressing_country")),
+        "source_notes": _clean_text(snapshot.get("source_notes")),
+        "credits": list(snapshot.get("credits") or []),
+        "identifier_items": list(snapshot.get("identifier_items") or []),
+        "image_items": list(snapshot.get("image_items") or []),
+        "company_items": list(snapshot.get("company_items") or []),
+        "series": list(snapshot.get("series") or []),
+        "format_items": list(snapshot.get("format_items") or []),
+        "track_items": list(snapshot.get("track_items") or []),
+        "label_items": list(snapshot.get("label_items") or []),
+        "confidence": 1.0,
+        "raw": raw,
+    }
+
+
+def _dedupe_metadata_candidates(candidates: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    dedup: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in candidates:
+        candidate = dict(row)
+        source = str(candidate.get("source") or "").strip().upper()
+        external_id = str(candidate.get("external_id") or "").strip()
+        if not source or not external_id:
+            continue
+        current = dedup.get((source, external_id))
+        if current is None or float(candidate.get("confidence") or 0.0) > float(current.get("confidence") or 0.0):
+            dedup[(source, external_id)] = candidate
+    merged = sorted(dedup.values(), key=lambda item: float(item.get("confidence") or 0.0), reverse=True)
+    return merged[: max(1, int(limit or 1))]
+
+
+def _build_direct_metadata_candidates(query: str | None, *, source: str = "AUTO", limit: int = 5) -> list[dict[str, Any]] | None:
+    parsed = _parse_direct_source_reference(query, source=source)
+    if not parsed:
+        return None
+
+    source_code = parsed["source"]
+    kind = parsed["kind"]
+    external_id = parsed["external_id"]
+
+    if kind == "release":
+        snapshot = get_source_release_snapshot(source=source_code, external_id=external_id)
+        if not snapshot:
+            return []
+        return [_metadata_candidate_from_snapshot(source_code, external_id, snapshot)]
+
+    if source_code == "DISCOGS" and kind == "master":
+        variants = get_album_master_variants(source="DISCOGS", master_external_id=external_id, limit=limit, include_details=True)
+        return _dedupe_metadata_candidates(variants, limit)
+
+    if source_code == "MANIADB" and kind == "album":
+        variants = get_album_master_variants(source="MANIADB", master_external_id=external_id, limit=limit, include_details=False)
+        return _dedupe_metadata_candidates(variants, limit)
+
+    return []
+
+
+def _build_album_master_candidate_from_release_reference(source: str, release_external_id: str) -> dict[str, Any] | None:
+    master_ref = resolve_release_master_reference(source=source, external_id=release_external_id)
+    if not isinstance(master_ref, dict):
+        return None
+    source_code = str(master_ref.get("source") or source).strip().upper()
+    master_external_id = str(master_ref.get("master_external_id") or "").strip()
+    if not source_code or not master_external_id:
+        return None
+    preview = None
+    if source_code in {"DISCOGS", "MANIADB"}:
+        variants = get_album_master_variants(source=source_code, master_external_id=master_external_id, limit=1, include_details=False)
+        preview = variants[0] if variants else None
+    return {
+        "source": source_code,
+        "master_external_id": master_external_id,
+        "title": _clean_text(master_ref.get("title")) or _clean_text((preview or {}).get("title")) or f"{source_code} Master #{master_external_id}",
+        "artist_or_brand": _clean_text(master_ref.get("artist_or_brand")) or _clean_text((preview or {}).get("artist_or_brand")),
+        "release_year": master_ref.get("release_year") if master_ref.get("release_year") is not None else (preview or {}).get("release_year"),
+        "label_name": _clean_text((preview or {}).get("label_name")),
+        "catalog_no": _discogs_catalog_no((preview or {}).get("catalog_no")),
+        "barcode": _clean_text((preview or {}).get("barcode")),
+        "variant_count": None,
+        "confidence": 1.0,
+        "raw": {"direct_reference": release_external_id, "kind": "release"},
+    }
+
+
+def _build_album_master_candidate_from_master_reference(source: str, master_external_id: str) -> dict[str, Any] | None:
+    source_code = str(source or "").strip().upper()
+    preview = None
+    variant_count = None
+    if source_code in {"DISCOGS", "MANIADB"}:
+        variants = get_album_master_variants(source=source_code, master_external_id=master_external_id, limit=30, include_details=False)
+        if variants:
+            preview = variants[0]
+            variant_count = len(variants)
+    if source_code not in {"DISCOGS", "MANIADB", "MUSICBRAINZ"}:
+        return None
+    return {
+        "source": source_code,
+        "master_external_id": str(master_external_id or "").strip(),
+        "title": _clean_text((preview or {}).get("title")) or f"{source_code} Master #{master_external_id}",
+        "artist_or_brand": _clean_text((preview or {}).get("artist_or_brand")),
+        "release_year": (preview or {}).get("release_year"),
+        "label_name": _clean_text((preview or {}).get("label_name")),
+        "catalog_no": _discogs_catalog_no((preview or {}).get("catalog_no")),
+        "barcode": _clean_text((preview or {}).get("barcode")),
+        "variant_count": variant_count,
+        "confidence": 1.0,
+        "raw": {"direct_reference": master_external_id, "kind": "master"},
+    }
+
+
+def _build_direct_album_master_candidates(query: str | None, *, source: str = "AUTO") -> list[dict[str, Any]] | None:
+    parsed = _parse_direct_source_reference(query, source=source)
+    if not parsed:
+        return None
+
+    source_code = parsed["source"]
+    kind = parsed["kind"]
+    external_id = parsed["external_id"]
+
+    if kind == "release":
+        candidate = _build_album_master_candidate_from_release_reference(source_code, external_id)
+        return [candidate] if candidate else []
+    if source_code == "DISCOGS" and kind == "master":
+        candidate = _build_album_master_candidate_from_master_reference("DISCOGS", external_id)
+        return [candidate] if candidate else []
+    if source_code == "MANIADB" and kind == "album":
+        candidate = _build_album_master_candidate_from_master_reference("MANIADB", external_id.split(":", 1)[0].strip())
+        return [candidate] if candidate else []
+    return []
+
+
+def _search_discogs_with_artist_variations(
+    *,
+    artist_or_brand: str | None,
+    title: str | None,
+    category: str | None,
+    limit: int,
+) -> list[dict[str, Any]]:
+    artist_text = _clean_text(artist_or_brand)
+    title_text = _clean_text(title)
+    if not artist_text:
+        return []
+
+    variation_names = search_discogs_artist_name_variations(artist_text, limit=6, suppress_errors=True)
+    if not variation_names:
+        return []
+
+    collected: list[dict[str, Any]] = []
+    seen_queries: set[str] = set()
+
+    def run_query(search_query: str) -> list[dict[str, Any]]:
+        normalized_query = _normalize_lookup_text(search_query)
+        if not normalized_query or normalized_query in seen_queries:
+            return []
+        seen_queries.add(normalized_query)
+        return search_music_metadata(
+            query=search_query,
+            category=category,
+            source="DISCOGS",
+            limit=limit,
+        )
+
+    for variation_name in variation_names:
+        variation_text = _clean_text(variation_name)
+        if not variation_text:
+            continue
+        query_text = " ".join(part for part in [variation_text, title_text] if part).strip()
+        results = run_query(query_text)
+        if title_text:
+            results = [candidate for candidate in results if _candidate_matches_title_filter(candidate, title_text)]
+        if results:
+            collected.extend(results)
+            break
+
+    if not collected and title_text:
+        for variation_name in variation_names:
+            variation_text = _clean_text(variation_name)
+            if not variation_text:
+                continue
+            results = run_query(variation_text)
+            matched = [candidate for candidate in results if _candidate_matches_title_filter(candidate, title_text)]
+            if matched:
+                collected.extend(matched)
+                break
+
+    return _dedupe_metadata_candidates(collected, limit)
+
+
+def _search_lookup_metadata_candidates(
+    *,
+    query: str,
+    category: str | None,
+    source: str,
+    limit: int,
+    artist_or_brand: str | None = None,
+    title: str | None = None,
+) -> list[dict[str, Any]]:
+    direct_candidates = _build_direct_metadata_candidates(query, source=source, limit=limit)
+    if direct_candidates is not None:
+        return direct_candidates
+
+    candidates = search_music_metadata(
+        query=query,
+        category=category,
+        source=source,
+        limit=limit,
+        artist_or_brand=artist_or_brand,
+        title=title,
+    )
+
+    source_u = str(source or "").strip().upper()
+    if source_u == "MANIADB" and (artist_or_brand or title):
+        candidates = _filter_maniadb_candidates(
+            candidates,
+            artist_or_brand=artist_or_brand,
+            title=title,
+        )
+
+    if candidates or source_u not in {"AUTO", "DISCOGS"}:
+        return candidates
+
+    if artist_or_brand or title:
+        return _search_discogs_with_artist_variations(
+            artist_or_brand=artist_or_brand,
+            title=title,
+            category=category,
+            limit=limit,
+        )
+
+    return []
 
 
 def _parse_price_number(value: Any) -> float | None:
@@ -1087,6 +1436,19 @@ def _normalize_purchase_media_format(value: Any) -> str | None:
         return "DIGITAL"
     if "REEL" in text:
         return "REEL_TO_REEL"
+    return None
+
+
+def _purchase_import_media_format_or_default(vendor_code: Any, value: Any) -> str | None:
+    normalized = _normalize_purchase_media_format(value)
+    if normalized:
+        return normalized
+    cleaned = _clean_text(value)
+    if cleaned:
+        return cleaned
+    vendor = str(vendor_code or "").strip().upper()
+    if vendor in {"ALADIN", "YES24"}:
+        return "CD"
     return None
 
 
@@ -2747,6 +3109,18 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _external_base_url_for_request(request: Request) -> str:
+    forwarded_host = str(request.headers.get("x-forwarded-host") or "").split(",", 1)[0].strip()
+    host = forwarded_host or str(request.headers.get("host") or request.url.netloc or "").split(",", 1)[0].strip()
+    forwarded_proto = str(request.headers.get("x-forwarded-proto") or "").split(",", 1)[0].strip().lower()
+    scheme = forwarded_proto or str(request.url.scheme or "").strip().lower() or "https"
+    if not host or host in {"127.0.0.1", "localhost", "testserver"}:
+        return "https://library.muzlife.com"
+    if scheme not in {"http", "https"}:
+        scheme = "https"
+    return f"{scheme}://{host}"
+
+
 @app.get("/system/status")
 def system_status(request: Request) -> dict[str, Any]:
     _require_admin_request(request)
@@ -2754,12 +3128,13 @@ def system_status(request: Request) -> dict[str, Any]:
     sync_last_error = str(METADATA_SYNC_LAST_ERROR or "").strip()
     recent_launchd_lines = _tail_text_lines(LAUNCHD_ERR_LOG_PATH, limit=2)
     qa_summary = _read_qa_summary()
+    external_base_url = _external_base_url_for_request(request)
     return {
         "health": "ok",
         "metadata_sync_running": sync_running,
         "metadata_sync_last_error": sync_last_error or None,
-        "external_login_url": "https://library.muzlife.com/login",
-        "external_health_url": "https://library.muzlife.com/health",
+        "external_login_url": f"{external_base_url}/login",
+        "external_health_url": f"{external_base_url}/health",
         "launchd_err_log": str(PROJECT_LAUNCHD_ERR_LOG_PATH),
         "recent_launchd_lines": recent_launchd_lines,
         "qa_summary": qa_summary,
@@ -3583,7 +3958,7 @@ def _purchase_import_rows_for_save(
             {
                 "artist_name": _clean_text(item.artist_name),
                 "item_name": str(item.item_name or "").strip(),
-                "media_format": _normalize_purchase_media_format(item.media_format) or _clean_text(item.media_format),
+                "media_format": _purchase_import_media_format_or_default(vendor_code, item.media_format),
                 "quantity": max(1, int(item.quantity or 1)),
                 "unit_price": float(item.unit_price) if item.unit_price is not None else None,
                 "line_total": float(item.line_total) if item.line_total is not None else None,
@@ -3600,7 +3975,7 @@ def _purchase_import_rows_for_save(
 
 
 def _purchase_queue_base_context(row: dict[str, Any]) -> tuple[str, str, str, str]:
-    media_format = _normalize_purchase_media_format(row.get("media_format")) or "LP"
+    media_format = _purchase_import_media_format_or_default(row.get("vendor_code"), row.get("media_format")) or "LP"
     category = _infer_music_category_from_format(media_format)
     size_group = _default_size_group_for_category(category)
     seller_name = _clean_text(row.get("seller_name")) or _clean_text(row.get("vendor_code")) or "PURCHASE_IMPORT"
@@ -3856,13 +4231,14 @@ def list_purchase_import_candidates(
     if not search_query:
         raise HTTPException(status_code=400, detail="구매 수입 큐 항목에서 후보 조회용 상품명/아티스트 정보를 찾지 못했습니다.")
 
-    media_format = _normalize_purchase_media_format(working_row.get("media_format")) or "LP"
-    category = _infer_music_category_from_format(media_format)
-    candidates = search_music_metadata(
+    _media_format, category, _size_group, _seller_name = _purchase_queue_base_context(working_row)
+    candidates = _search_lookup_metadata_candidates(
         query=search_query,
         category=category,
         source=str(source or "AUTO").strip().upper() or "AUTO",
         limit=limit,
+        artist_or_brand=_clean_text(artist_name) if artist_name is not None else _clean_text(working_row.get("artist_name")),
+        title=_clean_text(item_name) if item_name is not None else _clean_text(working_row.get("item_name")),
     )
     candidates = _annotate_owned_flags(candidates)
     return PurchaseImportCandidateSearchResponse(
@@ -3961,6 +4337,12 @@ def create_owned_item_from_purchase_import_candidate(
 @app.post("/purchase-imports/{queue_id}/ignore", response_model=PurchaseImportQueueItem)
 def ignore_purchase_import(queue_id: int, request: Request) -> PurchaseImportQueueItem:
     _require_admin_request(request)
+    row = db.get_purchase_import_row(queue_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="purchase import row not found")
+    queue_status = str(row.get("queue_status") or "").strip().upper()
+    if queue_status != "PENDING":
+        raise HTTPException(status_code=400, detail="purchase import row is not pending")
     updated = db.update_purchase_import_row(queue_id, queue_status="IGNORED")
     if updated is None:
         raise HTTPException(status_code=404, detail="purchase import row not found")
@@ -4958,18 +5340,14 @@ def ingest_search(payload: QueryIngestRequest) -> QueryIngestResponse:
             detail="Provide query or at least one of artist_or_brand/title/catalog_no/runout/label_name/release_year/country",
         )
 
-    candidates = search_music_metadata(
+    candidates = _search_lookup_metadata_candidates(
         query=query,
         category=payload.category,
         source=payload.source,
         limit=payload.limit,
+        artist_or_brand=payload.artist_or_brand,
+        title=payload.title,
     )
-    if str(payload.source or "").strip().upper() == "MANIADB" and (payload.artist_or_brand or payload.title):
-        candidates = _filter_maniadb_candidates(
-            candidates,
-            artist_or_brand=payload.artist_or_brand,
-            title=payload.title,
-        )
     candidates = _annotate_owned_flags(candidates)
     return QueryIngestResponse(query=query, candidates=candidates)
 
@@ -5242,7 +5620,13 @@ async def ingest_csv(
             if barcode:
                 candidates = search_music_metadata(barcode=barcode, category=category, limit=5)
             elif query:
-                candidates = search_music_metadata(query=query, category=category, limit=5)
+                candidates = search_music_metadata(
+                    query=query,
+                    category=category,
+                    limit=5,
+                    artist_or_brand=normalized_row.get("artist_or_brand"),
+                    title=normalized_row.get("title"),
+                )
             else:
                 candidates = []
 
@@ -5868,6 +6252,66 @@ def _build_label_id(category: str, owned_item_id: int) -> str:
     return f"{prefix}-{owned_item_id:06d}"
 
 
+def _resolve_owned_item_relation_scope(row: dict[str, Any]) -> tuple[str, str, bool]:
+    copy_group_key = str(row.get("copy_group_key") or "").strip()
+    if copy_group_key:
+        return "COPY_GROUP", copy_group_key, True
+    return "OWNED_ITEM", str(row.get("id") or ""), False
+
+
+def _fetch_owned_item_relation_brief(conn: sqlite3.Connection, owned_item_id: int) -> dict[str, Any] | None:
+    row = conn.execute(
+        """
+        SELECT
+          oi.id,
+          oi.category,
+          oi.copy_group_key,
+          oi.item_name_override,
+          mid.artist_or_brand,
+          am.title AS master_title
+        FROM owned_item oi
+        LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+        LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+        WHERE oi.id = ?
+        """,
+        (owned_item_id,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def _fetch_owned_item_relation_group_items(conn: sqlite3.Connection, copy_group_key: str) -> list[dict[str, Any]]:
+    key = str(copy_group_key or "").strip()
+    if not key:
+        return []
+    rows = conn.execute(
+        """
+        SELECT
+          oi.id,
+          oi.category,
+          oi.copy_group_key,
+          oi.item_name_override,
+          mid.artist_or_brand,
+          am.title AS master_title
+        FROM owned_item oi
+        LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+        LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+        WHERE oi.copy_group_key = ?
+        ORDER BY oi.id ASC
+        """,
+        (key,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def _owned_item_relation_label(row: dict[str, Any]) -> str:
+    title = str(row.get("item_name_override") or "").strip()
+    if not title:
+        title = str(row.get("master_title") or "").strip()
+    if not title:
+        title = _build_label_id(str(row.get("category") or ""), int(row.get("id") or 0))
+    return title
+
+
 def _to_owned_item_list_item(row: dict[str, object]) -> OwnedItemListItem:
     row2 = dict(row)
     category_code = str(row2.get("category") or "")
@@ -5967,6 +6411,18 @@ def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsR
             title=str(bound.get("title") or "").strip() or None,
             artist_or_brand=str(bound.get("artist_or_brand") or "").strip() or None,
             sort_artist_name=str(bound.get("sort_artist_name") or "").strip() or None,
+            release_year=int(bound["release_year"]) if bound.get("release_year") not in (None, "") else None,
+            domain_code=str(bound.get("domain_code") or "").strip() or None,
+            source_release_year=int(bound["source_release_year"]) if bound.get("source_release_year") not in (None, "") else None,
+            source_domain_code=str(bound.get("source_domain_code") or "").strip() or None,
+            override_release_year=int(bound["override_release_year"]) if bound.get("override_release_year") not in (None, "") else None,
+            override_domain_code=str(bound.get("override_domain_code") or "").strip() or None,
+            override_note=str(bound.get("override_note") or "").strip() or None,
+            has_manual_correction=bool(
+                bound.get("override_release_year") not in (None, "")
+                or str(bound.get("override_domain_code") or "").strip()
+                or str(bound.get("override_note") or "").strip()
+            ),
             items=_to_items(rows),
         )
 
@@ -6003,6 +6459,437 @@ def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsR
         relation_type="NONE",
         items=_to_items([base_row]),
     )
+
+
+@app.get("/owned-items/{owned_item_id}/relations")
+def get_owned_item_relations(owned_item_id: int, request: Request) -> dict[str, Any]:
+    _require_admin_request(request)
+    owned_row = db.get_owned_item(owned_item_id)
+    if owned_row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    scope_kind, scope_key, uses_shared = _resolve_owned_item_relation_scope(owned_row)
+    bound_master = db.get_album_master_binding_for_owned_item(owned_item_id)
+
+    with db.get_conn() as conn:
+        relation_rows = conn.execute(
+            """
+            SELECT
+              id,
+              relation_type,
+              target_kind,
+              target_ref,
+              note,
+              display_order
+            FROM owned_item_relation
+            WHERE source_scope_kind = ?
+              AND source_scope_key = ?
+            ORDER BY display_order ASC, id ASC
+            """,
+            (scope_kind, scope_key),
+        ).fetchall()
+
+        relation_dicts = [dict(row) for row in relation_rows]
+
+        album_master_ids: set[int] = set()
+        product_group_ids: set[int] = set()
+        owned_item_target_ids: set[int] = set()
+        for row in relation_dicts:
+            target_kind = str(row.get("target_kind") or "").strip().upper()
+            target_ref = str(row.get("target_ref") or "").strip()
+            try:
+                target_id = int(target_ref)
+            except (TypeError, ValueError):
+                target_id = 0
+            if target_id <= 0:
+                continue
+            if target_kind == "ALBUM_MASTER":
+                album_master_ids.add(target_id)
+            elif target_kind == "PRODUCT_GROUP":
+                product_group_ids.add(target_id)
+            elif target_kind == "OWNED_ITEM":
+                owned_item_target_ids.add(target_id)
+
+        album_master_map: dict[int, dict[str, Any]] = {}
+        if album_master_ids:
+            placeholders = ",".join("?" for _ in album_master_ids)
+            rows = conn.execute(
+                f"""
+                SELECT id, title, artist_or_brand
+                FROM album_master
+                WHERE id IN ({placeholders})
+                """,
+                list(album_master_ids),
+            ).fetchall()
+            album_master_map = {int(row["id"]): dict(row) for row in rows}
+
+        product_group_map: dict[int, dict[str, Any]] = {}
+        if product_group_ids:
+            placeholders = ",".join("?" for _ in product_group_ids)
+            rows = conn.execute(
+                f"""
+                SELECT id, group_type, group_name
+                FROM product_group
+                WHERE id IN ({placeholders})
+                """,
+                list(product_group_ids),
+            ).fetchall()
+            product_group_map = {int(row["id"]): dict(row) for row in rows}
+
+        owned_item_map: dict[int, dict[str, Any]] = {}
+        for target_id in owned_item_target_ids:
+            brief = _fetch_owned_item_relation_brief(conn, target_id)
+            if brief is not None:
+                owned_item_map[target_id] = brief
+
+        master_links: list[dict[str, Any]] = []
+        series_memberships: list[dict[str, Any]] = []
+        box_memberships: list[dict[str, Any]] = []
+        related_releases: list[dict[str, Any]] = []
+
+        def _register_relation(entry: dict[str, Any], relation_type: str) -> None:
+            if relation_type == "MASTER_CHILD":
+                master_links.append(entry)
+            elif relation_type == "SERIES_MEMBER":
+                series_memberships.append(entry)
+            elif relation_type == "BOX_MEMBER_OF":
+                box_memberships.append(entry)
+            elif relation_type == "RELATED_RELEASE":
+                related_releases.append(entry)
+
+        for row in relation_dicts:
+            relation_type = str(row.get("relation_type") or "").strip().upper()
+            target_kind = str(row.get("target_kind") or "").strip().upper()
+            target_ref = str(row.get("target_ref") or "").strip()
+            entry: dict[str, Any] = {
+                "relation_type": relation_type,
+                "target_kind": target_kind,
+                "target_ref": target_ref,
+                "note": str(row.get("note") or "").strip() or None,
+                "display_order": int(row.get("display_order") or 0),
+            }
+
+            target_id = 0
+            try:
+                target_id = int(target_ref)
+            except (TypeError, ValueError):
+                target_id = 0
+
+            if target_kind == "ALBUM_MASTER" and target_id > 0:
+                entry["album_master_id"] = target_id
+                master_row = album_master_map.get(target_id)
+                if master_row:
+                    entry["target_label"] = str(master_row.get("title") or "").strip() or None
+                    entry["artist_or_brand"] = str(master_row.get("artist_or_brand") or "").strip() or None
+            elif target_kind == "PRODUCT_GROUP" and target_id > 0:
+                entry["product_group_id"] = target_id
+                group_row = product_group_map.get(target_id)
+                if group_row:
+                    entry["product_group_type"] = str(group_row.get("group_type") or "").strip().upper() or None
+                    entry["target_label"] = str(group_row.get("group_name") or "").strip() or None
+            elif target_kind == "OWNED_ITEM" and target_id > 0:
+                entry["target_owned_item_id"] = target_id
+                item_row = owned_item_map.get(target_id)
+                if item_row:
+                    entry["target_category"] = str(item_row.get("category") or "").strip().upper() or None
+                    entry["target_copy_group_key"] = str(item_row.get("copy_group_key") or "").strip() or None
+                    entry["artist_or_brand"] = str(item_row.get("artist_or_brand") or "").strip() or None
+                    entry["target_label"] = _owned_item_relation_label(item_row)
+            elif target_kind == "COPY_GROUP" and target_ref:
+                entry["target_copy_group_key"] = target_ref
+
+            _register_relation(entry, relation_type)
+
+        if bound_master:
+            master_id = int(bound_master.get("album_master_id") or 0)
+            if master_id > 0 and not any(
+                str(row.get("target_kind") or "").strip().upper() == "ALBUM_MASTER"
+                and str(row.get("target_ref") or "").strip() == str(master_id)
+                for row in master_links
+            ):
+                master_links.insert(
+                    0,
+                    {
+                        "relation_type": "MASTER_CHILD",
+                        "target_kind": "ALBUM_MASTER",
+                        "target_ref": str(master_id),
+                        "target_label": str(bound_master.get("title") or "").strip() or None,
+                        "album_master_id": master_id,
+                        "artist_or_brand": str(bound_master.get("artist_or_brand") or "").strip() or None,
+                        "display_order": 0,
+                    },
+                )
+
+        target_conditions = ["(target_kind = 'OWNED_ITEM' AND target_ref = ?)"]
+        target_params: list[Any] = [str(owned_item_id)]
+        copy_group_key = str(owned_row.get("copy_group_key") or "").strip()
+        if copy_group_key:
+            target_conditions.append("(target_kind = 'COPY_GROUP' AND target_ref = ?)")
+            target_params.append(copy_group_key)
+
+        box_components: list[dict[str, Any]] = []
+        seen_component_ids: set[int] = set()
+        if target_conditions:
+            box_rows = conn.execute(
+                f"""
+                SELECT source_scope_kind, source_scope_key, note
+                FROM owned_item_relation
+                WHERE relation_type = 'BOX_MEMBER_OF'
+                  AND ({' OR '.join(target_conditions)})
+                ORDER BY display_order ASC, id ASC
+                """,
+                target_params,
+            ).fetchall()
+            for row in box_rows:
+                scope_kind = str(row.get("source_scope_kind") or "").strip().upper()
+                scope_key = str(row.get("source_scope_key") or "").strip()
+                note = str(row.get("note") or "").strip() or None
+                source_rows: list[dict[str, Any]] = []
+                if scope_kind == "OWNED_ITEM":
+                    try:
+                        source_id = int(scope_key)
+                    except (TypeError, ValueError):
+                        source_id = 0
+                    if source_id > 0:
+                        brief = _fetch_owned_item_relation_brief(conn, source_id)
+                        if brief:
+                            source_rows = [brief]
+                        else:
+                            source_rows = [{"id": source_id, "category": None, "copy_group_key": None}]
+                elif scope_kind == "COPY_GROUP" and scope_key:
+                    source_rows = _fetch_owned_item_relation_group_items(conn, scope_key)
+                for source_row in source_rows:
+                    source_id = int(source_row.get("id") or 0)
+                    if source_id <= 0 or source_id in seen_component_ids:
+                        continue
+                    seen_component_ids.add(source_id)
+                    box_components.append(
+                        {
+                            "source_owned_item_id": source_id,
+                            "source_item_name": _owned_item_relation_label(source_row)
+                            if source_row.get("id")
+                            else f"owned_item_id={source_id}",
+                            "source_copy_group_key": str(source_row.get("copy_group_key") or "").strip() or None,
+                            "source_category": str(source_row.get("category") or "").strip().upper() or None,
+                            "note": note,
+                        }
+                    )
+
+    return {
+        "uses_shared_relation_scope": uses_shared,
+        "scope_key": scope_key if uses_shared else None,
+        "master_links": master_links,
+        "series_memberships": series_memberships,
+        "box_memberships": box_memberships,
+        "related_releases": related_releases,
+        "box_components": box_components,
+    }
+
+
+@app.put("/owned-items/{owned_item_id}/relations")
+def save_owned_item_relations(
+    owned_item_id: int,
+    payload: OwnedItemRelationSaveRequest,
+    request: Request,
+) -> dict[str, Any]:
+    _require_admin_request(request)
+    owned_row = db.get_owned_item(owned_item_id)
+    if owned_row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    scope_kind, scope_key, _ = _resolve_owned_item_relation_scope(owned_row)
+
+    normalized: list[tuple[str, str, str, str | None, int]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for index, rel in enumerate(payload.relations):
+        relation_type = str(rel.relation_type or "").strip().upper()
+        target_kind = str(rel.target_kind or "").strip().upper()
+        target_ref = str(rel.target_ref or "").strip()
+        if not relation_type or not target_kind or not target_ref:
+            continue
+        key = (relation_type, target_kind, target_ref)
+        if key in seen:
+            continue
+        seen.add(key)
+        display_order = int(rel.display_order if rel.display_order is not None else index)
+        note = str(rel.note or "").strip() or None
+        normalized.append((relation_type, target_kind, target_ref, note, display_order))
+
+    now = db.utc_now_iso()
+    with db.get_conn() as conn:
+        conn.execute(
+            "DELETE FROM owned_item_relation WHERE source_scope_kind = ? AND source_scope_key = ?",
+            (scope_kind, scope_key),
+        )
+        for relation_type, target_kind, target_ref, note, display_order in normalized:
+            conn.execute(
+                """
+                INSERT INTO owned_item_relation (
+                  source_scope_kind,
+                  source_scope_key,
+                  relation_type,
+                  target_kind,
+                  target_ref,
+                  display_order,
+                  note,
+                  created_at,
+                  updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    scope_kind,
+                    scope_key,
+                    relation_type,
+                    target_kind,
+                    target_ref,
+                    display_order,
+                    note,
+                    now,
+                    now,
+                ),
+            )
+
+    return get_owned_item_relations(owned_item_id, request)
+
+
+@app.get("/product-groups")
+def list_product_groups(
+    request: Request,
+    q: str | None = Query(default=None),
+    limit: int = Query(default=12, ge=1, le=100),
+) -> list[dict[str, Any]]:
+    _require_admin_request(request)
+    query_text = str(q or "").strip().lower()
+    with db.get_conn() as conn:
+        if query_text:
+            like = f"%{query_text}%"
+            rows = conn.execute(
+                """
+                SELECT id, group_type, group_name, status
+                FROM product_group
+                WHERE LOWER(group_name) LIKE ?
+                  AND status = 'ACTIVE'
+                ORDER BY group_name ASC, id ASC
+                LIMIT ?
+                """,
+                (like, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """
+                SELECT id, group_type, group_name, status
+                FROM product_group
+                WHERE status = 'ACTIVE'
+                ORDER BY group_name ASC, id ASC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+    return [dict(row) for row in rows]
+
+
+@app.post("/product-groups")
+def create_product_group(payload: ProductGroupCreateRequest, request: Request) -> dict[str, Any]:
+    _require_admin_request(request)
+    group_type = str(payload.group_type or "SERIES").strip().upper()
+    group_name = str(payload.group_name or "").strip()
+    if not group_name:
+        raise HTTPException(status_code=400, detail="group_name is required")
+    now = db.utc_now_iso()
+    with db.get_conn() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO product_group (
+              group_type,
+              group_name,
+              description,
+              status,
+              created_at,
+              updated_at
+            ) VALUES (?, ?, ?, 'ACTIVE', ?, ?)
+            """,
+            (group_type, group_name, payload.description, now, now),
+        )
+        group_id = int(cur.lastrowid or 0)
+        row = conn.execute(
+            """
+            SELECT id, group_type, group_name, description, status
+            FROM product_group
+            WHERE id = ?
+            """,
+            (group_id,),
+        ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=500, detail="failed to create product group")
+    return dict(row)
+
+
+@app.get("/owned-item-relation-targets")
+def search_owned_item_relation_targets(
+    request: Request,
+    kind: Literal["owned_item"] = Query(default="owned_item"),
+    q: str = Query(default=""),
+    owned_item_id: int | None = Query(default=None, ge=1),
+    limit: int = Query(default=12, ge=1, le=50),
+) -> dict[str, Any]:
+    _require_admin_request(request)
+    query_text = str(q or "").strip().lower()
+    if not query_text:
+        return {"items": []}
+    like = f"%{query_text}%"
+    params: list[Any] = [like, like, like]
+    exclude_sql = ""
+    if owned_item_id:
+        exclude_sql = "AND oi.id <> ?"
+        params.append(int(owned_item_id))
+    params.append(limit)
+    with db.get_conn() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT
+              oi.id,
+              oi.category,
+              oi.copy_group_key,
+              oi.item_name_override,
+              mid.artist_or_brand,
+              am.title AS master_title
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND (
+                LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
+                OR LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
+                OR LOWER(COALESCE(am.title, '')) LIKE ?
+              )
+              {exclude_sql}
+            ORDER BY oi.updated_at DESC, oi.id DESC
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+
+    items = []
+    for row in rows:
+        data = dict(row)
+        label = _owned_item_relation_label(data)
+        copy_group_key = str(data.get("copy_group_key") or "").strip() or None
+        if copy_group_key:
+            scope_kind = "COPY_GROUP"
+            scope_key = copy_group_key
+        else:
+            scope_kind = "OWNED_ITEM"
+            scope_key = str(int(data.get("id") or 0))
+        items.append(
+            {
+                "owned_item_id": int(data.get("id") or 0),
+                "label": label,
+                "category": str(data.get("category") or "").strip().upper() or None,
+                "copy_group_key": copy_group_key,
+                "scope_kind": scope_kind,
+                "scope_key": scope_key,
+            }
+        )
+
+    return {"items": items}
 
 
 @app.get("/owned-items/{owned_item_id}/copies", response_model=list[OwnedItemListItem])
@@ -6257,7 +7144,17 @@ def _album_master_variant_item_from_owned_row(row: dict[str, Any], source_code: 
 
 @app.post("/album-masters/search", response_model=AlbumMasterSearchResponse)
 def search_album_masters(payload: AlbumMasterSearchRequest) -> AlbumMasterSearchResponse:
-    candidates = search_album_master_candidates(query=payload.query, source=payload.source, limit=payload.limit)
+    direct_candidates = _build_direct_album_master_candidates(payload.query, source=payload.source)
+    if direct_candidates is not None:
+        candidates = direct_candidates
+    else:
+        candidates = search_album_master_candidates(
+            query=payload.query,
+            source=payload.source,
+            limit=payload.limit,
+            artist_or_brand=payload.artist_or_brand,
+            title=payload.title,
+        )
     return AlbumMasterSearchResponse(query=payload.query, candidates=candidates)
 
 
@@ -6396,6 +7293,8 @@ def bind_album_master(payload: AlbumMasterBindRequest) -> AlbumMasterBindRespons
         owned_item_ids=payload.owned_item_ids,
         replace_existing=payload.replace_existing,
     )
+    for owned_item_id in payload.owned_item_ids:
+        db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
     return AlbumMasterBindResponse(album_master_id=album_master_id, linked_count=linked_count)
 
 
@@ -7122,6 +8021,36 @@ def update_album_master_sort_artist_name(
     )
 
 
+@app.patch("/album-masters/{album_master_id}/correction", response_model=AlbumMasterCorrectionUpdateResponse)
+def update_album_master_correction(
+    album_master_id: int,
+    payload: AlbumMasterCorrectionUpdateRequest,
+) -> AlbumMasterCorrectionUpdateResponse:
+    updated = db.update_album_master_correction(
+        album_master_id=album_master_id,
+        release_year=payload.release_year,
+        domain_code=payload.domain_code,
+        override_note=payload.override_note,
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="album_master not found")
+    return AlbumMasterCorrectionUpdateResponse(
+        album_master_id=int(updated["id"]),
+        release_year=int(updated["release_year"]) if updated.get("release_year") not in (None, "") else None,
+        domain_code=str(updated.get("domain_code") or "").strip() or None,
+        source_release_year=(
+            int(updated["source_release_year"]) if updated.get("source_release_year") not in (None, "") else None
+        ),
+        source_domain_code=str(updated.get("source_domain_code") or "").strip() or None,
+        override_release_year=(
+            int(updated["override_release_year"]) if updated.get("override_release_year") not in (None, "") else None
+        ),
+        override_domain_code=str(updated.get("override_domain_code") or "").strip() or None,
+        override_note=str(updated.get("override_note") or "").strip() or None,
+        has_manual_correction=bool(updated.get("has_manual_correction")),
+    )
+
+
 @app.get("/album-masters/{album_master_id}/members", response_model=list[OwnedItemListItem])
 def list_album_master_members(album_master_id: int) -> list[OwnedItemListItem]:
     rows = db.list_owned_items_by_album_master(album_master_id=album_master_id)
@@ -7214,6 +8143,7 @@ def get_album_master_duplicates(
 
 @app.post("/album-masters/{album_master_id}/merge", response_model=AlbumMasterMergeResponse)
 def merge_album_master(
+    request: Request,
     album_master_id: int,
     payload: AlbumMasterMergeRequest,
 ) -> AlbumMasterMergeResponse:
@@ -7228,12 +8158,14 @@ def merge_album_master(
             target_album_master_id=target_id,
             moved_member_count=0,
             target_member_count=len(count_rows),
+            merge_history_id=None,
             merged=False,
         )
     try:
         result = db.merge_album_masters(
             source_album_master_id=source_id,
             target_album_master_id=target_id,
+            merged_by=_read_auth_username(request),
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -7245,8 +8177,28 @@ def merge_album_master(
         target_album_master_id=int(result.get("target_album_master_id") or target_id),
         moved_member_count=int(result.get("moved_member_count") or 0),
         target_member_count=int(result.get("target_member_count") or 0),
+        merge_history_id=int(result["merge_history_id"]) if result.get("merge_history_id") is not None else None,
         merged=True,
     )
+
+
+@app.get("/album-masters/merge-history", response_model=list[AlbumMasterMergeHistoryItem])
+def get_album_master_merge_history(
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[AlbumMasterMergeHistoryItem]:
+    rows = db.list_album_master_merge_history(limit=limit)
+    return [AlbumMasterMergeHistoryItem(**row) for row in rows]
+
+
+@app.post("/album-masters/merge-history/latest/rollback", response_model=AlbumMasterMergeRollbackResponse)
+def rollback_latest_album_master_merge(request: Request) -> AlbumMasterMergeRollbackResponse:
+    try:
+        result = db.rollback_latest_album_master_merge(rolled_back_by=_read_auth_username(request))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return AlbumMasterMergeRollbackResponse(**result)
 
 
 @app.get("/discogs/identity", response_model=DiscogsIdentityResponse)
@@ -9077,6 +10029,7 @@ def _save_owned_item_update(
     payload: OwnedItemCreate,
     existing: dict[str, Any] | None = None,
 ) -> OwnedItemCreateResponse:
+    save_started_at = time.perf_counter()
     existing_row = existing or db.get_owned_item(owned_item_id)
     if existing_row is None:
         raise HTTPException(status_code=404, detail="owned_item not found")
@@ -9109,25 +10062,75 @@ def _save_owned_item_update(
         notices.append("복수 보유는 개별 인스턴스로 관리됩니다. 수량은 1로 저장했습니다.")
     _normalize_music_detail_payload(normalized_payload)
     _normalize_goods_detail_payload(normalized_payload)
+    previous_source_code = str(existing_row.get("source_code") or "").strip().upper()
+    previous_source_external_id = str(existing_row.get("source_external_id") or "").strip()
+    normalize_done_at = time.perf_counter()
     ok = db.update_owned_item(owned_item_id=owned_item_id, payload=normalized_payload)
     if not ok:
         raise HTTPException(status_code=404, detail="owned_item not found")
+    update_done_at = time.perf_counter()
     previous_status = str(existing_row.get("status") or "").strip().upper()
     next_status = str(normalized_payload.get("status") or "").strip().upper()
-    if previous_status == "IN_COLLECTION" or next_status == "IN_COLLECTION":
+    try:
+        previous_slot_id = int(existing_row.get("storage_slot_id")) if existing_row.get("storage_slot_id") is not None else None
+    except (TypeError, ValueError):
+        previous_slot_id = None
+    try:
+        next_slot_id = int(normalized_payload.get("storage_slot_id")) if normalized_payload.get("storage_slot_id") is not None else None
+    except (TypeError, ValueError):
+        next_slot_id = None
+    try:
+        previous_display_rank = int(existing_row.get("display_rank")) if existing_row.get("display_rank") is not None else None
+    except (TypeError, ValueError):
+        previous_display_rank = None
+    try:
+        next_display_rank = int(normalized_payload.get("display_rank")) if normalized_payload.get("display_rank") is not None else None
+    except (TypeError, ValueError):
+        next_display_rank = None
+    should_resequence = False
+    if previous_status != next_status:
+        should_resequence = True
+    elif previous_status == "IN_COLLECTION" and next_status == "IN_COLLECTION":
+        if previous_slot_id != next_slot_id or previous_display_rank != next_display_rank:
+            should_resequence = True
+    if should_resequence:
         db.resequence_in_collection_order()
+    resequence_done_at = time.perf_counter()
     resolved_master_id, ensured_notices = _ensure_owned_item_master_link(owned_item_id)
     for msg in ensured_notices:
         text = str(msg or "").strip()
         if text and text not in notices:
             notices.append(text)
-    promoted_master_id, promoted_notices = _promote_owned_item_linked_master_from_discogs_source(owned_item_id)
-    if promoted_master_id > 0:
-        resolved_master_id = promoted_master_id
-    for msg in promoted_notices:
-        text = str(msg or "").strip()
-        if text and text not in notices:
-            notices.append(text)
+    ensure_done_at = time.perf_counter()
+    next_source_code = str(normalized_payload.get("source_code") or "").strip().upper()
+    next_source_external_id = str(normalized_payload.get("source_external_id") or "").strip()
+    source_changed = (
+        previous_source_code != next_source_code
+        or previous_source_external_id != next_source_external_id
+    )
+    promote_done_at = ensure_done_at
+    if source_changed:
+        promoted_master_id, promoted_notices = _promote_owned_item_linked_master_from_discogs_source(owned_item_id)
+        if promoted_master_id > 0:
+            resolved_master_id = promoted_master_id
+        for msg in promoted_notices:
+            text = str(msg or "").strip()
+            if text and text not in notices:
+                notices.append(text)
+        promote_done_at = time.perf_counter()
+
+    save_total = time.perf_counter() - save_started_at
+    if save_total >= OWNED_ITEM_SAVE_SLOW_SEC:
+        logger.warning(
+            "owned_item_save_slow owned_item_id=%s total=%.3fs normalize=%.3fs update=%.3fs resequence=%.3fs ensure=%.3fs promote=%.3fs",
+            owned_item_id,
+            save_total,
+            normalize_done_at - save_started_at,
+            update_done_at - normalize_done_at,
+            resequence_done_at - update_done_at,
+            ensure_done_at - resequence_done_at,
+            promote_done_at - ensure_done_at,
+        )
 
     return OwnedItemCreateResponse(
         owned_item_id=owned_item_id,
