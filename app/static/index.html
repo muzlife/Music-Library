@@ -8507,6 +8507,132 @@
       background: var(--admin-console-panel-bg);
     }
 
+    #tabMedia.admin-console-shell {
+      gap: 12px;
+    }
+
+    #tabMedia.admin-console-shell > .card {
+      padding: 12px;
+      border-color: var(--admin-console-panel-border);
+      background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));
+    }
+
+    #tabMedia.admin-console-shell .goods-mode-tabs,
+    #tabRegister.admin-console-shell .subtabs {
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn,
+    #tabRegister.admin-console-shell .subtabs .subtab-btn {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    #tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn.active,
+    #tabRegister.admin-console-shell .subtabs .subtab-btn.active {
+      border-color: var(--admin-console-accent);
+      background: var(--admin-console-panel-bg);
+    }
+
+    #tabSearch .admin-console-grid,
+    #tabManage .admin-console-main,
+    #tabRegister.admin-console-shell,
+    #sourceWorkbenchCard.admin-console-shell {
+      --admin-console-panel-bg: rgba(18, 23, 29, 0.98);
+      --admin-console-panel-bg-2: rgba(13, 17, 23, 0.98);
+      --admin-console-panel-border: rgba(137, 151, 171, 0.22);
+      --admin-console-text: #eef3f8;
+      --admin-console-text-muted: #c2ccd7;
+      --admin-console-text-meta: #8e99a7;
+      --admin-console-accent: #ff7a1a;
+      color: var(--admin-console-text);
+    }
+
+    #tabSearch .admin-console-grid {
+      gap: 12px;
+    }
+
+    #tabSearch .admin-console-grid > .card,
+    #tabSearch .admin-console-grid > .admin-console-secondary,
+    #tabManage .admin-console-main > .card,
+    #tabManage .admin-console-main > .manual-block,
+    #registerCollectPanel > .card,
+    #registerPurchasePanel > .card,
+    #registerBatchPanel > .card,
+    #registerMasterPanel > .card,
+    #sourceWorkbenchCard.admin-console-shell {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    #tabSearch .admin-console-grid > .admin-console-secondary,
+    #tabManage .admin-console-main > .card,
+    #sourceWorkbenchCard.admin-console-shell {
+      padding: 12px;
+    }
+
+    #tabSearch .admin-console-grid :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
+    #tabManage .admin-console-main :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
+    #tabRegister.admin-console-shell :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
+    #sourceWorkbenchCard.admin-console-shell :is(.manual-block, .result-list, .table-wrap, .status, .compact-line) {
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+      color: var(--admin-console-text);
+    }
+
+    #tabSearch .admin-console-grid :is(input, select, textarea),
+    #tabManage .admin-console-main :is(input, select, textarea),
+    #tabRegister.admin-console-shell :is(input, select, textarea),
+    #sourceWorkbenchCard.admin-console-shell :is(input, select, textarea) {
+      background: var(--admin-console-panel-bg-2);
+      border: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      color: var(--admin-console-text);
+      box-shadow: none;
+    }
+
+    #tabSearch .admin-console-grid button:not(.page-help-trigger),
+    #tabManage .admin-console-main button:not(.page-help-trigger),
+    #tabRegister.admin-console-shell button:not(.page-help-trigger),
+    #sourceWorkbenchCard.admin-console-shell button:not(.page-help-trigger) {
+      border: 1px solid var(--admin-console-panel-border);
+      box-shadow: none;
+    }
+
+    #tabSearch .admin-console-grid :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note),
+    #tabManage .admin-console-main :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note),
+    #tabRegister.admin-console-shell :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note),
+    #sourceWorkbenchCard.admin-console-shell :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note) {
+      color: var(--admin-console-text-meta);
+    }
+
+    #tabSearch .page-help-source,
+    #tabManage .page-help-source,
+    #tabRegister.admin-console-shell .page-help-source,
+    #sourceWorkbenchCard.admin-console-shell .page-help-source {
+      border-color: var(--admin-console-panel-border);
+      border-radius: 0;
+      background: var(--admin-console-panel-bg-2);
+      box-shadow: none;
+    }
+
+    #registerCollectPanel,
+    #registerPurchasePanel,
+    #registerBatchPanel,
+    #registerMasterPanel {
+      gap: 12px;
+      color: var(--admin-console-text);
+    }
+
     @media (max-width: 1280px) {
       #opsHomeLayout.admin-console-shell {
         grid-template-columns: 1fr;
@@ -8514,6 +8640,10 @@
 
       .admin-console-shell .shared-camera-layout {
         grid-template-columns: 1fr;
+      }
+
+      #tabSearch .admin-console-grid {
+        flex-direction: column;
       }
     }
 
@@ -12300,8 +12430,8 @@
       </section>
     </div>
 
-    <div id="tabSearch" class="tab-panel page-column">
-      <div id="adminSearchSurface" class="admin-manage-surface active media-search-layout">
+    <div id="tabSearch" class="tab-panel page-column admin-console-shell">
+      <div id="adminSearchSurface" class="admin-manage-surface active media-search-layout admin-console-grid">
       <section id="homeSearchCard" class="card">
         <div class="page-help-title-row">
           <h2><span data-i18n="media.search.title">검색 / 리스트</span></h2>
@@ -12408,7 +12538,7 @@
           </div>
         </div>
       </section>
-      <aside id="adminSearchContextPanel" class="media-search-context-panel" style="position:sticky;top:20px;align-self:start;">
+      <aside id="adminSearchContextPanel" class="media-search-context-panel admin-console-secondary" style="position:sticky;top:20px;align-self:start;">
         <section id="adminSearchContextBody" class="card" style="position:relative;top:auto;bottom:auto;">
           <h3 data-i18n="media.search.context.title">선택한 상품</h3>
             <p class="mini muted" data-i18n="media.search.context.subtitle">상품 preview를 선택하면 현재 위치와 아티스트 컨텍스트를 여기서 확인하고 관리 화면으로 이어갈 수 있습니다.</p>
@@ -12417,8 +12547,8 @@
       </div>
     </div>
 
-    <div id="tabManage" class="tab-panel page-column">
-      <div id="adminManageSurface" class="admin-manage-surface active">
+    <div id="tabManage" class="tab-panel page-column admin-console-shell">
+      <div id="adminManageSurface" class="admin-manage-surface active admin-console-main">
         <div class="result-head page-help-panel-head">
           <div class="page-help-title-row">
             <strong data-i18n="media.mode.manage">관리</strong>
@@ -13567,7 +13697,7 @@
 
   <div class="wrap">
     <div id="tabSource" class="tab-panel">
-      <section id="sourceWorkbenchCard" class="card">
+      <section id="sourceWorkbenchCard" class="card admin-console-shell">
         <div class="page-help-title-row">
           <h2><span data-i18n="media.source.title">일괄 소스 보강</span></h2>
           <button class="page-help-trigger" type="button" data-page-help-open="source-workbench" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
@@ -13634,7 +13764,7 @@
       </section>
     </div>
 
-    <div id="tabRegister" class="tab-panel">
+    <div id="tabRegister" class="tab-panel admin-console-shell">
     <div class="subtabs">
       <button id="registerCollectTabBtn" class="subtab-btn active" type="button" data-i18n="media.register.subtab.direct">직접 등록</button>
       <button id="registerPurchaseTabBtn" class="subtab-btn" type="button" data-i18n="media.register.subtab.purchase">구매 내역</button>
@@ -13642,7 +13772,7 @@
       <button id="registerMasterTabBtn" class="subtab-btn" type="button" data-i18n="media.register.subtab.master">마스터 정리</button>
           <button id="registerTrackTabBtn" class="subtab-btn" type="button" hidden style="display:none;" data-i18n="media.register.mode.track_map">음원 매핑</button>
     </div>
-    <div id="registerCollectPanel" class="subtab-panel active">
+    <div id="registerCollectPanel" class="subtab-panel active admin-console-main">
     <div>
     <details class="manual-block page-help-source" data-page-help-source="register-direct" hidden>
       <summary data-i18n="manual.register_direct.summary">직접 등록 페이지 활용 매뉴얼</summary>
@@ -14114,7 +14244,7 @@
     </div>
     </div>
 
-    <div id="registerPurchasePanel" class="subtab-panel">
+    <div id="registerPurchasePanel" class="subtab-panel admin-console-main">
     <details class="manual-block page-help-source" data-page-help-source="register-purchase" hidden>
       <summary data-i18n="manual.register_purchase.summary">구매 내역 가져오기 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
@@ -14283,7 +14413,7 @@
     </div>
     </div>
 
-    <div id="registerBatchPanel" class="subtab-panel">
+    <div id="registerBatchPanel" class="subtab-panel admin-console-main">
     <details class="manual-block page-help-source" data-page-help-source="register-batch" hidden>
       <summary data-i18n="manual.register_batch.summary">대량 등록 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
@@ -14462,7 +14592,7 @@
     </section>
 
     </div>
-    <div id="registerMasterPanel" class="subtab-panel">
+    <div id="registerMasterPanel" class="subtab-panel admin-console-main">
     <details class="manual-block page-help-source" data-page-help-source="register-master" hidden>
       <summary data-i18n="manual.register_master.summary">마스터 정리 페이지 활용 매뉴얼</summary>
       <div class="manual-block-body">
