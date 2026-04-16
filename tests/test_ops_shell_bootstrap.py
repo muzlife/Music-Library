@@ -7238,6 +7238,11 @@ def test_media_admin_surfaces_share_console_shell_helpers():
     assert 'id="registerPurchasePanel" class="subtab-panel admin-console-main"' in html
     assert 'id="registerBatchPanel" class="subtab-panel admin-console-main"' in html
     assert 'id="registerMasterPanel" class="subtab-panel admin-console-main"' in html
+    assert "#registerCollectPanel .layout > .card," in html
+    assert "#registerPurchasePanel .layout > .card," in html
+    assert "#registerBatchPanel .layout > .card," in html
+    assert "#registerBatchPanel > .card," in html
+    assert "#registerMasterPanel > .card," in html
     assert (
         'id="sourceWorkbenchCard" class="card admin-console-shell"' in html
         or 'id="sourceWorkbenchCard" class="card source-workbench-console admin-console-shell"' in html
