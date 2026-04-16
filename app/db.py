@@ -1385,6 +1385,11 @@ def init_db() -> None:
               sort_artist_name TEXT,
               domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
               release_year INTEGER,
+              source_domain_code TEXT CHECK (source_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              source_release_year INTEGER,
+              override_domain_code TEXT CHECK (override_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              override_release_year INTEGER,
+              override_note TEXT,
               raw_json TEXT NOT NULL DEFAULT '{{}}',
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
@@ -2286,6 +2291,20 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         )
     if not _column_exists(conn, "album_master", "sort_artist_name"):
         conn.execute("ALTER TABLE album_master ADD COLUMN sort_artist_name TEXT")
+    if not _column_exists(conn, "album_master", "source_domain_code"):
+        conn.execute(
+            f"ALTER TABLE album_master ADD COLUMN source_domain_code TEXT CHECK (source_domain_code IN ('{_domain_code_check_sql()}'))"
+        )
+    if not _column_exists(conn, "album_master", "source_release_year"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN source_release_year INTEGER")
+    if not _column_exists(conn, "album_master", "override_domain_code"):
+        conn.execute(
+            f"ALTER TABLE album_master ADD COLUMN override_domain_code TEXT CHECK (override_domain_code IN ('{_domain_code_check_sql()}'))"
+        )
+    if not _column_exists(conn, "album_master", "override_release_year"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN override_release_year INTEGER")
+    if not _column_exists(conn, "album_master", "override_note"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN override_note TEXT")
     if _column_exists(conn, "album_master", "sort_artist_name"):
         conn.execute(
             """
@@ -2337,6 +2356,57 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
               LIMIT 1
             )
             WHERE am.domain_code IS NULL OR TRIM(am.domain_code) = ''
+            """
+        )
+    if _column_exists(conn, "album_master", "source_domain_code"):
+        conn.execute(
+            f"""
+            UPDATE album_master
+            SET source_domain_code = {_normalize_domain_code_sql("source_domain_code")}
+            WHERE source_domain_code IS NOT NULL
+              AND TRIM(source_domain_code) <> ''
+            """
+        )
+        conn.execute(
+            """
+            UPDATE album_master
+            SET source_domain_code = domain_code
+            WHERE source_domain_code IS NULL
+               OR TRIM(source_domain_code) = ''
+            """
+        )
+    if _column_exists(conn, "album_master", "source_release_year"):
+        conn.execute(
+            """
+            UPDATE album_master
+            SET source_release_year = release_year
+            WHERE source_release_year IS NULL
+            """
+        )
+    if _column_exists(conn, "album_master", "override_domain_code"):
+        conn.execute(
+            f"""
+            UPDATE album_master
+            SET override_domain_code = {_normalize_domain_code_sql("override_domain_code")}
+            WHERE override_domain_code IS NOT NULL
+              AND TRIM(override_domain_code) <> ''
+            """
+        )
+        conn.execute(
+            """
+            UPDATE album_master
+            SET override_domain_code = NULL
+            WHERE override_domain_code IS NOT NULL
+              AND TRIM(override_domain_code) = ''
+            """
+        )
+    if _column_exists(conn, "album_master", "override_note"):
+        conn.execute(
+            """
+            UPDATE album_master
+            SET override_note = NULL
+            WHERE override_note IS NOT NULL
+              AND TRIM(override_note) = ''
             """
         )
 
@@ -5745,7 +5815,14 @@ def get_album_master_binding_for_owned_item(owned_item_id: int) -> dict[str, Any
               am.source_master_id,
               am.title,
               am.artist_or_brand,
-              am.sort_artist_name
+              am.sort_artist_name,
+              am.release_year,
+              am.domain_code,
+              am.source_release_year,
+              am.source_domain_code,
+              am.override_release_year,
+              am.override_domain_code,
+              am.override_note
             FROM album_master_member amm
             JOIN album_master am ON am.id = amm.album_master_id
             WHERE amm.owned_item_id = ?
@@ -7445,6 +7522,125 @@ def update_album_master_sort_artist_name(album_master_id: int, sort_artist_name:
             (master_id,),
         ).fetchone()
     return dict(row) if row else None
+
+
+def get_album_master_correction_state(album_master_id: int) -> dict[str, Any] | None:
+    master_id = int(album_master_id or 0)
+    if master_id <= 0:
+        return None
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT
+              id,
+              release_year,
+              domain_code,
+              source_release_year,
+              source_domain_code,
+              override_release_year,
+              override_domain_code,
+              override_note
+            FROM album_master
+            WHERE id = ?
+            LIMIT 1
+            """,
+            (master_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    data = dict(row)
+    data["domain_code"] = _normalize_domain_code_value(data.get("domain_code"))
+    data["source_domain_code"] = _normalize_domain_code_value(data.get("source_domain_code")) or data["domain_code"]
+    data["override_domain_code"] = _normalize_domain_code_value(data.get("override_domain_code"))
+    data["source_release_year"] = (
+        int(data["source_release_year"]) if data.get("source_release_year") not in (None, "") else data.get("release_year")
+    )
+    data["override_release_year"] = (
+        int(data["override_release_year"]) if data.get("override_release_year") not in (None, "") else None
+    )
+    data["release_year"] = int(data["release_year"]) if data.get("release_year") not in (None, "") else None
+    data["override_note"] = str(data.get("override_note") or "").strip() or None
+    data["has_manual_correction"] = bool(
+        data.get("override_release_year") is not None
+        or data.get("override_domain_code")
+        or data.get("override_note")
+    )
+    return data
+
+
+def update_album_master_correction(
+    album_master_id: int,
+    *,
+    release_year: int | None,
+    domain_code: str | None,
+    override_note: str | None,
+) -> dict[str, Any] | None:
+    master_id = int(album_master_id or 0)
+    if master_id <= 0:
+        return None
+    normalized_domain_code = _normalize_domain_code_value(domain_code)
+    normalized_note = str(override_note or "").strip() or None
+    release_year_value = int(release_year) if release_year is not None else None
+    now = utc_now_iso()
+
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT
+              id,
+              release_year,
+              domain_code,
+              source_release_year,
+              source_domain_code
+            FROM album_master
+            WHERE id = ?
+            LIMIT 1
+            """,
+            (master_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        current = dict(row)
+        source_release_year = (
+            int(current["source_release_year"])
+            if current.get("source_release_year") not in (None, "")
+            else (int(current["release_year"]) if current.get("release_year") not in (None, "") else None)
+        )
+        source_domain_code = _normalize_domain_code_value(current.get("source_domain_code")) or _normalize_domain_code_value(
+            current.get("domain_code")
+        )
+        effective_release_year = release_year_value if release_year_value is not None else source_release_year
+        effective_domain_code = normalized_domain_code if normalized_domain_code else source_domain_code
+
+        cur = conn.execute(
+            """
+            UPDATE album_master
+            SET release_year = ?,
+                domain_code = ?,
+                source_release_year = ?,
+                source_domain_code = ?,
+                override_release_year = ?,
+                override_domain_code = ?,
+                override_note = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                effective_release_year,
+                effective_domain_code,
+                source_release_year,
+                source_domain_code,
+                release_year_value,
+                normalized_domain_code,
+                normalized_note,
+                now,
+                master_id,
+            ),
+        )
+        if int(cur.rowcount or 0) <= 0:
+            return None
+
+    return get_album_master_correction_state(master_id)
 
 
 def set_owned_item_linked_album_master(owned_item_id: int, album_master_id: int | None) -> bool:

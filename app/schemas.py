@@ -1177,6 +1177,14 @@ class RelatedAlbumVersionsResponse(BaseModel):
     title: str | None = None
     artist_or_brand: str | None = None
     sort_artist_name: str | None = None
+    release_year: int | None = None
+    domain_code: DomainCode | None = None
+    source_release_year: int | None = None
+    source_domain_code: DomainCode | None = None
+    override_release_year: int | None = None
+    override_domain_code: DomainCode | None = None
+    override_note: str | None = None
+    has_manual_correction: bool = False
     items: list[OwnedItemListItem] = Field(default_factory=list)
 
 
@@ -1187,6 +1195,24 @@ class AlbumMasterSortArtistUpdateRequest(BaseModel):
 class AlbumMasterSortArtistUpdateResponse(BaseModel):
     album_master_id: int
     sort_artist_name: str | None = None
+
+
+class AlbumMasterCorrectionUpdateRequest(BaseModel):
+    release_year: int | None = Field(default=None, ge=1900, le=2100)
+    domain_code: DomainCode | None = None
+    override_note: str | None = None
+
+
+class AlbumMasterCorrectionUpdateResponse(BaseModel):
+    album_master_id: int
+    release_year: int | None = None
+    domain_code: DomainCode | None = None
+    source_release_year: int | None = None
+    source_domain_code: DomainCode | None = None
+    override_release_year: int | None = None
+    override_domain_code: DomainCode | None = None
+    override_note: str | None = None
+    has_manual_correction: bool = False
 
 
 class OwnedItemDetailResponse(BaseModel):

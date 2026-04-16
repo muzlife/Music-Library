@@ -1758,9 +1758,71 @@ def test_admin_can_search_goods_album_master_targets(admin_client):
     )
 
     assert res.status_code == 200
+
+
+def test_admin_can_save_album_master_correction_and_related_versions_exposes_it(admin_client):
+    master_id = db.upsert_album_master(
+        source_code="MANUAL",
+        source_master_id="correction-route-master",
+        title="교정 테스트 앨범",
+        artist_or_brand="교정 테스트 아티스트",
+        domain_code="WESTERN",
+        release_year=2001,
+        raw={},
+    )
+    owned_item_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "preferred_storage_size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "교정 테스트 앨범",
+            "domain_code": "WESTERN",
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "교정 테스트 아티스트",
+                "release_year": 2001,
+            },
+        }
+    )
+    db.bind_album_master_members(album_master_id=master_id, owned_item_ids=[owned_item_id], replace_existing=False)
+    db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=master_id)
+
+    res = admin_client.patch(
+        f"/album-masters/{master_id}/correction",
+        json={
+            "release_year": 1978,
+            "domain_code": "KOREA",
+            "override_note": "정렬은 원발매 기준",
+        },
+    )
+
+    assert res.status_code == 200
     payload = res.json()
-    assert payload["items"][0]["album_master_id"] == master_id
-    assert payload["items"][0]["title"] == "연계 대상 앨범"
+    assert payload["album_master_id"] == master_id
+    assert payload["release_year"] == 1978
+    assert payload["domain_code"] == "KOREA"
+    assert payload["source_release_year"] == 2001
+    assert payload["source_domain_code"] == "WESTERN"
+    assert payload["override_release_year"] == 1978
+    assert payload["override_domain_code"] == "KOREA"
+    assert payload["override_note"] == "정렬은 원발매 기준"
+    assert payload["has_manual_correction"] is True
+
+    related = admin_client.get(f"/owned-items/{owned_item_id}/related-versions")
+
+    assert related.status_code == 200
+    related_payload = related.json()
+    assert related_payload["album_master_id"] == master_id
+    assert related_payload["release_year"] == 1978
+    assert related_payload["domain_code"] == "KOREA"
+    assert related_payload["source_release_year"] == 2001
+    assert related_payload["source_domain_code"] == "WESTERN"
+    assert related_payload["override_release_year"] == 1978
+    assert related_payload["override_domain_code"] == "KOREA"
+    assert related_payload["override_note"] == "정렬은 원발매 기준"
+    assert related_payload["has_manual_correction"] is True
 
 
 def test_bind_album_master_updates_selected_owned_items_linked_master(admin_client):

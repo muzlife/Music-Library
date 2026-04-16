@@ -3367,15 +3367,17 @@ def test_index_reset_action_group_uses_shared_symbol_buttons():
     icon_reset_block = html.split(".icon-symbol-btn--reset {", 1)[1].split("}", 1)[0]
     assert "--icon-mask: url(" in icon_reset_block
     assert 'id="homeResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" data-i18n-title="media.search.action.reset_filters" data-i18n-aria-label="media.search.action.reset_filters"' in html
-    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>' in html
-    assert 'id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n="media.register.direct.action.reset" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>' in html
-    assert 'id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n="media.register.detail.action.reset" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"></button>' in html
-    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>' in html
-    assert 'id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n="media.register.master.action.reset_filters" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"></button>' in html
-    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>' in html
-    assert 'id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.camera.action.reset" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>' in html
-    assert 'id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.slot.action.reset" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"></button>' in html
-    assert 'id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.account.action.reset" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>' in html
+    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>' in html
+    assert 'id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>' in html
+    assert 'id="resetFormBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="폼 초기화" aria-label="폼 초기화" data-i18n-title="media.register.detail.action.reset" data-i18n-aria-label="media.register.detail.action.reset"></button>' in html
+    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>' in html
+    assert 'id="masterVariantResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="초기화" aria-label="초기화" data-i18n-title="media.register.master.action.reset_filters" data-i18n-aria-label="media.register.master.action.reset_filters"></button>' in html
+    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>' in html
+    assert 'id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>' in html
+    assert 'id="opsSlotResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.slot.action.reset" data-i18n-aria-label="ops.slot.action.reset"></button>' in html
+    assert 'id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>' in html
+    assert 'id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset"></button>' in html
+    assert 'id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset"></button>' in html
 
 
 def test_icon_buttons_share_uniform_height_and_symbol_box():
@@ -3816,8 +3818,8 @@ def test_goods_search_surface_contains_status_domain_and_slot_filters():
 def test_goods_manage_surface_contains_album_artist_label_mapping_sections():
     html = read_static_html("index.html")
     assert 'id="goodsAlbumMasterMapList"' in html
-    assert 'id="goodsArtistMapList"' in html
-    assert 'id="goodsLabelMapList"' in html
+    assert 'id="goodsArtistMapList"' not in html
+    assert 'id="goodsLabelMapList"' not in html
 
 
 def test_goods_manage_surface_is_split_into_basic_product_collectible_and_notes_sections():
@@ -3840,10 +3842,20 @@ def test_goods_manage_surface_uses_compact_core_and_extra_notes_layout():
 def test_goods_manage_mapping_blocks_use_compact_stack_controls():
     html = read_static_html("index.html")
     assert 'id="goodsManageAlbumMasterControls" class="compact-stack"' in html
-    assert 'id="goodsManageArtistControls" class="compact-stack"' in html
-    assert 'id="goodsManageLabelControls" class="compact-stack"' in html
+    assert 'id="goodsManageArtistControls" class="compact-stack"' not in html
+    assert 'id="goodsManageLabelControls" class="compact-stack"' not in html
     assert 'id="goodsManageCollectibleLookupControls" class="compact-stack"' in html
     assert 'id="goodsManageCollectibleComposeControls" class="compact-stack"' in html
+
+
+def test_compact_stack_actions_force_search_and_add_buttons_to_input_height():
+    html = read_static_html("index.html")
+    assert ".compact-stack-actions {" in html
+    assert "align-items: stretch;" in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions button," in html
+    assert "body[data-shell-mode=\"admin\"] .compact-stack-actions .btn.tiny {" in html
+    assert "height: var(--compact-control-height);" in html
+    assert "box-sizing: border-box;" in html
 
 
 def test_goods_search_surface_contains_collectible_relation_filters():
@@ -4783,6 +4795,18 @@ def test_inline_field_action_rows_share_adjacent_field_height():
     assert 'class="row ops-compact-inline-field-actions" style="justify-content:flex-end;"' in html
 
 
+def test_media_search_action_buttons_match_adjacent_field_height():
+    html = read_static_html("index.html")
+    home_search_action_block = html.split("body[data-shell-mode=\"admin\"] .home-search-action {", 1)[1].split("}", 1)[0]
+    home_search_button_block = html.split('body[data-shell-mode="admin"] .home-search-action > button,', 1)[1].split("}", 1)[0]
+
+    assert "align-items: stretch;" in home_search_action_block
+    assert "min-height: var(--compact-control-height);" in home_search_button_block
+    assert "height: var(--compact-control-height);" in home_search_button_block
+    assert "align-self: stretch;" in home_search_button_block
+    assert "box-sizing: border-box;" in home_search_button_block
+
+
 def test_collectibles_dynamic_status_messages_use_i18n_keys():
     html = read_static_html("index.html")
     assert 't("collectibles.search.loading")' in html
@@ -4839,8 +4863,7 @@ def test_collectibles_form_labels_and_placeholders_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<label for="goodsSearchQuery" data-i18n="collectibles.search.field.query.label">검색어</label>' in html
     assert 'id="goodsSearchQuery" data-i18n-placeholder="collectibles.search.field.query.placeholder"' in html
-    assert '<label for="goodsSearchArtist" data-i18n="collectibles.search.field.artist.label">연계 아티스트</label>' in html
-    assert 'id="goodsSearchArtist" data-i18n-placeholder="collectibles.search.field.artist.placeholder"' in html
+    assert 'id="goodsSearchArtist"' not in html
     assert '<label for="goodsManageName" data-i18n="collectibles.manage.field.name.label">컬렉터블명</label>' in html
     assert 'id="goodsManageName" data-i18n-placeholder="collectibles.manage.field.name.placeholder"' in html
     assert '<label for="goodsManageDescription" data-i18n="collectibles.manage.field.description.label">설명</label>' in html
@@ -5016,7 +5039,7 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '<div class="goods-mode-tabs" role="tablist" aria-label="컬렉터블 화면 모드" data-i18n-aria-label="collectibles.mode.aria">' in html
     assert '<label for="goodsSearchCategory" data-i18n="collectibles.search.field.category.label">카테고리</label>' in html
     assert '<label for="goodsSearchStatusFilter" data-i18n="collectibles.search.field.status.label">상태</label>' in html
-    assert '<label for="goodsSearchLabel" data-i18n="collectibles.search.field.label.label">연계 레이블</label>' in html
+    assert 'id="goodsSearchLabel"' not in html
     assert '<label for="goodsSearchAlbumMasterId" data-i18n="collectibles.search.field.album_master_id.label">연계 마스터 ID</label>' in html
     assert '<label for="goodsSearchLinkedState" data-i18n="collectibles.search.field.linked_state.label">연계 상태</label>' in html
     assert '<label for="goodsSearchStorageSlotId" data-i18n="collectibles.search.field.slot_id.label">보관 슬롯</label>' in html
@@ -5025,9 +5048,9 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '<label for="goodsManageStatus" data-i18n="collectibles.manage.field.status.label">상태</label>' in html
     assert '<label for="goodsManageMemoryNote" data-i18n="collectibles.manage.field.memory_note.label">메모</label>' in html
     assert '<strong data-i18n="collectibles.manage.map.album_master.title">마스터 매핑</strong>' in html
-    assert '<strong data-i18n="collectibles.manage.map.artist.title">아티스트 매핑</strong>' in html
-    assert '<strong data-i18n="collectibles.manage.map.label.title">레이블 매핑</strong>' in html
-    assert '<button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_mappings">매핑 저장</button>' in html
+    assert 'data-i18n="collectibles.manage.map.artist.title"' not in html
+    assert 'data-i18n="collectibles.manage.map.label.title"' not in html
+    assert '<button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_album_master_mappings">마스터 매핑 저장</button>' in html
     assert '<div class="mini" data-i18n="collectibles.register.intro">컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.</div>' in html
     assert '<label for="goodsRegisterCategory" data-i18n="collectibles.register.field.category.label">카테고리</label>' in html
     assert '<label for="goodsRegisterQuantity" data-i18n="collectibles.register.field.quantity.label">수량</label>' in html
@@ -5036,6 +5059,7 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '<label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>' in html
     assert '"collectibles.search.field.category.label":' in html
     assert '"collectibles.manage.map.album_master.title":' in html
+    assert '"collectibles.manage.action.save_album_master_mappings":' in html
     assert '"collectibles.register.field.label_names.label":' in html
 
 
@@ -5277,6 +5301,22 @@ def test_dashboard_selected_item_edit_button_opens_detail_manage_flow():
     assert "await loadHomeItemForEdit(ownedItemId);" not in function_block
     label_block = html.split("    function dashboardEditItemLabel() {", 1)[1].split("    function dashboardColumnCodeLabel(code) {", 1)[0]
     assert 'return t("media.manage.search.action.open_detail_manage");' in label_block
+
+
+def test_dashboard_slot_and_workbench_open_detail_manage_from_cards_and_buttons():
+    html = read_static_html("index.html")
+    helper_block = html.split("    async function openDashboardOwnedItemDetailManage(ownedItemId, sourceKind = \"SLOT\") {", 1)[1].split("    async function refreshDashboardSelectedSlotDetail() {", 1)[0]
+    assert "const row = findDashboardOwnedItemRowById(targetOwnedItemId, sourceKind);" in helper_block
+    assert "const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);" in helper_block
+    assert "await openMediaSearchDetailManage(masterId, targetOwnedItemId);" in helper_block
+
+    slot_click_block = html.split('    $("homeDashSlotItems").addEventListener("click", (e) => {', 1)[1].split('    $("homeDashWorkbenchList").addEventListener("pointerdown", (e) => {', 1)[0]
+    assert 'void openDashboardOwnedItemDetailManage(ownedItemId, "SLOT");' in slot_click_block
+    assert "selectDashboardSingleSlotItemById(ownedItemId);" not in slot_click_block
+
+    workbench_click_block = html.split('    $("homeDashWorkbenchList").addEventListener("click", (e) => {', 1)[1].split("    document.addEventListener(\"click\", (e) => {", 1)[0]
+    assert 'const source = String(editBtn.getAttribute("data-dashboard-workbench-source") || "").trim().toUpperCase();' in workbench_click_block
+    assert "void openDashboardOwnedItemDetailManage(ownedItemId, source);" in workbench_click_block
 
 
 def test_dashboard_selected_sort_artist_row_uses_aligned_grid_layout():
@@ -6173,6 +6213,9 @@ def test_home_master_manual_correction_controls_and_save_flow_exist():
     assert '"media.manage.master.correction.field.note.label":' in html
     assert '"media.manage.master.correction.source_hint":' in html
     assert 'row.style.display = "grid";' in html
+    assert 'data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다."' in html
+    assert 'data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다."' in html
+    assert 'data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다. 이후 소스 교체나 재정렬 때 참고용으로 사용합니다."' in html
 
     save_block = html.split("    async function saveHomeMasterCorrection() {", 1)[1].split("    async function saveHomeMasterSortArtistName()", 1)[0]
     assert 'const res = await fetch(`/album-masters/${masterId}/correction`,' in save_block
