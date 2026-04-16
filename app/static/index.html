@@ -4435,6 +4435,11 @@
       padding-right: 2px;
     }
 
+    .registered-master-merge-console-shell {
+      display: grid;
+      gap: 12px;
+    }
+
     .registered-master-merge-card {
       grid-template-columns: 76px minmax(0, 1fr);
       align-items: start;
@@ -8116,6 +8121,17 @@
       padding-top: 4px;
     }
 
+    #homeDashboardCard.dashboard-console-shell,
+    #registeredMasterMergeCard.registered-master-merge-console {
+      --console-bg: #0b0e12;
+      --console-panel: #11161d;
+      --console-panel-soft: #171d25;
+      --console-border: rgba(137, 151, 171, 0.24);
+      --console-accent: #ff7a1a;
+      --console-text: #edf2f7;
+      --console-text-dim: #95a2b3;
+    }
+
     .dashboard-screen {
       padding: 12px;
       background:
@@ -10937,7 +10953,7 @@
     </aside>
 
     <div id="tabHome" class="tab-panel active">
-      <section id="homeDashboardCard" class="card dashboard-screen">
+      <section id="homeDashboardCard" class="card dashboard-screen dashboard-console-shell">
         <div class="dashboard-topbar">
           <div>
             <div class="page-help-title-row">
@@ -13889,7 +13905,8 @@
       </div>
     </section>
 
-    <section id="registeredMasterMergeCard" class="card" style="margin-top:14px;">
+    <section id="registeredMasterMergeCard" class="card registered-master-merge-console" style="margin-top:14px;">
+      <div class="registered-master-merge-console-shell">
       <div class="page-help-title-row">
         <h2><span data-i18n="media.register.master.workflow.title">등록 마스터 병합</span></h2>
         <button class="page-help-trigger" type="button" data-page-help-open="register-master" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
@@ -13946,6 +13963,7 @@
       </div>
       <div id="registeredMasterMergeHistoryBody" class="result-list registered-master-merge-list">
         <div class="muted" data-i18n="media.register.master.workflow.history.state.empty">최근 병합 이력이 없습니다.</div>
+      </div>
       </div>
     </section>
 

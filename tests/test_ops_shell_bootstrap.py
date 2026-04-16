@@ -7220,6 +7220,14 @@ def test_index_dashboard_cabinet_selection_uses_cover_flow_area_for_cabinet_over
     assert "dashboard-cabinet-overview-card" in block
 
 
+def test_index_dashboard_console_shell_roots_exist():
+    html = read_static_html("index.html")
+
+    assert 'id="homeDashboardCard" class="card dashboard-screen dashboard-console-shell"' in html
+    assert "--console-bg:" in html
+    assert "--console-panel:" in html
+
+
 def test_index_dashboard_runtime_sections_use_i18n_keys():
     html = read_static_html("index.html")
     assert '"dashboard.cabinet.meta.free_slots":' in html
