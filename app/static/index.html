@@ -5862,7 +5862,7 @@
 
     .purchase-import-candidate-search-row {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: minmax(96px, 0.82fr) minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 1.08fr);
       gap: 8px;
       margin-bottom: 8px;
       align-items: end;
@@ -5872,6 +5872,10 @@
       display: grid;
       gap: 4px;
       min-width: 0;
+    }
+
+    .purchase-import-candidate-search-field--source {
+      min-width: 96px;
     }
 
     .purchase-import-candidate-row td {
@@ -28512,7 +28516,7 @@
               </div>
               ${purchaseImportAmazonMetaHtml(row)}
               <div class="purchase-import-candidate-search-row">
-                <div class="purchase-import-candidate-search-field">
+                <div class="purchase-import-candidate-search-field purchase-import-candidate-search-field--source">
                   <label class="mini" for="purchaseImportSourceOverride-${queueId}" data-i18n="media.register.purchase.queue.field.candidate_source.label">${escapeHtml(t("media.register.purchase.queue.field.candidate_source.label"))}</label>
                   <select id="purchaseImportSourceOverride-${queueId}" data-purchase-import-source="${queueId}">
                     <option value="AUTO" ${String(state?.source || "AUTO").trim().toUpperCase() === "AUTO" ? "selected" : ""}>AUTO</option>

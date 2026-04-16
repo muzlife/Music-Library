@@ -5162,6 +5162,19 @@ def test_purchase_import_candidate_row_includes_per_row_source_selector():
     assert 'params.set("source", source);' in queue_load_block
 
 
+def test_purchase_import_candidate_row_uses_single_line_search_layout():
+    html = read_static_html("index.html")
+    css_block = html.split(".purchase-import-candidate-search-row {", 1)[1].split("}", 1)[0]
+    assert "grid-template-columns: minmax(96px, 0.82fr) minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 1.08fr);" in css_block
+    candidate_row_block = html.split('function renderPurchaseImportQueueDetails(row, state) {', 1)[1].split('function renderPurchaseImportQueue(items) {', 1)[0]
+    assert 'class="purchase-import-candidate-search-field purchase-import-candidate-search-field--source"' in candidate_row_block
+    source_pos = candidate_row_block.index('for="purchaseImportSourceOverride-${queueId}"')
+    artist_pos = candidate_row_block.index('for="purchaseImportArtistOverride-${queueId}"')
+    item_pos = candidate_row_block.index('for="purchaseImportItemOverride-${queueId}"')
+    query_pos = candidate_row_block.index('for="purchaseImportQueryOverride-${queueId}"')
+    assert source_pos < artist_pos < item_pos < query_pos
+
+
 def test_dashboard_overview_actions_use_media_icon_button_pattern():
     html = read_static_html("index.html")
     assert 'id="homeOpenManageBtn" class="btn ghost icon-btn" type="button" data-i18n-title="dashboard.action.search" data-i18n-aria-label="dashboard.action.search"' in html
