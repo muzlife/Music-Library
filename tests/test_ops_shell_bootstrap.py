@@ -7268,6 +7268,59 @@ def test_collectibles_and_ops_use_console_panel_grammar():
     assert 'id="opsProviderPanel" class="subtab-panel admin-console-main"' in html
     assert 'id="opsExportPanel" class="subtab-panel admin-console-main"' in html
     assert 'id="opsMetaSyncPanel" class="subtab-panel admin-console-main"' in html
+    assert ".goods-shell.admin-console-shell {" in html
+    goods_shell_block = html.split(".goods-shell.admin-console-shell {", 1)[1].split("}", 1)[0]
+    assert "gap: 12px;" in goods_shell_block
+    assert "padding: 12px;" in goods_shell_block
+    assert "background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));" in goods_shell_block
+    assert ".goods-shell.admin-console-shell .goods-surface {" in html
+    goods_surface_block = html.split(".goods-shell.admin-console-shell .goods-surface {", 1)[1].split("}", 1)[0]
+    assert "gap: 12px;" in goods_surface_block
+    assert "color: var(--admin-console-text);" in goods_surface_block
+    assert ".goods-shell.admin-console-shell .goods-surface > .card," in html
+    assert ".goods-shell.admin-console-shell .goods-surface > .manual-block {" in html
+    assert "#tabOps.admin-console-shell {" in html
+    tab_ops_block = html.split("#tabOps.admin-console-shell {", 1)[1].split("}", 1)[0]
+    assert "gap: 12px;" in tab_ops_block
+    assert "color: var(--admin-console-text);" in tab_ops_block
+    assert "#tabOps.admin-console-shell > .card {" in html
+    tab_ops_card_block = html.split("#tabOps.admin-console-shell > .card {", 1)[1].split("}", 1)[0]
+    assert "padding: 12px;" in tab_ops_card_block
+    assert "border-color: var(--admin-console-panel-border);" in tab_ops_card_block
+    assert "background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));" in tab_ops_card_block
+    assert "#tabOps.admin-console-shell > .subtabs {" in html
+    tab_ops_subtabs_block = html.split("#tabOps.admin-console-shell > .subtabs {", 1)[1].split("}", 1)[0]
+    assert "gap: 8px;" in tab_ops_subtabs_block
+    assert "flex-wrap: wrap;" in tab_ops_subtabs_block
+    assert "#tabOps.admin-console-shell > .subtabs .subtab-btn {" in html
+    tab_ops_subtab_btn_block = html.split("#tabOps.admin-console-shell > .subtabs .subtab-btn {", 1)[1].split("}", 1)[0]
+    assert "border: 1px solid var(--admin-console-panel-border);" in tab_ops_subtab_btn_block
+    assert "border-radius: 0;" in tab_ops_subtab_btn_block
+    assert "background: var(--admin-console-panel-bg-2);" in tab_ops_subtab_btn_block
+    assert "box-shadow: none;" in tab_ops_subtab_btn_block
+    assert "#opsCabinetPanel," in html
+    ops_panel_block = html.split("#opsCabinetPanel,", 1)[1].split("}", 1)[0]
+    assert "#opsCameraPanel," in ops_panel_block
+    assert "#opsSlotPanel," in ops_panel_block
+    assert "#opsExceptionPanel," in ops_panel_block
+    assert "#opsAccountPanel," in ops_panel_block
+    assert "#opsProviderPanel," in ops_panel_block
+    assert "#opsExportPanel," in ops_panel_block
+    assert "#opsMetaSyncPanel {" in ops_panel_block
+    assert "gap: 12px;" in ops_panel_block
+    assert "color: var(--admin-console-text);" in ops_panel_block
+    assert "#opsCabinetPanel > .layout > .card," in html
+    ops_panel_card_block = html.split("#opsCabinetPanel > .layout > .card,", 1)[1].split("}", 1)[0]
+    assert "#opsCameraPanel > .layout > .card," in ops_panel_card_block
+    assert "#opsSlotPanel > .layout > .card," in ops_panel_card_block
+    assert "#opsExceptionPanel > .layout > .card," in ops_panel_card_block
+    assert "#opsAccountPanel > .layout > .card," in ops_panel_card_block
+    assert "#opsProviderPanel > .layout > .card," in ops_panel_card_block
+    assert "#opsExportPanel > .layout > .card," in ops_panel_card_block
+    assert "#opsMetaSyncPanel > .layout > .card {" in ops_panel_card_block
+    assert "padding: 12px;" in ops_panel_card_block
+    assert "border-color: var(--admin-console-panel-border);" in ops_panel_card_block
+    assert "background: var(--admin-console-panel-bg);" in ops_panel_card_block
 
 
 def test_ops_console_status_and_exception_anchors_remain_present():
@@ -7278,6 +7331,34 @@ def test_ops_console_status_and_exception_anchors_remain_present():
     assert 'id="opsExceptionSummary"' in html
     assert 'id="opsExceptionList"' in html
     assert 'id="opsExceptionSelectionSummary"' in html
+    assert "#tabOps.admin-console-shell :is(.dashboard-selection-toolbar, #opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {" in html
+    ops_status_block = html.split("#tabOps.admin-console-shell :is(.dashboard-selection-toolbar, #opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {", 1)[1].split("}", 1)[0]
+    assert "border: 1px solid var(--admin-console-panel-border);" in ops_status_block
+    assert "border-radius: 0;" in ops_status_block
+    assert "background: var(--admin-console-panel-bg-2);" in ops_status_block
+    assert "box-shadow: none;" in ops_status_block
+    assert "#tabOps.admin-console-shell .dashboard-selection-toolbar {" in html
+    ops_status_toolbar_block = html.split("#tabOps.admin-console-shell .dashboard-selection-toolbar {", 1)[1].split("}", 1)[0]
+    assert "padding: 8px;" in ops_status_toolbar_block
+    assert "gap: 8px;" in ops_status_toolbar_block
+    assert "flex-wrap: wrap;" in ops_status_toolbar_block
+    assert "#tabOps.admin-console-shell :is(#opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {" in html
+    ops_status_detail_block = html.split("#tabOps.admin-console-shell :is(#opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {", 1)[1].split("}", 1)[0]
+    assert "padding: 6px 8px;" in ops_status_detail_block
+    assert "#opsExceptionPanel .ops-exception-summary {" in html
+    ops_exception_summary_block = html.split("#opsExceptionPanel .ops-exception-summary {", 1)[1].split("}", 1)[0]
+    assert "display: grid;" in ops_exception_summary_block
+    assert "grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));" in ops_exception_summary_block
+    assert "gap: 8px;" in ops_exception_summary_block
+    assert "#opsExceptionPanel .dashboard-selection-toolbar," in html
+    ops_exception_list_block = html.split("#opsExceptionPanel .dashboard-selection-toolbar,\n    #opsExceptionPanel .ops-exception-list {", 1)[1].split("}", 1)[0]
+    assert "border: 1px solid var(--admin-console-panel-border);" in ops_exception_list_block
+    assert "border-radius: 0;" in ops_exception_list_block
+    assert "background: var(--admin-console-panel-bg-2);" in ops_exception_list_block
+    assert "box-shadow: none;" in ops_exception_list_block
+    assert "#opsExceptionPanel .ops-exception-list {" in html
+    ops_exception_list_padding_block = html.split("#opsExceptionPanel .dashboard-selection-toolbar {\n      padding: 8px;\n      gap: 8px;\n      flex-wrap: wrap;\n    }\n\n    #opsExceptionPanel .ops-exception-list {", 1)[1].split("}", 1)[0]
+    assert "padding: 8px;" in ops_exception_list_padding_block
 
 
 def test_admin_console_shell_has_shared_tokens_and_breakpoints():
