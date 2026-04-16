@@ -2872,15 +2872,20 @@ def test_index_admin_hero_compacts_copy_to_tab_spacing():
     header_row_block = html.split(".shell-header-row {", 1)[1].split("}", 1)[0]
     tab_btn_block = html.split("\n    .tab-btn {\n", 1)[1].split("}", 1)[0]
     assert "padding: 8px 12px;" in hero_block
+    assert "border-radius: 0;" in hero_block
+    assert "color: #eef3f8;" in hero_block
     assert "gap: 3px;" in main_block
     assert "align-items: start;" in head_block
-    assert "gap: 6px;" in head_block
+    assert "grid-template-columns: minmax(0, 1fr) auto;" in head_block
+    assert "gap: 8px;" in head_block
     assert "gap: 1px;" in copy_block
     assert "gap: 3px;" in side_block
-    assert "min-height: 44px;" in art_block
+    assert "display: none;" in art_block
     assert "margin-top: 0;" in header_row_block
     assert "gap: 4px;" in header_row_block
     assert "padding: 4px 9px;" in tab_btn_block
+    assert "border-radius: 4px;" in tab_btn_block
+    assert "background: rgba(13, 17, 23, 0.98);" in tab_btn_block
 
 
 def test_index_ops_home_hero_matches_admin_shell_spacing_tokens():
@@ -2899,8 +2904,8 @@ def test_index_ops_home_hero_matches_admin_shell_spacing_tokens():
     ops_art_block = html.split(".ops-home-hero-art {", 1)[1].split("}", 1)[0]
     assert "padding: 8px 12px;" in admin_hero_block
     assert "padding: 8px 12px;" in ops_hero_block
-    assert "border-radius: 22px;" in admin_hero_block
-    assert "border-radius: 22px;" in ops_hero_block
+    assert "border-radius: 0;" in admin_hero_block
+    assert "border-radius: 0;" in ops_hero_block
     assert "gap: 3px;" in admin_main_block
     assert "gap: 3px;" in ops_main_block
     assert "gap: 1px;" in admin_copy_block
@@ -2909,8 +2914,8 @@ def test_index_ops_home_hero_matches_admin_shell_spacing_tokens():
     assert "gap: 3px;" in ops_side_block
     assert "font-size: 1.34rem;" in admin_h1_block
     assert "font-size: 1.34rem;" in ops_h1_block
-    assert "min-height: 44px;" in admin_art_block
-    assert "min-height: 44px;" in ops_art_block
+    assert "display: none;" in admin_art_block
+    assert "display: none;" in ops_art_block
 
 
 def test_index_shell_density_sync_clears_compact_header_classes_to_keep_shell_headers_consistent():
@@ -2936,7 +2941,7 @@ def test_index_ops_home_hero_uses_top_aligned_side_and_matches_admin_compact_tit
     ops_main_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
     ops_compact_h1_block = html.split(".ops-home-hero--compact .ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
     assert "align-items: start;" in ops_main_block
-    assert "font-size: 1.42rem;" in ops_compact_h1_block
+    assert "font-size: 1.2rem;" in ops_compact_h1_block
 
 
 def test_index_ops_home_header_uses_admin_width_tokens():
@@ -3066,10 +3071,12 @@ def test_index_compact_hero_variants_reduce_padding_one_more_step():
     compact_ops_h1_block = html.split(".ops-home-hero--compact .ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
     assert "padding: var(--shell-density-hero-padding);" in compact_admin_block
     assert "gap: var(--shell-density-hero-gap);" in compact_admin_block
+    assert "border-radius: var(--shell-density-hero-radius, 0);" in compact_admin_block
     assert "gap: 6px;" in compact_admin_head_block
     assert "font-size: 1.2rem;" in compact_admin_h1_block
     assert "padding: var(--shell-density-hero-padding);" in compact_ops_block
     assert "gap: var(--shell-density-hero-gap);" in compact_ops_block
+    assert "border-radius: var(--shell-density-hero-radius, 0);" in compact_ops_block
     assert "gap: 1px;" in compact_ops_copy_block
     assert "font-size: 1.2rem;" in compact_ops_h1_block
 
@@ -3098,8 +3105,10 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "display: grid;" in shell_utility_block
     assert "align-content: space-between;" in shell_utility_block
     assert "min-height: 68px;" in shell_utility_block
+    assert "padding: 10px 12px;" in shell_utility_block
+    assert "border-radius: 0;" in shell_utility_block
     assert "justify-items: end;" in shell_utility_block
-    assert "gap: 3px;" in shell_utility_block
+    assert "gap: 4px;" in shell_utility_block
     assert "justify-content: flex-end;" in utility_main_block
     assert "justify-self: end;" in utility_main_block
     assert "margin-left: 0;" in utility_tools_block
@@ -3113,6 +3122,7 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "min-height: 28px;" in utility_chip_block
     assert "font-size: 0.76rem;" in utility_chip_block
     assert "font-weight: 700;" in utility_chip_block
+    assert "background: rgba(13, 17, 23, 0.98);" in utility_chip_block
     assert "min-height: var(--shell-density-utility-height);" in utility_btn_block
     assert "font-size: var(--shell-density-utility-font);" in utility_btn_block
     utility_override_block = html.split("#shellUtilityBar .chip,\n    #shellUtilityBar .tab-btn {", 1)[1].split("}", 1)[0]
@@ -3124,14 +3134,17 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     main_row_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]
     assert "padding-bottom: 4px;" in tools_block
     assert "padding-top: 4px;" in main_row_block
-    assert "border-top: 1px solid rgba(203, 213, 225, 0.7);" in main_row_block
+    assert "border-top: 1px solid rgba(255, 255, 255, 0.08);" in main_row_block
     assert "padding: 3px 8px;" in locale_block
     assert "font-size: 0.72rem;" in locale_block
     assert "font-weight: 700;" in locale_block
     assert "min-width: 96px;" in locale_block
+    assert "border-radius: 0;" in locale_block
+    assert "background: rgba(18, 23, 29, 0.98);" in locale_block
     assert "padding: 3px 8px;" in docs_link_block
     assert "min-height: 24px;" in docs_link_block
     assert "min-width: 96px;" in docs_link_block
+    assert "border-radius: 0;" in docs_link_block
     assert "appearance: none;" in locale_select_block
     assert "-webkit-appearance: none;" in locale_select_block
     assert "min-width: 68px;" in locale_select_block
@@ -3157,12 +3170,12 @@ def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
     action_control_block = html.split(".shell-utility-main--actions .chip,\n    .shell-utility-main--actions .tab-btn {", 1)[1].split("}", 1)[0]
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility" style="display:none;">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
     assert "padding-bottom: 3px;" in tools_modifier_block
-    assert "border-top: 1px solid rgba(148, 163, 184, 0.22);" in actions_modifier_block
+    assert "border-top: 1px solid rgba(255, 255, 255, 0.08);" in actions_modifier_block
     assert "padding-top: 5px;" in actions_modifier_block
     assert "box-shadow: none;" in meta_control_block
-    assert "color: #64748b;" in meta_control_block
-    assert "background: rgba(255,255,255,0.96);" in action_control_block
-    assert "border-color: #c7d7d2;" in action_control_block
+    assert "color: #b3bfcc;" in meta_control_block
+    assert "background: rgba(18, 23, 29, 0.98);" in action_control_block
+    assert "border-color: rgba(184, 196, 210, 0.18);" in action_control_block
     assert 'class="shell-utility-tools shell-utility-tools--meta"' in utility_block
     assert 'class="shell-utility-main shell-utility-main--actions"' in utility_block
 
@@ -3170,9 +3183,121 @@ def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
 def test_header_login_chip_uses_high_contrast_readable_treatment():
     html = read_static_html("index.html")
     chip_block = html.split(".shell-utility-main--actions .chip {", 1)[1].split("}", 1)[0]
-    assert "background: rgba(15, 23, 42, 0.72);" in chip_block
-    assert "color: #ffffff;" in chip_block
-    assert "border-color: rgba(226, 232, 240, 0.4);" in chip_block
+    assert "background: rgba(18, 23, 29, 0.98);" in chip_block
+    assert "color: #eef3f8;" in chip_block
+    assert "border-color: rgba(255, 122, 26, 0.28);" in chip_block
+
+
+def test_index_console_shells_use_hard_edge_high_contrast_surface_tokens():
+    html = read_static_html("index.html")
+    token_block = html.split("#homeDashboardCard.dashboard-console-shell,\n    #registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
+    dashboard_root_block = html.split("#homeDashboardCard.dashboard-console-shell {", 1)[1].split("}", 1)[0]
+    status_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar {", 1)[1].split("}", 1)[0]
+    hero_card_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-hero-card {", 1)[1].split("}", 1)[0]
+    panel_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-console-panel {", 1)[1].split("}", 1)[0]
+    surfaces_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-map-shell, .dashboard-cabinet-detail, .dashboard-slot-rack-surface, .dashboard-slot-bulk-popover, .dashboard-workbench-toolbar, .dashboard-surface-dock, .dashboard-cabinet-board, .dashboard-slot-grid-panel) {", 1)[1].split("}", 1)[0]
+    action_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-viewbtn, .dashboard-workbench-source, .dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-slot-grid-nav, .dashboard-slot-sidearrow) {", 1)[1].split("}", 1)[0]
+    assert "--console-text: #f3f6fb;" in token_block
+    assert "--console-text-dim: #c2ccd7;" in token_block
+    assert "--console-text-muted: #8e99a7;" in token_block
+    assert "border-radius: 0;" in dashboard_root_block
+    assert "border-radius: 0;" in status_block
+    assert "border-radius: 0;" in hero_card_block
+    assert "border-radius: 0;" in panel_block
+    assert "border-color: rgba(137, 151, 171, 0.14);" in surfaces_block
+    assert "border-radius: 0;" in surfaces_block
+    assert "background: rgba(13, 17, 23, 0.98);" in action_block
+    assert "border-radius: 4px;" in action_block
+
+
+def test_index_dashboard_console_separates_text_hierarchy_and_cabinet_slot_surfaces():
+    html = read_static_html("index.html")
+    dim_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.mini, .muted, .dashboard-kicker, .dashboard-panel-head span, .dashboard-detail-meta, .dashboard-selected-sort-artist-note, .dashboard-slot-map-copy span) {", 1)[1].split("}", 1)[0]
+    tertiary_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-grid-info, .dashboard-cabinet-head-sub, .dashboard-cabinet-total, .dashboard-cabinet-map-floorcode, .dashboard-cabinet-map-cellmeta, .dashboard-workbench-warning-meta, .dashboard-slot-listitem-date) {", 1)[1].split("}", 1)[0]
+    map_shell_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-map-shell {", 1)[1].split("}", 1)[0]
+    grid_panel_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-grid-panel {", 1)[1].split("}", 1)[0]
+    cabinet_board_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-board {", 1)[1].split("}", 1)[0]
+    cabinet_map_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map {", 1)[1].split("}", 1)[0]
+    cabinet_cell_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cell {", 1)[1].split("}", 1)[0]
+    cabinet_stage_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-stage {", 1)[1].split("}", 1)[0]
+    rack_surface_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-rack-surface {", 1)[1].split("}", 1)[0]
+    shelf_block = html.split("#homeDashboardCard.dashboard-console-shell :is(#homeDashSlotItems.dashboard-slot-shelfview, #homeDashWorkbenchList.dashboard-slot-shelfview) {", 1)[1].split("}", 1)[0]
+    assert "color: var(--console-text-dim);" in dim_block
+    assert "color: var(--console-text-muted);" in tertiary_block
+    assert "background: rgba(15, 21, 29, 0.98);" in map_shell_block
+    assert "background: rgba(16, 23, 31, 0.98);" in grid_panel_block
+    assert "background: rgba(18, 25, 33, 0.98);" in cabinet_board_block
+    assert "background: rgba(14, 20, 28, 0.98);" in cabinet_map_block
+    assert "background: rgba(22, 29, 38, 0.98);" in cabinet_cell_block
+    assert "background: rgba(18, 23, 29, 0.98);" in cabinet_stage_block
+    assert "box-shadow: none;" in cabinet_stage_block
+    assert "background: rgba(18, 24, 31, 0.98);" in rack_surface_block
+    assert "background: linear-gradient(180deg, rgba(29, 36, 45, 0.98), rgba(22, 28, 36, 0.98));" in shelf_block
+
+
+def test_index_dashboard_console_minimizes_internal_rounding_and_color_blocks():
+    html = read_static_html("index.html")
+    override_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-overview-card, .dashboard-slot-covercard, .dashboard-slot-listitem, .dashboard-slot-item-row, .dashboard-surface-dock-panel, .dashboard-slot-mutation-row, .dashboard-slot-item-cover, .dashboard-slot-listitem-cover, .dashboard-slot-covercard-cover, .dashboard-slot-shelfcover) {", 1)[1].split("}", 1)[0]
+    chip_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-legend-chip, .dashboard-slot-flag-icon, .dashboard-slot-recentmove, .dashboard-slot-covercard-index, .dashboard-selection-box-label, .dashboard-workbench-warning-badge, .dashboard-cabinet-head-flag, .dashboard-cabinet-summary-meta span, .dashboard-detail-meta span) {", 1)[1].split("}", 1)[0]
+    shelf_block = html.split("#homeDashboardCard.dashboard-console-shell :is(#homeDashSlotItems.dashboard-slot-shelfview, #homeDashWorkbenchList.dashboard-slot-shelfview) {", 1)[1].split("}", 1)[0]
+    warning_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-workbench-warning {", 1)[1].split("}", 1)[0]
+    selection_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-selection-box {", 1)[1].split("}", 1)[0]
+    pagebar_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-pagebar {", 1)[1].split("}", 1)[0]
+    selected_meta_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-selected-item-meta {", 1)[1].split("}", 1)[0]
+    assert "border-radius: 0;" in override_block
+    assert "background: rgba(18, 23, 29, 0.98);" in override_block
+    assert "border-radius: 0;" in chip_block
+    assert "background: rgba(18, 23, 29, 0.98);" in chip_block
+    assert "background: linear-gradient(180deg, rgba(29, 36, 45, 0.98), rgba(22, 28, 36, 0.98));" in shelf_block
+    assert "border-left: 2px solid rgba(255, 122, 26, 0.72);" in warning_block
+    assert "background: rgba(18, 23, 29, 0.98);" in warning_block
+    assert "border-radius: 0;" in selection_block
+    assert "background: rgba(255, 122, 26, 0.05);" in selection_block
+    assert "background: rgba(13, 17, 23, 0.98);" in pagebar_block
+    assert "border: 1px solid rgba(184, 196, 210, 0.14);" in pagebar_block
+    assert "background: rgba(13, 17, 23, 0.98);" in selected_meta_block
+    assert "color: var(--console-text);" in selected_meta_block
+
+
+def test_index_dashboard_console_expands_slot_panel_and_reduces_slot_surface_side_padding():
+    html = read_static_html("index.html")
+    layout_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-console-main {", 1)[1].split("}", 1)[0]
+    primary_surface_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-console-panel--primary .dashboard-slot-rack-surface {", 1)[1].split("}", 1)[0]
+    slot_surface_block = html.split("#homeDashboardCard.dashboard-console-shell #homeDashSlotItems.dashboard-slot-shelfview,\n    #homeDashboardCard.dashboard-console-shell #homeDashWorkbenchList.dashboard-slot-shelfview {", 1)[1].split("}", 1)[0]
+    assert "grid-template-columns: minmax(0, 2.2fr) minmax(280px, 0.56fr);" in layout_block
+    assert "padding: 10px 10px 12px;" in primary_surface_block
+    assert "padding: 14px 12px 12px 14px;" in slot_surface_block
+
+
+def test_index_dashboard_console_switches_to_single_column_when_cabinet_detail_is_open():
+    html = read_static_html("index.html")
+    focus_layout_block = html.split("#homeDashboardCard.dashboard-console-shell.dashboard-console-shell--cabinet-focus .dashboard-console-main {", 1)[1].split("}", 1)[0]
+    helper_block = html.split("    function syncDashboardConsoleFocusState(expanded) {", 1)[1].split("    function summarizeStorageCabinets(rows) {", 1)[0]
+    render_block = html.split("    function renderDashboardCabinetDetail() {", 1)[1].split("    function summarizeStorageCabinets(rows) {", 1)[0]
+    assert "grid-template-columns: 1fr;" in focus_layout_block
+    assert 'root.classList.toggle("dashboard-console-shell--cabinet-focus", Boolean(expanded));' in helper_block
+    assert 'syncDashboardConsoleFocusState(false);' in render_block
+    assert 'syncDashboardConsoleFocusState(true);' in render_block
+
+
+def test_index_dashboard_console_persists_selected_cabinet_and_slot_across_refresh():
+    html = read_static_html("index.html")
+    assert 'const DASHBOARD_CABINET_SELECTION_STORAGE_KEY = "hahahoho.dashboardCabinetSelection.v1";' in html
+    persistence_block = html.split("    function restoreDashboardCabinetSelectionMemory() {", 1)[1].split("    function renderDashboardCabinetDetail() {", 1)[0]
+    load_block = html.split("    async function loadHomeDashboard(opts = {}) {", 1)[1].split("    function resetHomeSearchForm() {", 1)[0]
+    render_block = html.split("    function renderDashboardCabinetDetail() {", 1)[1].split("    function summarizeStorageCabinets(rows) {", 1)[0]
+    boot_block = html.split("    appLocale = loadSavedLocale();", 1)[1].split("    initMediaLabelUi();", 1)[0]
+    open_block = html.split("    async function openDashboardForResolvedSlot(slotRow, opts = {}) {", 1)[1].split("    function findDashboardSlotByTriplet(cabinetName, columnCode, cellCode) {", 1)[0]
+    locale_block = html.split("    function rerenderLocaleSensitiveViews() {", 1)[1].split("    function applyLocale(locale = appLocale) {", 1)[0]
+    assert 'window.sessionStorage.getItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY)' in persistence_block
+    assert 'window.sessionStorage.setItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY, JSON.stringify(payload));' in persistence_block
+    assert 'window.sessionStorage.removeItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY);' in persistence_block
+    assert 'restoreDashboardCabinetSelectionMemory();' in load_block
+    assert 'restoreDashboardCabinetSelectionMemory();' in boot_block
+    assert 'syncDashboardCabinetSelectionMemory();' in open_block
+    assert 'homeDashboardSelectedCabinetKey = null;' not in render_block.split("if (!group) {", 1)[1].split("panel.style.display = \"none\";", 1)[0]
+    assert 'if (homeDashboardBySlot.length) {' in locale_block
+    assert 'rerender(() => renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems));' in locale_block
 
 
 def test_index_apply_shell_navigation_shows_shell_utility_bar_as_grid():
@@ -5190,6 +5315,17 @@ def test_dashboard_slot_and_workbench_open_detail_manage_from_cards_and_buttons(
     assert "void openDashboardOwnedItemDetailManage(ownedItemId, source);" in workbench_click_block
 
 
+def test_dashboard_shelfview_uses_muted_console_aligned_background():
+    html = read_static_html("index.html")
+    shelf_block = html.split("#homeDashSlotItems.dashboard-slot-shelfview,", 1)[1].split("#homeDashSlotItems.dashboard-slot-shelfview::before,", 1)[0]
+    assert "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 18%)" in shelf_block
+    assert "linear-gradient(180deg, #2f3944 0%, #2a3440 69%, #242e38 69%, #1f2932 82%, #5f554d 82%, #4f4640 100%)" in shelf_block
+    assert "inset 0 -10px 18px rgba(0, 0, 0, 0.22)" in shelf_block
+    drop_ready_block = html.split("#homeDashSlotItems.drop-ready.dashboard-slot-shelfview {", 1)[1].split("#homeDashSlotItems.dashboard-slot-shelfview::before,", 1)[0]
+    assert "rgba(56, 189, 248, 0.16)" in drop_ready_block
+    assert "#dbe4ef" not in shelf_block
+
+
 def test_dashboard_selected_sort_artist_row_uses_aligned_grid_layout():
     html = read_static_html("index.html")
     assert 'id="homeDashSelectedSortArtistRow" class="dashboard-selected-sort-artist-row"' in html
@@ -7058,6 +7194,72 @@ def test_index_dashboard_console_shell_roots_exist():
     assert "--console-panel:" in html
 
 
+def test_admin_console_shell_roots_exist_outside_dashboard():
+    html = read_static_html("index.html")
+
+    assert 'id="opsHomeLayout" class="ops-home-layout operator-shell admin-console-shell"' in html
+    assert 'class="card shared-camera-shell admin-console-shell"' in html
+    assert 'id="tabMedia" class="tab-panel page-column admin-console-shell"' in html
+    assert 'class="card goods-shell admin-console-shell"' in html
+    assert 'id="tabOps" class="tab-panel admin-console-shell"' in html
+
+
+def test_admin_console_shell_has_shared_tokens_and_breakpoints():
+    html = read_static_html("index.html")
+
+    assert ".admin-console-shell {" in html
+    assert ".admin-console-shell button:not(.page-help-trigger) {" in html
+    assert ".admin-console-shell .status.ok {" in html
+    assert ".admin-console-shell .status.err {" in html
+    assert "--admin-console-panel-bg:" in html
+    assert "--admin-console-panel-border:" in html
+    assert "--admin-console-text:" in html
+    assert "@media (max-width: 1280px)" in html
+    assert "@media (max-width: 1120px)" in html
+
+
+def test_admin_console_extension_removes_rounded_tab_surfaces():
+    html = read_static_html("index.html")
+
+    shell_block = html.split(".admin-console-shell {", 1)[1].split("}", 1)[0]
+    button_block = html.split(".admin-console-shell button:not(.page-help-trigger) {", 1)[1].split("}", 1)[0]
+    page_help_block = html.split(".admin-console-shell .page-help-trigger {", 1)[1].split("}", 1)[0]
+    status_ok_block = html.split(".admin-console-shell .status.ok {", 1)[1].split("}", 1)[0]
+    status_err_block = html.split(".admin-console-shell .status.err {", 1)[1].split("}", 1)[0]
+    camera_panel_block = html.split(".admin-console-shell .shared-camera-list-panel,\n    .admin-console-shell .shared-camera-preview-panel {", 1)[1].split("}", 1)[0]
+    camera_list_item_block = html.split(".admin-console-shell .shared-camera-list-item {", 1)[1].split("}", 1)[0]
+    camera_frame_block = html.split(".admin-console-shell .shared-camera-stream-frame {", 1)[1].split("}", 1)[0]
+    selected_result_block = html.split(".admin-console-shell .result-item.pick {", 1)[1].split("}", 1)[0]
+    assert "border-radius: 0;" in shell_block
+    assert ".admin-console-shell .card {" in html
+    assert ".admin-console-shell input," in html
+    assert ".admin-console-shell select," in html
+    assert ".admin-console-shell textarea {" in html
+    assert "min-height:" in button_block
+    assert "border: 1px solid var(--admin-console-panel-border);" in button_block
+    assert "background: var(--admin-console-panel-bg-2);" in button_block
+    assert "box-shadow: none;" in button_block
+    assert "min-height: 16px;" in page_help_block
+    assert "width: 16px;" in page_help_block
+    assert "min-width: 16px;" in page_help_block
+    assert "padding: 0;" in page_help_block
+    assert "border-radius: 999px;" in page_help_block
+    assert "display: block;" in status_ok_block
+    assert "color: var(--ok);" in status_ok_block
+    assert "border-color: #86efac;" in status_ok_block
+    assert "display: block;" in status_err_block
+    assert "color: var(--danger);" in status_err_block
+    assert "border-color: #fca5a5;" in status_err_block
+    assert "border-radius: 0;" in camera_panel_block
+    assert "box-shadow: none;" in camera_panel_block
+    assert "border-radius: 4px;" in camera_list_item_block
+    assert "box-shadow: none;" in camera_list_item_block
+    assert "border-radius: 0;" in camera_frame_block
+    assert "border-color: var(--selected-accent-strong);" in selected_result_block
+    assert "background: linear-gradient(180deg, var(--selected-surface), var(--selected-surface-soft));" in selected_result_block
+    assert "box-shadow: 0 0 0 4px var(--selected-ring), 0 14px 26px var(--selected-shadow-soft);" in selected_result_block
+
+
 def test_index_dashboard_console_layout_regions_exist():
     html = read_static_html("index.html")
 
@@ -7468,11 +7670,11 @@ def test_index_storage_mapping_slot_tiles_render_occupancy_ratio_or_percent():
     render_block = html.split(render_start, 1)[1].split(render_end, 1)[0]
     assert "const occupancy = dashboardCabinetOccupancyLabel(row);" in render_block
     assert "const occupancyTone = dashboardCabinetMapCellTone(row);" in render_block
-    assert "const sizeGroupText = dashboardSizeGroupLabel(row?.allowed_size_group || \"-\");" in render_block
-    assert "const occupancyText = occupancy.usedText" in render_block
+    assert "const occupancyMetaText = occupancy.usedText" in render_block
+    assert "dashboardSizeGroupLabel(row?.allowed_size_group || \"-\")" not in render_block
     assert '--tile-count-bg:${occupancyTone.countBg};--tile-count-border:${occupancyTone.countBorder};--tile-count-fg:${occupancyTone.countFg};' in render_block
     assert 'dashboard-cabinet-map-cellcount">${escapeHtml(occupancy.percentText)}' in render_block
-    assert 'dashboard-cabinet-map-cellmeta">${escapeHtml(cellMetaText)}' in render_block
+    assert 'dashboard-cabinet-map-cellmeta">${escapeHtml(occupancyMetaText)}' in render_block
 
     label_start = "    function dashboardCabinetOccupancyLabel(slotRow) {"
     label_end = "    function dashboardCabinetMapCellTone(slotRow) {"
@@ -7583,45 +7785,48 @@ def test_index_storage_mapping_grid_clamps_min_width_to_avoid_panel_overflow():
         ".dashboard-cabinet-map-cells {",
     ):
         assert selector in html
-        block = html.split(selector, 1)[1].split("}", 1)[0]
-        assert "min-width: 0;" in block
-    map_block = html.split(".dashboard-cabinet-map {", 1)[1].split("}", 1)[0]
-    assert "max-width: 100%;" in map_block
-    assert "overflow-x: auto;" in map_block
-    panel_block = html.split(".dashboard-slot-grid-panel {", 1)[1].split("}", 1)[0]
-    assert "overflow-x: hidden;" in panel_block
-    board_block = html.split(".dashboard-cabinet-board {", 1)[1].split("}", 1)[0]
-    assert "max-width: 100%;" in board_block
-    assert "overflow: hidden;" in board_block
+        blocks = [part.split("}", 1)[0] for part in html.split(selector)[1:]]
+        assert any("min-width: 0;" in block for block in blocks)
+    map_blocks = [part.split("}", 1)[0] for part in html.split(".dashboard-cabinet-map {")[1:]]
+    assert any("max-width: 100%;" in block for block in map_blocks)
+    assert any("overflow-x: auto;" in block for block in map_blocks)
+    panel_blocks = [part.split("}", 1)[0] for part in html.split(".dashboard-slot-grid-panel {")[1:]]
+    assert any("overflow-x: hidden;" in block for block in panel_blocks)
+    board_blocks = [part.split("}", 1)[0] for part in html.split(".dashboard-cabinet-board {")[1:]]
+    assert any("max-width: 100%;" in block for block in board_blocks)
+    assert any("overflow: hidden;" in block for block in board_blocks)
     panel_shell_block = html.split(".dashboard-panel {", 1)[1].split("}", 1)[0]
     assert "min-width: 0;" in panel_shell_block
     assert "max-width: 100%;" in panel_shell_block
     assert "overflow: hidden;" in panel_shell_block
-    floor_block = html.split(".dashboard-cabinet-map-floor {", 1)[1].split("}", 1)[0]
-    assert "grid-template-columns: 42px minmax(0, 1fr);" in floor_block
-    cells_block = html.split(".dashboard-cabinet-map-cells {", 1)[1].split("}", 1)[0]
-    assert "grid-template-columns: repeat(var(--cell-count, 1), minmax(0, 1fr));" in cells_block
-    assert "justify-content: start;" in cells_block
-    assert "gap: 5px;" in cells_block
-    assert "width: 100%;" in cells_block
-    assert "max-width: 100%;" in cells_block
-    assert "overflow-x: hidden;" in cells_block
-    cell_block = html.split(".dashboard-cabinet-map-cell {", 1)[1].split("}", 1)[0]
-    assert "min-height: 46px;" in cell_block
-    assert "padding: 5px 4px;" in cell_block
+    floor_blocks = [part.split("}", 1)[0] for part in html.split(".dashboard-cabinet-map-floor {")[1:]]
+    assert any("grid-template-columns: 42px minmax(0, 1fr);" in block for block in floor_blocks)
+    cells_blocks = [part.split("}", 1)[0] for part in html.split(".dashboard-cabinet-map-cells {")[1:]]
+    assert any("grid-template-columns: repeat(var(--cell-count, 1), minmax(0, 1fr));" in block for block in cells_blocks)
+    assert any("justify-content: start;" in block for block in cells_blocks)
+    assert any("gap: 5px;" in block for block in cells_blocks)
+    assert any("width: 100%;" in block for block in cells_blocks)
+    assert any("max-width: 100%;" in block for block in cells_blocks)
+    assert any("overflow-x: hidden;" in block for block in cells_blocks)
+    cell_blocks = [part.split("}", 1)[0] for part in html.split(".dashboard-cabinet-map-cell {")[1:]]
+    assert any("min-height: 46px;" in block for block in cell_blocks)
+    assert any("padding: 5px 4px;" in block for block in cell_blocks)
     code_block = html.split(".dashboard-cabinet-map-cellcode {", 1)[1].split("}", 1)[0]
     assert "font-size: 0.6rem;" in code_block
     count_block = html.split(".dashboard-cabinet-map-cellcount {", 1)[1].split("}", 1)[0]
     assert "display: inline-flex;" in count_block
     assert "width: fit-content;" in count_block
-    assert "padding: 2px 5px;" in count_block
-    assert "border: 1px solid var(--tile-count-border, transparent);" in count_block
-    assert "background: var(--tile-count-bg, transparent);" in count_block
+    assert "padding: 0 0 0 7px;" in count_block
+    assert "border-left: 2px solid var(--tile-count-fg, currentColor);" in count_block
+    assert "background: transparent;" in count_block
     assert "color: var(--tile-count-fg, currentColor);" in count_block
+    assert "border-radius: 0;" in count_block
+    assert "box-shadow: none;" in count_block
     assert "font-size: 0.82rem;" in count_block
     meta_block = html.split(".dashboard-cabinet-map-cellmeta {", 1)[1].split("}", 1)[0]
     assert "font-size: 0.52rem;" in meta_block
     assert "color: inherit;" in meta_block
+    assert "padding-left: 9px;" in meta_block
     assert "white-space: nowrap;" in meta_block
     assert "overflow: hidden;" in meta_block
     assert "text-overflow: ellipsis;" in meta_block
@@ -7907,16 +8112,18 @@ def test_index_ops_home_header_precedes_dashboard_and_operator_tab_panels():
     assert html.index('id="opsHomeHero"') < html.index('<div id="tabSimple" class="tab-panel">')
 
 
-def test_index_dashboard_slot_focus_centers_cover_flow_in_viewport():
+def test_index_dashboard_slot_focus_moves_cover_flow_to_browser_bottom_and_focuses_it():
     html = read_static_html("index.html")
     assert 'function focusDashboardTargetSlot(slotCode, opts = {}) {' in html
     function_block = html.split('function focusDashboardTargetSlot(slotCode, opts = {}) {', 1)[1].split('\n    }\n\n', 1)[0]
     assert 'const slotItemsRoot = $("homeDashSlotItems");' in function_block
     assert 'const targetRoot = slotItemsRoot || detailRoot;' in function_block
-    assert 'const targetRect = targetRoot.getBoundingClientRect();' in function_block
-    assert 'window.scrollTo({ top: Math.max(targetTop - viewportOffset, 0), behavior: smooth ? "smooth" : "auto" });' in function_block
+    assert 'if (!targetRoot.hasAttribute("tabindex")) targetRoot.setAttribute("tabindex", "-1");' in function_block
+    assert 'targetRoot.focus({ preventScroll: true });' in function_block
+    assert 'targetRoot.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block });' in function_block
     assert 'floorsRoot.scrollIntoView' not in function_block
-    assert 'focusDashboardTargetSlot(slotRow.slot_code, { block: "center" });' in html
+    assert 'cell.focus({ preventScroll: true });' not in function_block
+    assert 'focusDashboardTargetSlot(slotRow.slot_code, { block: "end" });' in html
 
 
 def test_index_defines_ops_cabinet_route_helper_and_query_contract():
@@ -7987,7 +8194,9 @@ def test_index_operator_open_cabinet_prefers_exact_slot_selection_in_ops_shell()
 
 def test_index_cabinets_route_without_selection_clears_stale_dashboard_focus():
     html = read_static_html("index.html")
-    assert 'if (nextMode === "cabinets" && !pendingOpsCabinetSelection) {' in html
+    assert 'nextMode === "cabinets"' in html
+    assert "!pendingOpsCabinetSelection" in html
+    assert '!String(homeDashboardSelectedCabinetKey || "").trim()' in html
     assert "homeDashboardSelectedCabinetKey = null;" in html
     assert "homeDashboardSelectedSlotCode = null;" in html
     assert "homeDashboardSlotItems = [];" in html
