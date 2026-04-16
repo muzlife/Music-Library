@@ -13499,22 +13499,22 @@
                   </select>
                 </div>
                 <div>
-                  <label for="goodsSearchCollectibleRelationState">컬렉터블 연계</label>
+                  <label for="goodsSearchCollectibleRelationState" data-i18n="collectibles.search.field.collectible_relation_state.label">컬렉터블 연계</label>
                   <select id="goodsSearchCollectibleRelationState">
-                    <option value="ANY">전체</option>
-                    <option value="LINKED">연계 있음</option>
-                    <option value="UNLINKED">연계 없음</option>
+                    <option value="ANY" data-i18n="collectibles.search.collectible_relation_state.any">전체</option>
+                    <option value="LINKED" data-i18n="collectibles.search.collectible_relation_state.linked">연계 있음</option>
+                    <option value="UNLINKED" data-i18n="collectibles.search.collectible_relation_state.unlinked">연계 없음</option>
                   </select>
                 </div>
                 <div>
-                  <label for="goodsSearchCollectibleRelationType">관계 타입</label>
+                  <label for="goodsSearchCollectibleRelationType" data-i18n="collectibles.search.field.collectible_relation_type.label">관계 타입</label>
                   <select id="goodsSearchCollectibleRelationType">
-                    <option value="">전체</option>
-                    <option value="SERIES">시리즈</option>
-                    <option value="VARIANT">변형</option>
-                    <option value="SET_MEMBER">세트 구성</option>
-                    <option value="RELATED">관련</option>
-                    <option value="PROMO_FOR">프로모 연계</option>
+                    <option value="" data-i18n="collectibles.search.collectible_relation_type.all">전체</option>
+                    <option value="SERIES" data-i18n="collectibles.relation_type.series">시리즈</option>
+                    <option value="VARIANT" data-i18n="collectibles.relation_type.variant">변형</option>
+                    <option value="SET_MEMBER" data-i18n="collectibles.relation_type.set_member">세트 구성</option>
+                    <option value="RELATED" data-i18n="collectibles.relation_type.related">관련</option>
+                    <option value="PROMO_FOR" data-i18n="collectibles.relation_type.promo_for">프로모 연계</option>
                   </select>
                 </div>
                 <div>
@@ -13653,36 +13653,36 @@
 
             <section id="goodsManageCollectibleLinksSection" class="goods-map-section">
               <div class="result-head" style="margin-bottom:0;">
-                <strong>컬렉터블 연계</strong>
-                <span class="mini">시리즈/변형/세트/프로모 관계 관리</span>
+                <strong data-i18n="collectibles.manage.map.collectible.title">컬렉터블 연계</strong>
+                <span class="mini" data-i18n="collectibles.manage.map.collectible.subtitle">시리즈/변형/세트/프로모 관계 관리</span>
               </div>
               <div id="goodsCollectibleRelationMapList" class="goods-chip-list"></div>
               <div id="goodsManageCollectibleLookupControls" class="compact-stack" style="margin-top:8px;">
-                <input id="goodsManageCollectibleQuery" placeholder="연결할 컬렉터블 검색" />
+                <input id="goodsManageCollectibleQuery" data-i18n-placeholder="collectibles.manage.map.collectible.query.placeholder" placeholder="연결할 컬렉터블 검색" />
                 <div class="compact-stack-actions">
-                  <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button">조회</button>
+                  <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.collectible.action.search">조회</button>
                 </div>
               </div>
               <div id="goodsManageCollectibleResults" class="goods-target-results"></div>
               <div id="goodsManageCollectibleComposeControls" class="compact-stack" style="margin-top:8px;">
                 <div class="compact-stack-grid">
                   <div>
-                    <label for="goodsManageRelationType">관계 타입</label>
+                    <label for="goodsManageRelationType" data-i18n="collectibles.manage.map.collectible.field.relation_type.label">관계 타입</label>
                     <select id="goodsManageRelationType">
-                      <option value="SERIES">시리즈</option>
-                      <option value="VARIANT">변형</option>
-                      <option value="SET_MEMBER">세트 구성</option>
-                      <option value="RELATED">관련</option>
-                      <option value="PROMO_FOR">프로모 연계</option>
+                      <option value="SERIES" data-i18n="collectibles.relation_type.series">시리즈</option>
+                      <option value="VARIANT" data-i18n="collectibles.relation_type.variant">변형</option>
+                      <option value="SET_MEMBER" data-i18n="collectibles.relation_type.set_member">세트 구성</option>
+                      <option value="RELATED" data-i18n="collectibles.relation_type.related">관련</option>
+                      <option value="PROMO_FOR" data-i18n="collectibles.relation_type.promo_for">프로모 연계</option>
                     </select>
                   </div>
                   <div>
-                    <label for="goodsManageRelationNote">관계 메모(선택)</label>
-                    <input id="goodsManageRelationNote" placeholder="관계 메모(선택)" />
+                    <label for="goodsManageRelationNote" data-i18n="collectibles.manage.map.collectible.field.relation_note.label">관계 메모(선택)</label>
+                    <input id="goodsManageRelationNote" data-i18n-placeholder="collectibles.manage.map.collectible.field.relation_note.placeholder" placeholder="관계 메모(선택)" />
                   </div>
                 </div>
                 <div class="compact-stack-actions">
-                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button">컬렉터블 연계 저장</button>
+                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.map.collectible.action.save">컬렉터블 연계 저장</button>
                 </div>
               </div>
               <div id="goodsManageRelationStatus" class="status"></div>
@@ -17415,6 +17415,7 @@
         "collectibles.mapping.action.connect": "연결",
         "collectibles.search.meta.quantity": "수량 {quantity}",
         "collectibles.search.meta.links": "연계 {count}건",
+        "collectibles.search.meta.collectible_relations": "컬렉터블 연계 {count}건",
         "collectibles.status.search.failed": "컬렉터블 검색 실패",
         "collectibles.manage.status.loading": "컬렉터블 정보 로드 중... goods_item_id={id}",
         "collectibles.manage.status.load_failed": "컬렉터블 상세 조회 실패",
@@ -18014,10 +18015,21 @@
         "collectibles.search.field.album_master_id.label": '연계 마스터 ID',
         "collectibles.search.field.album_master_id.placeholder": '예: 197',
         "collectibles.search.field.linked_state.label": '연계 상태',
+        "collectibles.search.field.collectible_relation_state.label": '컬렉터블 연계',
+        "collectibles.search.field.collectible_relation_type.label": '관계 타입',
         "collectibles.search.field.slot_id.label": '보관 슬롯',
         "collectibles.search.linked_state.any": '전체',
         "collectibles.search.linked_state.linked": '연계 있음',
         "collectibles.search.linked_state.unlinked": '연계 없음',
+        "collectibles.search.collectible_relation_state.any": '전체',
+        "collectibles.search.collectible_relation_state.linked": '연계 있음',
+        "collectibles.search.collectible_relation_state.unlinked": '연계 없음',
+        "collectibles.search.collectible_relation_type.all": '전체',
+        "collectibles.relation_type.series": '시리즈',
+        "collectibles.relation_type.variant": '변형',
+        "collectibles.relation_type.set_member": '세트 구성',
+        "collectibles.relation_type.related": '관련',
+        "collectibles.relation_type.promo_for": '프로모 연계',
         "collectibles.manage.field.id.label": '컬렉터블 ID',
         "collectibles.manage.field.category.label": '카테고리',
         "collectibles.manage.field.quantity.label": '수량',
@@ -18032,6 +18044,14 @@
         "collectibles.manage.map.album_master.subtitle": '연결할 앨범 마스터를 검색해 추가합니다.',
         "collectibles.manage.map.album_master.query.placeholder": '예: 김윤아',
         "collectibles.manage.map.album_master.action.search": '마스터 검색',
+        "collectibles.manage.map.collectible.title": '컬렉터블 연계',
+        "collectibles.manage.map.collectible.subtitle": '시리즈/변형/세트/프로모 관계를 관리합니다.',
+        "collectibles.manage.map.collectible.query.placeholder": '연결할 컬렉터블 검색',
+        "collectibles.manage.map.collectible.action.search": '조회',
+        "collectibles.manage.map.collectible.field.relation_type.label": '관계 타입',
+        "collectibles.manage.map.collectible.field.relation_note.label": '관계 메모(선택)',
+        "collectibles.manage.map.collectible.field.relation_note.placeholder": '관계 메모(선택)',
+        "collectibles.manage.map.collectible.action.save": '컬렉터블 연계 저장',
         "collectibles.manage.map.artist.title": '아티스트 매핑',
         "collectibles.manage.map.artist.subtitle": '이 컬렉터블과 연결할 아티스트명을 추가합니다.',
         "collectibles.manage.map.artist.placeholder": '예: 김윤아',
@@ -19958,6 +19978,7 @@
         "collectibles.mapping.action.connect": "Connect",
         "collectibles.search.meta.quantity": "Qty {quantity}",
         "collectibles.search.meta.links": "Links {count}",
+        "collectibles.search.meta.collectible_relations": "Collectible Links {count}",
         "collectibles.status.search.failed": "Collectible search failed",
         "collectibles.manage.status.loading": "Loading collectible... goods_item_id={id}",
         "collectibles.manage.status.load_failed": "Failed to load collectible details",
@@ -20557,10 +20578,21 @@
         "collectibles.search.field.album_master_id.label": 'Linked Master ID',
         "collectibles.search.field.album_master_id.placeholder": 'e.g. 197',
         "collectibles.search.field.linked_state.label": 'Link State',
+        "collectibles.search.field.collectible_relation_state.label": 'Collectible Link State',
+        "collectibles.search.field.collectible_relation_type.label": 'Relation Type',
         "collectibles.search.field.slot_id.label": 'Storage Slot',
         "collectibles.search.linked_state.any": 'All',
         "collectibles.search.linked_state.linked": 'Linked',
         "collectibles.search.linked_state.unlinked": 'Unlinked',
+        "collectibles.search.collectible_relation_state.any": 'All',
+        "collectibles.search.collectible_relation_state.linked": 'Linked',
+        "collectibles.search.collectible_relation_state.unlinked": 'Unlinked',
+        "collectibles.search.collectible_relation_type.all": 'All',
+        "collectibles.relation_type.series": 'Series',
+        "collectibles.relation_type.variant": 'Variant',
+        "collectibles.relation_type.set_member": 'Set Member',
+        "collectibles.relation_type.related": 'Related',
+        "collectibles.relation_type.promo_for": 'Promo Link',
         "collectibles.manage.field.id.label": 'Collectible ID',
         "collectibles.manage.field.category.label": 'Category',
         "collectibles.manage.field.quantity.label": 'Quantity',
@@ -20575,6 +20607,14 @@
         "collectibles.manage.map.album_master.subtitle": 'Search and add the album master to connect.',
         "collectibles.manage.map.album_master.query.placeholder": 'e.g. Kim Yuna',
         "collectibles.manage.map.album_master.action.search": 'Search Master',
+        "collectibles.manage.map.collectible.title": 'Collectible Links',
+        "collectibles.manage.map.collectible.subtitle": 'Manage series, variant, set, and promo relationships.',
+        "collectibles.manage.map.collectible.query.placeholder": 'Search collectibles to link',
+        "collectibles.manage.map.collectible.action.search": 'Search',
+        "collectibles.manage.map.collectible.field.relation_type.label": 'Relation Type',
+        "collectibles.manage.map.collectible.field.relation_note.label": 'Relation Note (optional)',
+        "collectibles.manage.map.collectible.field.relation_note.placeholder": 'Relation Note (optional)',
+        "collectibles.manage.map.collectible.action.save": 'Save Collectible Links',
         "collectibles.manage.map.artist.title": 'Artist Mapping',
         "collectibles.manage.map.artist.subtitle": 'Add artist names linked to this collectible.',
         "collectibles.manage.map.artist.placeholder": 'e.g. Kim Yuna',
@@ -22524,6 +22564,7 @@
         "collectibles.mapping.action.connect": "連携",
         "collectibles.search.meta.quantity": "数量 {quantity}",
         "collectibles.search.meta.links": "連携 {count}件",
+        "collectibles.search.meta.collectible_relations": "コレクタブル連携 {count}件",
         "collectibles.status.search.failed": "コレクタブル検索に失敗しました",
         "collectibles.manage.status.loading": "コレクタブル情報を読み込み中... goods_item_id={id}",
         "collectibles.manage.status.load_failed": "コレクタブル詳細の取得に失敗しました",
@@ -23112,10 +23153,21 @@
         "collectibles.search.field.album_master_id.label": '連携マスターID',
         "collectibles.search.field.album_master_id.placeholder": '例: 197',
         "collectibles.search.field.linked_state.label": '連携状態',
+        "collectibles.search.field.collectible_relation_state.label": 'コレクタブル連携',
+        "collectibles.search.field.collectible_relation_type.label": '関係タイプ',
         "collectibles.search.field.slot_id.label": '保管スロット',
         "collectibles.search.linked_state.any": 'すべて',
         "collectibles.search.linked_state.linked": '連携あり',
         "collectibles.search.linked_state.unlinked": '連携なし',
+        "collectibles.search.collectible_relation_state.any": 'すべて',
+        "collectibles.search.collectible_relation_state.linked": '連携あり',
+        "collectibles.search.collectible_relation_state.unlinked": '連携なし',
+        "collectibles.search.collectible_relation_type.all": 'すべて',
+        "collectibles.relation_type.series": 'シリーズ',
+        "collectibles.relation_type.variant": 'バリアント',
+        "collectibles.relation_type.set_member": 'セット構成',
+        "collectibles.relation_type.related": '関連',
+        "collectibles.relation_type.promo_for": 'プロモ連携',
         "collectibles.manage.field.id.label": 'コレクタブルID',
         "collectibles.manage.field.category.label": 'カテゴリ',
         "collectibles.manage.field.quantity.label": '数量',
@@ -23130,6 +23182,14 @@
         "collectibles.manage.map.album_master.subtitle": '連携するアルバムマスターを検索して追加します。',
         "collectibles.manage.map.album_master.query.placeholder": '例: キム・ユナ',
         "collectibles.manage.map.album_master.action.search": 'マスター検索',
+        "collectibles.manage.map.collectible.title": 'コレクタブル連携',
+        "collectibles.manage.map.collectible.subtitle": 'シリーズ / バリアント / セット / プロモ関係を管理します。',
+        "collectibles.manage.map.collectible.query.placeholder": '連携するコレクタブルを検索',
+        "collectibles.manage.map.collectible.action.search": '検索',
+        "collectibles.manage.map.collectible.field.relation_type.label": '関係タイプ',
+        "collectibles.manage.map.collectible.field.relation_note.label": '関係メモ（任意）',
+        "collectibles.manage.map.collectible.field.relation_note.placeholder": '関係メモ（任意）',
+        "collectibles.manage.map.collectible.action.save": 'コレクタブル連携保存',
         "collectibles.manage.map.artist.title": 'アーティストマッピング',
         "collectibles.manage.map.artist.subtitle": 'このコレクタブルに紐づけるアーティスト名を追加します。',
         "collectibles.manage.map.artist.placeholder": '例: キム・ユナ',
@@ -42727,11 +42787,11 @@
 
     function goodsRelationTypeLabel(code) {
       const normalized = String(code || "").trim().toUpperCase();
-      if (normalized === "SERIES") return "시리즈";
-      if (normalized === "VARIANT") return "변형";
-      if (normalized === "SET_MEMBER") return "세트 구성";
-      if (normalized === "RELATED") return "관련";
-      if (normalized === "PROMO_FOR") return "프로모 연계";
+      if (normalized === "SERIES") return t("collectibles.relation_type.series");
+      if (normalized === "VARIANT") return t("collectibles.relation_type.variant");
+      if (normalized === "SET_MEMBER") return t("collectibles.relation_type.set_member");
+      if (normalized === "RELATED") return t("collectibles.relation_type.related");
+      if (normalized === "PROMO_FOR") return t("collectibles.relation_type.promo_for");
       return normalized || "-";
     }
 
@@ -42864,7 +42924,7 @@
                 <span>${escapeHtml(dashboardSizeGroupLabel(row.size_group))}</span>
                 <span>${escapeHtml(domainText)}</span>
                 <span>${escapeHtml(t("collectibles.search.meta.links", { count: formatCount(linkedCount) }))}</span>
-                <span>${escapeHtml(`컬렉터블 연계 ${formatCount(row.collectible_relation_count || collectibleRelationCount)}`)}</span>
+                <span>${escapeHtml(t("collectibles.search.meta.collectible_relations", { count: formatCount(row.collectible_relation_count || collectibleRelationCount) }))}</span>
               </div>
               ${relationBadges.length
                 ? `<div class="goods-result-meta">${relationBadges.map((badge) => `<span class="tag">${escapeHtml(badge)}</span>`).join("")}</div>`

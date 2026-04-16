@@ -3925,6 +3925,18 @@ def test_goods_manage_surface_contains_collectible_relation_lookup_and_save_cont
     assert 'id="goodsManageRelationNote"' in html
     assert 'id="goodsCollectibleRelationMapList"' in html
     assert 'id="goodsManageSaveRelationsBtn"' in html
+    assert '<strong data-i18n="collectibles.manage.map.collectible.title">컬렉터블 연계</strong>' in html
+    assert '<span class="mini" data-i18n="collectibles.manage.map.collectible.subtitle">시리즈/변형/세트/프로모 관계 관리</span>' in html
+    assert 'id="goodsManageCollectibleQuery" data-i18n-placeholder="collectibles.manage.map.collectible.query.placeholder"' in html
+    assert 'id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.collectible.action.search"' in html
+    assert '<label for="goodsManageRelationType" data-i18n="collectibles.manage.map.collectible.field.relation_type.label">관계 타입</label>' in html
+    assert '<label for="goodsManageRelationNote" data-i18n="collectibles.manage.map.collectible.field.relation_note.label">관계 메모(선택)</label>' in html
+    assert 'id="goodsManageRelationNote" data-i18n-placeholder="collectibles.manage.map.collectible.field.relation_note.placeholder"' in html
+    assert 'id="goodsManageSaveRelationsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.map.collectible.action.save"' in html
+    assert '"collectibles.manage.map.collectible.title":' in html
+    assert '"collectibles.manage.map.collectible.query.placeholder":' in html
+    assert '"collectibles.manage.map.collectible.field.relation_note.placeholder":' in html
+    assert '"collectibles.manage.map.collectible.action.save":' in html
 
 
 def test_goods_search_results_render_collectible_relation_summary_metadata():
@@ -3933,6 +3945,16 @@ def test_goods_search_results_render_collectible_relation_summary_metadata():
     assert 'row.collectible_relation_count' in render_block
     assert 'row.relation_badges' in render_block
     assert 'row.collectible_relation_preview' in render_block
+    relation_label_block = html.split("function goodsRelationTypeLabel(code) {", 1)[1].split("function renderGoodsCollectibleRelationList()", 1)[0]
+    assert 'if (normalized === "SERIES") return t("collectibles.relation_type.series");' in relation_label_block
+    assert 'if (normalized === "VARIANT") return t("collectibles.relation_type.variant");' in relation_label_block
+    assert 'if (normalized === "SET_MEMBER") return t("collectibles.relation_type.set_member");' in relation_label_block
+    assert 'if (normalized === "RELATED") return t("collectibles.relation_type.related");' in relation_label_block
+    assert 'if (normalized === "PROMO_FOR") return t("collectibles.relation_type.promo_for");' in relation_label_block
+    assert 't("collectibles.search.meta.collectible_relations", { count: formatCount(row.collectible_relation_count || collectibleRelationCount) })' in render_block
+    assert '"collectibles.relation_type.series":' in html
+    assert '"collectibles.relation_type.promo_for":' in html
+    assert '"collectibles.search.meta.collectible_relations":' in html
 
 
 def test_admin_parent_tabs_are_registered_in_shell_switching():
@@ -5070,6 +5092,17 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert 'id="goodsSearchLabel"' not in html
     assert '<label for="goodsSearchAlbumMasterId" data-i18n="collectibles.search.field.album_master_id.label">연계 마스터 ID</label>' in html
     assert '<label for="goodsSearchLinkedState" data-i18n="collectibles.search.field.linked_state.label">연계 상태</label>' in html
+    assert '<label for="goodsSearchCollectibleRelationState" data-i18n="collectibles.search.field.collectible_relation_state.label">컬렉터블 연계</label>' in html
+    assert '<option value="ANY" data-i18n="collectibles.search.collectible_relation_state.any">전체</option>' in html
+    assert '<option value="LINKED" data-i18n="collectibles.search.collectible_relation_state.linked">연계 있음</option>' in html
+    assert '<option value="UNLINKED" data-i18n="collectibles.search.collectible_relation_state.unlinked">연계 없음</option>' in html
+    assert '<label for="goodsSearchCollectibleRelationType" data-i18n="collectibles.search.field.collectible_relation_type.label">관계 타입</label>' in html
+    assert '<option value="" data-i18n="collectibles.search.collectible_relation_type.all">전체</option>' in html
+    assert '<option value="SERIES" data-i18n="collectibles.relation_type.series">시리즈</option>' in html
+    assert '<option value="VARIANT" data-i18n="collectibles.relation_type.variant">변형</option>' in html
+    assert '<option value="SET_MEMBER" data-i18n="collectibles.relation_type.set_member">세트 구성</option>' in html
+    assert '<option value="RELATED" data-i18n="collectibles.relation_type.related">관련</option>' in html
+    assert '<option value="PROMO_FOR" data-i18n="collectibles.relation_type.promo_for">프로모 연계</option>' in html
     assert '<label for="goodsSearchStorageSlotId" data-i18n="collectibles.search.field.slot_id.label">보관 슬롯</label>' in html
     assert '<label for="goodsManageCategory" data-i18n="collectibles.manage.field.category.label">카테고리</label>' in html
     assert '<label for="goodsManageQuantity" data-i18n="collectibles.manage.field.quantity.label">수량</label>' in html
@@ -5086,6 +5119,9 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '<label for="goodsRegisterDescription" data-i18n="collectibles.register.field.description.label">설명</label>' in html
     assert '<label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>' in html
     assert '"collectibles.search.field.category.label":' in html
+    assert '"collectibles.search.field.collectible_relation_state.label":' in html
+    assert '"collectibles.search.collectible_relation_type.all":' in html
+    assert '"collectibles.relation_type.series":' in html
     assert '"collectibles.manage.map.album_master.title":' in html
     assert '"collectibles.manage.action.save_album_master_mappings":' in html
     assert '"collectibles.register.field.label_names.label":' in html
