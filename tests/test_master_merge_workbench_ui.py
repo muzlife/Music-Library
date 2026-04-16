@@ -41,6 +41,16 @@ def test_registered_master_merge_console_shell_roots_exist():
     assert 'class="registered-master-merge-console-shell"' in html
 
 
+def test_registered_master_merge_console_regions_exist():
+    html = read_index_html()
+
+    assert 'class="registered-master-merge-commandbar"' in html
+    assert 'class="registered-master-merge-console-grid"' in html
+    assert 'class="registered-master-merge-results-panel"' in html
+    assert 'class="registered-master-merge-workspace-panel"' in html
+    assert 'class="registered-master-merge-log-panel"' in html
+
+
 def test_registered_master_merge_state_and_functions_exist():
     html = read_index_html()
 
