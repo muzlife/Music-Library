@@ -51,6 +51,14 @@ def test_registered_master_merge_console_regions_exist():
     assert 'class="registered-master-merge-log-panel"' in html
 
 
+def test_registered_master_merge_console_has_scoped_workspace_responsive_rules():
+    html = read_index_html()
+
+    assert "@media (max-width: 720px) {" in html
+    assert ".registered-master-merge-commandbar-meta {" in html
+    assert ".registered-master-merge-console-grid {" in html
+
+
 def test_registered_master_merge_state_and_functions_exist():
     html = read_index_html()
 
