@@ -7238,6 +7238,14 @@ def test_index_dashboard_console_layout_regions_exist():
     assert 'class="dashboard-panel dashboard-workbench-panel dashboard-console-panel dashboard-console-panel--rail"' in html
 
 
+def test_index_dashboard_console_shell_has_scoped_responsive_rules():
+    html = read_static_html("index.html")
+
+    assert "@media (max-width: 960px) {" in html
+    assert "#homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar {" in html
+    assert "#homeDashboardCard.dashboard-console-shell .dashboard-console-main {" in html
+
+
 def test_index_dashboard_runtime_sections_use_i18n_keys():
     html = read_static_html("index.html")
     assert '"dashboard.cabinet.meta.free_slots":' in html
