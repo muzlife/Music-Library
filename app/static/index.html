@@ -4440,10 +4440,106 @@
       gap: 12px;
     }
 
+    #registeredMasterMergeCard.registered-master-merge-console {
+      border: 1px solid rgba(120, 136, 158, 0.24);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255, 122, 26, 0.05), rgba(8, 11, 16, 0) 26%),
+        linear-gradient(180deg, rgba(11, 14, 18, 0.98), rgba(10, 13, 18, 0.99)),
+        var(--console-bg);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.03),
+        0 18px 50px rgba(2, 6, 23, 0.34);
+      color: var(--console-text);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+      background-size: 100% 18px, 18px 100%;
+      opacity: 0.18;
+      mix-blend-mode: screen;
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .registered-master-merge-commandbar,
+    .registered-master-merge-results-panel,
+    .registered-master-merge-workspace-panel,
+    .registered-master-merge-log-panel {
+      border: 1px solid var(--console-border);
+      border-radius: 20px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(18, 23, 31, 0.97), rgba(13, 17, 23, 0.99));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .registered-master-merge-commandbar {
+      display: grid;
+      gap: 12px;
+    }
+
+    .registered-master-merge-commandbar-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .registered-master-merge-commandbar-meta {
+      display: grid;
+      gap: 8px;
+      min-width: 220px;
+    }
+
+    .registered-master-merge-commandbar-summary {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .registered-master-merge-commandbar-chip {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(137, 151, 171, 0.2);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--console-text-dim);
+      font-size: 0.72rem;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .registered-master-merge-commandbar-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .registered-master-merge-console-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 12px;
+      align-items: start;
+    }
+
     .registered-master-merge-card {
       grid-template-columns: 76px minmax(0, 1fr);
       align-items: start;
       gap: 10px;
+      border: 1px solid rgba(137, 151, 171, 0.16);
+      border-radius: 18px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.02);
     }
 
     .registered-master-merge-head {
@@ -4457,7 +4553,7 @@
       margin: 0;
       font-size: 0.96rem;
       line-height: 1.28;
-      color: #0f172a;
+      color: var(--console-text);
     }
 
     .registered-master-merge-actions {
@@ -4476,8 +4572,45 @@
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
-      color: #64748b;
+      color: var(--console-text-dim);
       font-size: 0.72rem;
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console :is(.sub, .mini, .muted, .registered-master-merge-meta, label, .result-head span) {
+      color: var(--console-text-dim);
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console :is(h2, strong, .registered-master-merge-title) {
+      color: var(--console-text);
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console :is(input, select) {
+      background: rgba(10, 13, 18, 0.8);
+      border-color: rgba(137, 151, 171, 0.24);
+      color: var(--console-text);
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console .section-divider {
+      margin-top: 0;
+      padding-top: 0;
+      border-top-color: rgba(137, 151, 171, 0.14);
+    }
+
+    #registeredMasterMergeCard.registered-master-merge-console .result-head {
+      margin-top: 0 !important;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 1080px) {
+      .registered-master-merge-commandbar-main,
+      .registered-master-merge-console-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .registered-master-merge-commandbar-summary,
+      .registered-master-merge-commandbar-actions {
+        justify-content: flex-start;
+      }
     }
 
     .registered-master-merge-order-badge {
@@ -14059,63 +14192,77 @@
 
     <section id="registeredMasterMergeCard" class="card registered-master-merge-console" style="margin-top:14px;">
       <div class="registered-master-merge-console-shell">
-      <div class="page-help-title-row">
-        <h2><span data-i18n="media.register.master.workflow.title">등록 마스터 병합</span></h2>
-        <button class="page-help-trigger" type="button" data-page-help-open="register-master" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
-      </div>
-      <p class="sub" data-i18n="media.register.master.workflow.subtitle">DB에 등록된 album_master만 검색해 병합 대상으로 모은 뒤, 대표 마스터 하나로 순차 병합합니다.</p>
-
-      <div class="grid-3">
-        <div class="span-2">
-          <label for="registeredMasterMergeQuery" data-i18n="media.register.master.workflow.search.field.query.label">등록 마스터 검색</label>
-          <input id="registeredMasterMergeQuery" data-i18n-placeholder="media.register.master.workflow.search.field.query.placeholder" placeholder="예: album_master_id / 앨범명 / 아티스트명" />
+        <div class="registered-master-merge-commandbar">
+          <div class="page-help-title-row">
+            <h2><span data-i18n="media.register.master.workflow.title">등록 마스터 병합</span></h2>
+            <button class="page-help-trigger" type="button" data-page-help-open="register-master" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
+          </div>
+          <p class="sub" data-i18n="media.register.master.workflow.subtitle">DB에 등록된 album_master만 검색해 병합 대상으로 모은 뒤, 대표 마스터 하나로 순차 병합합니다.</p>
+          <div class="registered-master-merge-commandbar-main">
+            <div class="grid-3">
+              <div class="span-2">
+                <label for="registeredMasterMergeQuery" data-i18n="media.register.master.workflow.search.field.query.label">등록 마스터 검색</label>
+                <input id="registeredMasterMergeQuery" data-i18n-placeholder="media.register.master.workflow.search.field.query.placeholder" placeholder="예: album_master_id / 앨범명 / 아티스트명" />
+              </div>
+              <div style="display:flex;align-items:end;justify-content:flex-end;gap:8px;">
+                <button id="registeredMasterMergeSearchBtn" class="btn secondary" type="button" data-i18n="media.register.master.workflow.search.action.search">검색</button>
+                <button id="registeredMasterMergeClearBtn" class="btn ghost" type="button" data-i18n="media.register.master.workflow.search.action.clear">초기화</button>
+              </div>
+            </div>
+            <div class="registered-master-merge-commandbar-meta">
+              <div class="registered-master-merge-commandbar-summary">
+                <span id="registeredMasterMergeRepresentativeSummary" class="registered-master-merge-commandbar-chip mini" data-i18n="media.register.master.workflow.representative.summary.none">선택된 대표 마스터 없음</span>
+                <span id="registeredMasterMergeTargetSummary" class="registered-master-merge-commandbar-chip mini" data-i18n="media.register.master.workflow.targets.summary.none">선택된 병합 대상 없음</span>
+              </div>
+              <div class="registered-master-merge-commandbar-actions">
+                <button id="registeredMasterMergeRunBtn" class="btn" type="button" disabled data-i18n="media.register.master.workflow.action.run">병합 실행</button>
+              </div>
+            </div>
+          </div>
+          <div id="registeredMasterMergeStatus" class="status"></div>
         </div>
-        <div style="display:flex;align-items:end;justify-content:flex-end;gap:8px;">
-          <button id="registeredMasterMergeSearchBtn" class="btn secondary" type="button" data-i18n="media.register.master.workflow.search.action.search">검색</button>
-          <button id="registeredMasterMergeClearBtn" class="btn ghost" type="button" data-i18n="media.register.master.workflow.search.action.clear">초기화</button>
+
+        <div class="registered-master-merge-console-grid">
+          <section class="registered-master-merge-results-panel">
+            <div class="result-head">
+              <strong data-i18n="media.register.master.workflow.search_results.title">검색 결과</strong>
+              <span class="mini" id="registeredMasterMergeCount" data-i18n="common.count.zero_items">0건</span>
+            </div>
+            <div id="registeredMasterMergeBody" class="result-list registered-master-merge-list">
+              <div class="muted" data-i18n="media.register.master.workflow.search.state.prompt">등록 마스터를 검색하세요.</div>
+            </div>
+          </section>
+
+          <section class="registered-master-merge-workspace-panel">
+            <div class="section-divider">
+              <h2 data-i18n="media.register.master.workflow.workspace.title">병합 영역</h2>
+            </div>
+
+            <div class="result-head" style="margin-top:10px;">
+              <strong data-i18n="media.register.master.workflow.representative.title">대표 마스터</strong>
+            </div>
+            <div id="registeredMasterMergeRepresentativeBody" class="result-list registered-master-merge-list">
+              <div class="muted" data-i18n="media.register.master.workflow.representative.state.empty">대표 마스터를 선택하세요.</div>
+            </div>
+
+            <div class="result-head" style="margin-top:12px;">
+              <strong data-i18n="media.register.master.workflow.targets.title">병합 대상 마스터</strong>
+            </div>
+            <div id="registeredMasterMergeTargetBody" class="result-list registered-master-merge-list">
+              <div class="muted" data-i18n="media.register.master.workflow.targets.state.empty">병합 대상 마스터가 비어 있습니다.</div>
+            </div>
+          </section>
         </div>
-      </div>
-      <div id="registeredMasterMergeStatus" class="status"></div>
 
-      <div class="result-head" style="margin-top:12px;">
-        <strong data-i18n="media.register.master.workflow.search_results.title">검색 결과</strong>
-        <span class="mini" id="registeredMasterMergeCount" data-i18n="common.count.zero_items">0건</span>
-      </div>
-      <div id="registeredMasterMergeBody" class="result-list registered-master-merge-list">
-        <div class="muted" data-i18n="media.register.master.workflow.search.state.prompt">등록 마스터를 검색하세요.</div>
-      </div>
-
-      <div class="section-divider">
-        <h2 data-i18n="media.register.master.workflow.workspace.title">병합 영역</h2>
-      </div>
-
-      <div class="result-head" style="margin-top:10px;">
-        <strong data-i18n="media.register.master.workflow.representative.title">대표 마스터</strong>
-        <span id="registeredMasterMergeRepresentativeSummary" class="mini" data-i18n="media.register.master.workflow.representative.summary.none">선택된 대표 마스터 없음</span>
-      </div>
-      <div id="registeredMasterMergeRepresentativeBody" class="result-list registered-master-merge-list">
-        <div class="muted" data-i18n="media.register.master.workflow.representative.state.empty">대표 마스터를 선택하세요.</div>
-      </div>
-
-      <div class="result-head" style="margin-top:12px;">
-        <strong data-i18n="media.register.master.workflow.targets.title">병합 대상 마스터</strong>
-        <span id="registeredMasterMergeTargetSummary" class="mini" data-i18n="media.register.master.workflow.targets.summary.none">선택된 병합 대상 없음</span>
-      </div>
-      <div id="registeredMasterMergeTargetBody" class="result-list registered-master-merge-list">
-        <div class="muted" data-i18n="media.register.master.workflow.targets.state.empty">병합 대상 마스터가 비어 있습니다.</div>
-      </div>
-
-      <div class="row" style="margin-top:10px;">
-        <button id="registeredMasterMergeRunBtn" class="btn" type="button" disabled data-i18n="media.register.master.workflow.action.run">병합 실행</button>
-      </div>
-
-      <div class="result-head" style="margin-top:12px;">
-        <strong data-i18n="media.register.master.workflow.history.title">최근 병합 이력</strong>
-        <span id="registeredMasterMergeHistorySummary" class="mini" data-i18n="media.register.master.workflow.history.summary.none">최근 병합 이력 없음</span>
-      </div>
-      <div id="registeredMasterMergeHistoryBody" class="result-list registered-master-merge-list">
-        <div class="muted" data-i18n="media.register.master.workflow.history.state.empty">최근 병합 이력이 없습니다.</div>
-      </div>
+        <section class="registered-master-merge-log-panel">
+          <div class="result-head" style="margin-top:12px;">
+            <strong data-i18n="media.register.master.workflow.history.title">최근 병합 이력</strong>
+            <span id="registeredMasterMergeHistorySummary" class="mini" data-i18n="media.register.master.workflow.history.summary.none">최근 병합 이력 없음</span>
+          </div>
+          <div id="registeredMasterMergeHistoryBody" class="result-list registered-master-merge-list">
+            <div class="muted" data-i18n="media.register.master.workflow.history.state.empty">최근 병합 이력이 없습니다.</div>
+          </div>
+        </section>
       </div>
     </section>
 
