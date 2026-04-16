@@ -9107,10 +9107,6 @@
       background: rgba(14, 20, 28, 0.98);
     }
 
-    #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cell {
-      background: rgba(22, 29, 38, 0.98);
-    }
-
     #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-detail {
       background: rgba(20, 26, 34, 0.98);
     }
@@ -9273,14 +9269,6 @@
       border-radius: 0;
       box-shadow: none;
       color: var(--console-text);
-    }
-
-    #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cell.active {
-      border-color: rgba(255, 122, 26, 0.72);
-      background: rgba(23, 29, 36, 0.98);
-      color: var(--console-text);
-      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.22);
-      transform: none;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcover {
@@ -11919,6 +11907,7 @@
         <div class="shell-header-row admin-shell-row">
           <div id="adminTabs" class="tabs" style="display:none;">
             <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
+            <button id="tabCameraBtn" class="tab-btn" type="button" data-i18n="nav.camera">카메라</button>
             <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
             <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
             <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
@@ -16108,6 +16097,7 @@
         "operator.focus.count.recent_move_day": "최근 {days}일 {count}건",
         "operator.focus.count.recent_registration": "30일 {count}건",
         "nav.dashboard": "대시보드",
+        "nav.camera": "카메라",
         "nav.media": "미디어",
         "nav.collectibles": "컬렉터블",
         "nav.ops": "운영/연계",
@@ -18695,6 +18685,7 @@
         "operator.focus.count.recent_move_day": "Last {days} days {count} items",
         "operator.focus.count.recent_registration": "Last 30 days {count} items",
         "nav.dashboard": "Dashboard",
+        "nav.camera": "Camera",
         "nav.media": "Media",
         "nav.collectibles": "Collectibles",
         "nav.ops": "Ops / Links",
@@ -21282,6 +21273,7 @@
         "operator.focus.count.recent_move_day": "直近{days}日 {count}件",
         "operator.focus.count.recent_registration": "30日 {count}件",
         "nav.dashboard": "ダッシュボード",
+        "nav.camera": "カメラ",
         "nav.media": "メディア",
         "nav.collectibles": "コレクタブル",
         "nav.ops": "運用 / 連携",
@@ -46034,6 +46026,7 @@
     }
 
     $("tabHomeBtn").addEventListener("click", () => openAdminConsole("home"));
+    $("tabCameraBtn").addEventListener("click", () => openAdminConsole("camera"));
     $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabMediaBtn").addEventListener("click", () => openAdminConsole("media"));
     $("tabCollectiblesBtn").addEventListener("click", () => openAdminConsole("collectibles"));
@@ -47177,7 +47170,7 @@
         selectDashboardSlotRangeToId(ownedItemId);
         return;
       }
-      void openDashboardOwnedItemDetailManage(ownedItemId, "SLOT");
+      selectDashboardSingleSlotItemById(ownedItemId);
     });
     $("homeDashWorkbenchList").addEventListener("pointerdown", (e) => {
       if (isShellReadOnly()) return;
