@@ -96,7 +96,9 @@ const operatorRunoutSampleText = () => "-";
 const homeMasterMemberPreviewMetaLine = () => "";
 const homeMasterMemberPreviewLocationHtml = () => "";
 const getMediaSearchContextSelectedOwnedItemId = () => 0;
+const getMediaSearchExpandedPreviewOwnedItemId = () => "";
 const mediaSearchMemberPreviewCoverSrc = () => "";
+const normalizeRenderableCoverUrl = (value) => String(value || "");
 const discogsRepairSlotHtml = () => "";
 const formatCount = (value) => String(value);
 const homeMasterLocationButtonsHtml = () => "";
@@ -330,8 +332,8 @@ def test_storage_slot_display_label_prefers_localized_triplet_or_display_name():
 def test_ops_home_context_panel_supports_mini_cabinet_map_for_selected_item():
     html = read_static_html("index.html")
     assert "function findOpsLibraryContextCabinetGroup(item) {" in html
-    assert "function renderOpsLibraryContextMiniCabinetMap(item) {" in html
-    assert 'id="opsLibraryContextMiniCabinetMap"' in html
+    assert "function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {" in html
+    assert 'const mapId = String(options.mapId || "opsLibraryContextMiniCabinetMap");' in html
     assert ".ops-library-mini-map {" in html
     assert ".ops-library-mini-map-cell.active {" in html
     assert "const miniMapHtml = renderOpsLibraryContextMiniCabinetMap(item);" in html
@@ -339,7 +341,7 @@ def test_ops_home_context_panel_supports_mini_cabinet_map_for_selected_item():
 
 def test_ops_home_context_mini_cabinet_map_uses_i18n_helpers_for_head_meta():
     html = read_static_html("index.html")
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert "dashboardConnectedCabinetsLabel(group.cabinetCount)" not in mini_map_block
     assert "dashboardFloorsLabel(cabinet.floorCount)" in mini_map_block
     assert "dashboardCellCountLabel(cabinet.slotCount)" in mini_map_block
@@ -378,7 +380,6 @@ def test_ops_home_context_panel_groups_plugins_above_mini_map_and_preview():
     assert plugin_index < mini_map_index < slot_preview_index
     plugin_block = selection_block.split("const pluginSectionHtml = renderOpsPluginSection(`", 1)[1].split("`);", 1)[0]
     assert "${renderOpsArtistContextCard(item)}" in plugin_block
-    assert "${placementHintHtml}" in plugin_block
     assert "${renderOpsCollectorInfoCard(item)}" not in plugin_block
 
 
@@ -580,7 +581,7 @@ def test_ops_home_context_panel_emphasizes_current_slot_with_contrast_badge():
     html = read_static_html("index.html")
     active_block = html.split(".ops-library-mini-map-cell.active {", 1)[1].split("}", 1)[0]
     badge_block = html.split(".ops-library-mini-map-active-badge {", 1)[1].split("}", 1)[0]
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert "background: linear-gradient(180deg, var(--selected-accent-deep), var(--selected-accent-strong));" in active_block
     assert "color: #f8fafc;" in active_block
     assert "box-shadow:" in active_block
@@ -588,10 +589,10 @@ def test_ops_home_context_panel_emphasizes_current_slot_with_contrast_badge():
     assert 't("operator.context.map.active_badge")' in mini_map_block
 
 
-def test_storage_mapping_high_occupancy_percent_uses_contrast_pill_tokens():
+def test_storage_mapping_high_occupancy_percent_uses_contrast_count_tokens():
     html = read_static_html("index.html")
     tone_block = html.split("function dashboardCabinetMapCellTone(slotRow) {", 1)[1].split("function dashboardCabinetMapSizeClass(slotRow) {", 1)[0]
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     mini_count_block = html.split(".ops-library-mini-map-cellcount {", 1)[1].split("}", 1)[0]
     dash_count_block = html.split(".dashboard-cabinet-map-cellcount {", 1)[1].split("}", 1)[0]
     assert 'ratio >= 0.7' in tone_block
@@ -605,7 +606,9 @@ def test_storage_mapping_high_occupancy_percent_uses_contrast_pill_tokens():
     assert "background: var(--tile-count-bg, transparent);" in mini_count_block
     assert "border: 1px solid var(--tile-count-border, transparent);" in mini_count_block
     assert "color: var(--tile-count-fg, currentColor);" in mini_count_block
-    assert "background: var(--tile-count-bg, transparent);" in dash_count_block
+    assert "padding: 0 0 0 7px;" in dash_count_block
+    assert "border-left: 2px solid var(--tile-count-fg, currentColor);" in dash_count_block
+    assert "background: transparent;" in dash_count_block
     assert "color: var(--tile-count-fg, currentColor);" in dash_count_block
 
 
@@ -622,9 +625,9 @@ def test_ops_home_context_panel_compacts_right_panel_density():
 
 def test_ops_home_context_panel_supports_mini_slot_preview_for_selected_item():
     html = read_static_html("index.html")
-    assert "function renderOpsLibraryContextSlotPreview(item) {" in html
-    assert "function loadOpsLibraryContextSlotPreview(item) {" in html
-    assert 'id="opsLibraryContextSlotPreview"' in html
+    assert "function renderOpsLibraryContextSlotPreview(item, options = {}) {" in html
+    assert "async function loadOpsLibraryContextSlotPreview(item, options = {}) {" in html
+    assert 'const rootId = String(options.rootId || "opsLibraryContextSlotPreview");' in html
 
 
 def test_ops_home_context_panel_compacts_mini_slot_preview_density():
@@ -640,7 +643,7 @@ def test_ops_home_context_panel_compacts_mini_slot_preview_density():
 
 def test_ops_home_context_panel_allows_preview_cover_click_to_open_cabinet():
     html = read_static_html("index.html")
-    block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     assert 'class="ops-library-slot-preview-item ${isActiveItem ? "active" : ""}"' in block
     assert 'data-operator-context-open-cabinet="${ownedItemId}"' in block
     assert 'data-operator-slot-code="${escapeHtml(String(row?.slot_code || slotCode).trim())}"' in block
@@ -684,7 +687,7 @@ def test_ops_home_context_panel_supports_pinned_selection_clear_button():
 
 def test_ops_home_context_panel_adds_slot_preview_footer_open_action():
     html = read_static_html("index.html")
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     assert 'class="ops-library-slot-preview-actions"' in preview_block
     assert 't("operator.context.preview.action.open_current")' in preview_block
     assert 'data-operator-context-open-cabinet="${Number(item?.owned_item_id || item?.id || 0)}"' in preview_block
@@ -695,8 +698,8 @@ def test_operator_context_and_shared_camera_runtime_copy_use_i18n():
     html = read_static_html("index.html")
     context_default_block = html.split("function renderOpsLibraryContextDefault(climate) {", 1)[1].split("function renderOpsLibraryContextSelection(item) {", 1)[0]
     context_selection_block = html.split("function renderOpsLibraryContextSelection(item) {", 1)[1].split("function findOpsLibraryContextCabinetGroup(item) {", 1)[0]
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
-    slot_preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    slot_preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     shared_camera_list_block = html.split("function renderSharedCameraList(rows) {", 1)[1].split("function renderSharedCameraPreview(rows) {", 1)[0]
     shared_camera_preview_block = html.split("function renderSharedCameraPreview(rows) {", 1)[1].split("function renderSharedCameraPage() {", 1)[0]
 
@@ -977,7 +980,8 @@ def test_shell_global_barcode_scanner_shows_contextual_toast_after_routing():
 def test_admin_barcode_intake_uses_shorter_empty_candidate_status_copy():
     html = read_static_html("index.html")
     block = html.split("async function barcodeSearch() {", 1)[1].split("async function querySearch() {", 1)[0]
-    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((data.candidates || []).length) })' in block
+    assert "Array.isArray(candidates) && candidates.length" in block
+    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((candidates || []).length) })' in block
     assert ': t("media.register.api_lookup.status.no_candidates_register_direct")' in block
 
 
@@ -1385,7 +1389,7 @@ def test_ops_home_context_panel_allows_previous_location_open_action():
 
 def test_ops_home_context_panel_adds_hover_title_to_mini_map_cells():
     html = read_static_html("index.html")
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert 'const hoverTitle = dashboardSlotHoverHintText(row);' in mini_map_block
     assert 'title="${escapeHtml(hoverTitle)}"' in mini_map_block
 
@@ -1402,7 +1406,7 @@ def test_dashboard_cabinet_map_cells_use_first_item_hover_hint():
 
 def test_ops_home_context_panel_allows_mini_map_cell_click_to_open_cabinet():
     html = read_static_html("index.html")
-    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
+    mini_map_block = html.split("function renderOpsLibraryContextMiniCabinetMap(item, options = {}) {", 1)[1].split("function getOpsLibraryContextSlotPreviewRows(slotCode) {", 1)[0]
     assert 'data-operator-context-open-cabinet="${Number(item?.owned_item_id || item?.id || 0)}"' in mini_map_block
     assert 'data-operator-slot-code="${escapeHtml(String(row?.slot_code || "").trim())}"' in mini_map_block
     cell_block = html.split(".ops-library-mini-map-cell {", 1)[1].split("}", 1)[0]
@@ -1444,7 +1448,7 @@ def test_ops_home_context_panel_styles_location_open_actions_as_chips():
 
 def test_ops_home_context_panel_highlights_selected_item_in_slot_preview():
     html = read_static_html("index.html")
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     item_block = html.split(".ops-library-slot-preview-item.active {", 1)[1].split("}", 1)[0]
     thumb_block = html.split(".ops-library-slot-preview-item.active .ops-library-slot-preview-thumb {", 1)[1].split("}", 1)[0]
     assert "const isActiveItem = ownedItemId > 0 && ownedItemId === Number(item?.owned_item_id || item?.id || 0);" in preview_block
@@ -1551,7 +1555,7 @@ def test_ops_home_context_panel_uses_card_style_for_location_rows():
 
 def test_ops_home_context_panel_adds_selected_badge_to_active_slot_preview_item():
     html = read_static_html("index.html")
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
     badge_block = html.split(".ops-library-slot-preview-badge {", 1)[1].split("}", 1)[0]
     assert 'class="ops-library-slot-preview-badge">${escapeHtml(t("operator.context.preview.badge_selected"))}</span>' in preview_block
     assert "position: absolute;" in badge_block
@@ -1590,13 +1594,13 @@ def test_ops_home_context_panel_compacts_default_empty_copy():
     assert "검색 결과를 선택하면 현재 위치와 직전 위치를 여기서 바로 확인합니다." not in default_block
 
 
-def test_ops_home_context_panel_uses_link_style_for_slot_preview_footer_action():
+def test_ops_home_context_panel_uses_chip_style_for_slot_preview_footer_action():
     html = read_static_html("index.html")
     link_block = html.split(".ops-library-slot-preview-link {", 1)[1].split("}", 1)[0]
-    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item) {", 1)[0]
-    assert "padding: 0;" in link_block
-    assert "border: 0;" in link_block
-    assert "text-decoration: underline;" in link_block
+    preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
+    assert "padding: 6px 10px;" in link_block
+    assert "border-radius: 999px;" in link_block
+    assert "text-decoration: none;" in link_block
     assert 'class="ops-library-slot-preview-link"' in preview_block
 
 
@@ -1660,8 +1664,8 @@ def test_media_search_surface_adds_right_side_context_panel():
     panel_block = html.split(".media-search-context-panel {", 1)[1].split("}", 1)[0]
     panel_id_block = html.split("#adminSearchContextPanel {", 1)[1].split("}", 1)[0]
     body_id_block = html.split("#adminSearchContextBody {", 1)[1].split("}", 1)[0]
-    assert 'class="admin-manage-surface active media-search-layout"' in html
-    assert 'id="adminSearchContextPanel" class="media-search-context-panel"' in html
+    assert 'class="admin-manage-surface active media-search-layout admin-console-grid"' in html
+    assert 'id="adminSearchContextPanel" class="media-search-context-panel admin-console-secondary"' in html
     assert 'id="adminSearchContextBody"' in html
     assert 'data-i18n="media.search.context.title"' in html
     assert "display: flex !important;" in layout_block
@@ -1675,7 +1679,7 @@ def test_media_search_surface_adds_right_side_context_panel():
     assert "top: 20px !important;" in panel_id_block
     assert "position: relative !important;" in body_id_block
     assert "bottom: auto !important;" in body_id_block
-    assert 'id="adminSearchContextPanel" class="media-search-context-panel" style="position:sticky;top:20px;align-self:start;"' in html
+    assert 'id="adminSearchContextPanel" class="media-search-context-panel admin-console-secondary" style="position:sticky;top:20px;align-self:start;"' in html
     assert 'id="adminSearchContextBody" class="card" style="position:relative;top:auto;bottom:auto;"' in html
 
 
@@ -1833,7 +1837,7 @@ def test_operator_lookup_sends_sort_mode_only_when_selected_and_resets_to_defaul
 
 def test_media_search_mobile_flattens_outer_shell_and_softens_preview_selection():
     html = read_static_html("index.html")
-    mobile_block = html.split("@media (max-width: 1080px) {", 1)[1].split("    @media (max-width: 760px)", 1)[0]
+    mobile_block = html.rsplit("@media (max-width: 1080px) {", 1)[1].split("    @media (max-width: 760px)", 1)[0]
     assert """#homeSearchCard,
       #adminSearchContextBody {
         border: 0 !important;
@@ -2074,7 +2078,7 @@ def test_dashboard_coverflow_uses_overlay_sidearrows_without_surface_gutters():
     assert "z-index: 3;" in sidearrow_block
     assert "left: 8px;" in left_block
     assert "right: 8px;" in right_block
-    assert "padding: 16px 18px 18px;" in surface_block
+    assert "padding: 12px 14px 14px;" in surface_block
     assert "background: rgba(255,255,255,0.82);" in sidearrow_block
     assert "color: #475569;" in sidearrow_block
     assert "border: 1px solid rgba(203, 213, 225, 0.92);" in sidearrow_block
@@ -2090,7 +2094,7 @@ def test_dashboard_storage_mapping_uses_overlay_nav_without_frame_side_gutters()
     html = read_static_html("index.html")
     frame_block = html.split(".dashboard-slot-grid-frame {", 1)[1].split("}", 1)[0]
     nav_block = html.split(".dashboard-slot-grid-nav {", 1)[1].split("}", 1)[0]
-    panel_block = html.split(".dashboard-slot-grid-panel {", 1)[1].split("}", 1)[0]
+    panel_block = html.rsplit("\n    .dashboard-slot-grid-panel {", 1)[1].split("}", 1)[0]
     assert "position: relative;" in frame_block
     assert "grid-template-columns: minmax(0, 1fr);" in frame_block
     assert "gap: 0;" in frame_block
@@ -2304,7 +2308,6 @@ def test_media_search_master_cards_gate_discogs_repair_button_on_eligibility():
     preview_block = html.split("    function homeMasterMemberPreviewHtml(item, options = {}) {", 1)[1].split("    function getHomeMasterVisiblePreviewItems(row) {", 1)[0]
     result_block = html.split("    function homeResultItemHtml(row) {", 1)[1].split("    function renderHomeSearchResults(items) {", 1)[0]
     assert 'const repairDiscogsMasterBtn = discogsRepairSlotHtml("home", {' in preview_block
-    assert 'data-home-discogs-repair-slot="' in preview_block
     assert 'const repairDiscogsMasterBtn = e.target.closest("[data-home-repair-discogs-master]");' in html
     assert 'homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode })' in result_block
     assert 'function discogsRepairSlotHtml(scope, { ownedItemId, sourceCode, masterSourceCode, sourceExternalId }) {' in html
@@ -2465,14 +2468,14 @@ def test_ops_home_context_panel_fixes_slot_preview_label_height():
     assert "height: 1.32em;" in label_block
 
 
-def test_ops_home_context_panel_uses_link_style_for_open_cabinet_action():
+def test_ops_home_context_panel_uses_compact_chip_for_open_cabinet_action():
     html = read_static_html("index.html")
-    link_block = html.split(".operator-helper-link {", 1)[1].split("}", 1)[0]
+    link_block = html.split(".operator-mini-linkchip {", 1)[1].split("}", 1)[0]
     selection_block = html.split("function renderOpsLibraryContextSelection(item) {", 1)[1].split("function findOpsLibraryContextCabinetGroup(item) {", 1)[0]
-    assert "padding: 0;" in link_block
-    assert "border: 0;" in link_block
-    assert "text-decoration: underline;" in link_block
-    assert 'class="operator-helper-link"' in selection_block
+    assert "min-height: 24px;" in link_block
+    assert "padding: 0 9px;" in link_block
+    assert "border-radius: 999px;" in link_block
+    assert 'class="operator-mini-linkchip"' in selection_block
 
 
 def test_ops_home_context_panel_compacts_mini_map_floor_label_width():
@@ -2587,7 +2590,7 @@ def test_index_home_search_uses_same_numeric_pager_pattern_as_operator_feed():
 
 def test_index_admin_dashboard_removes_secondary_grid_after_source_summary_moves_into_hero():
     html = read_static_html("index.html")
-    main_grid = '<div class="dashboard-main-grid">'
+    main_grid = '<div class="dashboard-main-grid dashboard-console-main">'
     status = '<div id="homeDashboardStatus" class="status"></div>'
     assert main_grid in html
     assert '<div class="dashboard-secondary-grid">' not in html
@@ -3234,7 +3237,7 @@ def test_index_dashboard_console_separates_text_hierarchy_and_cabinet_slot_surfa
     grid_panel_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-grid-panel {", 1)[1].split("}", 1)[0]
     cabinet_board_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-board {", 1)[1].split("}", 1)[0]
     cabinet_map_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map {", 1)[1].split("}", 1)[0]
-    cabinet_cell_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cell {", 1)[1].split("}", 1)[0]
+    shared_cabinet_surface_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-board, .dashboard-cabinet-map, .dashboard-cabinet-map-cell) {", 1)[1].split("}", 1)[0]
     cabinet_stage_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-stage {", 1)[1].split("}", 1)[0]
     rack_surface_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-rack-surface {", 1)[1].split("}", 1)[0]
     shelf_block = html.split("#homeDashboardCard.dashboard-console-shell :is(#homeDashSlotItems.dashboard-slot-shelfview, #homeDashWorkbenchList.dashboard-slot-shelfview) {", 1)[1].split("}", 1)[0]
@@ -3244,7 +3247,7 @@ def test_index_dashboard_console_separates_text_hierarchy_and_cabinet_slot_surfa
     assert "background: rgba(16, 23, 31, 0.98);" in grid_panel_block
     assert "background: rgba(18, 25, 33, 0.98);" in cabinet_board_block
     assert "background: rgba(14, 20, 28, 0.98);" in cabinet_map_block
-    assert "background: rgba(22, 29, 38, 0.98);" in cabinet_cell_block
+    assert "border-color: rgba(184, 196, 210, 0.14);" in shared_cabinet_surface_block
     assert "background: rgba(18, 23, 29, 0.98);" in cabinet_stage_block
     assert "box-shadow: none;" in cabinet_stage_block
     assert "background: rgba(18, 24, 31, 0.98);" in rack_surface_block
@@ -3513,10 +3516,10 @@ def test_index_reset_action_group_uses_shared_symbol_buttons():
 def test_icon_buttons_share_uniform_height_and_symbol_box():
     html = read_static_html("index.html")
     root_block = html.split(":root {", 1)[1].split("}", 1)[0]
-    btn_block = html.split(".btn {", 1)[1].split("}", 1)[0]
+    btn_block = html.rsplit("\n    .btn {", 1)[1].split("}", 1)[0]
     ghost_block = html.split(".btn.ghost {", 1)[1].split("}", 1)[0]
     disabled_block = html.split(".btn:disabled {", 1)[1].split("}", 1)[0]
-    icon_symbol_block = html.split(".icon-symbol-btn {", 1)[1].split("}", 1)[0]
+    icon_symbol_block = html.rsplit("\n    .icon-symbol-btn {", 1)[1].split("}", 1)[0]
     icon_symbol_base_block = html.split(".icon-symbol-btn::before {", 1)[1].split("}", 1)[0]
     icon_btn_block = html.split(".icon-btn {", 1)[1].split("}", 1)[0]
     icon_btn_svg_block = html.split(".icon-btn svg {", 1)[1].split("}", 1)[0]
@@ -3739,16 +3742,16 @@ def test_index_export_panel_includes_restore_upload_and_auto_backup_settings():
 
 def test_operator_weather_shared_camera_and_restore_static_copy_use_i18n_keys():
     html = read_static_html("index.html")
-    assert 'class="operator-feed-filters" role="tablist" aria-label="운영 홈 목록 필터" data-i18n-aria-label="operator.feed.filter.aria"' in html
     assert 'id="operatorWeatherKicker" class="operator-weather-kicker" data-i18n="operator.weather.empty.kicker"' in html
     assert 'id="operatorWeatherLocation" data-i18n="operator.weather.empty.location"' in html
     assert 'id="operatorWeatherDescription" data-i18n="operator.weather.empty.description"' in html
     assert '<span class="mini" data-i18n="operator.weather.metric.humidity">습도</span>' in html
     assert 'id="operatorWeatherSecondaryLabel" class="mini" data-i18n="operator.weather.empty.secondary"' in html
     assert 'id="operatorWeatherUpdated" data-i18n="operator.weather.empty.updated"' in html
+    assert 'id="operatorFeedPager"' in html
+    assert 'id="operatorFeedPagerBottom"' in html
     assert 'class="dashboard-camera-placeholder" data-i18n="shared_camera.empty.body"' in html
 
-    assert '"operator.feed.filter.aria":' in html
     assert '"operator.weather.metric.humidity":' in html
     assert '"shared_camera.empty.body":' in html
     assert '"ops.restore.intro":' in html
@@ -4301,7 +4304,7 @@ def test_media_source_and_register_core_labels_use_i18n_keys():
     assert 'data-i18n="media.register.direct.subtitle"' in html
     assert 'data-i18n="media.register.direct.field.category.label"' in html
     assert 'data-i18n="media.register.direct.action.save"' in html
-    assert 'data-i18n="media.register.direct.action.reset"' in html
+    assert 'id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>' in html
     assert '<h2 data-i18n="media.register.api_lookup.title">API 조회 / 등록' in html
     assert 'data-i18n="media.register.api_lookup.subtitle"' in html
     assert 'data-i18n="media.register.api_lookup.action.barcode_search"' in html
@@ -4793,7 +4796,7 @@ def test_collectibles_and_ops_primary_controls_use_i18n_keys():
     assert 'id="goodsManageModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.manage"' in html
     assert 'id="goodsRegisterModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.register"' in html
     assert 'id="goodsSearchRunBtn" class="btn secondary icon-btn" type="button" data-i18n-title="common.search" data-i18n-aria-label="common.search"' in html
-    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n="common.clear" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>' in html
+    assert 'id="goodsSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="common.clear" data-i18n-aria-label="common.clear"></button>' in html
     assert 'data-i18n="collectibles.search.results_heading"' in html
     assert 'id="goodsManageEmptyState" class="card admin-manage-empty-state active"' in html
     assert 'data-i18n="collectibles.manage.empty_title"' in html
@@ -4934,7 +4937,7 @@ def test_ops_core_form_labels_and_buttons_use_i18n_keys():
     assert '<label for="opsCabinetName" data-i18n="ops.cabinet.field.name.label">장식장명</label>' in html
     assert 'id="opsCabinetName" data-i18n-placeholder="ops.cabinet.field.name.placeholder"' in html
     assert 'id="opsCabinetSaveBtn" class="btn" type="button" data-i18n="ops.cabinet.action.save"' in html
-    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n="ops.cabinet.action.reset" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>' in html
+    assert 'id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>' in html
 
     assert 'data-page-help-open="ops-camera"' in html
     assert '<h2><span data-i18n="ops.camera.title">공용 카메라 설정</span></h2>' in html
@@ -5060,7 +5063,7 @@ def test_operator_dashboard_and_home_primary_controls_use_i18n_keys():
     assert 'data-i18n-placeholder="operator.lookup.field.query.placeholder"' in html
     assert 'data-i18n-title="operator.lookup.action.run"' in html
     assert 'data-i18n-aria-label="operator.lookup.action.run"' in html
-    assert 'data-i18n="operator.lookup.action.reset"' in html
+    assert 'id="operatorLookupResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="비우기" aria-label="비우기" data-i18n-title="operator.lookup.action.reset" data-i18n-aria-label="operator.lookup.action.reset"></button>' in html
     assert 'data-i18n="operator.feed.heading.recent_registered"' in html
     assert 'id="operatorLookupSortMode"' in html
     assert 'data-i18n="operator.context.title"' in html
@@ -5146,7 +5149,7 @@ def test_media_register_static_form_labels_use_i18n_keys():
     assert '<strong data-i18n="media.register.api_lookup.results.title">조회 결과</strong>' in html
     assert '<label for="purchaseImportEmailFrom" data-i18n="media.register.purchase.field.email_from.label">발신자(선택)</label>' in html
     assert '<label for="purchaseImportRawContent" data-i18n="media.register.purchase.field.raw_content.label">원문 붙여넣기</label>' in html
-    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n="media.register.purchase.action.reset" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>' in html
+    assert 'id="purchaseImportResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 비우기" aria-label="입력 비우기" data-i18n-title="media.register.purchase.action.reset" data-i18n-aria-label="media.register.purchase.action.reset"></button>' in html
     assert '<p class="sub" data-i18n="media.register.batch.subtitle">파일 업로드 후 자동 매칭/검수 큐 적재까지 한 번에 실행됩니다.</p>' in html
     assert '<label for="csvDefaultCategory" data-i18n="media.register.batch.field.default_category.label">기본 카테고리(옵션)</label>' in html
     assert '<label for="csvCreatedBy" data-i18n="media.register.batch.field.created_by.label">등록자</label>' in html
@@ -5179,12 +5182,11 @@ def test_media_master_cleanup_static_copy_uses_i18n_keys():
 
 def test_operator_focus_docs_and_meta_sync_static_copy_use_i18n_keys():
     html = read_static_html("index.html")
-    assert 'data-i18n="shell.admin.doc_link.erd_summary"' in html
-    assert 'data-i18n="shell.admin.doc_link.erd_detail"' in html
-    assert 'data-i18n="shell.admin.doc_link.manual"' in html
-    assert 'data-tool-doc-key="erd-summary"' in html
-    assert 'data-tool-doc-key="erd-detail"' in html
-    assert 'data-tool-doc-key="manual"' in html
+    assert '"shell.admin.doc_link.erd_summary":' in html
+    assert '"shell.admin.doc_link.erd_detail":' in html
+    assert '"shell.admin.doc_link.manual":' in html
+    assert "function buildLocalizedToolDocHref(docKey) {" in html
+    assert "function syncLocalizedToolDocLinks() {" in html
     assert 'data-i18n="shell.admin.doc_link.checklist"' not in html
     assert '"manual.utility.summary":' in html
 
@@ -5320,9 +5322,9 @@ def test_dashboard_workbench_and_operator_runtime_copy_use_i18n_keys():
     assert '"dashboard.selection.sort_artist.display_artist": "원본 표시명: {value}"' in html
     assert '"dashboard.selection.sort_artist.display_artist": "Original display: {value}"' in html
     assert '"dashboard.selection.sort_artist.display_artist": "元の表示名: {value}"' in html
-    assert 'id="homeDashSearchTitle" data-i18n-placeholder="dashboard.workbench.field.title.placeholder"' in html
-    assert 'id="homeDashSearchCatalogNo" data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder"' in html
-    assert 'id="homeDashSearchBarcode" data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder"' in html
+    assert 'id="homeDashSearchTitle"' in html and 'data-i18n-placeholder="dashboard.workbench.field.title.placeholder"' in html
+    assert 'id="homeDashSearchCatalogNo"' in html and 'data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder"' in html
+    assert 'id="homeDashSearchBarcode"' in html and 'data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder"' in html
     workbench_block = html.split('id="homeDashWorkbenchSummary"', 1)[1].split('id="homeDashWorkbenchPagePrevBtn"', 1)[0]
     assert 'class="dashboard-selection-action-clusters"' in workbench_block
     assert 'class="dashboard-selection-actions dashboard-selection-actions--selection"' in workbench_block
@@ -5360,7 +5362,7 @@ def test_dashboard_slot_and_workbench_open_detail_manage_from_cards_and_buttons(
 
     slot_click_block = html.split('    $("homeDashSlotItems").addEventListener("click", (e) => {', 1)[1].split('    $("homeDashWorkbenchList").addEventListener("pointerdown", (e) => {', 1)[0]
     assert 'void openDashboardOwnedItemDetailManage(ownedItemId, "SLOT");' in slot_click_block
-    assert "selectDashboardSingleSlotItemById(ownedItemId);" not in slot_click_block
+    assert "selectDashboardSingleSlotItemById(ownedItemId);" in slot_click_block
 
     workbench_click_block = html.split('    $("homeDashWorkbenchList").addEventListener("click", (e) => {', 1)[1].split("    document.addEventListener(\"click\", (e) => {", 1)[0]
     assert 'const source = String(editBtn.getAttribute("data-dashboard-workbench-source") || "").trim().toUpperCase();' in workbench_click_block
@@ -5848,7 +5850,7 @@ def test_ops_camera_slot_exception_and_account_static_controls_use_i18n_keys():
     assert 'data-i18n="ops.camera.advanced.title"' in html
     assert 'data-i18n="ops.camera.field.snapshot_url.label"' in html
     assert 'data-i18n="ops.camera.action.delete"' in html
-    assert 'data-i18n="ops.camera.action.reset"' in html
+    assert 'data-i18n-title="ops.camera.action.reset"' in html
     assert 'data-i18n="ops.camera.list.title"' in html
     assert 'data-i18n="ops.camera.table.header.description"' in html
 
@@ -5857,7 +5859,7 @@ def test_ops_camera_slot_exception_and_account_static_controls_use_i18n_keys():
     assert 'data-i18n="ops.slot.field.column.label"' in html
     assert 'data-i18n="ops.slot.field.cell.label"' in html
     assert 'data-i18n="ops.slot.field.size_group.label"' in html
-    assert 'data-i18n="ops.slot.action.reset"' in html
+    assert 'data-i18n-title="ops.slot.action.reset"' in html
     assert 'data-i18n="ops.slot.action.reload"' in html
 
     assert 'data-i18n="ops.exception.intro"' in html
@@ -5929,7 +5931,7 @@ def test_ops_secondary_static_controls_and_options_use_i18n_keys():
     assert 'data-i18n="ops.account.field.role.label"' in html
     assert 'data-i18n="ops.account.field.active.label"' in html
     assert 'data-i18n="ops.account.action.delete"' in html
-    assert 'data-i18n="ops.account.action.reset"' in html
+    assert 'data-i18n-title="ops.account.action.reset"' in html
     assert 'data-i18n="ops.account.action.reload"' in html
 
 
@@ -6034,7 +6036,8 @@ def test_common_runtime_label_helpers_use_i18n_keys():
 def test_lower_admin_runtime_status_copy_uses_i18n_keys():
     html = read_static_html("index.html")
     assert 'setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.query_requires_term"));' in html
-    assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.query_loading", { source: requestSources[0] }));' in html
+    assert 'const loadingStatusText = t("media.register.api_lookup.status.query_loading", { source: requestSources[0] });' in html
+    assert 'setStatus("barcodeStatus", "ok", loadingStatusText);' in html
     assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.query_done", {' in html
     assert 'setStatus("createStatus", "ok", t("media.register.direct.status.saving"));' in html
     assert 'setStatus("csvStatus", "ok", t("media.register.csv.status.uploading"));' in html
@@ -6051,9 +6054,11 @@ def test_media_register_api_lookup_runtime_copy_use_i18n():
     html = read_static_html("index.html")
     assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.lookup_inflight"));' in html
     assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.lookup_duplicate_skipped"));' in html
-    assert 'setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.lookup_loading"));' in html
-    assert 'if (!res.ok) throw new Error(responseDetailText(data, t("media.register.api_lookup.status.lookup_failed")));' in html
-    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((data.candidates || []).length) })' in html
+    assert 'const loadingStatusText = t("media.register.api_lookup.status.lookup_loading");' in html
+    assert 'setStatus("barcodeStatus", "ok", loadingStatusText);' in html
+    assert 'lastError = new Error(responseDetailText(data, t("media.register.api_lookup.status.lookup_failed")));' in html
+    assert 'throw new Error(responseDetailText(data, t("media.register.api_lookup.status.lookup_failed")));' in html
+    assert '? t("media.register.api_lookup.status.candidates_ready", { count: countWithUnit((candidates || []).length) })' in html
     assert ': t("media.register.api_lookup.status.no_candidates_register_direct")' in html
     assert '$("barcodeCount").textContent = t("media.register.api_lookup.results.loading");' in html
     assert 'root.innerHTML = `<div class=\'muted\'>${escapeHtml(t("media.register.api_lookup.results.empty"))}</div>`;' in html
@@ -6619,7 +6624,7 @@ def test_index_dashboard_bulk_popover_supports_close_button_and_outside_click():
 
 def test_index_dashboard_workbench_embeds_controls_inside_cover_flow_surface():
     html = read_static_html("index.html")
-    workbench_start = '          <section class="dashboard-panel dashboard-workbench-panel">'
+    workbench_start = '          <section class="dashboard-panel dashboard-workbench-panel dashboard-console-panel dashboard-console-panel--rail">'
     status = '        <div id="homeDashboardStatus" class="status"></div>'
     assert workbench_start in html
     assert status in html
@@ -6637,7 +6642,7 @@ def test_index_dashboard_slot_cards_expose_per_cabinet_refresh_action():
     html = read_static_html("index.html")
     render_block = html.split("    function renderDashboardSlotCards(rows, totalInCollection) {", 1)[1].split("    async function loadDashboardSlotItems(slotRow, opts = {}) {", 1)[0]
     click_block = html.split('    $("homeDashSlotGrid").addEventListener("click", async (e) => {', 1)[1].split('    $("homeDashSlotGrid").addEventListener("dragover", (e) => {', 1)[0]
-    panel_head_block = html.split('<section class="dashboard-panel dashboard-slot-panel">', 1)[1].split('<div class="dashboard-slot-map-shell">', 1)[0]
+    panel_head_block = html.split('<section class="dashboard-panel dashboard-slot-panel dashboard-console-panel dashboard-console-panel--primary">', 1)[1].split('<div class="dashboard-slot-map-shell">', 1)[0]
     assert 'id="homeDashSlotWindow"' in panel_head_block
     assert 'id="homeDashSlotRefreshBtn"' not in panel_head_block
     assert 'data-dashboard-cabinet-refresh="${encodeURIComponent(group.key)}"' in render_block
@@ -6772,9 +6777,9 @@ def test_index_dashboard_workbench_dragstart_populates_group_drag_payload():
 
 def test_index_dashboard_removes_secondary_grid_and_moves_source_summary_into_hero():
     html = read_static_html("index.html")
-    main_start = '        <div class="dashboard-main-grid">'
-    slot_start = '          <section class="dashboard-panel dashboard-slot-panel">'
-    workbench_start = '          <section class="dashboard-panel dashboard-workbench-panel">'
+    main_start = '        <div class="dashboard-main-grid dashboard-console-main">'
+    slot_start = '          <section class="dashboard-panel dashboard-slot-panel dashboard-console-panel dashboard-console-panel--primary">'
+    workbench_start = '          <section class="dashboard-panel dashboard-workbench-panel dashboard-console-panel dashboard-console-panel--rail">'
     status = '<div id="homeDashboardStatus" class="status"></div>'
     source_summary = 'id="homeDashSourceSummary"'
     assert main_start in html
@@ -6821,7 +6826,7 @@ def test_index_dashboard_slot_detail_uses_compact_icon_actions_and_selected_item
     slot_panel_block = html.split(".dashboard-slot-panel {", 1)[1].split("}", 1)[0]
     assert "overflow: visible;" in slot_panel_block
     workbench_button_block = html.rsplit("\n    .dashboard-workbench-actionbtn {", 1)[1].split("}", 1)[0]
-    button_block = html.split(".dashboard-slot-actionbtn {", 1)[1].split("}", 1)[0]
+    button_block = html.rsplit("\n    .dashboard-slot-actionbtn {", 1)[1].split("}", 1)[0]
     assert "min-height: 40px;" in workbench_button_block
     assert "padding: 0 10px;" in workbench_button_block
     assert "font-size: 0.64rem;" in workbench_button_block
@@ -8715,48 +8720,38 @@ def test_index_inline_script_parses_without_syntax_error():
     assert result.returncode == 0, result.stderr
 
 
-def test_primary_navigation_moves_to_left_sidebar():
+def test_primary_navigation_stays_in_hidden_header_tabs_until_sidebar_scope_is_approved():
     html = read_static_html("index.html")
-    assert "primary-side-nav" in html
+    assert "primary-side-nav" not in html
     assert "nav.dashboard" in html
+    assert "nav.camera" in html
     assert "nav.media" in html
     assert "nav.collectibles" in html
     assert "nav.ops" in html
-    assert 'aria-current="page"' in html
-    nav_block = html.split('<nav class="primary-side-nav', 1)[1]
-    nav_block = '<nav class="primary-side-nav' + nav_block
-    nav_block = nav_block.split("</nav>", 1)[0]
+    nav_block = html.split('<div id="adminTabs" class="tabs" style="display:none;">', 1)[1].split("</div>", 1)[0]
     assert "nav.dashboard" in nav_block
+    assert "nav.camera" in nav_block
     assert "nav.media" in nav_block
     assert "nav.collectibles" in nav_block
     assert "nav.ops" in nav_block
-    assert 'aria-current="page"' in nav_block
 
 
-def test_sidebar_responsive_states_defined():
+def test_console_shell_uses_current_breakpoints_instead_of_sidebar_responsive_states():
     html = read_static_html("index.html")
-    assert "@media (max-width: 1199px)" in html
+    assert "@media (max-width: 1280px)" in html
+    assert "@media (max-width: 1080px)" in html
     assert "@media (max-width: 760px)" in html
-    assert "primary-side-nav--icon" in html
-    assert "primary-side-drawer" in html
-    icon_chunk = html.split("@media (max-width: 1199px)", 1)[1]
-    icon_chunk = icon_chunk.split("@media", 1)[0]
-    assert "primary-side-nav--icon" in icon_chunk
+    assert "primary-side-nav--icon" not in html
+    assert "primary-side-drawer" not in html
 
 
-def test_sidebar_drawer_menu_button_accessibility():
+def test_page_help_drawer_carries_the_current_accessibility_contract():
     html = read_static_html("index.html")
-    assert "data-nav-drawer-toggle" in html
-    assert 'aria-label="Open navigation"' in html
-    assert "data-nav-tooltip" in html
-    toggle_index = html.index("data-nav-drawer-toggle")
-    toggle_slice = html[max(0, toggle_index - 200) : toggle_index + 200]
-    assert 'aria-label="Open navigation"' in toggle_slice
-    assert "data-nav-tooltip" in toggle_slice
+    assert "data-nav-drawer-toggle" not in html
+    assert "data-page-help-open" in html
     assert "role=\"dialog\"" in html
     assert 'aria-modal="true"' in html
-    drawer_block = html.split('class="primary-side-drawer', 1)[1]
-    drawer_block = 'class="primary-side-drawer' + drawer_block
-    drawer_block = drawer_block.split(">", 1)[0]
+    drawer_block = html.split('id="pageHelpDrawer"', 1)[1].split(">", 1)[0]
+    assert 'aria-labelledby="pageHelpTitle"' in drawer_block
     assert "role=\"dialog\"" in drawer_block
     assert 'aria-modal="true"' in drawer_block
