@@ -2551,6 +2551,13 @@ def test_index_operator_home_and_camera_use_console_region_markup():
     assert 'class="shared-camera-layout admin-console-grid"' in html
     assert 'class="shared-camera-list-panel admin-console-secondary"' in html
     assert 'id="sharedCameraPreview" class="shared-camera-preview-panel admin-console-main"' in html
+    assert "#opsHomeLayout.admin-console-shell {\n      gap: 14px;\n    }" in html
+    assert "#opsHomeLayout.admin-console-shell .operator-home-card {\n      padding: 12px;" in html
+    assert "#opsHomeLayout.admin-console-shell .operator-weather-card {\n      padding: 10px 12px 12px;" in html
+    assert ".shared-camera-shell.admin-console-shell {\n      gap: 10px;\n    }" in html
+    assert ".shared-camera-shell.admin-console-shell .shared-camera-layout.admin-console-grid {\n      gap: 12px;\n    }" in html
+    assert ".shared-camera-shell.admin-console-shell .shared-camera-list-panel {\n      padding: 12px;" in html
+    assert ".shared-camera-shell.admin-console-shell .shared-camera-preview-panel {\n      padding: 12px;" in html
 
 
 def test_index_ops_home_reuses_default_main_and_context_column_ratio():
