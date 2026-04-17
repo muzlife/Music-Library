@@ -39,6 +39,20 @@ MUSIC_CONTEXT_KEYWORDS = (
     "record producer",
     "dj",
     "vocalist",
+    "가수",
+    "음악가",
+    "싱어송라이터",
+    "래퍼",
+    "밴드",
+    "록 밴드",
+    "포크 밴드",
+    "작곡가",
+    "피아니스트",
+    "첼리스트",
+    "바이올리니스트",
+    "기타리스트",
+    "드러머",
+    "베이시스트",
 )
 
 
@@ -130,6 +144,52 @@ def _normalize_wikipedia_match_name(value: str) -> str:
     return normalize_artist_name(text)
 
 
+def _normalize_artist_match_key(value: str) -> str:
+    text = _normalize_wikipedia_match_name(value)
+    if not text:
+        return ""
+    text = re.sub(r"[^\w\s]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _artist_name_match_keys(value: str) -> set[str]:
+    normalized = _normalize_wikipedia_match_name(value)
+    if not normalized:
+        return set()
+    simplified = _normalize_artist_match_key(value)
+    compact = simplified.replace(" ", "")
+    return {item for item in (normalized, simplified, compact) if item}
+
+
+def _artist_names_match(left: str, right: str) -> bool:
+    left_keys = _artist_name_match_keys(left)
+    right_keys = _artist_name_match_keys(right)
+    return bool(left_keys and right_keys and left_keys.intersection(right_keys))
+
+
+def _extract_musicbrainz_match_names(raw: dict[str, Any] | None) -> list[str]:
+    if not raw:
+        return []
+    names: list[str] = []
+    for key in ("artist_name", "name", "sort_name", "sort-name"):
+        text = str(raw.get(key) or "").strip()
+        if text:
+            names.append(text)
+    aliases = raw.get("aliases")
+    if isinstance(aliases, list):
+        for alias in aliases:
+            if isinstance(alias, dict):
+                for key in ("name", "sort_name", "sort-name"):
+                    text = str(alias.get(key) or "").strip()
+                    if text:
+                        names.append(text)
+            else:
+                text = str(alias or "").strip()
+                if text:
+                    names.append(text)
+    return names
+
+
 def _wikipedia_search_url(artist_name: str) -> str:
     return f"https://en.wikipedia.org/w/index.php?{urlencode({'search': artist_name}, encoding='utf-8')}"
 
@@ -138,13 +198,14 @@ def _discogs_search_url(artist_name: str) -> str:
     return f"https://www.discogs.com/search/?{urlencode({'q': artist_name, 'type': 'artist'}, encoding='utf-8')}"
 
 
-def fetch_wikipedia_summary(artist_name: str) -> dict[str, Any] | None:
+def _fetch_wikipedia_summary_for_language(artist_name: str, language: str = "en") -> dict[str, Any] | None:
     query = str(artist_name or "").strip()
     if not query:
         return None
 
     encoded_query = quote(query, safe="")
-    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_query}"
+    normalized_language = str(language or "en").strip().lower() or "en"
+    url = f"https://{normalized_language}.wikipedia.org/api/rest_v1/page/summary/{encoded_query}"
     response = httpx.get(
         url,
         headers={"User-Agent": get_settings().musicbrainz_user_agent},
@@ -169,6 +230,10 @@ def fetch_wikipedia_summary(artist_name: str) -> dict[str, Any] | None:
         "active_years": data.get("active_years"),
         "genres": data.get("genres"),
     }
+
+
+def fetch_wikipedia_summary(artist_name: str) -> dict[str, Any] | None:
+    return _fetch_wikipedia_summary_for_language(artist_name, language="en")
 
 
 def search_wikipedia_titles(query: str, limit: int = 5) -> list[str]:
@@ -216,7 +281,7 @@ def _is_music_related_wikipedia_summary(raw: dict[str, Any] | None) -> bool:
 
 def _wikipedia_summary_matches_artist(raw: dict[str, Any] | None, artist_name: str) -> bool:
     candidate_name = _extract_name(raw)
-    return bool(candidate_name) and _normalize_wikipedia_match_name(candidate_name) == normalize_artist_name(artist_name)
+    return bool(candidate_name) and _artist_names_match(candidate_name, artist_name)
 
 
 def fetch_wikipedia_music_summary(artist_name: str) -> dict[str, Any] | None:
@@ -268,12 +333,14 @@ def search_musicbrainz_artist(artist_name: str) -> dict[str, Any] | None:
 
     return {
         "artist_name": str(first.get("name") or "").strip() or query,
+        "sort_name": str(first.get("sort-name") or "").strip() or None,
         "summary": first.get("disambiguation"),
         "url": str(first.get("url") or "").strip(),
         "country": str(first.get("country") or "").strip() or None,
         "active_years": active_years,
         "genres": first.get("genres") if isinstance(first.get("genres"), list) else None,
         "resource_url": str((first.get("_links") or {}).get("self", {}).get("href") or "").strip(),
+        "aliases": first.get("aliases") if isinstance(first.get("aliases"), list) else None,
     }
 
 
@@ -396,6 +463,23 @@ def build_artist_context(artist_name: str, category: str | None = None, locale: 
     except Exception:
         musicbrainz_data = None
 
+    if not wikipedia_data:
+        try:
+            direct_wikipedia_data = fetch_wikipedia_summary(lookup_artist_name)
+        except Exception:
+            direct_wikipedia_data = None
+        if direct_wikipedia_data and _is_music_related_wikipedia_summary(direct_wikipedia_data):
+            wikipedia_data = direct_wikipedia_data
+    if not wikipedia_data and (
+        _normalize_translation_locale(locale) == "ko" or re.search(r"[\u3131-\u318E\uAC00-\uD7A3]", lookup_artist_name)
+    ):
+        try:
+            localized_wikipedia_data = _fetch_wikipedia_summary_for_language(lookup_artist_name, language="ko")
+        except Exception:
+            localized_wikipedia_data = None
+        if localized_wikipedia_data and _is_music_related_wikipedia_summary(localized_wikipedia_data):
+            wikipedia_data = localized_wikipedia_data
+
     wiki_url = _safe_wikipedia_article_url(wikipedia_data) or _wikipedia_search_url(lookup_artist_name or artist_name)
     links.append({"label": "Wikipedia", "url": wiki_url})
 
@@ -409,19 +493,26 @@ def build_artist_context(artist_name: str, category: str | None = None, locale: 
             links.append({"label": "MusicBrainz", "url": mb_url})
 
     wiki_name = _extract_name(wikipedia_data)
-    mb_name = _extract_name(musicbrainz_data)
-    normalized_wiki = _normalize_wikipedia_match_name(wiki_name)
-    normalized_mb = normalize_artist_name(mb_name)
+    mb_match_names = _extract_musicbrainz_match_names(musicbrainz_data)
     wiki_is_disambiguation = str((wikipedia_data or {}).get("type") or "").strip().lower() == "disambiguation"
 
-    wiki_matches_query = normalized_wiki == normalized_input and bool(wiki_name)
-    if musicbrainz_data and normalized_mb and normalized_wiki and normalized_mb != normalized_wiki:
+    wiki_matches_query = bool(wiki_name) and _artist_names_match(wiki_name, lookup_artist_name)
+    wiki_matches_musicbrainz = bool(wiki_name) and any(
+        _artist_names_match(wiki_name, candidate_name) for candidate_name in mb_match_names
+    )
+    query_matches_musicbrainz = any(
+        _artist_names_match(lookup_artist_name, candidate_name) for candidate_name in mb_match_names
+    )
+    if musicbrainz_data and wiki_name and not wiki_matches_musicbrainz:
         return _build_unavailable_payload(artist_name, links)
 
     if wiki_data := wikipedia_data:
-        if wiki_matches_query and not wiki_is_disambiguation:
+        if (wiki_matches_query or (wiki_matches_musicbrainz and query_matches_musicbrainz)) and not wiki_is_disambiguation:
             summary_original = None
             summary_text = wiki_data.get("summary")
+            country = str(wiki_data.get("country") or (musicbrainz_data or {}).get("country") or "").strip() or None
+            active_years = str(wiki_data.get("active_years") or (musicbrainz_data or {}).get("active_years") or "").strip() or None
+            genres = _extract_genres(wiki_data) or _extract_genres(musicbrainz_data)
             if isinstance(summary_text, str) and summary_text.strip():
                 summary_original = summary_text
                 try:
@@ -436,14 +527,14 @@ def build_artist_context(artist_name: str, category: str | None = None, locale: 
                 "summary": summary_text,
                 "summary_original": summary_original,
                 "image_url": _extract_image_url(wiki_data),
-                "country": str(wiki_data.get("country") or "").strip() or None,
-                "active_years": str(wiki_data.get("active_years") or "").strip() or None,
-                "genres": _extract_genres(wiki_data),
+                "country": country,
+                "active_years": active_years,
+                "genres": genres,
                 "links": links,
             }
         return _build_unavailable_payload(artist_name, links)
 
-    if musicbrainz_data and normalized_mb == normalized_input:
+    if musicbrainz_data and query_matches_musicbrainz:
         return _build_unavailable_payload(artist_name, links)
 
     return _build_unavailable_payload(artist_name, links)

@@ -197,6 +197,120 @@ def test_build_artist_context_cleans_discogs_suffix_on_unavailable_payload(monke
     assert result["artist_name"] == "Prince"
 
 
+def test_build_artist_context_accepts_korean_artist_when_wikipedia_uses_romanized_title(monkeypatch) -> None:
+    monkeypatch.setattr(artist_context, "fetch_wikipedia_music_summary", lambda artist_name: None)
+    monkeypatch.setattr(
+        artist_context,
+        "fetch_wikipedia_summary",
+        lambda artist_name: {
+            "artist_name": "Cho Yong-pil",
+            "description": "South Korean singer (born 1950)",
+            "summary": "Cho Yong-pil is a South Korean singer-songwriter.",
+            "url": "https://en.wikipedia.org/wiki/Cho_Yong-pil",
+            "type": "standard",
+        },
+    )
+    monkeypatch.setattr(
+        artist_context,
+        "search_musicbrainz_artist",
+        lambda artist_name: {
+            "artist_name": "조용필",
+            "sort_name": "Cho, Yong-pil",
+            "country": "KR",
+            "active_years": "1950",
+            "resource_url": "https://musicbrainz.org/artist/f1fa5a60-33f7-42fb-8c59-de7a0765e6d0",
+            "aliases": [
+                {"name": "Cho Yong Pil"},
+                {"name": "CHO Yong Pil"},
+            ],
+        },
+    )
+    monkeypatch.setattr(artist_context, "translate_text_with_deepl", lambda text, locale: text)
+
+    result = artist_context.build_artist_context("조용필", category="CD", locale="ko")
+
+    assert result["available"] is True
+    assert result["artist_name"] == "조용필"
+    assert result["country"] == "KR"
+    assert any(link["label"] == "Wikipedia" and "Cho_Yong-pil" in link["url"] for link in result["links"])
+    assert any(link["label"] == "MusicBrainz" and "f1fa5a60-33f7-42fb-8c59-de7a0765e6d0" in link["url"] for link in result["links"])
+
+
+def test_build_artist_context_accepts_romanized_query_when_musicbrainz_primary_name_is_korean(monkeypatch) -> None:
+    monkeypatch.setattr(artist_context, "fetch_wikipedia_music_summary", lambda artist_name: None)
+    monkeypatch.setattr(
+        artist_context,
+        "fetch_wikipedia_summary",
+        lambda artist_name: {
+            "artist_name": "Cho Yong-pil",
+            "description": "South Korean singer (born 1950)",
+            "summary": "Cho Yong-pil is a South Korean singer-songwriter.",
+            "url": "https://en.wikipedia.org/wiki/Cho_Yong-pil",
+            "type": "standard",
+        },
+    )
+    monkeypatch.setattr(
+        artist_context,
+        "search_musicbrainz_artist",
+        lambda artist_name: {
+            "artist_name": "조용필",
+            "sort_name": "Cho, Yong-pil",
+            "country": "KR",
+            "active_years": "1950",
+            "resource_url": "https://musicbrainz.org/artist/f1fa5a60-33f7-42fb-8c59-de7a0765e6d0",
+            "aliases": [
+                {"name": "Cho Yong Pil"},
+                {"name": "CHO Yong Pil"},
+            ],
+        },
+    )
+    monkeypatch.setattr(artist_context, "translate_text_with_deepl", lambda text, locale: text)
+
+    result = artist_context.build_artist_context("Cho Yong-pil", category="CD", locale="ko")
+
+    assert result["available"] is True
+    assert result["artist_name"] == "Cho Yong-pil"
+    assert result["country"] == "KR"
+
+
+def test_build_artist_context_falls_back_to_korean_wikipedia_for_korean_artist(monkeypatch) -> None:
+    monkeypatch.setattr(artist_context, "fetch_wikipedia_music_summary", lambda artist_name: None)
+    monkeypatch.setattr(artist_context, "fetch_wikipedia_summary", lambda artist_name: None)
+    monkeypatch.setattr(
+        artist_context,
+        "_fetch_wikipedia_summary_for_language",
+        lambda artist_name, language="en": {
+            "artist_name": "어떤날",
+            "description": "대한민국의 포크 밴드",
+            "summary": "어떤날은 대한민국의 포크 밴드이다.",
+            "url": "https://ko.wikipedia.org/wiki/%EC%96%B4%EB%96%A4%EB%82%A0",
+            "type": "standard",
+        }
+        if language == "ko"
+        else None,
+    )
+    monkeypatch.setattr(
+        artist_context,
+        "search_musicbrainz_artist",
+        lambda artist_name: {
+            "artist_name": "어떤날",
+            "sort_name": "Eoddeonnal",
+            "country": "KR",
+            "active_years": "1984",
+            "resource_url": "https://musicbrainz.org/artist/example",
+            "aliases": None,
+        },
+    )
+    monkeypatch.setattr(artist_context, "translate_text_with_deepl", lambda text, locale: text)
+
+    result = artist_context.build_artist_context("어떤날", category="CD", locale="ko")
+
+    assert result["available"] is True
+    assert result["artist_name"] == "어떤날"
+    assert result["summary"] == "어떤날은 대한민국의 포크 밴드이다."
+    assert result["country"] == "KR"
+
+
 def test_translate_text_with_deepl_uses_header_authentication_and_json_payload(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
