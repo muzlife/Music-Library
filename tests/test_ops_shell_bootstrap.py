@@ -1415,6 +1415,28 @@ def test_admin_barcode_intake_uses_shorter_empty_candidate_status_copy():
     assert ': t("media.register.api_lookup.status.no_candidates_register_direct")' in block
 
 
+def test_admin_barcode_intake_queues_latest_scan_while_lookup_is_running():
+    html = read_static_html("index.html")
+    assert 'let barcodeSearchPendingToken = "";' in html
+    assert 'let barcodeSearchPendingValue = "";' in html
+    block = html.split("async function barcodeSearch() {", 1)[1].split("async function detectRegisterLookupCategoryMismatch(payload, source) {", 1)[0]
+    assert "if (barcodeSearchInFlight) {" in block
+    assert "barcodeSearchPendingToken = barcodeToken;" in block
+    assert "barcodeSearchPendingValue = barcode;" in block
+
+
+def test_admin_barcode_intake_replays_latest_pending_scan_after_lookup_finishes():
+    html = read_static_html("index.html")
+    block = html.split("async function barcodeSearch() {", 1)[1].split("async function detectRegisterLookupCategoryMismatch(payload, source) {", 1)[0]
+    assert 'const pendingToken = String(barcodeSearchPendingToken || "").trim();' in block
+    assert 'const pendingValue = String(barcodeSearchPendingValue || "").trim();' in block
+    assert 'barcodeSearchPendingToken = "";' in block
+    assert 'barcodeSearchPendingValue = "";' in block
+    assert 'if (pendingToken && pendingToken !== barcodeToken) {' in block
+    assert 'if (input) input.value = pendingValue;' in block
+    assert 'await barcodeSearch();' in block
+
+
 def test_admin_barcode_intake_defaults_meta_source_to_auto():
     html = read_static_html("index.html")
     markup = html.split('<select id="metaSourceFilter">', 1)[1].split("</select>", 1)[0]

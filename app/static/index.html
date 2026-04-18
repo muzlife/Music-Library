@@ -20961,6 +20961,8 @@
     let barcodeSearchInFlight = false;
     let barcodeSearchLastToken = "";
     let barcodeSearchLastTriggeredAt = 0;
+    let barcodeSearchPendingToken = "";
+    let barcodeSearchPendingValue = "";
     let purchaseImportPreviewItems = [];
     let purchaseImportQueueItems = [];
     let purchaseImportQueueCandidateState = {};
@@ -48821,6 +48823,8 @@
       }
       const now = Date.now();
       if (barcodeSearchInFlight) {
+        barcodeSearchPendingToken = barcodeToken;
+        barcodeSearchPendingValue = barcode;
         setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.lookup_inflight"));
         return;
       }
@@ -48908,6 +48912,15 @@
         setStatus("barcodeStatus", "err", errorMessageText(err, t("media.register.api_lookup.status.lookup_failed")));
       } finally {
         barcodeSearchInFlight = false;
+        const pendingToken = String(barcodeSearchPendingToken || "").trim();
+        const pendingValue = String(barcodeSearchPendingValue || "").trim();
+        barcodeSearchPendingToken = "";
+        barcodeSearchPendingValue = "";
+        if (pendingToken && pendingToken !== barcodeToken) {
+          const input = $("barcodeInput");
+          if (input) input.value = pendingValue;
+          await barcodeSearch();
+        }
       }
     }
 
