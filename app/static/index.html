@@ -983,6 +983,26 @@
         0 2px 4px rgba(69, 85, 102, 0.1) !important;
     }
 
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-workbench-source {
+      border-color: rgba(103, 118, 135, 0.82);
+      background: rgba(236, 241, 246, 0.99);
+      color: #173043;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.42) inset,
+        0 2px 4px rgba(69, 85, 102, 0.08);
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-workbench-source.active {
+      border-color: rgba(65, 122, 117, 0.76);
+      background: linear-gradient(
+        180deg,
+        rgba(194, 228, 220, 0.995),
+        rgba(168, 206, 198, 0.99)
+      );
+      color: #10283a;
+      box-shadow: inset 0 0 0 1px rgba(58, 116, 112, 0.24);
+    }
+
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-viewbtn.active {
       border-color: rgba(65, 122, 117, 0.76) !important;
       background: linear-gradient(
@@ -1020,6 +1040,14 @@
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell label {
       color: #31465a;
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-pageinfo {
+      border: 1px solid rgba(103, 118, 135, 0.74);
+      border-radius: 6px;
+      background: rgba(236, 241, 246, 0.98);
+      color: #173043;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(input, select, textarea) {
@@ -7779,9 +7807,9 @@
 
     .admin-barcode-intake-bar {
       display: grid;
-      grid-template-columns: 96px 64px minmax(0, 1fr) 100px;
+      grid-template-columns: 96px 64px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.72fr) minmax(0, 0.86fr) auto;
       gap: 4px;
-      align-items: center;
+      align-items: end;
     }
 
     .admin-barcode-intake-bar > div > label {
@@ -7811,30 +7839,16 @@
       background: linear-gradient(180deg, #f8fbfb, #f3f8f8);
     }
 
-    .admin-barcode-intake-meta-fields {
-      margin-top: 0;
-    }
-
-    .admin-barcode-intake-meta-fields--with-action {
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 0.7fr) auto;
-      align-items: end;
-    }
-
-    .admin-barcode-intake-meta-actioncell {
+    .admin-barcode-intake-search-action {
       display: flex;
       align-items: end;
       justify-content: flex-end;
       min-width: 0;
     }
 
-    .admin-barcode-intake-meta-actioncell .btn {
+    .admin-barcode-intake-search-action .btn {
       min-width: 88px;
       white-space: nowrap;
-    }
-
-    .admin-barcode-intake-meta-actions {
-      justify-content: flex-end;
-      margin-top: 0;
     }
 
     .admin-barcode-input-shell {
@@ -7852,7 +7866,7 @@
 
     .admin-barcode-intake-panels {
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+      grid-template-columns: minmax(0, 4fr) minmax(260px, 1fr);
       gap: 8px;
     }
 
@@ -7914,6 +7928,11 @@
       font-size: 0.84rem;
       line-height: 1.25;
       color: #0f172a;
+    }
+
+    #barcodeResults .album-result-main strong {
+      font-size: 0.84rem;
+      line-height: 1.25;
     }
 
     .admin-barcode-candidate-picker {
@@ -8208,6 +8227,10 @@
       font-size: 0.62rem;
       font-weight: 700;
       line-height: 1;
+    }
+
+    .admin-barcode-input-state:empty {
+      display: none;
     }
 
     .admin-barcode-input-state.confirm {
@@ -12338,13 +12361,24 @@
       gap: 6px 8px;
     }
 
-    #tabRegister.admin-console-shell #barcodeResults .admin-barcode-result-gallery-action {
+    #tabRegister.admin-console-shell #barcodeResults .admin-barcode-result-actions {
       margin-left: auto;
       display: inline-flex;
       align-items: center;
+      gap: 6px;
     }
 
     #tabRegister.admin-console-shell #barcodeResults .image-gallery-open-btn {
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    #tabRegister.admin-console-shell #barcodeResults .admin-barcode-result-save-btn {
       min-height: 30px;
       padding: 0 10px;
       border-radius: 4px;
@@ -12928,6 +12962,12 @@
       border-color: rgba(98, 115, 133, 0.58);
       background: rgba(214, 223, 232, 0.992);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    }
+
+    body[data-theme="day"] #tabRegister.admin-console-shell #barcodeResults .album-result.pick {
+      background: linear-gradient(180deg, rgba(206, 225, 236, 0.994), rgba(186, 209, 222, 0.99)) !important;
+      border-color: rgba(79, 120, 140, 0.64) !important;
+      box-shadow: 0 0 0 1px rgba(79, 120, 140, 0.12) !important;
     }
 
     body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) label {
@@ -19025,33 +19065,23 @@
           </div>
           <div class="mini" data-i18n="media.register.api_lookup.flow_hint">첫 스캔은 조회, 같은 바코드 재스캔 또는 Enter는 저장 확정입니다.</div>
         </div>
-        <div class="admin-barcode-intake-bar">
-          <div>
-            <label for="metaSourceFilter" data-i18n="media.register.api_lookup.field.source.label">검색 소스</label>
-            <select id="metaSourceFilter">
-              <option selected>AUTO</option>
-              <option>DISCOGS</option>
-              <option>ALADIN</option>
-              <option>MANIADB</option>
-              <option>MUSICBRAINZ</option>
-            </select>
-          </div>
-          <div>
-            <label for="barcodeLimit" data-i18n="media.register.api_lookup.field.limit.label">개수</label>
-            <input id="barcodeLimit" type="number" min="1" max="20" value="5" />
-          </div>
-          <div>
-            <label for="barcodeInput" data-i18n="media.register.api_lookup.field.barcode.label">바코드</label>
-            <div class="admin-barcode-input-shell">
-              <input id="barcodeInput" class="admin-barcode-input" data-i18n-placeholder="media.register.api_lookup.field.barcode.placeholder" placeholder="예: 602537235376" />
-              <div id="adminBarcodeInputState" class="admin-barcode-input-state" data-i18n="media.register.api_lookup.field.barcode.idle">스캔 대기</div>
-            </div>
-          </div>
-          <button id="barcodeSearchBtn" class="btn secondary" type="button" data-i18n="media.register.api_lookup.action.barcode_search">바코드 조회</button>
-        </div>
         <div class="admin-barcode-intake-lookup-grid">
-          <div class="mini" data-i18n="media.register.api_lookup.lookup_hint">바코드가 없거나 후보 보정이 필요하면 아래 조건 조회를 함께 사용합니다. 자세한 수정은 상단 `관리` 탭에서 이어갑니다.</div>
-          <div class="meta-search-fields-4 admin-barcode-intake-meta-fields admin-barcode-intake-meta-fields--with-action">
+          <div class="mini" data-i18n="media.register.api_lookup.lookup_hint">바코드 또는 조건으로 후보를 조회한 뒤, 결과에서 등록할 상품을 선택하세요.</div>
+          <div class="admin-barcode-intake-bar">
+            <div>
+              <label for="metaSourceFilter" data-i18n="media.register.api_lookup.field.source.label">검색 소스</label>
+              <select id="metaSourceFilter">
+                <option selected>AUTO</option>
+                <option>DISCOGS</option>
+                <option>ALADIN</option>
+                <option>MANIADB</option>
+                <option>MUSICBRAINZ</option>
+              </select>
+            </div>
+            <div>
+              <label for="barcodeLimit" data-i18n="media.register.api_lookup.field.limit.label">개수</label>
+              <input id="barcodeLimit" type="number" min="1" max="20" value="5" />
+            </div>
             <div>
               <label for="queryArtist" data-i18n="media.register.api_lookup.field.artist.label">아티스트명</label>
               <input id="queryArtist" tabindex="1" data-i18n-placeholder="media.register.api_lookup.field.artist.placeholder" placeholder="예: 산울림" />
@@ -19061,6 +19091,13 @@
               <input id="queryTitle" tabindex="2" data-i18n-placeholder="media.register.api_lookup.field.title.placeholder" placeholder="예: 내 마음에 주단을 깔고" />
             </div>
             <div>
+              <label for="barcodeInput" data-i18n="media.register.api_lookup.field.barcode.label">바코드</label>
+              <div class="admin-barcode-input-shell">
+                <input id="barcodeInput" class="admin-barcode-input" data-i18n-placeholder="media.register.api_lookup.field.barcode.placeholder" placeholder="예: 602537235376" />
+                <div id="adminBarcodeInputState" class="admin-barcode-input-state"></div>
+              </div>
+            </div>
+            <div>
               <label for="queryCatalog" data-i18n="media.register.api_lookup.field.catalog.label">카탈로그번호</label>
               <input id="queryCatalog" tabindex="3" data-i18n-placeholder="media.register.api_lookup.field.catalog.placeholder" placeholder="예: OL-1234" />
             </div>
@@ -19068,8 +19105,8 @@
               <label for="querySourceRef" data-i18n="media.register.api_lookup.field.source_ref.label">참조 ID / URL</label>
               <input id="querySourceRef" tabindex="4" data-i18n-placeholder="media.register.api_lookup.field.source_ref.placeholder" placeholder="예: release:36614953" />
             </div>
-            <div class="admin-barcode-intake-meta-actioncell ops-compact-inline-field-actions">
-              <button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>
+            <div class="admin-barcode-intake-search-action ops-compact-inline-field-actions">
+              <button id="registerLookupSearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.lookup">조회</button>
             </div>
           </div>
         </div>
@@ -19077,16 +19114,12 @@
         <div id="barcodeProviderStatusBadges" class="operator-status-badges admin-barcode-provider-status-badges u-hidden-initial"></div>
 
         <div class="admin-barcode-intake-panels">
-          <section id="adminBarcodeCandidatePanel" class="admin-barcode-intake-panel">
+          <section id="adminBarcodeResultsPanel" class="admin-barcode-intake-panel">
             <div class="result-head u-mb-0">
-              <strong data-i18n="media.register.api_lookup.candidate.title">후보 확인</strong>
-              <span class="mini" data-i18n="media.register.api_lookup.candidate.subtitle">대표 후보</span>
+              <strong data-i18n="media.register.api_lookup.results.title">조회 결과</strong>
+              <span class="mini" id="barcodeCount" data-i18n="common.count.zero_items">0건</span>
             </div>
-            <div id="adminBarcodeCandidatePicker" class="admin-barcode-candidate-picker u-hidden-initial"></div>
-            <div id="adminBarcodeCandidateSummary" class="result-item admin-barcode-intake-summary">
-              <strong data-i18n="media.register.api_lookup.candidate.empty_title">바코드를 스캔하세요</strong>
-              <div class="mini" data-i18n="media.register.api_lookup.candidate.empty_body">첫 스캔에서 조회된 후보가 여기서 바로 확인됩니다.</div>
-            </div>
+            <div id="barcodeResults" class="result-list"></div>
           </section>
           <section id="adminBarcodePlacementPanel" class="admin-barcode-intake-panel">
             <div class="result-head u-mb-0">
@@ -19104,12 +19137,6 @@
         </div>
 
         <div id="adminBarcodeIntakeConfirm" class="admin-barcode-intake-confirm" data-i18n="media.register.api_lookup.confirm.idle">같은 바코드를 다시 스캔하거나 Enter를 누르면 1순위 칸으로 저장합니다.</div>
-
-        <div class="result-head u-mt-2">
-          <strong data-i18n="media.register.api_lookup.results.title">조회 결과</strong>
-          <span class="mini" id="barcodeCount" data-i18n="common.count.zero_items">0건</span>
-        </div>
-        <div id="barcodeResults" class="result-list"></div>
         </div>
       </section>
 
@@ -22312,6 +22339,7 @@
         "media.register.queue.status.load_failed": "조회 실패",
         "media.register.api_lookup.title": "API 조회 / 등록",
         "media.register.api_lookup.subtitle": "바코드를 스캔하세요",
+        "media.register.api_lookup.action.lookup": "조회",
         "media.register.api_lookup.action.barcode_search": "바코드 조회",
         "media.register.api_lookup.field.artist.label": "아티스트명",
         "media.register.api_lookup.field.artist.placeholder": "예: 산울림",
@@ -23132,7 +23160,7 @@
         "media.register.api_lookup.field.barcode.label": '바코드',
         "media.register.api_lookup.field.barcode.placeholder": '예: 602537235376',
         "media.register.api_lookup.field.barcode.idle": '스캔 대기',
-        "media.register.api_lookup.lookup_hint": '스캐너 입력 또는 수동 조건 검색 뒤 후보를 확인하세요.',
+        "media.register.api_lookup.lookup_hint": '바코드 또는 조건으로 후보를 조회한 뒤, 결과에서 등록할 상품을 선택하세요.',
         "media.register.api_lookup.field.title.label": '상품명',
         "media.register.api_lookup.field.title.placeholder": '예: 제13집',
         "media.register.api_lookup.field.catalog.label": '카탈로그번호',
@@ -23509,6 +23537,7 @@
         "media.register.api_lookup.status.category_mismatch_hint": "후보는 있지만 현재 카테고리 {category} 필터에 걸려 숨겨졌습니다. 감지된 매체: {detected}",
         "media.register.api_lookup.status.category_mismatch_autofix": "현재 카테고리 {category} 대신 감지된 매체 {detected}로 맞춰 결과를 표시했습니다.",
         "media.register.api_lookup.status.query_requires_term": "조건 조회는 아티스트/상품명/카탈로그번호 중 1개 이상 필요합니다.",
+        "media.register.api_lookup.status.lookup_requires_input": "바코드 또는 조건을 입력하세요.",
         "media.register.api_lookup.status.slot_selection_required": "장식장/열/칸을 모두 선택하세요.",
         "media.register.api_lookup.status.slot_not_found": "선택한 장식장/열/칸 슬롯을 찾지 못했습니다.",
         "media.register.api_lookup.status.query_loading": "조건 조회 중... ({source})",
@@ -24894,6 +24923,7 @@
         "media.register.api_lookup.field.artist.placeholder": "e.g. Sanullim",
         "media.register.api_lookup.field.source_ref.label": "Reference ID / URL",
         "media.register.api_lookup.field.source_ref.placeholder": "e.g. release:36614953",
+        "media.register.api_lookup.action.lookup": "Search",
         "media.register.api_lookup.action.query_search": "Search by Criteria",
         "media.register.purchase.title": "Import Purchase History",
         "media.register.purchase.field.file.label": "Order File",
@@ -25709,7 +25739,7 @@
         "media.register.api_lookup.field.barcode.label": 'Barcode',
         "media.register.api_lookup.field.barcode.placeholder": 'e.g. 602537235376',
         "media.register.api_lookup.field.barcode.idle": 'Waiting for Scan',
-        "media.register.api_lookup.lookup_hint": 'Use scanner input or manual criteria, then review the candidates.',
+        "media.register.api_lookup.lookup_hint": 'Search by barcode or criteria, then choose the item to register from the results.',
         "media.register.api_lookup.field.title.label": 'Item Title',
         "media.register.api_lookup.field.title.placeholder": 'e.g. Vol. 13',
         "media.register.api_lookup.field.catalog.label": 'Catalog No.',
@@ -26086,6 +26116,7 @@
         "media.register.api_lookup.status.category_mismatch_hint": "Candidates exist, but the current {category} category filter is hiding them. Detected media: {detected}",
         "media.register.api_lookup.status.category_mismatch_autofix": "Showing results with detected media {detected} instead of the current {category} category.",
         "media.register.api_lookup.status.query_requires_term": "Provide at least one of artist, item title, or catalog number to search by criteria.",
+        "media.register.api_lookup.status.lookup_requires_input": "Enter a barcode or at least one search condition.",
         "media.register.api_lookup.status.slot_selection_required": "Select a cabinet, column, and slot.",
         "media.register.api_lookup.status.slot_not_found": "Could not find the selected cabinet / column / slot.",
         "media.register.api_lookup.status.query_loading": "Searching by criteria... ({source})",
@@ -27487,6 +27518,7 @@
         "media.register.api_lookup.field.artist.placeholder": "例: サヌリム",
         "media.register.api_lookup.field.source_ref.label": "参照 ID / URL",
         "media.register.api_lookup.field.source_ref.placeholder": "例: release:36614953",
+        "media.register.api_lookup.action.lookup": "照会",
         "media.register.api_lookup.action.query_search": "条件照会",
         "media.register.purchase.title": "購入履歴を取り込む",
         "media.register.purchase.field.file.label": "注文ファイル",
@@ -28298,7 +28330,7 @@
         "media.register.api_lookup.field.barcode.label": 'バーコード',
         "media.register.api_lookup.field.barcode.placeholder": '例: 602537235376',
         "media.register.api_lookup.field.barcode.idle": 'スキャン待機',
-        "media.register.api_lookup.lookup_hint": 'スキャナ入力または手動条件で候補を呼び出してください。',
+        "media.register.api_lookup.lookup_hint": 'バーコードまたは条件で候補を照会し、結果から登録する商品を選択してください。',
         "media.register.api_lookup.field.title.label": '商品名',
         "media.register.api_lookup.field.title.placeholder": '例: 第13集',
         "media.register.api_lookup.field.catalog.label": 'カタログ番号',
@@ -28675,6 +28707,7 @@
         "media.register.api_lookup.status.category_mismatch_hint": "候補はありますが、現在のカテゴリ {category} フィルタで隠れています。検出メディア: {detected}",
         "media.register.api_lookup.status.category_mismatch_autofix": "現在のカテゴリ {category} の代わりに、検出メディア {detected} に合わせて結果を表示しました。",
         "media.register.api_lookup.status.query_requires_term": "条件照会にはアーティスト名、商品名、カタログ番号のうち1つ以上が必要です。",
+        "media.register.api_lookup.status.lookup_requires_input": "バーコードまたは条件を入力してください。",
         "media.register.api_lookup.status.slot_selection_required": "キャビネット / 列 / スロットをすべて選択してください。",
         "media.register.api_lookup.status.slot_not_found": "選択したキャビネット / 列 / スロットが見つかりませんでした。",
         "media.register.api_lookup.status.query_loading": "条件照会中... ({source})",
@@ -29924,16 +29957,6 @@
       row.focus({ preventScroll: opts.preventScroll !== false });
     }
 
-    function focusAdminBarcodeCandidateChip(index) {
-      const root = $("adminBarcodeCandidatePicker");
-      if (!root) return;
-      const candidateIndex = Number(index);
-      if (!Number.isInteger(candidateIndex) || candidateIndex < 0) return;
-      const chip = root.querySelector(`[data-admin-barcode-candidate-index="${candidateIndex}"]`);
-      if (!chip || typeof chip.focus !== "function") return;
-      chip.focus({ preventScroll: true });
-    }
-
     function selectRegisterLookupCandidate(index, opts = {}) {
       const candidateIndex = Number(index);
       if (!Number.isInteger(candidateIndex) || candidateIndex < 0) return;
@@ -29949,30 +29972,6 @@
       }
     }
 
-    function moveRegisterLookupCandidate(delta) {
-      if (!Array.isArray(registerLookupCandidates) || registerLookupCandidates.length <= 1) return;
-      const currentIndex = Math.max(0, findRegisterLookupCandidateIndexByKey(selectedRegisterLookupCandidateKey()));
-      const nextIndex = Math.min(
-        registerLookupCandidates.length - 1,
-        Math.max(0, currentIndex + Number(delta || 0))
-      );
-      if (nextIndex === currentIndex) return;
-      selectRegisterLookupCandidate(nextIndex, {
-        focus: false,
-        preventScroll: true,
-        scroll: false,
-      });
-      requestAnimationFrame(() => focusAdminBarcodeCandidateChip(nextIndex));
-    }
-
-    function buildAdminBarcodeCandidateChipLabel(candidate, index) {
-      const artist = String(candidate?.artist_or_brand || "").trim();
-      const title = String(candidate?.title || "").trim();
-      const combined = [artist, title].filter(Boolean).join(" - ");
-      const label = combined.length > 18 ? `${combined.slice(0, 18).trim()}…` : (combined || t("media.register.api_lookup.candidate.chip_fallback"));
-      return `${index + 1} · ${label}`;
-    }
-
     function syncAdminBarcodeInputReadyState(mode = "idle") {
       const input = $("barcodeInput");
       const state = $("adminBarcodeInputState");
@@ -29984,7 +29983,7 @@
         ? t("media.register.api_lookup.field.barcode.ready")
         : (mode === "confirm"
           ? t("media.register.api_lookup.field.barcode.confirm")
-          : t("media.register.api_lookup.field.barcode.idle"));
+          : "");
       state.classList.toggle("confirm", mode === "confirm");
       state.classList.toggle("ready", mode === "ready");
     }
@@ -30044,77 +30043,6 @@
       } catch (_err) {
         return { ...candidate };
       }
-    }
-
-    function renderAdminBarcodeCandidateSummary(candidate = null) {
-      const root = $("adminBarcodeCandidateSummary");
-      if (!root) return;
-      if (!candidate) {
-        root.innerHTML = `
-          <strong>${escapeHtml(t("media.register.api_lookup.candidate.idle_title"))}</strong>
-          <div class="mini">${escapeHtml(t("media.register.api_lookup.candidate.idle_body"))}</div>
-        `;
-        return;
-      }
-      const artist = String(candidate.artist_or_brand || "").trim() || t("common.unknown");
-      const title = String(candidate.title || "").trim() || t("common.no_title");
-      const year = String(candidate.release_year || candidate.released_date || "").trim();
-      const titleLine = `${artist} - ${title}${year ? ` (${year.slice(0, 4)})` : ""}`;
-      const formatLabel = mediaDisplayLabel(candidate.format_name || "LP");
-      const barcode = String(candidate.barcode || "").trim() || "-";
-      const catalogNo = String(candidate.catalog_no || "").trim() || "-";
-      const coverUrl = String(candidate.cover_image_url || "").trim();
-      const cover = coverUrl
-        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(titleLine)}" />`
-        : escapeHtml(t("common.no_cover"));
-      const ownershipFlag = candidate.is_owned
-        ? `<span class="admin-barcode-candidate-flag owned">${escapeHtml(t("media.register.api_lookup.candidate.flag.owned", { count: formatCount(candidate.owned_count) }))}</span>`
-        : `<span class="admin-barcode-candidate-flag fresh">${escapeHtml(t("media.register.api_lookup.candidate.flag.fresh"))}</span>`;
-      const candidateKey = registerLookupCandidateKey(candidate);
-      const selectedPlacement = candidateKey ? adminBarcodePlacementSelectionByCandidateKey.get(candidateKey) : null;
-      const selectedSlot = selectedPlacement ? getStorageSlotById(Number(selectedPlacement.storage_slot_id || 0)) : null;
-      const selectedSlotLabel = selectedSlot ? (storageSlotDisplayLabel(selectedSlot) || String(selectedSlot.slot_code || "").trim()) : "";
-      const resolvedSlotId = resolveAdminBarcodeRecommendedSlotId(candidate);
-      const resolvedSlot = !selectedSlotLabel && resolvedSlotId ? getStorageSlotById(resolvedSlotId) : null;
-      const resolvedSlotLabel = resolvedSlot ? (storageSlotDisplayLabel(resolvedSlot) || String(resolvedSlot.slot_code || "").trim()) : "";
-      const saveTargetChip = selectedSlotLabel || resolvedSlotLabel
-        ? `<span class="admin-barcode-candidate-save-target"><span class="admin-barcode-candidate-save-target-label">${escapeHtml(t("media.register.api_lookup.candidate.save_target"))}</span>${escapeHtml(selectedSlotLabel || resolvedSlotLabel)}</span>`
-        : "";
-      const summaryLine = ownershipFlag || saveTargetChip
-        ? `<div class="admin-barcode-candidate-summary-line">${ownershipFlag}${saveTargetChip}</div>`
-        : "";
-      root.innerHTML = `
-        <div class="admin-barcode-candidate-summary">
-          <div class="admin-barcode-candidate-cover">${cover}</div>
-          <div class="admin-barcode-candidate-main">
-            <strong>${escapeHtml(titleLine)}</strong>
-            <div class="admin-barcode-candidate-meta">
-              <span><span class="tag">${escapeHtml(formatLabel)}</span></span>
-              <span><span class="admin-barcode-candidate-meta-key">source</span>${escapeHtml(String(candidate.source || "-"))}</span>
-              <span><span class="admin-barcode-candidate-meta-key">barcode</span>${escapeHtml(barcode)}</span>
-              <span><span class="admin-barcode-candidate-meta-key">cat#</span>${escapeHtml(catalogNo)}</span>
-            </div>
-            ${summaryLine}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderAdminBarcodeCandidatePicker() {
-      const root = $("adminBarcodeCandidatePicker");
-      if (!root) return;
-      if (!Array.isArray(registerLookupCandidates) || registerLookupCandidates.length <= 1) {
-        root.innerHTML = "";
-        setDisplayMode(root, "none");
-        return;
-      }
-      const selectedKey = selectedRegisterLookupCandidateKey();
-      setDisplayMode(root, "flex");
-      root.innerHTML = registerLookupCandidates.map((row, index) => {
-        const candidateKey = registerLookupCandidateKey(row, index);
-        const isSelected = Boolean(selectedKey) && selectedKey === candidateKey;
-        return `<button type="button" class="admin-barcode-candidate-chip${isSelected ? " active" : ""}" data-admin-barcode-candidate-index="${index}">${escapeHtml(buildAdminBarcodeCandidateChipLabel(row, index))}</button>`;
-      }).join("");
     }
 
     function renderAdminBarcodePlacementSummary(state = null) {
@@ -30294,7 +30222,6 @@
       }
       $("slotId").value = String(slotId);
       renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
-      renderAdminBarcodeCandidateSummary(candidate);
       const cached = adminBarcodePlacementCache.get(candidateKey) || null;
       renderAdminBarcodePlacementSummary(cached);
     }
@@ -30354,7 +30281,6 @@
       const cached = adminBarcodePlacementCache.get(candidateKey);
       if (cached) {
         renderAdminBarcodePlacementSummary(cached);
-        renderAdminBarcodeCandidateSummary(candidate);
         return;
       }
       const token = ++adminBarcodePlacementToken;
@@ -30363,7 +30289,6 @@
         const data = await fetchAdminBarcodePlacementSummary(candidate);
         if (token !== adminBarcodePlacementToken) return;
         renderAdminBarcodePlacementSummary(data);
-        renderAdminBarcodeCandidateSummary(candidate);
       } catch (err) {
         if (token !== adminBarcodePlacementToken) return;
         renderAdminBarcodePlacementSummary({
@@ -30371,13 +30296,10 @@
           recommendations: [],
           fallback_message: errorMessageText(err, t("media.register.api_lookup.status.recommendation_failed")),
         });
-        renderAdminBarcodeCandidateSummary(candidate);
       }
     }
 
     function syncAdminBarcodeIntakePanels() {
-      renderAdminBarcodeCandidatePicker();
-      renderAdminBarcodeCandidateSummary(selectedCandidate);
       void loadAdminBarcodePlacementSummary(selectedCandidate);
     }
 
@@ -47074,15 +46996,15 @@
 
     async function registerCandidateFromLookup(entryOrIndex) {
       const entry = Number.isInteger(entryOrIndex)
-        ? (() => {
-            const candidate = registerLookupCandidates[entryOrIndex];
-            if (!candidate) return null;
-            return {
-              key: registerLookupCandidateKey(candidate, entryOrIndex),
-              candidate: cloneRegisterLookupCandidate(candidate),
-              storage_slot_id: resolveRegisterLookupStorageSlotId(entryOrIndex),
-            };
-          })()
+          ? (() => {
+              const candidate = registerLookupCandidates[entryOrIndex];
+              if (!candidate) return null;
+              return {
+                key: registerLookupCandidateKey(candidate, entryOrIndex),
+                candidate: cloneRegisterLookupCandidate(candidate),
+                storage_slot_id: resolveAdminBarcodeRecommendedSlotId(candidate),
+              };
+            })()
         : entryOrIndex;
       if (!entry?.candidate) {
         setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.candidate_not_found"));
@@ -47201,7 +47123,7 @@
       const entry = {
         key,
         candidate: cloneRegisterLookupCandidate(candidate),
-        storage_slot_id: resolveRegisterLookupStorageSlotId(index) ?? resolveAdminBarcodeRecommendedSlotId(candidate),
+        storage_slot_id: resolveAdminBarcodeRecommendedSlotId(candidate),
       };
       registerLookupSaveQueue.push(entry);
       registerLookupQueuedKeys.add(key);
@@ -47336,6 +47258,7 @@
         const cover = coverUrl
           ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(t("common.no_cover"));
+        const registerButtonHtml = `<button class="btn ghost admin-barcode-result-save-btn" type="button" data-register-lookup-save="${index}" ${isSaving || isQueued ? "disabled" : ""}>${escapeHtml(isSaving ? t("media.register.api_lookup.action.save_loading") : (isQueued ? t("media.register.api_lookup.action.save_queued") : t("media.register.api_lookup.action.save_owned")))}</button>`;
         box.innerHTML = `
           <div class="album-result-cover">${cover}</div>
           <div class="album-result-main">
@@ -47350,7 +47273,10 @@
                 ${Number(c.owned_count || 0) > 0 ? `<span>${escapeHtml(t("common.meta.already_owned", { count: countWithUnit(Number(c.owned_count || 0)) }))}</span>` : ""}
               `}
               ${discogsLink ? `<span>${discogsLink}</span>` : ""}
-              ${galleryKey ? `<span class="admin-barcode-result-gallery-action">${imageGalleryButtonHtml(galleryKey, t("media.source.candidate.action.images", { count: galleryCount }))}</span>` : ""}
+              <span class="admin-barcode-result-actions">
+                ${galleryKey ? imageGalleryButtonHtml(galleryKey, t("media.source.candidate.action.images", { count: galleryCount })) : ""}
+                ${registerButtonHtml}
+              </span>
             </div>
             <div class="row u-mt-4 u-flex-between-center-wrap">
               <div class="mini">${escapeHtml(t("common.meta.external_id", { value: c.external_id || "-" }))}${isOwnedCandidate ? ` / ${escapeHtml(t("common.meta.already_owned", { count: countWithUnit(Number(c.owned_count || 0)) }))}` : ""}</div>
@@ -47358,66 +47284,6 @@
             </div>
           </div>
         `;
-
-        const state = registerLookupLocationStateFor(index);
-        const cabinetSelect = document.createElement("select");
-        const floorSelect = document.createElement("select");
-        const cellSelect = document.createElement("select");
-        fillRegisterLookupSelect(cabinetSelect, listRegisterLookupCabinets(), state.cabinet_name, t("common.cabinet"));
-        fillRegisterLookupSelect(floorSelect, listRegisterLookupFloors(state.cabinet_name), state.column_code, t("common.column"));
-        fillRegisterLookupSelect(cellSelect, listRegisterLookupCells(state.cabinet_name, state.column_code), state.cell_code, t("common.cell"));
-        cabinetSelect.onchange = () => {
-          registerLookupLocationState[String(index)] = {
-            cabinet_name: cabinetSelect.value,
-            column_code: "",
-            cell_code: "",
-          };
-          renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
-        };
-        floorSelect.onchange = () => {
-          registerLookupLocationState[String(index)] = {
-            cabinet_name: state.cabinet_name,
-            column_code: floorSelect.value,
-            cell_code: "",
-          };
-          renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
-        };
-        cellSelect.onchange = () => {
-          registerLookupLocationState[String(index)] = {
-            cabinet_name: state.cabinet_name,
-            column_code: state.column_code,
-            cell_code: cellSelect.value,
-          };
-        };
-
-        const actionRow = document.createElement("div");
-        actionRow.className = "row";
-        actionRow.style.marginTop = "6px";
-        actionRow.style.justifyContent = "space-between";
-        actionRow.style.alignItems = "center";
-        actionRow.style.gap = "8px";
-
-        const locationWrap = document.createElement("div");
-        locationWrap.className = "row";
-        locationWrap.style.gap = "6px";
-        locationWrap.style.flexWrap = "wrap";
-        locationWrap.appendChild(cabinetSelect);
-        locationWrap.appendChild(floorSelect);
-        locationWrap.appendChild(cellSelect);
-
-        const registerBtn = document.createElement("button");
-        registerBtn.className = "btn";
-        registerBtn.type = "button";
-        registerBtn.textContent = isSaving ? t("media.register.api_lookup.action.save_loading") : (isQueued ? t("media.register.api_lookup.action.save_queued") : t("media.register.api_lookup.action.save_owned"));
-        registerBtn.disabled = isSaving || isQueued;
-        registerBtn.onclick = () => {
-          queueRegisterLookupCandidate(index);
-        };
-
-        actionRow.appendChild(locationWrap);
-        actionRow.appendChild(registerBtn);
-        const main = box.querySelector(".album-result-main");
-        if (main) main.appendChild(actionRow);
         root.appendChild(box);
       }
     }
@@ -49069,6 +48935,11 @@
           }
         }
         renderBarcodeResults(items || []);
+        if (Array.isArray(items) && items.length) {
+          selectRegisterLookupCandidate(0, { focus: true, preventScroll: true, scroll: false });
+        } else {
+          selectedCandidate = null;
+        }
         const adjustedSourceText = usedSource !== selectedSource ? t("media.register.api_lookup.status.adjusted_source", { source: usedSource }) : "";
         setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.query_done", {
           count: countWithUnit((items || []).length),
@@ -49078,6 +48949,26 @@
         renderBarcodeResults([]);
         setStatus("barcodeStatus", "err", errorMessageText(err, t("media.register.api_lookup.status.lookup_failed")));
       }
+    }
+
+    async function submitAdminRegisterLookupSearch() {
+      const barcode = $("barcodeInput").value.trim();
+      const hasQueryInput = [
+        $("queryArtist").value.trim(),
+        $("queryTitle").value.trim(),
+        $("queryCatalog").value.trim(),
+        $("querySourceRef").value.trim(),
+      ].some(Boolean);
+      if (barcode) {
+        await barcodeSearch();
+        return;
+      }
+      if (hasQueryInput) {
+        await querySearch();
+        return;
+      }
+      renderRegisterLookupProviderStatusBadges([]);
+      setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.lookup_requires_input"));
     }
 
     function buildOwnedPayload() {
@@ -53170,6 +53061,12 @@
     });
     document.addEventListener("keydown", handleGlobalBarcodeScannerKeydown, true);
     $("barcodeResults").addEventListener("click", (e) => {
+      const saveBtn = e.target.closest("[data-register-lookup-save]");
+      if (saveBtn) {
+        e.preventDefault();
+        queueRegisterLookupCandidate(Number(saveBtn.getAttribute("data-register-lookup-save") || -1));
+        return;
+      }
       if (e.target.closest("button, select, option, input, label, a")) return;
       const row = e.target.closest("[data-register-lookup-index]");
       if (!row) return;
@@ -53190,20 +53087,6 @@
         scroll: false,
       });
     });
-    $("adminBarcodeCandidatePicker").addEventListener("click", (e) => {
-      const chip = e.target.closest("[data-admin-barcode-candidate-index]");
-      if (!chip) return;
-      selectRegisterLookupCandidate(Number(chip.getAttribute("data-admin-barcode-candidate-index") || -1), {
-        focus: true,
-        preventScroll: true,
-        scroll: false,
-      });
-    });
-    $("adminBarcodeCandidatePicker").addEventListener("keydown", (e) => {
-      if (e.isComposing || !["ArrowLeft", "ArrowRight"].includes(e.key)) return;
-      e.preventDefault();
-      moveRegisterLookupCandidate(e.key === "ArrowRight" ? 1 : -1);
-    });
     $("adminBarcodePlacementSummary").addEventListener("click", (e) => {
       const placementBtn = e.target.closest("[data-admin-barcode-placement-slot-id]");
       if (!placementBtn || !selectedCandidate) return;
@@ -53211,12 +53094,11 @@
         Number(placementBtn.getAttribute("data-admin-barcode-placement-slot-id") || 0),
         Number(placementBtn.getAttribute("data-admin-barcode-placement-rank") || 0));
     });
-    $("barcodeSearchBtn").addEventListener("click", submitAdminBarcodeIntake);
-    $("queryArtist").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
-    $("queryTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
-    $("queryCatalog").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
-    $("querySourceRef").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });
-    $("querySearchBtn").addEventListener("click", querySearch);
+    $("queryArtist").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });
+    $("queryTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });
+    $("queryCatalog").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });
+    $("querySourceRef").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });
+    $("registerLookupSearchBtn").addEventListener("click", submitAdminRegisterLookupSearch);
     $("createOwnedBtn").addEventListener("click", createOwnedItem);
     $("csvUploadBtn").addEventListener("click", uploadCsv);
     $("queueLoadBtn").addEventListener("click", loadReviewQueue);
