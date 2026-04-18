@@ -2959,7 +2959,17 @@ def test_camera_onvif_route_uses_stored_credentials_for_selected_camera(admin_cl
     assert captured["password"] == "stored-pass"
 
 
-def test_admin_can_read_and_save_auto_backup_settings(admin_client, tmp_path):
+def test_admin_can_read_and_save_auto_backup_settings(admin_client, monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        main_module,
+        "_read_backup_launchd_schedules",
+        lambda: {
+            "daily_schedule": "매일 00:00",
+            "weekly_schedule": "일요일 01:00",
+        },
+        raising=False,
+    )
+
     res = admin_client.get("/ops/export/backup-settings")
 
     assert res.status_code == 200
@@ -2969,6 +2979,8 @@ def test_admin_can_read_and_save_auto_backup_settings(admin_client, tmp_path):
     assert payload["backup_dir"].endswith("/backups")
     assert payload["backup_scope"] == "DB"
     assert payload["include_env_file"] is False
+    assert payload["daily_schedule"] == "매일 00:00"
+    assert payload["weekly_schedule"] == "일요일 01:00"
 
     save_res = admin_client.post(
         "/ops/export/backup-settings",
@@ -2988,6 +3000,8 @@ def test_admin_can_read_and_save_auto_backup_settings(admin_client, tmp_path):
     assert saved["backup_dir"] == str(tmp_path / "auto-backups")
     assert saved["backup_scope"] == "FULL"
     assert saved["include_env_file"] is True
+    assert saved["daily_schedule"] == "매일 00:00"
+    assert saved["weekly_schedule"] == "일요일 01:00"
 
     reread_res = admin_client.get("/ops/export/backup-settings")
     assert reread_res.status_code == 200
@@ -2997,6 +3011,8 @@ def test_admin_can_read_and_save_auto_backup_settings(admin_client, tmp_path):
     assert reread["backup_dir"] == str(tmp_path / "auto-backups")
     assert reread["backup_scope"] == "FULL"
     assert reread["include_env_file"] is True
+    assert reread["daily_schedule"] == "매일 00:00"
+    assert reread["weekly_schedule"] == "일요일 01:00"
 
 
 def test_admin_can_read_and_save_metadata_provider_settings(admin_client, monkeypatch, tmp_path):

@@ -1543,6 +1543,8 @@ class AutoBackupSettingsResponse(BaseModel):
     backup_dir: str
     backup_scope: BackupScope = "DB"
     include_env_file: bool = False
+    daily_schedule: str | None = None
+    weekly_schedule: str | None = None
     last_backup_at: str | None = None
     last_backup_path: str | None = None
     last_error: str | None = None

@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import platform
+import plistlib
 import re
 import shutil
 import socket
@@ -2996,6 +2997,77 @@ def _create_local_full_backup_bundle(
     return str(final_path)
 
 
+def _read_launchd_calendar_interval(plist_path: Path) -> dict[str, int] | None:
+    if not plist_path.is_file():
+        return None
+    try:
+        with plist_path.open("rb") as handle:
+            payload = plistlib.load(handle)
+    except Exception:
+        return None
+    interval = payload.get("StartCalendarInterval")
+    if isinstance(interval, list):
+        interval = interval[0] if interval else None
+    if not isinstance(interval, dict):
+        return None
+    try:
+        hour = int(interval.get("Hour"))
+        minute = int(interval.get("Minute"))
+    except (TypeError, ValueError):
+        return None
+    schedule: dict[str, int] = {"hour": hour, "minute": minute}
+    weekday = interval.get("Weekday")
+    if weekday is not None:
+        try:
+            schedule["weekday"] = int(weekday)
+        except (TypeError, ValueError):
+            pass
+    return schedule
+
+
+def _format_launchd_schedule_label(schedule: dict[str, int] | None) -> str | None:
+    if not schedule:
+        return None
+    time_text = f"{int(schedule.get('hour', 0)):02d}:{int(schedule.get('minute', 0)):02d}"
+    weekday = schedule.get("weekday")
+    if weekday is None:
+        return time_text
+    weekday_names = {
+        0: "일요일",
+        1: "월요일",
+        2: "화요일",
+        3: "수요일",
+        4: "목요일",
+        5: "금요일",
+        6: "토요일",
+        7: "일요일",
+    }
+    return f"{weekday_names.get(int(weekday), '주간')} {time_text}"
+
+
+def _read_backup_launchd_schedules() -> dict[str, str | None]:
+    project_root = Path(__file__).resolve().parents[1]
+    launch_agents_dir = Path.home() / "Library" / "LaunchAgents"
+
+    def _read_first_label(*candidates: Path) -> str | None:
+        for candidate in candidates:
+            label = _format_launchd_schedule_label(_read_launchd_calendar_interval(candidate))
+            if label:
+                return label
+        return None
+
+    return {
+        "daily_schedule": _read_first_label(
+            launch_agents_dir / "com.muzlife.backup-daily-db.plist",
+            project_root / "deploy" / "templates" / "launchd" / "com.muzlife.backup-daily-db.plist",
+        ),
+        "weekly_schedule": _read_first_label(
+            launch_agents_dir / "com.muzlife.backup-weekly-full.plist",
+            project_root / "deploy" / "templates" / "launchd" / "com.muzlife.backup-weekly-full.plist",
+        ),
+    }
+
+
 def _validate_library_db_file(candidate_path: Path) -> None:
     conn = sqlite3.connect(f"file:{candidate_path}?mode=ro", uri=True, timeout=1)
     try:
@@ -3276,6 +3348,7 @@ def export_full_backup(
 def get_auto_backup_settings(request: Request) -> AutoBackupSettingsResponse:
     _require_admin_request(request)
     payload = db.get_auto_backup_settings()
+    payload.update(_read_backup_launchd_schedules())
     return AutoBackupSettingsResponse(**payload)
 
 
@@ -3294,6 +3367,7 @@ def save_auto_backup_settings(
         backup_scope=str(payload.backup_scope or "DB"),
         include_env_file=bool(payload.include_env_file),
     )
+    saved.update(_read_backup_launchd_schedules())
     return AutoBackupSettingsResponse(**saved)
 
 
