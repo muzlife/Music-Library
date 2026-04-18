@@ -1533,6 +1533,22 @@ def test_admin_register_collect_copy_renames_barcode_intake_to_api_lookup_regist
     assert '<button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>' in html
 
 
+def test_admin_api_lookup_keeps_condition_fields_and_query_button_on_single_inline_row():
+    html = read_static_html("index.html")
+    fields_block = html.split(".admin-barcode-intake-meta-fields--with-action {", 1)[1].split("}", 1)[0]
+    action_cell_block = html.split(".admin-barcode-intake-meta-actioncell {", 1)[1].split("}", 1)[0]
+    action_btn_block = html.split(".admin-barcode-intake-meta-actioncell .btn {", 1)[1].split("}", 1)[0]
+    markup_block = html.split('<div class="meta-search-fields-4 admin-barcode-intake-meta-fields admin-barcode-intake-meta-fields--with-action">', 1)[1].split("</div>\n        </div>", 1)[0]
+
+    assert "grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 0.7fr) auto;" in fields_block
+    assert "align-items: end;" in fields_block
+    assert "display: flex;" in action_cell_block
+    assert "justify-content: flex-end;" in action_cell_block
+    assert "min-width: 88px;" in action_btn_block
+    assert '<div class="admin-barcode-intake-meta-actioncell ops-compact-inline-field-actions">' in markup_block
+    assert markup_block.index('id="querySourceRef"') < markup_block.index('id="querySearchBtn"')
+
+
 def test_admin_barcode_results_shrink_cover_to_widen_text_lane():
     html = read_static_html("index.html")
     list_block = html.split("#barcodeResults.result-list {", 1)[1].split("}", 1)[0]
