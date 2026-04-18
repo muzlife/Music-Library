@@ -12,6 +12,290 @@ def read_static_html(name: str) -> str:
     return (STATIC_DIR / name).read_text(encoding="utf-8")
 
 
+def extract_login_inline_script(html: str) -> str:
+    scripts = extract_inline_scripts(html)
+    if not scripts:
+        raise AssertionError("no inline scripts found in login.html")
+    for script in scripts:
+        if (
+            'document.getElementById("loginForm")' in script
+            and 'addEventListener("submit"' in script
+        ):
+            return script
+    for script in scripts:
+        if '("submit"' in script and "form.addEventListener" in script and "loginForm" in script:
+            return script
+    for script in scripts:
+        if '"/auth/login"' in script or '"/auth/login' in script:
+            return script
+    raise AssertionError(
+        "login bootstrap inline script not found (missing login form submit handler bound to /auth/login)"
+    )
+
+
+def extract_main_shell_locale_theme_keys() -> tuple[str, str]:
+    index_html = read_static_html("index.html")
+    locale_match = re.search(
+        r'const APP_LOCALE_STORAGE_KEY\s*=\s*"([^"]+)"',
+        index_html,
+    )
+    theme_match = re.search(
+        r'const APP_THEME_STORAGE_KEY\s*=\s*"([^"]+)"',
+        index_html,
+    )
+    if not locale_match:
+        raise AssertionError("APP_LOCALE_STORAGE_KEY not found in index.html")
+    if not theme_match:
+        raise AssertionError("APP_THEME_STORAGE_KEY not found in index.html")
+    return locale_match.group(1), theme_match.group(1)
+
+
+def run_login_page_harness(
+    *,
+    local_storage: dict[str, str] | None = None,
+    locale: str | None = None,
+    submit_response: dict | None = None,
+    username: str = "",
+    password: str = "",
+) -> dict:
+    html = read_static_html("login.html")
+    script = extract_login_inline_script(html)
+
+    should_submit = submit_response is not None
+    script_storage = dict(local_storage or {})
+    if locale is not None:
+        script_storage["hahahoho.appLocale.v1"] = locale
+    local_storage_json = json.dumps(script_storage, ensure_ascii=False)
+    submit_response_json = json.dumps(submit_response or {}, ensure_ascii=False)
+    username_js = json.dumps(username, ensure_ascii=False)
+    password_js = json.dumps(password, ensure_ascii=False)
+    heading_js = json.dumps("HARNESS-HEADING-SEED", ensure_ascii=False)
+    should_submit_js = "true" if should_submit else "false"
+
+    harness = '''
+const shouldSubmit = __SHOULD_SUBMIT__;
+
+class MockElement {
+  constructor(id, options = {}) {
+    this.id = id;
+    this.tagName = options.tagName || "div";
+    this.type = options.type || "";
+    this.name = options.name || "";
+    this.value = options.value || "";
+    this.textContent = options.textContent || "";
+    this.className = "";
+    this.dataset = {};
+    this._listeners = {};
+    this.disabled = false;
+  }
+
+  focus() {
+    this.focused = true;
+  }
+
+  addEventListener(type, handler) {
+    if (!this._listeners[type]) this._listeners[type] = [];
+    this._listeners[type].push(handler);
+  }
+
+  async dispatchEvent(event) {
+    event.currentTarget = this;
+    event.target = this;
+    if (!event.preventDefault) {
+      event.preventDefault = () => {
+        event.defaultPrevented = true;
+      };
+    }
+    const listeners = this._listeners[event.type] || [];
+    for (const listener of listeners) {
+      await Promise.resolve(listener(event));
+    }
+  }
+}
+
+class MockDocument {
+  constructor(headingText) {
+    this._elements = Object.create(null);
+    this.body = new MockElement("body", { tagName: "body" });
+    this.documentElement = { lang: "seed-locale", dataset: {} };
+    this._headingText = headingText;
+  }
+
+  registerElement(id, element) {
+    this._elements[id] = element;
+  }
+
+  getElementById(id) {
+    return this._elements[id] || null;
+  }
+
+  querySelector(selector) {
+    if (selector === "h1") {
+      return this._elements.loginHeading;
+    }
+    if (selector === "button") {
+      return this._elements.loginSubmitBtn;
+    }
+    if (selector.startsWith("#")) {
+      return this.getElementById(selector.slice(1));
+    }
+    return null;
+  }
+}
+
+class MockStorage {
+  constructor(values) {
+    this._values = { ...values };
+    this.getCalls = [];
+    this.setCalls = [];
+    this.removeCalls = [];
+  }
+  getItem(key) {
+    this.getCalls.push(key);
+    return Object.prototype.hasOwnProperty.call(this._values, key)
+      ? this._values[key]
+      : null;
+  }
+  setItem(key, value) {
+    this.setCalls.push(key);
+    this._values[key] = String(value);
+  }
+  removeItem(key) {
+    this.removeCalls.push(key);
+    delete this._values[key];
+  }
+}
+
+class MockFormData {
+  constructor(form) {
+    this._values = [];
+    if (form && Array.isArray(form._fields)) {
+      for (const [name, value] of form._fields) {
+        this._values.push([name, String(value)]);
+      }
+    }
+  }
+  append(name, value) {
+    this._values.push([name, String(value)]);
+  }
+  [Symbol.iterator]() {
+    return this._values[Symbol.iterator]();
+  }
+}
+
+const submitResponse = __SUBMIT__;
+const localStorageValues = __LOCAL_STORAGE__;
+const storage = new MockStorage(localStorageValues);
+
+const elements = {
+  form: new MockElement("loginForm", { tagName: "form" }),
+  statusEl: new MockElement("loginStatus"),
+  submitBtn: new MockElement("loginSubmitBtn", { tagName: "button" }),
+  usernameInput: new MockElement("loginUsername", {
+    name: "username",
+    value: __USERNAME__,
+  }),
+  passwordInput: new MockElement("loginPassword", {
+    name: "password",
+    type: "password",
+    value: __PASSWORD__,
+  }),
+  heading: new MockElement("loginHeading", { tagName: "h1", textContent: __HEADING__ }),
+};
+elements.form._fields = [
+  ["username", elements.usernameInput.value],
+  ["password", elements.passwordInput.value],
+];
+
+const document = new MockDocument(__HEADING__);
+document.registerElement("loginForm", elements.form);
+document.registerElement("loginStatus", elements.statusEl);
+document.registerElement("loginSubmitBtn", elements.submitBtn);
+document.registerElement("loginUsername", elements.usernameInput);
+document.registerElement("loginPassword", elements.passwordInput);
+document.registerElement("loginHeading", elements.heading);
+document.body.dataset = {};
+
+let fetchCalledWith = null;
+let replacedLocation = null;
+
+global.window = {
+  localStorage: storage,
+  addEventListener: () => {},
+  location: {
+    replace(value) {
+      replacedLocation = value;
+    },
+  },
+};
+global.document = document;
+global.localStorage = global.window.localStorage;
+global.fetch = async (url, init = {}) => {
+  fetchCalledWith = { url, init };
+  return {
+    ok: submitResponse.ok || false,
+    status: submitResponse.status || 200,
+    async text() {
+      if (submitResponse.body === undefined) {
+        return "";
+      }
+      if (typeof submitResponse.body === "string") {
+        return submitResponse.body;
+      }
+      return JSON.stringify(submitResponse.body || {});
+    },
+  };
+};
+global.FormData = MockFormData;
+
+__SCRIPT__
+
+(async () => {
+  if (shouldSubmit) {
+    await elements.form.dispatchEvent({ type: "submit" });
+  }
+  process.stdout.write(
+    JSON.stringify({
+      lang: document.documentElement.lang,
+      theme: document.body.dataset.theme || null,
+      heading: document.querySelector("h1")?.textContent || "",
+      storage_get_keys: storage.getCalls,
+      storage_set_keys: storage.setCalls,
+      status_text: elements.statusEl.textContent || "",
+      submit_disabled_after_error: elements.submitBtn.disabled,
+      fetch_url: fetchCalledWith ? fetchCalledWith.url : null,
+      redirect_url: replacedLocation,
+      fetch_payload: fetchCalledWith ? fetchCalledWith.init.body || "" : "",
+    }),
+  );
+})();
+'''
+    harness = harness.replace("__LOCAL_STORAGE__", local_storage_json)
+    harness = harness.replace("__SUBMIT__", submit_response_json)
+    harness = harness.replace("__USERNAME__", username_js)
+    harness = harness.replace("__PASSWORD__", password_js)
+    harness = harness.replace("__HEADING__", heading_js)
+    harness = harness.replace("__SHOULD_SUBMIT__", should_submit_js)
+    harness = harness.replace("__SCRIPT__", script)
+
+    with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
+        handle.write(harness)
+        path = Path(handle.name)
+    try:
+        result = subprocess.run(
+            ["node", str(path)],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=str(REPO_ROOT),
+        )
+    finally:
+        path.unlink(missing_ok=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout, "empty harness output"
+    return json.loads(result.stdout)
+
+
 def extract_inline_scripts(html: str) -> list[str]:
     return re.findall(r"<script>(.*?)</script>", html, re.S)
 
@@ -140,6 +424,73 @@ process.stdout.write(homeResultItemHtml(row) || "");
 def test_login_page_redirect_target_is_ops():
     html = read_static_html("login.html")
     assert 'window.location.replace("/ops")' in html
+
+
+def test_login_page_exposes_shell_locale_and_theme_controls():
+    html = read_static_html("login.html")
+    assert re.search(r'class="[^"]*login-shell-utility[^"]*"', html), "login shell utility wrapper missing"
+    assert re.search(r'id="loginLocaleSelect"', html), "login locale select missing"
+    assert re.search(r'id="loginThemeToggle"', html), "login theme toggle missing"
+
+
+def test_login_page_defaults_invalid_saved_locale_and_theme():
+    payload = run_login_page_harness(
+        local_storage={
+            "hahahoho.appLocale.v1": "bogus",
+            "hahahoho.uiTheme.v1": "bogus",
+        }
+    )
+    assert payload["lang"] == "ko"
+    assert payload["theme"] == "night"
+    assert payload["heading"] == "라이브러리 관리/운영 콘솔"
+
+
+def test_login_page_maps_only_exact_auth_failure_literal():
+    mapped = run_login_page_harness(
+        local_storage={
+            "hahahoho.appLocale.v1": "en",
+        },
+        submit_response={
+            "ok": False,
+            "status": 401,
+            "body": {"detail": "아이디 또는 비밀번호가 올바르지 않습니다."},
+        },
+    )
+    assert mapped["status_text"] == "Incorrect username or password."
+
+    passthrough = run_login_page_harness(
+        local_storage={
+            "hahahoho.appLocale.v1": "en",
+        },
+        submit_response={
+            "ok": False,
+            "status": 401,
+            "body": {"detail": "임의 오류"},
+        },
+    )
+    assert passthrough["status_text"] == "임의 오류"
+
+
+def test_login_page_preserves_submit_flow_contract():
+    success = run_login_page_harness(
+        submit_response={"ok": True, "status": 200, "body": {"authenticated": True}},
+    )
+    assert success["fetch_url"] == "/auth/login"
+    assert success["redirect_url"] == "/ops"
+
+    failure = run_login_page_harness(
+        submit_response={"ok": False, "status": 500, "body": {"detail": "임의 오류"}},
+    )
+    assert failure["submit_disabled_after_error"] is False
+
+
+def test_login_page_reuses_same_locale_and_theme_storage_keys_as_main_shell():
+    expected_locale_key, expected_theme_key = extract_main_shell_locale_theme_keys()
+    payload = run_login_page_harness()
+    storage_access_keys = set(payload["storage_get_keys"]) | set(payload["storage_set_keys"])
+    assert expected_locale_key in storage_access_keys
+    assert expected_theme_key in storage_access_keys
+    assert set(payload["storage_set_keys"]).issubset({expected_locale_key, expected_theme_key})
 
 
 def test_admin_route_serves_index_for_admin(admin_client):
@@ -5890,11 +6241,14 @@ def test_day_mode_adds_stronger_shell_and_dashboard_hierarchy():
     day_dashboard_actionbtn_disabled_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-slot-selectbtn):disabled {', 1)[1].split("}", 1)[0]
     day_dashboard_actionbtn_active_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-selectbtn.is-selected {', 1)[1].split("}", 1)[0]
     day_dashboard_viewbtn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-viewbtn, .dashboard-slot-grid-nav, .dashboard-slot-sidearrow) {', 1)[1].split("}", 1)[0]
+    day_dashboard_workbench_source_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-workbench-source {', 1)[1].split("}", 1)[0]
+    day_dashboard_workbench_source_active_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-workbench-source.active {', 1)[1].split("}", 1)[0]
     day_dashboard_viewbtn_active_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-viewbtn.active {', 1)[1].split("}", 1)[0]
     day_dashboard_closebtn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell #homeDashCabinetCloseBtn {', 1)[1].split("}", 1)[0]
     day_dashboard_viewbtn_hover_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-grid-nav:hover, .dashboard-slot-grid-nav:focus-visible, .dashboard-slot-sidearrow:hover, .dashboard-slot-sidearrow:focus-visible) {', 1)[1].split("}", 1)[0]
     day_dashboard_coverflow_chip_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-shelfhint, .dashboard-slot-shelfrecentmove, .dashboard-slot-recentmove, .dashboard-slot-covercard-index) {', 1)[1].split("}", 1)[0]
     day_dashboard_label_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell label {', 1)[1].split("}", 1)[0]
+    day_dashboard_pageinfo_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-pageinfo {', 1)[1].split("}", 1)[0]
     day_dashboard_field_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(input, select, textarea) {', 1)[1].split("}", 1)[0]
     day_dashboard_placeholder_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(input, textarea)::placeholder {', 1)[1].split("}", 1)[0]
     day_dashboard_statusbar_btn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar :is(.btn, .dashboard-slot-actionbtn, .dashboard-workbench-actionbtn) {', 1)[1].split("}", 1)[0]
@@ -5981,6 +6335,13 @@ def test_day_mode_adds_stronger_shell_and_dashboard_hierarchy():
     assert "background: rgba(242, 246, 250, 0.99) !important;" in day_dashboard_viewbtn_block
     assert "border-color: rgba(103, 118, 135, 0.82) !important;" in day_dashboard_viewbtn_block
     assert "color: #173043 !important;" in day_dashboard_viewbtn_block
+    assert "background: rgba(236, 241, 246, 0.99);" in day_dashboard_workbench_source_block
+    assert "border-color: rgba(103, 118, 135, 0.82);" in day_dashboard_workbench_source_block
+    assert "color: #173043;" in day_dashboard_workbench_source_block
+    assert "border-color: rgba(65, 122, 117, 0.76);" in day_dashboard_workbench_source_active_block
+    assert "background: linear-gradient(" in day_dashboard_workbench_source_active_block
+    assert "rgba(194, 228, 220, 0.995)" in day_dashboard_workbench_source_active_block
+    assert "color: #10283a;" in day_dashboard_workbench_source_active_block
     assert "border-color: rgba(65, 122, 117, 0.76) !important;" in day_dashboard_viewbtn_active_block
     assert "background: linear-gradient(" in day_dashboard_viewbtn_active_block
     assert "rgba(194, 228, 220, 0.995)" in day_dashboard_viewbtn_active_block
@@ -5992,6 +6353,9 @@ def test_day_mode_adds_stronger_shell_and_dashboard_hierarchy():
     assert "background: rgba(236, 241, 246, 0.98) !important;" in day_dashboard_viewbtn_hover_block
     assert "color: #1c3448 !important;" in day_dashboard_viewbtn_hover_block
     assert "color: #31465a;" in day_dashboard_label_block
+    assert "border: 1px solid rgba(103, 118, 135, 0.74);" in day_dashboard_pageinfo_block
+    assert "background: rgba(236, 241, 246, 0.98);" in day_dashboard_pageinfo_block
+    assert "color: #173043;" in day_dashboard_pageinfo_block
     assert "background: color-mix(in srgb, var(--paper) 90%, white 10%) !important;" in day_dashboard_field_block
     assert "color: #1b3144 !important;" in day_dashboard_field_block
     assert "border-color: rgba(84, 102, 122, 0.46) !important;" in day_dashboard_field_block
