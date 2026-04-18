@@ -37,6 +37,16 @@ def test_unauthenticated_ops_cabinets_redirects_to_login(client):
     assert res.headers["location"] == "/login"
 
 
+def test_login_route_serves_login_page_with_locale_and_theme_controls(client):
+    res = client.get("/login", headers={"accept": "text/html"})
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("text/html")
+    assert "<!doctype html>" in res.text.lower()
+    assert 'id="loginLocaleSelect"' in res.text
+    assert 'id="loginThemeToggle"' in res.text
+
+
 def test_operator_cannot_open_admin_route(operator_client):
     res = operator_client.get("/admin", follow_redirects=False, headers={"accept": "text/html"})
     assert res.status_code == 303
