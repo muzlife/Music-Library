@@ -103,10 +103,13 @@
 
 ## State Model
 
-로그인 화면은 메인 콘솔과 같은 저장 키를 사용한다.
+로그인 화면은 메인 콘솔과 같은 **저장 키 문자열**을 사용한다.
 
-- locale storage key: 기존 `index.html`에서 쓰는 `APP_LOCALE_STORAGE_KEY`
-- theme storage key: 기존 `index.html`에서 쓰는 `APP_THEME_STORAGE_KEY`
+- locale storage key literal: `hahahoho.appLocale.v1`
+- theme storage key literal: `hahahoho.uiTheme.v1`
+
+구현 경계는 `login.html` 한 파일이므로, 이번 범위에서는 별도 공통 스크립트를 추출하지 않는다.  
+대신 로그인 화면 안에 위 두 literal key를 직접 적고, 메인 콘솔과 동일한 값만 사용한다.
 
 초기화 순서:
 1. 저장된 locale/theme 읽기
@@ -114,10 +117,16 @@
    - locale: `ko`
    - theme: `night`
 
+지원 locale 집합은 메인 shell과 동일하게 아래 셋으로 고정한다.
+
+- `ko`
+- `en`
+- `ja`
+
 적용 방식:
 - `document.documentElement.lang` 갱신
 - `document.body.dataset.theme = "day" | "night"`
-- locale 변경 시 로그인 화면의 텍스트, 버튼 라벨, placeholder, 상태 문구를 다시 렌더
+- locale 변경 시 로그인 화면의 텍스트, 버튼 라벨, 상태 문구를 다시 렌더
 
 로그인 성공 후 `/ops` 또는 후속 라우트로 이동하면, 본 콘솔이 같은 저장값을 읽어 그대로 이어진다.
 
@@ -160,6 +169,9 @@
   - `로그인 실패`
   를 즉시 다시 렌더한다.
 
+로그인 화면의 i18n은 메인 콘솔의 대형 `I18N_MESSAGES` 블록을 복사하지 않는다.  
+`login.html` 안에는 로그인 화면에서 실제로 쓰는 최소 문구만 가진 **login-scoped message table**만 둔다.
+
 ### Theme
 
 - 로그인 화면에서 theme를 바꾸면 즉시 `body[data-theme]`가 변경된다.
@@ -170,6 +182,16 @@
 - `/auth/login` 요청/응답 구조는 그대로 유지한다.
 - 성공 시 리다이렉트 동작은 그대로 둔다.
 - 실패 시 상태 메시지만 locale/theme에 맞는 스타일로 보여준다.
+
+실패 메시지 정책:
+
+- 서버가 내려주는 한국어 detail을 그대로 번역하지 않는다.
+- 대신 `401` 응답이면서 detail이 아래 정확한 문자열과 일치할 때만, 클라이언트에서 locale별 표준 문구로 치환한다.
+  - `아이디 또는 비밀번호가 올바르지 않습니다.`
+  - 예: `아이디 또는 비밀번호가 올바르지 않습니다.`
+- 그 외 예상 밖 오류는 서버 detail을 우선 노출한다.
+
+이렇게 하면 인증 API는 그대로 두면서도, 대표적인 로그인 실패 문구는 locale에 맞춰 보여줄 수 있다.
 
 ## Implementation Boundaries
 
@@ -210,8 +232,8 @@
 
 ### 1. Storage key duplication drift
 
-`index.html`과 `login.html`에 동일한 키 문자열을 별도로 적으면 나중에 어긋날 수 있다.  
-이 변경에서는 우선 같은 문자열을 사용하되, 추후 공통 스크립트 분리 여지는 남긴다.
+`index.html`과 `login.html`에 동일한 key literal을 별도로 적으면 나중에 어긋날 수 있다.  
+이번 변경에서는 scope를 넓히지 않기 위해 literal 복제를 허용하되, 값은 위에서 명시한 두 문자열로 고정한다.
 
 ### 2. Login page overgrowth
 
@@ -222,4 +244,3 @@ shell utility를 과하게 가져오면 로그인 화면이 복잡해질 수 있
 
 토글/locale picker를 일부만 복사하면 shell과 미묘하게 다른 UI가 될 수 있다.  
 따라서 아이콘 구조와 상태 표시는 최대한 같은 패턴을 유지하되, 레이아웃만 로그인 전용으로 단순화한다.
-
