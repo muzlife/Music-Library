@@ -7815,6 +7815,23 @@
       margin-top: 0;
     }
 
+    .admin-barcode-intake-meta-fields--with-action {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 0.7fr) auto;
+      align-items: end;
+    }
+
+    .admin-barcode-intake-meta-actioncell {
+      display: flex;
+      align-items: end;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    .admin-barcode-intake-meta-actioncell .btn {
+      min-width: 88px;
+      white-space: nowrap;
+    }
+
     .admin-barcode-intake-meta-actions {
       justify-content: flex-end;
       margin-top: 0;
@@ -19034,7 +19051,7 @@
         </div>
         <div class="admin-barcode-intake-lookup-grid">
           <div class="mini" data-i18n="media.register.api_lookup.lookup_hint">바코드가 없거나 후보 보정이 필요하면 아래 조건 조회를 함께 사용합니다. 자세한 수정은 상단 `관리` 탭에서 이어갑니다.</div>
-          <div class="meta-search-fields-4 admin-barcode-intake-meta-fields">
+          <div class="meta-search-fields-4 admin-barcode-intake-meta-fields admin-barcode-intake-meta-fields--with-action">
             <div>
               <label for="queryArtist" data-i18n="media.register.api_lookup.field.artist.label">아티스트명</label>
               <input id="queryArtist" tabindex="1" data-i18n-placeholder="media.register.api_lookup.field.artist.placeholder" placeholder="예: 산울림" />
@@ -19051,10 +19068,10 @@
               <label for="querySourceRef" data-i18n="media.register.api_lookup.field.source_ref.label">참조 ID / URL</label>
               <input id="querySourceRef" tabindex="4" data-i18n-placeholder="media.register.api_lookup.field.source_ref.placeholder" placeholder="예: release:36614953" />
             </div>
+            <div class="admin-barcode-intake-meta-actioncell ops-compact-inline-field-actions">
+              <button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>
+            </div>
           </div>
-        <div class="row admin-barcode-intake-meta-actions ops-compact-inline-field-actions">
-          <button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>
-        </div>
         </div>
         <div id="barcodeStatus" class="status"></div>
         <div id="barcodeProviderStatusBadges" class="operator-status-badges admin-barcode-provider-status-badges u-hidden-initial"></div>
