@@ -143,6 +143,7 @@
     }
 
     body[data-theme="day"] .admin-shell-hero {
+      border-color: rgba(98, 114, 131, 0.52);
       background: linear-gradient(180deg, var(--theme-shell-surface), var(--theme-shell-surface));
     }
 
@@ -178,7 +179,7 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-panel {
-      border-color: rgba(94, 112, 130, 0.62);
+      border-color: rgba(88, 107, 126, 0.68);
       background: linear-gradient(
         180deg,
         rgba(226, 234, 242, 0.996),
@@ -188,7 +189,7 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--rail {
-      border-color: rgba(101, 116, 132, 0.56);
+      border-color: rgba(95, 111, 128, 0.62);
       background: linear-gradient(
         180deg,
         rgba(220, 229, 238, 0.996),
@@ -222,7 +223,7 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-map-shell, .dashboard-slot-grid-panel, .dashboard-slot-rack-surface, .dashboard-workbench-toolbar, .dashboard-slot-pagebar, .dashboard-selected-item-meta, .dashboard-slot-bulk-popover, .dashboard-slot-mutation-row) {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: linear-gradient(
         180deg,
         rgba(220, 229, 238, 0.996),
@@ -467,6 +468,20 @@
       box-shadow: 0 0 0 1px rgba(21, 32, 43, 0.08) inset;
     }
 
+    body[data-theme="day"] .shell-utility :is(.help-dot, .section-help-dot) {
+      border-color: rgba(124, 138, 153, 0.56);
+      background: rgba(233, 239, 244, 0.98);
+      color: #3d5266;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset;
+    }
+
+    body[data-theme="day"] .shell-utility :is(.help-dot:hover, .help-dot:focus, .section-help-dot:hover, .section-help-dot:focus) {
+      border-color: rgba(111, 125, 140, 0.72);
+      background: rgba(236, 241, 246, 0.98);
+      color: #1c3448;
+      box-shadow: 0 0 0 1px rgba(21, 32, 43, 0.08) inset;
+    }
+
     body[data-theme="day"] .manual-block {
       border-color: rgba(98, 115, 133, 0.58);
       background: rgba(223, 231, 239, 0.992);
@@ -698,7 +713,7 @@
     }
 
     body[data-theme="day"] #tabOps.admin-console-shell > .subtabs {
-      border: 1px solid rgba(101, 116, 132, 0.56);
+      border: 1px solid rgba(95, 111, 128, 0.62);
       background: linear-gradient(
         180deg,
         rgba(214, 223, 232, 0.994),
@@ -729,8 +744,25 @@
       box-shadow: inset 0 0 0 1px rgba(58, 116, 112, 0.24);
     }
 
+    body[data-theme="day"] #tabOps.admin-console-shell .subtab-panel label {
+      color: #31465a;
+    }
+
+    body[data-theme="day"] #tabOps.admin-console-shell .subtab-panel :is(input:not([type="checkbox"]), select, textarea) {
+      border-color: rgba(84, 102, 122, 0.46) !important;
+      color: #1b3144 !important;
+    }
+
+    body[data-theme="day"] #tabOps.admin-console-shell .subtab-panel :is(input:not([type="checkbox"]), textarea)::placeholder {
+      color: #5a7084;
+    }
+
+    body[data-theme="day"] #tabOps.admin-console-shell .subtab-panel :is(.mini, .muted, .sub) {
+      color: #41586d;
+    }
+
     body[data-theme="day"] #opsExceptionPanel > .layout > .card {
-      border-color: rgba(94, 112, 130, 0.62);
+      border-color: rgba(88, 107, 126, 0.68);
       background: linear-gradient(
         180deg,
         rgba(226, 234, 242, 0.996),
@@ -742,26 +774,33 @@
     }
 
     body[data-theme="day"] #opsExceptionPanel .ops-exception-box {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: rgba(223, 231, 239, 0.992);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
     }
 
     body[data-theme="day"] #opsExceptionPanel .dashboard-selection-toolbar {
       background: rgba(223, 231, 239, 0.992);
-      border: 1px solid rgba(98, 115, 133, 0.58);
+      border: 1px solid rgba(93, 110, 127, 0.64);
     }
 
     body[data-theme="day"] #opsExceptionPanel .ops-exception-list {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: rgba(223, 231, 239, 0.992);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
     }
 
     body[data-theme="day"] #opsExceptionPanel .ops-exception-row {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: rgba(244, 248, 252, 0.996);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    }
+
+    body[data-theme="day"] #opsExceptionPanel .ops-exception-cover {
+      border-color: rgba(93, 110, 127, 0.64);
+      background: rgba(223, 231, 239, 0.992);
+      color: #42586b;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
     }
 
     body[data-theme="day"] #tabCamera.page-column {
@@ -773,26 +812,30 @@
     }
 
     body[data-theme="day"] #tabCamera :is(.shared-camera-list-panel, .shared-camera-preview-panel) {
-      border-color: rgba(98, 115, 133, 0.58);
-      background: rgba(223, 231, 239, 0.992);
+      border-color: rgba(93, 110, 127, 0.64);
+      background: rgba(214, 223, 232, 0.992);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
     }
 
     body[data-theme="day"] #tabCamera .shared-camera-shell {
-      border-color: rgba(94, 112, 130, 0.62) !important;
+      border-color: rgba(88, 107, 126, 0.68) !important;
       background: linear-gradient(
         180deg,
-        rgba(244, 248, 252, 0.996),
-        rgba(232, 239, 246, 0.992)
+        rgba(236, 242, 248, 0.996),
+        rgba(223, 231, 239, 0.992)
       ) !important;
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.46),
         0 1px 0 rgba(122, 137, 154, 0.12) !important;
     }
 
+    body[data-theme="day"] #tabCamera :is(.dashboard-camera-meta, .shared-camera-list-item .mini, .shared-camera-preview-panel .mini, .shared-camera-list-panel .mini) {
+      color: #41586d !important;
+    }
+
     body[data-theme="day"] #tabCamera .table-wrap {
-      border-color: rgba(98, 115, 133, 0.58) !important;
-      background: rgba(223, 231, 239, 0.992) !important;
+      border-color: rgba(93, 110, 127, 0.64) !important;
+      background: rgba(214, 223, 232, 0.992) !important;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
     }
 
@@ -811,7 +854,7 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map {
-      background: rgba(221, 229, 237, 0.98) !important;
+      background: rgba(214, 223, 232, 0.992) !important;
       border-color: rgba(101, 117, 135, 0.78) !important;
     }
 
@@ -829,7 +872,7 @@
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-board, .dashboard-cabinet-map-cell, .dashboard-cell-card, .dashboard-slot-card) {
       border-color: rgba(92, 108, 124, 0.82);
-      background: rgba(246, 249, 253, 0.99);
+      background: rgba(236, 242, 248, 0.994);
       color: #132536;
       box-shadow: none;
     }
@@ -837,8 +880,8 @@
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcover {
       background: linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.995),
-        rgba(244, 248, 252, 0.99)
+        rgba(246, 249, 252, 0.996),
+        rgba(234, 240, 246, 0.992)
       ) !important;
       border-color: rgba(92, 108, 125, 0.86) !important;
       color: #132738 !important;
@@ -975,11 +1018,19 @@
       box-shadow: 0 0 0 1px rgba(21, 32, 43, 0.08) inset !important;
     }
 
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell label {
+      color: #31465a;
+    }
+
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(input, select, textarea) {
-      border-color: color-mix(in srgb, var(--theme-dashboard-border) 68%, white 32%) !important;
+      border-color: rgba(84, 102, 122, 0.46) !important;
       background: color-mix(in srgb, var(--paper) 90%, white 10%) !important;
-      color: var(--theme-dashboard-text) !important;
+      color: #1b3144 !important;
       box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset !important;
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(input, textarea)::placeholder {
+      color: #5a7084;
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar :is(.btn, .dashboard-slot-actionbtn, .dashboard-workbench-actionbtn) {
@@ -1000,7 +1051,7 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-grid-panel {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: linear-gradient(
         180deg,
         rgba(220, 229, 238, 0.996),
@@ -1013,7 +1064,7 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-pagebar {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: linear-gradient(
         180deg,
         rgba(220, 229, 238, 0.996),
@@ -1059,7 +1110,7 @@
 
     body[data-theme="day"] #tabOps.admin-console-shell .dashboard-selection-toolbar {
       background: rgba(223, 231, 239, 0.992) !important;
-      border: 1px solid rgba(98, 115, 133, 0.58) !important;
+      border: 1px solid rgba(93, 110, 127, 0.64) !important;
       padding: 8px 10px;
     }
 
@@ -1077,12 +1128,12 @@
 
     body[data-theme="day"] #tabCamera .shared-camera-list-item {
       border-color: rgba(98, 115, 133, 0.58);
-      background: rgba(244, 248, 252, 0.996);
+      background: rgba(236, 242, 248, 0.996);
     }
 
     body[data-theme="day"] #tabCamera .dashboard-camera-placeholder {
       border-color: rgba(98, 115, 133, 0.58);
-      background: rgba(232, 239, 246, 0.992);
+      background: rgba(223, 231, 239, 0.992);
     }
 
     body[data-theme="day"] #tabCollectibles {
@@ -1157,6 +1208,23 @@
         0 1px 0 rgba(120, 136, 153, 0.08);
     }
 
+    body[data-theme="day"] #tabCollectibles label {
+      color: #31465a;
+    }
+
+    body[data-theme="day"] #tabCollectibles :is(input, select, textarea) {
+      border-color: rgba(84, 102, 122, 0.46);
+      color: #1b3144;
+    }
+
+    body[data-theme="day"] #tabCollectibles :is(input, textarea)::placeholder {
+      color: #5a7084;
+    }
+
+    body[data-theme="day"] #tabCollectibles :is(.mini, .muted, .goods-help-copy) {
+      color: #41586d;
+    }
+
     body[data-theme="day"] #tabCollectibles :is(.mini, .muted, .goods-result-meta) {
       color: #394f63;
     }
@@ -1211,6 +1279,19 @@
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.26),
         0 1px 0 rgba(120, 136, 153, 0.08);
+    }
+
+    body[data-theme="day"] #tabSearch .admin-console-grid label {
+      color: #31465a;
+    }
+
+    body[data-theme="day"] #tabSearch .admin-console-grid :is(input, select, textarea) {
+      border-color: rgba(84, 102, 122, 0.46);
+      color: #1b3144;
+    }
+
+    body[data-theme="day"] #tabSearch .admin-console-grid :is(input, textarea)::placeholder {
+      color: #5a7084;
     }
 
     body[data-theme="day"] #tabSearch .admin-console-grid :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note, .home-master-subline, .home-master-member-preview-title span, .home-master-member-preview-runout) {
@@ -1981,6 +2062,56 @@
       background: color-mix(in srgb, var(--theme-shell-surface-2) 84%, white 16%);
       box-shadow: 0 1px 0 rgba(255, 255, 255, 0.26) inset;
       color: color-mix(in srgb, var(--theme-shell-text) 88%, var(--ink) 12%);
+    }
+
+    body[data-theme="day"] .tab-btn {
+      border-color: rgba(103, 118, 135, 0.52);
+      background: linear-gradient(
+        180deg,
+        rgba(208, 218, 227, 0.985),
+        rgba(194, 205, 215, 0.98)
+      );
+      color: #173043;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        0 1px 0 rgba(122, 137, 154, 0.08);
+    }
+
+    body[data-theme="day"] .tab-btn.active {
+      border-color: rgba(79, 120, 140, 0.68);
+      background: linear-gradient(
+        180deg,
+        rgba(208, 226, 236, 0.995),
+        rgba(189, 211, 223, 0.992)
+      );
+      color: #14384d;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.44),
+        0 1px 0 rgba(121, 136, 154, 0.12);
+    }
+
+    body[data-theme="day"] .subtab-btn {
+      border-color: rgba(103, 118, 135, 0.48);
+      background: linear-gradient(
+        180deg,
+        rgba(206, 217, 226, 0.985),
+        rgba(193, 204, 214, 0.98)
+      );
+      color: #173043;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    body[data-theme="day"] .subtab-btn.active {
+      border-color: rgba(79, 120, 140, 0.64);
+      background: linear-gradient(
+        180deg,
+        rgba(206, 225, 236, 0.994),
+        rgba(186, 209, 222, 0.99)
+      );
+      color: #14384d;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 1px 0 rgba(121, 136, 154, 0.1);
     }
 
     body[data-theme="day"] .shell-utility-main--actions :is(.shell-utility-navbtn, .shell-session-role, .shell-session-logout) {
@@ -12075,6 +12206,10 @@
       color: var(--admin-console-text);
     }
 
+    #registerMasterLegacyCard {
+      display: none !important;
+    }
+
     #tabRegister.admin-console-shell :is(.ops-compact-extra-fields, .admin-barcode-intake-lookup-grid, .admin-barcode-intake-panel, .admin-barcode-candidate-summary, .admin-barcode-placement-item) {
       border-color: var(--admin-console-panel-border);
       background: var(--admin-console-panel-bg-2);
@@ -12406,7 +12541,7 @@
 
     body[data-theme="day"] #opsExceptionPanel .dashboard-selection-toolbar {
       background: rgba(223, 231, 239, 0.992) !important;
-      border: 1px solid rgba(98, 115, 133, 0.58) !important;
+      border: 1px solid rgba(93, 110, 127, 0.64) !important;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
     }
 
@@ -12510,7 +12645,7 @@
     }
 
     body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(label, .mini, .muted) {
-      color: #4a6177 !important;
+      color: #31465a !important;
     }
 
     body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(input:not([type="checkbox"]), select, textarea) {
@@ -12518,7 +12653,7 @@
     }
 
     body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(input:not([type="checkbox"]), textarea)::placeholder {
-      color: #657b91;
+      color: #5a7084;
     }
 
     body[data-theme="day"] #opsCameraPanel .table-wrap {
@@ -12598,7 +12733,7 @@
     }
 
     body[data-theme="day"] :is(#opsCabinetPanel, #opsCameraPanel, #opsSlotPanel) > .layout > .card {
-      border-color: rgba(94, 112, 130, 0.62) !important;
+      border-color: rgba(88, 107, 126, 0.68) !important;
       background: linear-gradient(
         180deg,
         rgba(226, 234, 242, 0.996),
@@ -12610,8 +12745,8 @@
     }
 
     body[data-theme="day"] :is(#opsCabinetPanel, #opsSlotPanel) :is(.status, .compact-line, .inline-check, input:not([type="checkbox"]), select, textarea, .table-wrap) {
-      border-color: rgba(98, 115, 133, 0.58) !important;
-      background: rgba(223, 231, 239, 0.992) !important;
+      border-color: rgba(93, 110, 127, 0.64) !important;
+      background: rgba(214, 223, 232, 0.992) !important;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
     }
 
@@ -12774,8 +12909,21 @@
 
     body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(.manual-block, .result-list, .table-wrap, .status, .compact-line, .ops-compact-extra-fields, .admin-barcode-intake-lookup-grid, .admin-barcode-intake-panel, .admin-barcode-candidate-summary, .admin-barcode-placement-item) {
       border-color: rgba(98, 115, 133, 0.58);
-      background: rgba(223, 231, 239, 0.992);
+      background: rgba(214, 223, 232, 0.992);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    }
+
+    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) label {
+      color: #31465a;
+    }
+
+    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(input, select, textarea) {
+      border-color: rgba(84, 102, 122, 0.46);
+      color: #1b3144;
+    }
+
+    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(input, textarea)::placeholder {
+      color: #5a7084;
     }
 
     body[data-theme="day"] #tabRegister.admin-console-shell :is(th, td) {
@@ -12996,6 +13144,19 @@
       border-color: rgba(98, 115, 133, 0.58);
       background: rgba(214, 223, 232, 0.992);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    }
+
+    body[data-theme="day"] #tabManage .admin-console-main label {
+      color: #31465a;
+    }
+
+    body[data-theme="day"] #tabManage .admin-console-main :is(input, select, textarea) {
+      border-color: rgba(84, 102, 122, 0.46);
+      color: #1b3144;
+    }
+
+    body[data-theme="day"] #tabManage .admin-console-main :is(input, textarea)::placeholder {
+      color: #5a7084;
     }
 
     body[data-theme="day"] #tabManage .shelf-track-wrap {
@@ -16599,6 +16760,88 @@
       .album-result-cover { width: 100%; height: 150px; }
       .registered-master-merge-head { grid-template-columns: 1fr; }
       .registered-master-merge-actions { justify-content: flex-start; }
+    }
+
+    /* Late day-mode surface rebalance. These live at the end of the stylesheet so
+       they override the generic shell rules declared later than the first day pass. */
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map {
+      background: rgba(214, 223, 232, 0.992) !important;
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-board, .dashboard-cabinet-map-cell, .dashboard-cell-card, .dashboard-slot-card) {
+      background: rgba(236, 242, 248, 0.994) !important;
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-board.active {
+      background: rgba(228, 236, 244, 0.996) !important;
+      border-color: rgba(92, 108, 124, 0.88) !important;
+      box-shadow: inset 0 0 0 1px rgba(92, 108, 124, 0.12) !important;
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cell {
+      background: rgba(228, 236, 244, 0.996) !important;
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cell.active {
+      background: rgba(221, 231, 241, 0.998) !important;
+      border-color: rgba(92, 108, 124, 0.88) !important;
+    }
+
+    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcover {
+      background: linear-gradient(145deg, rgba(246, 249, 252, 0.996), rgba(234, 240, 246, 0.992)) !important;
+      border-color: rgba(92, 108, 124, 0.82) !important;
+      box-shadow:
+        0 12px 16px rgba(79, 97, 117, 0.12),
+        4px 0 8px rgba(79, 97, 117, 0.08) !important;
+    }
+
+    body[data-theme="day"] :is(#opsCabinetPanel, #opsSlotPanel) .table-wrap {
+      background: rgba(214, 223, 232, 0.992) !important;
+      border-color: rgba(93, 110, 127, 0.64) !important;
+    }
+
+    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(.admin-barcode-intake-lookup-grid, .admin-barcode-intake-panel, .admin-barcode-candidate-summary, .admin-barcode-placement-item) {
+      background: rgba(214, 223, 232, 0.992) !important;
+      border-color: rgba(93, 110, 127, 0.64) !important;
+    }
+
+    body[data-theme="day"] #tabCamera :is(.shared-camera-list-panel, .shared-camera-preview-panel, .table-wrap) {
+      background: rgba(214, 223, 232, 0.992) !important;
+      border-color: rgba(93, 110, 127, 0.64) !important;
+    }
+
+    body[data-theme="day"] #tabCamera .shared-camera-list-item {
+      background: rgba(236, 242, 248, 0.994) !important;
+      border-color: rgba(98, 115, 133, 0.58) !important;
+    }
+
+    body[data-theme="day"] #tabCamera .dashboard-camera-placeholder {
+      background: rgba(223, 231, 239, 0.992) !important;
+      border-color: rgba(98, 115, 133, 0.58) !important;
+    }
+
+    body[data-theme="day"] :is(#tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn, #tabCollectibles .goods-mode-tabs .subtab-btn, #tabRegister.admin-console-shell > .subtabs .subtab-btn, #tabOps.admin-console-shell > .subtabs .subtab-btn) {
+      border-color: rgba(103, 118, 135, 0.52) !important;
+      background: linear-gradient(
+        180deg,
+        rgba(206, 217, 226, 0.985),
+        rgba(193, 204, 214, 0.98)
+      ) !important;
+      color: #173043 !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    }
+
+    body[data-theme="day"] :is(#tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn.active, #tabCollectibles .goods-mode-tabs .subtab-btn.active, #tabRegister.admin-console-shell > .subtabs .subtab-btn.active, #tabOps.admin-console-shell > .subtabs .subtab-btn.active) {
+      border-color: rgba(79, 120, 140, 0.64) !important;
+      background: linear-gradient(
+        180deg,
+        rgba(206, 225, 236, 0.994),
+        rgba(186, 209, 222, 0.99)
+      ) !important;
+      color: #14384d !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 1px 0 rgba(121, 136, 154, 0.1) !important;
     }
 
   </style>
