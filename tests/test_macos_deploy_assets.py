@@ -372,6 +372,11 @@ def test_backup_launchd_install_script_renders_three_jobs(tmp_path: Path):
     assert str(prod_root) in weekly_text
     assert str(prod_root / "runtime" / "backups" / "weekly-full") in qa_sync_text
     assert str(qa_root) in qa_sync_text
+    assert "<key>Hour</key>\n    <integer>0</integer>" in daily_text
+    assert "<key>Minute</key>\n    <integer>0</integer>" in daily_text
+    assert "<key>Weekday</key>\n    <integer>0</integer>" in weekly_text
+    assert "<key>Hour</key>\n    <integer>1</integer>" in weekly_text
+    assert "<key>Minute</key>\n    <integer>0</integer>" in weekly_text
 
 
 def test_backup_launchd_install_script_rejects_non_isolated_roots(tmp_path: Path):

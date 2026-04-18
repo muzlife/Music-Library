@@ -6120,12 +6120,12 @@ def test_day_mode_rebalances_media_manage_surface_depth_and_button_priority():
     muted_block = html.split('    body[data-theme="day"] #tabManage :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note, .source-meta-summary .compact-line, .home-edit-track-summary, .home-edit-track-row, .home-edit-track-pos, .home-edit-track-duration, .home-manage-secondary-note, .home-master-lookup-note, .home-edit-cover-meta-text, .image-chip-item) {', 1)[1].split("}", 1)[0]
     help_block = html.split('    body[data-theme="day"] #tabManage :is(.help-dot, .section-help-dot) {', 1)[1].split("}", 1)[0]
     kicker_block = html.split('    body[data-theme="day"] #tabManage :is(.home-product-edit-kicker, .home-master-lookup-kicker) {', 1)[1].split("}", 1)[0]
-    assert "rgba(195, 207, 219, 0.965)" in manage_shell_block
+    assert "rgba(184, 196, 208, 0.968)" in manage_shell_block
     assert "border-color: rgba(94, 112, 130, 0.62);" in manage_shell_block
     assert "0 1px 0 rgba(118, 133, 150, 0.12);" in manage_shell_block
-    assert "rgba(245, 249, 252, 0.996)" in card_block
+    assert "rgba(234, 240, 246, 0.996)" in card_block
     assert "0 1px 0 rgba(122, 137, 154, 0.12);" in card_block
-    assert "background: rgba(223, 231, 239, 0.992);" in panel_block
+    assert "background: rgba(214, 223, 232, 0.992);" in panel_block
     assert "color-mix(in srgb, var(--theme-admin-panel-bg) 60%, var(--ink) 40%)" in shelf_block
     assert "color-mix(in srgb, var(--paper) 94%, white 6%)" in ghost_button_block
     assert "background: linear-gradient(" in primary_button_block
@@ -6151,11 +6151,11 @@ def test_day_mode_lightens_media_manage_selected_result_surfaces():
     preview_first_block = html.split('    body[data-theme="day"] #tabManage .home-master-member-preview-item.is-context-selected:first-child {', 1)[1].split("}", 1)[0]
     assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 24%, var(--line) 76%);" in pick_block
     assert "background: linear-gradient(" in pick_block
-    assert "color-mix(in srgb, var(--paper) 80%, white 20%)" in pick_block
-    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 84%, white 16%)" in pick_block
+    assert "color-mix(in srgb, var(--paper) 86%, var(--bg) 14%)" in pick_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 90%, var(--bg) 10%)" in pick_block
     assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 18%, var(--line) 82%);" in preview_pick_block
-    assert "color-mix(in srgb, var(--paper) 88%, white 12%)" in preview_pick_block
-    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 88%, white 12%)" in preview_pick_block
+    assert "color-mix(in srgb, var(--paper) 92%, var(--bg) 8%)" in preview_pick_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 92%, var(--bg) 8%)" in preview_pick_block
     assert "border-top-color: color-mix(in srgb, var(--theme-admin-accent) 18%, var(--line) 82%);" in preview_first_block
 
 
@@ -6165,8 +6165,8 @@ def test_day_mode_lightens_media_manage_expanded_related_group_surface():
     inline_host_block = html.split('    body[data-theme="day"] #tabManage .home-related-inline-editor-host {', 1)[1].split("}", 1)[0]
     assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 18%, var(--line) 82%);" in same_group_block
     assert "background: linear-gradient(" in same_group_block
-    assert "color-mix(in srgb, var(--paper) 86%, white 14%)" in same_group_block
-    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 88%, white 12%)" in same_group_block
+    assert "color-mix(in srgb, var(--paper) 90%, var(--bg) 10%)" in same_group_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 92%, var(--bg) 8%)" in same_group_block
     assert "border-top-color: color-mix(in srgb, var(--line) 62%, white 38%);" in inline_host_block
 
 
@@ -6216,7 +6216,7 @@ def test_day_mode_adds_stronger_ops_exception_hierarchy():
     day_ops_exception_card_block = html.split('    body[data-theme="day"] #opsExceptionPanel > .layout > .card {', 1)[1].split("}", 1)[0]
     day_ops_exception_summary_block = html.split('    body[data-theme="day"] #opsExceptionPanel .ops-exception-box {', 1)[1].split("}", 1)[0]
     day_ops_toolbar_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell .dashboard-selection-toolbar {', 1)[1].split("}", 1)[0]
-    day_ops_exception_toolbar_block = html.split('    body[data-theme="day"] #opsExceptionPanel .dashboard-selection-toolbar {', 1)[1].split("}", 1)[0]
+    day_ops_exception_toolbar_block = extract_css_block(html, 'body[data-theme="day"] #opsExceptionPanel .dashboard-selection-toolbar {', "last")
     day_ops_exception_list_block = html.split('    body[data-theme="day"] #opsExceptionPanel .ops-exception-list {', 1)[1].split("}", 1)[0]
     day_ops_exception_row_block = html.split('    body[data-theme="day"] #opsExceptionPanel .ops-exception-row {', 1)[1].split("}", 1)[0]
     assert "background: linear-gradient(" in day_ops_tab_block
@@ -6229,8 +6229,9 @@ def test_day_mode_adds_stronger_ops_exception_hierarchy():
     assert "border-color: rgba(98, 115, 133, 0.58);" in day_ops_exception_summary_block
     assert "background: rgba(223, 231, 239, 0.992) !important;" in day_ops_toolbar_block
     assert "border: 1px solid rgba(98, 115, 133, 0.58) !important;" in day_ops_toolbar_block
-    assert "background: rgba(223, 231, 239, 0.992);" in day_ops_exception_toolbar_block
-    assert "border: 1px solid rgba(98, 115, 133, 0.58);" in day_ops_exception_toolbar_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_ops_exception_toolbar_block
+    assert "border: 1px solid rgba(98, 115, 133, 0.58) !important;" in day_ops_exception_toolbar_block
+    assert "rgba(51, 62, 73, 0.99)" not in day_ops_exception_toolbar_block
     assert "background: rgba(223, 231, 239, 0.992);" in day_ops_exception_list_block
     assert "background: rgba(244, 248, 252, 0.996);" in day_ops_exception_row_block
 
@@ -6252,6 +6253,10 @@ def test_day_mode_adds_stronger_camera_hierarchy():
     day_camera_panel_block = html.split('    body[data-theme="day"] #tabCamera :is(.shared-camera-list-panel, .shared-camera-preview-panel) {', 1)[1].split("}", 1)[0]
     day_camera_item_block = html.split('    body[data-theme="day"] #tabCamera .shared-camera-list-item {', 1)[1].split("}", 1)[0]
     day_camera_placeholder_block = html.split('    body[data-theme="day"] #tabCamera .dashboard-camera-placeholder {', 1)[1].split("}", 1)[0]
+    day_camera_table_wrap_block = html.split('    body[data-theme="day"] #tabCamera .table-wrap {', 1)[1].split("}", 1)[0]
+    day_camera_cells_block = html.split('    body[data-theme="day"] #tabCamera :is(th, td) {', 1)[1].split("}", 1)[0]
+    day_camera_header_block = html.split('    body[data-theme="day"] #tabCamera th {', 1)[1].split("}", 1)[0]
+    day_camera_row_block = html.split('    body[data-theme="day"] #tabCamera td {', 1)[1].split("}", 1)[0]
     assert "background: linear-gradient(" in day_camera_tab_block
     assert "rgba(192, 204, 216, 0.965)" in day_camera_tab_block
     assert "rgba(181, 194, 207, 0.985)" in day_camera_tab_block
@@ -6261,6 +6266,13 @@ def test_day_mode_adds_stronger_camera_hierarchy():
     assert "background: rgba(223, 231, 239, 0.992);" in day_camera_panel_block
     assert "background: rgba(244, 248, 252, 0.996);" in day_camera_item_block
     assert "background: rgba(232, 239, 246, 0.992);" in day_camera_placeholder_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_camera_table_wrap_block
+    assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_camera_table_wrap_block
+    assert "border-bottom: 1px solid rgba(108, 123, 140, 0.16) !important;" in day_camera_cells_block
+    assert "background: linear-gradient(180deg, rgba(212, 221, 230, 0.998), rgba(198, 209, 220, 0.994)) !important;" in day_camera_header_block
+    assert "color: #23384b !important;" in day_camera_header_block
+    assert "background: rgba(235, 241, 247, 0.996) !important;" in day_camera_row_block
+    assert "color: #203649 !important;" in day_camera_row_block
 
 
 def test_day_mode_adds_stronger_ops_export_hierarchy():
@@ -6359,6 +6371,21 @@ def test_day_mode_adds_stronger_ops_cabinet_and_slot_hierarchy():
     assert "color: #23384b !important;" in day_ops_cabinet_slot_header_block
     assert "background: rgba(235, 241, 247, 0.996) !important;" in day_ops_cabinet_slot_row_block
     assert "color: #203649 !important;" in day_ops_cabinet_slot_row_block
+
+
+def test_day_mode_adds_stronger_ops_camera_table_hierarchy():
+    html = read_static_html("index.html")
+    day_ops_camera_table_wrap_block = html.split('    body[data-theme="day"] #opsCameraPanel .table-wrap {', 1)[1].split("}", 1)[0]
+    day_ops_camera_cells_block = html.split('    body[data-theme="day"] #opsCameraPanel :is(th, td) {', 1)[1].split("}", 1)[0]
+    day_ops_camera_header_block = html.split('    body[data-theme="day"] #opsCameraPanel th {', 1)[1].split("}", 1)[0]
+    day_ops_camera_row_block = html.split('    body[data-theme="day"] #opsCameraPanel td {', 1)[1].split("}", 1)[0]
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_ops_camera_table_wrap_block
+    assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_ops_camera_table_wrap_block
+    assert "border-bottom: 1px solid rgba(108, 123, 140, 0.16) !important;" in day_ops_camera_cells_block
+    assert "background: linear-gradient(180deg, rgba(212, 221, 230, 0.998), rgba(198, 209, 220, 0.994)) !important;" in day_ops_camera_header_block
+    assert "color: #23384b !important;" in day_ops_camera_header_block
+    assert "background: rgba(235, 241, 247, 0.996) !important;" in day_ops_camera_row_block
+    assert "color: #203649 !important;" in day_ops_camera_row_block
 
 
 def test_day_mode_adds_stronger_image_gallery_hierarchy():
@@ -6461,6 +6488,9 @@ def test_day_mode_adds_stronger_register_hierarchy():
     day_register_primary_btn_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) .btn:not(.ghost):not(.secondary) {', 1)[1].split("}", 1)[0]
     day_register_secondary_btn_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) .btn.secondary {', 1)[1].split("}", 1)[0]
     day_register_kpi_block = html.split('    body[data-theme="day"] #registerBatchPanel .kpi .box {', 1)[1].split("}", 1)[0]
+    day_register_cells_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell :is(th, td) {', 1)[1].split("}", 1)[0]
+    day_register_header_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell th {', 1)[1].split("}", 1)[0]
+    day_register_row_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell td {', 1)[1].split("}", 1)[0]
     assert "rgba(192, 204, 216, 0.965)" in day_register_shell_block
     assert "rgba(244, 248, 252, 0.996)" in day_register_subtabs_block
     assert "border-color: rgba(94, 112, 130, 0.62);" in day_register_subtabs_block
@@ -6492,6 +6522,11 @@ def test_day_mode_adds_stronger_register_hierarchy():
     assert "color: #15374b;" in day_register_secondary_btn_block
     assert "background: linear-gradient(" in day_register_kpi_block
     assert "color: #21384a;" in day_register_kpi_block
+    assert "border-bottom: 1px solid rgba(108, 123, 140, 0.16) !important;" in day_register_cells_block
+    assert "background: linear-gradient(180deg, rgba(212, 221, 230, 0.998), rgba(198, 209, 220, 0.994)) !important;" in day_register_header_block
+    assert "color: #23384b !important;" in day_register_header_block
+    assert "background: rgba(235, 241, 247, 0.996) !important;" in day_register_row_block
+    assert "color: #203649 !important;" in day_register_row_block
 
 
 def test_day_mode_adds_stronger_media_search_hierarchy():
