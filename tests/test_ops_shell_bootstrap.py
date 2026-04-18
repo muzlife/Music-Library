@@ -1905,7 +1905,8 @@ def test_admin_barcode_intake_compacts_left_filter_label_and_select_typography()
     assert "font-size: 0.69rem;" in label_block
     assert "margin-bottom: 3px;" in label_block
     assert "font-size: 0.84rem;" in select_block
-    assert "min-height: 34px;" in select_block
+    assert "height: 34px;" in select_block
+    assert "box-sizing: border-box;" in select_block
 
 
 def test_admin_barcode_intake_tightens_candidate_and_recommendation_internal_spacing():
@@ -7719,7 +7720,9 @@ def test_media_register_static_form_labels_use_i18n_keys():
     assert '<label for="queryTitle" data-i18n="media.register.api_lookup.field.title.label">상품명</label>' in html
     assert '<label for="queryCatalog" data-i18n="media.register.api_lookup.field.catalog.label">카탈로그번호</label>' in html
     assert '<button id="registerLookupSearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.lookup">조회</button>' in html
+    assert '<div class="admin-barcode-placement-head">' in html
     assert '<strong data-i18n="media.register.api_lookup.placement.title">추천 위치</strong>' in html
+    assert '<span class="mini" data-i18n="media.register.api_lookup.placement.subtitle">추천 칸과 현재 선택 칸을 비교해 저장 위치를 결정합니다.</span>' in html
     assert '<strong data-i18n="media.register.api_lookup.results.title">조회 결과</strong>' in html
     assert '<label for="purchaseImportEmailFrom" data-i18n="media.register.purchase.field.email_from.label">발신자(선택)</label>' in html
     assert '<label for="purchaseImportRawContent" data-i18n="media.register.purchase.field.raw_content.label">원문 붙여넣기</label>' in html

@@ -7820,7 +7820,8 @@
     .admin-barcode-intake-bar > div > select,
     .admin-barcode-intake-bar > div > input[type="number"] {
       font-size: 0.84rem;
-      min-height: 34px;
+      height: 34px;
+      box-sizing: border-box;
     }
 
     .admin-barcode-intake-bar .btn {
@@ -7883,6 +7884,16 @@
     .admin-barcode-intake-summary {
       min-height: 92px;
       gap: 5px;
+    }
+
+    .admin-barcode-placement-head {
+      display: grid;
+      justify-items: start;
+      gap: 2px;
+    }
+
+    .admin-barcode-placement-head .mini {
+      line-height: 1.35;
     }
 
     .admin-barcode-candidate-summary {
@@ -19123,8 +19134,10 @@
           </section>
           <section id="adminBarcodePlacementPanel" class="admin-barcode-intake-panel">
             <div class="result-head u-mb-0">
-              <strong data-i18n="media.register.api_lookup.placement.title">추천 위치</strong>
-              <span class="mini" data-i18n="media.register.api_lookup.placement.subtitle">상위 3칸</span>
+              <div class="admin-barcode-placement-head">
+                <strong data-i18n="media.register.api_lookup.placement.title">추천 위치</strong>
+                <span class="mini" data-i18n="media.register.api_lookup.placement.subtitle">추천 칸과 현재 선택 칸을 비교해 저장 위치를 결정합니다.</span>
+              </div>
             </div>
             <div id="adminBarcodePlacementSummary" class="admin-barcode-placement-list">
               <div class="admin-barcode-placement-item rank-1">
