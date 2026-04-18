@@ -458,6 +458,18 @@ def test_login_page_maps_only_exact_auth_failure_literal():
     )
     assert mapped["status_text"] == "Incorrect username or password."
 
+    wrong_status = run_login_page_harness(
+        local_storage={
+            "hahahoho.appLocale.v1": "en",
+        },
+        submit_response={
+            "ok": False,
+            "status": 500,
+            "body": {"detail": "아이디 또는 비밀번호가 올바르지 않습니다."},
+        },
+    )
+    assert wrong_status["status_text"] == "아이디 또는 비밀번호가 올바르지 않습니다."
+
     passthrough = run_login_page_harness(
         local_storage={
             "hahahoho.appLocale.v1": "en",
