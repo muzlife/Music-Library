@@ -1174,8 +1174,9 @@ def test_admin_register_barcode_results_use_console_surfaces_for_candidate_rows(
 
     assert "#tabRegister.admin-console-shell #barcodeResults .admin-barcode-candidate-flag.owned {" in html
     owned_flag_block = html.split("#tabRegister.admin-console-shell #barcodeResults .admin-barcode-candidate-flag.owned {", 1)[1].split("}", 1)[0]
-    assert "background: var(--admin-console-panel-bg-2);" in owned_flag_block
-    assert "color: var(--admin-console-text-muted);" in owned_flag_block
+    assert "border-color: rgba(255, 122, 26, 0.42);" in owned_flag_block
+    assert "background: rgba(255, 122, 26, 0.14);" in owned_flag_block
+    assert "color: #ffd4b5;" in owned_flag_block
 
 
 def test_admin_register_barcode_results_align_source_and_image_actions_with_candidate_button_language():
@@ -2123,7 +2124,8 @@ def test_dashboard_phone_flattens_cabinet_detail_shell_and_compacts_coverflow_de
     html = read_static_html("index.html")
     phone_block = html.split("@media (max-width: 760px) {", 1)[1].split("\n\n  </style>", 1)[0]
     assert ".dashboard-slot-map-shell {" in phone_block
-    assert "display: contents;" in phone_block
+    assert "display: grid;" in phone_block
+    assert "padding: 0 8px;" in phone_block
     assert ".dashboard-slot-grid-frame {" in phone_block
     assert "margin-top: 6px;" in phone_block
     assert ".dashboard-slot-map-legend {" in phone_block
@@ -2138,7 +2140,8 @@ def test_dashboard_phone_flattens_cabinet_detail_shell_and_compacts_coverflow_de
     assert "padding-top: 0;" in phone_block
     assert "gap: 6px;" in phone_block
     assert ".dashboard-cabinet-stage {" in phone_block
-    assert "display: contents;" in phone_block
+    assert "display: grid;" in phone_block
+    assert "padding: 0 8px;" in phone_block
     assert ".dashboard-slot-rack-surface {" in phone_block
     assert "gap: 6px;" in phone_block
     assert "min-height: 220px;" in phone_block
@@ -2736,6 +2739,14 @@ def test_index_operator_home_and_camera_use_console_region_markup():
 
 def test_index_operator_home_search_shell_uses_console_surface_tones():
     html = read_static_html("index.html")
+    body_tag = html.split("<body ", 1)[1].split(">", 1)[0]
+    operator_home_card_block = html.split(".operator-home-card {", 1)[1].split("}", 1)[0]
+    operator_search_shell_block = html.split(".operator-search-shell {", 1)[1].split("}", 1)[0]
+    assert 'data-theme="night"' in body_tag
+    assert "var(--theme-admin-panel-bg, rgba(18, 23, 29, 0.98))" in operator_home_card_block
+    assert "var(--theme-admin-panel-bg-2, rgba(13, 17, 23, 0.98))" in operator_home_card_block
+    assert "var(--theme-shell-surface, rgba(13, 17, 23, 0.98))" in operator_search_shell_block
+    assert "var(--theme-shell-surface-2, rgba(18, 23, 29, 0.98))" in operator_search_shell_block
     assert "#opsHomeLayout.admin-console-shell .operator-search-shell {\n      border-color: var(--admin-console-panel-border);" in html
     assert "background: linear-gradient(180deg, var(--admin-console-panel-bg-2), var(--admin-console-panel-bg));" in html
     assert "box-shadow: none;" in html
@@ -3095,18 +3106,18 @@ def test_index_admin_hero_compacts_copy_to_tab_spacing():
 
 def test_index_ops_home_hero_matches_admin_shell_spacing_tokens():
     html = read_static_html("index.html")
-    admin_hero_block = html.split(".admin-shell-hero {", 1)[1].split("}", 1)[0]
-    ops_hero_block = html.split(".ops-home-hero {", 1)[1].split("}", 1)[0]
-    admin_main_block = html.split(".admin-shell-hero-main {", 1)[1].split("}", 1)[0]
-    ops_main_block = html.split(".ops-home-hero-main {", 1)[1].split("}", 1)[0]
-    admin_copy_block = html.split(".admin-shell-copy {", 1)[1].split("}", 1)[0]
-    ops_copy_block = html.split(".ops-home-hero-copy {", 1)[1].split("}", 1)[0]
-    admin_side_block = html.split(".admin-shell-hero-side {", 1)[1].split("}", 1)[0]
-    ops_side_block = html.split(".ops-home-hero-side {", 2)[2].split("}", 1)[0]
-    admin_h1_block = html.split(".admin-shell-hero h1 {", 1)[1].split("}", 1)[0]
-    ops_h1_block = html.split(".ops-home-hero-copy h1 {", 1)[1].split("}", 1)[0]
-    admin_art_block = html.split(".admin-shell-hero-art {", 2)[2].split("}", 1)[0]
-    ops_art_block = html.split(".ops-home-hero-art {", 1)[1].split("}", 1)[0]
+    admin_hero_block = html.split("\n    .admin-shell-hero {\n", 1)[1].split("}", 1)[0]
+    ops_hero_block = html.split("\n    .ops-home-hero {\n", 1)[1].split("}", 1)[0]
+    admin_main_block = html.split("\n    .admin-shell-hero-main {\n", 1)[1].split("}", 1)[0]
+    ops_main_block = html.split("\n    .ops-home-hero-main {\n", 1)[1].split("}", 1)[0]
+    admin_copy_block = html.split("\n    .admin-shell-copy {\n", 1)[1].split("}", 1)[0]
+    ops_copy_block = html.split("\n    .ops-home-hero-copy {\n", 1)[1].split("}", 1)[0]
+    admin_side_block = html.split("\n    .admin-shell-hero-side {\n", 1)[1].split("}", 1)[0]
+    ops_side_block = html.split("\n    .ops-home-hero-side {\n", 2)[2].split("}", 1)[0]
+    admin_h1_block = html.split("\n    .admin-shell-hero h1 {\n", 1)[1].split("}", 1)[0]
+    ops_h1_block = html.split("\n    .ops-home-hero-copy h1 {\n", 1)[1].split("}", 1)[0]
+    admin_art_block = html.split("\n    .admin-shell-hero-art {\n", 1)[1].split("}", 1)[0]
+    ops_art_block = html.split("\n    .ops-home-hero-art {\n", 1)[1].split("}", 1)[0]
     assert "padding: 8px 12px;" in admin_hero_block
     assert "padding: 8px 12px;" in ops_hero_block
     assert "border-radius: 0;" in admin_hero_block
@@ -3297,9 +3308,9 @@ def test_index_admin_dashboard_and_subtabs_use_closer_header_title_scales():
 def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     html = read_static_html("index.html")
     utility_mount_block = html.split(".utility-mount {", 1)[1].split("}", 1)[0]
-    shell_utility_block = html.split(".shell-utility {", 1)[1].split("}", 1)[0]
+    shell_utility_block = html.split("\n    .shell-utility {", 1)[1].split("}", 1)[0]
     utility_main_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]
-    session_actions_block = html.split(".shell-session-actions {", 1)[1].split("}", 1)[0]
+    session_actions_block = html.rsplit(".shell-session-actions {", 1)[1].split("}", 1)[0]
     utility_tools_block = html.split(".shell-utility-tools {", 1)[1].split("}", 1)[0]
     utility_chip_block = html.split(".shell-utility .chip {", 1)[1].split("}", 1)[0]
     utility_btn_block = html.split('body[data-shell-density="compact"] .shell-utility .tab-btn {', 1)[1].split("}", 1)[0]
@@ -3312,6 +3323,7 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "align-content: space-between;" in shell_utility_block
     assert "min-height: 68px;" in shell_utility_block
     assert "padding: 10px 12px;" in shell_utility_block
+    assert "border: 0;" in shell_utility_block
     assert "border-radius: 0;" in shell_utility_block
     assert "justify-items: end;" in shell_utility_block
     assert "gap: 4px;" in shell_utility_block
@@ -3333,7 +3345,6 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     assert "min-height: 28px;" in utility_chip_block
     assert "font-size: 0.76rem;" in utility_chip_block
     assert "font-weight: 700;" in utility_chip_block
-    assert "background: rgba(13, 17, 23, 0.98);" in utility_chip_block
     assert "min-height: var(--shell-density-utility-height);" in utility_btn_block
     assert "font-size: var(--shell-density-utility-font);" in utility_btn_block
     utility_override_block = html.split("#shellUtilityBar .chip,\n    #shellUtilityBar .tab-btn {", 1)[1].split("}", 1)[0]
@@ -3345,13 +3356,13 @@ def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     main_row_block = html.split(".shell-utility-main {", 1)[1].split("}", 1)[0]
     assert "padding-bottom: 4px;" in tools_block
     assert "padding-top: 4px;" in main_row_block
-    assert "border-top: 1px solid rgba(255, 255, 255, 0.08);" in main_row_block
-    assert "padding: 3px 8px;" in locale_block
+    assert "border-top: 1px solid color-mix(in srgb, var(--theme-shell-border) 72%, transparent);" in main_row_block
+    assert "height: 28px;" in locale_block
+    assert "padding: 0 8px;" in locale_block
     assert "font-size: 0.72rem;" in locale_block
     assert "font-weight: 700;" in locale_block
     assert "min-width: 96px;" in locale_block
-    assert "border-radius: 0;" in locale_block
-    assert "background: rgba(18, 23, 29, 0.98);" in locale_block
+    assert "border-radius: 6px;" in locale_block
     assert "padding: 3px 8px;" in docs_link_block
     assert "min-height: 24px;" in docs_link_block
     assert "min-width: 96px;" in docs_link_block
@@ -3381,21 +3392,130 @@ def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
     html = read_static_html("index.html")
     tools_modifier_block = html.split(".shell-utility-tools--meta {", 1)[1].split("}", 1)[0]
     actions_modifier_block = html.split(".shell-utility-main--actions {", 1)[1].split("}", 1)[0]
-    meta_control_block = html.split(".shell-utility-tools--meta .doc-link-chip,\n    .shell-utility-tools--meta .shell-locale-picker {", 1)[1].split("}", 1)[0]
+    meta_control_block = html.split(".shell-utility-tools--meta .doc-link-chip,\n    .shell-utility-tools--meta .shell-locale-picker,\n    .shell-utility-tools--meta .shell-theme-toggle {", 1)[1].split("}", 1)[0]
     action_control_block = html.split(".shell-utility-main--actions .chip,\n    .shell-utility-main--actions .tab-btn {", 1)[1].split("}", 1)[0]
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility u-hidden-initial">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
     assert "padding-bottom: 3px;" in tools_modifier_block
-    assert "border-top: 1px solid rgba(255, 255, 255, 0.08);" in actions_modifier_block
+    assert "border-top: 1px solid color-mix(in srgb, var(--theme-shell-border) 72%, transparent);" in actions_modifier_block
     assert "padding-top: 5px;" in actions_modifier_block
     assert "box-shadow: none;" in meta_control_block
-    assert "color: #b3bfcc;" in meta_control_block
-    assert "background: rgba(18, 23, 29, 0.98);" in action_control_block
-    assert "border-color: rgba(184, 196, 210, 0.18);" in action_control_block
+    assert "color: var(--theme-shell-text-muted);" in meta_control_block
+    assert "background: var(--theme-shell-surface-2);" in action_control_block
+    assert "border-color: color-mix(in srgb, var(--theme-shell-border) 85%, transparent);" in action_control_block
     assert ".shell-session-actions .chip,\n    .shell-session-actions .tab-btn {" in html
     assert ".shell-session-actions .shell-session-info {" in html
     assert ".shell-session-pill--icon {" in html
     assert 'class="shell-utility-tools shell-utility-tools--meta"' in utility_block
     assert 'class="shell-utility-main shell-utility-main--actions"' in utility_block
+    assert 'id="shellThemeToggle"' in utility_block
+    assert utility_block.index('id="shellLocaleSelect"') < utility_block.index('id="shellThemeToggle"')
+
+
+def test_index_shell_utility_exposes_theme_toggle_next_to_locale_picker():
+    html = read_static_html("index.html")
+    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility u-hidden-initial">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    theme_block = utility_block.split('id="shellThemeToggle"', 1)[1].split("</button>", 1)[0]
+    toggle_style_block = html.split(".shell-theme-toggle {", 1)[1].split("}", 1)[0]
+    toggle_icon_block = html.split(".shell-theme-toggle-icon {", 1)[1].split("}", 1)[0]
+    toggle_track_block = html.split(".shell-theme-toggle-track {", 1)[1].split("}", 1)[0]
+    toggle_thumb_block = html.split(".shell-theme-toggle-thumb {", 1)[1].split("}", 1)[0]
+    toggle_sr_block = html.split(".shell-theme-toggle-sr,\n    .shell-locale-picker-sr {", 1)[1].split("}", 1)[0]
+    toggle_day_block = html.split('.shell-theme-toggle.is-day .shell-theme-toggle-thumb {', 1)[1].split("}", 1)[0]
+    assert 'class="shell-theme-toggle"' in utility_block
+    assert 'class="shell-theme-toggle-icon shell-theme-toggle-icon--sun"' in theme_block
+    assert 'class="shell-theme-toggle-icon shell-theme-toggle-icon--moon"' in theme_block
+    assert 'id="shellThemeToggleText" class="shell-theme-toggle-sr"' in theme_block
+    assert 'data-i18n-title="utility.theme.switch_to_day"' in theme_block
+    assert 'data-i18n-aria-label="utility.theme.switch_to_day"' in theme_block
+    assert "gap: 6px;" in toggle_style_block
+    assert "min-width: 118px;" in toggle_style_block
+    assert "height: 28px;" in toggle_style_block
+    assert "border-radius: 6px;" in toggle_style_block
+    assert "width: 16px;" in toggle_icon_block
+    assert "height: 16px;" in toggle_icon_block
+    assert "width: 46px;" in toggle_track_block
+    assert "height: 22px;" in toggle_track_block
+    assert "border-radius: 999px;" in toggle_track_block
+    assert "width: 18px;" in toggle_thumb_block
+    assert "height: 18px;" in toggle_thumb_block
+    assert "transform: translateX(0);" in toggle_day_block
+    assert "clip: rect(0, 0, 0, 0);" in toggle_sr_block
+
+
+def test_index_shell_locale_picker_uses_language_switch_icon_and_hidden_label():
+    html = read_static_html("index.html")
+    utility_block = html.split('<div id="shellUtilityBar" class="shell-utility u-hidden-initial">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
+    locale_block = utility_block.split('class="shell-locale-picker"', 1)[1].split("</label>", 1)[0]
+    icon_block = html.split(".shell-locale-picker-icon {", 1)[1].split("}", 1)[0]
+    locale_select_block = html.split(".shell-locale-picker select {", 1)[1].split("}", 1)[0]
+    sr_block = html.split(".shell-locale-picker-sr {", 1)[1].split("}", 1)[0]
+    assert 'class="shell-locale-picker-icon" aria-hidden="true"' in locale_block
+    assert 'id="shellLocaleLabel" class="shell-locale-picker-sr" data-i18n="utility.language"' in locale_block
+    assert '<svg viewBox="0 0 24 24" focusable="false">' in locale_block
+    locale_style_block = html.split(".shell-locale-picker {", 1)[1].split("}", 1)[0]
+    assert "height: 28px;" in locale_style_block
+    assert "padding: 0 8px;" in locale_style_block
+    assert "font-size: 0.72rem;" in locale_select_block
+    assert "font-weight: 700;" in locale_select_block
+    assert "width: 18px;" in icon_block
+    assert "height: 18px;" in icon_block
+    assert "clip: rect(0, 0, 0, 0);" in sr_block
+
+
+def test_admin_shell_compact_select_rule_excludes_shell_locale_picker():
+    html = read_static_html("index.html")
+    admin_select_block = html.split("body[data-shell-mode=\"admin\"] input,\n    body[data-shell-mode=\"admin\"] select:not(#shellLocaleSelect),\n    body[data-shell-mode=\"admin\"] textarea {", 1)[1].split("}", 1)[0]
+    assert "font-size: 0.86rem;" in admin_select_block
+    assert "min-height: 28px;" in admin_select_block
+
+
+def test_index_theme_toggle_persists_choice_and_applies_body_theme_data_attribute():
+    html = read_static_html("index.html")
+    apply_locale_block = html.split("function applyLocale(locale = appLocale) {", 1)[1].split("\n    }\n\n    function mediaDisplayLabel", 1)[0]
+    assert 'const APP_THEME_STORAGE_KEY = "hahahoho.uiTheme.v1";' in html
+    assert "let appTheme = \"night\";" in html
+    assert "function normalizeAppTheme(theme) {" in html
+    assert "function loadSavedTheme() {" in html
+    assert "function saveTheme(theme) {" in html
+    assert "function syncShellThemeToggle() {" in html
+    assert "function applyAppTheme(theme = appTheme) {" in html
+    assert "function toggleAppTheme() {" in html
+    assert 'window.localStorage.getItem(APP_THEME_STORAGE_KEY)' in html
+    assert 'window.localStorage.setItem(APP_THEME_STORAGE_KEY, normalized);' in html
+    assert 'document.body.dataset.theme = appTheme;' in html
+    assert '$("shellThemeToggle").addEventListener("click", toggleAppTheme);' in html
+    assert "appTheme = loadSavedTheme();" in html
+    assert "applyAppTheme(appTheme);" in html
+    assert "syncShellThemeToggle();" in apply_locale_block
+
+
+def test_index_theme_tokens_define_day_and_night_surface_modes():
+    html = read_static_html("index.html")
+    body_block = html.split("    body {", 1)[1].split("}", 1)[0]
+    night_block = html.split('    body[data-theme="night"] {', 1)[1].split("}", 1)[0]
+    day_block = html.split('    body[data-theme="day"] {', 1)[1].split("}", 1)[0]
+    admin_token_block = html.split("    .admin-console-shell {", 1)[1].split("}", 1)[0]
+    admin_tab_shell_block = html.split("    #tabSearch .admin-console-grid,\n    #tabManage .admin-console-main,\n    #tabRegister.admin-console-shell,\n    #sourceWorkbenchCard.admin-console-shell {", 1)[1].split("}", 1)[0]
+    dashboard_token_block = html.split("    #homeDashboardCard.dashboard-console-shell,\n    #registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
+    assert "background: var(--app-body-background);" in body_block
+    assert "--theme-shell-surface: rgba(10, 14, 20, 0.98);" in night_block
+    assert "--theme-shell-surface-2: rgba(22, 29, 38, 0.98);" in night_block
+    assert "--theme-shell-text-subtle: #a2afbe;" in night_block
+    assert "--theme-shell-surface: rgba(198, 207, 216, 0.95);" in day_block
+    assert "--theme-admin-panel-bg: rgba(19, 25, 33, 0.98);" in night_block
+    assert "--theme-admin-panel-bg-2: rgba(9, 13, 18, 0.98);" in night_block
+    assert "--theme-admin-text-meta: #b6c3d2;" in night_block
+    assert "--theme-admin-panel-bg: rgba(198, 207, 216, 0.95);" in day_block
+    assert "--theme-dashboard-panel: #10161d;" in night_block
+    assert "--theme-dashboard-panel-soft: #1b2632;" in night_block
+    assert "--theme-dashboard-text-muted: #a4b1c0;" in night_block
+    assert "--admin-console-panel-bg: var(--theme-admin-panel-bg);" in admin_token_block
+    assert "--admin-console-text: var(--theme-admin-text);" in admin_token_block
+    assert "--admin-console-panel-bg: var(--theme-admin-panel-bg);" in admin_tab_shell_block
+    assert "--admin-console-panel-bg-2: var(--theme-admin-panel-bg-2);" in admin_tab_shell_block
+    assert "--admin-console-panel-border: var(--theme-admin-panel-border);" in admin_tab_shell_block
+    assert "--console-panel: var(--theme-dashboard-panel);" in dashboard_token_block
+    assert "--console-text: var(--theme-dashboard-text);" in dashboard_token_block
 
 
 def test_header_login_chip_uses_high_contrast_readable_treatment():
@@ -3406,17 +3526,17 @@ def test_header_login_chip_uses_high_contrast_readable_treatment():
     logout_block = html.split(".shell-session-logout {", 1)[1].split("}", 1)[0]
     role_icon_block = html.split(".icon-symbol-btn--session-role {", 1)[1].split("}", 1)[0]
     logout_icon_block = html.split(".icon-symbol-btn--logout {", 1)[1].split("}", 1)[0]
-    assert "background: rgba(18, 23, 29, 0.98);" in chip_block
-    assert "color: #eef3f8;" in chip_block
-    assert "border-color: rgba(255, 122, 26, 0.28);" in chip_block
+    assert "background: var(--theme-shell-surface-2);" in chip_block
+    assert "color: var(--theme-shell-text);" in chip_block
+    assert "border-color: color-mix(in srgb, var(--theme-shell-accent) 40%, transparent);" in chip_block
     assert "width: 26px;" in icon_pill_block
     assert "min-width: 26px;" in icon_pill_block
     assert "min-height: 26px;" in icon_pill_block
     assert "font-size: 0;" in icon_pill_block
-    assert "border: 1px solid rgba(255, 122, 26, 0.22);" in role_block
-    assert "border-radius: 999px;" in role_block
-    assert "border: 1px solid rgba(184, 196, 210, 0.16);" in logout_block
-    assert "border-radius: 999px;" in logout_block
+    assert "border: 1px solid var(--theme-shell-border);" in role_block
+    assert "border-radius: 6px;" in role_block
+    assert "border: 1px solid var(--theme-shell-border);" in logout_block
+    assert "border-radius: 6px;" in logout_block
     assert "--icon-mask: url(" in role_icon_block
     assert "--icon-mask: url(" in logout_icon_block
 
@@ -3425,26 +3545,29 @@ def test_index_console_shells_use_hard_edge_high_contrast_surface_tokens():
     html = read_static_html("index.html")
     token_block = html.split("#homeDashboardCard.dashboard-console-shell,\n    #registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
     dashboard_root_block = html.split("#homeDashboardCard.dashboard-console-shell {", 1)[1].split("}", 1)[0]
-    status_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar {", 1)[1].split("}", 1)[0]
+    status_block = html.split("    #homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar {", 1)[1].split("}", 1)[0]
     hero_card_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-hero-card {", 1)[1].split("}", 1)[0]
-    panel_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-console-panel {", 1)[1].split("}", 1)[0]
+    panel_block = html.split("    #homeDashboardCard.dashboard-console-shell .dashboard-console-panel {", 1)[1].split("}", 1)[0]
     surfaces_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-map-shell, .dashboard-cabinet-detail, .dashboard-slot-rack-surface, .dashboard-slot-bulk-popover, .dashboard-workbench-toolbar, .dashboard-surface-dock, .dashboard-cabinet-board, .dashboard-slot-grid-panel) {", 1)[1].split("}", 1)[0]
     action_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-viewbtn, .dashboard-workbench-source, .dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-slot-grid-nav, .dashboard-slot-sidearrow) {", 1)[1].split("}", 1)[0]
-    assert "--console-text: #f3f6fb;" in token_block
-    assert "--console-text-dim: #c2ccd7;" in token_block
-    assert "--console-text-muted: #8e99a7;" in token_block
-    assert "border-radius: 0;" in dashboard_root_block
+    assert "--console-text: var(--theme-dashboard-text);" in token_block
+    assert "--console-text-dim: var(--theme-dashboard-text-dim);" in token_block
+    assert "--console-text-muted: var(--theme-dashboard-text-muted);" in token_block
+    assert "border-color: rgba(96, 113, 131, 0.88);" in dashboard_root_block
     assert "border-radius: 0;" in status_block
-    assert "border-radius: 0;" in hero_card_block
+    assert "background: linear-gradient(" in hero_card_block
     assert "border-radius: 0;" in panel_block
-    assert "border-color: rgba(137, 151, 171, 0.14);" in surfaces_block
+    assert "background: var(--theme-dashboard-panel);" in panel_block or "background: color-mix(in srgb, var(--theme-dashboard-panel) 84%, white 16%);" in panel_block
+    assert "border-color: var(--theme-dashboard-border);" in surfaces_block
     assert "border-radius: 0;" in surfaces_block
-    assert "background: rgba(13, 17, 23, 0.98);" in action_block
-    assert "border-radius: 4px;" in action_block
+    assert "background: color-mix(in srgb, var(--theme-dashboard-panel-soft) 76%, var(--theme-dashboard-panel) 24%);" in action_block
+    assert "border-radius: 6px;" in action_block
 
 
 def test_index_dashboard_console_separates_text_hierarchy_and_cabinet_slot_surfaces():
     html = read_static_html("index.html")
+    kicker_block = html.split(".dashboard-kicker {", 1)[1].split("}", 1)[0]
+    stat_line_block = html.split(".dashboard-stat-line {", 1)[1].split("}", 1)[0]
     dim_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.mini, .muted, .dashboard-kicker, .dashboard-panel-head span, .dashboard-detail-meta, .dashboard-selected-sort-artist-note, .dashboard-slot-map-copy span) {", 1)[1].split("}", 1)[0]
     tertiary_block = html.split("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-grid-info, .dashboard-cabinet-head-sub, .dashboard-cabinet-total, .dashboard-cabinet-map-floorcode, .dashboard-cabinet-map-cellmeta, .dashboard-workbench-warning-meta, .dashboard-slot-listitem-date) {", 1)[1].split("}", 1)[0]
     map_shell_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-map-shell {", 1)[1].split("}", 1)[0]
@@ -3456,17 +3579,48 @@ def test_index_dashboard_console_separates_text_hierarchy_and_cabinet_slot_surfa
     cabinet_stage_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-stage {", 1)[1].split("}", 1)[0]
     rack_surface_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-rack-surface {", 1)[1].split("}", 1)[0]
     shelf_block = html.split("#homeDashboardCard.dashboard-console-shell :is(#homeDashSlotItems.dashboard-slot-shelfview, #homeDashWorkbenchList.dashboard-slot-shelfview) {", 1)[1].split("}", 1)[0]
+    assert "font-size: 0.66rem;" in kicker_block
+    assert "font-size: 0.68rem;" in stat_line_block
     assert "color: var(--console-text-dim);" in dim_block
     assert "color: var(--console-text-muted);" in tertiary_block
     assert "display: contents;" in map_shell_block
     assert "margin-top: 10px;" in grid_frame_block
-    assert "background: rgba(15, 20, 27, 0.98);" in grid_panel_block
-    assert "background: linear-gradient(180deg, rgba(17, 22, 29, 0.98), rgba(14, 19, 26, 0.98));" in cabinet_board_block
-    assert "background: rgba(11, 15, 21, 0.98);" in cabinet_map_block
+    assert "background: linear-gradient(" in grid_panel_block
+    assert "rgba(224, 232, 240, 0.98)" in grid_panel_block
+    assert "rgba(208, 219, 229, 0.99)" in grid_panel_block
+    assert "background: linear-gradient(180deg, var(--theme-dashboard-panel), var(--theme-dashboard-panel-soft));" in cabinet_board_block
+    assert "background: rgba(221, 229, 237, 0.98) !important;" in cabinet_map_block
     assert "border-color: rgba(184, 196, 210, 0.14);" in shared_cabinet_surface_block
-    assert "display: contents;" in cabinet_stage_block
-    assert "background: rgba(19, 25, 32, 0.98);" in rack_surface_block
-    assert "background: linear-gradient(180deg, rgba(29, 36, 45, 0.98), rgba(22, 28, 36, 0.98));" in shelf_block
+    assert "display: grid;" in cabinet_stage_block
+    assert "padding: 0 12px;" in cabinet_stage_block
+    assert "background: transparent;" in cabinet_stage_block
+    assert "background: var(--theme-dashboard-panel);" in rack_surface_block
+    assert "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 14%)" in shelf_block
+    assert "linear-gradient(180deg, #28313b 0%, #222b35 66%, #1b232c 66%, #161d25 82%, #495564 82%, #3b4653 100%)" in shelf_block
+
+
+def test_dashboard_workbench_toolbar_uses_distinct_subpanel_surface():
+    html = read_static_html("index.html")
+    toolbar_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-workbench-toolbar {", 1)[1].split("}", 1)[0]
+    assert "border: 1px solid color-mix(in srgb, var(--theme-dashboard-border) 78%, transparent);" in toolbar_block
+    assert "background: linear-gradient(" in toolbar_block
+    assert "color-mix(in srgb, var(--theme-dashboard-panel-soft) 88%, var(--paper) 12%)" in toolbar_block
+    assert "color-mix(in srgb, var(--theme-dashboard-panel) 92%, var(--paper) 8%)" in toolbar_block
+    assert "padding: 10px 10px 8px;" in toolbar_block
+    assert "box-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);" in toolbar_block
+
+
+def test_day_mode_lightens_dashboard_workbench_ghost_search_buttons():
+    html = read_static_html("index.html")
+    ghost_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.btn.ghost) {', 1)[1].split("}", 1)[0]
+    hover_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.btn.ghost):hover,\n    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.btn.ghost):focus-visible {', 1)[1].split("}", 1)[0]
+    disabled_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.btn.ghost):disabled {', 1)[1].split("}", 1)[0]
+    assert "background: color-mix(in srgb, var(--paper) 94%, white 6%);" in ghost_block
+    assert "border-color: color-mix(in srgb, var(--line) 64%, white 36%);" in ghost_block
+    assert "color: var(--admin-console-text);" in ghost_block
+    assert "background: color-mix(in srgb, var(--theme-admin-panel-bg-2) 88%, white 12%);" in hover_block
+    assert "background: color-mix(in srgb, var(--theme-admin-panel-bg-2) 76%, white 24%);" in disabled_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-meta) 86%, white 14%);" in disabled_block
 
 
 def test_index_dashboard_console_rebalances_storage_mapping_copy_and_chips():
@@ -3478,8 +3632,8 @@ def test_index_dashboard_console_rebalances_storage_mapping_copy_and_chips():
     board_active_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-cabinet-board.active {", 1)[1].split("}", 1)[0]
     assert "color: var(--console-text);" in title_block
     assert "color: var(--console-text-muted);" in meta_block
-    assert "border-color: rgba(184, 196, 210, 0.16);" in chip_block
-    assert "background: rgba(13, 17, 23, 0.98);" in chip_block
+    assert "border-color: rgba(148, 163, 184, 0.18);" in chip_block
+    assert "background: rgba(17, 24, 32, 0.92);" in chip_block
     assert "color: var(--console-text-dim);" in chip_block
     assert "border-color: rgba(255, 122, 26, 0.18);" in board_hover_block
     assert "background: linear-gradient(180deg, rgba(19, 25, 32, 0.98), rgba(15, 20, 27, 0.98));" in board_hover_block
@@ -3496,18 +3650,20 @@ def test_index_dashboard_console_minimizes_internal_rounding_and_color_blocks():
     selection_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-selection-box {", 1)[1].split("}", 1)[0]
     pagebar_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-slot-pagebar {", 1)[1].split("}", 1)[0]
     selected_meta_block = html.split("#homeDashboardCard.dashboard-console-shell .dashboard-selected-item-meta {", 1)[1].split("}", 1)[0]
-    assert "border-radius: 0;" in override_block
-    assert "background: rgba(18, 23, 29, 0.98);" in override_block
-    assert "border-radius: 0;" in chip_block
-    assert "background: rgba(14, 19, 26, 0.96);" in chip_block
-    assert "background: linear-gradient(180deg, rgba(29, 36, 45, 0.98), rgba(22, 28, 36, 0.98));" in shelf_block
-    assert "border-left: 2px solid rgba(255, 122, 26, 0.72);" in warning_block
-    assert "background: rgba(18, 23, 29, 0.98);" in warning_block
-    assert "border-radius: 0;" in selection_block
+    assert "border-radius: 10px;" in override_block
+    assert "background: var(--theme-dashboard-panel-soft);" in override_block
+    assert "border-radius: 6px;" in chip_block
+    assert "background: rgba(17, 24, 32, 0.92);" in chip_block
+    assert "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 14%)" in shelf_block
+    assert "border-left-color: rgba(191, 111, 38, 0.82);" in warning_block
+    assert "background: linear-gradient(" in warning_block or "background: rgba(18, 23, 29, 0.98);" in warning_block
+    assert "border-radius: 6px;" in selection_block
     assert "background: rgba(255, 122, 26, 0.05);" in selection_block
-    assert "background: rgba(13, 17, 23, 0.98);" in pagebar_block
-    assert "border: 1px solid rgba(184, 196, 210, 0.14);" in pagebar_block
-    assert "background: rgba(13, 17, 23, 0.98);" in selected_meta_block
+    assert "background: linear-gradient(" in pagebar_block
+    assert "rgba(121, 140, 160, 0.98)" in pagebar_block
+    assert "rgba(93, 113, 134, 0.98)" in pagebar_block
+    assert "border-color: rgba(49, 67, 85, 0.86);" in pagebar_block
+    assert "background: color-mix(in srgb, var(--theme-dashboard-panel-soft) 76%, var(--theme-dashboard-panel) 24%);" in selected_meta_block
     assert "color: var(--console-text);" in selected_meta_block
 
 
@@ -3607,6 +3763,7 @@ def test_index_sync_shell_utility_row_sizing_normalizes_right_side_controls():
     assert 'if (iconOnlyUtilityButton) {' in block
     assert 'el.style.width = "28px";' in block
     assert 'el.style.minWidth = "28px";' in block
+    assert 'el.style.height = "28px";' in block
     assert 'el.style.minHeight = "28px";' in block
     assert 'el.style.padding = "0";' in block
     assert 'el.style.fontSize = "0";' in block
@@ -3721,28 +3878,36 @@ def test_index_help_and_close_action_groups_render_as_symbol_buttons():
 def test_page_help_drawer_uses_console_surface_and_localizes_close_button_text():
     html = read_static_html("index.html")
 
-    assert ".page-help-drawer {" in html
-    drawer_block = html.split(".page-help-drawer {", 1)[1].split("}", 1)[0]
-    assert "border-left: 1px solid rgba(137, 151, 171, 0.22);" in drawer_block
-    assert "background: linear-gradient(180deg, rgba(13, 17, 23, 0.99), rgba(18, 23, 29, 0.99));" in drawer_block
-    assert "color: #f2f6fb;" in drawer_block
+    assert "    .page-help-drawer {" in html
+    drawer_block = html.split("    .page-help-drawer {", 1)[1].split("}", 1)[0]
+    assert "border-left: 1px solid var(--theme-help-drawer-border);" in drawer_block
+    assert "background: var(--theme-help-drawer-bg);" in drawer_block
+    assert "color: var(--theme-help-text);" in drawer_block
 
     assert ".page-help-drawer-copy strong {" in html
     title_block = html.split(".page-help-drawer-copy strong {", 1)[1].split("}", 1)[0]
-    assert "color: #f2f6fb;" in title_block
+    assert "color: var(--theme-help-text);" in title_block
 
     assert ".page-help-drawer-copy .mini {" in html
     mini_block = html.split(".page-help-drawer-copy .mini {", 1)[1].split("}", 1)[0]
-    assert "color: #d0d9e4;" in mini_block
+    assert "color: var(--theme-help-text-muted);" in mini_block
 
-    assert ".page-help-drawer-body .manual-block-note {" in html
-    note_block = html.split(".page-help-drawer-body .manual-block-note {", 1)[1].split("}", 1)[0]
-    assert "background: rgba(18, 23, 29, 0.96);" in note_block
-    assert "color: #d0d9e4;" in note_block
+    base_body_block = html.split("    .page-help-drawer-body li {", 1)[1].split("    .layout {", 1)[0]
+    assert ".page-help-drawer-body .manual-block-note {" in base_body_block
+    assert "background: color-mix(in srgb, var(--theme-shell-surface-2) 96%, transparent);" in base_body_block
+    assert "color: var(--theme-help-text-muted);" in base_body_block
 
     assert 'closeBtn.textContent = t("common.close");' in html
     assert 'closeBtn.setAttribute("aria-label", t("common.close"));' in html
     assert 'closeBtn.setAttribute("title", t("common.close"));' in html
+
+
+def test_page_help_drawer_keeps_empty_state_mini_text_on_help_tokens():
+    html = read_static_html("index.html")
+
+    assert "    .page-help-drawer-body :is(.mini, .muted) {" in html
+    mini_muted_block = html.split("    .page-help-drawer-body :is(.mini, .muted) {", 1)[1].split("}", 1)[0]
+    assert "color: var(--theme-help-text-muted);" in mini_muted_block
 
 
 def test_ops_primary_create_and_save_rows_place_primary_action_last():
@@ -5093,6 +5258,1243 @@ def test_media_source_and_purchase_row_level_actions_use_i18n():
     assert '"media.source.field.artist_override.label":' in html
 
 
+def test_register_purchase_candidate_expansion_uses_console_surface_tones():
+    html = read_static_html("index.html")
+    assert "#tabRegister.admin-console-shell :is(.purchase-import-candidate-row td, .source-workbench-candidate, .source-queue-row) {" in html
+    row_block = html.split("#tabRegister.admin-console-shell :is(.purchase-import-candidate-row td, .source-workbench-candidate, .source-queue-row) {", 1)[1].split("}", 1)[0]
+    assert "background: var(--admin-console-panel-bg);" in row_block
+    assert "color: var(--admin-console-text);" in row_block
+    assert "#tabRegister.admin-console-shell .source-workbench-cover {" in html
+    cover_block = html.split("#tabRegister.admin-console-shell .source-workbench-cover {", 1)[1].split("}", 1)[0]
+    assert "background: var(--admin-console-panel-bg-2);" in cover_block
+    assert "#tabRegister.admin-console-shell :is(.source-workbench-candidate-meta, .source-queue-meta, .purchase-import-candidate-head .mini, .purchase-import-candidate-search-field label) {" in html
+    meta_block = html.split("#tabRegister.admin-console-shell :is(.source-workbench-candidate-meta, .source-queue-meta, .purchase-import-candidate-head .mini, .purchase-import-candidate-search-field label) {", 1)[1].split("}", 1)[0]
+    assert "color: var(--admin-console-text-muted);" in meta_block
+    assert "#tabRegister.admin-console-shell .source-workbench-candidate.selected {" in html
+    selected_block = html.split("#tabRegister.admin-console-shell .source-workbench-candidate.selected {", 1)[1].split("}", 1)[0]
+    assert "background: color-mix(in srgb, var(--admin-console-panel-bg) 84%, var(--admin-console-accent) 16%);" in selected_block
+
+
+def test_day_mode_strengthens_purchase_candidate_expansion_hierarchy():
+    html = read_static_html("index.html")
+    row_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell .purchase-import-candidate-row td {', 1)[1].split("}", 1)[0]
+    box_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell .purchase-import-candidate-box {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in row_block
+    assert "rgba(247, 250, 253, 0.996)" in row_block
+    assert "rgba(235, 241, 247, 0.992)" in row_block
+    assert "border-top: 1px solid rgba(100, 117, 135, 0.34);" in row_block
+    assert "padding: 10px 12px;" in box_block
+    assert "border: 1px solid rgba(94, 112, 130, 0.58);" in box_block
+    assert "rgba(245, 249, 252, 0.996)" in box_block
+    assert "rgba(233, 239, 246, 0.992)" in box_block
+
+
+def test_legacy_light_surfaces_use_theme_tokens_in_day_and_night_modes():
+    html = read_static_html("index.html")
+    night_block = html.split('    body[data-theme="night"] {', 1)[1].split("}", 1)[0]
+    day_block = html.split('    body[data-theme="day"] {', 1)[1].split("}", 1)[0]
+    operator_pagebtn_block = html.split("    .operator-feed-pagebtn {", 1)[1].split("}", 1)[0]
+    operator_result_block = html.split("    .operator-result-item,\n    .operator-request-item {", 1)[1].split("}", 1)[0]
+    operator_label_chip_block = html.split("    .operator-label-chip {", 1)[1].split("}", 1)[0]
+    operator_track_hit_block = html.split("    .operator-track-hit {", 1)[1].split("}", 1)[0]
+    operator_status_pill_block = html.split("    .operator-status-pill {", 1)[1].split("}", 1)[0]
+    operator_mini_card_block = html.split("    .operator-mini-card {", 1)[1].split("}", 1)[0]
+    home_track_panel_block = html.split("    .home-edit-track-panel {", 1)[1].split("}", 1)[0]
+    home_track_list_block = html.split("    .home-edit-track-list {", 1)[1].split("}", 1)[0]
+    source_meta_tracklist_block = html.split("    .source-meta-tracklist {", 1)[1].split("}", 1)[0]
+    option_pill_block = html.split("    .option-pill {", 1)[1].split("}", 1)[0]
+
+    assert "--paper: rgba(18, 23, 29, 0.98);" in night_block
+    assert "--paper: rgba(205, 213, 221, 0.95);" in day_block
+    assert "--line: rgba(137, 151, 171, 0.22);" in night_block
+    assert "--line: rgba(82, 100, 120, 0.38);" in day_block
+    assert "background: var(--paper);" in operator_pagebtn_block
+    assert "background: var(--paper);" in operator_result_block
+    assert "background: var(--paper);" in operator_label_chip_block
+    assert "background: var(--paper);" in operator_track_hit_block
+    assert "background: var(--paper);" in operator_status_pill_block
+    assert "background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 82%, var(--bg) 18%));" in operator_mini_card_block
+    assert "background: var(--paper);" in home_track_panel_block
+    assert "background: var(--paper);" in home_track_list_block
+    assert "background: var(--paper);" in source_meta_tracklist_block
+    assert "background: var(--paper);" in option_pill_block
+
+
+def test_manage_detail_support_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    copy_group_block = html.split("    .home-copy-group {", 1)[1].split("}", 1)[0]
+    compact_line_block = html.split("    .compact-line {", 1)[1].split("}", 1)[0]
+    image_paste_block = html.split("    .image-paste-box {", 1)[1].split("}", 1)[0]
+    image_chip_list_block = html.split("    .image-chip-list {", 1)[1].split("}", 1)[0]
+    image_chip_item_block = html.split("    .image-chip-item {", 1)[1].split("}", 1)[0]
+    image_chip_button_block = html.split("    .image-chip-item button {", 1)[1].split("}", 1)[0]
+    image_gallery_panel_block = html.split("    .image-gallery-panel {", 1)[1].split("}", 1)[0]
+    image_gallery_preview_block = html.split("    .image-gallery-preview-card {", 1)[1].split("}", 1)[0]
+    image_gallery_thumb_block = html.split("    .image-gallery-thumb {", 1)[1].split("}", 1)[0]
+    image_gallery_thumb_hover_block = html.split("    .image-gallery-thumb:hover,\n    .image-gallery-thumb.active {", 1)[1].split("}", 1)[0]
+    image_gallery_thumb_img_block = html.split("    .image-gallery-thumb img {", 1)[1].split("}", 1)[0]
+    dash_pill_block = html.split("    .home-dash-pill {", 1)[1].split("}", 1)[0]
+    dash_summary_block = html.split("    .home-dash-summary {", 1)[1].split("}", 1)[0]
+
+    assert "background: var(--paper);" in copy_group_block
+    assert "background: var(--paper);" in compact_line_block
+    assert "background: var(--paper);" in image_paste_block
+    assert "background: var(--paper);" in image_chip_list_block
+    assert "background: var(--paper);" in image_chip_item_block
+    assert "background: var(--paper);" in image_chip_button_block
+    assert "background: var(--paper);" in image_gallery_panel_block
+    assert "background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 82%, var(--bg) 18%));" in image_gallery_preview_block
+    assert "background: var(--paper);" in image_gallery_thumb_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-admin-accent, var(--brand)) 16%);" in image_gallery_thumb_hover_block
+    assert "background: var(--paper);" in image_gallery_thumb_img_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, var(--theme-admin-accent, var(--brand)) 14%);" in dash_pill_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in dash_summary_block
+
+
+def test_ops_home_support_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    artist_context_pill_block = html.split("    .ops-artist-context-pill {", 1)[1].split("}", 1)[0]
+    artist_context_link_block = html.split("    .ops-artist-context-link {", 1)[1].split("}", 1)[0]
+    placement_hint_row_block = html.split("    .ops-placement-hint-row {", 1)[1].split("}", 1)[0]
+    recent_section_block = html.split("    .operator-recent-section {", 1)[1].split("}", 1)[0]
+    recent_item_block = html.split("    .operator-recent-item {", 1)[1].split("}", 1)[0]
+
+    assert "background: var(--paper);" in artist_context_pill_block
+    assert "background: var(--paper);" in artist_context_link_block
+    assert "background: var(--paper);" in placement_hint_row_block
+    assert "background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 82%, var(--bg) 18%));" in recent_section_block
+    assert "background: var(--paper);" in recent_item_block
+
+
+def test_manage_lookup_and_goods_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    empty_state_block = html.split("    .admin-manage-empty-state {", 1)[1].split("}", 1)[0]
+    goods_zone_block = html.split("    .home-goods-zone {", 1)[1].split("}", 1)[0]
+    goods_panel_block = html.split("    .home-goods-panel {", 1)[1].split("}", 1)[0]
+    lookup_pending_block = html.split("    .home-master-lookup-pending {", 1)[1].split("}", 1)[0]
+    editor_block = html.split("    #homeEditorProductBlock {", 1)[1].split("}", 1)[0]
+    goods_map_section_block = html.split("    .goods-map-section {", 1)[1].split("}", 1)[0]
+    goods_chip_block = html.split("    .goods-chip {", 1)[1].split("}", 1)[0]
+    goods_target_row_block = html.split("    .goods-target-row {", 1)[1].split("}", 1)[0]
+    doc_link_chip_block = html.split("    .doc-link-chip {", 1)[1].split("}", 1)[0]
+    manual_block_block = html.split("    .manual-block {", 1)[1].split("}", 1)[0]
+    manual_block_summary_block = html.split("    .manual-block summary {", 1)[1].split("}", 1)[0]
+
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in empty_state_block
+    assert "background: linear-gradient(" in goods_zone_block
+    assert "color-mix(in srgb, var(--paper) 92%, var(--theme-admin-accent, var(--brand)) 8%) 0%" in goods_zone_block
+    assert "color-mix(in srgb, var(--paper) 96%, var(--bg) 4%) 100%" in goods_zone_block
+    assert "background: linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 88%, var(--bg) 12%) 100%);" in goods_panel_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in lookup_pending_block
+    assert "background: linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 90%, var(--bg) 10%) 100%);" in editor_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in goods_map_section_block
+    assert "background: var(--paper);" in goods_chip_block
+    assert "background: var(--paper);" in goods_target_row_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, var(--theme-admin-accent, var(--brand)) 14%);" in doc_link_chip_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in manual_block_block
+    assert "background: linear-gradient(" in manual_block_summary_block
+    assert "color-mix(in srgb, var(--paper) 92%, var(--bg) 8%) 0%" in manual_block_summary_block
+
+
+def test_remaining_manage_lookup_and_help_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    master_add_block = html.split("    #homeMasterAddBlock {", 1)[1].split("}", 1)[0]
+    master_lookup_kicker_block = html.split("    .home-master-lookup-kicker {", 1)[1].split("}", 1)[0]
+    master_lookup_note_block = html.split("    .home-master-lookup-note {", 1)[1].split("}", 1)[0]
+    secondary_block = html.split("    .home-manage-secondary-block {", 1)[1].split("}", 1)[0]
+    secondary_summary_block = html.split("    .home-manage-secondary-summary {", 1)[1].split("}", 1)[0]
+    secondary_note_block = html.split("    .home-manage-secondary-note {", 1)[1].split("}", 1)[0]
+    compact_extra_fields_block = html.split("    .ops-compact-extra-fields {", 1)[1].split("}", 1)[0]
+    compact_extra_fields_summary_block = html.split("    .ops-compact-extra-fields > summary {", 1)[1].split("}", 1)[0]
+    compact_extra_fields_before_block = html.split("    .ops-compact-extra-fields > summary::before {", 1)[1].split("}", 1)[0]
+    goods_result_item_block = html.split("    .goods-result-item {", 1)[1].split("}", 1)[0]
+    goods_result_hover_block = html.split("    .goods-result-item:hover {", 1)[1].split("}", 1)[0]
+    goods_result_meta_block = html.split("    .goods-result-meta {", 1)[1].split("}", 1)[0]
+    master_load_btn_block = html.split("    .home-master-load-btn {", 1)[1].split("}", 1)[0]
+    manual_block_li_block = html.split("    .manual-block-body li {", 1)[1].split("}", 1)[0]
+    manual_block_note_block = html.split("    .manual-block-note {", 1)[1].split("}", 1)[0]
+    page_help_trigger_block = html.split("    .page-help-trigger {", 1)[1].split("}", 1)[0]
+    page_help_trigger_hover_block = html.split("    .page-help-trigger:hover {", 1)[1].split("}", 1)[0]
+    hero_docs_block = html.split("    .hero-docs {", 1)[1].split("}", 1)[0]
+    hero_docs_summary_block = html.split("    .hero-docs summary {", 1)[1].split("}", 1)[0]
+
+    assert "background: linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 90%, var(--bg) 10%) 100%);" in master_add_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-admin-accent, var(--brand)) 16%);" in master_lookup_kicker_block
+    assert "color: var(--muted);" in master_lookup_note_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in secondary_block
+    assert "color: var(--ink);" in secondary_summary_block
+    assert "color: var(--muted);" in secondary_note_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in compact_extra_fields_block
+    assert "color: var(--ink);" in compact_extra_fields_summary_block
+    assert "color: var(--muted);" in compact_extra_fields_before_block
+    assert "background: linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 88%, var(--bg) 12%) 100%);" in goods_result_item_block
+    assert "border-color: color-mix(in srgb, var(--theme-admin-accent, var(--brand)) 26%, var(--line));" in goods_result_hover_block
+    assert "color: var(--muted);" in goods_result_meta_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-admin-accent, var(--brand)) 16%) !important;" in master_load_btn_block
+    assert "color: var(--ink);" in manual_block_li_block
+    assert "color: var(--muted);" in manual_block_note_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in page_help_trigger_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, var(--theme-admin-accent, var(--brand)) 14%);" in page_help_trigger_hover_block
+    assert "background: color-mix(in srgb, var(--theme-shell-surface) 90%, var(--paper) 10%);" in hero_docs_block
+    assert "background: color-mix(in srgb, var(--theme-shell-surface-2) 86%, var(--paper) 14%);" in hero_docs_summary_block
+
+
+def test_dashboard_secondary_controls_and_cards_use_theme_tokens():
+    html = read_static_html("index.html")
+    selection_secondary_block = html.split("    .dashboard-selection-actions--secondary .dashboard-slot-actionbtn,\n    .dashboard-selection-actions--secondary .dashboard-workbench-actionbtn {", 1)[1].split("}", 1)[0]
+    selection_primary_block = html.split("    .dashboard-selection-actions--primary .dashboard-slot-actionbtn,\n    .dashboard-selection-actions--primary .dashboard-workbench-actionbtn {", 1)[1].split("}", 1)[0]
+    selection_primary_hover_block = html.split("    .dashboard-selection-actions--primary .dashboard-slot-actionbtn:hover,\n    .dashboard-selection-actions--primary .dashboard-workbench-actionbtn:hover {", 1)[1].split("}", 1)[0]
+    selection_extra_block = html.split("    .dashboard-selection-toolbar-extra {", 1)[1].split("}", 1)[0]
+    bulk_popover_block = html.split("    .dashboard-slot-bulk-popover {", 1)[1].split("}", 1)[0]
+    mutation_row_block = html.split("    .dashboard-slot-mutation-row {", 1)[1].split("}", 1)[0]
+    slot_item_cover_block = html.split("    .dashboard-slot-item-cover {", 1)[1].split("}", 1)[0]
+    slot_item_action_block = html.split("    .dashboard-slot-item-action {", 1)[1].split("}", 1)[0]
+    workbench_source_block = html.split("    .dashboard-workbench-source {", 1)[1].split("}", 1)[0]
+    workbench_filter_label_block = html.split("    .dashboard-workbench-filter label {", 1)[1].split("}", 1)[0]
+    workbench_filter_select_block = html.split("    .dashboard-workbench-filter select {", 1)[1].split("}", 1)[0]
+    workbench_checkbox_block = html.split("    .dashboard-workbench-checkbox {", 1)[1].split("}", 1)[0]
+    workbench_warning_block = html.split("    .dashboard-workbench-warning {", 1)[1].split("}", 1)[0]
+    move_target_group_block = html.split("    .dashboard-move-target-group {", 1)[1].split("}", 1)[0]
+    move_target_cell_block = html.split("    .dashboard-move-target-cell {", 1)[1].split("}", 1)[0]
+    move_target_cell_hover_block = html.split("    .dashboard-move-target-cell:hover,\n    .dashboard-move-target-cell.drag-over {", 1)[1].split("}", 1)[0]
+    cell_card_block = html.split("    .dashboard-cell-card {", 1)[1].split("}", 1)[0]
+    slot_card_block = html.split("    .dashboard-slot-card {", 1)[1].split("}", 1)[0]
+    move_cover_block = html.split("    .dashboard-move-cover {", 1)[1].split("}", 1)[0]
+
+    assert "background: color-mix(in srgb, var(--paper) 88%, var(--bg) 12%);" in selection_secondary_block
+    assert "background: color-mix(in srgb, var(--paper) 82%, var(--theme-admin-accent, var(--brand)) 18%);" in selection_primary_block
+    assert "background: color-mix(in srgb, var(--paper) 74%, var(--theme-admin-accent, var(--brand)) 26%);" in selection_primary_hover_block
+    assert "border-top: 1px dashed color-mix(in srgb, var(--line) 82%, transparent);" in selection_extra_block
+    assert "background: color-mix(in srgb, var(--paper) 96%, var(--bg) 4%);" in bulk_popover_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in mutation_row_block
+    assert "background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 82%, var(--bg) 18%));" in slot_item_cover_block
+    assert "background: var(--paper);" in slot_item_action_block
+    assert "background: var(--paper);" in workbench_source_block
+    assert "color: var(--muted);" in workbench_filter_label_block
+    assert "background: color-mix(in srgb, var(--paper) 90%, var(--bg) 10%);" in workbench_filter_select_block
+    assert "background: color-mix(in srgb, var(--paper) 90%, var(--bg) 10%);" in workbench_checkbox_block
+    assert "background: linear-gradient(180deg, color-mix(in srgb, var(--paper) 88%, var(--theme-admin-accent, var(--brand)) 12%), color-mix(in srgb, var(--paper) 82%, var(--theme-admin-accent, var(--brand)) 18%));" in workbench_warning_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in move_target_group_block
+    assert "background: var(--paper);" in move_target_cell_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-admin-link, var(--brand)) 16%);" in move_target_cell_hover_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in cell_card_block
+    assert "background:" in slot_card_block and "color-mix(in srgb, var(--paper) 82%, var(--bg) 18%)" in slot_card_block
+    assert "background:" in move_cover_block and "color-mix(in srgb, var(--paper) 82%, var(--bg) 18%)" in move_cover_block
+
+
+def test_gallery_and_album_result_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    discogs_image_block = html.split("    .discogs-image-card img {", 1)[1].split("}", 1)[0]
+    album_result_cover_block = html.split("    .album-result-cover {", 1)[1].split("}", 1)[0]
+
+    assert "border: 1px solid var(--line);" in discogs_image_block
+    assert "background: var(--paper);" in discogs_image_block
+    assert "border: 1px solid var(--line);" in album_result_cover_block
+    assert "color-mix(in srgb, var(--paper) 86%, var(--bg) 14%)" in album_result_cover_block
+    assert "color: var(--muted);" in album_result_cover_block
+
+
+def test_dashboard_camera_and_floor_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    detail_meta_block = html.split("    .dashboard-detail-meta span {", 1)[1].split("}", 1)[0]
+    camera_title_block = html.split("    .dashboard-camera-title {", 1)[1].split("}", 1)[0]
+    camera_meta_block = html.split("    .dashboard-camera-meta {", 1)[1].split("}", 1)[0]
+    camera_image_block = html.split("    .dashboard-camera-image {", 1)[1].split("}", 1)[0]
+    camera_placeholder_block = html.split("    .dashboard-camera-placeholder {", 1)[1].split("}", 1)[0]
+    camera_list_panel_block = html.split("    .shared-camera-list-panel,\n    .shared-camera-preview-panel {", 1)[1].split("}", 1)[0]
+    camera_list_item_block = html.split("    .shared-camera-list-item {", 1)[1].split("}", 1)[0]
+    camera_list_item_active_block = html.split("    .shared-camera-list-item.active {", 1)[1].split("}", 1)[0]
+    camera_list_item_strong_block = html.split("    .shared-camera-list-item strong {", 1)[1].split("}", 1)[0]
+    camera_list_item_mini_block = html.split("    .shared-camera-list-item .mini {", 1)[1].split("}", 1)[0]
+    floor_label_block = html.split("    .dashboard-floor-label {", 1)[1].split("}", 1)[0]
+    floor_cell_block = html.split("    .dashboard-floor-cell {", 1)[1].split("}", 1)[0]
+    floor_cell_hover_block = html.split("    .dashboard-floor-cell:hover {", 1)[1].split("}", 1)[0]
+    floor_cell_active_block = html.split("    .dashboard-floor-cell.active {", 1)[1].split("}", 1)[0]
+    floor_cell_drag_block = html.split("    .dashboard-floor-cell.drag-over,\n    .dashboard-floor-cell.drop-ready {", 1)[1].split("}", 1)[0]
+    floor_cell_empty_block = html.split("    .dashboard-floor-cell.empty {", 1)[1].split("}", 1)[0]
+    floor_cell_title_block = html.split("    .dashboard-floor-cell-title {", 1)[1].split("}", 1)[0]
+    floor_cell_count_block = html.split("    .dashboard-floor-cell-count {", 1)[1].split("}", 1)[0]
+    floor_cell_meta_block = html.split("    .dashboard-floor-cell-meta {", 1)[1].split("}", 1)[0]
+
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in detail_meta_block
+    assert "color: var(--ink);" in detail_meta_block
+    assert "color: var(--ink);" in camera_title_block
+    assert "color: var(--muted);" in camera_meta_block
+    assert "background: color-mix(in srgb, var(--paper) 82%, var(--bg) 18%);" in camera_image_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in camera_placeholder_block
+    assert "background: var(--paper);" in camera_list_panel_block
+    assert "background: var(--paper);" in camera_list_item_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-dashboard-accent, var(--brand)) 16%);" in camera_list_item_active_block
+    assert "color: var(--ink);" in camera_list_item_strong_block
+    assert "color: var(--muted);" in camera_list_item_mini_block
+    assert "color: var(--muted);" in floor_label_block
+    assert "background: var(--paper);" in floor_cell_block
+    assert "background: color-mix(in srgb, var(--paper) 90%, var(--bg) 10%);" in floor_cell_hover_block
+    assert "background: linear-gradient(180deg, var(--selected-surface), color-mix(in srgb, var(--paper) 92%, var(--bg) 8%));" in floor_cell_active_block
+    assert "color-mix(in srgb, var(--paper) 86%, var(--theme-dashboard-accent, var(--brand)) 14%)" in floor_cell_drag_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in floor_cell_empty_block
+    assert "color: var(--ink);" in floor_cell_title_block
+    assert "color: var(--theme-dashboard-accent, var(--brand));" in floor_cell_count_block
+    assert "color: var(--muted);" in floor_cell_meta_block
+
+
+def test_ops_camera_and_source_workbench_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    camera_summary_block = html.split("    .ops-camera-selection-summary {", 1)[1].split("}", 1)[0]
+    camera_summary_strong_block = html.split("    .ops-camera-selection-summary strong {", 1)[1].split("}", 1)[0]
+    camera_summary_active_block = html.split("    .ops-camera-selection-summary.active {", 1)[1].split("}", 1)[0]
+    workbench_candidate_block = html.split("    .source-workbench-candidate {", 1)[1].split("}", 1)[0]
+    workbench_candidate_selected_block = html.split("    .source-workbench-candidate.selected {", 1)[1].split("}", 1)[0]
+    workbench_cover_block = html.split("    .source-workbench-cover {", 1)[1].split("}", 1)[0]
+    workbench_title_block = html.split("    .source-workbench-candidate-title {", 1)[1].split("}", 1)[0]
+    workbench_meta_block = html.split("    .source-workbench-candidate-meta {", 1)[1].split("}", 1)[0]
+    workbench_edition_summary_block = html.split("    .source-workbench-edition-summary {", 1)[1].split("}", 1)[0]
+    workbench_edition_explanation_block = html.split("    .source-workbench-edition-explanation {", 1)[1].split("}", 1)[0]
+    workbench_identity_chip_block = html.split("    .source-workbench-edition-identity-chip {", 1)[1].split("}", 1)[0]
+    workbench_identity_chip_em_block = html.split("    .source-workbench-edition-identity-chip em {", 1)[1].split("}", 1)[0]
+    workbench_identity_same_block = html.split("    .source-workbench-edition-identity-chip--same {", 1)[1].split("}", 1)[0]
+    workbench_identity_diff_block = html.split("    .source-workbench-edition-identity-chip--different {", 1)[1].split("}", 1)[0]
+    workbench_identity_partial_block = html.split("    .source-workbench-edition-identity-chip--partial {", 1)[1].split("}", 1)[0]
+    workbench_identity_uncomp_block = html.split("    .source-workbench-edition-identity-chip--uncomparable {", 1)[1].split("}", 1)[0]
+    workbench_evidence_summary_block = html.split("    .source-workbench-edition-evidence summary {", 1)[1].split("}", 1)[0]
+    workbench_evidence_marker_block = html.split("    .source-workbench-edition-evidence summary::marker {", 1)[1].split("}", 1)[0]
+    workbench_evidence_row_block = html.split("    .source-workbench-edition-evidence-row {", 1)[1].split("}", 1)[0]
+    workbench_evidence_head_block = html.split("    .source-workbench-edition-evidence-row-head {", 1)[1].split("}", 1)[0]
+    workbench_evidence_head_strong_block = html.split("    .source-workbench-edition-evidence-row-head strong {", 1)[1].split("}", 1)[0]
+    workbench_evidence_values_block = html.split("    .source-workbench-edition-evidence-row-values {", 1)[1].split("}", 1)[0]
+
+    assert "background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 88%, var(--bg) 12%));" in camera_summary_block
+    assert "color: var(--muted);" in camera_summary_block
+    assert "color: var(--ink);" in camera_summary_strong_block
+    assert "background: linear-gradient(" in camera_summary_active_block
+    assert "color-mix(in srgb, var(--paper) 86%, var(--theme-dashboard-accent, var(--brand)) 14%)" in camera_summary_active_block
+    assert "color-mix(in srgb, var(--paper) 92%, var(--bg) 8%)" in camera_summary_active_block
+    assert "background: var(--paper);" in workbench_candidate_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-admin-accent, var(--brand)) 16%);" in workbench_candidate_selected_block
+    assert "background: color-mix(in srgb, var(--paper) 90%, var(--bg) 10%);" in workbench_cover_block
+    assert "color: var(--muted);" in workbench_cover_block
+    assert "color: var(--ink);" in workbench_title_block
+    assert "color: var(--muted);" in workbench_meta_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, var(--theme-admin-accent, var(--brand)) 14%);" in workbench_edition_summary_block
+    assert "color: var(--theme-admin-accent-deep, var(--brand));" in workbench_edition_summary_block
+    assert "color: var(--ink);" in workbench_edition_explanation_block
+    assert "background: var(--paper);" in workbench_identity_chip_block
+    assert "color: var(--ink);" in workbench_identity_chip_block
+    assert "color: var(--muted);" in workbench_identity_chip_em_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, var(--theme-admin-accent, var(--brand)) 14%);" in workbench_identity_same_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, #fdba74 14%);" in workbench_identity_diff_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, #fca5a5 14%);" in workbench_identity_partial_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in workbench_identity_uncomp_block
+    assert "color: var(--ink);" in workbench_evidence_summary_block
+    assert "color: var(--muted);" in workbench_evidence_marker_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in workbench_evidence_row_block
+    assert "color: var(--ink);" in workbench_evidence_row_block
+    assert "color: var(--muted);" in workbench_evidence_head_block
+    assert "color: var(--ink);" in workbench_evidence_head_strong_block
+    assert "color: var(--ink);" in workbench_evidence_values_block
+
+
+def test_barcode_intake_and_toast_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    barcode_state_block = html.split("    .admin-barcode-input-state {", 1)[1].split("}", 1)[0]
+    barcode_state_confirm_block = html.split("    .admin-barcode-input-state.confirm {", 1)[1].split("}", 1)[0]
+    barcode_state_ready_block = html.split("    .admin-barcode-input-state.ready {", 1)[1].split("}", 1)[0]
+    barcode_confirm_block = html.split("    .admin-barcode-intake-confirm {", 1)[1].split("}", 1)[0]
+    barcode_confirm_ready_block = html.split("    .admin-barcode-intake-confirm.ready {", 1)[1].split("}", 1)[0]
+    barcode_toast_block = html.split("    .admin-barcode-toast {", 1)[1].split("}", 1)[0]
+    barcode_toast_slot_block = html.split("    .admin-barcode-toast-slot {", 1)[1].split("}", 1)[0]
+    shell_barcode_toast_block = html.split("    .shell-barcode-toast {", 1)[1].split("}", 1)[0]
+    workbench_title_block = html.split("    .source-workbench-title {", 1)[1].split("}", 1)[0]
+    workbench_meta_block = html.split("    .source-workbench-meta {", 1)[1].split("}", 1)[0]
+    workbench_query_block = html.split("    .source-workbench-query {", 1)[1].split("}", 1)[0]
+
+    assert "border: 1px solid var(--line);" in barcode_state_block
+    assert "background: var(--paper);" in barcode_state_block
+    assert "color: var(--muted);" in barcode_state_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, var(--theme-admin-accent, var(--brand)) 14%);" in barcode_state_confirm_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, #86efac 14%);" in barcode_state_ready_block
+    assert "background: color-mix(in srgb, var(--paper) 90%, var(--theme-admin-accent, var(--brand)) 10%);" in barcode_confirm_block
+    assert "background: linear-gradient(" in barcode_confirm_ready_block
+    assert "color-mix(in srgb, var(--paper) 86%, #86efac 14%)" in barcode_confirm_ready_block
+    assert "border: 1px solid color-mix(in srgb, var(--line) 28%, #86efac 72%);" in barcode_toast_block
+    assert "background: linear-gradient(" in barcode_toast_block
+    assert "color-mix(in srgb, var(--paper) 86%, #86efac 14%)" in barcode_toast_block
+    assert "background: color-mix(in srgb, var(--paper) 78%, #166534 22%);" in barcode_toast_slot_block
+    assert "border: 1px solid color-mix(in srgb, var(--line) 28%, var(--theme-dashboard-accent, var(--brand)) 72%);" in shell_barcode_toast_block
+    assert "color-mix(in srgb, var(--paper) 86%, var(--theme-dashboard-accent, var(--brand)) 14%)" in shell_barcode_toast_block
+    assert "color: var(--ink);" in workbench_title_block
+    assert "color: var(--muted);" in workbench_meta_block
+    assert "color: var(--muted);" in workbench_query_block
+
+
+def test_source_workbench_diff_and_exception_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    diff_panel_block = html.split("    .source-workbench-diff-panel {", 1)[1].split("}", 1)[0]
+    diff_head_block = html.split("    .source-workbench-diff-head,\n    .source-workbench-diff-foot {", 1)[1].split("}", 1)[0]
+    diff_head_strong_block = html.split("    .source-workbench-diff-head strong {", 1)[1].split("}", 1)[0]
+    diff_summary_block = html.split("    .source-workbench-diff-summary {", 1)[1].split("}", 1)[0]
+    diff_note_block = html.split("    .source-workbench-diff-note {", 1)[1].split("}", 1)[0]
+    diff_card_block = html.split("    .source-workbench-diff-card {", 1)[1].split("}", 1)[0]
+    diff_card_head_block = html.split("    .source-workbench-diff-card-head {", 1)[1].split("}", 1)[0]
+    diff_card_head_label_block = html.split("    .source-workbench-diff-card-head-label {", 1)[1].split("}", 1)[0]
+    diff_card_head_value_block = html.split("    .source-workbench-diff-card-head-value {", 1)[1].split("}", 1)[0]
+    diff_row_disabled_block = html.split("    .source-workbench-diff-row.is-disabled {", 1)[1].split("}", 1)[0]
+    diff_row_selected_block = html.split("    .source-workbench-diff-row.is-selected {", 1)[1].split("}", 1)[0]
+    diff_label_strong_block = html.split("    .source-workbench-diff-label strong {", 1)[1].split("}", 1)[0]
+    diff_label_span_block = html.split("    .source-workbench-diff-label span {", 1)[1].split("}", 1)[0]
+    diff_value_block = html.split("    .source-workbench-diff-value {", 1)[1].split("}", 1)[0]
+    diff_value_card_block = html.split("    .source-workbench-diff-value-card {", 1)[1].split("}", 1)[0]
+    diff_value_card_emphasis_block = html.split("    .source-workbench-diff-row--emphasis .source-workbench-diff-value-card {", 1)[1].split("}", 1)[0]
+    diff_inline_strong_block = html.split("    .source-workbench-diff-inline-strong {", 1)[1].split("}", 1)[0]
+    diff_cover_thumb_block = html.split("    .source-workbench-diff-cover-thumb {", 1)[1].split("}", 1)[0]
+    diff_track_preview_block = html.split("    .source-workbench-diff-track-preview {", 1)[1].split("}", 1)[0]
+    diff_track_preview_summary_block = html.split("    .source-workbench-diff-track-preview summary {", 1)[1].split("}", 1)[0]
+    diff_track_preview_ol_block = html.split("    .source-workbench-diff-track-preview ol {", 1)[1].split("}", 1)[0]
+    diff_status_empty_fill_block = html.split("    .source-workbench-diff-status-badge.empty-fill {", 1)[1].split("}", 1)[0]
+    diff_status_conflict_block = html.split("    .source-workbench-diff-status-badge.conflict {", 1)[1].split("}", 1)[0]
+    diff_status_same_block = html.split("    .source-workbench-diff-status-badge.same,\n    .source-workbench-diff-status-badge.empty-both {", 1)[1].split("}", 1)[0]
+    exception_box_block = html.split("    .ops-exception-box {", 1)[1].split("}", 1)[0]
+    exception_box_active_block = html.split("    .ops-exception-box.active {", 1)[1].split("}", 1)[0]
+    exception_box_strong_block = html.split("    .ops-exception-box strong {", 1)[1].split("}", 1)[0]
+    exception_box_span_block = html.split("    .ops-exception-box span {", 1)[1].split("}", 1)[0]
+    exception_row_block = html.split("    .ops-exception-row {", 1)[1].split("}", 1)[0]
+    exception_cover_block = html.split("    .ops-exception-cover {", 1)[1].split("}", 1)[0]
+    exception_title_block = html.split("    .ops-exception-title {", 1)[1].split("}", 1)[0]
+    exception_meta_block = html.split("    .ops-exception-meta,\n    .ops-exception-submeta {", 1)[1].split("}", 1)[0]
+
+    assert "background: linear-gradient(" in diff_panel_block
+    assert "color-mix(in srgb, var(--paper) 96%, var(--bg) 4%)" in diff_panel_block
+    assert "background: color-mix(in srgb, var(--paper) 94%, var(--bg) 6%);" in diff_head_block
+    assert "color: var(--ink);" in diff_head_strong_block
+    assert "color: var(--muted);" in diff_summary_block
+    assert "background: linear-gradient(" in diff_note_block
+    assert "color-mix(in srgb, var(--paper) 86%, #fdba74 14%)" in diff_note_block
+    assert "background: color-mix(in srgb, var(--paper) 96%, var(--bg) 4%);" in diff_card_block
+    assert "background: linear-gradient(" in diff_card_head_block
+    assert "color-mix(in srgb, var(--paper) 92%, var(--bg) 8%)" in diff_card_head_block
+    assert "color: var(--muted);" in diff_card_head_label_block
+    assert "color: var(--ink);" in diff_card_head_value_block
+    assert "background: color-mix(in srgb, var(--paper) 88%, var(--bg) 12%);" in diff_row_disabled_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, var(--theme-admin-accent, var(--brand)) 14%);" in diff_row_selected_block
+    assert "color: var(--ink);" in diff_label_strong_block
+    assert "color: var(--muted);" in diff_label_span_block
+    assert "color: var(--ink);" in diff_value_block
+    assert "background: linear-gradient(" in diff_value_card_block
+    assert "color-mix(in srgb, var(--paper) 92%, var(--bg) 8%)" in diff_value_card_block
+    assert "color-mix(in srgb, var(--paper) 86%, #fdba74 14%)" in diff_value_card_emphasis_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-admin-accent, var(--brand)) 16%);" in diff_inline_strong_block
+    assert "background: linear-gradient(" in diff_cover_thumb_block
+    assert "color-mix(in srgb, var(--paper) 82%, var(--bg) 18%)" in diff_cover_thumb_block
+    assert "background: linear-gradient(" in diff_track_preview_block
+    assert "color-mix(in srgb, var(--paper) 92%, var(--bg) 8%)" in diff_track_preview_block
+    assert "color: var(--theme-admin-accent-deep, var(--brand));" in diff_track_preview_summary_block
+    assert "color: var(--ink);" in diff_track_preview_ol_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, #86efac 14%);" in diff_status_empty_fill_block
+    assert "background: color-mix(in srgb, var(--paper) 86%, #fca5a5 14%);" in diff_status_conflict_block
+    assert "background: color-mix(in srgb, var(--paper) 90%, var(--bg) 10%);" in diff_status_same_block
+    assert "background: var(--paper);" in exception_box_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, var(--theme-admin-accent, var(--brand)) 16%);" in exception_box_active_block
+    assert "color: var(--ink);" in exception_box_strong_block
+    assert "color: var(--muted);" in exception_box_span_block
+    assert "background: var(--paper);" in exception_row_block
+    assert "background: color-mix(in srgb, var(--paper) 92%, var(--bg) 8%);" in exception_cover_block
+    assert "color: var(--muted);" in exception_cover_block
+    assert "color: var(--ink);" in exception_title_block
+    assert "color: var(--muted);" in exception_meta_block
+
+
+def test_dashboard_slot_and_shelf_surfaces_use_theme_tokens():
+    html = read_static_html("index.html")
+    kpi_box_block = html.split("    .kpi .box {", 1)[1].split("}", 1)[0]
+    kpi_strong_block = html.split("    .kpi strong {", 1)[1].split("}", 1)[0]
+    kpi_span_block = html.split("    .kpi span {", 1)[1].split("}", 1)[0]
+    shelf_toolbar_mini_block = html.split("    .shelf-toolbar .mini {", 1)[1].split("}", 1)[0]
+    shelf_track_wrap_block = html.split("    .shelf-track-wrap {", 1)[1].split("}", 1)[0]
+    shelf_empty_block = html.split("    .shelf-empty {", 1)[1].split("}", 1)[0]
+    shelf_detail_block = html.split("    .shelf-detail {", 1)[1].split("}", 1)[0]
+    shelf_cover_block = html.split("    .shelf-cover {", 1)[1].split("}", 1)[0]
+    shelf_meta_strong_block = html.split("    .shelf-meta strong {", 1)[1].split("}", 1)[0]
+    dashboard_slot_rack_surface_block = html.split("    #homeDashboardCard.dashboard-console-shell .dashboard-slot-rack-surface {", 1)[1].split("}", 1)[0]
+    dashboard_slot_pagebar_block = html.split("    #homeDashboardCard.dashboard-console-shell .dashboard-slot-pagebar {", 1)[1].split("}", 1)[0]
+    dashboard_slot_controls_block = html.split('    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-viewbtn, .dashboard-workbench-source, .dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-slot-grid-nav, .dashboard-slot-sidearrow) {', 1)[1].split("}", 1)[0]
+    dashboard_slot_cards_block = html.split('    #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-overview-card, .dashboard-slot-covercard, .dashboard-slot-listitem, .dashboard-slot-item-row, .dashboard-surface-dock-panel, .dashboard-slot-mutation-row, .dashboard-slot-item-cover, .dashboard-slot-listitem-cover, .dashboard-slot-covercard-cover, .dashboard-slot-shelfcover) {', 1)[1].split("}", 1)[0]
+    dashboard_slot_toolbar_select_block = html.split('    #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-toolbar-filter select, .dashboard-workbench-filter select, .dashboard-workbench-checkbox, .dashboard-slot-sidearrow:hover, .dashboard-slot-sidearrow:focus-visible) {', 1)[1].split("}", 1)[0]
+
+    assert "border: 1px solid var(--line);" in kpi_box_block
+    assert "background: color-mix(in srgb, var(--paper)" in kpi_box_block
+    assert "color: var(--ink);" in kpi_strong_block
+    assert "color: var(--muted);" in kpi_span_block
+    assert "color: var(--muted);" in shelf_toolbar_mini_block
+    assert "border: 1px solid var(--line);" in shelf_track_wrap_block
+    assert "color-mix(in srgb, var(--paper)" in shelf_track_wrap_block
+    assert "color: var(--muted);" in shelf_empty_block
+    assert "border: 1px solid var(--line);" in shelf_detail_block
+    assert "background: var(--paper);" in shelf_detail_block
+    assert "border: 1px solid var(--line);" in shelf_cover_block
+    assert "color-mix(in srgb, var(--paper)" in shelf_cover_block
+    assert "color: var(--ink);" in shelf_meta_strong_block
+    assert "background: var(--theme-dashboard-panel);" in dashboard_slot_rack_surface_block
+    assert "border: 1px solid color-mix(in srgb, var(--theme-dashboard-border) 74%, var(--ink) 26%);" in dashboard_slot_pagebar_block
+    assert "background: color-mix(in srgb, var(--theme-dashboard-panel-soft) 72%, var(--theme-dashboard-panel) 28%);" in dashboard_slot_pagebar_block
+    assert "border-color: color-mix(in srgb, var(--theme-dashboard-border) 76%, var(--ink) 24%);" in dashboard_slot_controls_block
+    assert "background: color-mix(in srgb, var(--theme-dashboard-panel-soft) 76%, var(--theme-dashboard-panel) 24%);" in dashboard_slot_controls_block
+    assert "border-color: var(--theme-dashboard-border);" in dashboard_slot_cards_block
+    assert "background: var(--theme-dashboard-panel-soft);" in dashboard_slot_cards_block
+    assert "background: var(--theme-dashboard-panel-soft);" in dashboard_slot_toolbar_select_block
+    assert "border-radius: 6px;" in dashboard_slot_toolbar_select_block
+
+
+def test_dashboard_coverflow_controls_use_unified_compact_button_system():
+    html = read_static_html("index.html")
+    pagebar_block = html.split("    .dashboard-slot-pagebar {", 1)[1].split("}", 1)[0]
+    sidearrow_block = html.split("    .dashboard-slot-sidearrow {", 1)[1].split("}", 1)[0]
+    viewbtn_block = html.split("    .dashboard-slot-viewbtn {", 1)[1].split("}", 1)[0]
+    pagebar_btn_block = html.split("    .dashboard-slot-pagebar .btn {", 1)[1].split("}", 1)[0]
+    actionbtn_block = html.split("    .dashboard-slot-actionbtn {", 1)[1].split("}", 1)[0]
+    workbench_actionbtn_block = html.split("    .dashboard-workbench-actionbtn {", 1)[1].split("}", 1)[0]
+    shelfview_block = html.split("    #homeDashSlotItems.dashboard-slot-shelfview,\n    #homeDashWorkbenchList.dashboard-slot-shelfview {", 1)[1].split("}", 1)[0]
+    shelfcover_block = html.split("    .dashboard-slot-shelfcover {", 1)[1].split("}", 1)[0]
+    shelfhint_block = html.split("    .dashboard-slot-shelfhint {", 1)[1].split("}", 1)[0]
+    shelfrecent_block = html.split("    .dashboard-slot-shelfrecentmove {", 1)[1].split("}", 1)[0]
+    cover_index_block = html.split("    .dashboard-slot-covercard-index {", 1)[1].split("}", 1)[0]
+
+    assert "min-height: 28px;" in pagebar_block
+    assert "padding: 0 10px;" in pagebar_block
+    assert "border-radius: 6px;" in pagebar_block
+    assert "min-width: 28px;" in sidearrow_block
+    assert "min-height: 28px;" in sidearrow_block
+    assert "border-radius: 6px;" in sidearrow_block
+    assert "min-height: 28px;" in viewbtn_block
+    assert "padding: 0 10px;" in viewbtn_block
+    assert "border-radius: 6px;" in viewbtn_block
+    assert "min-height: 28px;" in pagebar_btn_block
+    assert "padding: 0 10px;" in pagebar_btn_block
+    assert "min-height: 28px;" in actionbtn_block
+    assert "padding: 0 9px;" in actionbtn_block
+    assert "font-size: 0.72rem;" in actionbtn_block
+    assert "min-height: 28px;" in workbench_actionbtn_block
+    assert "padding: 0 9px;" in workbench_actionbtn_block
+    assert "font-size: 0.72rem;" in workbench_actionbtn_block
+    assert "border-radius: 14px;" in shelfview_block
+    assert "border: 1px solid rgba(148, 163, 184, 0.16);" in shelfview_block
+    assert "background: linear-gradient(145deg, #303a45, #1f2832);" in shelfcover_block
+    assert "border: 1px solid rgba(148, 163, 184, 0.22);" in shelfcover_block
+    assert "border-radius: 6px;" in shelfhint_block
+    assert "background: rgba(17, 24, 32, 0.92);" in shelfhint_block
+    assert "border-radius: 6px;" in shelfrecent_block
+    assert "background: rgba(17, 24, 32, 0.92);" in shelfrecent_block
+    assert "border-radius: 6px;" in cover_index_block
+    assert "background: rgba(17, 24, 32, 0.92);" in cover_index_block
+
+
+def test_shell_utility_and_tabs_use_theme_tokens():
+    html = read_static_html("index.html")
+    shell_utility_block = html.split("    .shell-utility {", 1)[1].split("}", 1)[0]
+    shell_utility_main_block = html.split("    .shell-utility-main {", 1)[1].split("}", 1)[0]
+    shell_utility_actions_block = html.split("    .shell-utility-main--actions {", 1)[1].split("}", 1)[0]
+    shell_session_info_block = html.split("    .shell-session-info {", 1)[1].split("}", 1)[0]
+    shell_session_user_block = html.split("    .shell-session-user {", 1)[1].split("}", 1)[0]
+    shell_session_role_block = html.split("    .shell-session-role {", 1)[1].split("}", 1)[0]
+    shell_session_logout_block = html.split("    .shell-session-logout {", 1)[1].split("}", 1)[0]
+    shell_ops_home_btn_block = html.split("    .shell-ops-home-btn {", 1)[1].split("}", 1)[0]
+    admin_shell_kicker_block = html.split("    .admin-shell-kicker {", 1)[1].split("}", 1)[0]
+    admin_shell_h1_block = html.split("    .admin-shell-hero h1 {", 1)[1].split("}", 1)[0]
+    admin_shell_p_block = html.split("    .admin-shell-hero p {", 1)[1].split("}", 1)[0]
+    admin_shell_docs_chip_block = html.split("    .admin-shell-docs .doc-link-chip {", 1)[1].split("}", 1)[0]
+    tab_btn_block = html.split("    .tab-btn {", 1)[1].split("}", 1)[0]
+    tab_btn_active_block = html.split("    .tab-btn.active {", 1)[1].split("}", 1)[0]
+    tab_btn_hover_block = html.split("    .tab-btn:hover,\n    .subtab-btn:hover {", 1)[1].split("}", 1)[0]
+    tab_btn_focus_block = html.split("    .tab-btn:focus-visible,\n    .subtab-btn:focus-visible {", 1)[1].split("}", 1)[0]
+    subtab_btn_block = html.split("    .subtab-btn {", 1)[1].split("}", 1)[0]
+    subtab_btn_active_block = html.split("    .subtab-btn.active {", 1)[1].split("}", 1)[0]
+
+    assert "border: 0;" in shell_utility_block
+    assert "background: var(--theme-shell-surface);" in shell_utility_block
+    assert "border-top: 1px solid color-mix(in srgb, var(--theme-shell-border) 72%, transparent);" in shell_utility_main_block
+    assert "border-top: 1px solid color-mix(in srgb, var(--theme-shell-border) 72%, transparent);" in shell_utility_actions_block
+    assert "color: var(--theme-shell-text);" in shell_session_info_block
+    assert "color: var(--theme-shell-text);" in shell_session_user_block
+    assert "border: 1px solid var(--theme-shell-border);" in shell_session_role_block
+    assert "background: var(--theme-shell-surface-2);" in shell_session_role_block
+    assert "color: var(--theme-shell-text);" in shell_session_role_block
+    assert "border: 1px solid var(--theme-shell-border);" in shell_session_logout_block
+    assert "background: var(--theme-shell-surface-2);" in shell_session_logout_block
+    assert "color: var(--theme-shell-text);" in shell_session_logout_block
+    assert "border-color: var(--theme-shell-border);" in shell_ops_home_btn_block
+    assert "background: var(--theme-shell-surface-2);" in shell_ops_home_btn_block
+    assert "color: var(--theme-shell-text);" in shell_ops_home_btn_block
+    assert "color: var(--theme-shell-accent);" in admin_shell_kicker_block
+    assert "color: var(--theme-shell-text);" in admin_shell_h1_block
+    assert "color: var(--theme-shell-text-muted);" in admin_shell_p_block
+    assert "border-color: var(--theme-shell-border);" in admin_shell_docs_chip_block
+
+
+def test_day_mode_adds_stronger_shell_and_dashboard_hierarchy():
+    html = read_static_html("index.html")
+    day_shell_utility_block = html.split('    body[data-theme="day"] .shell-utility {', 1)[1].split("}", 1)[0]
+    day_shell_theme_toggle_block = html.split('    body[data-theme="day"] .shell-theme-toggle {', 1)[1].split("}", 1)[0]
+    day_shell_theme_toggle_track_block = html.split('    body[data-theme="day"] .shell-theme-toggle-track {', 1)[1].split("}", 1)[0]
+    day_shell_theme_toggle_thumb_block = html.split('    body[data-theme="day"] .shell-theme-toggle-thumb {', 1)[1].split("}", 1)[0]
+    day_admin_hero_block = html.split('    body[data-theme="day"] .admin-shell-hero {', 1)[1].split("}", 1)[0]
+    day_dashboard_root_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell {', 1)[1].split("}", 1)[0]
+    day_dashboard_status_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar {', 1)[1].split("}", 1)[0]
+    day_dashboard_panel_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-panel {', 1)[1].split("}", 1)[0]
+    day_dashboard_rail_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--rail {', 1)[1].split("}", 1)[0]
+    day_dashboard_hero_card_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-hero-card {', 1)[1].split("}", 1)[0]
+    day_dashboard_hero_card_accent_main_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-main {', 1)[1].split("}", 1)[0]
+    day_dashboard_surface_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-map-shell, .dashboard-slot-grid-panel, .dashboard-slot-rack-surface, .dashboard-workbench-toolbar, .dashboard-slot-pagebar, .dashboard-selected-item-meta, .dashboard-slot-bulk-popover, .dashboard-slot-mutation-row) {', 1)[1].split("}", 1)[0]
+    day_dashboard_bulk_head_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-bulk-popover-head strong {', 1)[1].split("}", 1)[0]
+    day_dashboard_bulk_mini_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-bulk-edit-bar .mini {', 1)[1].split("}", 1)[0]
+    day_dashboard_bulk_ghost_btn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell #homeDashBulkEditPanel .btn.ghost {', 1)[1].split("}", 1)[0]
+    day_dashboard_bulk_apply_btn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell #homeDashBulkApplyBtn {', 1)[1].split("}", 1)[0]
+    day_dashboard_micro_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-grid-nav, .dashboard-slot-sidearrow, .dashboard-slot-shelfhint, .dashboard-slot-shelfrecentmove, .dashboard-cabinet-type-stamp, .dashboard-cabinet-head-flag, .dashboard-slot-compact-meta .mini-tag) {', 1)[1].split("}", 1)[0]
+    day_dashboard_card_group_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-cabinet-overview-card, .dashboard-slot-covercard, .dashboard-slot-listitem, .dashboard-slot-item-row, .dashboard-surface-dock-panel, .dashboard-slot-mutation-row, .dashboard-slot-item-cover, .dashboard-slot-listitem-cover, .dashboard-slot-covercard-cover) {', 1)[1].split("}", 1)[0]
+    day_dashboard_chip_group_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-legend-chip, .dashboard-slot-flag-icon, .dashboard-slot-covercard-index, .dashboard-selection-box-label, .dashboard-workbench-warning-badge, .dashboard-cabinet-head-flag, .dashboard-cabinet-type-stamp, .dashboard-cabinet-map-celltype, .dashboard-cabinet-summary-meta span, .dashboard-detail-meta span) {', 1)[1].split("}", 1)[0]
+    day_dashboard_warning_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-workbench-warning {', 1)[1].split("}", 1)[0]
+    day_dashboard_warning_action_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-workbench-warning-action {', 1)[1].split("}", 1)[0]
+    day_dashboard_has_activity_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cell-card.has-activity {', 1)[1].split("}", 1)[0]
+    day_dashboard_activity_in_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-activity-badge.in {', 1)[1].split("}", 1)[0]
+    day_dashboard_activity_out_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-activity-badge.out {', 1)[1].split("}", 1)[0]
+    day_dashboard_overflow_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-card.overflow {', 1)[1].split("}", 1)[0]
+    day_dashboard_unassigned_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-card.unassigned {', 1)[1].split("}", 1)[0]
+    day_dashboard_recentmove_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-recentmove, .dashboard-slot-shelfrecentmove) {', 1)[1].split("}", 1)[0]
+    day_dashboard_floor_label_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-floor-label {', 1)[1].split("}", 1)[0]
+    day_dashboard_floor_cell_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-floor-cell {', 1)[1].split("}", 1)[0]
+    day_dashboard_floor_hover_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-floor-cell:hover {', 1)[1].split("}", 1)[0]
+    day_dashboard_floor_active_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-floor-cell.active {', 1)[1].split("}", 1)[0]
+    day_dashboard_floor_drag_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-floor-cell.drag-over,\n    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-floor-cell.drop-ready {', 1)[1].split("}", 1)[0]
+    day_dashboard_floor_empty_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-floor-cell.empty {', 1)[1].split("}", 1)[0]
+    day_option_pill_block = html.split('    body[data-theme="day"] .option-pill {', 1)[1].split("}", 1)[0]
+    day_dashboard_map_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map {', 1)[1].split("}", 1)[0]
+    day_dashboard_shelfcover_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcover {', 1)[1].split("}", 1)[0]
+    day_dashboard_cellcount_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cellcount {', 1)[1].split("}", 1)[0]
+    day_dashboard_cellmeta_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cellmeta {', 1)[1].split("}", 1)[0]
+    day_dashboard_cellcount_hot_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-map-cell:is(.tone-high, .tone-over) .dashboard-cabinet-map-cellcount {', 1)[1].split("}", 1)[0]
+    day_dashboard_actionbtn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-workbench-warning-action, .dashboard-slot-selectbtn, .dashboard-slot-editbtn, .dashboard-slot-locatebtn, .dashboard-slot-covercard-check) {', 1)[1].split("}", 1)[0]
+    day_dashboard_actionbtn_disabled_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-slot-selectbtn):disabled {', 1)[1].split("}", 1)[0]
+    day_dashboard_actionbtn_active_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-selectbtn.is-selected {', 1)[1].split("}", 1)[0]
+    day_dashboard_viewbtn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-viewbtn, .dashboard-slot-grid-nav, .dashboard-slot-sidearrow) {', 1)[1].split("}", 1)[0]
+    day_dashboard_viewbtn_active_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-viewbtn.active {', 1)[1].split("}", 1)[0]
+    day_dashboard_closebtn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell #homeDashCabinetCloseBtn {', 1)[1].split("}", 1)[0]
+    day_dashboard_viewbtn_hover_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-grid-nav:hover, .dashboard-slot-grid-nav:focus-visible, .dashboard-slot-sidearrow:hover, .dashboard-slot-sidearrow:focus-visible) {', 1)[1].split("}", 1)[0]
+    day_dashboard_coverflow_chip_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-shelfhint, .dashboard-slot-shelfrecentmove, .dashboard-slot-recentmove, .dashboard-slot-covercard-index) {', 1)[1].split("}", 1)[0]
+    day_dashboard_field_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(input, select, textarea) {', 1)[1].split("}", 1)[0]
+    day_dashboard_statusbar_btn_block = html.split('    body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-statusbar :is(.btn, .dashboard-slot-actionbtn, .dashboard-workbench-actionbtn) {', 1)[1].split("}", 1)[0]
+    assert "background: transparent;" in day_shell_utility_block
+    assert "background: color-mix(in srgb, var(--theme-shell-surface-2) 84%, white 16%);" in day_shell_theme_toggle_block
+    assert "color-mix(in srgb, var(--theme-shell-surface) 88%, white 12%)" in day_shell_theme_toggle_track_block
+    assert "color-mix(in srgb, white 62%, var(--theme-shell-accent) 38%)" in day_shell_theme_toggle_thumb_block
+    assert "background: linear-gradient(180deg, var(--theme-shell-surface), var(--theme-shell-surface));" in day_admin_hero_block
+    assert "border-color: rgba(96, 113, 131, 0.88);" in day_dashboard_root_block
+    assert "border-top-color: rgba(85, 123, 146, 0.5);" in day_dashboard_root_block
+    assert "background: linear-gradient(" in day_dashboard_root_block
+    assert "rgba(223, 230, 237, 0.98)" in day_dashboard_root_block
+    assert "rgba(208, 217, 227, 0.98)" in day_dashboard_root_block
+    assert "border-color: rgba(104, 120, 137, 0.8);" in day_dashboard_status_block
+    assert "background: linear-gradient(" in day_dashboard_status_block
+    assert "rgba(244, 247, 251, 0.98)" in day_dashboard_status_block
+    assert "rgba(229, 236, 243, 0.98)" in day_dashboard_status_block
+    assert "0 1px 0 rgba(107, 121, 137, 0.22);" in day_dashboard_status_block
+    assert "border-color: rgba(108, 124, 141, 0.74);" in day_dashboard_panel_block
+    assert "background: rgba(235, 241, 247, 0.98);" in day_dashboard_panel_block
+    assert "box-shadow: none;" in day_dashboard_panel_block
+    assert "border-color: rgba(104, 119, 136, 0.74);" in day_dashboard_rail_block
+    assert "background: rgba(221, 229, 237, 0.98);" in day_dashboard_rail_block
+    assert "box-shadow: none;" in day_dashboard_rail_block
+    assert "background: linear-gradient(" in day_dashboard_hero_card_block
+    assert "color-mix(in srgb, var(--paper) 84%, white 16%)" in day_dashboard_hero_card_block
+    assert "color-mix(in srgb, var(--theme-dashboard-panel-soft) 88%, white 12%)" in day_dashboard_hero_card_block
+    assert "color-mix(in srgb, var(--theme-dashboard-accent, var(--brand)) 22%, white 78%)" in day_dashboard_hero_card_accent_main_block
+    assert "background: linear-gradient(" in day_dashboard_surface_block
+    assert "rgba(228, 235, 242, 0.98)" in day_dashboard_surface_block
+    assert "rgba(211, 220, 229, 0.99)" in day_dashboard_surface_block
+    assert "color: #142739;" in day_dashboard_bulk_head_block
+    assert "color: #465d72;" in day_dashboard_bulk_mini_block
+    assert "border-color: rgba(103, 121, 139, 0.72);" in day_dashboard_bulk_ghost_btn_block
+    assert "color: #1f3648;" in day_dashboard_bulk_ghost_btn_block
+    assert "border-color: rgba(86, 125, 149, 0.64);" in day_dashboard_bulk_apply_btn_block
+    assert "color: #14384d;" in day_dashboard_bulk_apply_btn_block
+    assert "border-color: rgba(110, 125, 142, 0.74);" in day_dashboard_micro_block
+    assert "background: rgba(243, 247, 250, 0.98);" in day_dashboard_micro_block
+    assert "color: #1b3043;" in day_dashboard_micro_block
+    assert "background: linear-gradient(" in day_dashboard_card_group_block
+    assert "rgba(252, 253, 255, 0.99)" in day_dashboard_card_group_block
+    assert "rgba(241, 246, 250, 0.99)" in day_dashboard_card_group_block
+    assert "background: rgba(229, 236, 243, 0.98);" in day_dashboard_chip_group_block
+    assert "background: rgba(221, 229, 237, 0.98) !important;" in day_dashboard_map_block
+    assert "border-color: rgba(101, 117, 135, 0.78) !important;" in day_dashboard_map_block
+    assert "background: linear-gradient(" in day_dashboard_shelfcover_block
+    assert "rgba(255, 255, 255, 0.995)" in day_dashboard_shelfcover_block
+    assert "rgba(244, 248, 252, 0.99)" in day_dashboard_shelfcover_block
+    assert "border-color: rgba(92, 108, 125, 0.86) !important;" in day_dashboard_shelfcover_block
+    assert "color: #132738 !important;" in day_dashboard_shelfcover_block
+    assert "color: #182d40;" in day_dashboard_cellcount_block
+    assert "border-left-color: rgba(92, 106, 121, 0.72);" in day_dashboard_cellcount_block
+    assert "color: #495f74;" in day_dashboard_cellmeta_block
+    assert "color: #9a3412;" in day_dashboard_cellcount_hot_block
+    assert "border-left-color: #d97706;" in day_dashboard_cellcount_hot_block
+    assert "border-color: rgba(176, 123, 70, 0.56);" in day_dashboard_warning_block
+    assert "background: linear-gradient(" in day_dashboard_warning_block
+    assert "rgba(250, 240, 226, 0.98)" in day_dashboard_warning_block
+    assert "color: #35281d;" in day_dashboard_warning_block
+    assert "border-color: rgba(154, 120, 86, 0.46) !important;" in day_dashboard_warning_action_block
+    assert "background: rgba(247, 238, 226, 0.98) !important;" in day_dashboard_warning_action_block
+    assert "color: #35281d;" in day_dashboard_warning_action_block
+    assert "color-mix(in srgb, var(--paper) 80%, white 20%)" in day_dashboard_has_activity_block
+    assert "color-mix(in srgb, var(--theme-dashboard-panel-soft) 78%, var(--theme-dashboard-accent, var(--brand)) 22%)" in day_dashboard_has_activity_block
+    assert "background: color-mix(in srgb, #dcfce7 82%, var(--theme-dashboard-panel-soft) 18%);" in day_dashboard_activity_in_block
+    assert "background: color-mix(in srgb, #fee2e2 82%, var(--theme-dashboard-panel-soft) 18%);" in day_dashboard_activity_out_block
+    assert "color-mix(in srgb, #fdba74 16%, var(--ink) 84%)" in day_dashboard_overflow_block
+    assert "color-mix(in srgb, #fca5a5 14%, var(--ink) 86%)" in day_dashboard_unassigned_block
+    assert "background: rgba(239, 244, 248, 0.98);" in day_dashboard_recentmove_block
+    assert "background: rgba(242, 246, 250, 0.99) !important;" in day_dashboard_actionbtn_block
+    assert "border-color: rgba(103, 118, 135, 0.82) !important;" in day_dashboard_actionbtn_block
+    assert "color: #173043 !important;" in day_dashboard_actionbtn_block
+    assert "0 2px 4px rgba(69, 85, 102, 0.1) !important;" in day_dashboard_actionbtn_block
+    assert "background: color-mix(in srgb, var(--paper) 76%, var(--theme-dashboard-panel-soft) 24%) !important;" in day_dashboard_actionbtn_disabled_block
+    assert "color: color-mix(in srgb, var(--theme-dashboard-text-muted) 76%, white 24%) !important;" in day_dashboard_actionbtn_disabled_block
+    assert "opacity: 1 !important;" in day_dashboard_actionbtn_disabled_block
+    assert "rgba(194, 228, 220, 0.995)" in day_dashboard_actionbtn_active_block
+    assert "color: #10283a !important;" in day_dashboard_actionbtn_active_block
+    assert "background: rgba(242, 246, 250, 0.99) !important;" in day_dashboard_viewbtn_block
+    assert "border-color: rgba(103, 118, 135, 0.82) !important;" in day_dashboard_viewbtn_block
+    assert "color: #173043 !important;" in day_dashboard_viewbtn_block
+    assert "border-color: rgba(65, 122, 117, 0.76) !important;" in day_dashboard_viewbtn_active_block
+    assert "background: linear-gradient(" in day_dashboard_viewbtn_active_block
+    assert "rgba(194, 228, 220, 0.995)" in day_dashboard_viewbtn_active_block
+    assert "rgba(168, 206, 198, 0.99)" in day_dashboard_viewbtn_active_block
+    assert "color: #10283a !important;" in day_dashboard_viewbtn_active_block
+    assert "border-color: rgba(103, 118, 135, 0.82) !important;" in day_dashboard_closebtn_block
+    assert "background: rgba(242, 246, 250, 0.99) !important;" in day_dashboard_closebtn_block
+    assert "color: #173043 !important;" in day_dashboard_closebtn_block
+    assert "background: rgba(236, 241, 246, 0.98) !important;" in day_dashboard_viewbtn_hover_block
+    assert "color: #1c3448 !important;" in day_dashboard_viewbtn_hover_block
+    assert "background: color-mix(in srgb, var(--paper) 90%, white 10%) !important;" in day_dashboard_field_block
+    assert "color: var(--theme-dashboard-text) !important;" in day_dashboard_field_block
+    assert "border-color: color-mix(in srgb, var(--theme-dashboard-border) 68%, white 32%) !important;" in day_dashboard_field_block
+    assert "background: rgba(242, 246, 250, 0.99) !important;" in day_dashboard_statusbar_btn_block
+    assert "color: #173043 !important;" in day_dashboard_statusbar_btn_block
+    assert "color-mix(in srgb, var(--theme-dashboard-text-muted) 82%, var(--ink) 18%)" in day_dashboard_floor_label_block
+    assert "background: color-mix(in srgb, var(--paper) 76%, var(--theme-dashboard-panel-soft) 24%);" in day_dashboard_floor_cell_block
+    assert "background: color-mix(in srgb, var(--paper) 68%, white 32%);" in day_dashboard_floor_hover_block
+    assert "color-mix(in srgb, var(--theme-dashboard-accent, var(--brand)) 14%, white 86%)" in day_dashboard_floor_active_block
+    assert "color-mix(in srgb, var(--theme-dashboard-accent, var(--brand)) 18%, white 82%)" in day_dashboard_floor_drag_block
+    assert "background: color-mix(in srgb, var(--paper) 70%, var(--theme-dashboard-panel-soft) 30%);" in day_dashboard_floor_empty_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, white 16%);" in day_option_pill_block
+    assert "background: rgba(221, 229, 237, 0.98) !important;" in day_dashboard_map_block
+    assert "border-color: rgba(101, 117, 135, 0.78) !important;" in day_dashboard_map_block
+    assert "rgba(255, 255, 255, 0.995)" in day_dashboard_shelfcover_block
+    assert "rgba(244, 248, 252, 0.99)" in day_dashboard_shelfcover_block
+    assert "background: rgba(233, 239, 244, 0.98) !important;" in day_dashboard_coverflow_chip_block
+    assert "border-color: rgba(124, 138, 153, 0.56) !important;" in day_dashboard_coverflow_chip_block
+    assert "color: #3d5266 !important;" in day_dashboard_coverflow_chip_block
+
+
+def test_day_mode_shell_utility_removes_outer_panel_chrome():
+    html = read_static_html("index.html")
+    day_shell_utility_block = html.split('    body[data-theme="day"] .shell-utility {', 1)[1].split("}", 1)[0]
+    day_shell_actions_block = html.split('    body[data-theme="day"] .shell-utility-main--actions {', 1)[1].split("}", 1)[0]
+    day_shell_tools_block = html.split('    body[data-theme="day"] .shell-utility-tools--meta {', 1)[1].split("}", 1)[0]
+    day_shell_compact_utility_block = html.split('    body[data-theme="day"][data-shell-density="compact"] .shell-utility {', 1)[1].split("}", 1)[0]
+    day_shell_compact_actions_block = html.split('    body[data-theme="day"][data-shell-density="compact"] .shell-utility-main--actions {', 1)[1].split("}", 1)[0]
+    day_shell_compact_tools_block = html.split('    body[data-theme="day"][data-shell-density="compact"] .shell-utility-tools--meta {', 1)[1].split("}", 1)[0]
+    assert "padding: 0;" in day_shell_utility_block
+    assert "min-height: auto;" in day_shell_utility_block
+    assert "border-top: 0;" in day_shell_actions_block
+    assert "padding-top: 0;" in day_shell_actions_block
+    assert "padding-bottom: 0;" in day_shell_tools_block
+    assert "min-height: auto;" in day_shell_compact_utility_block
+    assert "padding-top: 0;" in day_shell_compact_actions_block
+    assert "padding-bottom: 0;" in day_shell_compact_tools_block
+
+
+def test_day_mode_adds_stronger_ops_home_hierarchy():
+    html = read_static_html("index.html")
+    day_ops_card_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell :is(.operator-home-card, .operator-weather-card, .operator-mini-card) {', 1)[1].split("}", 1)[0]
+    day_ops_context_panel_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-context-panel.operator-shell-sidebar {', 1)[1].split("}", 1)[0]
+    day_ops_search_shell_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .operator-search-shell {', 1)[1].split("}", 1)[0]
+    day_ops_list_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell :is(.operator-recent-section, .operator-recent-item, .operator-result-item, .operator-request-item, .operator-feed-pagebtn, .operator-cover) {', 1)[1].split("}", 1)[0]
+    day_ops_weather_metric_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .operator-weather-metric {', 1)[1].split("}", 1)[0]
+    day_ops_manual_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-home-manual {', 1)[1].split("}", 1)[0]
+    day_operator_status_pill_block = html.split('    body[data-theme="day"] .operator-status-pill {', 1)[1].split("}", 1)[0]
+    day_operator_status_requested_block = html.split('    body[data-theme="day"] .operator-status-pill.requested {', 1)[1].split("}", 1)[0]
+    day_ops_preview_badge_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-slot-preview-badge {', 1)[1].split("}", 1)[0]
+    day_ops_preview_format_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-slot-preview-format {', 1)[1].split("}", 1)[0]
+    day_ops_record_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-home-record {', 1)[1].split("}", 1)[0]
+    day_ops_record_before_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-home-record::before {', 1)[1].split("}", 1)[0]
+    day_ops_note_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-home-note {', 1)[1].split("}", 1)[0]
+    day_ops_context_meta_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell :is(.ops-library-context-eyebrow, .ops-library-context-subtitle, .ops-library-mini-map-head span, .ops-library-mini-map-floorcode, .ops-library-slot-preview-head span) {', 1)[1].split("}", 1)[0]
+    day_ops_context_title_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell :is(.ops-library-mini-map-head strong, .ops-library-slot-preview-head strong, .ops-library-slot-preview-label) {', 1)[1].split("}", 1)[0]
+    day_ops_mini_card_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .operator-mini-card {', 1)[1].split("}", 1)[0]
+    day_ops_mini_label_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .operator-mini-line strong {', 1)[1].split("}", 1)[0]
+    day_ops_mini_value_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .operator-mini-line span {', 1)[1].split("}", 1)[0]
+    day_ops_context_shell_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell :is(.ops-library-mini-map, .ops-library-slot-preview) {', 1)[1].split("}", 1)[0]
+    day_ops_context_cell_empty_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-mini-map-cell.tone-empty {', 1)[1].split("}", 1)[0]
+    day_ops_context_cell_filled_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-mini-map-cell.tone-filled {', 1)[1].split("}", 1)[0]
+    day_ops_context_cell_high_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-mini-map-cell.tone-high {', 1)[1].split("}", 1)[0]
+    day_ops_context_cell_over_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-mini-map-cell.tone-over {', 1)[1].split("}", 1)[0]
+    day_ops_context_cell_active_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-mini-map-cell.active {', 1)[1].split("}", 1)[0]
+    day_ops_context_active_badge_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-mini-map-active-badge {', 1)[1].split("}", 1)[0]
+    day_ops_preview_thumb_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell .ops-library-slot-preview-thumb {', 1)[1].split("}", 1)[0]
+    day_ops_context_link_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell :is(.ops-library-slot-preview-link, .operator-mini-linkchip) {', 1)[1].split("}", 1)[0]
+    assert "border-color: color-mix(in srgb, var(--line) 62%, white 38%);" in day_ops_card_block
+    assert "color-mix(in srgb, var(--paper) 86%, white 14%)" in day_ops_card_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 78%, white 22%)" in day_ops_card_block
+    assert "border: 1px solid color-mix(in srgb, var(--line) 64%, white 36%);" in day_ops_context_panel_block
+    assert "color-mix(in srgb, var(--theme-shell-surface) 92%, white 8%)" in day_ops_context_panel_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 72%, white 28%)" in day_ops_context_panel_block
+    assert "border-color: color-mix(in srgb, var(--line) 64%, white 36%);" in day_ops_search_shell_block
+    assert "color-mix(in srgb, var(--paper) 94%, white 6%)" in day_ops_search_shell_block
+    assert "color-mix(in srgb, var(--paper) 82%, var(--bg) 18%)" in day_ops_search_shell_block
+    assert "background: color-mix(in srgb, var(--paper) 76%, white 24%);" in day_ops_list_block
+    assert "background: color-mix(in srgb, var(--paper) 84%, white 16%);" in day_ops_weather_metric_block
+    assert "border-color: color-mix(in srgb, var(--line) 64%, white 36%);" in day_ops_weather_metric_block
+    assert "background: color-mix(in srgb, var(--paper) 88%, white 12%);" in day_ops_manual_block
+    assert "border-color: color-mix(in srgb, var(--line) 64%, white 36%);" in day_ops_manual_block
+    assert "background: color-mix(in srgb, var(--paper) 72%, white 28%);" in day_operator_status_pill_block
+    assert "background: color-mix(in srgb, #1d4ed8 14%, white 86%);" in day_operator_status_requested_block
+    assert "background: color-mix(in srgb, #c2410c 78%, white 22%);" in day_ops_preview_badge_block
+    assert "background: color-mix(in srgb, var(--paper) 82%, white 18%);" in day_ops_preview_format_block
+    assert "color-mix(in srgb, var(--theme-admin-accent, var(--brand)) 10%, white 90%)" in day_ops_record_block
+    assert "color-mix(in srgb, var(--paper) 72%, white 28%)" in day_ops_record_block
+    assert "color-mix(in srgb, #ffffff 44%, transparent)" in day_ops_record_before_block
+    assert "color: color-mix(in srgb, var(--theme-admin-accent, var(--brand)) 58%, var(--ink) 42%);" in day_ops_note_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-muted) 86%, var(--ink) 14%);" in day_ops_context_meta_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text) 90%, #000000 10%);" in day_ops_context_title_block
+    assert "border-color: color-mix(in srgb, var(--line) 66%, white 34%);" in day_ops_mini_card_block
+    assert "color-mix(in srgb, var(--paper) 90%, white 10%)" in day_ops_mini_card_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 82%, white 18%)" in day_ops_mini_card_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-muted) 84%, var(--ink) 16%);" in day_ops_mini_label_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text) 90%, #000000 10%);" in day_ops_mini_value_block
+    assert "border-color: color-mix(in srgb, var(--line) 68%, white 32%);" in day_ops_context_shell_block
+    assert "color-mix(in srgb, var(--paper) 92%, white 8%)" in day_ops_context_shell_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 80%, white 20%)" in day_ops_context_shell_block
+    assert "color-mix(in srgb, var(--paper) 72%, white 28%)" in day_ops_context_cell_empty_block
+    assert "color-mix(in srgb, var(--paper) 64%, white 36%)" in day_ops_context_cell_filled_block
+    assert "color-mix(in srgb, #f59e0b 14%, white 86%)" in day_ops_context_cell_high_block
+    assert "color-mix(in srgb, #dc2626 10%, white 90%)" in day_ops_context_cell_over_block
+    assert "background: color-mix(in srgb, var(--selected-accent) 10%, white 90%);" in day_ops_context_cell_active_block
+    assert "background: color-mix(in srgb, var(--theme-admin-accent, var(--brand)) 12%, white 88%);" in day_ops_context_active_badge_block
+    assert "color-mix(in srgb, var(--paper) 94%, white 6%)" in day_ops_preview_thumb_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 84%, white 16%)" in day_ops_preview_thumb_block
+    assert "color-mix(in srgb, var(--theme-admin-link, var(--brand)) 24%, var(--line) 76%)" in day_ops_context_link_block
+    assert "color-mix(in srgb, var(--paper) 94%, white 6%)" in day_ops_context_link_block
+    assert "color: color-mix(in srgb, var(--theme-admin-link, var(--brand)) 72%, var(--ink) 28%);" in day_ops_context_link_block
+
+
+def test_day_mode_adds_stronger_admin_tab_shell_hierarchy():
+    html = read_static_html("index.html")
+    day_admin_tab_shell_block = html.split('    body[data-theme="day"] :is(#tabMedia.admin-console-shell, #tabManage .admin-console-main, #tabRegister.admin-console-shell, #tabCollectibles) {', 1)[1].split("}", 1)[0]
+    assert "background: color-mix(in srgb, var(--theme-admin-panel-bg) 64%, var(--ink) 36%);" in day_admin_tab_shell_block
+
+
+def test_day_mode_rebalances_media_manage_surface_depth_and_button_priority():
+    html = read_static_html("index.html")
+    manage_shell_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main {', 1)[1].split("}", 1)[0]
+    card_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main > :is(.card, .manual-block) {', 1)[1].split("}", 1)[0]
+    panel_block = html.split('    body[data-theme="day"] #tabManage :is(.manual-block, .result-list, .table-wrap, .status, .compact-line, .music-box, .source-meta-summary, .home-manage-secondary-block, .ops-compact-extra-fields, .home-edit-track-panel, .home-edit-track-list, .source-meta-tracklist, .image-chip-list, .home-edit-cover-meta-text, .meta-search-box, #homeMasterAddResults.result-list, #homeMetaResults.result-list) {', 1)[1].split("}", 1)[0]
+    shelf_block = html.split('    body[data-theme="day"] #tabManage .shelf-track-wrap {', 1)[1].split("}", 1)[0]
+    ghost_button_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main .btn.ghost {', 1)[1].split("}", 1)[0]
+    primary_button_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main .btn:not(.ghost):not(.secondary) {', 1)[1].split("}", 1)[0]
+    muted_block = html.split('    body[data-theme="day"] #tabManage :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note, .source-meta-summary .compact-line, .home-edit-track-summary, .home-edit-track-row, .home-edit-track-pos, .home-edit-track-duration, .home-manage-secondary-note, .home-master-lookup-note, .home-edit-cover-meta-text, .image-chip-item) {', 1)[1].split("}", 1)[0]
+    help_block = html.split('    body[data-theme="day"] #tabManage :is(.help-dot, .section-help-dot) {', 1)[1].split("}", 1)[0]
+    kicker_block = html.split('    body[data-theme="day"] #tabManage :is(.home-product-edit-kicker, .home-master-lookup-kicker) {', 1)[1].split("}", 1)[0]
+    assert "rgba(195, 207, 219, 0.965)" in manage_shell_block
+    assert "border-color: rgba(94, 112, 130, 0.62);" in manage_shell_block
+    assert "0 1px 0 rgba(118, 133, 150, 0.12);" in manage_shell_block
+    assert "rgba(245, 249, 252, 0.996)" in card_block
+    assert "0 1px 0 rgba(122, 137, 154, 0.12);" in card_block
+    assert "background: rgba(223, 231, 239, 0.992);" in panel_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 60%, var(--ink) 40%)" in shelf_block
+    assert "color-mix(in srgb, var(--paper) 94%, white 6%)" in ghost_button_block
+    assert "background: linear-gradient(" in primary_button_block
+    assert "rgba(213, 232, 244, 0.998)" in primary_button_block
+    assert "rgba(191, 217, 234, 0.994)" in primary_button_block
+    assert "color: #41586d;" in muted_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-meta) 82%, var(--ink) 18%);" in help_block
+    assert "background: linear-gradient(180deg, rgba(223, 237, 245, 0.985), rgba(208, 225, 236, 0.982));" in kicker_block
+
+
+def test_day_mode_media_manage_disabled_buttons_stay_light_and_legible():
+    html = read_static_html("index.html")
+    disabled_ghost_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main .btn.ghost:disabled {', 1)[1].split("}", 1)[0]
+    assert "background: color-mix(in srgb, var(--theme-admin-panel-bg-2) 76%, white 24%);" in disabled_ghost_block
+    assert "border-color: color-mix(in srgb, var(--line) 58%, white 42%);" in disabled_ghost_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-meta) 86%, white 14%);" in disabled_ghost_block
+
+
+def test_day_mode_lightens_media_manage_selected_result_surfaces():
+    html = read_static_html("index.html")
+    pick_block = html.split('    body[data-theme="day"] #tabManage .result-item.pick {', 1)[1].split("}", 1)[0]
+    preview_pick_block = html.split('    body[data-theme="day"] #tabManage .home-master-member-preview-item.is-context-selected {', 1)[1].split("}", 1)[0]
+    preview_first_block = html.split('    body[data-theme="day"] #tabManage .home-master-member-preview-item.is-context-selected:first-child {', 1)[1].split("}", 1)[0]
+    assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 24%, var(--line) 76%);" in pick_block
+    assert "background: linear-gradient(" in pick_block
+    assert "color-mix(in srgb, var(--paper) 80%, white 20%)" in pick_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 84%, white 16%)" in pick_block
+    assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 18%, var(--line) 82%);" in preview_pick_block
+    assert "color-mix(in srgb, var(--paper) 88%, white 12%)" in preview_pick_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 88%, white 12%)" in preview_pick_block
+    assert "border-top-color: color-mix(in srgb, var(--theme-admin-accent) 18%, var(--line) 82%);" in preview_first_block
+
+
+def test_day_mode_lightens_media_manage_expanded_related_group_surface():
+    html = read_static_html("index.html")
+    same_group_block = html.split('    body[data-theme="day"] #tabManage .home-copy-group.same {', 1)[1].split("}", 1)[0]
+    inline_host_block = html.split('    body[data-theme="day"] #tabManage .home-related-inline-editor-host {', 1)[1].split("}", 1)[0]
+    assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 18%, var(--line) 82%);" in same_group_block
+    assert "background: linear-gradient(" in same_group_block
+    assert "color-mix(in srgb, var(--paper) 86%, white 14%)" in same_group_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 88%, white 12%)" in same_group_block
+    assert "border-top-color: color-mix(in srgb, var(--line) 62%, white 38%);" in inline_host_block
+
+
+def test_day_mode_adds_stronger_manual_block_hierarchy():
+    html = read_static_html("index.html")
+    day_manual_block = html.split('    body[data-theme="day"] .manual-block {', 1)[1].split("}", 1)[0]
+    day_manual_summary = html.split('    body[data-theme="day"] .manual-block summary {', 1)[1].split("}", 1)[0]
+    assert "background: rgba(223, 231, 239, 0.992);" in day_manual_block
+    assert "border-color: rgba(98, 115, 133, 0.58);" in day_manual_block
+    assert "rgba(236, 242, 247, 0.996) 0%" in day_manual_summary
+    assert "rgba(223, 231, 239, 0.992) 100%" in day_manual_summary
+
+
+def test_day_mode_adds_stronger_collectibles_hierarchy():
+    html = read_static_html("index.html")
+    day_collectibles_tab_block = html.split('    body[data-theme="day"] #tabCollectibles {', 1)[1].split("}", 1)[0]
+    day_collectibles_shell_block = html.split('    body[data-theme="day"] #tabCollectibles .goods-shell.admin-console-shell {', 1)[1].split("}", 1)[0]
+    day_collectibles_card_block = html.split('    body[data-theme="day"] #tabCollectibles :is(.goods-surface > .card, .goods-surface > .manual-block) {', 1)[1].split("}", 1)[0]
+    day_collectibles_list_block = html.split('    body[data-theme="day"] #tabCollectibles :is(.goods-map-section, .goods-target-row, .goods-result-item) {', 1)[1].split("}", 1)[0]
+    assert "rgba(192, 204, 216, 0.965)" in day_collectibles_tab_block
+    assert "--admin-console-panel-bg: rgba(244, 248, 252, 0.996);" in day_collectibles_shell_block
+    assert "--admin-console-panel-bg-2: rgba(223, 231, 239, 0.992);" in day_collectibles_shell_block
+    assert "--admin-console-panel-border: rgba(94, 112, 130, 0.62);" in day_collectibles_shell_block
+    assert "rgba(244, 248, 252, 0.996)" in day_collectibles_card_block
+    assert "border-color: rgba(94, 112, 130, 0.62);" in day_collectibles_card_block
+    assert "color: #203548;" in day_collectibles_card_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_collectibles_list_block
+    assert "border-color: rgba(98, 115, 133, 0.58);" in day_collectibles_list_block
+
+
+def test_collectibles_mode_tabs_share_console_subtab_treatment():
+    html = read_static_html("index.html")
+    mode_tabs_block = html.split("    #tabMedia.admin-console-shell .goods-mode-tabs,\n    #tabCollectibles .goods-mode-tabs,\n    #tabRegister.admin-console-shell .subtabs {", 1)[1].split("}", 1)[0]
+    subtab_block = html.split("    #tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn,\n    #tabCollectibles .goods-mode-tabs .subtab-btn,\n    #tabRegister.admin-console-shell .subtabs .subtab-btn {", 1)[1].split("}", 1)[0]
+    subtab_active_block = html.split("    #tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn.active,\n    #tabCollectibles .goods-mode-tabs .subtab-btn.active,\n    #tabRegister.admin-console-shell .subtabs .subtab-btn.active {", 1)[1].split("}", 1)[0]
+    assert "gap: 8px;" in mode_tabs_block
+    assert "flex-wrap: wrap;" in mode_tabs_block
+    assert "background: var(--admin-console-panel-bg-2);" in subtab_block
+    assert "color: var(--admin-console-text);" in subtab_block
+    assert "background: var(--admin-console-panel-bg);" in subtab_active_block
+    assert "border-color: var(--admin-console-accent);" in subtab_active_block
+
+
+def test_day_mode_adds_stronger_ops_exception_hierarchy():
+    html = read_static_html("index.html")
+    day_ops_tab_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell {', 1)[1].split("}", 1)[0]
+    day_ops_exception_card_block = html.split('    body[data-theme="day"] #opsExceptionPanel > .layout > .card {', 1)[1].split("}", 1)[0]
+    day_ops_exception_summary_block = html.split('    body[data-theme="day"] #opsExceptionPanel .ops-exception-box {', 1)[1].split("}", 1)[0]
+    day_ops_toolbar_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell .dashboard-selection-toolbar {', 1)[1].split("}", 1)[0]
+    day_ops_exception_toolbar_block = html.split('    body[data-theme="day"] #opsExceptionPanel .dashboard-selection-toolbar {', 1)[1].split("}", 1)[0]
+    day_ops_exception_list_block = html.split('    body[data-theme="day"] #opsExceptionPanel .ops-exception-list {', 1)[1].split("}", 1)[0]
+    day_ops_exception_row_block = html.split('    body[data-theme="day"] #opsExceptionPanel .ops-exception-row {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in day_ops_tab_block
+    assert "rgba(192, 204, 216, 0.965)" in day_ops_tab_block
+    assert "rgba(181, 194, 207, 0.985)" in day_ops_tab_block
+    assert "background: linear-gradient(" in day_ops_exception_card_block
+    assert "rgba(244, 248, 252, 0.996)" in day_ops_exception_card_block
+    assert "rgba(232, 239, 246, 0.992)" in day_ops_exception_card_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_ops_exception_summary_block
+    assert "border-color: rgba(98, 115, 133, 0.58);" in day_ops_exception_summary_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_ops_toolbar_block
+    assert "border: 1px solid rgba(98, 115, 133, 0.58) !important;" in day_ops_toolbar_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_ops_exception_toolbar_block
+    assert "border: 1px solid rgba(98, 115, 133, 0.58);" in day_ops_exception_toolbar_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_ops_exception_list_block
+    assert "background: rgba(244, 248, 252, 0.996);" in day_ops_exception_row_block
+
+
+def test_day_mode_strengthens_ops_system_status_text_hierarchy():
+    html = read_static_html("index.html")
+    summary_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell #opsSystemStatusSummary {', 1)[1].split("}", 1)[0]
+    subtitle_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell > .card > .mini {', 1)[1].split("}", 1)[0]
+    detail_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell :is(#opsSystemStatusLinks, #opsSystemStatusPaths, #opsSystemStatusRecentLog, #opsQaStatusPaths, #opsQaRemainingList) {', 1)[1].split("}", 1)[0]
+    assert "color: color-mix(in srgb, var(--theme-admin-text) 94%, var(--ink) 6%);" in summary_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-muted) 84%, var(--ink) 16%);" in subtitle_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-muted) 84%, var(--ink) 16%);" in detail_block
+
+
+def test_day_mode_adds_stronger_camera_hierarchy():
+    html = read_static_html("index.html")
+    day_camera_tab_block = html.split('    body[data-theme="day"] #tabCamera.page-column {', 1)[1].split("}", 1)[0]
+    day_camera_shell_block = html.split('    body[data-theme="day"] #tabCamera .shared-camera-shell {', 1)[1].split("}", 1)[0]
+    day_camera_panel_block = html.split('    body[data-theme="day"] #tabCamera :is(.shared-camera-list-panel, .shared-camera-preview-panel) {', 1)[1].split("}", 1)[0]
+    day_camera_item_block = html.split('    body[data-theme="day"] #tabCamera .shared-camera-list-item {', 1)[1].split("}", 1)[0]
+    day_camera_placeholder_block = html.split('    body[data-theme="day"] #tabCamera .dashboard-camera-placeholder {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in day_camera_tab_block
+    assert "rgba(192, 204, 216, 0.965)" in day_camera_tab_block
+    assert "rgba(181, 194, 207, 0.985)" in day_camera_tab_block
+    assert "background: linear-gradient(" in day_camera_shell_block
+    assert "rgba(244, 248, 252, 0.996)" in day_camera_shell_block
+    assert "rgba(232, 239, 246, 0.992)" in day_camera_shell_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_camera_panel_block
+    assert "background: rgba(244, 248, 252, 0.996);" in day_camera_item_block
+    assert "background: rgba(232, 239, 246, 0.992);" in day_camera_placeholder_block
+
+
+def test_day_mode_adds_stronger_ops_export_hierarchy():
+    html = read_static_html("index.html")
+    day_export_card_block = html.split('    body[data-theme="day"] #opsExportPanel > .layout > .card {', 1)[1].split("}", 1)[0]
+    day_export_surface_block = html.split('    body[data-theme="day"] #opsExportPanel :is(.status, input, select, textarea, .compact-line, .inline-check) {', 1)[1].split("}", 1)[0]
+    day_export_specific_surface_block = html.split('    body[data-theme="day"] #opsExportPanel .status,', 1)[1].split("}", 1)[0]
+    day_export_file_button_block = html.split('    body[data-theme="day"] #opsExportPanel input[type="file"]::file-selector-button {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in day_export_card_block
+    assert "rgba(244, 248, 252, 0.996)" in day_export_card_block
+    assert "rgba(232, 239, 246, 0.992)" in day_export_card_block
+    assert "border-color: rgba(94, 112, 130, 0.62) !important;" in day_export_card_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_export_surface_block
+    assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_export_surface_block
+    assert "body[data-theme=\"day\"] #opsExportPanel input:not([type=\"checkbox\"])," in day_export_specific_surface_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_export_specific_surface_block
+    assert "background: rgba(232, 239, 246, 0.992) !important;" in day_export_file_button_block
+
+
+def test_day_mode_adds_stronger_ops_account_and_provider_hierarchy():
+    html = read_static_html("index.html")
+    day_ops_account_provider_card_block = html.split('    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) > .layout > .card {', 1)[1].split("}", 1)[0]
+    day_ops_account_provider_surface_block = html.split('    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(.status, .compact-line, .inline-check, input:not([type="checkbox"]), select, textarea) {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in day_ops_account_provider_card_block
+    assert "rgba(244, 248, 252, 0.996)" in day_ops_account_provider_card_block
+    assert "rgba(232, 239, 246, 0.992)" in day_ops_account_provider_card_block
+    assert "border-color: rgba(94, 112, 130, 0.62) !important;" in day_ops_account_provider_card_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_ops_account_provider_surface_block
+    assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_ops_account_provider_surface_block
+
+
+def test_day_mode_lightens_ops_provider_group_surfaces():
+    html = read_static_html("index.html")
+    provider_group_block = html.split('    body[data-theme="day"] #opsProviderPanel .ops-provider-group {', 1)[1].split("}", 1)[0]
+    provider_label_block = html.split('    body[data-theme="day"] #opsProviderPanel .ops-provider-group :is(label, .mini, .muted) {', 1)[1].split("}", 1)[0]
+    assert "border-color: rgba(98, 115, 133, 0.58) !important;" in provider_group_block
+    assert "background: linear-gradient(" in provider_group_block
+    assert "rgba(232, 239, 246, 0.992)" in provider_group_block
+    assert "rgba(220, 229, 238, 0.988)" in provider_group_block
+    assert "color: rgb(57, 75, 95);" not in provider_label_block
+    assert "color: color-mix(in srgb, var(--theme-admin-text-muted) 92%, var(--ink) 8%) !important;" in provider_label_block
+
+
+def test_day_mode_adds_stronger_ops_meta_sync_hierarchy():
+    html = read_static_html("index.html")
+    day_ops_meta_sync_card_block = html.split('    body[data-theme="day"] #opsMetaSyncPanel > .layout > .card {', 1)[1].split("}", 1)[0]
+    day_ops_meta_sync_surface_block = html.split('    body[data-theme="day"] #opsMetaSyncPanel :is(.status, .compact-line, .inline-check, input:not([type="checkbox"]), select, textarea) {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in day_ops_meta_sync_card_block
+    assert "rgba(244, 248, 252, 0.996)" in day_ops_meta_sync_card_block
+    assert "rgba(232, 239, 246, 0.992)" in day_ops_meta_sync_card_block
+    assert "border-color: rgba(94, 112, 130, 0.62) !important;" in day_ops_meta_sync_card_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_ops_meta_sync_surface_block
+    assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_ops_meta_sync_surface_block
+
+
+def test_day_mode_adds_stronger_barcode_feedback_hierarchy():
+    html = read_static_html("index.html")
+    day_barcode_toast_block = html.split('    body[data-theme="day"] .admin-barcode-toast {', 1)[1].split("}", 1)[0]
+    day_barcode_slot_block = html.split('    body[data-theme="day"] .admin-barcode-toast-slot {', 1)[1].split("}", 1)[0]
+    assert 'color-mix(in srgb, var(--theme-admin-panel-bg-2) 56%, var(--ink) 44%)' in day_barcode_toast_block
+    assert 'color-mix(in srgb, var(--theme-admin-panel-bg) 60%, var(--ink) 40%)' in day_barcode_toast_block
+    assert 'color: var(--ink);' in day_barcode_toast_block
+    assert 'background: color-mix(in srgb, var(--theme-admin-panel-bg-2) 48%, var(--ink) 52%);' in day_barcode_slot_block
+
+
+def test_day_mode_adds_stronger_ops_cabinet_and_slot_hierarchy():
+    html = read_static_html("index.html")
+    day_ops_cabinet_slot_card_block = html.split('    body[data-theme="day"] :is(#opsCabinetPanel, #opsSlotPanel) > .layout > .card {', 1)[1].split("}", 1)[0]
+    day_ops_cabinet_slot_surface_block = html.split('    body[data-theme="day"] :is(#opsCabinetPanel, #opsSlotPanel) :is(.status, .compact-line, .inline-check, input:not([type="checkbox"]), select, textarea, .table-wrap) {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in day_ops_cabinet_slot_card_block
+    assert "rgba(244, 248, 252, 0.996)" in day_ops_cabinet_slot_card_block
+    assert "rgba(232, 239, 246, 0.992)" in day_ops_cabinet_slot_card_block
+    assert "border-color: rgba(94, 112, 130, 0.62) !important;" in day_ops_cabinet_slot_card_block
+    assert "background: rgba(223, 231, 239, 0.992) !important;" in day_ops_cabinet_slot_surface_block
+    assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_ops_cabinet_slot_surface_block
+
+
+def test_day_mode_adds_stronger_image_gallery_hierarchy():
+    html = read_static_html("index.html")
+    day_gallery_panel_block = html.split('    body[data-theme="day"] .image-gallery-panel {', 1)[1].split("}", 1)[0]
+    day_gallery_preview_block = html.split('    body[data-theme="day"] .image-gallery-preview-card {', 1)[1].split("}", 1)[0]
+    day_gallery_thumb_block = html.split('    body[data-theme="day"] .image-gallery-thumb {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(180deg, rgba(244, 248, 252, 0.996), rgba(232, 239, 246, 0.992));" in day_gallery_panel_block
+    assert "border-color: rgba(94, 112, 130, 0.62);" in day_gallery_panel_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_gallery_preview_block
+    assert "background: rgba(229, 236, 243, 0.994);" in day_gallery_thumb_block
+
+
+def test_day_mode_adds_stronger_manage_detail_hierarchy():
+    html = read_static_html("index.html")
+    day_manage_primary_block = html.split('    body[data-theme="day"] #tabManage :is(#homeLinkedGoodsPanel, #homeEditorProductBlock, #homeMasterAddBlock) {', 1)[1].split("}", 1)[0]
+    day_manage_summary_block = html.split('    body[data-theme="day"] #tabManage #homeMasterSummarySection {', 1)[1].split("}", 1)[0]
+    day_manage_status_block = html.split('    body[data-theme="day"] #tabManage :is(#homeMasterStatus, #homeMasterMeta, #homeMasterCorrectionStatus, #homeMasterSortArtistStatus) {', 1)[1].split("}", 1)[0]
+    day_manage_formrow_block = html.split('    body[data-theme="day"] #tabManage :is(#homeMasterCorrectionRow, #homeMasterSortArtistRow) {', 1)[1].split("}", 1)[0]
+    day_manage_secondary_block = html.split('    body[data-theme="day"] #tabManage :is(#homeProductRelationSection, #homeMasterFetchDetails, #homeMasterLookupResultsDetails, #homeEditTrackPanel, #homeEditTrackInfoList) {', 1)[1].split("}", 1)[0]
+    day_manage_related_card_block = html.split('    body[data-theme="day"] #tabManage :is(#homeMasterRelatedList .home-copy-group, #homeMasterRelatedList .home-master-member-preview-item) {', 1)[1].split("}", 1)[0]
+    day_manage_meta_block = html.split('    body[data-theme="day"] #tabManage #homeMasterRelatedList :is(.mini, .muted, .home-master-subline, .home-master-member-preview-title span) {', 1)[1].split("}", 1)[0]
+    day_manage_heading_block = html.split('    body[data-theme="day"] #tabManage :is(.section-divider h2, .home-copy-group-head, .home-master-heading) {', 1)[1].split("}", 1)[0]
+    day_manage_kicker_block = html.split('    body[data-theme="day"] #tabManage :is(.home-master-lookup-kicker, .home-product-edit-kicker) {', 1)[1].split("}", 1)[0]
+    day_manage_note_block = html.split('    body[data-theme="day"] #tabManage :is(.home-master-lookup-note, .home-manage-secondary-note, .dashboard-selected-sort-artist-note, .home-master-subline, .home-master-member-preview-title span) {', 1)[1].split("}", 1)[0]
+    day_manage_results_block = html.split('    body[data-theme="day"] #tabManage :is(#homeMetaResults.result-list, #homeTrackMapBox) {', 1)[1].split("}", 1)[0]
+    day_manage_danger_block = html.split('    body[data-theme="day"] #tabManage .home-master-danger-zone {', 1)[1].split("}", 1)[0]
+    day_manage_danger_note_block = html.split('    body[data-theme="day"] #tabManage .home-master-danger-zone .mini {', 1)[1].split("}", 1)[0]
+    day_manage_primary_btn_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main .btn:not(.ghost):not(.secondary) {', 1)[1].split("}", 1)[0]
+    day_manage_load_btn_block = html.split('    body[data-theme="day"] #tabManage .home-master-load-btn {', 1)[1].split("}", 1)[0]
+    assert "border-color: rgba(92, 110, 128, 0.68) !important;" in day_manage_primary_block
+    assert "background: linear-gradient(180deg, rgba(246, 250, 253, 0.996), rgba(235, 241, 247, 0.992)) !important;" in day_manage_primary_block
+    assert "border: 1px solid rgba(94, 112, 130, 0.72);" in day_manage_summary_block
+    assert "background: linear-gradient(180deg, rgba(250, 252, 254, 0.997), rgba(238, 244, 249, 0.993));" in day_manage_summary_block
+    assert "border-color: rgba(101, 118, 136, 0.62) !important;" in day_manage_status_block
+    assert "background: rgba(229, 236, 243, 0.992) !important;" in day_manage_status_block
+    assert "border-color: rgba(98, 115, 133, 0.6);" in day_manage_formrow_block
+    assert "background: rgba(224, 232, 240, 0.992);" in day_manage_formrow_block
+    assert "border-color: rgba(99, 116, 134, 0.62) !important;" in day_manage_secondary_block
+    assert "background: rgba(216, 225, 234, 0.992) !important;" in day_manage_secondary_block
+    assert "border-color: rgba(91, 109, 127, 0.62) !important;" in day_manage_related_card_block
+    assert "background: linear-gradient(180deg, rgba(248, 251, 253, 0.996), rgba(235, 241, 246, 0.993)) !important;" in day_manage_related_card_block
+    assert "color: #3e5569;" in day_manage_meta_block
+    assert "color: #0f2537;" in day_manage_heading_block
+    assert "border-color: rgba(94, 126, 146, 0.3);" not in day_manage_kicker_block
+    assert "border-color: rgba(90, 126, 148, 0.34);" in day_manage_kicker_block
+    assert "background: linear-gradient(180deg, rgba(223, 237, 245, 0.985), rgba(208, 225, 236, 0.982));" in day_manage_kicker_block
+    assert "color: #28495f;" in day_manage_kicker_block
+    assert "color: #355066;" in day_manage_note_block
+    assert "border-color: rgba(99, 116, 134, 0.62) !important;" in day_manage_results_block
+    assert "background: rgba(216, 225, 234, 0.992) !important;" in day_manage_results_block
+    assert "border-color: rgba(164, 120, 82, 0.52) !important;" in day_manage_danger_block
+    assert "background: linear-gradient(180deg, rgba(243, 230, 220, 0.986), rgba(231, 214, 202, 0.984)) !important;" in day_manage_danger_block
+    assert "color: #6f4d3a;" in day_manage_danger_note_block
+    assert "border-color: rgba(86, 125, 149, 0.64);" in day_manage_primary_btn_block
+    assert "color: #14384d;" in day_manage_primary_btn_block
+    assert "border-color: rgba(86, 125, 149, 0.64) !important;" in day_manage_load_btn_block
+    assert "color: #14384d !important;" in day_manage_load_btn_block
+
+
+def test_day_mode_adds_stronger_source_workbench_diff_hierarchy():
+    html = read_static_html("index.html")
+    day_diff_ghost_btn_block = html.split('    body[data-theme="day"] #sourceWorkbenchDiffReview .btn.ghost {', 1)[1].split("}", 1)[0]
+    day_diff_primary_btn_block = html.split('    body[data-theme="day"] #sourceWorkbenchDiffReview .btn:not(.ghost):not(.secondary) {', 1)[1].split("}", 1)[0]
+    day_diff_row_block = html.split('    body[data-theme="day"] #sourceWorkbenchDiffReview .source-workbench-diff-row {', 1)[1].split("}", 1)[0]
+    day_diff_row_disabled_block = html.split('    body[data-theme="day"] #sourceWorkbenchDiffReview .source-workbench-diff-row.is-disabled {', 1)[1].split("}", 1)[0]
+    day_diff_row_selected_block = html.split('    body[data-theme="day"] #sourceWorkbenchDiffReview .source-workbench-diff-row.is-selected {', 1)[1].split("}", 1)[0]
+
+    assert "border-color: rgba(103, 121, 139, 0.72);" in day_diff_ghost_btn_block
+    assert "rgba(249, 251, 253, 0.998)" in day_diff_ghost_btn_block
+    assert "color: #1f3648;" in day_diff_ghost_btn_block
+
+    assert "border-color: rgba(86, 125, 149, 0.64);" in day_diff_primary_btn_block
+    assert "rgba(213, 232, 244, 0.998)" in day_diff_primary_btn_block
+    assert "color: #14384d;" in day_diff_primary_btn_block
+
+    assert "border-top-color: rgba(98, 115, 133, 0.34);" in day_diff_row_block
+    assert "background: rgba(232, 239, 246, 0.992);" in day_diff_row_block
+    assert "background: rgba(219, 227, 235, 0.992);" in day_diff_row_disabled_block
+    assert "background: linear-gradient(" in day_diff_row_selected_block
+    assert "rgba(221, 237, 246, 0.998)" in day_diff_row_selected_block
+
+
+def test_day_mode_adds_stronger_register_hierarchy():
+    html = read_static_html("index.html")
+    day_register_shell_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell,', 1)[1].split("}", 1)[0]
+    day_register_card_block = html.split('    body[data-theme="day"] :is(#registerCollectPanel .layout > .card, #registerPurchasePanel .layout > .card, #registerBatchPanel .layout > .card, #registerBatchPanel > .card, #registerMasterPanel > .card, #sourceWorkbenchCard.admin-console-shell) {', 1)[1].split("}", 1)[0]
+    day_register_panel_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(.manual-block, .result-list, .table-wrap, .status, .compact-line, .ops-compact-extra-fields, .admin-barcode-intake-lookup-grid, .admin-barcode-intake-panel, .admin-barcode-candidate-summary, .admin-barcode-placement-item) {', 1)[1].split("}", 1)[0]
+    day_register_meta_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note, .source-workbench-candidate-meta, .source-queue-meta, .purchase-import-candidate-head .mini, .purchase-import-candidate-search-field label) {', 1)[1].split("}", 1)[0]
+    day_register_text_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(tbody td, .purchase-import-candidate-box, .source-workbench-title, .source-workbench-candidate-title, .source-queue-title, .source-workbench-query) {', 1)[1].split("}", 1)[0]
+    day_register_link_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) a:not(.btn):not(.doc-link-chip) {', 1)[1].split("}", 1)[0]
+    day_register_ghost_btn_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) .btn.ghost {', 1)[1].split("}", 1)[0]
+    day_register_primary_btn_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) .btn:not(.ghost):not(.secondary) {', 1)[1].split("}", 1)[0]
+    day_register_secondary_btn_block = html.split('    body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) .btn.secondary {', 1)[1].split("}", 1)[0]
+    day_register_kpi_block = html.split('    body[data-theme="day"] #registerBatchPanel .kpi .box {', 1)[1].split("}", 1)[0]
+    assert "rgba(192, 204, 216, 0.965)" in day_register_shell_block
+    assert "rgba(244, 248, 252, 0.996)" in day_register_card_block
+    assert "0 1px 0 rgba(122, 137, 154, 0.12);" in day_register_card_block
+    assert "border-color: rgba(98, 115, 133, 0.58);" in day_register_panel_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_register_panel_block
+    assert "color: #41586d;" in day_register_meta_block
+    assert "color: #203548;" in day_register_text_block
+    assert "color: #215a7a;" in day_register_link_block
+    assert "border-color: rgba(103, 121, 139, 0.72);" in day_register_ghost_btn_block
+    assert "color: #1f3648;" in day_register_ghost_btn_block
+    assert "border-color: rgba(86, 125, 149, 0.64);" in day_register_primary_btn_block
+    assert "color: #14384d;" in day_register_primary_btn_block
+    assert "border-color: rgba(77, 120, 146, 0.68);" in day_register_secondary_btn_block
+    assert "color: #15374b;" in day_register_secondary_btn_block
+    assert "background: linear-gradient(" in day_register_kpi_block
+    assert "color: #21384a;" in day_register_kpi_block
+
+
+def test_day_mode_adds_stronger_media_search_hierarchy():
+    html = read_static_html("index.html")
+    day_search_shell_block = html.split('    body[data-theme="day"] #tabSearch .admin-console-grid {', 1)[1].split("}", 1)[0]
+    day_search_card_block = html.split('    body[data-theme="day"] #tabSearch .admin-console-grid > :is(.card, .admin-console-secondary) {', 1)[1].split("}", 1)[0]
+    day_search_panel_block = html.split('    body[data-theme="day"] #tabSearch .admin-console-grid :is(.manual-block, .result-list, .table-wrap, .status, .compact-line, .music-box, .meta-search-box, .home-manage-secondary-block) {', 1)[1].split("}", 1)[0]
+    day_search_meta_block = html.split('    body[data-theme="day"] #tabSearch .admin-console-grid :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note, .home-master-subline, .home-master-member-preview-title span, .home-master-member-preview-runout) {', 1)[1].split("}", 1)[0]
+    day_search_ghost_btn_block = html.split('    body[data-theme="day"] #tabSearch .admin-console-grid .btn.ghost {', 1)[1].split("}", 1)[0]
+    day_search_primary_btn_block = html.split('    body[data-theme="day"] #tabSearch .admin-console-grid .btn:not(.ghost):not(.secondary) {', 1)[1].split("}", 1)[0]
+    day_search_context_block = html.split('    body[data-theme="day"] #tabSearch #adminSearchContextBody {', 1)[1].split("}", 1)[0]
+    day_search_context_cards_block = html.split('    body[data-theme="day"] #tabSearch :is(.ops-plugin-section, .ops-artist-context-card, #adminSearchContextBody .operator-mini-card) {', 1)[1].split("}", 1)[0]
+    day_search_context_heading_block = html.split('    body[data-theme="day"] #tabSearch :is(.ops-plugin-section-head strong, .ops-artist-context-head strong, .ops-artist-context-name, #adminSearchContextBody .operator-mini-line span) {', 1)[1].split("}", 1)[0]
+    day_search_context_meta_block = html.split('    body[data-theme="day"] #tabSearch :is(.ops-artist-context-summary, .ops-artist-context-summary--original, .ops-artist-context-links-label, .ops-artist-context-pill, .ops-artist-context-pill strong, .ops-library-context-subtitle, #adminSearchContextBody .operator-mini-line strong) {', 1)[1].split("}", 1)[0]
+    day_search_context_chip_block = html.split('    body[data-theme="day"] #tabSearch :is(.ops-artist-context-original, .ops-artist-context-pill, .ops-artist-context-toggle, .ops-artist-context-media, #adminSearchContextBody .operator-label-chip) {', 1)[1].split("}", 1)[0]
+    assert "rgba(192, 204, 216, 0.965)" in day_search_shell_block
+    assert "rgba(244, 248, 252, 0.996)" in day_search_card_block
+    assert "0 1px 0 rgba(122, 137, 154, 0.12);" in day_search_card_block
+    assert "border-color: rgba(98, 115, 133, 0.58);" in day_search_panel_block
+    assert "background: rgba(223, 231, 239, 0.992);" in day_search_panel_block
+    assert "color: #41586d;" in day_search_meta_block
+    assert "border-color: rgba(103, 121, 139, 0.72);" in day_search_ghost_btn_block
+    assert "color: #1f3648;" in day_search_ghost_btn_block
+    assert "border-color: rgba(86, 125, 149, 0.64);" in day_search_primary_btn_block
+    assert "color: #14384d;" in day_search_primary_btn_block
+    assert "border-color: rgba(88, 106, 124, 0.68);" in day_search_context_block
+    assert "rgba(240, 245, 250, 0.996)" in day_search_context_block
+    assert "border-color: rgba(91, 109, 127, 0.64);" in day_search_context_cards_block
+    assert "background: rgba(232, 238, 244, 0.994);" in day_search_context_cards_block
+    assert "color: #163247;" in day_search_context_heading_block
+    assert "color: #4b6175;" in day_search_context_meta_block
+    assert "border-color: rgba(96, 114, 132, 0.62);" in day_search_context_chip_block
+    assert "background: rgba(226, 233, 240, 0.994);" in day_search_context_chip_block
+    assert "color: #40576b;" in day_search_context_chip_block
+
+
+def test_day_mode_adds_stronger_page_help_hierarchy():
+    html = read_static_html("index.html")
+    day_help_drawer_block = html.split('    body[data-theme="day"] .page-help-drawer {', 1)[1].split("}", 1)[0]
+    day_help_note_block = html.split('    body[data-theme="day"] .page-help-drawer-body .manual-block-note {', 1)[1].split("}", 1)[0]
+    assert 'rgba(242, 247, 251, 0.996)' in day_help_drawer_block
+    assert 'rgba(230, 237, 244, 0.992)' in day_help_drawer_block
+    assert 'background: rgba(229, 236, 243, 0.994);' in day_help_note_block
+
+
+def test_global_controls_and_admin_metrics_use_theme_tokens():
+    html = read_static_html("index.html")
+    admin_metric_chip_block = html.split("    .admin-shell-metric-chip {", 1)[1].split("}", 1)[0]
+    label_block = html.split("    label {", 1)[1].split("}", 1)[0]
+    input_block = html.split("    input, select, textarea {", 1)[1].split("}", 1)[0]
+    button_block = html.split("    button {", 1)[1].split("}", 1)[0]
+    input_focus_block = html.split("    input:focus, select:focus, textarea:focus {", 1)[1].split("}", 1)[0]
+    btn_ghost_block = html.split("    .btn.ghost {", 1)[1].split("}", 1)[0]
+
+    assert "border: 1px solid var(--theme-shell-border);" in admin_metric_chip_block
+    assert "background: var(--theme-shell-surface-2);" in admin_metric_chip_block
+    assert "color: var(--theme-shell-text);" in admin_metric_chip_block
+    assert "color: var(--muted);" in label_block
+    assert "background: var(--paper);" in input_block
+    assert "color: var(--ink);" in input_block
+    assert "background: var(--paper);" in button_block
+    assert "color: var(--ink);" in button_block
+    assert "border-color: color-mix(in srgb, var(--brand) 60%, var(--line) 40%);" in input_focus_block
+    assert "box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);" in input_focus_block
+    assert "background: var(--paper);" in btn_ghost_block
+    assert "border: 1px solid var(--line);" in btn_ghost_block
+    assert "color: var(--ink);" in btn_ghost_block
+
+
 def test_purchase_queue_remaining_runtime_status_copy_uses_i18n():
     html = read_static_html("index.html")
     runtime_block = html.split("async function enrichPurchaseImportFromItemPage(queueId) {", 1)[1].split("function dashboardMoveKindLabel", 1)[0]
@@ -5817,6 +7219,24 @@ def test_dashboard_shelfview_stretches_to_full_slot_surface_width():
     assert "box-sizing: border-box;" in shelf_block
 
 
+def test_dashboard_shelfview_preserves_native_bottom_scrollbar():
+    html = read_static_html("index.html")
+    shelf_block = html.split("#homeDashSlotItems.dashboard-slot-shelfview,", 1)[1].split("#homeDashSlotItems.dashboard-slot-shelfview::before,", 1)[0]
+    assert "overflow-x: auto;" in shelf_block
+    assert "scrollbar-width: none;" not in shelf_block
+    assert "-ms-overflow-style: none;" not in shelf_block
+    assert "#homeDashSlotItems.dashboard-slot-shelfview::-webkit-scrollbar," not in html
+
+
+def test_dashboard_selected_item_meta_panel_is_not_rendered_above_cover_flow_toolbar():
+    html = read_static_html("index.html")
+    function_block = html.split("    function renderDashboardSelectedItemMeta() {", 1)[1].split("    function syncDashboardSelectedSortArtistEditor() {", 1)[0]
+    assert 'setDisplayMode(el, "none");' in function_block
+    assert 'if (textEl) textEl.textContent = "";' in function_block
+    assert 'syncDashboardSelectedSortArtistEditor();' in function_block
+    assert 'setDisplayMode(el, "flex");' not in function_block
+
+
 def test_dashboard_selected_sort_artist_row_uses_aligned_grid_layout():
     html = read_static_html("index.html")
     assert 'id="homeDashSelectedSortArtistRow" class="dashboard-selected-sort-artist-row"' in html
@@ -5860,6 +7280,18 @@ def test_dashboard_selected_sort_artist_row_uses_aligned_grid_layout():
     assert 't("dashboard.workbench.meta.search_ready")' in workbench_block
     assert 't("dashboard.workbench.status.loading_search")' in workbench_block
     assert 't("dashboard.workbench.status.empty_search")' in workbench_block
+
+
+def test_dashboard_selection_helpers_override_component_display_defaults():
+    html = read_static_html("index.html")
+    meta_hidden_block = html.split(".dashboard-selected-item-meta.u-hidden-initial {", 1)[1].split("}", 1)[0]
+    meta_shown_block = html.split(".dashboard-selected-item-meta.u-display-flex {", 1)[1].split("}", 1)[0]
+    row_hidden_block = html.split(".dashboard-selected-sort-artist-row.u-hidden-initial {", 1)[1].split("}", 1)[0]
+    row_shown_block = html.split(".dashboard-selected-sort-artist-row.u-display-grid {", 1)[1].split("}", 1)[0]
+    assert "display: none !important;" in meta_hidden_block
+    assert "display: flex !important;" in meta_shown_block
+    assert "display: none !important;" in row_hidden_block
+    assert "display: grid !important;" in row_shown_block
 
 
 def test_dashboard_workbench_includes_media_filter_field():
@@ -6489,6 +7921,13 @@ def test_signature_cover_badges_define_left_anchored_circle_variants():
     assert "bottom:" in shelf_offset_css
 
 
+def test_dashboard_location_shelf_cards_use_contain_fit_for_full_cover_art():
+    html = read_static_html("index.html")
+    cover_block = html.split(".dashboard-slot-shelfcover img {", 1)[1].split("}", 1)[0]
+
+    assert "object-fit: contain;" in cover_block
+
+
 def test_signature_cover_badges_render_in_dashboard_and_media_preview_covers():
     html = read_static_html("index.html")
     helper_block = html.split("function signatureIconLabel(value) {", 1)[1].split("function conditionIconLabel(prefix, value) {", 1)[0]
@@ -6608,6 +8047,15 @@ def test_api_lookup_results_sort_maniadb_variants_by_year_format_and_catalog_wit
     assert 'const formatDiff = registerLookupCandidateFormatRank(a) - registerLookupCandidateFormatRank(b);' in helper_block
     assert 'const catalogDiff = compareCodeValue(aCatalog || "ZZZ", bCatalog || "ZZZ");' in helper_block
     assert '.sort((a, b) => Number(b.isOwned) - Number(a.isOwned) || compareRegisterLookupCandidateDisplay(a.candidate, b.candidate) || a.order - b.order)' in barcode_block
+
+
+def test_api_lookup_results_render_standard_meta_for_maniadb_candidates():
+    html = read_static_html("index.html")
+    helper_block = html.split("function buildDiscogsStandardMetaHtml(row, opts = {}) {", 1)[1].split("function collectGalleryItems", 1)[0]
+    assert 'if (sourceCode !== "DISCOGS") return "";' not in helper_block
+    assert 'const labelName = String(row?.label_name || "").trim() || "-";' in helper_block
+    assert 'const catalogNo = String(row?.catalog_no || "").trim() || "-";' in helper_block
+    assert 'const barcode = String(row?.barcode || "").trim() || "-";' in helper_block
 
 
 def test_cover_url_normalizer_repairs_legacy_maniadb_variant_paths_for_rendering():
@@ -7330,6 +8778,7 @@ def test_index_dashboard_source_summary_uses_hero_count_style_for_discogs_and_ma
     render_block = html.split('const summaryRoot = $("homeDashSourceSummary");', 1)[1].split("      if (!root) return;", 1)[0]
     assert "margin-top: 8px;" in inline_block
     assert "display: block;" in row_block
+    assert "color: inherit;" in row_block
     assert "color: inherit;" in name_block
     assert "font-size: inherit;" in name_block
     assert "font-style: normal;" in count_block
@@ -7976,6 +9425,8 @@ def test_index_dashboard_cover_flow_uses_generic_titles_and_force_hides_floor_gr
     assert 'id="homeDashSlotItemsTitle"><span data-i18n="dashboard.cover_flow.title">커버 플로우</span>' in html
     assert '.dashboard-cabinet-detail #homeDashCabinetFloors {' in html
     assert 'display: none !important;' in html.split('.dashboard-cabinet-detail #homeDashCabinetFloors {', 1)[1].split('}', 1)[0]
+    assert '.dashboard-cabinet-detail.u-hidden-initial {' in html
+    assert 'display: none !important;' in html.split('.dashboard-cabinet-detail.u-hidden-initial {', 1)[1].split('}', 1)[0]
     assert 'titleEl.textContent = t("dashboard.selection.title");' in html
     assert 'titleEl.textContent = t("dashboard.cover_flow.title");' in html
 
@@ -8361,6 +9812,15 @@ def test_manage_related_version_groups_use_console_surface_tones():
     assert "background: var(--admin-console-panel-bg-2);" in count_block
 
 
+def test_home_master_location_preview_cover_uses_contain_fit():
+    html = read_static_html("index.html")
+
+    cover_block = html.split(".home-master-member-preview-cover img {", 1)[1].split("}", 1)[0]
+    assert "object-fit: contain;" in cover_block
+    assert "padding: 3px;" in cover_block
+    assert "box-sizing: border-box;" in cover_block
+
+
 def test_admin_console_shell_selected_result_surfaces_use_dark_warm_console_palette():
     html = read_static_html("index.html")
 
@@ -8383,8 +9843,8 @@ def test_admin_console_shell_selected_result_surfaces_use_dark_warm_console_pale
 def test_home_master_member_preview_uses_matched_height_actions_and_low_contrast_dividers():
     html = read_static_html("index.html")
 
-    preview_item_block = html.split(".home-master-member-preview-item {", 1)[1].split("}", 1)[0]
-    assert "border-top: 1px dashed rgba(137, 151, 171, 0.08);" in preview_item_block
+    preview_item_block = html.split("    .home-master-member-preview-item {", 1)[1].split("}", 1)[0]
+    assert "border-top: 1px dashed rgba(137, 151, 171, 0.16);" in preview_item_block
 
     action_height_block = html.split(".home-master-member-preview-actions > :is(.btn, .home-master-member-preview-code) {", 1)[1].split("}", 1)[0]
     assert "min-height: 30px;" in action_height_block
@@ -8393,6 +9853,73 @@ def test_home_master_member_preview_uses_matched_height_actions_and_low_contrast
     assert "min-height: 30px;" in location_btn_block
     assert "padding: 0 10px;" in location_btn_block
     assert "border-radius: 4px;" in location_btn_block
+
+
+def test_home_search_master_cards_use_tinted_surface_to_separate_master_groups():
+    html = read_static_html("index.html")
+
+    assert "#homeSearchResults .result-item {" in html
+    result_block = html.split("#homeSearchResults .result-item {", 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(180deg, rgba(18, 23, 29, 0.98), rgba(14, 18, 24, 0.96));" in result_block
+    assert "border-color: rgba(137, 151, 171, 0.22);" in result_block
+    assert "box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);" in result_block
+
+
+def test_day_mode_lightens_media_search_result_list_surfaces():
+    html = read_static_html("index.html")
+
+    assert '    body[data-theme="day"] #tabSearch .result-item {' in html
+    result_block = html.split('    body[data-theme="day"] #tabSearch .result-item {', 1)[1].split("}", 1)[0]
+    assert "border-color: color-mix(in srgb, rgba(98, 114, 132, 0.74) 72%, white 28%);" in result_block
+    assert "background: linear-gradient(" in result_block
+    assert "color-mix(in srgb, var(--paper) 82%, white 18%)" in result_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 88%, white 12%)" in result_block
+    assert "box-shadow:" in result_block
+    assert "inset 0 1px 0 rgba(255, 255, 255, 0.46)" in result_block
+
+    assert '    body[data-theme="day"] #tabSearch .home-master-member-preview-item {' in html
+    preview_block = html.split('    body[data-theme="day"] #tabSearch .home-master-member-preview-item {', 1)[1].split("}", 1)[0]
+    assert "padding: 8px 10px;" in preview_block
+    assert "border: 1px solid color-mix(in srgb, var(--line) 48%, white 52%);" in preview_block
+    assert "border-radius: 12px;" in preview_block
+    assert "color-mix(in srgb, var(--paper) 92%, white 8%)" in preview_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 84%, white 16%)" in preview_block
+
+    assert '    body[data-theme="day"] #tabSearch .home-master-member-preview-item:first-child {' in html
+    preview_first_base_block = html.split('    body[data-theme="day"] #tabSearch .home-master-member-preview-item:first-child {', 1)[1].split("}", 1)[0]
+    assert "padding-top: 8px;" in preview_first_base_block
+    assert "border-top: 1px solid color-mix(in srgb, var(--line) 48%, white 52%);" in preview_first_base_block
+
+    assert '    body[data-theme="day"] #tabSearch :is(.home-master-member-preview-code, .home-master-member-preview-actions > .btn, .operator-title-side-location-btn, .home-master-member-preview-detail-btn) {' in html
+    chip_block = html.split('    body[data-theme="day"] #tabSearch :is(.home-master-member-preview-code, .home-master-member-preview-actions > .btn, .operator-title-side-location-btn, .home-master-member-preview-detail-btn) {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(" in chip_block
+    assert "color-mix(in srgb, var(--paper) 94%, white 6%)" in chip_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 86%, white 14%)" in chip_block
+    assert "border-color: color-mix(in srgb, var(--line) 66%, white 34%);" in chip_block
+    assert "color: #1d3446;" in chip_block
+
+    assert '    body[data-theme="day"] #tabSearch :is(.home-master-subline, .home-master-member-preview-title span, .home-master-member-preview-runout) {' in html
+    meta_block = html.split('    body[data-theme="day"] #tabSearch :is(.home-master-subline, .home-master-member-preview-title span, .home-master-member-preview-runout) {', 1)[1].split("}", 1)[0]
+    assert "color: #4b6175;" in meta_block
+
+    assert '    body[data-theme="day"] #tabSearch .result-item.pick {' in html
+    pick_block = html.split('    body[data-theme="day"] #tabSearch .result-item.pick {', 1)[1].split("}", 1)[0]
+    assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 42%, rgba(96, 114, 132, 0.72) 58%);" in pick_block
+    assert "background: linear-gradient(" in pick_block
+    assert "color-mix(in srgb, var(--paper) 70%, var(--theme-admin-accent) 30%)" in pick_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 86%, white 14%)" in pick_block
+
+
+def test_day_mode_lightens_media_search_context_selected_preview():
+    html = read_static_html("index.html")
+    preview_pick_block = html.split('    body[data-theme="day"] #tabSearch .home-master-member-preview-item.is-context-selected {', 1)[1].split("}", 1)[0]
+    preview_first_block = html.split('    body[data-theme="day"] #tabSearch .home-master-member-preview-item.is-context-selected:first-child {', 1)[1].split("}", 1)[0]
+    assert "border-color: color-mix(in srgb, var(--brand) 52%, var(--line) 48%);" in preview_pick_block
+    assert "background: linear-gradient(" in preview_pick_block
+    assert "color-mix(in srgb, var(--paper) 82%, var(--brand) 18%)" in preview_pick_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 86%, white 14%)" in preview_pick_block
+    assert "0 0 0 1px color-mix(in srgb, var(--brand) 14%, transparent)" in preview_pick_block
+    assert "border-top-color: color-mix(in srgb, var(--brand) 52%, var(--line) 48%);" in preview_first_block
 
 
 def test_admin_console_shell_promotes_search_section_titles_and_form_labels_to_console_contrast():
@@ -8436,16 +9963,16 @@ def test_source_workbench_console_surfaces_and_text_use_admin_contrast_tokens():
 
     assert "#sourceWorkbenchDiffReview .source-workbench-diff-panel {" in html
     diff_panel_block = html.split("#sourceWorkbenchDiffReview .source-workbench-diff-panel {", 1)[1].split("}", 1)[0]
-    assert "background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));" in diff_panel_block
-    assert "border: 1px solid var(--admin-console-panel-border);" in diff_panel_block
+    assert "background: linear-gradient(180deg, color-mix(in srgb, var(--paper) 64%, var(--bg) 36%), color-mix(in srgb, var(--paper) 56%, var(--bg) 44%));" in diff_panel_block
+    assert "border: 1px solid var(--line);" in diff_panel_block
 
     assert "#sourceWorkbenchDiffReview :is(.source-workbench-diff-head strong, .source-workbench-diff-card-head-value, .source-workbench-diff-label strong) {" in html
     diff_title_block = html.split("#sourceWorkbenchDiffReview :is(.source-workbench-diff-head strong, .source-workbench-diff-card-head-value, .source-workbench-diff-label strong) {", 1)[1].split("}", 1)[0]
-    assert "color: var(--admin-console-text);" in diff_title_block
+    assert "color: var(--ink);" in diff_title_block
 
     assert "#sourceWorkbenchDiffReview :is(.source-workbench-diff-summary, .source-workbench-diff-card-head-label, .source-workbench-diff-label span) {" in html
     diff_meta_block = html.split("#sourceWorkbenchDiffReview :is(.source-workbench-diff-summary, .source-workbench-diff-card-head-label, .source-workbench-diff-label span) {", 1)[1].split("}", 1)[0]
-    assert "color: var(--admin-console-text-muted);" in diff_meta_block
+    assert "color: var(--muted);" in diff_meta_block
 
 
 def test_source_workbench_target_rows_render_left_cover_art_shell():
@@ -9469,11 +10996,16 @@ def test_index_slot_clear_button_can_clear_item_selection_or_current_slot_contex
 def test_index_selected_item_edit_buttons_look_disabled_when_multi_select_blocks_editing():
     html = read_static_html("index.html")
     disabled_block = html.split(".dashboard-slot-actionbtn:disabled,", 1)[1].split("}", 1)[0]
+    dashboard_disabled_block = html.rsplit("#homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-actionbtn, .dashboard-workbench-actionbtn, .dashboard-slot-selectbtn):disabled {", 1)[1].split("}", 1)[0]
     assert "opacity:" in disabled_block
     assert "cursor: not-allowed;" in disabled_block
     assert "color:" in disabled_block
     assert "border-color:" in disabled_block
     assert "background:" in disabled_block
+    assert "opacity: 0.78;" in dashboard_disabled_block
+    assert "color: color-mix(in srgb, var(--console-text-dim) 78%, white 22%);" in dashboard_disabled_block
+    assert "border-color: color-mix(in srgb, var(--theme-dashboard-border) 76%, white 24%);" in dashboard_disabled_block
+    assert "background: color-mix(in srgb, var(--theme-dashboard-panel-soft) 82%, var(--theme-dashboard-panel) 18%);" in dashboard_disabled_block
 
     sync_start = "    function syncDashboardSelectionControls() {"
     sync_end = "    function renderDashboardSelectionSummary() {"
@@ -10050,6 +11582,16 @@ def test_admin_header_places_camera_menu_immediately_before_main_utility_mount()
     assert action_block.index('id="tabCameraBtn"') < action_block.index('id="adminUtilityMainMount"')
 
 
+def test_admin_header_camera_button_matches_utility_icon_button_height():
+    html = read_static_html("index.html")
+    action_css = html.split(".admin-shell-row-actions > #tabCameraBtn {", 1)[1].split("}", 1)[0]
+
+    assert "height: 28px;" in action_css
+    assert "min-height: 28px;" in action_css
+    assert "padding-top: 0;" in action_css
+    assert "padding-bottom: 0;" in action_css
+
+
 def test_console_shell_uses_current_breakpoints_instead_of_sidebar_responsive_states():
     html = read_static_html("index.html")
     assert "@media (max-width: 1280px)" in html
@@ -10092,6 +11634,14 @@ def test_operator_session_hides_admin_role_badge_in_utility_row():
 def test_page_help_drawer_carries_the_current_accessibility_contract():
     html = read_static_html("index.html")
     assert "data-nav-drawer-toggle" not in html
+
+
+def test_shell_mode_hides_redundant_header_jump_buttons():
+    html = read_static_html("index.html")
+    assert 'body[data-shell-mode="admin"] #shellAdminBtn,' in html
+    redundant_nav_block = html.split('body[data-shell-mode="admin"] #shellAdminBtn,', 1)[1].split("}", 1)[0]
+    assert 'body[data-shell-mode="ops"] #shellOpsHomeBtn' in redundant_nav_block
+    assert "display: none !important;" in redundant_nav_block
     assert "data-page-help-open" in html
     assert "role=\"dialog\"" in html
     assert 'aria-modal="true"' in html
