@@ -4249,6 +4249,9 @@ def test_index_export_panel_includes_restore_upload_and_auto_backup_settings():
     assert '<option value="DB" data-i18n="ops.restore.scope.db">DB만</option>' in section
     assert '<option value="FULL" data-i18n="ops.restore.scope.full">전체(zip)</option>' in section
     assert 'data-i18n="ops.restore.field.include_env.label"' in section
+    assert 'data-i18n="ops.restore.field.applied_schedule.label"' in section
+    assert 'id="opsAutoBackupDailySchedule" class="chip mini"' in section
+    assert 'id="opsAutoBackupWeeklySchedule" class="chip mini"' in section
     assert 'id="opsAutoBackupSummary" class="mini muted u-mt-8" data-i18n="ops.restore.summary.loading"' in section
     assert '<h2 data-i18n="ops.restore.db.title">DB 복구 업로드</h2>' in section
     assert '<label for="opsRestoreDbFile" data-i18n="ops.restore.db.field.file.label">복구 파일(.db)</label>' in section
@@ -4274,6 +4277,7 @@ def test_operator_weather_shared_camera_and_restore_static_copy_use_i18n_keys():
     assert '"operator.weather.metric.humidity":' in html
     assert '"shared_camera.empty.body":' in html
     assert '"ops.restore.intro":' in html
+    assert '"ops.restore.field.applied_schedule.label":' in html
     assert '"ops.restore.db.action.run":' in html
     assert '"ops.restore.bundle.action.run":' in html
 
@@ -5900,26 +5904,28 @@ def test_day_mode_adds_stronger_shell_and_dashboard_hierarchy():
     assert "border-color: rgba(96, 113, 131, 0.88);" in day_dashboard_root_block
     assert "border-top-color: rgba(85, 123, 146, 0.5);" in day_dashboard_root_block
     assert "background: linear-gradient(" in day_dashboard_root_block
-    assert "rgba(223, 230, 237, 0.98)" in day_dashboard_root_block
-    assert "rgba(208, 217, 227, 0.98)" in day_dashboard_root_block
+    assert "rgba(184, 196, 208, 0.968)" in day_dashboard_root_block
+    assert "rgba(173, 186, 199, 0.986)" in day_dashboard_root_block
     assert "border-color: rgba(104, 120, 137, 0.8);" in day_dashboard_status_block
     assert "background: linear-gradient(" in day_dashboard_status_block
-    assert "rgba(244, 247, 251, 0.98)" in day_dashboard_status_block
-    assert "rgba(229, 236, 243, 0.98)" in day_dashboard_status_block
+    assert "rgba(226, 234, 242, 0.996)" in day_dashboard_status_block
+    assert "rgba(214, 223, 232, 0.992)" in day_dashboard_status_block
     assert "0 1px 0 rgba(107, 121, 137, 0.22);" in day_dashboard_status_block
-    assert "border-color: rgba(108, 124, 141, 0.74);" in day_dashboard_panel_block
-    assert "background: rgba(235, 241, 247, 0.98);" in day_dashboard_panel_block
+    assert "border-color: rgba(94, 112, 130, 0.62);" in day_dashboard_panel_block
+    assert "rgba(226, 234, 242, 0.996)" in day_dashboard_panel_block
+    assert "rgba(214, 223, 232, 0.992)" in day_dashboard_panel_block
     assert "box-shadow: none;" in day_dashboard_panel_block
-    assert "border-color: rgba(104, 119, 136, 0.74);" in day_dashboard_rail_block
-    assert "background: rgba(221, 229, 237, 0.98);" in day_dashboard_rail_block
+    assert "border-color: rgba(101, 116, 132, 0.56);" in day_dashboard_rail_block
+    assert "rgba(220, 229, 238, 0.996)" in day_dashboard_rail_block
+    assert "rgba(208, 218, 227, 0.992)" in day_dashboard_rail_block
     assert "box-shadow: none;" in day_dashboard_rail_block
     assert "background: linear-gradient(" in day_dashboard_hero_card_block
     assert "color-mix(in srgb, var(--paper) 84%, white 16%)" in day_dashboard_hero_card_block
     assert "color-mix(in srgb, var(--theme-dashboard-panel-soft) 88%, white 12%)" in day_dashboard_hero_card_block
     assert "color-mix(in srgb, var(--theme-dashboard-accent, var(--brand)) 22%, white 78%)" in day_dashboard_hero_card_accent_main_block
     assert "background: linear-gradient(" in day_dashboard_surface_block
-    assert "rgba(228, 235, 242, 0.98)" in day_dashboard_surface_block
-    assert "rgba(211, 220, 229, 0.99)" in day_dashboard_surface_block
+    assert "rgba(220, 229, 238, 0.996)" in day_dashboard_surface_block
+    assert "rgba(208, 218, 227, 0.992)" in day_dashboard_surface_block
     assert "color: #142739;" in day_dashboard_bulk_head_block
     assert "color: #465d72;" in day_dashboard_bulk_mini_block
     assert "border-color: rgba(103, 121, 139, 0.72);" in day_dashboard_bulk_ghost_btn_block
@@ -6190,13 +6196,16 @@ def test_day_mode_adds_stronger_collectibles_hierarchy():
     assert "rgba(184, 196, 208, 0.968)" in day_collectibles_tab_block
     assert "--admin-console-panel-bg: rgba(226, 234, 242, 0.996);" in day_collectibles_shell_block
     assert "--admin-console-panel-bg-2: rgba(208, 218, 227, 0.992);" in day_collectibles_shell_block
-    assert "--admin-console-panel-border: rgba(94, 112, 130, 0.62);" in day_collectibles_shell_block
+    assert "--admin-console-panel-border: rgba(88, 107, 126, 0.68);" in day_collectibles_shell_block
+    assert "--admin-console-text-muted: #394f63;" in day_collectibles_shell_block
+    assert "--admin-console-text-meta: #52697f;" in day_collectibles_shell_block
     assert "rgba(226, 234, 242, 0.996)" in day_collectibles_card_block
     assert "rgba(214, 223, 232, 0.992)" in day_collectibles_card_block
-    assert "border-color: rgba(94, 112, 130, 0.62);" in day_collectibles_card_block
+    assert "border-color: rgba(88, 107, 126, 0.68);" in day_collectibles_card_block
     assert "color: #203548;" in day_collectibles_card_block
     assert "background: rgba(208, 218, 227, 0.992);" in day_collectibles_list_block
-    assert "border-color: rgba(98, 115, 133, 0.58);" in day_collectibles_list_block
+    assert "border-color: rgba(93, 110, 127, 0.64);" in day_collectibles_list_block
+    assert "0 1px 0 rgba(120, 136, 153, 0.08);" in day_collectibles_list_block
 
 
 def test_collectibles_mode_tabs_share_console_subtab_treatment():
@@ -6567,22 +6576,24 @@ def test_day_mode_adds_stronger_media_search_hierarchy():
     assert "rgba(226, 234, 242, 0.996)" in day_search_card_block
     assert "rgba(214, 223, 232, 0.992)" in day_search_card_block
     assert "0 1px 0 rgba(122, 137, 154, 0.12);" in day_search_card_block
-    assert "border-color: rgba(98, 115, 133, 0.58);" in day_search_panel_block
+    assert "border-color: rgba(93, 110, 127, 0.64);" in day_search_panel_block
     assert "background: rgba(214, 223, 232, 0.992);" in day_search_panel_block
-    assert "color: #41586d;" in day_search_meta_block
+    assert "0 1px 0 rgba(120, 136, 153, 0.08);" in day_search_panel_block
+    assert "color: #395063;" in day_search_meta_block
     assert "border-color: rgba(103, 121, 139, 0.72);" in day_search_ghost_btn_block
     assert "color: #1f3648;" in day_search_ghost_btn_block
     assert "border-color: rgba(86, 125, 149, 0.64);" in day_search_primary_btn_block
     assert "color: #14384d;" in day_search_primary_btn_block
-    assert "border-color: rgba(88, 106, 124, 0.68);" in day_search_context_block
+    assert "border-color: rgba(84, 103, 122, 0.74);" in day_search_context_block
     assert "rgba(230, 237, 244, 0.996)" in day_search_context_block
-    assert "border-color: rgba(91, 109, 127, 0.64);" in day_search_context_cards_block
+    assert "border-color: rgba(86, 105, 124, 0.7);" in day_search_context_cards_block
     assert "background: rgba(221, 229, 237, 0.994);" in day_search_context_cards_block
-    assert "color: #163247;" in day_search_context_heading_block
-    assert "color: #4b6175;" in day_search_context_meta_block
-    assert "border-color: rgba(96, 114, 132, 0.62);" in day_search_context_chip_block
-    assert "background: rgba(226, 233, 240, 0.994);" in day_search_context_chip_block
-    assert "color: #40576b;" in day_search_context_chip_block
+    assert "0 1px 0 rgba(116, 131, 147, 0.12);" in day_search_context_cards_block
+    assert "color: #112c40;" in day_search_context_heading_block
+    assert "color: #42586b;" in day_search_context_meta_block
+    assert "border-color: rgba(90, 109, 127, 0.68);" in day_search_context_chip_block
+    assert "background: rgba(220, 228, 236, 0.994);" in day_search_context_chip_block
+    assert "color: #375064;" in day_search_context_chip_block
     assert "background: rgba(242, 246, 250, 0.99);" in day_search_help_trigger_block
     assert "color: #173043;" in day_search_help_trigger_block
     assert "background: rgba(233, 239, 244, 0.98);" in day_search_help_dot_block
@@ -6946,8 +6957,10 @@ def test_ops_backup_and_restore_runtime_status_copy_uses_i18n():
 
     assert "function autoBackupIntervalDaysFromMinutes(value) {" in html
     assert "function autoBackupIntervalMinutesFromDays(value) {" in html
+    assert "function renderOpsBackupScheduleDetails(data) {" in html
     assert '$("opsAutoBackupIntervalDays").value = String(autoBackupIntervalDaysFromMinutes(data.interval_minutes || 0));' in block
     assert 'interval_minutes: autoBackupIntervalMinutesFromDays($("opsAutoBackupIntervalDays").value),' in block
+    assert "renderOpsBackupScheduleDetails(data);" in block
     assert 't("ops.restore.status.load_failed")' in block
     assert 't("ops.restore.summary.auto_on",' in block
     assert 't("ops.restore.summary.auto_off")' in block
@@ -10034,12 +10047,13 @@ def test_day_mode_lightens_media_search_result_list_surfaces():
 
     assert '    body[data-theme="day"] #tabSearch .result-item {' in html
     result_block = html.split('    body[data-theme="day"] #tabSearch .result-item {', 1)[1].split("}", 1)[0]
-    assert "border-color: color-mix(in srgb, rgba(98, 114, 132, 0.74) 72%, white 28%);" in result_block
+    assert "border-color: color-mix(in srgb, rgba(88, 106, 124, 0.82) 74%, white 26%);" in result_block
     assert "background: linear-gradient(" in result_block
     assert "color-mix(in srgb, var(--paper) 88%, var(--bg) 12%)" in result_block
     assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 92%, var(--bg) 8%)" in result_block
     assert "box-shadow:" in result_block
     assert "inset 0 1px 0 rgba(255, 255, 255, 0.46)" in result_block
+    assert "0 1px 0 rgba(116, 131, 147, 0.12)" in result_block
 
     assert '    body[data-theme="day"] #tabSearch .home-master-member-preview-item {' in html
     preview_block = html.split('    body[data-theme="day"] #tabSearch .home-master-member-preview-item {', 1)[1].split("}", 1)[0]
@@ -10068,10 +10082,12 @@ def test_day_mode_lightens_media_search_result_list_surfaces():
 
     assert '    body[data-theme="day"] #tabSearch .result-item.pick {' in html
     pick_block = html.split('    body[data-theme="day"] #tabSearch .result-item.pick {', 1)[1].split("}", 1)[0]
-    assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 42%, rgba(96, 114, 132, 0.72) 58%);" in pick_block
+    assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 48%, rgba(88, 106, 124, 0.78) 52%);" in pick_block
     assert "background: linear-gradient(" in pick_block
     assert "color-mix(in srgb, var(--paper) 78%, var(--theme-admin-accent) 22%)" in pick_block
     assert "color-mix(in srgb, var(--theme-admin-panel-bg) 90%, var(--bg) 10%)" in pick_block
+    assert "0 0 0 1px color-mix(in srgb, var(--theme-admin-accent) 28%, transparent)" in pick_block
+    assert "0 2px 6px rgba(108, 126, 144, 0.12)" in pick_block
 
 
 def test_day_mode_lightens_media_search_context_selected_preview():
