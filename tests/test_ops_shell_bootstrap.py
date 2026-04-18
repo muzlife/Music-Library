@@ -6193,7 +6193,7 @@ def test_day_mode_adds_stronger_collectibles_hierarchy():
     assert "rgba(234, 240, 246, 0.996)" in day_collectibles_card_block
     assert "border-color: rgba(94, 112, 130, 0.62);" in day_collectibles_card_block
     assert "color: #203548;" in day_collectibles_card_block
-    assert "background: rgba(214, 223, 232, 0.992);" in day_collectibles_list_block
+    assert "background: rgba(208, 218, 227, 0.992);" in day_collectibles_list_block
     assert "border-color: rgba(98, 115, 133, 0.58);" in day_collectibles_list_block
 
 
@@ -9989,8 +9989,8 @@ def test_day_mode_lightens_media_search_result_list_surfaces():
     result_block = html.split('    body[data-theme="day"] #tabSearch .result-item {', 1)[1].split("}", 1)[0]
     assert "border-color: color-mix(in srgb, rgba(98, 114, 132, 0.74) 72%, white 28%);" in result_block
     assert "background: linear-gradient(" in result_block
-    assert "color-mix(in srgb, var(--paper) 82%, white 18%)" in result_block
-    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 88%, white 12%)" in result_block
+    assert "color-mix(in srgb, var(--paper) 88%, var(--bg) 12%)" in result_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg-2) 92%, var(--bg) 8%)" in result_block
     assert "box-shadow:" in result_block
     assert "inset 0 1px 0 rgba(255, 255, 255, 0.46)" in result_block
 
@@ -10023,8 +10023,8 @@ def test_day_mode_lightens_media_search_result_list_surfaces():
     pick_block = html.split('    body[data-theme="day"] #tabSearch .result-item.pick {', 1)[1].split("}", 1)[0]
     assert "border-color: color-mix(in srgb, var(--theme-admin-accent) 42%, rgba(96, 114, 132, 0.72) 58%);" in pick_block
     assert "background: linear-gradient(" in pick_block
-    assert "color-mix(in srgb, var(--paper) 70%, var(--theme-admin-accent) 30%)" in pick_block
-    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 86%, white 14%)" in pick_block
+    assert "color-mix(in srgb, var(--paper) 78%, var(--theme-admin-accent) 22%)" in pick_block
+    assert "color-mix(in srgb, var(--theme-admin-panel-bg) 90%, var(--bg) 10%)" in pick_block
 
 
 def test_day_mode_lightens_media_search_context_selected_preview():
