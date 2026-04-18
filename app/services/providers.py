@@ -1046,7 +1046,7 @@ def _parse_maniadb_artist_candidates(
     out: list[Candidate] = []
     seen: set[str] = set()
     pattern = re.compile(
-        r'<div class="artist">\s*<a href="/artist/(\d+)"[^>]*?(?:alt="([^"]*)")?[^>]*>(.*?)</a>',
+        r'<div class="artist">\s*<a href="/artist/(\d+)"[^>]*?(?:alt="([^"]*)")?[^>]*>(.*?)</a>(.*?)</div>',
         re.IGNORECASE | re.DOTALL,
     )
 
@@ -1060,6 +1060,22 @@ def _parse_maniadb_artist_candidates(
         artist_name = re.split(r"\s*\[", artist_text, maxsplit=1)[0].strip() or artist_text
         if not artist_name:
             continue
+        trailing_text = _clean_html_text(match.group(4) or "")
+        search_terms: list[str] = []
+        seen_terms: set[str] = set()
+        for value in [artist_name, *re.split(r"\s*/\s*", trailing_text)]:
+            term = _clean_html_text(value)
+            normalized_term = _normalize_text(term)
+            if (
+                not term
+                or not normalized_term
+                or normalized_term in seen_terms
+                or re.fullmatch(r"\d{4}s", term, re.IGNORECASE)
+                or term.endswith("그룹")
+            ):
+                continue
+            seen_terms.add(normalized_term)
+            search_terms.append(term)
 
         sim = _token_similarity(query, artist_name)
         confidence = min(max(0.48 + (0.22 * sim), 0.0), 0.82)
@@ -1084,6 +1100,7 @@ def _parse_maniadb_artist_candidates(
                     "artist_id": artist_id,
                     "source_url": f"{base_url}/artist/{artist_id}",
                     "name_raw": artist_text,
+                    "search_terms": search_terms,
                 },
                 media_type=None,
                 release_type=None,
@@ -1136,6 +1153,58 @@ def _maniadb_search(query: str, limit: int = 5) -> list[Candidate]:
             limit=max(1, limit - len(albums)),
             base_url=base_url,
         )
+
+        album_ids = {
+            str((candidate.raw or {}).get("album_id") or candidate.external_id.replace("album:", "", 1)).strip()
+            for candidate in albums
+            if str((candidate.raw or {}).get("kind") or "").strip().lower() == "album"
+        }
+        seen_queries: set[str] = {_normalize_text(query)}
+        alias_search_terms: list[tuple[str, list[str]]] = []
+        for artist_candidate in artists:
+            raw = artist_candidate.raw if isinstance(artist_candidate.raw, dict) else {}
+            terms = [str(term or "").strip() for term in (raw.get("search_terms") or [])]
+            cleaned_terms = [term for term in terms if term]
+            for term in cleaned_terms:
+                normalized_term = _normalize_text(term)
+                if not normalized_term or normalized_term in seen_queries:
+                    continue
+                seen_queries.add(normalized_term)
+                alias_search_terms.append((term, cleaned_terms))
+
+        for alias_query, artist_search_terms in alias_search_terms:
+            alias_encoded_query = quote(alias_query.strip(), safe="")
+            if not alias_encoded_query:
+                continue
+            alias_album_started_at = time.perf_counter()
+            alias_album_res = client.get(f"{base_url}/search/{alias_encoded_query}/", params={"sr": "L"})
+            alias_album_elapsed = time.perf_counter() - alias_album_started_at
+            if alias_album_elapsed >= PROVIDER_SLOW_SEC:
+                logger.warning(
+                    "provider_slow source=MANIADB op=search_album_alias elapsed=%.3fs query=%s alias=%s",
+                    alias_album_elapsed,
+                    query,
+                    alias_query,
+                )
+            alias_album_res.raise_for_status()
+            alias_albums = _parse_maniadb_album_candidates(
+                alias_album_res.text,
+                query=query,
+                limit=limit,
+                base_url=base_url,
+            )
+            for alias_album in alias_albums:
+                album_id = str((alias_album.raw or {}).get("album_id") or alias_album.external_id.replace("album:", "", 1)).strip()
+                if not album_id or album_id in album_ids:
+                    continue
+                album_ids.add(album_id)
+                alias_album.raw["artist_search_terms"] = artist_search_terms
+                albums.append(alias_album)
+                if len(albums) >= limit:
+                    break
+            if len(albums) >= limit:
+                break
+
         return (albums + artists)[:limit]
 
 

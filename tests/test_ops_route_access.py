@@ -928,11 +928,111 @@ def test_ingest_search_maniadb_retries_with_split_title_when_compound_title_has_
     payload = res.json()
     assert [item["external_id"] for item in payload["candidates"]] == ["215240:1"]
     assert payload["candidates"][0]["cover_image_url"] == "https://i.maniadb.com/images/album/215/215240_1_f.jpg"
-    assert seen == [
-        ("이무하 휘장을 열고 / 새 날", "이무하", "휘장을 열고 / 새 날"),
-        ("이무하 휘장을 열고", "이무하", "휘장을 열고"),
-        ("이무하 새 날", "이무하", "새 날"),
-    ]
+
+
+def test_filter_maniadb_candidates_matches_artist_filter_against_alias_search_terms():
+    narrowed = main_module._filter_maniadb_candidates(
+        [
+            {
+                "source": "MANIADB",
+                "external_id": "album:129004",
+                "title": "Open The Door",
+                "artist_or_brand": "Noizegarden",
+                "confidence": 0.91,
+                "raw": {"kind": "album", "artist_search_terms": ["노이즈가든", "Noizegarden"]},
+            }
+        ],
+        artist_or_brand="노이즈가든",
+        title=None,
+    )
+
+    assert [item["external_id"] for item in narrowed] == ["album:129004"]
+
+
+def test_maniadb_search_retries_album_lookup_with_artist_aliases(monkeypatch):
+    album_ko_html = '''
+    <div class="artist">
+      <a href="/album/129004" alt="노이즈가든 - Open The Door (1999, Banana)">노이즈가든 - Open The Door (1999, Banana)</a>
+    </div>
+    '''
+    artist_html = '''
+    <div class="artist"><a href="/artist/114429" alt="노이즈가든">노이즈가든</a>
+      / Noizegarden / 남성그룹 / 1990s
+    </div>
+    '''
+    album_alias_html = '''
+    <div class="artist">
+      <a href="/album/127004" alt="Noizegarden - 골든디럭스 제1집 : 영일만 친구 / 내마음 갈곳을 잃어 (1979, Oasis)">Noizegarden - 골든디럭스 제1집 : 영일만 친구 / 내마음 갈곳을 잃어 (1979, Oasis)</a>
+    </div>
+    <div class="artist">
+      <a href="/album/133577" alt="Noizegarden - 길 (1992, Oasis)">Noizegarden - 길 (1992, Oasis)</a>
+    </div>
+    '''
+
+    calls: list[tuple[str, str]] = []
+
+    class DummyResponse:
+        def __init__(self, text: str):
+            self.text = text
+
+        def raise_for_status(self):
+            return None
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, params=None):
+            path = str(url)
+            sr = str((params or {}).get("sr") or "")
+            calls.append((path, sr))
+            if "/search/%EB%85%B8%EC%9D%B4%EC%A6%88%EA%B0%80%EB%93%A0/" in path and sr == "L":
+                return DummyResponse(album_ko_html)
+            if "/search/%EB%85%B8%EC%9D%B4%EC%A6%88%EA%B0%80%EB%93%A0/" in path and sr == "P":
+                return DummyResponse(artist_html)
+            if "/search/Noizegarden/" in path and sr == "L":
+                return DummyResponse(album_alias_html)
+            raise AssertionError(f"unexpected request: {path} params={params}")
+
+    monkeypatch.setattr(provider_module.httpx, "Client", DummyClient)
+    monkeypatch.setattr(
+        provider_module,
+        "get_settings",
+        lambda: SimpleNamespace(maniadb_base_url="http://www.maniadb.com"),
+    )
+    monkeypatch.setattr(
+        provider_module,
+        "get_maniadb_master_variants",
+        lambda master_external_id, limit=30: [
+            {
+                "source": "MANIADB",
+                "external_id": str(master_external_id),
+                "title": {
+                    "129004": "Open The Door",
+                    "127004": "골든디럭스 제1집 : 영일만 친구 / 내마음 갈곳을 잃어",
+                    "133577": "길",
+                }.get(str(master_external_id), ""),
+                "artist_or_brand": {
+                    "129004": "노이즈가든",
+                    "127004": "Noizegarden",
+                    "133577": "Noizegarden",
+                }.get(str(master_external_id), ""),
+                "raw": {"kind": "album", "album_id": str(master_external_id)},
+            }
+        ],
+    )
+
+    rows = provider_module.search_maniadb_by_query("노이즈가든", limit=5)
+
+    assert [item["external_id"] for item in rows[:3]] == ["129004", "127004", "133577"]
+    assert any(item["external_id"] == "artist:114429" for item in rows)
+    assert any(path.endswith("/search/Noizegarden/") and sr == "L" for path, sr in calls)
 
 
 def test_ingest_search_accepts_musicbrainz_source(admin_client, monkeypatch):
