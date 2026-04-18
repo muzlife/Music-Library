@@ -3599,10 +3599,10 @@ def test_index_dashboard_console_separates_text_hierarchy_and_cabinet_slot_surfa
     assert "display: contents;" in map_shell_block
     assert "margin-top: 10px;" in grid_frame_block
     assert "background: linear-gradient(" in grid_panel_block
-    assert "rgba(224, 232, 240, 0.98)" in grid_panel_block
-    assert "rgba(208, 219, 229, 0.99)" in grid_panel_block
+    assert "rgba(220, 229, 238, 0.996)" in grid_panel_block
+    assert "rgba(208, 218, 227, 0.992)" in grid_panel_block
     assert "background: linear-gradient(180deg, var(--theme-dashboard-panel), var(--theme-dashboard-panel-soft));" in cabinet_board_block
-    assert "background: rgba(221, 229, 237, 0.98) !important;" in cabinet_map_block
+    assert "background: rgba(214, 223, 232, 0.992) !important;" in cabinet_map_block
     assert "border-color: rgba(184, 196, 210, 0.14);" in shared_cabinet_surface_block
     assert "display: grid;" in cabinet_stage_block
     assert "padding: 0 12px;" in cabinet_stage_block
@@ -6155,11 +6155,11 @@ def test_day_mode_adds_stronger_admin_tab_shell_hierarchy():
     day_media_menu_block = html.split('    body[data-theme="day"] #tabMedia.admin-console-shell > .card {', 1)[1].split("}", 1)[0]
     day_media_subtabs_block = html.split('    body[data-theme="day"] :is(#tabMedia.admin-console-shell .goods-mode-tabs, #tabCollectibles .goods-mode-tabs) {', 1)[1].split("}", 1)[0]
     assert "background: color-mix(in srgb, var(--theme-admin-panel-bg) 64%, var(--ink) 36%);" in day_admin_tab_shell_block
-    assert "border-color: rgba(94, 112, 130, 0.62);" in day_media_menu_block
+    assert "border-color: rgba(88, 107, 126, 0.68);" in day_media_menu_block
     assert "rgba(226, 234, 242, 0.996)" in day_media_menu_block
     assert "rgba(214, 223, 232, 0.992)" in day_media_menu_block
     assert "0 1px 0 rgba(122, 137, 154, 0.12);" in day_media_menu_block
-    assert "border: 1px solid rgba(101, 116, 132, 0.56);" in day_media_subtabs_block
+    assert "border: 1px solid rgba(95, 111, 128, 0.62);" in day_media_subtabs_block
     assert "rgba(214, 223, 232, 0.994)" in day_media_subtabs_block
     assert "rgba(203, 214, 224, 0.988)" in day_media_subtabs_block
 
@@ -6400,7 +6400,7 @@ def test_day_mode_adds_stronger_ops_account_and_provider_hierarchy():
     assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_ops_account_provider_surface_block
     assert "border-bottom: 1px solid rgba(108, 124, 141, 0.32) !important;" in day_ops_account_provider_cell_block
     assert "background: linear-gradient(" in day_ops_account_provider_th_block
-    assert "color: #2d4760 !important;" in day_ops_account_provider_th_block
+    assert "color: #23384b !important;" in day_ops_account_provider_th_block
     assert "color: #31465a !important;" in day_ops_account_provider_copy_block
     assert "color: #1b3346 !important;" in day_ops_account_provider_input_block
     assert "color: #5a7084;" in day_ops_account_provider_placeholder_block
@@ -6681,7 +6681,7 @@ def test_day_mode_adds_stronger_media_search_hierarchy():
     assert "border-color: rgba(84, 102, 122, 0.46);" in day_search_input_block
     assert "color: #1b3144;" in day_search_input_block
     assert "color: #5a7084;" in day_search_placeholder_block
-    assert "color: #395063;" in day_search_meta_block
+    assert "color: #41586d;" in day_search_meta_block
     assert "border-color: rgba(103, 121, 139, 0.72);" in day_search_ghost_btn_block
     assert "color: #1f3648;" in day_search_ghost_btn_block
     assert "border-color: rgba(86, 125, 149, 0.64);" in day_search_primary_btn_block
@@ -10330,8 +10330,9 @@ def test_collectibles_and_ops_use_console_panel_grammar():
     assert "background: linear-gradient(180deg, var(--admin-console-panel-bg), var(--admin-console-panel-bg-2));" in tab_ops_card_block
     assert "#tabOps.admin-console-shell > .subtabs {" in html
     tab_ops_subtabs_block = html.split("#tabOps.admin-console-shell > .subtabs {", 1)[1].split("}", 1)[0]
-    assert "gap: 8px;" in tab_ops_subtabs_block
-    assert "flex-wrap: wrap;" in tab_ops_subtabs_block
+    assert "border: 1px solid rgba(95, 111, 128, 0.62);" in tab_ops_subtabs_block
+    assert "rgba(214, 223, 232, 0.994)" in tab_ops_subtabs_block
+    assert "rgba(203, 214, 224, 0.988)" in tab_ops_subtabs_block
     assert "#tabOps.admin-console-shell > .subtabs .subtab-btn {" in html
     tab_ops_subtab_btn_block = extract_css_block(html, "#tabOps.admin-console-shell > .subtabs .subtab-btn {", "last")
     assert "border: 1px solid var(--admin-console-panel-border);" in tab_ops_subtab_btn_block
@@ -10418,7 +10419,7 @@ def test_ops_exception_queue_rows_and_summary_cards_use_console_surface_tones():
     assert "color: var(--admin-console-text-muted);" in summary_copy_block
     assert "background: var(--admin-console-panel-bg);" in row_block
     assert "border-color: var(--admin-console-panel-border);" in row_block
-    assert "background: var(--admin-console-panel-bg-2);" in cover_block
+    assert "background: rgba(223, 231, 239, 0.992);" in cover_block
     assert "color: var(--admin-console-text);" in title_block
     assert "color: var(--admin-console-text-muted);" in meta_block
 
