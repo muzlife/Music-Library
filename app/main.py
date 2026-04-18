@@ -823,7 +823,12 @@ def _lookup_compact_match_level(query_value: Any, candidate_value: Any) -> int:
 
 
 def _candidate_artist_match_level(candidate: dict[str, Any], artist_or_brand: str | None) -> int:
-    return _lookup_match_level(artist_or_brand, candidate.get("artist_or_brand"))
+    levels = [_lookup_match_level(artist_or_brand, candidate.get("artist_or_brand"))]
+    raw = candidate.get("raw")
+    if isinstance(raw, dict):
+        for term in raw.get("artist_search_terms") or raw.get("search_terms") or []:
+            levels.append(_lookup_match_level(artist_or_brand, term))
+    return max(levels)
 
 
 def _candidate_title_match_level(candidate: dict[str, Any], title: str | None) -> int:
