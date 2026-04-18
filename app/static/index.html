@@ -151,8 +151,8 @@
       border-top-color: rgba(85, 123, 146, 0.5);
       background: linear-gradient(
         180deg,
-        rgba(223, 230, 237, 0.98),
-        rgba(208, 217, 227, 0.98)
+        rgba(184, 196, 208, 0.968),
+        rgba(173, 186, 199, 0.986)
       );
       color: var(--theme-dashboard-text);
     }
@@ -169,8 +169,8 @@
       border-color: rgba(104, 120, 137, 0.8);
       background: linear-gradient(
         180deg,
-        rgba(244, 247, 251, 0.98),
-        rgba(229, 236, 243, 0.98)
+        rgba(226, 234, 242, 0.996),
+        rgba(214, 223, 232, 0.992)
       );
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.42),
@@ -178,14 +178,22 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-panel {
-      border-color: rgba(108, 124, 141, 0.74);
-      background: rgba(235, 241, 247, 0.98);
+      border-color: rgba(94, 112, 130, 0.62);
+      background: linear-gradient(
+        180deg,
+        rgba(226, 234, 242, 0.996),
+        rgba(214, 223, 232, 0.992)
+      );
       box-shadow: none;
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--rail {
-      border-color: rgba(104, 119, 136, 0.74);
-      background: rgba(221, 229, 237, 0.98);
+      border-color: rgba(101, 116, 132, 0.56);
+      background: linear-gradient(
+        180deg,
+        rgba(220, 229, 238, 0.996),
+        rgba(208, 218, 227, 0.992)
+      );
       box-shadow: none;
     }
 
@@ -214,11 +222,11 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-map-shell, .dashboard-slot-grid-panel, .dashboard-slot-rack-surface, .dashboard-workbench-toolbar, .dashboard-slot-pagebar, .dashboard-selected-item-meta, .dashboard-slot-bulk-popover, .dashboard-slot-mutation-row) {
-      border-color: rgba(102, 118, 136, 0.78);
+      border-color: rgba(98, 115, 133, 0.58);
       background: linear-gradient(
         180deg,
-        rgba(228, 235, 242, 0.98),
-        rgba(211, 220, 229, 0.99)
+        rgba(220, 229, 238, 0.996),
+        rgba(208, 218, 227, 0.992)
       );
     }
 
@@ -992,11 +1000,11 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-grid-panel {
-      border-color: rgba(118, 132, 147, 0.74);
+      border-color: rgba(98, 115, 133, 0.58);
       background: linear-gradient(
         180deg,
-        rgba(224, 232, 240, 0.98),
-        rgba(208, 219, 229, 0.99)
+        rgba(220, 229, 238, 0.996),
+        rgba(208, 218, 227, 0.992)
       );
       padding: 0 18px 18px;
       box-shadow:
@@ -1005,11 +1013,11 @@
     }
 
     body[data-theme="day"] #homeDashboardCard.dashboard-console-shell .dashboard-slot-pagebar {
-      border-color: rgba(124, 138, 153, 0.72);
+      border-color: rgba(98, 115, 133, 0.58);
       background: linear-gradient(
         180deg,
-        rgba(233, 239, 244, 0.98),
-        rgba(218, 227, 235, 0.98)
+        rgba(220, 229, 238, 0.996),
+        rgba(208, 218, 227, 0.992)
       );
     }
 
@@ -1086,7 +1094,7 @@
     }
 
     body[data-theme="day"] #tabMedia.admin-console-shell > .card {
-      border-color: rgba(94, 112, 130, 0.62);
+      border-color: rgba(88, 107, 126, 0.68);
       background: linear-gradient(
         180deg,
         rgba(226, 234, 242, 0.996),
@@ -1099,7 +1107,7 @@
 
     body[data-theme="day"] :is(#tabMedia.admin-console-shell .goods-mode-tabs, #tabCollectibles .goods-mode-tabs) {
       padding: 8px;
-      border: 1px solid rgba(101, 116, 132, 0.56);
+      border: 1px solid rgba(95, 111, 128, 0.62);
       background: linear-gradient(
         180deg,
         rgba(214, 223, 232, 0.994),
@@ -1113,10 +1121,10 @@
     body[data-theme="day"] #tabCollectibles .goods-shell.admin-console-shell {
       --admin-console-panel-bg: rgba(226, 234, 242, 0.996);
       --admin-console-panel-bg-2: rgba(208, 218, 227, 0.992);
-      --admin-console-panel-border: rgba(94, 112, 130, 0.62);
+      --admin-console-panel-border: rgba(88, 107, 126, 0.68);
       --admin-console-text: #203548;
-      --admin-console-text-muted: #41586d;
-      --admin-console-text-meta: #5a7187;
+      --admin-console-text-muted: #394f63;
+      --admin-console-text-meta: #52697f;
       background: linear-gradient(
         180deg,
         rgba(226, 234, 242, 0.996),
@@ -1128,7 +1136,7 @@
     }
 
     body[data-theme="day"] #tabCollectibles :is(.goods-surface > .card, .goods-surface > .manual-block) {
-      border-color: rgba(94, 112, 130, 0.62);
+      border-color: rgba(88, 107, 126, 0.68);
       background: linear-gradient(
         180deg,
         rgba(226, 234, 242, 0.996),
@@ -1141,14 +1149,16 @@
     }
 
     body[data-theme="day"] #tabCollectibles :is(.goods-map-section, .goods-target-row, .goods-result-item) {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: rgba(208, 218, 227, 0.992);
       color: #203548;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.26),
+        0 1px 0 rgba(120, 136, 153, 0.08);
     }
 
     body[data-theme="day"] #tabCollectibles :is(.mini, .muted, .goods-result-meta) {
-      color: #41586d;
+      color: #394f63;
     }
 
     body[data-theme="day"] #tabCollectibles .btn.ghost {
@@ -1184,7 +1194,7 @@
     }
 
     body[data-theme="day"] #tabSearch .admin-console-grid > :is(.card, .admin-console-secondary) {
-      border-color: rgba(94, 112, 130, 0.62);
+      border-color: rgba(88, 107, 126, 0.68);
       background: linear-gradient(
         180deg,
         rgba(226, 234, 242, 0.996),
@@ -1196,13 +1206,15 @@
     }
 
     body[data-theme="day"] #tabSearch .admin-console-grid :is(.manual-block, .result-list, .table-wrap, .status, .compact-line, .music-box, .meta-search-box, .home-manage-secondary-block) {
-      border-color: rgba(98, 115, 133, 0.58);
+      border-color: rgba(93, 110, 127, 0.64);
       background: rgba(214, 223, 232, 0.992);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.26),
+        0 1px 0 rgba(120, 136, 153, 0.08);
     }
 
     body[data-theme="day"] #tabSearch .admin-console-grid :is(.mini, .muted, .result-head .mini, .result-head span, .manual-block-note, .home-master-subline, .home-master-member-preview-title span, .home-master-member-preview-runout) {
-      color: #41586d;
+      color: #395063;
     }
 
     body[data-theme="day"] #tabSearch .admin-console-grid .btn.ghost {
@@ -1230,7 +1242,7 @@
     }
 
     body[data-theme="day"] #tabSearch #adminSearchContextBody {
-      border-color: rgba(88, 106, 124, 0.68);
+      border-color: rgba(84, 103, 122, 0.74);
       background: linear-gradient(
         180deg,
         rgba(230, 237, 244, 0.996),
@@ -1242,27 +1254,27 @@
     }
 
     body[data-theme="day"] #tabSearch :is(.ops-plugin-section, .ops-artist-context-card, #adminSearchContextBody .operator-mini-card) {
-      border-color: rgba(91, 109, 127, 0.64);
+      border-color: rgba(86, 105, 124, 0.7);
       background: rgba(221, 229, 237, 0.994);
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.34),
-        0 1px 0 rgba(116, 131, 147, 0.1);
+        0 1px 0 rgba(116, 131, 147, 0.12);
       color: #15202b;
     }
 
     body[data-theme="day"] #tabSearch :is(.ops-plugin-section-head strong, .ops-artist-context-head strong, .ops-artist-context-name, #adminSearchContextBody .operator-mini-line span) {
-      color: #163247;
+      color: #112c40;
     }
 
     body[data-theme="day"] #tabSearch :is(.ops-artist-context-summary, .ops-artist-context-summary--original, .ops-artist-context-links-label, .ops-artist-context-pill, .ops-artist-context-pill strong, .ops-library-context-subtitle, #adminSearchContextBody .operator-mini-line strong) {
-      color: #4b6175;
+      color: #42586b;
     }
 
     body[data-theme="day"] #tabSearch :is(.ops-artist-context-original, .ops-artist-context-pill, .ops-artist-context-toggle, .ops-artist-context-media, #adminSearchContextBody .operator-label-chip) {
-      border-color: rgba(96, 114, 132, 0.62);
-      background: rgba(226, 233, 240, 0.994);
+      border-color: rgba(90, 109, 127, 0.68);
+      background: rgba(220, 228, 236, 0.994);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
-      color: #40576b;
+      color: #375064;
     }
 
     body[data-theme="day"] #tabSearch .page-help-trigger {
@@ -1413,7 +1425,7 @@
     }
 
     body[data-theme="day"] #tabSearch .result-item {
-      border-color: color-mix(in srgb, rgba(98, 114, 132, 0.74) 72%, white 28%);
+      border-color: color-mix(in srgb, rgba(88, 106, 124, 0.82) 74%, white 26%);
       background: linear-gradient(
         180deg,
         color-mix(in srgb, var(--paper) 88%, var(--bg) 12%),
@@ -1422,20 +1434,20 @@
       color: var(--admin-console-text);
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.46),
-        0 1px 0 rgba(116, 131, 147, 0.08);
+        0 1px 0 rgba(116, 131, 147, 0.12);
     }
 
     body[data-theme="day"] #tabSearch .result-item.pick {
-      border-color: color-mix(in srgb, var(--theme-admin-accent) 42%, rgba(96, 114, 132, 0.72) 58%);
+      border-color: color-mix(in srgb, var(--theme-admin-accent) 48%, rgba(88, 106, 124, 0.78) 52%);
       background: linear-gradient(
         180deg,
         color-mix(in srgb, var(--paper) 78%, var(--theme-admin-accent) 22%),
         color-mix(in srgb, var(--theme-admin-panel-bg) 90%, var(--bg) 10%)
       );
       box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--theme-admin-accent) 22%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--theme-admin-accent) 28%, transparent),
         inset 0 1px 0 rgba(255, 255, 255, 0.52),
-        0 2px 6px rgba(108, 126, 144, 0.08);
+        0 2px 6px rgba(108, 126, 144, 0.12);
     }
 
     body[data-theme="day"] #tabSearch .home-master-member-preview-item {
@@ -20469,6 +20481,11 @@
           <div class="row u-mt-8 u-gap-8-wrap">
             <button id="opsAutoBackupSaveBtn" class="btn ghost" type="button" data-i18n="ops.restore.action.save_auto_backup">자동 백업 설정 저장</button>
           </div>
+          <div class="row u-mt-8 u-gap-8-wrap">
+            <span class="mini muted" data-i18n="ops.restore.field.applied_schedule.label">적용 스케줄</span>
+            <span id="opsAutoBackupDailySchedule" class="chip mini">일일 DB -</span>
+            <span id="opsAutoBackupWeeklySchedule" class="chip mini">주간 전체 -</span>
+          </div>
           <div id="opsAutoBackupSummary" class="mini muted u-mt-8" data-i18n="ops.restore.summary.loading">자동 백업 설정을 불러옵니다.</div>
           <div class="section-divider u-mt-12">
             <h2 data-i18n="ops.restore.db.title">DB 복구 업로드</h2>
@@ -22490,6 +22507,7 @@
         "ops.restore.scope.db": "DB만",
         "ops.restore.scope.full": "전체(zip)",
         "ops.restore.field.include_env.label": "전체(zip) 자동 백업에 설정 파일(.env.local) 포함",
+        "ops.restore.field.applied_schedule.label": "적용 스케줄",
         "ops.restore.action.save_auto_backup": "자동 백업 설정 저장",
         "ops.restore.summary.loading": "자동 백업 설정을 불러옵니다.",
         "ops.restore.db.title": "DB 복구 업로드",
@@ -25066,6 +25084,7 @@
         "ops.restore.scope.db": "DB only",
         "ops.restore.scope.full": "Full (zip)",
         "ops.restore.field.include_env.label": "Include the settings file (.env.local) in automatic full zip backups",
+        "ops.restore.field.applied_schedule.label": "Applied schedule",
         "ops.restore.action.save_auto_backup": "Save Auto Backup Settings",
         "ops.restore.summary.loading": "Loading auto backup settings.",
         "ops.restore.db.title": "DB Restore Upload",
@@ -27654,6 +27673,7 @@
         "ops.restore.scope.db": "DBのみ",
         "ops.restore.scope.full": "全体(zip)",
         "ops.restore.field.include_env.label": "全体(zip)自動バックアップに設定ファイル(.env.local)を含める",
+        "ops.restore.field.applied_schedule.label": "適用スケジュール",
         "ops.restore.action.save_auto_backup": "自動バックアップ設定を保存",
         "ops.restore.summary.loading": "自動バックアップ設定を読み込みます。",
         "ops.restore.db.title": "DB復旧アップロード",
@@ -50882,6 +50902,19 @@
       return Math.round(days * 1440);
     }
 
+    function renderOpsBackupScheduleDetails(data) {
+      const dailySchedule = String(data?.daily_schedule || "").trim();
+      const weeklySchedule = String(data?.weekly_schedule || "").trim();
+      const dailyLabel = dailySchedule
+        ? t("ops.restore.summary.daily_schedule", { value: dailySchedule })
+        : `${t("ops.restore.summary.daily_schedule", { value: "-" })}`;
+      const weeklyLabel = weeklySchedule
+        ? t("ops.restore.summary.weekly_schedule", { value: weeklySchedule })
+        : `${t("ops.restore.summary.weekly_schedule", { value: "-" })}`;
+      setTextIfPresent("opsAutoBackupDailySchedule", dailyLabel);
+      setTextIfPresent("opsAutoBackupWeeklySchedule", weeklyLabel);
+    }
+
     async function loadOpsBackupSettings() {
       try {
         const res = await fetch("/ops/export/backup-settings");
@@ -50892,6 +50925,7 @@
         $("opsAutoBackupDir").value = String(data.backup_dir || "");
         $("opsAutoBackupScope").value = String(data.backup_scope || "DB").toUpperCase() === "FULL" ? "FULL" : "DB";
         $("opsAutoBackupIncludeEnvFile").checked = Boolean(data.include_env_file);
+        renderOpsBackupScheduleDetails(data);
         const summaryBits = [
           data.enabled ? t("ops.restore.summary.auto_on", { days: formatCount(autoBackupIntervalDaysFromMinutes(data.interval_minutes || 0)) }) : t("ops.restore.summary.auto_off"),
           String(data.backup_scope || "DB").toUpperCase() === "FULL" ? t("ops.restore.summary.scope_full") : t("ops.restore.summary.scope_db"),
@@ -50935,6 +50969,7 @@
         $("opsAutoBackupDir").value = String(data.backup_dir || "");
         $("opsAutoBackupScope").value = String(data.backup_scope || "DB").toUpperCase() === "FULL" ? "FULL" : "DB";
         $("opsAutoBackupIncludeEnvFile").checked = Boolean(data.include_env_file);
+        renderOpsBackupScheduleDetails(data);
         $("opsAutoBackupSummary").textContent = [
           data.enabled ? t("ops.restore.summary.auto_on", { days: formatCount(autoBackupIntervalDaysFromMinutes(data.interval_minutes || 0)) }) : t("ops.restore.summary.auto_off"),
           String(data.backup_scope || "DB").toUpperCase() === "FULL" ? t("ops.restore.summary.scope_full") : t("ops.restore.summary.scope_db"),
