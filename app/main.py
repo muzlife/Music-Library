@@ -6,6 +6,7 @@ from email.parser import Parser as EmailParser
 from email.parser import BytesParser as EmailBytesParser
 from email.utils import parsedate_to_datetime
 import io
+import inspect
 import json
 import logging
 import os
@@ -109,11 +110,14 @@ from .schemas import (
     DigitalLinkCreateResponse,
     GoodsCategory,
     GoodsItemAlbumMasterMapping,
+    GoodsItemCollectibleRelation,
     GoodsItemCreateRequest,
     GoodsItemMappingUpdateRequest,
+    GoodsItemRelationUpdateRequest,
     GoodsItemResponse,
     GoodsItemSearchResponse,
     GoodsItemUpdateRequest,
+    GoodsCollectibleRelationState,
     GoodsLinkedState,
     GoodsStatus,
     DomainCode,
@@ -197,6 +201,7 @@ from .services.providers import (
     get_source_release_snapshot,
     get_album_master_variants,
     get_album_master_variants_page,
+    resolve_discogs_preferred_korean_artist_name,
     resolve_release_master_reference,
     search_album_master_candidates,
     search_discogs_artist_name_variations,
@@ -325,6 +330,7 @@ PROJECT_ERD_SUMMARY_PATH = Path("/Volumes/Works/07.hahahoho/docs/library_erd_ope
 PROJECT_ERD_DETAIL_PATH = Path("/Volumes/Works/07.hahahoho/docs/library_erd.md")
 PROJECT_TOOL_MANUAL_PATH = Path("/Volumes/Works/07.hahahoho/docs/management_tool_manual.md")
 PROJECT_GO_LIVE_CHECKLIST_PATH = Path("/Volumes/Works/07.hahahoho/docs/go_live_checklist.md")
+PROJECT_PURCHASE_IMPORT_GUIDE_PATH = Path("/Volumes/Works/07.hahahoho/docs/purchase_mail_import.md")
 PROJECT_CSV_IMPORT_SAMPLE_PATH = Path("/Volumes/Works/07.hahahoho/docs/csv_import_sample.csv")
 DISCOGS_COVER_PREVIEW_CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "discogs_cover_preview_cache"
 HTML_NO_CACHE_HEADERS = {
@@ -342,6 +348,7 @@ PURCHASE_ITEM_FETCH_HEADERS = {
 
 settings = get_settings()
 _OFFICE_CLIMATE_CACHE: dict[str, Any] | None = None
+_SEOUL_WEATHER_CACHE: dict[str, Any] | None = None
 app.mount("/ui-static", StaticFiles(directory=STATIC_DIR), name="ui-static")
 
 
@@ -833,13 +840,31 @@ def _candidate_matches_title_filter(candidate: dict[str, Any], title: str | None
     return _candidate_title_match_level(candidate, title) > 0
 
 
+def _is_maniadb_artist_candidate(candidate: dict[str, Any]) -> bool:
+    external_id = str(candidate.get("external_id") or "").strip().lower()
+    if external_id.startswith("artist:"):
+        return True
+    raw = candidate.get("raw")
+    if isinstance(raw, dict) and str(raw.get("kind") or "").strip().lower() == "artist":
+        return True
+    return False
+
+
 def _filter_maniadb_candidates(
     candidates: list[dict[str, Any]],
     *,
     artist_or_brand: str | None = None,
     title: str | None = None,
 ) -> list[dict[str, Any]]:
-    narrowed = candidates
+    narrowed = [
+        candidate
+        for candidate in candidates
+        if str(candidate.get("source") or "").strip().upper() == "MANIADB"
+    ]
+
+    release_candidates = [candidate for candidate in narrowed if not _is_maniadb_artist_candidate(candidate)]
+    if release_candidates:
+        narrowed = release_candidates
 
     if artist_or_brand:
         matched_artist = [candidate for candidate in narrowed if _candidate_matches_artist_filter(candidate, artist_or_brand)]
@@ -1008,6 +1033,7 @@ def _build_album_master_candidate_from_release_reference(source: str, release_ex
         "label_name": _clean_text((preview or {}).get("label_name")),
         "catalog_no": _discogs_catalog_no((preview or {}).get("catalog_no")),
         "barcode": _clean_text((preview or {}).get("barcode")),
+        "cover_image_url": _clean_text((preview or {}).get("cover_image_url")),
         "variant_count": None,
         "confidence": 1.0,
         "raw": {"direct_reference": release_external_id, "kind": "release"},
@@ -1034,6 +1060,7 @@ def _build_album_master_candidate_from_master_reference(source: str, master_exte
         "label_name": _clean_text((preview or {}).get("label_name")),
         "catalog_no": _discogs_catalog_no((preview or {}).get("catalog_no")),
         "barcode": _clean_text((preview or {}).get("barcode")),
+        "cover_image_url": _clean_text((preview or {}).get("cover_image_url")),
         "variant_count": variant_count,
         "confidence": 1.0,
         "raw": {"direct_reference": master_external_id, "kind": "master"},
@@ -1131,14 +1158,52 @@ def _search_lookup_metadata_candidates(
     if direct_candidates is not None:
         return direct_candidates
 
-    candidates = search_music_metadata(
-        query=query,
-        category=category,
-        source=source,
-        limit=limit,
-        artist_or_brand=artist_or_brand,
-        title=title,
-    )
+    hint_kwargs = {
+        key: value
+        for key, value in {
+            "artist_or_brand": artist_or_brand,
+            "title": title,
+        }.items()
+        if value is not None
+    }
+    try:
+        signature = inspect.signature(search_music_metadata)
+    except (TypeError, ValueError):
+        signature = None
+
+    def build_search_kwargs(next_query: str, next_title: str | None) -> dict[str, Any]:
+        search_kwargs: dict[str, Any] = {
+            "query": next_query,
+            "category": category,
+            "source": source,
+            "limit": limit,
+        }
+        next_hint_kwargs = {
+            key: value
+            for key, value in {
+                "artist_or_brand": artist_or_brand,
+                "title": next_title,
+            }.items()
+            if value is not None
+        }
+        if not next_hint_kwargs:
+            return search_kwargs
+        if signature is None:
+            search_kwargs.update(next_hint_kwargs)
+            return search_kwargs
+        if any(param.kind is inspect.Parameter.VAR_KEYWORD for param in signature.parameters.values()):
+            search_kwargs.update(next_hint_kwargs)
+            return search_kwargs
+        search_kwargs.update(
+            {
+                key: value
+                for key, value in next_hint_kwargs.items()
+                if key in signature.parameters
+            }
+        )
+        return search_kwargs
+
+    candidates = search_music_metadata(**build_search_kwargs(query, title))
 
     source_u = str(source or "").strip().upper()
     if source_u == "MANIADB" and (artist_or_brand or title):
@@ -1147,6 +1212,30 @@ def _search_lookup_metadata_candidates(
             artist_or_brand=artist_or_brand,
             title=title,
         )
+        if not candidates and title:
+            seen_titles: set[str] = set()
+            retry_titles = [
+                part.strip()
+                for part in re.split(r"\s*/\s*", str(title or "").strip())
+                if part and part.strip()
+            ]
+            for retry_title in retry_titles:
+                normalized_retry_title = _normalize_lookup_text(retry_title)
+                if not normalized_retry_title or normalized_retry_title in seen_titles:
+                    continue
+                seen_titles.add(normalized_retry_title)
+                retry_query = " ".join(part for part in [artist_or_brand, retry_title] if part and str(part).strip()).strip()
+                if not retry_query:
+                    retry_query = retry_title
+                retry_candidates = search_music_metadata(**build_search_kwargs(retry_query, retry_title))
+                retry_candidates = _filter_maniadb_candidates(
+                    retry_candidates,
+                    artist_or_brand=artist_or_brand,
+                    title=retry_title,
+                )
+                if retry_candidates:
+                    candidates = retry_candidates
+                    break
 
     if candidates or source_u not in {"AUTO", "DISCOGS"}:
         return candidates
@@ -3512,6 +3601,7 @@ def tool_docs(doc_key: str) -> FileResponse:
         "erd-detail": PROJECT_ERD_DETAIL_PATH,
         "manual": PROJECT_TOOL_MANUAL_PATH,
         "go-live-checklist": PROJECT_GO_LIVE_CHECKLIST_PATH,
+        "purchase-import": PROJECT_PURCHASE_IMPORT_GUIDE_PATH,
         "csv-import-sample": PROJECT_CSV_IMPORT_SAMPLE_PATH,
     }
     doc_path = path_map.get(key)
@@ -3571,6 +3661,32 @@ def _goods_item_response_from_row(row: dict[str, Any]) -> GoodsItemResponse:
         ],
         artist_mappings=[str(name or "").strip() for name in row.get("artist_mappings") or [] if str(name or "").strip()],
         label_mappings=[str(name or "").strip() for name in row.get("label_mappings") or [] if str(name or "").strip()],
+        collectible_relations=[
+            GoodsItemCollectibleRelation(
+                relation_type=str(relation.get("relation_type") or "").strip().upper(),  # type: ignore[arg-type]
+                direction="OUTGOING",
+                linked_goods_item_id=int(relation["linked_goods_item_id"]),
+                linked_goods_name=str(relation.get("linked_goods_name") or "").strip(),
+                linked_category=str(relation.get("linked_category") or "").strip().upper() or None,  # type: ignore[arg-type]
+                note=str(relation.get("note") or "").strip() or None,
+                display_order=int(relation.get("display_order") or 0),
+            )
+            for relation in row.get("collectible_relations") or []
+        ],
+        collectible_relation_count=int(row.get("collectible_relation_count") or 0),
+        relation_badges=[str(relation_type or "").strip().upper() for relation_type in row.get("relation_badges") or [] if str(relation_type or "").strip()],
+        collectible_relation_preview=[
+            GoodsItemCollectibleRelation(
+                relation_type=str(relation.get("relation_type") or "").strip().upper(),  # type: ignore[arg-type]
+                direction="OUTGOING",
+                linked_goods_item_id=int(relation["linked_goods_item_id"]),
+                linked_goods_name=str(relation.get("linked_goods_name") or "").strip(),
+                linked_category=str(relation.get("linked_category") or "").strip().upper() or None,  # type: ignore[arg-type]
+                note=str(relation.get("note") or "").strip() or None,
+                display_order=int(relation.get("display_order") or 0),
+            )
+            for relation in row.get("collectible_relation_preview") or []
+        ],
         created_at=str(row.get("created_at") or "").strip(),
         updated_at=str(row.get("updated_at") or "").strip(),
     )
@@ -4691,23 +4807,75 @@ def _load_operator_office_climate() -> dict[str, Any]:
     }
 
 
+def _load_operator_seoul_weather() -> dict[str, Any]:
+    response = httpx.get(
+        "https://api.open-meteo.com/v1/forecast",
+        params={
+            "latitude": 37.5665,
+            "longitude": 126.9780,
+            "current": "temperature_2m,relative_humidity_2m,is_day,weather_code",
+            "daily": "temperature_2m_max,temperature_2m_min",
+            "forecast_days": 1,
+            "timezone": "Asia/Seoul",
+        },
+        timeout=10.0,
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    payload = response.json() if response.content else {}
+    current = payload.get("current") if isinstance(payload, dict) and isinstance(payload.get("current"), dict) else {}
+    daily = payload.get("daily") if isinstance(payload, dict) and isinstance(payload.get("daily"), dict) else {}
+    temperature_c = current.get("temperature_2m")
+    humidity_percent = current.get("relative_humidity_2m")
+    weather_code = current.get("weather_code")
+    is_day = current.get("is_day")
+    daily_max = daily.get("temperature_2m_max") if isinstance(daily.get("temperature_2m_max"), list) else []
+    daily_min = daily.get("temperature_2m_min") if isinstance(daily.get("temperature_2m_min"), list) else []
+    temperature_high_c = daily_max[0] if daily_max else None
+    temperature_low_c = daily_min[0] if daily_min else None
+    updated_at = str(current.get("time") or "").strip() or None
+    available = temperature_c is not None
+    return {
+        "available": available,
+        "source": "seoul_weather",
+        "location_label": "서울",
+        "description": "",
+        "temperature_c": float(temperature_c) if temperature_c is not None else None,
+        "humidity_percent": float(humidity_percent) if humidity_percent is not None else None,
+        "comfort_label": None,
+        "temperature_high_c": float(temperature_high_c) if temperature_high_c is not None else None,
+        "temperature_low_c": float(temperature_low_c) if temperature_low_c is not None else None,
+        "weather_code": int(weather_code) if weather_code is not None else None,
+        "is_day": bool(is_day) if is_day is not None else None,
+        "updated_at": updated_at,
+    }
+
+
 @app.get("/operator/office-climate", response_model=OfficeClimateResponse)
 def operator_office_climate() -> OfficeClimateResponse:
-    global _OFFICE_CLIMATE_CACHE
+    global _OFFICE_CLIMATE_CACHE, _SEOUL_WEATHER_CACHE
     try:
         payload = _load_operator_office_climate()
         if bool(payload.get("available")):
             _OFFICE_CLIMATE_CACHE = dict(payload)
-        return OfficeClimateResponse(**payload)
+            return OfficeClimateResponse(**payload)
     except Exception:
         if _OFFICE_CLIMATE_CACHE:
             return OfficeClimateResponse(**_OFFICE_CLIMATE_CACHE)
-        return OfficeClimateResponse(
-            available=False,
-            source="home_assistant",
-            location_label="상주 사무실",
-            description="온/습도계",
-        )
+    try:
+        payload = _load_operator_seoul_weather()
+        if bool(payload.get("available")):
+            _SEOUL_WEATHER_CACHE = dict(payload)
+            return OfficeClimateResponse(**payload)
+    except Exception:
+        if _SEOUL_WEATHER_CACHE:
+            return OfficeClimateResponse(**_SEOUL_WEATHER_CACHE)
+    return OfficeClimateResponse(
+        available=False,
+        source="seoul_weather",
+        location_label="서울",
+        description="",
+    )
 
 
 @app.post("/ops/artist-context", response_model=ArtistContextResponse)
@@ -5708,6 +5876,8 @@ def get_goods_items(
     label_name: str | None = Query(default=None),
     storage_slot_id: int | None = Query(default=None, ge=1),
     linked_state: GoodsLinkedState = Query(default="ANY"),
+    collectible_relation_state: GoodsCollectibleRelationState = Query(default="ANY"),
+    collectible_relation_type: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> GoodsItemSearchResponse:
@@ -5722,6 +5892,8 @@ def get_goods_items(
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,
+        collectible_relation_state=collectible_relation_state,
+        collectible_relation_type=collectible_relation_type,
         limit=limit,
         offset=offset,
     )
@@ -5735,6 +5907,8 @@ def get_goods_items(
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,
+        collectible_relation_state=collectible_relation_state,
+        collectible_relation_type=collectible_relation_type,
     )
     return GoodsItemSearchResponse(
         total_count=total_count,
@@ -5802,11 +5976,28 @@ def replace_goods_item_mappings(
     return _goods_item_response_from_row(row)
 
 
+@app.put("/goods-items/{goods_item_id}/relations", response_model=GoodsItemResponse)
+def replace_goods_item_collectible_relations(
+    goods_item_id: int,
+    payload: GoodsItemRelationUpdateRequest,
+    request: Request,
+) -> GoodsItemResponse:
+    _require_admin_request(request)
+    try:
+        row = db.replace_goods_item_collectible_relations(goods_item_id, payload.model_dump())
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+    if row is None:
+        raise HTTPException(status_code=404, detail="goods item not found")
+    return _goods_item_response_from_row(row)
+
+
 @app.get("/goods-targets")
 def search_goods_mapping_targets(
     request: Request,
-    kind: Literal["artist", "label", "album_master"] = Query(...),
+    kind: Literal["artist", "label", "album_master", "collectible"] = Query(...),
     q: str = Query(default=""),
+    goods_item_id: int | None = Query(default=None, ge=1),
     limit: int = Query(default=10, ge=1, le=50),
 ) -> dict[str, list[dict[str, Any]]]:
     _require_admin_request(request)
@@ -5823,6 +6014,23 @@ def search_goods_mapping_targets(
             "items": [
                 {"value": name, "label": name}
                 for name in db.list_goods_label_name_candidates(query, limit=limit)
+            ]
+        }
+    if kind == "collectible":
+        rows = db.search_goods_collectible_targets(
+            query_text=query,
+            goods_item_id=goods_item_id,
+            limit=limit,
+        )
+        return {
+            "items": [
+                {
+                    "value": int(row["id"]),
+                    "goods_item_id": int(row["id"]),
+                    "goods_name": str(row.get("goods_name") or "").strip(),
+                    "category": str(row.get("category") or "").strip().upper() or None,
+                }
+                for row in rows
             ]
         }
     rows = db.list_album_masters(
@@ -8883,6 +9091,278 @@ def _infer_album_master_domain_code(
     return _normalize_domain_code(inferred) or _master_domain_hint(linked_album_master_id)
 
 
+def _contains_hangul_artist_name(value: Any) -> bool:
+    return bool(re.search(r"[\u3131-\u318e\uac00-\ud7a3]", str(value or "")))
+
+
+def _discogs_artist_name_needs_localization(value: Any) -> bool:
+    text = _clean_text(value)
+    return bool(text) and not _contains_hangul_artist_name(text)
+
+
+def _rewrite_artist_prefixed_item_name(
+    item_name_override: Any,
+    previous_artist_names: list[str | None],
+    preferred_artist_name: str,
+) -> str | None:
+    current_text = _clean_text(item_name_override)
+    preferred_text = _clean_text(preferred_artist_name)
+    if not current_text or not preferred_text:
+        return current_text
+
+    seen: set[str] = set()
+    for candidate in previous_artist_names:
+        previous_text = _clean_text(candidate)
+        if not previous_text or previous_text == preferred_text:
+            continue
+        key = previous_text.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        if current_text == previous_text:
+            return preferred_text
+        prefix = f"{previous_text} - "
+        if current_text.startswith(prefix):
+            return f"{preferred_text} - {current_text[len(prefix):]}"
+    return current_text
+
+
+def _owned_item_discogs_artist_row(owned_item_id: int) -> dict[str, Any] | None:
+    with db.get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT
+              oi.id,
+              oi.source_code,
+              oi.source_external_id,
+              oi.linked_artist_name,
+              oi.item_name_override,
+              oi.linked_album_master_id,
+              COALESCE(NULLIF(TRIM(oi.domain_code), ''), NULLIF(TRIM(am.domain_code), ''), '') AS domain_code,
+              mid.artist_or_brand AS music_artist_or_brand,
+              am.artist_or_brand AS master_artist_or_brand,
+              am.sort_artist_name AS master_sort_artist_name
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            WHERE oi.id = ?
+            LIMIT 1
+            """,
+            (int(owned_item_id),),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def _resolve_owned_item_discogs_korean_artist_name(
+    row: dict[str, Any],
+    *,
+    source_snapshot: dict[str, Any] | None = None,
+) -> str | None:
+    source_code = str(row.get("source_code") or "").strip().upper()
+    source_external_id = str(row.get("source_external_id") or "").strip()
+    if source_code != "DISCOGS" or not source_external_id:
+        return None
+
+    master_sort_artist_name = _clean_text(row.get("master_sort_artist_name"))
+    if master_sort_artist_name and _contains_hangul_artist_name(master_sort_artist_name):
+        return master_sort_artist_name
+
+    artist_text = (
+        _clean_text(row.get("music_artist_or_brand"))
+        or _clean_text(row.get("linked_artist_name"))
+        or _clean_text(row.get("master_artist_or_brand"))
+    )
+    if not artist_text or _contains_hangul_artist_name(artist_text):
+        return artist_text or None
+
+    snapshot = source_snapshot if isinstance(source_snapshot, dict) else get_source_release_snapshot("DISCOGS", source_external_id)
+    snapshot_artist = _clean_text((snapshot or {}).get("artist_or_brand"))
+    preferred_artist_name = resolve_discogs_preferred_korean_artist_name(
+        snapshot_artist or artist_text,
+        external_id=source_external_id,
+        raw=(snapshot or {}).get("raw") if isinstance((snapshot or {}).get("raw"), dict) else None,
+        domain_code=(snapshot or {}).get("domain_code") or row.get("domain_code"),
+    )
+    preferred_text = _clean_text(preferred_artist_name)
+    if preferred_text and _contains_hangul_artist_name(preferred_text):
+        return preferred_text
+    return None
+
+
+def _apply_discogs_korean_artist_name_to_row(
+    row: dict[str, Any],
+    preferred_artist_name: str,
+) -> bool:
+    owned_item_id = int(row.get("id") or 0)
+    linked_album_master_id = int(row.get("linked_album_master_id") or 0)
+    preferred_text = _clean_text(preferred_artist_name)
+    if owned_item_id <= 0 or not preferred_text:
+        return False
+
+    linked_artist_name = _clean_text(row.get("linked_artist_name"))
+    music_artist_name = _clean_text(row.get("music_artist_or_brand"))
+    master_artist_name = _clean_text(row.get("master_artist_or_brand"))
+    master_sort_artist_name = _clean_text(row.get("master_sort_artist_name"))
+    item_name_override = _clean_text(row.get("item_name_override"))
+    rewritten_item_name = _rewrite_artist_prefixed_item_name(
+        item_name_override,
+        [music_artist_name, linked_artist_name, master_artist_name],
+        preferred_text,
+    )
+
+    changed = False
+    with db.get_conn() as conn:
+        now = db.utc_now_iso()
+        if not linked_artist_name or _discogs_artist_name_needs_localization(linked_artist_name):
+            conn.execute(
+                """
+                UPDATE owned_item
+                SET linked_artist_name = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (preferred_text, now, owned_item_id),
+            )
+            changed = True
+        if rewritten_item_name and rewritten_item_name != item_name_override:
+            conn.execute(
+                """
+                UPDATE owned_item
+                SET item_name_override = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (rewritten_item_name, now, owned_item_id),
+            )
+            changed = True
+        if not music_artist_name or _discogs_artist_name_needs_localization(music_artist_name):
+            conn.execute(
+                """
+                UPDATE music_item_detail
+                SET artist_or_brand = ?, updated_at = ?
+                WHERE owned_item_id = ?
+                """,
+                (preferred_text, now, owned_item_id),
+            )
+            changed = True
+        if linked_album_master_id > 0:
+            if not master_artist_name or _discogs_artist_name_needs_localization(master_artist_name):
+                conn.execute(
+                    """
+                    UPDATE album_master
+                    SET artist_or_brand = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (preferred_text, now, linked_album_master_id),
+                )
+                changed = True
+            if not master_sort_artist_name or _discogs_artist_name_needs_localization(master_sort_artist_name):
+                conn.execute(
+                    """
+                    UPDATE album_master
+                    SET sort_artist_name = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (preferred_text, now, linked_album_master_id),
+                )
+                changed = True
+            ext_ref_row = conn.execute(
+                """
+                SELECT artist_or_brand_hint
+                FROM album_master_external_ref
+                WHERE album_master_id = ?
+                  AND source_code = 'DISCOGS'
+                LIMIT 1
+                """,
+                (linked_album_master_id,),
+            ).fetchone()
+            ext_ref_artist_hint = _clean_text(ext_ref_row["artist_or_brand_hint"]) if ext_ref_row is not None else None
+            if ext_ref_row is not None and (
+                not ext_ref_artist_hint or _discogs_artist_name_needs_localization(ext_ref_artist_hint)
+            ):
+                cur = conn.execute(
+                    """
+                    UPDATE album_master_external_ref
+                    SET artist_or_brand_hint = ?, updated_at = ?
+                    WHERE album_master_id = ?
+                      AND source_code = 'DISCOGS'
+                    """,
+                    (preferred_text, now, linked_album_master_id),
+                )
+                if int(cur.rowcount or 0) > 0:
+                    changed = True
+    return changed
+
+
+def _apply_discogs_korean_artist_name_to_owned_item(owned_item_id: int) -> str | None:
+    row = _owned_item_discogs_artist_row(owned_item_id)
+    if not row:
+        return None
+    preferred_artist_name = _resolve_owned_item_discogs_korean_artist_name(row)
+    if not preferred_artist_name:
+        return None
+    changed = _apply_discogs_korean_artist_name_to_row(row, preferred_artist_name)
+    if changed and _contains_hangul_artist_name(preferred_artist_name):
+        return preferred_artist_name
+    return None
+
+
+def backfill_discogs_korean_artist_names(limit: int | None = None) -> dict[str, int]:
+    with db.get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+              oi.id,
+              oi.source_code,
+              oi.source_external_id,
+              oi.linked_artist_name,
+              oi.item_name_override,
+              oi.linked_album_master_id,
+              COALESCE(NULLIF(TRIM(oi.domain_code), ''), NULLIF(TRIM(am.domain_code), ''), '') AS domain_code,
+              mid.artist_or_brand AS music_artist_or_brand,
+              am.artist_or_brand AS master_artist_or_brand,
+              am.sort_artist_name AS master_sort_artist_name
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            WHERE oi.source_code = 'DISCOGS'
+              AND TRIM(COALESCE(oi.source_external_id, '')) <> ''
+            ORDER BY oi.id ASC
+            """
+        ).fetchall()
+
+    scanned_rows = [dict(row) for row in rows]
+    if isinstance(limit, int) and limit > 0:
+        scanned_rows = scanned_rows[:limit]
+
+    preferred_name_cache: dict[str, str | None] = {}
+    updated_items = 0
+    for row in scanned_rows:
+        if _normalize_domain_code(row.get("domain_code")) != "KOREA":
+            continue
+        if not any(
+            _discogs_artist_name_needs_localization(row.get(field))
+            for field in ("music_artist_or_brand", "linked_artist_name", "master_artist_or_brand", "master_sort_artist_name")
+        ):
+            continue
+
+        cache_key = _normalize_lookup_text(
+            row.get("music_artist_or_brand")
+            or row.get("linked_artist_name")
+            or row.get("master_artist_or_brand")
+            or row.get("source_external_id")
+        )
+        if not cache_key:
+            continue
+        if cache_key not in preferred_name_cache:
+            preferred_name_cache[cache_key] = _resolve_owned_item_discogs_korean_artist_name(row)
+        preferred_artist_name = preferred_name_cache.get(cache_key)
+        if not preferred_artist_name:
+            continue
+        if _apply_discogs_korean_artist_name_to_row(row, preferred_artist_name):
+            updated_items += 1
+
+    return {"scanned_items": len(scanned_rows), "updated_items": updated_items}
+
+
 def _normalize_music_detail_payload(normalized_payload: dict[str, object]) -> None:
     music_detail = normalized_payload.get("music_detail")
     if not isinstance(music_detail, dict):
@@ -9621,10 +10101,16 @@ def create_owned_item(payload: OwnedItemCreate) -> OwnedItemCreateResponse:
             owned_item_id=owned_item_id,
             preferred_master_id=resolved_master_id,
         )
+        localized_artist_name = _apply_discogs_korean_artist_name_to_owned_item(owned_item_id)
         location_notices = _apply_new_item_location_recommendation(payload=payload, owned_item_id=owned_item_id)
         for msg in item_notices:
             text = str(msg or "").strip()
             if text and text not in seen_notices:
+                seen_notices.add(text)
+                notices.append(text)
+        if localized_artist_name:
+            text = f"Discogs 국내 아티스트명을 한글로 정규화했습니다: {localized_artist_name}"
+            if text not in seen_notices:
                 seen_notices.add(text)
                 notices.append(text)
         for msg in location_notices:
@@ -10031,6 +10517,7 @@ def _save_owned_item_update(
 ) -> OwnedItemCreateResponse:
     save_started_at = time.perf_counter()
     existing_row = existing or db.get_owned_item(owned_item_id)
+    existing_detail_row = db.get_owned_item_detail(owned_item_id)
     if existing_row is None:
         raise HTTPException(status_code=404, detail="owned_item not found")
 
@@ -10093,6 +10580,10 @@ def _save_owned_item_update(
     elif previous_status == "IN_COLLECTION" and next_status == "IN_COLLECTION":
         if previous_slot_id != next_slot_id or previous_display_rank != next_display_rank:
             should_resequence = True
+        elif previous_slot_id is not None and previous_slot_id == next_slot_id:
+            updated_detail_row = db.get_owned_item_detail(owned_item_id)
+            if db.owned_item_storage_sort_changed(existing_detail_row, updated_detail_row):
+                should_resequence = True
     if should_resequence:
         db.resequence_in_collection_order()
     resequence_done_at = time.perf_counter()
@@ -10118,6 +10609,11 @@ def _save_owned_item_update(
             if text and text not in notices:
                 notices.append(text)
         promote_done_at = time.perf_counter()
+    localized_artist_name = _apply_discogs_korean_artist_name_to_owned_item(owned_item_id)
+    if localized_artist_name:
+        text = f"Discogs 국내 아티스트명을 한글로 정규화했습니다: {localized_artist_name}"
+        if text not in notices:
+            notices.append(text)
 
     save_total = time.perf_counter() - save_started_at
     if save_total >= OWNED_ITEM_SAVE_SLOW_SEC:

@@ -414,6 +414,22 @@ def test_parse_maniadb_release_legend_preserves_full_released_date():
     assert parsed["released_date"] == "2003-12-20"
 
 
+def test_parse_maniadb_release_legend_extracts_estimated_year_prefix():
+    parsed = provider_module._parse_maniadb_release_legend(
+        '<font color="black"><strong><a href="/album/125780?o=l&amp;s=2"><img src="http://i.maniadb.com/images/music_cd.gif" border="0" alt="CD"/></a> :: 1999 (추정) :: 굿 인터내셔널 (GI-3013, 8808513000379)</strong></font>',
+        album_id="125780",
+        album_artist="이성원",
+        album_title="뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+        block_html=None,
+    )
+
+    assert parsed is not None
+    assert parsed["release_year"] == 1999
+    assert parsed["released_date"] is None
+    assert parsed["catalog_no"] == "GI-3013"
+    assert parsed["barcode"] == "8808513000379"
+
+
 def test_get_source_release_snapshot_for_maniadb_uses_variant_released_date(monkeypatch):
     monkeypatch.setattr(
         provider_module,
@@ -435,6 +451,31 @@ def test_get_source_release_snapshot_for_maniadb_uses_variant_released_date(monk
     assert snapshot is not None
     assert snapshot["release_year"] == 2003
     assert snapshot["released_date"] == "2003-12-20"
+
+
+def test_filter_maniadb_candidates_keeps_variant_external_ids():
+    narrowed = main_module._filter_maniadb_candidates(
+        [
+            {
+                "source": "MANIADB",
+                "external_id": "125780:1",
+                "artist_or_brand": "이성원",
+                "title": "뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+                "confidence": 0.75,
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "125780:4",
+                "artist_or_brand": "이성원",
+                "title": "뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+                "confidence": 0.75,
+            },
+        ],
+        artist_or_brand="이성원",
+        title="뒷문 밖에는 갈잎의 노래",
+    )
+
+    assert [row["external_id"] for row in narrowed] == ["125780:1", "125780:4"]
 
 
 def test_operator_office_climate_returns_home_assistant_snapshot(operator_client, monkeypatch):
@@ -490,6 +531,43 @@ def test_operator_office_climate_returns_cached_snapshot_when_home_assistant_fai
     assert payload["temperature_c"] == 21.8
     assert payload["humidity_percent"] == 51.0
     assert payload["updated_at"] == "2026-04-03T14:10:00+09:00"
+
+
+def test_operator_office_climate_falls_back_to_seoul_weather_when_office_unavailable(operator_client, monkeypatch):
+    monkeypatch.setattr(main_module, "_OFFICE_CLIMATE_CACHE", None)
+    monkeypatch.setattr(main_module, "_SEOUL_WEATHER_CACHE", None)
+    monkeypatch.setattr(main_module, "_load_operator_office_climate", lambda: (_ for _ in ()).throw(RuntimeError("sensor offline")))
+    monkeypatch.setattr(
+        main_module,
+        "_load_operator_seoul_weather",
+        lambda: {
+            "available": True,
+            "source": "seoul_weather",
+            "location_label": "서울",
+            "description": "",
+            "temperature_c": 18.6,
+            "humidity_percent": 57.0,
+            "comfort_label": None,
+            "temperature_high_c": 22.3,
+            "temperature_low_c": 12.1,
+            "weather_code": 3,
+            "is_day": True,
+            "updated_at": "2026-04-17T09:00:00+09:00",
+        },
+    )
+
+    res = operator_client.get("/operator/office-climate")
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["available"] is True
+    assert payload["source"] == "seoul_weather"
+    assert payload["location_label"] == "서울"
+    assert payload["temperature_c"] == 18.6
+    assert payload["temperature_high_c"] == 22.3
+    assert payload["temperature_low_c"] == 12.1
+    assert payload["weather_code"] == 3
+    assert payload["is_day"] is True
 
 
 def test_operator_catalog_search_includes_current_cabinet_triplet(operator_client, monkeypatch):
@@ -552,11 +630,13 @@ def test_operator_catalog_search_includes_current_cabinet_triplet(operator_clien
 
 
 def test_ingest_search_maniadb_filters_title_false_positives_when_artist_field_is_used(admin_client, monkeypatch):
-    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5, artist_or_brand=None, title=None):
         assert barcode is None
         assert query == "어떤날"
         assert source == "MANIADB"
         assert limit == 5
+        assert artist_or_brand == "어떤날"
+        assert title is None
         return [
             {
                 "source": "MANIADB",
@@ -597,11 +677,13 @@ def test_ingest_search_maniadb_filters_title_false_positives_when_artist_field_i
 
 
 def test_ingest_search_maniadb_prefers_artist_and_title_match_when_both_fields_are_used(admin_client, monkeypatch):
-    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5, artist_or_brand=None, title=None):
         assert barcode is None
         assert query == "어떤날 출발"
         assert source == "MANIADB"
         assert limit == 5
+        assert artist_or_brand == "어떤날"
+        assert title == "출발"
         return [
             {
                 "source": "MANIADB",
@@ -652,11 +734,13 @@ def test_ingest_search_maniadb_prefers_artist_and_title_match_when_both_fields_a
 
 
 def test_ingest_search_maniadb_ranks_exact_artist_and_title_match_first(admin_client, monkeypatch):
-    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5, artist_or_brand=None, title=None):
         assert barcode is None
         assert query == "어떤날 출발"
         assert source == "MANIADB"
         assert limit == 5
+        assert artist_or_brand == "어떤날"
+        assert title == "출발"
         return [
             {
                 "source": "MANIADB",
@@ -696,6 +780,158 @@ def test_ingest_search_maniadb_ranks_exact_artist_and_title_match_first(admin_cl
     assert [item["external_id"] for item in payload["candidates"]] == [
         "album:artist-and-title-exact",
         "album:artist-and-title-partial",
+    ]
+
+
+def test_ingest_search_maniadb_excludes_artist_candidates(admin_client, monkeypatch):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=5, artist_or_brand=None, title=None):
+        assert barcode is None
+        assert query == "곽성삼 곽성삼"
+        assert source == "MANIADB"
+        assert limit == 5
+        assert artist_or_brand == "곽성삼"
+        assert title == "곽성삼"
+        return [
+            {
+                "source": "MANIADB",
+                "external_id": "artist:100577",
+                "title": "곽성삼",
+                "artist_or_brand": "곽성삼",
+                "confidence": 0.95,
+                "raw": {"kind": "artist"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "album:133577",
+                "title": "길",
+                "artist_or_brand": "곽성삼",
+                "confidence": 0.88,
+                "raw": {"kind": "album"},
+            },
+        ]
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "MANIADB",
+            "category": "LP",
+            "artist_or_brand": "곽성삼",
+            "title": "곽성삼",
+            "limit": 5,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert [item["external_id"] for item in payload["candidates"]] == ["album:133577"]
+
+
+def test_ingest_search_maniadb_keeps_variant_release_candidates_with_cover_images(admin_client, monkeypatch):
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=20, artist_or_brand=None, title=None):
+        assert barcode is None
+        assert query == "이무하 고향"
+        assert source == "MANIADB"
+        assert limit == 20
+        assert artist_or_brand == "이무하"
+        assert title == "고향"
+        return [
+            {
+                "source": "MANIADB",
+                "external_id": "artist:55321",
+                "title": "이무하",
+                "artist_or_brand": "이무하",
+                "confidence": 0.91,
+                "raw": {"kind": "artist"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "127440:4",
+                "title": "고향",
+                "artist_or_brand": "이무하",
+                "confidence": 0.92,
+                "cover_image_url": "https://i.maniadb.com/images/album/127/127440_4_f.jpeg",
+                "raw": {"kind": "album", "album_id": "127440", "release_seq": "4"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "127440:2",
+                "title": "고향",
+                "artist_or_brand": "이무하",
+                "confidence": 0.92,
+                "cover_image_url": "https://i.maniadb.com/images/album/127/127440_2_f.jpg",
+                "raw": {"kind": "album", "album_id": "127440", "release_seq": "2"},
+            },
+        ]
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "MANIADB",
+            "category": "LP",
+            "artist_or_brand": "이무하",
+            "title": "고향",
+            "limit": 20,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert [item["external_id"] for item in payload["candidates"]] == ["127440:4", "127440:2"]
+    assert [item["cover_image_url"] for item in payload["candidates"]] == [
+        "https://i.maniadb.com/images/album/127/127440_4_f.jpeg",
+        "https://i.maniadb.com/images/album/127/127440_2_f.jpg",
+    ]
+
+
+def test_ingest_search_maniadb_retries_with_split_title_when_compound_title_has_no_match(admin_client, monkeypatch):
+    seen: list[tuple[str | None, str | None, str | None]] = []
+
+    def fake_search_music_metadata(*, barcode=None, query=None, category=None, source="AUTO", limit=20, artist_or_brand=None, title=None):
+        assert barcode is None
+        assert source == "MANIADB"
+        assert limit == 20
+        seen.append((query, artist_or_brand, title))
+        if title == "휘장을 열고 / 새 날":
+            return []
+        if title == "새 날":
+            return [
+                {
+                    "source": "MANIADB",
+                    "external_id": "215240:1",
+                    "title": "휘장을 열고 / 새 날",
+                    "artist_or_brand": "이무하",
+                    "confidence": 0.89,
+                    "cover_image_url": "https://i.maniadb.com/images/album/215/215240_1_f.jpg",
+                    "raw": {"kind": "album", "album_id": "215240", "release_seq": "1"},
+                }
+            ]
+        return []
+
+    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+
+    res = admin_client.post(
+        "/ingest/search",
+        json={
+            "source": "MANIADB",
+            "category": "CD",
+            "artist_or_brand": "이무하",
+            "title": "휘장을 열고 / 새 날",
+            "limit": 20,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert [item["external_id"] for item in payload["candidates"]] == ["215240:1"]
+    assert payload["candidates"][0]["cover_image_url"] == "https://i.maniadb.com/images/album/215/215240_1_f.jpg"
+    assert seen == [
+        ("이무하 휘장을 열고 / 새 날", "이무하", "휘장을 열고 / 새 날"),
+        ("이무하 휘장을 열고", "이무하", "휘장을 열고"),
+        ("이무하 새 날", "이무하", "새 날"),
     ]
 
 
@@ -884,6 +1120,124 @@ def test_provider_search_music_metadata_retries_discogs_with_artist_variations(m
         "윤석철 트리오 나의 여름은 아직 안끝났어",
         "Yun Seok Cheol Trio 나의 여름은 아직 안끝났어",
     ]
+
+
+def test_provider_search_music_metadata_expands_maniadb_album_results_to_variants(monkeypatch):
+    monkeypatch.setattr(
+        provider_module,
+        "_maniadb_search",
+        lambda query, limit=5: [
+            provider_module.Candidate(
+                source="MANIADB",
+                external_id="album:125780",
+                title="뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+                artist_or_brand="이성원",
+                release_year=1996,
+                country="KR",
+                format_name="CD",
+                barcode=None,
+                catalog_no=None,
+                label_name=None,
+                cover_image_url=None,
+                track_list=[],
+                confidence=0.756,
+                raw={"kind": "album", "album_id": "125780"},
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        provider_module,
+        "get_maniadb_master_variants",
+        lambda master_external_id, limit=30: [
+            {
+                "source": "MANIADB",
+                "external_id": "125780:1",
+                "title": "뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+                "artist_or_brand": "이성원",
+                "release_year": 1996,
+                "released_date": None,
+                "country": "KR",
+                "format_name": "CD",
+                "label_name": "굿 인터내셔널",
+                "catalog_no": "HD-2184",
+                "barcode": "8808513000379",
+                "cover_image_url": "https://i.maniadb.com/images/album/125/125780_2_f.jpg",
+                "track_list": [],
+                "image_items": [{"type": "앞면", "uri": "https://i.maniadb.com/images/album/125/125780_2_f.jpg"}],
+                "confidence": 0.0,
+                "raw": {"album_id": "125780", "release_seq": "1"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "125780:2",
+                "title": "뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+                "artist_or_brand": "이성원",
+                "release_year": 1999,
+                "released_date": None,
+                "country": "KR",
+                "format_name": "CD",
+                "label_name": "굿 인터내셔널",
+                "catalog_no": "GI-3013",
+                "barcode": "8808513000379",
+                "cover_image_url": "https://i.maniadb.com/images/album/125/125780_2_f.jpg",
+                "track_list": [],
+                "image_items": [{"type": "앞면", "uri": "https://i.maniadb.com/images/album/125/125780_2_f.jpg"}],
+                "confidence": 0.0,
+                "raw": {"album_id": "125780", "release_seq": "2"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "125780:3",
+                "title": "뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+                "artist_or_brand": "이성원",
+                "release_year": None,
+                "released_date": None,
+                "country": "KR",
+                "format_name": "CD",
+                "label_name": "굿 인터내셔널",
+                "catalog_no": "GOOD-3013",
+                "barcode": "8808513000379",
+                "cover_image_url": "https://i.maniadb.com/images/album/125/125780_3_f.jpg",
+                "track_list": [],
+                "image_items": [{"type": "앞면", "uri": "https://i.maniadb.com/images/album/125/125780_3_f.jpg"}],
+                "confidence": 0.0,
+                "raw": {"album_id": "125780", "release_seq": "3"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "125780:4",
+                "title": "뒷문 밖에는 갈잎의 노래 / 이성원이 노래하는 아이들을 위한 옛동요",
+                "artist_or_brand": "이성원",
+                "release_year": 2022,
+                "released_date": "2022-05-20",
+                "country": "KR",
+                "format_name": "LP",
+                "label_name": "굿 인터내셔널",
+                "catalog_no": None,
+                "barcode": "8808513882272",
+                "cover_image_url": "https://i.maniadb.com/images/album/125/125780_4_f.jpg",
+                "track_list": [],
+                "image_items": [{"type": "앞면", "uri": "https://i.maniadb.com/images/album/125/125780_4_f.jpg"}],
+                "confidence": 0.0,
+                "raw": {"album_id": "125780", "release_seq": "4"},
+            },
+        ],
+    )
+
+    result = provider_module.search_music_metadata(
+        query="이성원 뒷문 밖에는 갈잎의 노래",
+        category="LP",
+        source="MANIADB",
+        limit=10,
+    )
+
+    assert [item["external_id"] for item in result] == ["125780:1", "125780:2", "125780:3", "125780:4"]
+    assert result[0]["label_name"] == "굿 인터내셔널"
+    assert result[0]["catalog_no"] == "HD-2184"
+    assert result[1]["catalog_no"] == "GI-3013"
+    assert result[2]["catalog_no"] == "GOOD-3013"
+    assert result[3]["format_name"] == "LP"
+    assert result[3]["barcode"] == "8808513882272"
 
 
 def test_provider_search_album_master_candidates_retries_discogs_with_artist_variations(monkeypatch):
@@ -1301,6 +1655,72 @@ def test_purchase_import_candidates_default_blank_aladin_media_to_cd(admin_clien
     assert captured["category"] == "CD"
 
 
+def test_purchase_import_candidates_maniadb_exclude_artist_candidates(admin_client, monkeypatch):
+    row = {
+        "id": 816,
+        "vendor_code": "YES24",
+        "source_type": "FILE_UPLOAD",
+        "source_ref": "yes24.mhtml",
+        "email_from": None,
+        "email_subject": None,
+        "artist_name": "곽성삼",
+        "item_name": "곽성삼",
+        "media_format": "LP",
+        "quantity": 1,
+        "unit_price": None,
+        "line_total": None,
+        "currency_code": None,
+        "purchase_date": None,
+        "seller_name": None,
+        "item_url": None,
+        "image_url": None,
+        "raw_line": None,
+        "queue_status": "PENDING",
+        "linked_owned_item_id": None,
+        "created_at": "2026-04-13T15:11:02.128993+00:00",
+        "updated_at": "2026-04-13T15:11:02.128993+00:00",
+        "raw_payload": {},
+    }
+    monkeypatch.setattr(main_module.db, "get_purchase_import_row", lambda queue_id: dict(row) if queue_id == 816 else None)
+    monkeypatch.setattr(
+        main_module,
+        "search_music_metadata",
+        lambda **kwargs: [
+            {
+                "source": "MANIADB",
+                "external_id": "artist:100577",
+                "title": "곽성삼",
+                "artist_or_brand": "곽성삼",
+                "confidence": 0.95,
+                "raw": {"kind": "artist"},
+            },
+            {
+                "source": "MANIADB",
+                "external_id": "album:133577",
+                "title": "길",
+                "artist_or_brand": "곽성삼",
+                "confidence": 0.88,
+                "raw": {"kind": "album"},
+            },
+        ],
+    )
+    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+
+    res = admin_client.get(
+        "/purchase-imports/816/candidates",
+        params={
+            "source": "MANIADB",
+            "limit": 5,
+            "artist_name": "곽성삼",
+            "item_name": "곽성삼",
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert [item["external_id"] for item in payload["candidates"]] == ["album:133577"]
+
+
 def test_purchase_import_ignore_rejects_non_pending_rows(admin_client, monkeypatch):
     row = {
         "id": 814,
@@ -1404,6 +1824,116 @@ def test_parse_maniadb_release_legend_keeps_legacy_variant_cover_path_order():
     assert parsed["cover_image_url"] == "https://i.maniadb.com/images/album/153/153773_f_1.jpg"
     assert parsed["image_items"][0]["uri"] == "https://i.maniadb.com/images/album/153/153773_f_1.jpg"
     assert parsed["image_items"][1]["uri"] == "https://i.maniadb.com/images/album/153/153773_b_1.jpg"
+
+
+def test_maniadb_variant_cover_url_uses_split_group_for_seven_digit_album_ids():
+    url = provider_module._maniadb_variant_cover_url("1028570", "1", "f")
+
+    assert url == "https://i.maniadb.com/images/album/1028/028570_1_f.jpg"
+
+
+def test_maniadb_variant_image_matches_accepts_split_group_tail_path():
+    matched = provider_module._maniadb_variant_image_matches(
+        "https://i.maniadb.com/images/album/1028/028570_1_f.jpg",
+        album_id="1028570",
+        variant_seq="1",
+    )
+
+    assert matched is True
+
+
+def test_parse_maniadb_release_legend_keeps_split_group_cover_path():
+    parsed = provider_module._parse_maniadb_release_legend(
+        '<font color="black"><strong><a href="/album/1028570?o=l&amp;s=1"><img src="http://i.maniadb.com/images/music_digital.gif" border="0" alt="DIGITAL"/></a> :: 2023-11-27 :: 금반지레코드, 포크라노스</strong></font>',
+        album_id="1028570",
+        album_artist="정밀아",
+        album_title="리버사이드",
+        block_html="""
+        <div class="album-track-list">
+          <img src="http://i.maniadb.com/images/album/1028/028570_1_f.jpg" />
+        </div>
+        """,
+    )
+
+    assert parsed is not None
+    assert parsed["cover_image_url"] == "https://i.maniadb.com/images/album/1028/028570_1_f.jpg"
+    assert parsed["image_items"][0]["uri"] == "https://i.maniadb.com/images/album/1028/028570_1_f.jpg"
+
+
+def test_get_maniadb_master_variants_fallback_uses_album_page_cover_image(monkeypatch):
+    album_html = """
+    <html>
+      <head>
+        <meta name="keyword" content="디오니서스 1집 - Legend Of Darkness (1989), music" />
+        <meta property="og:image" content="http://i.maniadb.com/images/album/100/100483_1_f.jpg" />
+      </head>
+      <body>
+        <div class="album-artist"><a href="/artist/103438">디오니서스</a></div>
+        <div class="album-title">디오니서스 1집 - Legend Of Darkness</div>
+        <div id="COVERART_FRONT">
+          <a href="http://i.maniadb.com/images/album/100/100483_1_f.jpg">
+            <img src="http://i.maniadb.com/images/album_t/260/100/100483_1_f.jpg" />
+          </a>
+        </div>
+      </body>
+    </html>
+    """
+
+    class DummyResponse:
+        def __init__(self, text):
+            self.text = text
+
+        def raise_for_status(self):
+            return None
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url, params=None):
+            assert url.endswith("/album/100483")
+            assert params == {"o": "l", "s": 0}
+            return DummyResponse(album_html)
+
+    monkeypatch.setattr(provider_module.httpx, "Client", DummyClient)
+    monkeypatch.setattr(
+        provider_module,
+        "get_settings",
+        lambda: SimpleNamespace(maniadb_base_url="http://www.maniadb.com"),
+    )
+
+    rows = provider_module.get_maniadb_master_variants("100483", limit=1)
+
+    assert len(rows) == 1
+    assert rows[0]["external_id"] == "100483"
+    assert rows[0]["title"] == "Legend Of Darkness"
+    assert rows[0]["artist_or_brand"] == "디오니서스"
+    assert rows[0]["cover_image_url"] == "https://i.maniadb.com/images/album/100/100483_1_f.jpg"
+
+
+def test_parse_maniadb_release_legend_falls_back_to_album_page_cover_when_variant_images_missing():
+    parsed = provider_module._parse_maniadb_release_legend(
+        '<font color="black"><strong><a href="/album/133577?o=l&amp;s=2"><img src="http://i.maniadb.com/images/music_cd.gif" border="0" alt="CD"/></a> :: 1992-05-01 :: 오아시스레코드</strong></font>',
+        album_id="133577",
+        album_artist="곽성삼",
+        album_title="길",
+        block_html="""
+        <div class="album-track-list">
+          <img src="http://i.maniadb.com/images/player_d.gif" />
+        </div>
+        """,
+        album_cover_image_url="https://i.maniadb.com/images/album/133/133577_f.jpg",
+    )
+
+    assert parsed is not None
+    assert parsed["cover_image_url"] == "https://i.maniadb.com/images/album/133/133577_f.jpg"
+    assert parsed["image_items"][0]["uri"] == "https://i.maniadb.com/images/album/133/133577_f.jpg"
 
 
 def test_discogs_variation_fallback_skips_artist_only_false_positives_until_title_match(monkeypatch):
@@ -1572,6 +2102,43 @@ def test_album_master_search_supports_direct_release_reference(admin_client, mon
     payload = res.json()
     assert payload["candidates"][0]["source"] == "DISCOGS"
     assert payload["candidates"][0]["master_external_id"] == "3123456"
+
+
+def test_album_master_search_supports_direct_maniadb_album_reference_with_cover(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "get_album_master_variants",
+        lambda source, master_external_id, limit=30, include_details=False: [
+            {
+                "source": "MANIADB",
+                "external_id": "129004:2",
+                "title": "그쟈? / 입영전야",
+                "artist_or_brand": "최백호",
+                "release_year": 1977,
+                "label_name": "SRB",
+                "catalog_no": "SR-0086",
+                "cover_image_url": "https://i.maniadb.com/images/album/129/129004_lpa_f.jpg",
+            }
+        ]
+        if source == "MANIADB" and master_external_id == "129004"
+        else [],
+    )
+    monkeypatch.setattr(main_module, "search_album_master_candidates", lambda **kwargs: (_ for _ in ()).throw(AssertionError("unexpected master search")))
+
+    res = admin_client.post(
+        "/album-masters/search",
+        json={
+            "source": "MANIADB",
+            "query": "album:129004",
+            "limit": 10,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["candidates"][0]["source"] == "MANIADB"
+    assert payload["candidates"][0]["master_external_id"] == "129004"
+    assert payload["candidates"][0]["cover_image_url"] == "https://i.maniadb.com/images/album/129/129004_lpa_f.jpg"
 
 
 def test_album_master_search_forwards_artist_and_title_hints(admin_client, monkeypatch):
@@ -1758,6 +2325,109 @@ def test_admin_can_search_goods_album_master_targets(admin_client):
     )
 
     assert res.status_code == 200
+
+
+def test_admin_can_search_goods_collectible_targets(admin_client):
+    source = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "POSTER",
+            "goods_name": "김윤아 포스터 A",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+    assert source.status_code == 200
+    source_id = int(source.json()["id"])
+
+    target = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "POSTER",
+            "goods_name": "김윤아 포스터 B",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+    assert target.status_code == 200
+    target_id = int(target.json()["id"])
+
+    res = admin_client.get(
+        "/goods-targets",
+        params={
+            "kind": "collectible",
+            "q": "김윤아",
+            "goods_item_id": source_id,
+            "limit": 10,
+        },
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert [int(item["goods_item_id"]) for item in payload["items"]] == [target_id]
+    assert payload["items"][0]["goods_name"] == "김윤아 포스터 B"
+
+
+def test_admin_can_save_goods_collectible_relations(admin_client):
+    source = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "POSTER",
+            "goods_name": "세트 본품",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+    assert source.status_code == 200
+    source_id = int(source.json()["id"])
+
+    linked = admin_client.post(
+        "/goods-items",
+        json={
+            "category": "OTHER",
+            "goods_name": "프로모 전단",
+            "quantity": 1,
+            "status": "ACTIVE",
+        },
+    )
+    assert linked.status_code == 200
+    linked_id = int(linked.json()["id"])
+
+    save = admin_client.put(
+        f"/goods-items/{source_id}/relations",
+        json={
+            "relations": [
+                {
+                    "relation_type": "SET_MEMBER",
+                    "linked_goods_item_id": linked_id,
+                    "note": "초회 특전 포함",
+                    "display_order": 0,
+                }
+            ]
+        },
+    )
+
+    assert save.status_code == 200
+    payload = save.json()
+    assert payload["collectible_relation_count"] == 1
+    assert payload["relation_badges"] == ["SET_MEMBER"]
+    assert payload["collectible_relations"] == [
+        {
+            "relation_type": "SET_MEMBER",
+            "direction": "OUTGOING",
+            "linked_goods_item_id": linked_id,
+            "linked_goods_name": "프로모 전단",
+            "linked_category": "OTHER",
+            "note": "초회 특전 포함",
+            "display_order": 0,
+        }
+    ]
+
+    detail = admin_client.get(f"/goods-items/{source_id}")
+    assert detail.status_code == 200
+    detail_payload = detail.json()
+    assert detail_payload["collectible_relation_count"] == 1
+    assert detail_payload["collectible_relation_preview"][0]["linked_goods_name"] == "프로모 전단"
 
 
 def test_admin_can_save_album_master_correction_and_related_versions_exposes_it(admin_client):
@@ -3131,6 +3801,149 @@ def test_owned_items_route_populates_master_sort_artist_name_from_db(admin_clien
     assert target["master_sort_artist_name"] == "신화"
 
 
+def test_create_owned_item_localizes_discogs_domestic_artist_name(admin_client, monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "get_source_release_snapshot",
+        lambda source, external_id: {
+            "artist_or_brand": "Cho Yong-pil",
+            "domain_code": "KOREA",
+            "raw": {"artists": [{"id": 101, "name": "Cho Yong-pil"}]},
+        }
+        if source == "DISCOGS" and external_id == "release-101"
+        else None,
+    )
+    monkeypatch.setattr(
+        main_module,
+        "resolve_discogs_preferred_korean_artist_name",
+        lambda artist_name, external_id=None, raw=None, domain_code=None: "조용필"
+        if artist_name == "Cho Yong-pil"
+        else None,
+    )
+    monkeypatch.setattr(
+        main_module,
+        "_apply_post_create_links",
+        lambda payload, owned_item_id, preferred_master_id=0: (preferred_master_id, []),
+    )
+
+    response = admin_client.post(
+        "/owned-items",
+        json={
+            "category": "CD",
+            "quantity": 1,
+            "size_group": "STD",
+            "status": "IN_COLLECTION",
+            "source_code": "DISCOGS",
+            "source_external_id": "release-101",
+            "linked_artist_name": "Cho Yong-pil",
+            "item_name_override": "Cho Yong-pil - Hello",
+            "music_detail": {
+                "format_name": "CD",
+                "artist_or_brand": "Cho Yong-pil",
+                "label_name": "굿 인터내셔널",
+                "catalog_no": "HD-2184",
+                "barcode": "8808513000379",
+                "track_list": ["Hello"],
+                "track_items": [{"display": "1. Hello", "title": "Hello"}],
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    owned_item_id = int(response.json()["owned_item_id"])
+    detail = db.get_owned_item_detail(owned_item_id)
+    assert detail["linked_artist_name"] == "조용필"
+    assert detail["artist_or_brand"] == "조용필"
+    assert detail["item_name_override"] == "조용필 - Hello"
+
+
+def test_backfill_discogs_korean_artist_names_updates_existing_registered_items(monkeypatch, tmp_path):
+    db_path = tmp_path / "library.db"
+    monkeypatch.setenv("LIBRARY_DB_PATH", str(db_path))
+    main_module.db.get_settings.cache_clear()
+    main_module.db.init_db()
+
+    owned_item_id = main_module.db.insert_owned_item(
+        {
+            "category": "CD",
+            "quantity": 1,
+            "size_group": "STD",
+            "status": "IN_COLLECTION",
+            "source_code": "DISCOGS",
+            "source_external_id": "release-101",
+            "linked_artist_name": "Cho Yong-pil",
+            "item_name_override": "Cho Yong-pil - Hello",
+            "music_detail": {
+                "format_name": "CD",
+                "artist_or_brand": "Cho Yong-pil",
+                "label_name": "굿 인터내셔널",
+                "catalog_no": "HD-2184",
+                "barcode": "8808513000379",
+                "track_list": ["Hello"],
+                "track_items": [{"display": "1. Hello", "title": "Hello"}],
+            },
+        }
+    )
+    album_master_id = main_module.db.upsert_album_master(
+        source_code="DISCOGS",
+        source_master_id="master-101",
+        title="Hello",
+        artist_or_brand="Cho Yong-pil",
+        domain_code="KOREA",
+        release_year=1996,
+        raw={},
+    )
+    main_module.db.bind_album_master_members(
+        album_master_id=album_master_id,
+        owned_item_ids=[owned_item_id],
+        replace_existing=False,
+    )
+    main_module.db.set_owned_item_linked_album_master(owned_item_id, album_master_id)
+
+    monkeypatch.setattr(
+        main_module,
+        "get_source_release_snapshot",
+        lambda source, external_id: {
+            "artist_or_brand": "Cho Yong-pil",
+            "domain_code": "KOREA",
+            "raw": {"artists": [{"id": 101, "name": "Cho Yong-pil"}]},
+        }
+        if source == "DISCOGS" and external_id == "release-101"
+        else None,
+    )
+    monkeypatch.setattr(
+        main_module,
+        "resolve_discogs_preferred_korean_artist_name",
+        lambda artist_name, external_id=None, raw=None, domain_code=None: "조용필"
+        if artist_name == "Cho Yong-pil"
+        else None,
+    )
+
+    result = main_module.backfill_discogs_korean_artist_names(limit=20)
+
+    assert result["scanned_items"] == 1
+    assert result["updated_items"] == 1
+    detail = main_module.db.get_owned_item_detail(owned_item_id)
+    binding = main_module.db.get_album_master_binding_for_owned_item(owned_item_id)
+    assert detail["linked_artist_name"] == "조용필"
+    assert detail["artist_or_brand"] == "조용필"
+    assert detail["item_name_override"] == "조용필 - Hello"
+    assert binding["artist_or_brand"] == "조용필"
+    assert binding["sort_artist_name"] == "조용필"
+    with main_module.db.get_conn() as conn:
+        external_ref = conn.execute(
+            """
+            SELECT artist_or_brand_hint
+            FROM album_master_external_ref
+            WHERE album_master_id = ?
+              AND source_code = 'DISCOGS'
+            LIMIT 1
+            """,
+            (album_master_id,),
+        ).fetchone()
+    assert dict(external_ref or {})["artist_or_brand_hint"] == "조용필"
+
+
 def test_admin_can_fetch_discogs_cover_preview(admin_client, monkeypatch, tmp_path):
     cover_path = tmp_path / "discogs-preview.jpg"
     expected = b"fake-discogs-cover-preview"
@@ -3174,6 +3987,76 @@ def test_startup_db_ready_skips_full_init_for_existing_db(monkeypatch, tmp_path)
     main_module.db.ensure_startup_db_ready()
 
     assert called["init"] == 0
+
+
+def test_collection_dashboard_includes_connection_quality_counts(monkeypatch, tmp_path):
+    db_path = tmp_path / "library.db"
+    monkeypatch.setenv("LIBRARY_DB_PATH", str(db_path))
+    main_module.db.get_settings.cache_clear()
+    main_module.db.init_db()
+
+    def insert_music_item(name: str, artist: str) -> int:
+        return main_module.db.insert_owned_item(
+            {
+                "category": "CD",
+                "quantity": 1,
+                "size_group": "STD",
+                "status": "IN_COLLECTION",
+                "item_name_override": name,
+                "music_detail": {
+                    "format_name": "CD",
+                    "artist_or_brand": artist,
+                    "label_name": "테스트 레이블",
+                    "catalog_no": f"CAT-{name}",
+                    "barcode": f"8800000{name[-1:]}",
+                    "track_list": [f"{name} 트랙"],
+                    "track_items": [{"number": "1", "title": f"{name} 트랙"}],
+                },
+            }
+        )
+
+    linked_ok_id = insert_music_item("연결완료", "테스트 아티스트")
+    source_missing_id = insert_music_item("소스누락", "테스트 아티스트")
+    master_missing_id = insert_music_item("마스터누락", "테스트 아티스트")
+    cover_missing_id = insert_music_item("커버누락", "테스트 아티스트")
+
+    album_master_id = main_module.db.upsert_album_master(
+        "DISCOGS",
+        "master-1",
+        "테스트 마스터",
+        "테스트 아티스트",
+        "KOREA",
+        1999,
+        {"id": "master-1"},
+    )
+
+    main_module.db.set_owned_item_linked_album_master(linked_ok_id, album_master_id)
+    main_module.db.set_owned_item_linked_album_master(source_missing_id, album_master_id)
+    main_module.db.set_owned_item_linked_album_master(cover_missing_id, album_master_id)
+
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            "UPDATE owned_item SET source_code = ?, source_external_id = ? WHERE id IN (?, ?, ?)",
+            ("DISCOGS", "release-1", linked_ok_id, master_missing_id, cover_missing_id),
+        )
+        conn.execute(
+            "UPDATE owned_item SET source_code = ?, source_external_id = ? WHERE id = ?",
+            ("DISCOGS", "release-2", master_missing_id),
+        )
+        conn.execute(
+            "UPDATE music_item_detail SET cover_image_url = ? WHERE owned_item_id IN (?, ?, ?)",
+            ("https://covers.example.com/ok.jpg", linked_ok_id, source_missing_id, master_missing_id),
+        )
+        conn.execute(
+            "UPDATE music_item_detail SET cover_image_url = ? WHERE owned_item_id = ?",
+            ("", cover_missing_id),
+        )
+
+    payload = main_module.db.get_collection_dashboard()
+
+    assert payload["source_unlinked_items"] == 1
+    assert payload["master_unlinked_items"] == 1
+    assert payload["cover_missing_items"] == 1
 
 
 def test_startup_db_ready_runs_full_init_for_missing_db(monkeypatch, tmp_path):
@@ -3318,3 +4201,14 @@ def test_startup_db_ready_migrates_purchase_import_queue_vendor_check_for_yes24(
     )
 
     assert len(created_ids) == 1
+
+
+def test_tool_docs_supports_purchase_import_guide(monkeypatch, tmp_path):
+    guide_path = tmp_path / "purchase_mail_import.md"
+    guide_path.write_text("# purchase import guide\n", encoding="utf-8")
+    monkeypatch.setattr(main_module, "PROJECT_PURCHASE_IMPORT_GUIDE_PATH", guide_path)
+
+    response = main_module.tool_docs("purchase-import")
+
+    assert str(response.path) == str(guide_path)
+    assert response.media_type == "text/markdown; charset=utf-8"

@@ -273,6 +273,51 @@ def test_build_artist_context_accepts_romanized_query_when_musicbrainz_primary_n
     assert result["country"] == "KR"
 
 
+def test_resolve_musicbrainz_preferred_korean_name_prefers_primary_hangul_name(monkeypatch) -> None:
+    monkeypatch.setattr(
+        artist_context,
+        "search_musicbrainz_artist",
+        lambda artist_name: {
+            "artist_name": "백예린",
+            "sort_name": "Baek, Yerin",
+            "country": "KR",
+            "aliases": [{"name": "Yerin Baek"}],
+        },
+    )
+
+    assert artist_context.resolve_musicbrainz_preferred_korean_name("Yerin Baek") == "백예린"
+
+
+def test_resolve_musicbrainz_preferred_korean_name_uses_hangul_alias_for_korean_artist(monkeypatch) -> None:
+    monkeypatch.setattr(
+        artist_context,
+        "search_musicbrainz_artist",
+        lambda artist_name: {
+            "artist_name": "Yun Seok Cheol Trio",
+            "sort_name": "Yun Seok Cheol Trio",
+            "country": "KR",
+            "aliases": [{"name": "윤석철 트리오"}],
+        },
+    )
+
+    assert artist_context.resolve_musicbrainz_preferred_korean_name("Yun Seok Cheol Trio") == "윤석철 트리오"
+
+
+def test_resolve_musicbrainz_preferred_korean_name_skips_non_korean_artist(monkeypatch) -> None:
+    monkeypatch.setattr(
+        artist_context,
+        "search_musicbrainz_artist",
+        lambda artist_name: {
+            "artist_name": "The Beatles",
+            "sort_name": "Beatles, The",
+            "country": "GB",
+            "aliases": [{"name": "비틀즈"}],
+        },
+    )
+
+    assert artist_context.resolve_musicbrainz_preferred_korean_name("The Beatles") is None
+
+
 def test_build_artist_context_falls_back_to_korean_wikipedia_for_korean_artist(monkeypatch) -> None:
     monkeypatch.setattr(artist_context, "fetch_wikipedia_music_summary", lambda artist_name: None)
     monkeypatch.setattr(artist_context, "fetch_wikipedia_summary", lambda artist_name: None)

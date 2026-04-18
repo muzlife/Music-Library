@@ -12,6 +12,7 @@ from urllib.parse import quote
 import httpx
 
 from ..config import get_settings
+from . import artist_context as artist_context_service
 
 logger = logging.getLogger(__name__)
 PROVIDER_SLOW_SEC = float(os.getenv("PROVIDER_SLOW_SEC", "1.2"))
@@ -351,6 +352,53 @@ def _fetch_discogs_master_detail(
         "master_styles": _unique_text_list(data.get("styles")),
         "raw_master": data,
     }
+
+
+def _fetch_discogs_artist_detail(
+    *,
+    headers: dict[str, str],
+    client: httpx.Client,
+    artist_id: str | None = None,
+    resource_url: str | None = None,
+) -> dict[str, Any] | None:
+    target_url = str(resource_url or "").strip()
+    target_artist_id = str(artist_id or "").strip()
+    if not target_url and not target_artist_id:
+        return None
+
+    try:
+        if target_url:
+            response = client.get(target_url, headers=headers)
+        else:
+            response = client.get(f"https://api.discogs.com/artists/{target_artist_id}", headers=headers)
+        response.raise_for_status()
+        data = response.json()
+    except httpx.HTTPError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _discogs_artist_detail_name_candidates(detail: dict[str, Any] | None) -> list[str]:
+    if not detail:
+        return []
+    names: list[str] = []
+    seen: set[str] = set()
+
+    def remember(value: Any) -> None:
+        text = str(value or "").strip()
+        if not text:
+            return
+        key = _normalize_text(text)
+        if not key or key in seen:
+            return
+        seen.add(key)
+        names.append(text)
+
+    remember(detail.get("name"))
+    remember(detail.get("realname"))
+    for variation in detail.get("namevariations") or []:
+        remember(variation)
+    return names
 
 
 def _discogs_identifier_items(identifiers: Any) -> list[dict[str, Any]]:
@@ -1494,6 +1542,57 @@ def search_discogs_artist_name_variations(
     return names[:variation_limit]
 
 
+def resolve_discogs_preferred_korean_artist_name(
+    artist_name: str,
+    *,
+    external_id: str | None = None,
+    raw: dict[str, Any] | None = None,
+    domain_code: str | None = None,
+) -> str | None:
+    artist_text = str(artist_name or "").strip()
+    if not artist_text:
+        return None
+    if _contains_hangul(artist_text):
+        return artist_text
+
+    normalized_domain_code = _normalize_domain_code(domain_code)
+    if normalized_domain_code and normalized_domain_code != "KOREA":
+        return None
+
+    raw_detail = raw if isinstance(raw, dict) else {}
+    headers = _discogs_headers()
+    if headers is not None and raw_detail:
+        try:
+            with httpx.Client(timeout=15.0) as client:
+                artists = raw_detail.get("artists")
+                if isinstance(artists, list):
+                    for row in artists:
+                        if not isinstance(row, dict):
+                            continue
+                        for candidate in (
+                            _pick_first_text(row.get("anv")),
+                            _pick_first_text(row.get("name")),
+                        ):
+                            if candidate and _contains_hangul(candidate):
+                                return candidate
+                        detail = _fetch_discogs_artist_detail(
+                            headers=headers,
+                            client=client,
+                            artist_id=_pick_first_text(row.get("id")),
+                            resource_url=_pick_first_text(row.get("resource_url")),
+                        )
+                        for candidate in _discogs_artist_detail_name_candidates(detail):
+                            if _contains_hangul(candidate):
+                                return candidate
+        except httpx.HTTPError:
+            pass
+
+    preferred_musicbrainz_name = artist_context_service.resolve_musicbrainz_preferred_korean_name(artist_text)
+    if preferred_musicbrainz_name and _contains_hangul(preferred_musicbrainz_name):
+        return preferred_musicbrainz_name
+    return None
+
+
 def _aladin_search(query: str, limit: int = 5) -> list[Candidate]:
     settings = get_settings()
     if not settings.aladin_ttb_key:
@@ -1539,8 +1638,35 @@ def search_maniadb_by_query(query: str, limit: int = 5) -> list[dict[str, Any]]:
         candidates = _maniadb_search(query=query, limit=limit)
     except httpx.HTTPError:
         return []
-    _enrich_maniadb_candidates(candidates, max_items=min(limit, 5))
-    return [c.to_dict() for c in candidates]
+    expanded: list[dict[str, Any]] = []
+    for candidate in candidates:
+        album_id = _extract_maniadb_album_id(candidate.external_id)
+        if not album_id or str(candidate.raw.get("kind") or "").strip().lower() != "album":
+            expanded.append(candidate.to_dict())
+            continue
+        variants = get_maniadb_master_variants(master_external_id=album_id, limit=max(30, limit))
+        if not variants:
+            expanded.append(candidate.to_dict())
+            continue
+        for variant in variants:
+            row = dict(variant)
+            row["artist_or_brand"] = row.get("artist_or_brand") or candidate.artist_or_brand
+            row["title"] = row.get("title") or candidate.title
+            row["confidence"] = round(float(candidate.confidence or 0.0), 3)
+            base_raw = dict(candidate.raw) if isinstance(candidate.raw, dict) else {}
+            variant_raw = dict(row.get("raw") or {}) if isinstance(row.get("raw"), dict) else {}
+            row["raw"] = {**base_raw, **variant_raw}
+            expanded.append(row)
+
+    deduped: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in expanded:
+        key = (str(row.get("source") or "").strip().upper(), str(row.get("external_id") or "").strip())
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(row)
+    return deduped[: max(1, limit)]
 
 
 def search_discogs_master_by_query(query: str, limit: int = 10) -> list[dict[str, Any]]:
@@ -1688,6 +1814,24 @@ def _parse_maniadb_album_header(html_text: str) -> tuple[str | None, str | None]
     return artist, title
 
 
+def _extract_maniadb_album_page_cover_image_url(html_text: str, album_id: str | None = None) -> str | None:
+    if not html_text:
+        return None
+    patterns = (
+        r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"',
+        r'<div[^>]+id="COVERART_FRONT"[^>]*>.*?<a[^>]+href="([^"]+)"',
+        r'<div[^>]+id="COVERART_FRONT"[^>]*>.*?<img[^>]+src="([^"]+)"',
+    )
+    for pattern in patterns:
+        match = re.search(pattern, html_text, re.IGNORECASE | re.DOTALL)
+        if not match:
+            continue
+        normalized = _normalize_maniadb_image_url(match.group(1), album_id=album_id)
+        if normalized:
+            return normalized
+    return None
+
+
 def _maniadb_image_items_from_block(block_html: str | None) -> list[dict[str, Any]]:
     if not block_html:
         return []
@@ -1724,24 +1868,32 @@ def _maniadb_image_items_from_block(block_html: str | None) -> list[dict[str, An
 
 def _maniadb_album_image_group(album_id: str) -> str | None:
     digits = re.sub(r"\D", "", str(album_id or "").strip())
-    if len(digits) < 3:
+    if len(digits) < 4:
         return None
-    return digits[:3]
+    return digits[:-3]
+
+
+def _maniadb_album_image_leaf(album_id: str) -> str | None:
+    digits = re.sub(r"\D", "", str(album_id or "").strip())
+    if len(digits) < 4:
+        return None
+    return digits[-6:]
 
 
 def _maniadb_variant_cover_url(album_id: str, variant_seq: str | None, side: str = "f") -> str | None:
     group = _maniadb_album_image_group(album_id)
-    digits = re.sub(r"\D", "", str(album_id or "").strip())
+    leaf = _maniadb_album_image_leaf(album_id)
     seq = re.sub(r"\D", "", str(variant_seq or "").strip())
     side_code = "b" if str(side or "").strip().lower() == "b" else "f"
-    if not group or not digits or not seq:
+    if not group or not leaf or not seq:
         return None
-    return f"https://i.maniadb.com/images/album/{group}/{digits}_{seq}_{side_code}.jpg"
+    return f"https://i.maniadb.com/images/album/{group}/{leaf}_{seq}_{side_code}.jpg"
 
 
 def _maniadb_variant_image_matches(url: str | None, album_id: str | None, variant_seq: str | None) -> bool:
     normalized_url = _clean_html_text(url)
     digits = re.sub(r"\D", "", str(album_id or "").strip())
+    leaf = digits[-6:] if len(digits) >= 4 else ""
     seq = re.sub(r"\D", "", str(variant_seq or "").strip())
     if not normalized_url or not digits or not seq:
         return False
@@ -1750,13 +1902,19 @@ def _maniadb_variant_image_matches(url: str | None, album_id: str | None, varian
     if legacy_match:
         file_album_id = legacy_match.group(1).lstrip("0") or "0"
         file_seq = legacy_match.group(3).lstrip("0") or "0"
-        return file_album_id == digits.lstrip("0") and file_seq == seq.lstrip("0")
+        return file_album_id in {
+            digits.lstrip("0") or "0",
+            (leaf.lstrip("0") or "0") if leaf else "",
+        } and file_seq == seq.lstrip("0")
     current_match = re.search(r"/(\d+)_([0-9]+)_[fb]\.jpg$", lower)
     if not current_match:
         return False
     file_album_id = current_match.group(1).lstrip("0") or "0"
     file_seq = current_match.group(2).lstrip("0") or "0"
-    return file_album_id == digits.lstrip("0") and file_seq == seq.lstrip("0")
+    return file_album_id in {
+        digits.lstrip("0") or "0",
+        (leaf.lstrip("0") or "0") if leaf else "",
+    } and file_seq == seq.lstrip("0")
 
 
 def _normalize_maniadb_image_url(url: str | None, album_id: str | None = None, variant_seq: str | None = None) -> str | None:
@@ -1770,12 +1928,26 @@ def _normalize_maniadb_image_url(url: str | None, album_id: str | None = None, v
     return normalized
 
 
+def _maniadb_release_year_from_token(date_token: str | None) -> int | None:
+    text = _clean_html_text(date_token)
+    if not text:
+        return None
+    exact_year = _safe_year(text.split("-", 1)[0])
+    if exact_year is not None:
+        return exact_year
+    year_match = re.search(r"\b((?:19|20)\d{2})\b", text)
+    if not year_match:
+        return None
+    return _safe_year(year_match.group(1))
+
+
 def _parse_maniadb_release_legend(
     legend_html: str,
     album_id: str,
     album_artist: str | None,
     album_title: str | None,
     block_html: str | None = None,
+    album_cover_image_url: str | None = None,
 ) -> dict[str, Any] | None:
     sid_match = re.search(r"(?:[?&]|&amp;)s=(\d+)", legend_html, re.IGNORECASE)
     fmt_match = re.search(r'alt="([^"]+)"', legend_html, re.IGNORECASE)
@@ -1786,7 +1958,7 @@ def _parse_maniadb_release_legend(
 
     date_token = chunks[0]
     label_token = chunks[1] if len(chunks) >= 2 else ""
-    year = _safe_year(date_token.split("-", 1)[0] if date_token else None)
+    year = _maniadb_release_year_from_token(date_token)
     released_date = date_token if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_token or "") else None
 
     label_name = label_token
@@ -1833,7 +2005,9 @@ def _parse_maniadb_release_legend(
         if image_items and not cover_image_url:
             cover_image_url = _pick_first_text(image_items[0].get("uri"))
         if not image_items:
-            cover_image_url = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+            cover_image_url = album_cover_image_url or _maniadb_variant_cover_url(album_id, variant_seq, "f")
+            if cover_image_url:
+                image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
 
         track_block_match = re.search(r'<td\s+class="tracks">(.*?)</td>', block_html, re.IGNORECASE | re.DOTALL)
         if track_block_match:
@@ -1841,7 +2015,7 @@ def _parse_maniadb_release_legend(
             tokens = re.findall(r"\d+\.\s*(?:<[^>]+>\s*)*([^/<]+)", track_html)
             track_list = [t for t in (_clean_html_text(tok) for tok in tokens) if t]
     else:
-        cover_image_url = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+        cover_image_url = album_cover_image_url or _maniadb_variant_cover_url(album_id, variant_seq, "f")
         if cover_image_url:
             image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
 
@@ -2229,6 +2403,7 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
         return []
 
     album_artist, album_title = _parse_maniadb_album_header(html_text)
+    album_cover_image_url = _extract_maniadb_album_page_cover_image_url(html_text, album_id=album_id)
     block_pattern = re.compile(r"<fieldset[^>]*>(.*?)</fieldset>", re.IGNORECASE | re.DOTALL)
     out: list[dict[str, Any]] = []
     for block in block_pattern.finditer(html_text):
@@ -2242,6 +2417,7 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
             album_artist=album_artist,
             album_title=album_title,
             block_html=block_html,
+            album_cover_image_url=album_cover_image_url,
         )
         if parsed is None:
             continue
@@ -2265,7 +2441,7 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
             "label_name": None,
             "catalog_no": None,
             "barcode": None,
-            "cover_image_url": None,
+            "cover_image_url": album_cover_image_url,
             "track_list": [],
             "raw": {"album_id": album_id},
         }

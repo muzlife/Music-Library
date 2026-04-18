@@ -47,6 +47,8 @@ BackupScope = Literal["DB", "FULL"]
 GoodsCategory = Literal["POSTER", "T_SHIRT", "LIGHT_STICK", "HAT", "BAG", "CUP", "OTHER"]
 GoodsStatus = Literal["ACTIVE", "ARCHIVED"]
 GoodsLinkedState = Literal["ANY", "LINKED", "UNLINKED"]
+GoodsCollectibleRelationState = Literal["ANY", "LINKED", "UNLINKED"]
+GoodsCollectibleRelationType = Literal["SERIES", "VARIANT", "SET_MEMBER", "RELATED", "PROMO_FOR"]
 
 
 class BarcodeIngestRequest(BaseModel):
@@ -220,6 +222,27 @@ class GoodsItemMappingUpdateRequest(BaseModel):
     label_names: list[str] = Field(default_factory=list)
 
 
+class GoodsItemCollectibleRelation(BaseModel):
+    relation_type: GoodsCollectibleRelationType
+    direction: Literal["OUTGOING"] = "OUTGOING"
+    linked_goods_item_id: int = Field(ge=1)
+    linked_goods_name: str
+    linked_category: GoodsCategory | None = None
+    note: str | None = None
+    display_order: int = 0
+
+
+class GoodsItemRelationUpdateItem(BaseModel):
+    relation_type: GoodsCollectibleRelationType
+    linked_goods_item_id: int = Field(ge=1)
+    note: str | None = None
+    display_order: int | None = None
+
+
+class GoodsItemRelationUpdateRequest(BaseModel):
+    relations: list[GoodsItemRelationUpdateItem] = Field(default_factory=list)
+
+
 class GoodsItemResponse(GoodsItemBase):
     id: int
     slot_code: str | None = None
@@ -227,6 +250,10 @@ class GoodsItemResponse(GoodsItemBase):
     album_master_mappings: list[GoodsItemAlbumMasterMapping] = Field(default_factory=list)
     artist_mappings: list[str] = Field(default_factory=list)
     label_mappings: list[str] = Field(default_factory=list)
+    collectible_relations: list[GoodsItemCollectibleRelation] = Field(default_factory=list)
+    collectible_relation_count: int = 0
+    relation_badges: list[GoodsCollectibleRelationType] = Field(default_factory=list)
+    collectible_relation_preview: list[GoodsItemCollectibleRelation] = Field(default_factory=list)
     created_at: str
     updated_at: str
 
@@ -388,6 +415,10 @@ class OfficeClimateResponse(BaseModel):
     temperature_c: float | None = None
     humidity_percent: float | None = None
     comfort_label: str | None = None
+    temperature_high_c: float | None = None
+    temperature_low_c: float | None = None
+    weather_code: int | None = None
+    is_day: bool | None = None
     updated_at: str | None = None
 
 
@@ -584,6 +615,7 @@ class AlbumMasterCandidate(BaseModel):
     label_name: str | None = None
     catalog_no: str | None = None
     barcode: str | None = None
+    cover_image_url: str | None = None
     variant_count: int | None = None
     confidence: float = 0.0
     raw: dict[str, Any] = Field(default_factory=dict)
@@ -1092,6 +1124,9 @@ class CollectionDashboardResponse(BaseModel):
     registered_last_30_days: int
     slotted_in_collection_items: int
     unslotted_in_collection_items: int
+    source_unlinked_items: int
+    master_unlinked_items: int
+    cover_missing_items: int
     by_category: list[CollectionCategoryCount] = Field(default_factory=list)
     by_status: list[CollectionStatusCount] = Field(default_factory=list)
     by_domain: list[CollectionValueCount] = Field(default_factory=list)

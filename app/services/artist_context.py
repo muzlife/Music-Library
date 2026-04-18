@@ -76,6 +76,10 @@ def normalize_artist_lookup_name(value: str) -> str:
     return text
 
 
+def _contains_hangul(value: str) -> bool:
+    return bool(re.search(r"[\u3131-\u318e\uac00-\ud7a3]", str(value or "")))
+
+
 def is_music_category(category: str | None) -> bool:
     if category is None:
         return True
@@ -187,6 +191,23 @@ def _extract_musicbrainz_match_names(raw: dict[str, Any] | None) -> list[str]:
                 text = str(alias or "").strip()
                 if text:
                     names.append(text)
+    return names
+
+
+def _extract_musicbrainz_korean_names(raw: dict[str, Any] | None) -> list[str]:
+    if not raw:
+        return []
+    names: list[str] = []
+    seen: set[str] = set()
+    for candidate in _extract_musicbrainz_match_names(raw):
+        text = str(candidate or "").strip()
+        if not text or not _contains_hangul(text):
+            continue
+        key = normalize_artist_name(text)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        names.append(text)
     return names
 
 
@@ -342,6 +363,28 @@ def search_musicbrainz_artist(artist_name: str) -> dict[str, Any] | None:
         "resource_url": str((first.get("_links") or {}).get("self", {}).get("href") or "").strip(),
         "aliases": first.get("aliases") if isinstance(first.get("aliases"), list) else None,
     }
+
+
+def resolve_musicbrainz_preferred_korean_name(artist_name: str) -> str | None:
+    query = normalize_artist_lookup_name(artist_name)
+    if not query:
+        return None
+    try:
+        musicbrainz_data = search_musicbrainz_artist(query)
+    except Exception:
+        return None
+    if not musicbrainz_data:
+        return None
+
+    country = str(musicbrainz_data.get("country") or "").strip().upper()
+    if country != "KR":
+        return None
+
+    if not any(_artist_names_match(query, candidate_name) for candidate_name in _extract_musicbrainz_match_names(musicbrainz_data)):
+        return None
+
+    korean_names = _extract_musicbrainz_korean_names(musicbrainz_data)
+    return korean_names[0] if korean_names else None
 
 
 def discogs_artist_search_link(artist_name: str) -> dict[str, str]:
