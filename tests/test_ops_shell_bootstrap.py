@@ -1170,13 +1170,14 @@ def test_operator_context_and_shared_camera_runtime_copy_use_i18n():
 def test_admin_page_has_barcode_intake_hero_shell():
     html = read_static_html("index.html")
     assert 'id="adminBarcodeIntakeHero"' in html
-    assert 'id="adminBarcodeCandidatePanel"' in html
+    assert 'id="adminBarcodeResultsPanel"' in html
     assert 'id="adminBarcodePlacementPanel"' in html
     hero_block = html.split('<section id="adminBarcodeIntakeHero"', 1)[1].split('<div id="registerOwnedDetailBlock"', 1)[0]
     assert 'id="queryArtist"' in hero_block
     assert 'id="queryTitle"' in hero_block
     assert 'id="queryCatalog"' in hero_block
-    assert 'id="querySearchBtn"' in hero_block
+    assert 'id="registerLookupSearchBtn"' in hero_block
+    assert 'id="adminBarcodeCandidatePanel"' not in hero_block
     assert 'id="adminSearchManageSecondary"' not in html
 
 
@@ -1200,7 +1201,7 @@ def test_admin_barcode_intake_supports_double_scan_confirmation_flow():
 def test_admin_barcode_intake_uses_rank_one_recommendation_when_no_manual_slot_selected():
     html = read_static_html("index.html")
     assert "function resolveAdminBarcodeRecommendedSlotId(candidate) {" in html
-    assert "resolveRegisterLookupStorageSlotId(index) ?? resolveAdminBarcodeRecommendedSlotId(candidate)" in html
+    assert "storage_slot_id: resolveAdminBarcodeRecommendedSlotId(candidate)," in html
 
 
 def test_admin_barcode_intake_allows_manual_recommendation_rank_override():
@@ -1258,23 +1259,19 @@ def test_admin_barcode_intake_resets_lookup_panels_when_queue_finishes():
     assert 'resetAdminBarcodeIntakeWorkspace({ preserveStatus: true });' in html
 
 
-def test_admin_barcode_intake_adds_quick_candidate_picker_for_multiple_matches():
+def test_admin_barcode_intake_auto_selects_first_result_to_sync_recommendation_panel():
     html = read_static_html("index.html")
-    assert 'id="adminBarcodeCandidatePicker"' in html
-    assert ".admin-barcode-candidate-picker {" in html
-    assert "function renderAdminBarcodeCandidatePicker() {" in html
-    assert 'data-admin-barcode-candidate-index="${index}"' in html
-    assert 'class="admin-barcode-candidate-chip${isSelected ? " active" : ""}"' in html
-    assert '$("adminBarcodeCandidatePicker").addEventListener("click", (e) => {' in html
+    assert "selectRegisterLookupCandidate(0, { focus: true, preventScroll: true, scroll: false });" in html
+    assert "await barcodeSearch();" in html
+    assert "await querySearch();" in html
 
 
-def test_admin_barcode_intake_supports_arrow_key_navigation_between_candidate_chips():
+def test_admin_barcode_intake_uses_single_lookup_dispatcher_for_button_and_query_enter():
     html = read_static_html("index.html")
-    assert "function moveRegisterLookupCandidate(delta) {" in html
-    assert 'const chip = root.querySelector(`[data-admin-barcode-candidate-index="${candidateIndex}"]`);' in html
-    assert '$("adminBarcodeCandidatePicker").addEventListener("keydown", (e) => {' in html
-    assert '!["ArrowLeft", "ArrowRight"].includes(e.key)' in html
-    assert 'moveRegisterLookupCandidate(e.key === "ArrowRight" ? 1 : -1);' in html
+    assert "async function submitAdminRegisterLookupSearch() {" in html
+    assert '$("registerLookupSearchBtn").addEventListener("click", submitAdminRegisterLookupSearch);' in html
+    assert '$("queryArtist").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });' in html
+    assert 't("media.register.api_lookup.status.lookup_requires_input")' in html
 
 
 def test_admin_barcode_intake_strengthens_primary_recommendation_badge_copy():
@@ -1283,13 +1280,11 @@ def test_admin_barcode_intake_strengthens_primary_recommendation_badge_copy():
     assert 't("media.register.api_lookup.placement.rank_first")' in html
 
 
-def test_admin_barcode_intake_adds_abbreviated_labels_to_candidate_chips():
+def test_admin_barcode_intake_uses_result_list_as_primary_candidate_surface():
     html = read_static_html("index.html")
-    assert "function buildAdminBarcodeCandidateChipLabel(candidate, index) {" in html
-    assert 'const artist = String(candidate?.artist_or_brand || "").trim();' in html
-    assert 'const title = String(candidate?.title || "").trim();' in html
-    assert 'return `${index + 1} · ${label}`;' in html
-    assert '${escapeHtml(buildAdminBarcodeCandidateChipLabel(row, index))}' in html
+    assert 'id="adminBarcodeCandidatePanel"' not in html
+    assert 'id="adminBarcodeResultsPanel"' in html
+    assert 'data-register-lookup-index' in html
 
 
 def test_admin_barcode_intake_shows_transient_success_toast_after_save():
@@ -1333,13 +1328,15 @@ def test_admin_barcode_intake_adds_save_target_copy_to_current_slot_chip():
 
 def test_admin_barcode_intake_renders_small_input_state_badge():
     html = read_static_html("index.html")
-    assert 'id="adminBarcodeInputState" class="admin-barcode-input-state" data-i18n="media.register.api_lookup.field.barcode.idle">스캔 대기</div>' in html
+    assert 'id="adminBarcodeInputState" class="admin-barcode-input-state"></div>' in html
+    assert ".admin-barcode-input-state:empty {" in html
     assert ".admin-barcode-input-state.confirm {" in html
     assert ".admin-barcode-input-state.ready {" in html
     assert 'const state = $("adminBarcodeInputState");' in html
     assert 't("media.register.api_lookup.field.barcode.ready")' in html
     assert 't("media.register.api_lookup.field.barcode.confirm")' in html
-    assert 't("media.register.api_lookup.field.barcode.idle")' in html
+    assert 'state.textContent = mode === "ready"' in html
+    assert ': "");' in html
     assert 'state.classList.toggle("confirm", mode === "confirm");' in html
     assert 'state.classList.toggle("ready", mode === "ready");' in html
 
@@ -1530,23 +1527,41 @@ def test_admin_register_collect_copy_renames_quick_register_to_direct_register()
 def test_admin_register_collect_copy_renames_barcode_intake_to_api_lookup_register():
     html = read_static_html("index.html")
     assert '<h2 data-i18n="media.register.api_lookup.title">API 조회 / 등록' in html
-    assert '<button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>' in html
+    assert '<button id="registerLookupSearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.lookup">조회</button>' in html
 
 
-def test_admin_api_lookup_keeps_condition_fields_and_query_button_on_single_inline_row():
+def test_admin_api_lookup_keeps_condition_fields_and_lookup_button_on_single_inline_row():
     html = read_static_html("index.html")
-    fields_block = html.split(".admin-barcode-intake-meta-fields--with-action {", 1)[1].split("}", 1)[0]
-    action_cell_block = html.split(".admin-barcode-intake-meta-actioncell {", 1)[1].split("}", 1)[0]
-    action_btn_block = html.split(".admin-barcode-intake-meta-actioncell .btn {", 1)[1].split("}", 1)[0]
-    markup_block = html.split('<div class="meta-search-fields-4 admin-barcode-intake-meta-fields admin-barcode-intake-meta-fields--with-action">', 1)[1].split("</div>\n        </div>", 1)[0]
+    fields_block = html.split(".admin-barcode-intake-bar {", 1)[1].split("}", 1)[0]
+    action_cell_block = html.split(".admin-barcode-intake-search-action {", 1)[1].split("}", 1)[0]
+    action_btn_block = html.split(".admin-barcode-intake-bar .btn {", 1)[1].split("}", 1)[0]
+    markup_block = html.split('<div class="admin-barcode-intake-bar">', 1)[1].split("</div>\n        </div>", 1)[0]
 
-    assert "grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 0.7fr) auto;" in fields_block
+    assert "grid-template-columns: 96px 64px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.72fr) minmax(0, 0.86fr) auto;" in fields_block
     assert "align-items: end;" in fields_block
     assert "display: flex;" in action_cell_block
     assert "justify-content: flex-end;" in action_cell_block
-    assert "min-width: 88px;" in action_btn_block
-    assert '<div class="admin-barcode-intake-meta-actioncell ops-compact-inline-field-actions">' in markup_block
-    assert markup_block.index('id="querySourceRef"') < markup_block.index('id="querySearchBtn"')
+    assert "min-width: 96px;" in action_btn_block
+    assert '<div class="admin-barcode-intake-search-action ops-compact-inline-field-actions">' in markup_block
+    assert markup_block.index('id="metaSourceFilter"') < markup_block.index('id="barcodeLimit"')
+    assert markup_block.index('id="barcodeLimit"') < markup_block.index('id="queryArtist"')
+    assert markup_block.index('id="queryArtist"') < markup_block.index('id="queryTitle"')
+    assert markup_block.index('id="queryTitle"') < markup_block.index('id="barcodeInput"')
+    assert markup_block.index('id="barcodeInput"') < markup_block.index('id="queryCatalog"')
+    assert markup_block.index('id="queryCatalog"') < markup_block.index('id="querySourceRef"')
+    assert markup_block.index('id="querySourceRef"') < markup_block.index('id="registerLookupSearchBtn"')
+
+
+def test_admin_api_lookup_unifies_lookup_flow_and_places_results_beside_placement_panel():
+    html = read_static_html("index.html")
+    panels_block = html.split(".admin-barcode-intake-panels {", 1)[1].split("}", 1)[0]
+    hero_block = html.split('<section id="adminBarcodeIntakeHero"', 1)[1].split('<div id="registerOwnedDetailBlock"', 1)[0]
+
+    assert "grid-template-columns: minmax(0, 4fr) minmax(260px, 1fr);" in panels_block
+    assert 'id="adminBarcodeResultsPanel"' in hero_block
+    assert 'id="adminBarcodePlacementPanel"' in hero_block
+    assert 'id="adminBarcodeCandidatePanel"' not in hero_block
+    assert hero_block.index('id="adminBarcodeResultsPanel"') < hero_block.index('id="adminBarcodePlacementPanel"')
 
 
 def test_admin_barcode_results_shrink_cover_to_widen_text_lane():
@@ -1582,6 +1597,12 @@ def test_admin_register_barcode_results_use_console_surfaces_for_candidate_rows(
     assert "border-color: rgba(255, 122, 26, 0.16);" in pick_block
     assert "box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.06);" in pick_block
 
+    assert 'body[data-theme="day"] #tabRegister.admin-console-shell #barcodeResults .album-result.pick {' in html
+    day_pick_block = html.split('body[data-theme="day"] #tabRegister.admin-console-shell #barcodeResults .album-result.pick {', 1)[1].split("}", 1)[0]
+    assert "background: linear-gradient(180deg, rgba(206, 225, 236, 0.994), rgba(186, 209, 222, 0.99)) !important;" in day_pick_block
+    assert "border-color: rgba(79, 120, 140, 0.64) !important;" in day_pick_block
+    assert "box-shadow: 0 0 0 1px rgba(79, 120, 140, 0.12) !important;" in day_pick_block
+
     assert "#tabRegister.admin-console-shell :is(#barcodeResults .result-meta, #barcodeResults .mini) {" in html
     meta_block = html.split("#tabRegister.admin-console-shell :is(#barcodeResults .result-meta, #barcodeResults .mini) {", 1)[1].split("}", 1)[0]
     assert "color: var(--admin-console-text-muted);" in meta_block
@@ -1598,19 +1619,37 @@ def test_admin_register_barcode_results_align_source_and_image_actions_with_cand
 
     render_block = html.split("function renderBarcodeResults(items, opts = {}) {", 1)[1].split("function resetOpsSlotForm()", 1)[0]
     assert '<span class="tag home-master-source-chip">' in render_block
-    assert '<span class="admin-barcode-result-gallery-action">' in render_block
+    assert '<span class="admin-barcode-result-actions">' in render_block
+    assert 'class="btn ghost admin-barcode-result-save-btn"' in render_block
+    assert 'data-register-lookup-save="${index}"' in render_block
+    assert 'const cabinetSelect = document.createElement("select");' not in render_block
+    assert 'const floorSelect = document.createElement("select");' not in render_block
+    assert 'const cellSelect = document.createElement("select");' not in render_block
+    assert 'fillRegisterLookupSelect(cabinetSelect' not in render_block
+    assert 'fillRegisterLookupSelect(floorSelect' not in render_block
+    assert 'fillRegisterLookupSelect(cellSelect' not in render_block
+    assert 'const actionRow = document.createElement("div");' not in render_block
+    assert 'const locationWrap = document.createElement("div");' not in render_block
 
     meta_block = html.split("#tabRegister.admin-console-shell #barcodeResults .result-meta {", 1)[1].split("}", 1)[0]
     assert "align-items: center;" in meta_block
 
-    gallery_wrap_block = html.split("#tabRegister.admin-console-shell #barcodeResults .admin-barcode-result-gallery-action {", 1)[1].split("}", 1)[0]
-    assert "margin-left: auto;" in gallery_wrap_block
-    assert "display: inline-flex;" in gallery_wrap_block
+    actions_wrap_block = html.split("#tabRegister.admin-console-shell #barcodeResults .admin-barcode-result-actions {", 1)[1].split("}", 1)[0]
+    assert "margin-left: auto;" in actions_wrap_block
+    assert "display: inline-flex;" in actions_wrap_block
+    assert "gap: 6px;" in actions_wrap_block
 
     gallery_btn_block = html.split("#tabRegister.admin-console-shell #barcodeResults .image-gallery-open-btn {", 1)[1].split("}", 1)[0]
     assert "min-height: 30px;" in gallery_btn_block
     assert "padding: 0 10px;" in gallery_btn_block
     assert "border-radius: 4px;" in gallery_btn_block
+
+    save_btn_block = html.split("#tabRegister.admin-console-shell #barcodeResults .admin-barcode-result-save-btn {", 1)[1].split("}", 1)[0]
+    assert "min-height: 30px;" in save_btn_block
+    assert "padding: 0 10px;" in save_btn_block
+    assert "border-radius: 4px;" in save_btn_block
+    assert 'const saveBtn = e.target.closest("[data-register-lookup-save]");' in html
+    assert 'queueRegisterLookupCandidate(Number(saveBtn.getAttribute("data-register-lookup-save") || -1));' in html
 def test_shell_global_barcode_scanner_routes_ops_scans_to_operator_lookup():
     html = read_static_html("index.html")
     block = html.split("async function routeGlobalBarcodeScanForOps(barcode) {", 1)[1].split("async function lookupAdminOwnedBarcodeMatches(barcode) {", 1)[0]
@@ -1691,9 +1730,10 @@ def test_admin_non_barcode_lookup_fields_define_explicit_tab_order():
 
 def test_admin_non_barcode_lookup_fields_submit_query_search_on_enter():
     html = read_static_html("index.html")
-    assert '$("queryArtist").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });' in html
-    assert '$("queryTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });' in html
-    assert '$("queryCatalog").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); querySearch(); } });' in html
+    assert '$("queryArtist").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });' in html
+    assert '$("queryTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });' in html
+    assert '$("queryCatalog").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });' in html
+    assert '$("querySourceRef").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitAdminRegisterLookupSearch(); } });' in html
 
 
 def test_admin_barcode_intake_explains_when_manual_slot_differs_from_auto_recommendation():
@@ -1795,7 +1835,7 @@ def test_admin_barcode_intake_moves_input_state_badge_inline_with_barcode_input(
     html = read_static_html("index.html")
     shell_block = html.split(".admin-barcode-input-shell {", 1)[1].split("}", 1)[0]
     shell_input_block = html.split(".admin-barcode-input-shell > input {", 1)[1].split("}", 1)[0]
-    markup_block = html.split('<label for="barcodeInput" data-i18n="media.register.api_lookup.field.barcode.label">바코드</label>', 1)[1].split('<button id="barcodeSearchBtn"', 1)[0]
+    markup_block = html.split('<label for="barcodeInput" data-i18n="media.register.api_lookup.field.barcode.label">바코드</label>', 1)[1].split('</div>\n        <div class="admin-barcode-intake-lookup-grid">', 1)[0]
     state_block = html.split(".admin-barcode-input-state {", 1)[1].split("}", 1)[0]
     assert "display: grid;" in shell_block
     assert "grid-template-columns: minmax(0, 1fr) auto;" in shell_block
@@ -1804,7 +1844,7 @@ def test_admin_barcode_intake_moves_input_state_badge_inline_with_barcode_input(
     assert "min-height: 34px;" in shell_input_block
     assert '<div class="admin-barcode-input-shell">' in markup_block
     assert 'id="barcodeInput" class="admin-barcode-input"' in markup_block
-    assert 'id="adminBarcodeInputState" class="admin-barcode-input-state" data-i18n="media.register.api_lookup.field.barcode.idle">스캔 대기</div>' in markup_block
+    assert 'id="adminBarcodeInputState" class="admin-barcode-input-state"></div>' in markup_block
     assert "margin-top: 0;" in state_block
 
 
@@ -1827,13 +1867,13 @@ def test_admin_barcode_intake_tightens_inline_input_state_badge_density():
     assert "padding: 2px 5px;" in state_block
 
 
-def test_admin_barcode_intake_compacts_candidate_and_recommendation_header_typography():
+def test_admin_barcode_intake_compacts_results_and_recommendation_header_typography():
     html = read_static_html("index.html")
-    candidate_title_block = html.split(".admin-barcode-candidate-main strong {", 1)[1].split("}", 1)[0]
+    result_title_block = html.split("#barcodeResults .album-result-main strong {", 1)[1].split("}", 1)[0]
     placement_title_block = html.split(".admin-barcode-placement-item strong {", 1)[1].split("}", 1)[0]
     placement_rank_block = html.rsplit(".admin-barcode-placement-rank {", 1)[1].split("}", 1)[0]
-    assert "font-size: 0.84rem;" in candidate_title_block
-    assert "line-height: 1.25;" in candidate_title_block
+    assert "font-size: 0.84rem;" in result_title_block
+    assert "line-height: 1.25;" in result_title_block
     assert "font-size: 0.81rem;" in placement_title_block
     assert "line-height: 1.2;" in placement_title_block
     assert "font-size: 0.62rem;" in placement_rank_block
@@ -5259,7 +5299,7 @@ def test_media_source_and_register_core_labels_use_i18n_keys():
     assert 'id="quickResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="직접 등록 폼 초기화" aria-label="직접 등록 폼 초기화" data-i18n-title="media.register.direct.action.reset" data-i18n-aria-label="media.register.direct.action.reset"></button>' in html
     assert '<h2 data-i18n="media.register.api_lookup.title">API 조회 / 등록' in html
     assert 'data-i18n="media.register.api_lookup.subtitle"' in html
-    assert 'data-i18n="media.register.api_lookup.action.barcode_search"' in html
+    assert 'data-i18n="media.register.api_lookup.action.lookup"' in html
     assert 'data-page-help-open="register-purchase"' in html
     assert '<h2><span data-i18n="media.register.purchase.title">구매 내역 가져오기</span></h2>' in html
     assert 'data-i18n="media.register.purchase.action.preview"' in html
@@ -5288,7 +5328,7 @@ def test_media_source_and_register_form_labels_and_placeholders_use_i18n_keys():
     assert '<label for="queryArtist" data-i18n="media.register.api_lookup.field.artist.label">아티스트명</label>' in html
     assert 'id="queryArtist" tabindex="1" data-i18n-placeholder="media.register.api_lookup.field.artist.placeholder"' in html
     assert '<label for="querySourceRef" data-i18n="media.register.api_lookup.field.source_ref.label">참조 ID / URL</label>' in html
-    assert '<button id="querySearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.query_search">조건 조회</button>' in html
+    assert '<button id="registerLookupSearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.lookup">조회</button>' in html
     assert '<label for="purchaseImportFile" data-i18n="media.register.purchase.field.file.label">주문 파일</label>' in html
     assert '<label data-i18n="media.register.purchase.field.auto_detect.label">자동 판별</label>' in html
     assert '<strong data-i18n="media.register.purchase.section.preview">미리보기</strong>' in html
@@ -7675,10 +7715,10 @@ def test_media_register_static_form_labels_use_i18n_keys():
     assert '<label for="metaSourceFilter" data-i18n="media.register.api_lookup.field.source.label">검색 소스</label>' in html
     assert '<label for="barcodeLimit" data-i18n="media.register.api_lookup.field.limit.label">개수</label>' in html
     assert '<label for="barcodeInput" data-i18n="media.register.api_lookup.field.barcode.label">바코드</label>' in html
-    assert 'id="adminBarcodeInputState" class="admin-barcode-input-state" data-i18n="media.register.api_lookup.field.barcode.idle">스캔 대기</div>' in html
+    assert 'id="adminBarcodeInputState" class="admin-barcode-input-state"></div>' in html
     assert '<label for="queryTitle" data-i18n="media.register.api_lookup.field.title.label">상품명</label>' in html
     assert '<label for="queryCatalog" data-i18n="media.register.api_lookup.field.catalog.label">카탈로그번호</label>' in html
-    assert '<strong data-i18n="media.register.api_lookup.candidate.title">후보 확인</strong>' in html
+    assert '<button id="registerLookupSearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.lookup">조회</button>' in html
     assert '<strong data-i18n="media.register.api_lookup.placement.title">추천 위치</strong>' in html
     assert '<strong data-i18n="media.register.api_lookup.results.title">조회 결과</strong>' in html
     assert '<label for="purchaseImportEmailFrom" data-i18n="media.register.purchase.field.email_from.label">발신자(선택)</label>' in html
@@ -8821,9 +8861,6 @@ def test_register_lookup_and_ops_slot_camera_remaining_runtime_copy_use_i18n():
     assert '$("barcodeCount").textContent = countWithUnit(registerLookupCandidates.length);' in html
     assert 't("common.meta.external_id", { value: c.external_id || "-" })' in html
     assert 't("common.meta.candidate_confidence", { value: Number(c.confidence || 0).toFixed(3) })' in html
-    assert 'fillRegisterLookupSelect(cabinetSelect, listRegisterLookupCabinets(), state.cabinet_name, t("common.cabinet"));' in html
-    assert 'fillRegisterLookupSelect(floorSelect, listRegisterLookupFloors(state.cabinet_name), state.column_code, t("common.column"));' in html
-    assert 'fillRegisterLookupSelect(cellSelect, listRegisterLookupCells(state.cabinet_name, state.column_code), state.cell_code, t("common.cell"));' in html
     assert ': t("common.default")}</td>' in html
     assert 'if (!res.ok) throw new Error(responseDetailText(data, t("ops.camera.status.discover_failed")));' in html
     assert 'if (!res.ok) throw new Error(responseDetailText(data, t("ops.camera.status.test_failed")));' in html
@@ -9777,13 +9814,10 @@ def test_index_manage_music_editor_expands_music_fields_for_selected_product():
 
 def test_index_register_lookup_and_cover_preview_use_display_helper_for_simple_toggles():
     html = read_static_html("index.html")
-    picker_block = html.split("    function renderAdminBarcodeCandidatePicker() {", 1)[1].split("    function renderAdminBarcodePlacementSummary(state = null) {", 1)[0]
     cover_block = html.split("    function renderHomeEditCoverImagePreview() {", 1)[1].split("    function applyHomeEditCoverImageUrl(url, message) {", 1)[0]
-    assert 'setDisplayMode(root, "none");' in picker_block
-    assert 'setDisplayMode(root, "flex");' in picker_block
     assert 'setDisplayMode(link, "none");' in cover_block
     assert 'setDisplayMode(link, "block");' in cover_block
-    assert ".style.display" not in "\n".join([picker_block, cover_block])
+    assert ".style.display" not in cover_block
 
 
 def test_index_shared_display_helpers_cover_operator_dashboard_and_master_edit_toggles():
