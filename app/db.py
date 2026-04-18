@@ -17,6 +17,7 @@ DASHBOARD_MOVE_WINDOW_DAYS = 1
 SIZE_GROUP_CODES = ("STD", "BOOK", "LP", "LP10", "LP7", "OVERSIZE", "CASSETTE", "8TRACK", "REEL_TO_REEL", "GOODS")
 DOMAIN_CODES = ("KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN")
 CABINET_SORT_POLICIES = ("ARTIST_RELEASE_TITLE", "LABEL_ID")
+GOODS_RELATION_TYPE_CODES = ("SERIES", "VARIANT", "SET_MEMBER", "RELATED", "PROMO_FOR")
 LEGACY_DOMAIN_CODE_MAP = {
     "KOREAN": "KOREA",
     "JPOP": "JAPAN",
@@ -36,6 +37,14 @@ LABEL_PREFIX_BY_CATEGORY = {
     "BAG": "BG",
     "CUP": "CP",
     "OTHER": "OT",
+}
+LABEL_CATEGORIES_BY_PREFIX: dict[str, tuple[str, ...]] = {}
+for _category_code, _label_prefix in LABEL_PREFIX_BY_CATEGORY.items():
+    LABEL_CATEGORIES_BY_PREFIX.setdefault(_label_prefix.upper(), [])
+    LABEL_CATEGORIES_BY_PREFIX[_label_prefix.upper()].append(_category_code)
+LABEL_CATEGORIES_BY_PREFIX = {
+    prefix: tuple(categories)
+    for prefix, categories in LABEL_CATEGORIES_BY_PREFIX.items()
 }
 DEFAULT_SLOT_CAPACITY_MM = {
     "STD": 142,
@@ -123,6 +132,10 @@ def _goods_category_check_sql() -> str:
 
 def _goods_status_check_sql() -> str:
     return "', '".join(GOODS_STATUS_CODES)
+
+
+def _goods_relation_type_check_sql() -> str:
+    return "', '".join(GOODS_RELATION_TYPE_CODES)
 
 
 def _normalize_cabinet_sort_policy_value(value: Any) -> str:
@@ -639,6 +652,13 @@ def _normalize_goods_status_value(value: Any) -> str:
     return status
 
 
+def _normalize_goods_relation_type_value(value: Any) -> str:
+    relation_type = str(value or "").strip().upper()
+    if relation_type not in GOODS_RELATION_TYPE_CODES:
+        raise ValueError("invalid goods relation_type")
+    return relation_type
+
+
 def _normalize_goods_mapping_text(value: Any) -> str:
     return " ".join(str(value or "").strip().split())
 
@@ -805,6 +825,40 @@ def _owned_item_storage_sort_key(
     )
 
 
+def owned_item_storage_sort_changed(
+    previous_row: dict[str, Any] | None,
+    next_row: dict[str, Any] | None,
+) -> bool:
+    if not isinstance(previous_row, dict) or not isinstance(next_row, dict):
+        return False
+    try:
+        previous_slot_id = int(previous_row.get("storage_slot_id") or 0) or None
+    except (TypeError, ValueError):
+        previous_slot_id = None
+    try:
+        next_slot_id = int(next_row.get("storage_slot_id") or 0) or None
+    except (TypeError, ValueError):
+        next_slot_id = None
+    if previous_slot_id is None or previous_slot_id != next_slot_id:
+        return False
+    slot = get_storage_slot(previous_slot_id) or {}
+    if _normalize_cabinet_sort_policy_value(slot.get("cabinet_sort_policy")) == "LABEL_ID":
+        return False
+    master_ids: list[int] = []
+    for row in (previous_row, next_row):
+        try:
+            master_id = int(row.get("linked_album_master_id") or 0)
+        except (TypeError, ValueError):
+            master_id = 0
+        if master_id > 0:
+            master_ids.append(master_id)
+    korean_artist_by_master_id = _preferred_korean_artist_by_master_ids(master_ids)
+    return _owned_item_storage_sort_key(previous_row, korean_artist_by_master_id) != _owned_item_storage_sort_key(
+        next_row,
+        korean_artist_by_master_id,
+    )
+
+
 def _extract_collection_dashboard_release_year(row: dict[str, Any]) -> int | None:
     for candidate in (
         row.get("master_release_year"),
@@ -898,6 +952,23 @@ def _parse_order_value(raw: Any) -> int | None:
 def _build_label_id(category: str | None, owned_item_id: int) -> str:
     prefix = LABEL_PREFIX_BY_CATEGORY.get(str(category or "").upper(), "IT")
     return f"{prefix}-{owned_item_id:06d}"
+
+
+def _parse_label_id_query(raw_query: str | None) -> tuple[tuple[str, ...], int] | None:
+    compact = re.sub(r"[^A-Za-z0-9]", "", str(raw_query or "").upper())
+    if not compact:
+        return None
+    for prefix, category_codes in LABEL_CATEGORIES_BY_PREFIX.items():
+        if not compact.startswith(prefix):
+            continue
+        raw_owned_item_id = compact[len(prefix):]
+        if not raw_owned_item_id.isdigit():
+            continue
+        owned_item_id = int(raw_owned_item_id)
+        if owned_item_id <= 0:
+            continue
+        return category_codes, owned_item_id
+    return None
 
 
 def _location_slot_snapshot_in_conn(conn: sqlite3.Connection, storage_slot_id: int | None) -> dict[str, Any]:
@@ -1329,6 +1400,20 @@ def init_db() -> None:
               created_at TEXT NOT NULL,
               UNIQUE (goods_item_id, normalized_label_name),
               FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS goods_item_collectible_relation (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              goods_item_id INTEGER NOT NULL,
+              relation_type TEXT NOT NULL CHECK (relation_type IN ('{_goods_relation_type_check_sql()}')),
+              linked_goods_item_id INTEGER NOT NULL,
+              note TEXT,
+              display_order INTEGER NOT NULL DEFAULT 0,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              UNIQUE (goods_item_id, relation_type, linked_goods_item_id),
+              FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE,
+              FOREIGN KEY (linked_goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS owned_item_subtype (
@@ -2602,11 +2687,27 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
           FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS goods_item_collectible_relation (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          goods_item_id INTEGER NOT NULL,
+          relation_type TEXT NOT NULL CHECK (relation_type IN ('{_goods_relation_type_check_sql()}')),
+          linked_goods_item_id INTEGER NOT NULL,
+          note TEXT,
+          display_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          UNIQUE (goods_item_id, relation_type, linked_goods_item_id),
+          FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE,
+          FOREIGN KEY (linked_goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
+        );
+
         CREATE INDEX IF NOT EXISTS idx_goods_item_category_name ON goods_item (category, goods_name);
         CREATE INDEX IF NOT EXISTS idx_goods_item_storage_slot ON goods_item (storage_slot_id, status);
         CREATE INDEX IF NOT EXISTS idx_goods_item_album_master_map_goods ON goods_item_album_master_map (goods_item_id, album_master_id);
         CREATE INDEX IF NOT EXISTS idx_goods_item_artist_map_lookup ON goods_item_artist_map (normalized_artist_name);
         CREATE INDEX IF NOT EXISTS idx_goods_item_label_map_lookup ON goods_item_label_map (normalized_label_name);
+        CREATE INDEX IF NOT EXISTS idx_goods_item_collectible_relation_goods ON goods_item_collectible_relation (goods_item_id, display_order, id);
+        CREATE INDEX IF NOT EXISTS idx_goods_item_collectible_relation_linked ON goods_item_collectible_relation (linked_goods_item_id);
         """
     )
     conn.executescript(
@@ -2697,6 +2798,25 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE goods_item_detail ADD COLUMN created_at TEXT")
     if not _column_exists(conn, "goods_item_detail", "updated_at"):
         conn.execute("ALTER TABLE goods_item_detail ADD COLUMN updated_at TEXT")
+    conn.executescript(
+        f"""
+        CREATE TABLE IF NOT EXISTS goods_item_collectible_relation (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          goods_item_id INTEGER NOT NULL,
+          relation_type TEXT NOT NULL CHECK (relation_type IN ('{_goods_relation_type_check_sql()}')),
+          linked_goods_item_id INTEGER NOT NULL,
+          note TEXT,
+          display_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          UNIQUE (goods_item_id, relation_type, linked_goods_item_id),
+          FOREIGN KEY (goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE,
+          FOREIGN KEY (linked_goods_item_id) REFERENCES goods_item(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_goods_item_collectible_relation_goods ON goods_item_collectible_relation (goods_item_id, display_order, id);
+        CREATE INDEX IF NOT EXISTS idx_goods_item_collectible_relation_linked ON goods_item_collectible_relation (linked_goods_item_id);
+        """
+    )
 
     if not _column_exists(conn, "music_item_detail", "label_name"):
         conn.execute("ALTER TABLE music_item_detail ADD COLUMN label_name TEXT")
@@ -4030,6 +4150,7 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
     query_like = f"%{query_norm}%"
     query_token_groups = _search_token_groups(clean_query)
     barcode_digits = re.sub(r"[^0-9]", "", clean_query)
+    parsed_label_id = _parse_label_id_query(clean_query)
     requested_limit = max(1, int(limit))
     fetch_limit = max(10, min(200, requested_limit * 4))
 
@@ -4165,6 +4286,11 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
         "LOWER(COALESCE(mid.catalog_no, '')) LIKE ?",
     ]
     primary_params: list[Any] = [query_like, query_like, query_like, query_like, query_like]
+    if parsed_label_id is not None:
+        category_codes, owned_item_id = parsed_label_id
+        category_placeholders = ",".join("?" for _ in category_codes)
+        primary_where_clauses.insert(0, f"(oi.id = ? AND UPPER(COALESCE(oi.category, '')) IN ({category_placeholders}))")
+        primary_params = [owned_item_id, *category_codes, *primary_params]
     if barcode_digits:
         primary_where_clauses.append("REPLACE(COALESCE(mid.barcode, ''), '-', '') LIKE ?")
         primary_params.append(f"%{barcode_digits}%")
@@ -4237,6 +4363,13 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
     out = _build_items(rows)
     out.sort(
         key=lambda row: (
+            0
+            if (
+                parsed_label_id is not None
+                and int(row.get("id") or 0) == parsed_label_id[1]
+                and str(row.get("category") or "").upper() in parsed_label_id[0]
+            )
+            else 1,
             0 if (row.get("matched_track_count") or 0) > 0 else 1,
             0 if str(row.get("status") or "") == "IN_COLLECTION" else 1,
             str(row.get("item_title") or row.get("item_name_override") or "").lower(),
@@ -5375,15 +5508,46 @@ def get_collection_dashboard() -> dict[str, Any]:
             """
             SELECT
               COUNT(*) AS total_items,
-              SUM(CASE WHEN status = 'IN_COLLECTION' THEN 1 ELSE 0 END) AS in_collection_items,
-              SUM(CASE WHEN category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL') THEN 1 ELSE 0 END) AS music_items,
-              SUM(CASE WHEN category NOT IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL') THEN 1 ELSE 0 END) AS goods_items,
-              SUM(CASE WHEN signature_type IS NOT NULL AND signature_type <> 'NONE' THEN 1 ELSE 0 END) AS signed_items,
-              SUM(CASE WHEN is_second_hand = 1 THEN 1 ELSE 0 END) AS second_hand_items,
-              SUM(CASE WHEN created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS registered_last_30_days,
-              SUM(CASE WHEN status = 'IN_COLLECTION' AND storage_slot_id IS NOT NULL THEN 1 ELSE 0 END) AS slotted_in_collection_items,
-              SUM(CASE WHEN status = 'IN_COLLECTION' AND storage_slot_id IS NULL THEN 1 ELSE 0 END) AS unslotted_in_collection_items
-            FROM owned_item
+              SUM(CASE WHEN oi.status = 'IN_COLLECTION' THEN 1 ELSE 0 END) AS in_collection_items,
+              SUM(CASE WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL') THEN 1 ELSE 0 END) AS music_items,
+              SUM(CASE WHEN oi.category NOT IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL') THEN 1 ELSE 0 END) AS goods_items,
+              SUM(CASE WHEN oi.signature_type IS NOT NULL AND oi.signature_type <> 'NONE' THEN 1 ELSE 0 END) AS signed_items,
+              SUM(CASE WHEN oi.is_second_hand = 1 THEN 1 ELSE 0 END) AS second_hand_items,
+              SUM(CASE WHEN oi.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS registered_last_30_days,
+              SUM(CASE WHEN oi.status = 'IN_COLLECTION' AND oi.storage_slot_id IS NOT NULL THEN 1 ELSE 0 END) AS slotted_in_collection_items,
+              SUM(CASE WHEN oi.status = 'IN_COLLECTION' AND oi.storage_slot_id IS NULL THEN 1 ELSE 0 END) AS unslotted_in_collection_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND (
+                     oi.source_code IS NULL
+                     OR TRIM(oi.source_code) = ''
+                     OR UPPER(TRIM(oi.source_code)) = 'MANUAL'
+                     OR oi.source_external_id IS NULL
+                     OR TRIM(oi.source_external_id) = ''
+                   )
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS source_unlinked_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND oi.linked_album_master_id IS NULL
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS master_unlinked_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND (mid.cover_image_url IS NULL OR TRIM(mid.cover_image_url) = '')
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS cover_missing_items
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
             """
         ).fetchone()
 
@@ -5575,6 +5739,9 @@ def get_collection_dashboard() -> dict[str, Any]:
         "registered_last_30_days": int((summary["registered_last_30_days"] if summary else 0) or 0),
         "slotted_in_collection_items": int((summary["slotted_in_collection_items"] if summary else 0) or 0),
         "unslotted_in_collection_items": int((summary["unslotted_in_collection_items"] if summary else 0) or 0),
+        "source_unlinked_items": int((summary["source_unlinked_items"] if summary else 0) or 0),
+        "master_unlinked_items": int((summary["master_unlinked_items"] if summary else 0) or 0),
+        "cover_missing_items": int((summary["cover_missing_items"] if summary else 0) or 0),
         "by_category": [
             {"category": str(row["category"]), "count": int(row["cnt"] or 0)}
             for row in by_category_rows
@@ -8575,6 +8742,38 @@ def _list_goods_item_label_mappings_in_conn(conn: sqlite3.Connection, goods_item
     return [str(row["label_name"] or "").strip() for row in rows if str(row["label_name"] or "").strip()]
 
 
+def _list_goods_item_collectible_relations_in_conn(conn: sqlite3.Connection, goods_item_id: int) -> list[dict[str, Any]]:
+    rows = conn.execute(
+        """
+        SELECT
+          gcr.relation_type,
+          gcr.linked_goods_item_id,
+          gcr.note,
+          gcr.display_order,
+          gi.goods_name AS linked_goods_name,
+          gi.category AS linked_category
+        FROM goods_item_collectible_relation gcr
+        JOIN goods_item gi ON gi.id = gcr.linked_goods_item_id
+        WHERE gcr.goods_item_id = ?
+        ORDER BY gcr.display_order ASC, gcr.id ASC
+        """,
+        (int(goods_item_id),),
+    ).fetchall()
+    row_dicts = [dict(row) for row in rows]
+    return [
+        {
+            "relation_type": str(row["relation_type"] or "").strip().upper(),
+            "direction": "OUTGOING",
+            "linked_goods_item_id": int(row["linked_goods_item_id"]),
+            "linked_goods_name": str(row.get("linked_goods_name") or "").strip() or f"goods_item_id={int(row['linked_goods_item_id'])}",
+            "linked_category": str(row.get("linked_category") or "").strip().upper() or None,
+            "note": str(row.get("note") or "").strip() or None,
+            "display_order": int(row.get("display_order") or 0),
+        }
+        for row in row_dicts
+    ]
+
+
 def _build_goods_item_with_mappings(conn: sqlite3.Connection, row: sqlite3.Row | dict[str, Any] | None) -> dict[str, Any] | None:
     if row is None:
         return None
@@ -8583,7 +8782,80 @@ def _build_goods_item_with_mappings(conn: sqlite3.Connection, row: sqlite3.Row |
     item["album_master_mappings"] = _list_goods_item_album_master_mappings_in_conn(conn, goods_item_id)
     item["artist_mappings"] = _list_goods_item_artist_mappings_in_conn(conn, goods_item_id)
     item["label_mappings"] = _list_goods_item_label_mappings_in_conn(conn, goods_item_id)
+    item["collectible_relations"] = _list_goods_item_collectible_relations_in_conn(conn, goods_item_id)
+    item["collectible_relation_count"] = len(item["collectible_relations"])
+    item["relation_badges"] = [
+        relation_type
+        for relation_type in dict.fromkeys(
+            str(row.get("relation_type") or "").strip().upper()
+            for row in item["collectible_relations"]
+            if str(row.get("relation_type") or "").strip()
+        )
+    ]
+    item["collectible_relation_preview"] = item["collectible_relations"][:2]
     return item
+
+
+def _replace_goods_item_collectible_relations_in_conn(
+    conn: sqlite3.Connection,
+    goods_item_id: int,
+    *,
+    relations: list[dict[str, Any]],
+) -> None:
+    item_id = int(goods_item_id or 0)
+    if item_id <= 0:
+        raise ValueError("goods_item_id must be positive")
+    now = utc_now_iso()
+    normalized: list[tuple[str, int, str | None, int]] = []
+    seen: set[tuple[str, int]] = set()
+    linked_ids: set[int] = set()
+    for index, row in enumerate(relations):
+        relation_type = _normalize_goods_relation_type_value(row.get("relation_type"))
+        linked_goods_item_id = int(row.get("linked_goods_item_id") or 0)
+        if linked_goods_item_id <= 0:
+            continue
+        if linked_goods_item_id == item_id:
+            raise ValueError("collectible relation cannot target itself")
+        key = (relation_type, linked_goods_item_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        linked_ids.add(linked_goods_item_id)
+        normalized.append(
+            (
+                relation_type,
+                linked_goods_item_id,
+                _normalize_goods_mapping_text(row.get("note")) or None,
+                int(row.get("display_order") if row.get("display_order") is not None else index),
+            )
+        )
+    if linked_ids:
+        placeholders = ", ".join("?" for _ in linked_ids)
+        rows = conn.execute(
+            f"SELECT id FROM goods_item WHERE id IN ({placeholders})",
+            tuple(sorted(linked_ids)),
+        ).fetchall()
+        found_ids = {int(row["id"]) for row in rows}
+        missing_ids = [target_id for target_id in sorted(linked_ids) if target_id not in found_ids]
+        if missing_ids:
+            raise ValueError(f"linked goods items not found: {', '.join(str(target_id) for target_id in missing_ids)}")
+
+    conn.execute("DELETE FROM goods_item_collectible_relation WHERE goods_item_id = ?", (item_id,))
+    for relation_type, linked_goods_item_id, note, display_order in normalized:
+        conn.execute(
+            """
+            INSERT INTO goods_item_collectible_relation (
+              goods_item_id,
+              relation_type,
+              linked_goods_item_id,
+              note,
+              display_order,
+              created_at,
+              updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (item_id, relation_type, linked_goods_item_id, note, display_order, now, now),
+        )
 
 
 def _replace_goods_item_mappings_in_conn(
@@ -8828,6 +9100,52 @@ def replace_goods_item_mappings(goods_item_id: int, payload: dict[str, Any]) -> 
         return _build_goods_item_with_mappings(conn, row)
 
 
+def replace_goods_item_collectible_relations(goods_item_id: int, payload: dict[str, Any]) -> dict[str, Any] | None:
+    item_id = int(goods_item_id or 0)
+    if item_id <= 0:
+        raise ValueError("goods_item_id must be positive")
+    with get_conn() as conn:
+        existing = conn.execute("SELECT id FROM goods_item WHERE id = ?", (item_id,)).fetchone()
+        if existing is None:
+            return None
+        _replace_goods_item_collectible_relations_in_conn(
+            conn,
+            item_id,
+            relations=[dict(row or {}) for row in payload.get("relations") or []],
+        )
+        row = conn.execute(f"{_goods_item_select_query()} WHERE gi.id = ?", (item_id,)).fetchone()
+        return _build_goods_item_with_mappings(conn, row)
+
+
+def search_goods_collectible_targets(
+    *,
+    query_text: str | None = None,
+    goods_item_id: int | None = None,
+    limit: int = 12,
+) -> list[dict[str, Any]]:
+    query = str(query_text or "").strip()
+    exclude_id = int(goods_item_id or 0) if goods_item_id not in (None, "") else 0
+    where_sql, params = _build_goods_search_where(query_text=query)
+    clauses: list[str] = []
+    if where_sql:
+        clauses.append(where_sql.replace(" WHERE ", "", 1))
+    if exclude_id > 0:
+        clauses.append("gi.id <> ?")
+        params.append(exclude_id)
+    final_where_sql = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+    with get_conn() as conn:
+        rows = conn.execute(
+            f"""
+            {_goods_item_select_query()}
+            {final_where_sql}
+            ORDER BY LOWER(COALESCE(gi.goods_name, '')) ASC, gi.id ASC
+            LIMIT ?
+            """,
+            tuple(params) + (int(limit),),
+        ).fetchall()
+    return [_normalize_goods_item_row(dict(row)) for row in rows]
+
+
 def _build_goods_search_where(
     *,
     query_text: str | None = None,
@@ -8839,6 +9157,8 @@ def _build_goods_search_where(
     label_name: str | None = None,
     storage_slot_id: int | None = None,
     linked_state: str = "ANY",
+    collectible_relation_state: str = "ANY",
+    collectible_relation_type: str | None = None,
 ) -> tuple[str, list[Any]]:
     clauses: list[str] = []
     params: list[Any] = []
@@ -8902,6 +9222,21 @@ def _build_goods_search_where(
             "EXISTS (SELECT 1 FROM goods_item_label_map glm WHERE glm.goods_item_id = gi.id)"
             ")"
         )
+    relation_state_u = str(collectible_relation_state or "ANY").strip().upper() or "ANY"
+    if relation_state_u == "LINKED":
+        clauses.append(
+            "EXISTS (SELECT 1 FROM goods_item_collectible_relation gcr WHERE gcr.goods_item_id = gi.id)"
+        )
+    elif relation_state_u == "UNLINKED":
+        clauses.append(
+            "NOT EXISTS (SELECT 1 FROM goods_item_collectible_relation gcr WHERE gcr.goods_item_id = gi.id)"
+        )
+    relation_type_value = str(collectible_relation_type or "").strip().upper()
+    if relation_type_value:
+        clauses.append(
+            "EXISTS (SELECT 1 FROM goods_item_collectible_relation gcr WHERE gcr.goods_item_id = gi.id AND gcr.relation_type = ?)"
+        )
+        params.append(_normalize_goods_relation_type_value(relation_type_value))
     return (" WHERE " + " AND ".join(clauses)) if clauses else "", params
 
 
@@ -8916,6 +9251,8 @@ def count_goods_items(
     label_name: str | None = None,
     storage_slot_id: int | None = None,
     linked_state: str = "ANY",
+    collectible_relation_state: str = "ANY",
+    collectible_relation_type: str | None = None,
 ) -> int:
     where_sql, params = _build_goods_search_where(
         query_text=query_text,
@@ -8927,6 +9264,8 @@ def count_goods_items(
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,
+        collectible_relation_state=collectible_relation_state,
+        collectible_relation_type=collectible_relation_type,
     )
     with get_conn() as conn:
         row = conn.execute(
@@ -8947,6 +9286,8 @@ def search_goods_items(
     label_name: str | None = None,
     storage_slot_id: int | None = None,
     linked_state: str = "ANY",
+    collectible_relation_state: str = "ANY",
+    collectible_relation_type: str | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
@@ -8960,6 +9301,8 @@ def search_goods_items(
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,
+        collectible_relation_state=collectible_relation_state,
+        collectible_relation_type=collectible_relation_type,
     )
     with get_conn() as conn:
         rows = conn.execute(

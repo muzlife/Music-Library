@@ -1,30 +1,44 @@
 # Music Library Management Console
 
-Internal console focused on library management: metadata editing, placement operations, and source enrichment in one workflow.
+음반/굿즈 라이브러리 운영을 위한 내부 관리 콘솔입니다.  
+한 저장소 안에서 `등록`, `메타 보강`, `마스터 정리`, `장식장 배치`, `예외 처리`, `백업/복구`까지 이어지는 운영 흐름을 다룹니다.
 
-## Core Management Workflows
+## 현재 기준 문서
 
-- Media search, manage, and register flows for owned items.
-- Cabinet/slot placement workflow with operational dashboard views.
-- Source enrichment and candidate replacement (Discogs, ManiaDB, Aladin).
+- 운영 매뉴얼: [docs/management_tool_manual.md](/Volumes/Works/07.hahahoho/docs/management_tool_manual.md)
+- 운영자용 ERD 요약: [docs/library_erd_operator.md](/Volumes/Works/07.hahahoho/docs/library_erd_operator.md)
+- 개발자용 ERD 상세: [docs/library_erd.md](/Volumes/Works/07.hahahoho/docs/library_erd.md)
+- 구매 내역 수입 가이드: [docs/purchase_mail_import.md](/Volumes/Works/07.hahahoho/docs/purchase_mail_import.md)
+- 상용화 체크리스트: [docs/go_live_checklist.md](/Volumes/Works/07.hahahoho/docs/go_live_checklist.md)
+- macOS QA/운영 런북: [docs/macos_qa_prod_runbook.md](/Volumes/Works/07.hahahoho/docs/macos_qa_prod_runbook.md)
+- CSV 샘플: [docs/csv_import_sample.csv](/Volumes/Works/07.hahahoho/docs/csv_import_sample.csv)
+- QA 마스터 시트: [docs/qa/qa_master_sheet.csv](/Volumes/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
+  배포 게이트, 기능 도메인 QA, 수동 증적을 함께 추적하는 단일 기준 문서
 
-## Data & Quality Operations
+## 화면별 역할
 
-- Master grouping and metadata correction.
-- Exception handling for missing fields or source mismatches.
-- Consistent QA vs Production separation to protect data integrity.
+- `대시보드`
+  실제 장식장/칸 배치 운영, 이동, 복구
+- `운영 홈`
+  현장 조회, 요청곡 응대, 현재/직전 위치 확인
+- `검색/관리`
+  보유 상품 상세 수정, 마스터 연결 상태 확인
+- `소스 보강`
+  Discogs, ManiaDB, Aladin 기반 메타 보강
+- `등록/수집`
+  간편 등록, 구매 내역 수입, CSV 대량 입력, 마스터 정리
+- `운영/연계`
+  구조 관리, 예외 큐, 계정, 백업/복원, 메타 동기화
 
-## Ops Notes (Minimal)
+## 문서 구조
 
-- Services are intended to auto-start via macOS `launchd`.
-- Cloudflare tunnel templates live under `deploy/templates/cloudflare/`.
-- Use separate runtime paths per environment (QA vs Production).
+- `docs/`
+  현재 운영 기준 문서와 앱이 직접 링크하는 산출물
+- `docs/qa/`
+  단일 QA 기준 시트와 배포/검증 증적
+- `docs/superpowers/specs/`
+  설계 기록
+- `docs/superpowers/plans/`
+  구현 계획 기록
 
-## Quick Links
-
-- Management Tool Manual: `docs/management_tool_manual.md`
-- macOS QA/Prod Runbook: `docs/macos_qa_prod_runbook.md`
-- ERD Summary: `docs/library_erd_operator.md`
-- ERD Detail: `docs/library_erd.md`
-- Go-live Checklist: `docs/go_live_checklist.md`
-- Purchase Mail Import: `docs/purchase_mail_import.md`
+`docs/superpowers/*`는 개발 이력 보관용입니다. 운영자가 바로 참고해야 하는 최종 문서는 `docs/`와 `docs/qa/`를 기준으로 봅니다.

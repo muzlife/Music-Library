@@ -205,6 +205,29 @@ def test_search_operator_catalog_keeps_individual_cabinet_display_even_when_grou
     assert rows[0]["current_slot_display_name"] == "가요장 B / 01열 / 01칸"
 
 
+def test_search_operator_catalog_matches_exact_label_id(isolated_operator_search_db):
+    owned_item_id = db.insert_owned_item(
+        {
+            "category": "LP",
+            "quantity": 1,
+            "size_group": "LP",
+            "status": "IN_COLLECTION",
+            "item_name_override": "Label Probe Album",
+            "music_detail": {
+                "format_name": "LP",
+                "artist_or_brand": "Label Probe Artist",
+                "label_name": "Label Probe",
+                "catalog_no": "LABEL-001",
+                "barcode": "8800000099991",
+            },
+        }
+    )
+
+    rows = db.search_operator_catalog("LP-000001", limit=5)
+
+    assert [int(row["id"]) for row in rows] == [owned_item_id]
+
+
 def test_recent_move_flag_only_applies_within_one_day(isolated_operator_search_db):
     slot = db.upsert_storage_slot(
         cabinet_name="이동 테스트 장",

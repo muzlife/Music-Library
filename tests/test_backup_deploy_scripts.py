@@ -16,6 +16,7 @@ GCS_UPLOAD_SCRIPT = ROOT / "deploy" / "scripts" / "upload_backup_to_gcs.sh"
 DRIVE_MIRROR_SCRIPT = ROOT / "deploy" / "scripts" / "mirror_backup_to_drive.sh"
 QA_SYNC_SCRIPT = ROOT / "deploy" / "scripts" / "sync_prod_backup_to_qa.sh"
 BACKUP_STATUS_SCRIPT = ROOT / "deploy" / "scripts" / "backup_status.sh"
+CHECK_LIBRARY_STATUS_SCRIPT = ROOT / "scripts" / "check_library_status.sh"
 
 
 def _load_backup_ops_module():
@@ -425,3 +426,56 @@ def test_backup_status_reports_latest_daily_full_and_qa_sync(tmp_path: Path):
     assert payload["qa_sync"]["status"] in {"applied", "skipped"}
     assert payload["paths"]["prod_app_root"] == str(prod_root)
     assert payload["paths"]["qa_app_root"] == str(qa_root)
+
+
+def test_check_library_status_short_reports_normal_summary_and_scope_states(tmp_path: Path):
+    prod_root = _make_app_root(tmp_path / "prod", db_title="prod-status")
+    qa_root = _make_app_root(tmp_path / "qa", db_title="qa-status")
+
+    subprocess.run(
+        [str(DAILY_DB_SCRIPT), str(prod_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [str(WEEKLY_FULL_SCRIPT), str(prod_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [str(QA_SYNC_SCRIPT), str(prod_root / "runtime" / "backups" / "weekly-full"), str(qa_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, QA_SYNC_SKIP_RESTART="1", QA_SYNC_SKIP_VERIFY="1"),
+    )
+
+    result = subprocess.run(
+        [str(CHECK_LIBRARY_STATUS_SCRIPT), "--short", str(prod_root), str(qa_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "정상:" in result.stdout
+    assert "daily-db=" in result.stdout
+    assert "weekly-full=" in result.stdout
+    assert "qa-sync=" in result.stdout
+
+
+def test_check_library_status_warns_in_korean_when_backup_state_is_missing(tmp_path: Path):
+    prod_root = _make_app_root(tmp_path / "prod", db_title="prod-status")
+    qa_root = _make_app_root(tmp_path / "qa", db_title="qa-status")
+
+    result = subprocess.run(
+        [str(CHECK_LIBRARY_STATUS_SCRIPT), "--short", str(prod_root), str(qa_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "주의:" in result.stdout
+    assert "AFP/외장 마운트 지연" in result.stdout
+    assert "launchd 로그" in result.stdout

@@ -128,18 +128,18 @@
     }
 
     body[data-theme="day"] .shell-utility {
-      min-height: auto;
-      padding: 0;
+      min-height: 68px;
+      padding: 10px 12px;
       background: transparent;
     }
 
     body[data-theme="day"] .shell-utility-tools--meta {
-      padding-bottom: 0;
+      padding-bottom: 3px;
     }
 
     body[data-theme="day"] .shell-utility-main--actions {
-      border-top: 0;
-      padding-top: 0;
+      border-top: 1px solid color-mix(in srgb, var(--theme-shell-border) 72%, transparent);
+      padding-top: 5px;
     }
 
     body[data-theme="day"] .admin-shell-hero {
@@ -426,6 +426,37 @@
     body[data-theme="day"] .page-help-drawer-body .manual-block-note {
       border-color: rgba(98, 115, 133, 0.58);
       background: rgba(229, 236, 243, 0.994);
+    }
+
+    body[data-theme="day"] :is(.admin-console-shell, #homeDashboardCard.dashboard-console-shell, #registeredMasterMergeCard.registered-master-merge-console) .page-help-trigger {
+      border-color: rgba(103, 118, 135, 0.82);
+      background: rgba(242, 246, 250, 0.99);
+      color: #173043;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.42) inset,
+        0 2px 4px rgba(69, 85, 102, 0.1);
+    }
+
+    body[data-theme="day"] :is(.admin-console-shell, #homeDashboardCard.dashboard-console-shell, #registeredMasterMergeCard.registered-master-merge-console) .page-help-trigger:hover,
+    body[data-theme="day"] :is(.admin-console-shell, #homeDashboardCard.dashboard-console-shell, #registeredMasterMergeCard.registered-master-merge-console) .page-help-trigger:focus-visible {
+      border-color: rgba(111, 125, 140, 0.72);
+      background: rgba(236, 241, 246, 0.98);
+      color: #1c3448;
+      box-shadow: 0 0 0 1px rgba(21, 32, 43, 0.08) inset;
+    }
+
+    body[data-theme="day"] :is(.admin-console-shell, #homeDashboardCard.dashboard-console-shell, #registeredMasterMergeCard.registered-master-merge-console) :is(.help-dot, .section-help-dot) {
+      border-color: rgba(124, 138, 153, 0.56);
+      background: rgba(233, 239, 244, 0.98);
+      color: #3d5266;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset;
+    }
+
+    body[data-theme="day"] :is(.admin-console-shell, #homeDashboardCard.dashboard-console-shell, #registeredMasterMergeCard.registered-master-merge-console) :is(.help-dot:hover, .help-dot:focus, .section-help-dot:hover, .section-help-dot:focus) {
+      border-color: rgba(111, 125, 140, 0.72);
+      background: rgba(236, 241, 246, 0.98);
+      color: #1c3448;
+      box-shadow: 0 0 0 1px rgba(21, 32, 43, 0.08) inset;
     }
 
     body[data-theme="day"] .manual-block {
@@ -935,6 +966,7 @@
         rgba(224, 232, 240, 0.98),
         rgba(208, 219, 229, 0.99)
       );
+      padding: 0 18px 18px;
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.42),
         0 1px 0 rgba(255, 255, 255, 0.18);
@@ -1016,22 +1048,47 @@
     body[data-theme="day"] #tabCollectibles {
       background: linear-gradient(
         180deg,
-        rgba(192, 204, 216, 0.965),
-        rgba(181, 194, 207, 0.985)
+        rgba(184, 196, 208, 0.968),
+        rgba(173, 186, 199, 0.986)
       );
     }
 
+    body[data-theme="day"] #tabMedia.admin-console-shell > .card {
+      border-color: rgba(94, 112, 130, 0.62);
+      background: linear-gradient(
+        180deg,
+        rgba(234, 240, 246, 0.996),
+        rgba(223, 231, 239, 0.992)
+      );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.46),
+        0 1px 0 rgba(122, 137, 154, 0.12);
+    }
+
+    body[data-theme="day"] :is(#tabMedia.admin-console-shell .goods-mode-tabs, #tabCollectibles .goods-mode-tabs) {
+      padding: 8px;
+      border: 1px solid rgba(101, 116, 132, 0.56);
+      background: linear-gradient(
+        180deg,
+        rgba(221, 229, 237, 0.994),
+        rgba(210, 220, 229, 0.988)
+      );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 1px 0 rgba(122, 137, 154, 0.1);
+    }
+
     body[data-theme="day"] #tabCollectibles .goods-shell.admin-console-shell {
-      --admin-console-panel-bg: rgba(244, 248, 252, 0.996);
-      --admin-console-panel-bg-2: rgba(223, 231, 239, 0.992);
+      --admin-console-panel-bg: rgba(234, 240, 246, 0.996);
+      --admin-console-panel-bg-2: rgba(214, 223, 232, 0.992);
       --admin-console-panel-border: rgba(94, 112, 130, 0.62);
       --admin-console-text: #203548;
       --admin-console-text-muted: #41586d;
       --admin-console-text-meta: #5a7187;
       background: linear-gradient(
         180deg,
-        rgba(244, 248, 252, 0.996),
-        rgba(232, 239, 246, 0.992)
+        rgba(234, 240, 246, 0.996),
+        rgba(223, 231, 239, 0.992)
       );
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.46),
@@ -1042,8 +1099,8 @@
       border-color: rgba(94, 112, 130, 0.62);
       background: linear-gradient(
         180deg,
-        rgba(244, 248, 252, 0.996),
-        rgba(232, 239, 246, 0.992)
+        rgba(234, 240, 246, 0.996),
+        rgba(223, 231, 239, 0.992)
       );
       color: #203548;
       box-shadow:
@@ -1053,7 +1110,7 @@
 
     body[data-theme="day"] #tabCollectibles :is(.goods-map-section, .goods-target-row, .goods-result-item) {
       border-color: rgba(98, 115, 133, 0.58);
-      background: rgba(223, 231, 239, 0.992);
+      background: rgba(214, 223, 232, 0.992);
       color: #203548;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
     }
@@ -1089,8 +1146,8 @@
     body[data-theme="day"] #tabSearch .admin-console-grid {
       background: linear-gradient(
         180deg,
-        rgba(192, 204, 216, 0.965),
-        rgba(181, 194, 207, 0.985)
+        rgba(184, 196, 208, 0.968),
+        rgba(173, 186, 199, 0.986)
       );
     }
 
@@ -1098,8 +1155,8 @@
       border-color: rgba(94, 112, 130, 0.62);
       background: linear-gradient(
         180deg,
-        rgba(244, 248, 252, 0.996),
-        rgba(232, 239, 246, 0.992)
+        rgba(234, 240, 246, 0.996),
+        rgba(223, 231, 239, 0.992)
       );
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.46),
@@ -1108,7 +1165,7 @@
 
     body[data-theme="day"] #tabSearch .admin-console-grid :is(.manual-block, .result-list, .table-wrap, .status, .compact-line, .music-box, .meta-search-box, .home-manage-secondary-block) {
       border-color: rgba(98, 115, 133, 0.58);
-      background: rgba(223, 231, 239, 0.992);
+      background: rgba(214, 223, 232, 0.992);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
     }
 
@@ -1144,8 +1201,8 @@
       border-color: rgba(88, 106, 124, 0.68);
       background: linear-gradient(
         180deg,
-        rgba(240, 245, 250, 0.996),
-        rgba(226, 234, 242, 0.992)
+        rgba(230, 237, 244, 0.996),
+        rgba(220, 228, 236, 0.992)
       );
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.52),
@@ -1154,7 +1211,7 @@
 
     body[data-theme="day"] #tabSearch :is(.ops-plugin-section, .ops-artist-context-card, #adminSearchContextBody .operator-mini-card) {
       border-color: rgba(91, 109, 127, 0.64);
-      background: rgba(232, 238, 244, 0.994);
+      background: rgba(221, 229, 237, 0.994);
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.34),
         0 1px 0 rgba(116, 131, 147, 0.1);
@@ -1174,6 +1231,153 @@
       background: rgba(226, 233, 240, 0.994);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
       color: #40576b;
+    }
+
+    body[data-theme="day"] #tabSearch .page-help-trigger {
+      border-color: rgba(103, 118, 135, 0.82);
+      background: rgba(242, 246, 250, 0.99);
+      color: #173043;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.42) inset,
+        0 2px 4px rgba(69, 85, 102, 0.1);
+    }
+
+    body[data-theme="day"] #tabSearch .page-help-trigger:hover,
+    body[data-theme="day"] #tabSearch .page-help-trigger:focus-visible {
+      border-color: rgba(111, 125, 140, 0.72);
+      background: rgba(236, 241, 246, 0.98);
+      color: #1c3448;
+      box-shadow: 0 0 0 1px rgba(21, 32, 43, 0.08) inset;
+    }
+
+    body[data-theme="day"] #tabSearch :is(.help-dot, .section-help-dot) {
+      border-color: rgba(124, 138, 153, 0.56);
+      background: rgba(233, 239, 244, 0.98);
+      color: #3d5266;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset;
+    }
+
+    body[data-theme="day"] #tabSearch :is(.help-dot:hover, .help-dot:focus, .section-help-dot:hover, .section-help-dot:focus) {
+      border-color: rgba(111, 125, 140, 0.72);
+      background: rgba(236, 241, 246, 0.98);
+      color: #1c3448;
+      box-shadow: 0 0 0 1px rgba(21, 32, 43, 0.08) inset;
+    }
+
+    body[data-theme="day"] #tabSearch :is(.ops-library-context-head-copy, .ops-library-mini-map-head span, .ops-library-mini-map-floorcode, .ops-library-slot-preview-head span) {
+      color: #4b6175;
+    }
+
+    body[data-theme="day"] #tabSearch :is(.ops-library-context-head h3, .ops-library-mini-map-head strong, .ops-library-slot-preview-head strong, .ops-library-slot-preview-label) {
+      color: #163247;
+    }
+
+    body[data-theme="day"] #tabSearch :is(.ops-library-mini-map, .ops-library-slot-preview) {
+      border-color: rgba(91, 109, 127, 0.64);
+      background: linear-gradient(
+        180deg,
+        rgba(230, 237, 244, 0.996),
+        rgba(220, 228, 236, 0.992)
+      );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 1px 0 rgba(112, 128, 145, 0.08);
+    }
+
+    body[data-theme="day"] #tabSearch :is(.ops-library-mini-map-grid, .ops-library-slot-preview-grid) {
+      border: 1px solid rgba(102, 118, 135, 0.46);
+      background: rgba(223, 230, 237, 0.994);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-mini-map-grid {
+      padding: 8px;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-slot-preview-grid {
+      padding: 8px;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-mini-map-cell.tone-empty {
+      --tile-bg: rgba(222, 229, 236, 0.996);
+      --tile-border: rgba(110, 126, 143, 0.42);
+      --tile-fg: #617589;
+      --tile-count-fg: #55697d;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-mini-map-cell.tone-filled {
+      --tile-bg: rgba(213, 222, 230, 0.996);
+      --tile-border: rgba(104, 120, 137, 0.46);
+      --tile-fg: #294258;
+      --tile-count-fg: #42586e;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-mini-map-cell.tone-high {
+      --tile-bg: rgba(255, 241, 225, 0.998);
+      --tile-border: rgba(216, 135, 55, 0.46);
+      --tile-fg: #7c2d12;
+      --tile-count-fg: #b45309;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-mini-map-cell.tone-over {
+      --tile-bg: rgba(253, 232, 232, 0.998);
+      --tile-border: rgba(200, 92, 92, 0.42);
+      --tile-fg: #7f1d1d;
+      --tile-count-fg: #b91c1c;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-mini-map-cell.active {
+      background: rgba(220, 237, 246, 0.998);
+      box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.18);
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-mini-map-active-badge {
+      background: rgba(223, 238, 247, 0.998);
+      border-color: rgba(90, 143, 179, 0.28);
+      color: #2a5875;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-slot-preview-badge {
+      background: color-mix(in srgb, #c2410c 78%, white 22%);
+      color: #fff7ed;
+      box-shadow: none;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-slot-preview-format {
+      border-color: rgba(104, 120, 137, 0.48);
+      background: rgba(232, 238, 244, 0.996);
+      color: #263d52;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-slot-preview-thumb {
+      border-color: rgba(108, 124, 141, 0.42);
+      background: linear-gradient(
+        180deg,
+        rgba(230, 237, 244, 0.998),
+        rgba(220, 228, 236, 0.994)
+      );
+      color: #5a7084;
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-slot-preview-item.active {
+      background: rgba(212, 228, 238, 0.992);
+    }
+
+    body[data-theme="day"] #tabSearch .ops-library-slot-preview-label {
+      color: #284155;
+    }
+
+    body[data-theme="day"] #tabSearch :is(.ops-library-slot-preview-link, .operator-mini-linkchip) {
+      border-color: rgba(90, 143, 179, 0.28);
+      background: linear-gradient(
+        180deg,
+        rgba(244, 248, 252, 0.998),
+        rgba(232, 239, 246, 0.994)
+      );
+      color: #2a5875;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 1px 0 rgba(121, 136, 154, 0.1);
     }
 
     body[data-theme="day"] #tabSearch .result-item {
@@ -1759,15 +1963,15 @@
     }
 
     body[data-theme="day"][data-shell-density="compact"] .shell-utility {
-      min-height: auto;
+      min-height: 56px;
     }
 
     body[data-theme="day"][data-shell-density="compact"] .shell-utility-tools--meta {
-      padding-bottom: 0;
+      padding-bottom: 3px;
     }
 
     body[data-theme="day"][data-shell-density="compact"] .shell-utility-main--actions {
-      padding-top: 0;
+      padding-top: 3px;
     }
 
     body[data-theme="night"] .shell-theme-toggle-track {
@@ -12236,10 +12440,64 @@
         0 1px 0 rgba(122, 137, 154, 0.12) !important;
     }
 
-    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(.status, .compact-line, .inline-check, input:not([type="checkbox"]), select, textarea) {
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(.table-wrap, .status, .compact-line, .inline-check, input:not([type="checkbox"]), select, textarea) {
       border-color: rgba(98, 115, 133, 0.58) !important;
       background: rgba(223, 231, 239, 0.992) !important;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(th, td) {
+      border-bottom: 1px solid rgba(108, 124, 141, 0.32) !important;
+      color: #20384a !important;
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) th {
+      background: linear-gradient(
+        180deg,
+        rgba(214, 224, 234, 0.996),
+        rgba(198, 210, 222, 0.992)
+      ) !important;
+      color: #2d4760 !important;
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) tbody tr {
+      background: rgba(232, 238, 245, 0.994);
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(label, .mini, .muted) {
+      color: #4a6177 !important;
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(input:not([type="checkbox"]), select, textarea) {
+      color: #1b3346 !important;
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) :is(input:not([type="checkbox"]), textarea)::placeholder {
+      color: #657b91;
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) .btn.ghost {
+      border-color: rgba(103, 121, 139, 0.72) !important;
+      background: linear-gradient(
+        180deg,
+        rgba(249, 251, 253, 0.998),
+        rgba(236, 242, 247, 0.994)
+      ) !important;
+      color: #1f3648 !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    }
+
+    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) .btn:not(.ghost):not(.secondary) {
+      border-color: rgba(86, 125, 149, 0.64) !important;
+      background: linear-gradient(
+        180deg,
+        rgba(213, 232, 244, 0.998),
+        rgba(191, 217, 234, 0.994)
+      ) !important;
+      color: #14384d !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 1px 0 rgba(121, 136, 154, 0.12) !important;
     }
 
     body[data-theme="day"] #opsProviderPanel .ops-provider-group {
@@ -12292,6 +12550,20 @@
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
     }
 
+    body[data-theme="day"] :is(#opsCabinetPanel, #opsSlotPanel) :is(th, td) {
+      border-bottom: 1px solid rgba(108, 123, 140, 0.16) !important;
+    }
+
+    body[data-theme="day"] :is(#opsCabinetPanel, #opsSlotPanel) th {
+      background: linear-gradient(180deg, rgba(212, 221, 230, 0.998), rgba(198, 209, 220, 0.994)) !important;
+      color: #23384b !important;
+    }
+
+    body[data-theme="day"] :is(#opsCabinetPanel, #opsSlotPanel) td {
+      background: rgba(235, 241, 247, 0.996) !important;
+      color: #203649 !important;
+    }
+
     body[data-theme="day"] #tabManage .admin-console-main {
       border-color: rgba(94, 112, 130, 0.62);
       background: linear-gradient(
@@ -12313,6 +12585,42 @@
       );
     }
 
+    body[data-theme="day"] #tabRegister.admin-console-shell > .subtabs {
+      border-color: rgba(94, 112, 130, 0.62);
+      background: linear-gradient(
+        180deg,
+        rgba(244, 248, 252, 0.996),
+        rgba(232, 239, 246, 0.992)
+      );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.46),
+        0 1px 0 rgba(122, 137, 154, 0.12);
+    }
+
+    body[data-theme="day"] #tabRegister.admin-console-shell > .subtabs .subtab-btn {
+      border-color: rgba(103, 121, 139, 0.72);
+      background: linear-gradient(
+        180deg,
+        rgba(249, 251, 253, 0.998),
+        rgba(236, 242, 247, 0.994)
+      );
+      color: #1f3648;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    body[data-theme="day"] #tabRegister.admin-console-shell > .subtabs .subtab-btn.active {
+      border-color: rgba(86, 125, 149, 0.64);
+      background: linear-gradient(
+        180deg,
+        rgba(213, 232, 244, 0.998),
+        rgba(191, 217, 234, 0.994)
+      );
+      color: #14384d;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 1px 0 rgba(121, 136, 154, 0.12);
+    }
+
     body[data-theme="day"] :is(#registerCollectPanel .layout > .card, #registerPurchasePanel .layout > .card, #registerBatchPanel .layout > .card, #registerBatchPanel > .card, #registerMasterPanel > .card, #sourceWorkbenchCard.admin-console-shell) {
       border-color: rgba(94, 112, 130, 0.62);
       background: linear-gradient(
@@ -12323,6 +12631,80 @@
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.46),
         0 1px 0 rgba(122, 137, 154, 0.12);
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console {
+      border-color: rgba(94, 112, 130, 0.62);
+      background: linear-gradient(
+        180deg,
+        rgba(244, 248, 252, 0.996),
+        rgba(232, 239, 246, 0.992)
+      );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.46),
+        0 1px 0 rgba(122, 137, 154, 0.12);
+      color: #203548;
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console::before {
+      background: linear-gradient(
+        180deg,
+        rgba(244, 248, 252, 0.996),
+        rgba(232, 239, 246, 0.992)
+      );
+      opacity: 1;
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console :is(.registered-master-merge-commandbar, .registered-master-merge-results-panel, .registered-master-merge-workspace-panel, .registered-master-merge-log-panel) {
+      border-color: rgba(98, 115, 133, 0.58);
+      background: rgba(223, 231, 239, 0.992);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+      color: #203548;
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console .registered-master-merge-card {
+      border-color: rgba(98, 115, 133, 0.58);
+      background: linear-gradient(
+        180deg,
+        rgba(244, 248, 252, 0.996),
+        rgba(232, 239, 246, 0.992)
+      );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        0 1px 0 rgba(122, 137, 154, 0.08);
+      color: #203548;
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console :is(.sub, .mini, .muted, .registered-master-merge-meta, label, .result-head span) {
+      color: #41586d;
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console :is(h2, strong, .registered-master-merge-title) {
+      color: #203548;
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console :is(input, select) {
+      border-color: rgba(98, 115, 133, 0.58);
+      background: rgba(244, 248, 252, 0.996);
+      color: #203548;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console .registered-master-merge-commandbar-chip {
+      border-color: rgba(98, 115, 133, 0.58);
+      background: rgba(236, 242, 247, 0.996);
+      color: #41586d;
+    }
+
+    body[data-theme="day"] #registeredMasterMergeCard.registered-master-merge-console .btn {
+      border-color: rgba(103, 121, 139, 0.72);
+      background: linear-gradient(
+        180deg,
+        rgba(249, 251, 253, 0.998),
+        rgba(236, 242, 247, 0.994)
+      );
+      color: #1f3648;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
 
     body[data-theme="day"] :is(#tabRegister.admin-console-shell, #sourceWorkbenchCard.admin-console-shell) :is(.manual-block, .result-list, .table-wrap, .status, .compact-line, .ops-compact-extra-fields, .admin-barcode-intake-lookup-grid, .admin-barcode-intake-panel, .admin-barcode-candidate-summary, .admin-barcode-placement-item) {
@@ -13723,7 +14105,7 @@
       gap: 8px;
       min-width: 0;
       overflow-x: hidden;
-      padding: 0 18px;
+      padding: 0 18px 18px;
     }
 
     .dashboard-slot-grid-info {
@@ -34905,8 +35287,14 @@
 
     function syncMasterExceptionBanner() {
       const el = $("masterExceptionBanner");
-      if (!el) return;
+      const legacyCard = $("registerMasterLegacyCard");
       const count = masterOwnedPrefilledIds.size;
+      const showLegacyCard = count > 0 || (Array.isArray(masterOwnedItems) && masterOwnedItems.length > 0);
+      if (legacyCard) {
+        legacyCard.hidden = !showLegacyCard;
+        setDisplayMode(legacyCard, showLegacyCard ? "block" : "none");
+      }
+      if (!el) return;
       if (!count) {
         setDisplayMode(el, "none");
         el.textContent = "";

@@ -12,7 +12,9 @@ def read_index_html() -> str:
 def test_registered_master_merge_ui_elements_exist():
     html = read_index_html()
 
-    assert 'id="registerMasterLegacyCard" class="card" style="margin-top:14px;display:none;" hidden' in html
+    assert 'id="registerMasterLegacyCard"' in html
+    assert 'class="card u-mt-14 u-hidden-initial"' in html
+    assert 'id="registerMasterLegacyCard" class="card u-mt-14 u-hidden-initial" hidden' in html
     assert 'id="registeredMasterMergeQuery"' in html
     assert 'id="registeredMasterMergeSearchBtn"' in html
     assert 'id="registeredMasterMergeClearBtn"' in html
@@ -57,6 +59,28 @@ def test_registered_master_merge_console_has_scoped_workspace_responsive_rules()
     assert "@media (max-width: 720px) {" in html
     assert ".registered-master-merge-commandbar-meta {" in html
     assert ".registered-master-merge-console-grid {" in html
+
+
+def test_registered_master_merge_console_uses_hard_edge_high_contrast_surface_tokens():
+    html = read_index_html()
+
+    root_block = html.split("#registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
+    panel_block = html.split(".registered-master-merge-commandbar,\n    .registered-master-merge-results-panel,\n    .registered-master-merge-workspace-panel,\n    .registered-master-merge-log-panel {", 1)[1].split("}", 1)[0]
+    chip_block = html.split(".registered-master-merge-commandbar-chip {", 1)[1].split("}", 1)[0]
+    card_block = html.split(".registered-master-merge-card {", 1)[1].split("}", 1)[0]
+    text_token_block = html.split("#homeDashboardCard.dashboard-console-shell,\n    #registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
+    assert "border-radius: 0;" in root_block
+    assert "background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));" in root_block
+    assert "box-shadow: none;" in root_block
+    assert "border-radius: 0;" in panel_block
+    assert "background: rgba(18, 23, 29, 0.98);" in panel_block
+    assert "border-radius: 0;" in chip_block
+    assert "background: rgba(18, 23, 29, 0.98);" in chip_block
+    assert "border-radius: 0;" in card_block
+    assert "background: rgba(23, 29, 36, 0.98);" in card_block
+    assert "--console-text: var(--theme-dashboard-text);" in text_token_block
+    assert "--console-text-dim: var(--theme-dashboard-text-dim);" in text_token_block
+    assert "--console-text-muted: var(--theme-dashboard-text-muted);" in text_token_block
 
 
 def test_registered_master_merge_state_and_functions_exist():
