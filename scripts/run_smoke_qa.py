@@ -17,7 +17,14 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
-ROOT = Path('/Volumes/Works/07.hahahoho')
+def _resolve_root() -> Path:
+    raw = os.getenv('LIBRARY_PROJECT_ROOT', '').strip()
+    if raw:
+        return Path(raw).expanduser().resolve()
+    return Path(__file__).resolve().parents[1]
+
+
+ROOT = _resolve_root()
 ENV_PATH = ROOT / '.env.local'
 QA_CSV_PATH = ROOT / 'docs' / 'qa' / 'qa_master_sheet.csv'
 EXTERNAL_BASE_URL = 'https://qa-library.muzlife.com'

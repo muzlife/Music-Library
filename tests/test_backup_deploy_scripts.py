@@ -9,7 +9,7 @@ import zipfile
 from pathlib import Path
 
 
-ROOT = Path("/Volumes/Works/07.hahahoho")
+ROOT = Path(os.getenv("LIBRARY_PROJECT_ROOT") or Path(__file__).resolve().parents[1])
 DAILY_DB_SCRIPT = ROOT / "deploy" / "scripts" / "backup_daily_db.sh"
 WEEKLY_FULL_SCRIPT = ROOT / "deploy" / "scripts" / "backup_weekly_full.sh"
 GCS_UPLOAD_SCRIPT = ROOT / "deploy" / "scripts" / "upload_backup_to_gcs.sh"

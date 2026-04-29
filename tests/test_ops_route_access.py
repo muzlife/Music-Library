@@ -4216,6 +4216,10 @@ def test_startup_db_ready_recreates_collectibles_tables_for_existing_db(monkeypa
     conn.execute("DROP TABLE IF EXISTS goods_item_artist_map")
     conn.execute("DROP TABLE IF EXISTS goods_item_label_map")
     conn.execute("DROP TABLE IF EXISTS goods_item")
+    # Simulating a pre-versioning install also requires rewinding user_version,
+    # otherwise ensure_startup_db_ready takes the fast path and skips the
+    # legacy idempotent migration that recreates these tables.
+    conn.execute("PRAGMA user_version = 0")
     conn.commit()
     conn.close()
 
@@ -4293,6 +4297,10 @@ def test_startup_db_ready_migrates_purchase_import_queue_vendor_check_for_yes24(
             )
             """
         )
+        # Pre-versioning install simulation: rewind user_version so the
+        # next ensure_startup_db_ready takes the slow path and migrates
+        # the vendor_code CHECK constraint.
+        conn.execute("PRAGMA user_version = 0")
         conn.commit()
     finally:
         conn.close()
