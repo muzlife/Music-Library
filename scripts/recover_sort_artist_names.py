@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 from pathlib import Path
@@ -10,7 +11,15 @@ from typing import Any
 
 import httpx
 
-ROOT = Path("/Volumes/Works/07.hahahoho")
+
+def _resolve_root() -> Path:
+    raw = os.getenv("LIBRARY_PROJECT_ROOT", "").strip()
+    if raw:
+        return Path(raw).expanduser().resolve()
+    return Path(__file__).resolve().parents[1]
+
+
+ROOT = _resolve_root()
 ENV_PATH = ROOT / ".env.local"
 DEFAULT_BASE_URL = "https://library.muzlife.com"
 

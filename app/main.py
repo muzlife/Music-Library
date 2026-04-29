@@ -27,6 +27,7 @@ import base64
 import hashlib
 import hmac
 import zipfile
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -46,32 +47,9 @@ from . import db
 from . import schemas as schemas_module
 from .config import get_settings
 from .schemas import (
-    AlbumMasterBindRequest,
-    AlbumMasterBindResponse,
-    AlbumMasterCorrectionUpdateRequest,
-    AlbumMasterCorrectionUpdateResponse,
-    AlbumMasterDeleteResponse,
-    AlbumMasterDuplicateCheckResponse,
-    AlbumMasterDuplicateItem,
-    AlbumMasterImportCreatedItem,
-    AlbumMasterImportSkippedItem,
     AlbumMasterImportVariantsRequest,
-    AlbumMasterImportVariantsResponse,
     AlbumMasterListItem,
-    AlbumMasterMergeHistoryItem,
-    AlbumMasterMergeRequest,
-    AlbumMasterMergeRollbackResponse,
-    AlbumMasterMergeResponse,
-    AlbumMasterSearchRequest,
-    AlbumMasterSearchResponse,
-    AlbumMasterSortArtistUpdateRequest,
-    AlbumMasterSortArtistUpdateResponse,
     AlbumMasterVariantItem,
-    AlbumMasterVariantsResponse,
-    AuthAccountCreateRequest,
-    AuthAccountItem,
-    AuthAccountListResponse,
-    AuthAccountUpdateRequest,
     ArtistContextRequest,
     ArtistContextResponse,
     BarcodeIngestRequest,
@@ -106,9 +84,7 @@ from .schemas import (
     AudioDirectoryMappingListResponse,
     AutoBackupSettingsResponse,
     AutoBackupSettingsUpdateRequest,
-    DigitalLinkCreate,
     DatabaseRestoreResponse,
-    DigitalLinkCreateResponse,
     GoodsCategory,
     GoodsItemAlbumMasterMapping,
     GoodsItemCollectibleRelation,
@@ -123,7 +99,6 @@ from .schemas import (
     GoodsStatus,
     DomainCode,
     OrderMoveRequest,
-    OrderMoveResponse,
     SlotOrderMoveResponse,
     MetadataSyncItemResult,
     MetadataProviderConnectionTestResponse,
@@ -133,42 +108,19 @@ from .schemas import (
     MetadataSyncRunResponse,
     MetadataSyncStatusResponse,
     MusicDetailCreate,
-    OwnedAlbumShelfWindowResponse,
-    OwnedItemDeleteResponse,
-    OwnedItemDuplicateRequest,
-    OwnedItemDuplicateResponse,
-    OwnedItemDetailResponse,
-    RelatedAlbumVersionsResponse,
     OwnedItemCreate,
     OwnedItemCreateResponse,
-    OwnedItemAutoMasterResponse,
-    OwnedItemBulkUpdateRequest,
-    OwnedItemBulkUpdateResponse,
     OwnedItemListItem,
-    OwnedItemLocationRecommendationCandidateSlot,
-    OwnedItemLocationRecommendationItem,
-    OwnedItemLocationRecommendationRequest,
-    OwnedItemSourceReplaceBulkRequest,
-    OwnedItemSourceReplaceBulkResponse,
-    OwnedItemSourceReplaceResult,
     OperatorCatalogSearchItem,
     OperatorCatalogSearchResponse,
     OfficeClimateResponse,
     OpsHomeFeedResponse,
     OpsHomeRecentItem,
     OpsHomeRecentSectionsResponse,
-    PurchaseImportListResponse,
     PurchaseImportPreviewItem,
     PurchaseImportPreviewRequest,
-    PurchaseImportPreviewResponse,
     PurchaseImportCreateResponse,
-    PurchaseImportCandidateCreateRequest,
-    PurchaseImportCandidateSearchResponse,
     PurchaseImportQueueItem,
-    PurchaseImportSaveRequest,
-    PurchaseImportSaveResponse,
-    PurchaseImportStatus,
-    PurchaseImportVendor,
     PurchaseImportWebhookRequest,
     QueryIngestRequest,
     QueryIngestResponse,
@@ -178,26 +130,19 @@ from .schemas import (
     StorageCabinetRegisterResponse,
     StorageSlotItem,
     StorageSlotUpsertRequest,
-    SlotUpdateRequest,
-    SlotUpdateResponse,
-    TrackMappedAssetItem,
     TrackMappingBulkFromDirRequest,
     TrackMappingBulkFromDirResponse,
     TrackMappingBulkMappedItem,
-    TrackMappingCreateRequest,
-    TrackMappingCreateResponse,
-    TrackMappingItem,
-    TrackMappingListResponse,
     TrackMappingManualAssignRequest,
     TrackMappingManualAssignResponse,
     UiImageUploadResponse,
-    SourceLinkState,
 )
 from .services import artist_context as artist_context_service
 from .services.matcher import MatchResult, classify_candidate, compose_query, validate_row_for_ingest
 from .services.providers import (
     discogs_add_release_to_collection,
     discogs_identity,
+    has_default_user_agent_placeholder,
     infer_domain_code,
     get_source_release_snapshot,
     get_album_master_variants,
@@ -261,8 +206,38 @@ class ProductGroupCreateRequest(BaseModel):
     description: str | None = None
 
 
-app = FastAPI(title="Hahahoho Library API", version="0.1.0")
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """App lifespan handler.
+
+    Replaces the deprecated `@app.on_event("startup"/"shutdown")` pattern.
+    The body references names defined later in this module — that's fine
+    because lifespan only fires after the entire module has loaded, by
+    which time all the worker globals (`METADATA_SYNC_*`, `AUTO_BACKUP_*`,
+    `_start_*_worker`) are bound.
+    """
+    db.ensure_startup_db_ready()
+    _seed_system_accounts()
+    if has_default_user_agent_placeholder():
+        logger.warning(
+            "DISCOGS_USER_AGENT/MUSICBRAINZ_USER_AGENT still contain the example "
+            "'your-email@example.com' placeholder. Discogs and MusicBrainz both "
+            "require a real contact in the User-Agent; update .env.local before "
+            "running metadata sync against production traffic.",
+        )
+    _start_metadata_sync_worker()
+    _start_auto_backup_worker()
+    try:
+        yield
+    finally:
+        METADATA_SYNC_STOP_EVENT.set()
+        AUTO_BACKUP_STOP_EVENT.set()
+
+
+app = FastAPI(title="Hahahoho Library API", version="0.1.0", lifespan=lifespan)
 OWNED_ITEM_SAVE_SLOW_SEC = float(os.getenv("OWNED_ITEM_SAVE_SLOW_SEC", "0.7"))
 MUSIC_CATEGORIES = {"LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"}
 DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"}
@@ -287,10 +262,32 @@ LABEL_PREFIX_BY_CATEGORY = {
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 IMAGE_UPLOAD_DIR = STATIC_DIR / "uploads"
 LOGIN_PAGE_PATH = STATIC_DIR / "login.html"
-AUTH_COOKIE_NAME = "hahahoho_session"
-AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 14
-AUTH_ROLE_ADMIN = "ADMIN"
-AUTH_ROLE_OPERATOR = "OPERATOR"
+from .security import (
+    AUTH_COOKIE_MAX_AGE,
+    AUTH_COOKIE_NAME,
+    AUTH_ROLE_ADMIN,
+    AUTH_ROLE_OPERATOR,
+    _auth_accounts,
+    _auth_cookie_signature,
+    _auth_cookie_value,
+    _auth_enabled,
+    _db_auth_accounts,
+    _env_seed_account_candidates,
+    _extra_operator_accounts,
+    _hash_auth_password,
+    _is_admin_role,
+    _is_authenticated,
+    _is_html_request,
+    _is_operator_role,
+    _match_auth_account,
+    _read_auth_role,
+    _read_auth_session_data,
+    _read_auth_username,
+    _require_admin_request,
+    _require_authenticated_request,
+    _seed_system_accounts,
+    _verify_auth_password,
+)
 ALLOWED_IMAGE_EXTENSIONS = {
     ".jpg",
     ".jpeg",
@@ -324,16 +321,38 @@ AUTO_BACKUP_STOP_EVENT = threading.Event()
 AUTO_BACKUP_THREAD: threading.Thread | None = None
 LAUNCHD_LOG_DIR = Path.home() / "Library" / "Logs" / "hahahoho-library"
 LAUNCHD_ERR_LOG_PATH = LAUNCHD_LOG_DIR / "library.err.log"
-PROJECT_LAUNCHD_ERR_LOG_PATH = Path("/Volumes/Works/07.hahahoho/logs/launchd/library.err.log")
-PROJECT_QA_MASTER_SHEET_PATH = Path("/Volumes/Works/07.hahahoho/docs/qa/qa_master_sheet.csv")
-PROJECT_QA_MANUAL_SHEET_PATH = Path("/Volumes/Works/07.hahahoho/docs/qa/qa_manual_remaining.csv")
-PROJECT_ERD_SUMMARY_PATH = Path("/Volumes/Works/07.hahahoho/docs/library_erd_operator.md")
-PROJECT_ERD_DETAIL_PATH = Path("/Volumes/Works/07.hahahoho/docs/library_erd.md")
-PROJECT_TOOL_MANUAL_PATH = Path("/Volumes/Works/07.hahahoho/docs/management_tool_manual.md")
-PROJECT_GO_LIVE_CHECKLIST_PATH = Path("/Volumes/Works/07.hahahoho/docs/go_live_checklist.md")
-PROJECT_PURCHASE_IMPORT_GUIDE_PATH = Path("/Volumes/Works/07.hahahoho/docs/purchase_mail_import.md")
-PROJECT_CSV_IMPORT_SAMPLE_PATH = Path("/Volumes/Works/07.hahahoho/docs/csv_import_sample.csv")
-DISCOGS_COVER_PREVIEW_CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "discogs_cover_preview_cache"
+
+
+def _resolve_project_root() -> Path:
+    """Resolve the workspace project root.
+
+    Resolution order:
+      1. Explicit `LIBRARY_PROJECT_ROOT` env var (preferred for QA/Prod).
+      2. The directory two levels above this file (works for in-repo runs).
+
+    The repo used to embed `/Volumes/Works/07.hahahoho` as a literal in nine
+    places. That made the same code break on a teammate's laptop, on a
+    runtime that mounted the repo elsewhere, or inside CI. Anchoring on a
+    single env var keeps QA/Prod overridable while keeping the local dev
+    flow zero-config.
+    """
+    raw = os.getenv("LIBRARY_PROJECT_ROOT", "").strip()
+    if raw:
+        return Path(raw).expanduser().resolve()
+    return Path(__file__).resolve().parents[1]
+
+
+PROJECT_ROOT = _resolve_project_root()
+PROJECT_LAUNCHD_ERR_LOG_PATH = PROJECT_ROOT / "logs" / "launchd" / "library.err.log"
+PROJECT_QA_MASTER_SHEET_PATH = PROJECT_ROOT / "docs" / "qa" / "qa_master_sheet.csv"
+PROJECT_QA_MANUAL_SHEET_PATH = PROJECT_ROOT / "docs" / "qa" / "qa_manual_remaining.csv"
+PROJECT_ERD_SUMMARY_PATH = PROJECT_ROOT / "docs" / "library_erd_operator.md"
+PROJECT_ERD_DETAIL_PATH = PROJECT_ROOT / "docs" / "library_erd.md"
+PROJECT_TOOL_MANUAL_PATH = PROJECT_ROOT / "docs" / "management_tool_manual.md"
+PROJECT_GO_LIVE_CHECKLIST_PATH = PROJECT_ROOT / "docs" / "go_live_checklist.md"
+PROJECT_PURCHASE_IMPORT_GUIDE_PATH = PROJECT_ROOT / "docs" / "purchase_mail_import.md"
+PROJECT_CSV_IMPORT_SAMPLE_PATH = PROJECT_ROOT / "docs" / "csv_import_sample.csv"
+DISCOGS_COVER_PREVIEW_CACHE_DIR = PROJECT_ROOT / "data" / "discogs_cover_preview_cache"
 HTML_NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
@@ -353,185 +372,14 @@ _SEOUL_WEATHER_CACHE: dict[str, Any] | None = None
 app.mount("/ui-static", StaticFiles(directory=STATIC_DIR), name="ui-static")
 
 
-def _auth_enabled() -> bool:
-    accounts = _auth_accounts()
-    return bool(accounts)
+# Domain routers extracted from this file. New domains should land in
+# app/api/<name>.py and be wired below — keep this list short and
+# alphabetised so reviewers can spot duplicates.
+from .api.admin_auth_accounts import router as admin_auth_accounts_router  # noqa: E402
+from .api.auth import router as auth_router  # noqa: E402  (must follow `app` definition)
 
-
-def _extra_operator_accounts() -> list[tuple[str, str]]:
-    raw = str(settings.auth_operator_accounts_raw or "").strip()
-    if not raw:
-        return []
-    accounts: list[tuple[str, str]] = []
-    for chunk in raw.split(","):
-        text = str(chunk or "").strip()
-        if not text or ":" not in text:
-            continue
-        username, password = text.split(":", 1)
-        username = username.strip()
-        password = password.strip()
-        if username and password:
-            accounts.append((username, password))
-    return accounts
-
-
-def _db_auth_accounts() -> list[dict[str, str]]:
-    rows = db.list_auth_accounts()
-    out: list[dict[str, str]] = []
-    for row in rows:
-        if not bool(row.get("is_active")):
-            continue
-        username = str(row.get("username") or "").strip()
-        password_hash = str(row.get("password_hash") or "").strip()
-        role = str(row.get("role") or "").strip().upper()
-        if username and password_hash and role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
-            out.append({"username": username, "password_hash": password_hash, "role": role})
-    return out
-
-
-def _hash_auth_password(password: str) -> str:
-    iterations = 200_000
-    salt = secrets.token_bytes(16)
-    digest = hashlib.pbkdf2_hmac("sha256", str(password or "").encode("utf-8"), salt, iterations)
-    return "pbkdf2_sha256${}${}${}".format(
-        iterations,
-        base64.urlsafe_b64encode(salt).decode("ascii").rstrip("="),
-        base64.urlsafe_b64encode(digest).decode("ascii").rstrip("="),
-    )
-
-
-def _verify_auth_password(password: str, encoded: str) -> bool:
-    raw = str(encoded or "").strip()
-    if not raw:
-        return False
-    if not raw.startswith("pbkdf2_sha256$"):
-        return secrets.compare_digest(str(password or ""), raw)
-    try:
-        _, iterations_text, salt_text, digest_text = raw.split("$", 3)
-        iterations = int(iterations_text)
-        salt = base64.urlsafe_b64decode(salt_text + "=" * (-len(salt_text) % 4))
-        expected = base64.urlsafe_b64decode(digest_text + "=" * (-len(digest_text) % 4))
-    except Exception:
-        return False
-    actual = hashlib.pbkdf2_hmac("sha256", str(password or "").encode("utf-8"), salt, iterations)
-    return secrets.compare_digest(actual, expected)
-
-
-def _auth_accounts() -> dict[str, dict[str, str]]:
-    accounts: dict[str, dict[str, str]] = {}
-    admin_username = str(settings.auth_admin_username or "").strip()
-    admin_password = str(settings.auth_admin_password or "")
-    if admin_username and admin_password:
-        accounts[admin_username] = {"password": admin_password, "role": AUTH_ROLE_ADMIN}
-
-    operator_username = str(settings.auth_operator_username or "").strip()
-    operator_password = str(settings.auth_operator_password or "")
-    if operator_username and operator_password:
-        accounts[operator_username] = {"password": operator_password, "role": AUTH_ROLE_OPERATOR}
-    for operator_username, operator_password in _extra_operator_accounts():
-        accounts[operator_username] = {"password": operator_password, "role": AUTH_ROLE_OPERATOR}
-    for account in _db_auth_accounts():
-        accounts[str(account["username"])] = {
-            "password_hash": str(account["password_hash"]),
-            "role": str(account["role"]),
-        }
-    return accounts
-
-
-def _match_auth_account(username: str, password: str) -> dict[str, str] | None:
-    provided_username = str(username or "").strip()
-    provided_password = str(password or "")
-    for account_username, account in _auth_accounts().items():
-        if not secrets.compare_digest(provided_username, account_username):
-            continue
-        account_hash = str(account.get("password_hash") or "").strip()
-        if account_hash:
-            if not _verify_auth_password(provided_password, account_hash):
-                continue
-        elif not secrets.compare_digest(provided_password, str(account.get("password") or "")):
-            continue
-        return {"username": account_username, "role": str(account.get("role") or AUTH_ROLE_ADMIN)}
-    return None
-
-
-def _auth_cookie_signature(payload_text: str) -> str:
-    return hmac.new(
-        settings.auth_session_secret.encode("utf-8"),
-        payload_text.encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
-
-
-def _auth_cookie_value(username: str, role: str) -> str:
-    payload = json.dumps(
-        {"u": username, "r": role, "ts": int(time.time())},
-        separators=(",", ":"),
-        ensure_ascii=True,
-    )
-    payload_text = base64.urlsafe_b64encode(payload.encode("utf-8")).decode("ascii").rstrip("=")
-    return f"{payload_text}.{_auth_cookie_signature(payload_text)}"
-
-
-def _read_auth_session_data(request: Request) -> dict[str, str] | None:
-    raw_value = str(request.cookies.get(AUTH_COOKIE_NAME) or "").strip()
-    if not raw_value or "." not in raw_value:
-        return None
-    payload_text, signature = raw_value.rsplit(".", 1)
-    expected = _auth_cookie_signature(payload_text)
-    if not secrets.compare_digest(signature, expected):
-        return None
-    try:
-        padded = payload_text + "=" * (-len(payload_text) % 4)
-        payload_raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
-        payload = json.loads(payload_raw)
-    except Exception:
-        return None
-    username = str(payload.get("u") or "").strip()
-    role = str(payload.get("r") or "").strip().upper()
-    issued_at = int(payload.get("ts") or 0)
-    if not username or issued_at <= 0:
-        return None
-    if int(time.time()) - issued_at > AUTH_COOKIE_MAX_AGE:
-        return None
-    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
-        matched = _auth_accounts().get(username)
-        role = str((matched or {}).get("role") or "").strip().upper()
-    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
-        return None
-    return {"username": username, "role": role}
-
-
-def _read_auth_username(request: Request) -> str | None:
-    session = _read_auth_session_data(request)
-    if session is None:
-        return None
-    return str(session.get("username") or "").strip() or None
-
-
-def _read_auth_role(request: Request) -> str | None:
-    session = _read_auth_session_data(request)
-    if session is None:
-        return None
-    role = str(session.get("role") or "").strip().upper()
-    return role if role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR} else None
-
-
-def _is_authenticated(request: Request) -> bool:
-    return _read_auth_session_data(request) is not None
-
-
-def _is_admin_role(role: str | None) -> bool:
-    return str(role or "").strip().upper() == AUTH_ROLE_ADMIN
-
-
-def _is_operator_role(role: str | None) -> bool:
-    return str(role or "").strip().upper() == AUTH_ROLE_OPERATOR
-
-
-def _require_admin_request(request: Request) -> None:
-    role = _read_auth_role(request)
-    if not _is_admin_role(role):
-        raise HTTPException(status_code=403, detail="admin access required")
+app.include_router(admin_auth_accounts_router)
+app.include_router(auth_router)
 
 
 _METADATA_PROVIDER_ENV_KEYS = (
@@ -587,16 +435,6 @@ def _metadata_provider_settings_payload() -> dict[str, Any]:
         "musicbrainz_user_agent": str(settings.musicbrainz_user_agent or ""),
         "deepl_base_url": str(settings.deepl_base_url or ""),
     }
-
-
-def _require_authenticated_request(request: Request) -> None:
-    if _read_auth_session_data(request) is None:
-        raise HTTPException(status_code=403, detail="authentication required")
-
-
-def _is_html_request(request: Request) -> bool:
-    accept = str(request.headers.get("accept", "")).lower()
-    return "text/html" in accept
 
 
 @app.middleware("http")
@@ -2526,6 +2364,67 @@ def _purchase_import_webhook_allowed(request: Request) -> bool:
     provided = str(request.headers.get("x-purchase-import-token") or "").strip()
     return bool(expected) and secrets.compare_digest(provided, expected)
 
+
+# 1 MB ceiling for the JSON body. Gmail forwards rarely exceed a few hundred
+# kilobytes; cap higher than that and we are paying the parse cost for what
+# is almost certainly an attack or a misrouted request.
+PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES = int(
+    os.getenv("LIBRARY_PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES", str(1 * 1024 * 1024))
+)
+_PURCHASE_IMPORT_WEBHOOK_ALLOWED_CONTENT_TYPES = ("application/json",)
+
+
+def _purchase_import_webhook_validate_request(request: Request) -> None:
+    """Hard checks on the incoming HTTP request before we let Pydantic parse it.
+
+    Used as a FastAPI `Depends`. Dependencies run before the route's body
+    parameter is parsed, so a wrong Content-Type or oversized body produces
+    415/413 instead of falling through to Pydantic's 422 with a confusing
+    "Input should be a valid dict" / "Field required" message.
+
+    * Content-Type must be a JSON variant. Browsers / non-JSON callers get
+      a 415.
+    * Content-Length, when present, must fit our cap. We can't enforce a
+      true streaming cap from inside FastAPI without a custom middleware,
+      but the header check covers well-behaved clients (Gmail forwarders,
+      Zapier).
+    """
+    content_type = str(request.headers.get("content-type") or "").lower().strip()
+    base_type = content_type.split(";", 1)[0].strip()
+    if base_type and base_type not in _PURCHASE_IMPORT_WEBHOOK_ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail=f"unsupported content-type: {base_type or 'unknown'}",
+        )
+
+    raw_length = str(request.headers.get("content-length") or "").strip()
+    if raw_length:
+        try:
+            declared = int(raw_length)
+        except (TypeError, ValueError):
+            declared = -1
+        if declared > PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=(
+                    "request body exceeds purchase import webhook limit of "
+                    f"{PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES} bytes"
+                ),
+            )
+
+
+def _require_purchase_import_webhook_envelope(request: Request) -> None:
+    """Composite Depends: token + envelope checks together.
+
+    Combines the token gate with the Content-Type / Content-Length check so
+    a single `dependencies=[...]` on the route covers everything that has
+    to happen before Pydantic parses the body.
+    """
+    if not _purchase_import_webhook_allowed(request):
+        raise HTTPException(status_code=403, detail="purchase import webhook token mismatch")
+    _purchase_import_webhook_validate_request(request)
+
+
 def _clean_track_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
@@ -3257,17 +3156,9 @@ def _start_auto_backup_worker() -> None:
     AUTO_BACKUP_THREAD.start()
 
 
-@app.on_event("startup")
-def on_startup() -> None:
-    db.ensure_startup_db_ready()
-    _start_metadata_sync_worker()
-    _start_auto_backup_worker()
-
-
-@app.on_event("shutdown")
-def on_shutdown() -> None:
-    METADATA_SYNC_STOP_EVENT.set()
-    AUTO_BACKUP_STOP_EVENT.set()
+# Startup / shutdown hooks live in the `lifespan` context manager defined
+# near the top of this module. The old @app.on_event("startup"/"shutdown")
+# pattern is deprecated since FastAPI 0.93.
 
 
 @app.get("/health")
@@ -3603,73 +3494,8 @@ def export_album_masters_csv(request: Request) -> Response:
     )
 
 
-@app.get("/login", include_in_schema=False)
-def login_page(request: Request):
-    if not _auth_enabled():
-        return RedirectResponse(url="/", status_code=303)
-    if _is_authenticated(request):
-        return RedirectResponse(url="/", status_code=303)
-    return FileResponse(LOGIN_PAGE_PATH, headers=HTML_NO_CACHE_HEADERS)
-
-
-@app.post("/auth/login", include_in_schema=False)
-def auth_login(
-    username: str = Form(...),
-    password: str = Form(...),
-) -> dict[str, Any]:
-    if not _auth_enabled():
-        return {"authenticated": True, "username": None, "role": AUTH_ROLE_ADMIN, "enabled": False}
-
-    matched_account = _match_auth_account(username=username, password=password)
-    if matched_account is None:
-        raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
-
-    matched_username = str(matched_account["username"])
-    matched_role = str(matched_account["role"])
-
-    response = JSONResponse(
-        {
-            "authenticated": True,
-            "username": matched_username,
-            "role": matched_role,
-            "enabled": True,
-        }
-    )
-    response.set_cookie(
-        AUTH_COOKIE_NAME,
-        _auth_cookie_value(matched_username, matched_role),
-        max_age=AUTH_COOKIE_MAX_AGE,
-        httponly=True,
-        secure=bool(settings.auth_cookie_secure),
-        samesite="lax",
-        path="/",
-    )
-    return response
-
-
-@app.post("/auth/logout", include_in_schema=False)
-def auth_logout() -> JSONResponse:
-    response = JSONResponse({"ok": True})
-    response.delete_cookie(AUTH_COOKIE_NAME, path="/")
-    return response
-
-
-@app.get("/auth/session", include_in_schema=False)
-def auth_session(request: Request) -> dict[str, Any]:
-    session = _read_auth_session_data(request)
-    username = str((session or {}).get("username") or "").strip() or None
-    role = str((session or {}).get("role") or "").strip().upper() or None
-    return {
-        "enabled": _auth_enabled(),
-        "authenticated": (not _auth_enabled()) or bool(username),
-        "username": username if _auth_enabled() else None,
-        "role": role if _auth_enabled() else AUTH_ROLE_ADMIN,
-        "admin_available": bool(settings.auth_admin_username and settings.auth_admin_password),
-        "operator_available": bool(
-            (settings.auth_operator_username and settings.auth_operator_password)
-            or _extra_operator_accounts()
-        ),
-    }
+# Auth routes (/login, /auth/login, /auth/logout, /auth/session) live in
+# app/api/auth.py. They are wired below via app.include_router.
 
 
 @app.get("/tool-docs/{doc_key}", include_in_schema=False)
@@ -4325,412 +4151,14 @@ def _purchase_import_duplicate_create_response(
     )
 
 
-@app.post("/purchase-imports/preview", response_model=PurchaseImportPreviewResponse)
-def preview_purchase_import(payload: PurchaseImportPreviewRequest, request: Request) -> PurchaseImportPreviewResponse:
-    _require_admin_request(request)
-    raw_content, _html_content = _resolve_purchase_import_raw_input(payload)
-    resolved_vendor_code = _resolve_purchase_import_vendor_code(payload.vendor_code, raw_content=raw_content)
-    items = _parse_purchase_import_preview(payload)
-    if not items:
-        reason = _purchase_import_empty_reason(resolved_vendor_code, raw_content)
-        if reason:
-            raise HTTPException(status_code=400, detail=reason)
-    return PurchaseImportPreviewResponse(
-        vendor_code=resolved_vendor_code,
-        total_count=len(items),
-        items=items,
-    )
+# Purchase-imports routes (preview/save/webhook/list/candidates/enrich/
+# create/ignore) live in app/api/purchase_imports.py, wired at the bottom
+# of this module via include_router. The parsing/normalising helpers stay
+# here because they're shared with non-route code paths.
 
 
-@app.post("/purchase-imports", response_model=PurchaseImportSaveResponse)
-def save_purchase_import(payload: PurchaseImportSaveRequest, request: Request) -> PurchaseImportSaveResponse:
-    _require_admin_request(request)
-    resolved_vendor_code = _resolve_purchase_import_vendor_code(payload.vendor_code, items=payload.items)
-    resolved_purchase_date = _resolve_purchase_import_purchase_date(payload.purchase_date, items=payload.items)
-    rows = _purchase_import_rows_for_save(payload.items, vendor_code=resolved_vendor_code, email_from=payload.email_from)
-    created_ids = db.insert_purchase_import_rows(
-        resolved_vendor_code,
-        payload.source_type,
-        rows,
-        source_ref=_clean_text(payload.source_ref),
-        email_from=_clean_text(payload.email_from),
-        email_subject=_clean_text(payload.email_subject),
-        purchase_date=resolved_purchase_date,
-    )
-    return PurchaseImportSaveResponse(created_count=len(created_ids), created_ids=created_ids)
-
-
-@app.post("/purchase-imports/webhook/gmail", response_model=PurchaseImportSaveResponse)
-def purchase_import_webhook_gmail(payload: PurchaseImportWebhookRequest, request: Request) -> PurchaseImportSaveResponse:
-    if not _purchase_import_webhook_allowed(request):
-        raise HTTPException(status_code=403, detail="purchase import webhook token mismatch")
-    items = _parse_purchase_import_preview(payload)
-    resolved_vendor_code = _resolve_purchase_import_vendor_code(payload.vendor_code, raw_content=payload.raw_content, items=items)
-    resolved_purchase_date = _resolve_purchase_import_purchase_date(payload.purchase_date, raw_content=payload.raw_content, items=items)
-    rows = _purchase_import_rows_for_save(items, vendor_code=resolved_vendor_code, email_from=payload.email_from)
-    created_ids = db.insert_purchase_import_rows(
-        resolved_vendor_code,
-        payload.source_type,
-        rows,
-        source_ref=_clean_text(payload.source_ref),
-        email_from=_clean_text(payload.email_from),
-        email_subject=_clean_text(payload.email_subject),
-        purchase_date=resolved_purchase_date,
-    )
-    return PurchaseImportSaveResponse(created_count=len(created_ids), created_ids=created_ids)
-
-
-@app.get("/purchase-imports", response_model=PurchaseImportListResponse)
-def list_purchase_imports(
-    request: Request,
-    queue_status: PurchaseImportStatus | None = Query(default="PENDING"),
-    vendor_code: PurchaseImportVendor | None = Query(default=None),
-    limit: int = Query(default=100, ge=1, le=300),
-) -> PurchaseImportListResponse:
-    _require_admin_request(request)
-    rows = db.list_purchase_import_rows(queue_status=queue_status, vendor_code=vendor_code, limit=limit)
-    total_count = db.count_purchase_import_rows(queue_status=queue_status, vendor_code=vendor_code)
-    return PurchaseImportListResponse(
-        total_count=total_count,
-        items=[_purchase_queue_item_from_row(row) for row in rows],
-    )
-
-
-@app.get("/purchase-imports/{queue_id}/candidates", response_model=PurchaseImportCandidateSearchResponse)
-def list_purchase_import_candidates(
-    queue_id: int,
-    request: Request,
-    source: str = Query(default="AUTO"),
-    limit: int = Query(default=5, ge=1, le=20),
-    artist_name: str | None = Query(default=None),
-    item_name: str | None = Query(default=None),
-    query: str | None = Query(default=None),
-) -> PurchaseImportCandidateSearchResponse:
-    _require_admin_request(request)
-    row = db.get_purchase_import_row(queue_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="purchase import row not found")
-
-    working_row = row
-    vendor_code = str(row.get("vendor_code") or "").strip().upper()
-    item_url = _clean_text(row.get("item_url"))
-    has_artist_name = bool(_clean_text(row.get("artist_name")))
-    has_image_url = bool(_clean_text(row.get("image_url")))
-    if vendor_code == "AMAZON" and item_url and (not has_artist_name or not has_image_url):
-        try:
-            working_row = _purchase_enrich_row_from_item_page(row)
-        except Exception:
-            working_row = row
-
-    search_query = _purchase_queue_candidate_query(working_row, artist_name=artist_name, item_name=item_name, query=query)
-    if not search_query:
-        raise HTTPException(status_code=400, detail="구매 수입 큐 항목에서 후보 조회용 상품명/아티스트 정보를 찾지 못했습니다.")
-
-    _media_format, category, _size_group, _seller_name = _purchase_queue_base_context(working_row)
-    candidates = _search_lookup_metadata_candidates(
-        query=search_query,
-        category=category,
-        source=str(source or "AUTO").strip().upper() or "AUTO",
-        limit=limit,
-        artist_or_brand=_clean_text(artist_name) if artist_name is not None else _clean_text(working_row.get("artist_name")),
-        title=_clean_text(item_name) if item_name is not None else _clean_text(working_row.get("item_name")),
-    )
-    candidates = _annotate_owned_flags(candidates)
-    return PurchaseImportCandidateSearchResponse(
-        queue_item=_purchase_queue_item_from_row(working_row),
-        query=search_query,
-        candidates=candidates,
-    )
-
-
-@app.post("/purchase-imports/{queue_id}/enrich-item-page", response_model=PurchaseImportQueueItem)
-def enrich_purchase_import_from_item_page(queue_id: int, request: Request) -> PurchaseImportQueueItem:
-    _require_admin_request(request)
-    row = db.get_purchase_import_row(queue_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="purchase import row not found")
-    updated = _purchase_enrich_row_from_item_page(row)
-    return _purchase_queue_item_from_row(updated)
-
-
-@app.post("/purchase-imports/{queue_id}/create-owned-item", response_model=PurchaseImportCreateResponse)
-def create_owned_item_from_purchase_import(queue_id: int, request: Request) -> PurchaseImportCreateResponse:
-    _require_admin_request(request)
-    row = db.get_purchase_import_row(queue_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="purchase import row not found")
-    if str(row.get("queue_status") or "").strip().upper() != "PENDING":
-        raise HTTPException(status_code=400, detail="purchase import row is not pending")
-    duplicate_row = db.find_purchase_import_duplicate_row(row, exclude_queue_id=queue_id, require_linked_owned_item=True)
-    if duplicate_row is not None:
-        existing_owned_item_id = int(duplicate_row.get("linked_owned_item_id") or 0)
-        if existing_owned_item_id > 0 and db.get_owned_item(existing_owned_item_id) is not None:
-            return _purchase_import_duplicate_create_response(
-                queue_id=queue_id,
-                row=row,
-                existing_owned_item_id=existing_owned_item_id,
-            )
-    payload = _build_owned_item_from_purchase_queue_row(row)
-    created = create_owned_item(payload)
-    updated = db.update_purchase_import_row(
-        queue_id,
-        queue_status="CREATED",
-        linked_owned_item_id=int(created.owned_item_id),
-    )
-    if updated is None:
-        raise HTTPException(status_code=500, detail="purchase import row update failed")
-    return PurchaseImportCreateResponse(
-        queue_item=_purchase_queue_item_from_row(updated),
-        owned_item_id=int(created.owned_item_id),
-        label_id=str(created.label_id),
-        linked_album_master_id=created.linked_album_master_id,
-        notices=list(created.notices or []),
-    )
-
-
-@app.post("/purchase-imports/{queue_id}/create-owned-item-from-candidate", response_model=PurchaseImportCreateResponse)
-def create_owned_item_from_purchase_import_candidate(
-    queue_id: int,
-    payload: PurchaseImportCandidateCreateRequest,
-    request: Request,
-) -> PurchaseImportCreateResponse:
-    _require_admin_request(request)
-    row = db.get_purchase_import_row(queue_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="purchase import row not found")
-    if str(row.get("queue_status") or "").strip().upper() != "PENDING":
-        raise HTTPException(status_code=400, detail="purchase import row is not pending")
-    duplicate_row = db.find_purchase_import_duplicate_row(row, exclude_queue_id=queue_id, require_linked_owned_item=True)
-    if duplicate_row is not None:
-        existing_owned_item_id = int(duplicate_row.get("linked_owned_item_id") or 0)
-        if existing_owned_item_id > 0 and db.get_owned_item(existing_owned_item_id) is not None:
-            return _purchase_import_duplicate_create_response(
-                queue_id=queue_id,
-                row=row,
-                existing_owned_item_id=existing_owned_item_id,
-            )
-
-    candidate = payload.candidate.model_dump(mode="python")
-    owned_payload = _build_owned_item_from_purchase_queue_row(row, candidate)
-    created = create_owned_item(owned_payload)
-    updated = db.update_purchase_import_row(
-        queue_id,
-        queue_status="CREATED",
-        linked_owned_item_id=int(created.owned_item_id),
-    )
-    if updated is None:
-        raise HTTPException(status_code=500, detail="purchase import row update failed")
-    return PurchaseImportCreateResponse(
-        queue_item=_purchase_queue_item_from_row(updated),
-        owned_item_id=int(created.owned_item_id),
-        label_id=str(created.label_id),
-        linked_album_master_id=created.linked_album_master_id,
-        notices=list(created.notices or []),
-    )
-
-
-@app.post("/purchase-imports/{queue_id}/ignore", response_model=PurchaseImportQueueItem)
-def ignore_purchase_import(queue_id: int, request: Request) -> PurchaseImportQueueItem:
-    _require_admin_request(request)
-    row = db.get_purchase_import_row(queue_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="purchase import row not found")
-    queue_status = str(row.get("queue_status") or "").strip().upper()
-    if queue_status != "PENDING":
-        raise HTTPException(status_code=400, detail="purchase import row is not pending")
-    updated = db.update_purchase_import_row(queue_id, queue_status="IGNORED")
-    if updated is None:
-        raise HTTPException(status_code=404, detail="purchase import row not found")
-    return _purchase_queue_item_from_row(updated)
-
-
-def _system_auth_account_items() -> list[AuthAccountItem]:
-    items: list[AuthAccountItem] = []
-    if settings.auth_admin_username and settings.auth_admin_password:
-        items.append(
-            AuthAccountItem(
-                username=str(settings.auth_admin_username),
-                role="ADMIN",
-                source="SYSTEM",
-                editable=False,
-                is_active=True,
-            )
-        )
-    if settings.auth_operator_username and settings.auth_operator_password:
-        items.append(
-            AuthAccountItem(
-                username=str(settings.auth_operator_username),
-                role="OPERATOR",
-                source="SYSTEM",
-                editable=False,
-                is_active=True,
-            )
-        )
-    for username, _password in _extra_operator_accounts():
-        items.append(
-            AuthAccountItem(
-                username=username,
-                role="OPERATOR",
-                source="SYSTEM",
-                editable=False,
-                is_active=True,
-            )
-        )
-    return items
-
-
-def _system_auth_account_lookup(username: str) -> dict[str, str] | None:
-    key = str(username or "").strip()
-    if not key:
-        return None
-    for account_username, account in _auth_accounts().items():
-        if account_username != key:
-            continue
-        if str(account.get("password_hash") or "").strip():
-            continue
-        return {
-            "username": account_username,
-            "password": str(account.get("password") or ""),
-            "role": str(account.get("role") or AUTH_ROLE_OPERATOR).strip().upper(),
-        }
-    return None
-
-
-@app.get("/admin/auth-accounts", response_model=AuthAccountListResponse)
-def list_auth_accounts(request: Request) -> AuthAccountListResponse:
-    _require_admin_request(request)
-    item_map: dict[str, AuthAccountItem] = {
-        item.username: item for item in _system_auth_account_items()
-    }
-    for row in db.list_auth_accounts():
-        username = str(row.get("username") or "").strip()
-        item_map[username] = AuthAccountItem(
-            username=username,
-            role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
-            source="MANAGED",
-            editable=True,
-            is_active=bool(row.get("is_active")),
-            created_at=str(row.get("created_at") or "").strip() or None,
-            updated_at=str(row.get("updated_at") or "").strip() or None,
-        )
-    items = list(item_map.values())
-    items.sort(key=lambda item: (0 if item.role == "ADMIN" else 1, 0 if item.source == "SYSTEM" else 1, item.username.lower()))
-    return AuthAccountListResponse(total_count=len(items), items=items)
-
-
-@app.get("/api/admin-auth-accounts", response_model=AuthAccountListResponse)
-def list_auth_accounts_api(request: Request) -> AuthAccountListResponse:
-    return list_auth_accounts(request)
-
-
-@app.get("/ops-auth-accounts", response_model=AuthAccountListResponse)
-def list_auth_accounts_ops(request: Request) -> AuthAccountListResponse:
-    return list_auth_accounts(request)
-
-
-@app.post("/admin/auth-accounts", response_model=AuthAccountItem)
-def create_auth_account(payload: AuthAccountCreateRequest, request: Request) -> AuthAccountItem:
-    _require_admin_request(request)
-    username = str(payload.username or "").strip()
-    if not username:
-        raise HTTPException(status_code=400, detail="username is required")
-    if db.get_auth_account_by_username(username) is not None:
-        raise HTTPException(status_code=409, detail="이미 존재하는 계정입니다.")
-    row = db.upsert_auth_account(
-        username=username,
-        password_hash=_hash_auth_password(payload.password),
-        role=str(payload.role or "OPERATOR").strip().upper(),
-        is_active=True,
-    )
-    if row is None:
-        raise HTTPException(status_code=500, detail="계정 저장에 실패했습니다.")
-    return AuthAccountItem(
-        username=str(row.get("username") or "").strip(),
-        role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
-        source="MANAGED",
-        editable=True,
-        is_active=bool(row.get("is_active")),
-        created_at=str(row.get("created_at") or "").strip() or None,
-        updated_at=str(row.get("updated_at") or "").strip() or None,
-    )
-
-
-@app.post("/api/admin-auth-accounts", response_model=AuthAccountItem)
-def create_auth_account_api(payload: AuthAccountCreateRequest, request: Request) -> AuthAccountItem:
-    return create_auth_account(payload, request)
-
-
-@app.post("/ops-auth-accounts", response_model=AuthAccountItem)
-def create_auth_account_ops(payload: AuthAccountCreateRequest, request: Request) -> AuthAccountItem:
-    return create_auth_account(payload, request)
-
-
-@app.patch("/admin/auth-accounts/{username}", response_model=AuthAccountItem)
-def update_auth_account(username: str, payload: AuthAccountUpdateRequest, request: Request) -> AuthAccountItem:
-    _require_admin_request(request)
-    existing = db.get_auth_account_by_username(username)
-    system_account = _system_auth_account_lookup(username)
-    if existing is None and system_account is None:
-        raise HTTPException(status_code=404, detail="계정을 찾을 수 없습니다.")
-    next_hash = str(existing.get("password_hash") or "").strip() if existing else ""
-    if not next_hash and system_account is not None:
-        next_hash = _hash_auth_password(system_account["password"])
-    if payload.password is not None:
-        next_hash = _hash_auth_password(payload.password)
-    base_role = str((existing or {}).get("role") or (system_account or {}).get("role") or "OPERATOR").strip().upper()
-    next_role = str(payload.role or base_role).strip().upper()
-    next_active = bool(existing.get("is_active")) if existing is not None else True
-    if payload.is_active is not None:
-        next_active = bool(payload.is_active)
-    row = db.upsert_auth_account(
-        username=username,
-        password_hash=next_hash,
-        role=next_role,
-        is_active=next_active,
-    )
-    if row is None:
-        raise HTTPException(status_code=500, detail="계정 수정에 실패했습니다.")
-    return AuthAccountItem(
-        username=str(row.get("username") or "").strip(),
-        role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
-        source="MANAGED",
-        editable=True,
-        is_active=bool(row.get("is_active")),
-        created_at=str(row.get("created_at") or "").strip() or None,
-        updated_at=str(row.get("updated_at") or "").strip() or None,
-    )
-
-
-@app.patch("/api/admin-auth-accounts/{username}", response_model=AuthAccountItem)
-def update_auth_account_api(username: str, payload: AuthAccountUpdateRequest, request: Request) -> AuthAccountItem:
-    return update_auth_account(username, payload, request)
-
-
-@app.patch("/ops-auth-accounts/{username}", response_model=AuthAccountItem)
-def update_auth_account_ops(username: str, payload: AuthAccountUpdateRequest, request: Request) -> AuthAccountItem:
-    return update_auth_account(username, payload, request)
-
-
-@app.delete("/admin/auth-accounts/{username}")
-def delete_auth_account(username: str, request: Request) -> dict[str, Any]:
-    _require_admin_request(request)
-    existing = db.get_auth_account_by_username(username)
-    if existing is None:
-        raise HTTPException(status_code=404, detail="관리 계정을 찾을 수 없습니다.")
-    ok = db.delete_auth_account(username)
-    if not ok:
-        raise HTTPException(status_code=500, detail="계정 삭제에 실패했습니다.")
-    return {"ok": True, "username": username}
-
-
-@app.delete("/api/admin-auth-accounts/{username}")
-def delete_auth_account_api(username: str, request: Request) -> dict[str, Any]:
-    return delete_auth_account(username, request)
-
-
-@app.delete("/ops-auth-accounts/{username}")
-def delete_auth_account_ops(username: str, request: Request) -> dict[str, Any]:
-    return delete_auth_account(username, request)
+# Admin auth-account routes (list/create/update/delete + legacy mirrors)
+# live in app/api/admin_auth_accounts.py, wired below via include_router.
 
 
 @app.get("/operator/catalog-search", response_model=OperatorCatalogSearchResponse)
@@ -5805,6 +5233,12 @@ async def ingest_csv(
     matched = 0
     review = 0
     failed = 0
+    # We accumulate review_queue inserts and flush them via executemany at
+    # the very end (`db.bulk_finalize_csv_ingest`). Pre-2026-04 each row
+    # opened its own write transaction; on a 1k-row import that paid for
+    # 1k separate fsync barriers. The single batch keeps everything atomic
+    # — if the loop raises, the whole CSV is rolled back together.
+    pending_rows: list[dict[str, Any]] = []
 
     for row_no, row in enumerate(reader, start=2):
         total += 1
@@ -5833,15 +5267,17 @@ async def ingest_csv(
 
         if not valid or location_error:
             failed += 1
-            db.insert_review_queue(
-                batch_id=batch_id,
-                row_no=row_no,
-                category=category,
-                payload=normalized_row,
-                candidate=None,
-                confidence=0.0,
-                review_status="NEEDS_REVIEW",
-                review_note=_merge_review_note(validation_error, location_error),
+            pending_rows.append(
+                {
+                    "batch_id": batch_id,
+                    "row_no": row_no,
+                    "category": category,
+                    "payload": normalized_row,
+                    "candidate": None,
+                    "confidence": 0.0,
+                    "review_status": "NEEDS_REVIEW",
+                    "review_note": _merge_review_note(validation_error, location_error),
+                }
             )
             continue
 
@@ -5887,18 +5323,24 @@ async def ingest_csv(
         else:
             review += 1
 
-        db.insert_review_queue(
-            batch_id=batch_id,
-            row_no=row_no,
-            category=category,
-            payload=normalized_row,
-            candidate=result.candidate,
-            confidence=result.confidence,
-            review_status=result.review_status,
-            review_note=result.review_note,
+        pending_rows.append(
+            {
+                "batch_id": batch_id,
+                "row_no": row_no,
+                "category": category,
+                "payload": normalized_row,
+                "candidate": result.candidate,
+                "confidence": result.confidence,
+                "review_status": result.review_status,
+                "review_note": result.review_note,
+            }
         )
 
-    db.finalize_batch(batch_id=batch_id, total=total, matched=matched, review=review, failed=failed)
+    db.bulk_finalize_csv_ingest(
+        batch_id=batch_id,
+        totals={"total": total, "matched": matched, "review": review, "failed": failed},
+        review_queue_rows=pending_rows,
+    )
 
     return CsvIngestResponse(
         batch_id=batch_id,
@@ -6394,146 +5836,6 @@ def get_collection_dashboard() -> CollectionDashboardResponse:
     return CollectionDashboardResponse(**db.get_collection_dashboard())
 
 
-@app.get("/owned-items", response_model=list[OwnedItemListItem])
-def get_owned_items(
-    response: Response,
-    category: str | None = Query(default=None, pattern="^(LP|CD|CASSETTE|8TRACK|DIGITAL|REEL_TO_REEL|T_SHIRT|POSTER|LIGHT_STICK|HAT|BAG|CUP|OTHER)$"),
-    domain_code: str | None = Query(default=None, pattern="^(KOREA|JAPAN|GREATER_CHINA|WESTERN|OTHER_ASIA|WORLD_OTHER|UNKNOWN)$"),
-    release_type: str | None = Query(default=None, pattern="^(ALBUM|EP|SINGLE)$"),
-    status: str | None = Query(default=None, pattern="^(IN_COLLECTION|LOANED|SOLD|LOST|ARCHIVED)$"),
-    q: str | None = Query(default=None),
-    artist_or_brand: str | None = Query(default=None),
-    item_name: str | None = Query(default=None),
-    catalog_no: str | None = Query(default=None),
-    barcode: str | None = Query(default=None),
-    release_year: int | None = Query(default=None, ge=1900, le=2100),
-    source_state: SourceLinkState = Query(default="ANY"),
-    master_state: str = Query(default="ANY", pattern="^(ANY|MISSING|LINKED)$"),
-    cover_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
-    slot_state: str = Query(default="ANY", pattern="^(ANY|SLOTTED|UNSLOTTED)$"),
-    preferred_storage_state: str = Query(default="ANY", pattern="^(ANY|MISMATCH|MATCH)$"),
-    track_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
-    music_only: bool = Query(default=False),
-    sort: str = Query(default="DISPLAY", pattern="^(DISPLAY|RECENT)$"),
-    include_total: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-) -> list[OwnedItemListItem]:
-    rows = db.list_owned_items(
-        category=category,
-        domain_code=domain_code,
-        release_type=release_type,
-        status=status,
-        q=q,
-        artist_or_brand=artist_or_brand,
-        item_name=item_name,
-        catalog_no=catalog_no,
-        barcode=barcode,
-        release_year=release_year,
-        source_state=source_state,
-        master_state=master_state,
-        cover_state=cover_state,
-        slot_state=slot_state,
-        preferred_storage_state=preferred_storage_state,
-        track_state=track_state,
-        music_only=music_only,
-        sort=sort,
-        limit=limit,
-        offset=offset,
-    )
-    if include_total:
-        total = db.count_owned_items(
-            category=category,
-            domain_code=domain_code,
-            release_type=release_type,
-            status=status,
-            q=q,
-            artist_or_brand=artist_or_brand,
-            item_name=item_name,
-            catalog_no=catalog_no,
-            barcode=barcode,
-            release_year=release_year,
-            source_state=source_state,
-            master_state=master_state,
-            cover_state=cover_state,
-            slot_state=slot_state,
-            preferred_storage_state=preferred_storage_state,
-            track_state=track_state,
-            music_only=music_only,
-        )
-        response.headers["X-Total-Count"] = str(total)
-    return [_to_owned_item_list_item(row) for row in rows]
-
-
-@app.post("/owned-items/location-recommendations", response_model=list[OwnedItemLocationRecommendationItem])
-def get_owned_item_location_recommendations(
-    payload: OwnedItemLocationRecommendationRequest,
-) -> list[OwnedItemLocationRecommendationItem]:
-    owned_item_ids = sorted({int(v) for v in (payload.owned_item_ids or []) if int(v) > 0})
-    result: list[OwnedItemLocationRecommendationItem] = []
-    for owned_item_id in owned_item_ids[:500]:
-        row = db.get_owned_item_detail(owned_item_id)
-        if not row:
-            continue
-        preferred_size_group = _preferred_storage_size_group(
-            str(row.get("preferred_storage_size_group") or ""),
-            str(row.get("size_group") or ""),
-        )
-        artist_or_brand = (
-            _clean_text(row.get("linked_artist_name"))
-            or _clean_text(row.get("artist_or_brand"))
-            or _clean_text(row.get("master_artist_or_brand"))
-        )
-        item_title = _clean_text(row.get("item_name_override")) or _clean_text(row.get("master_title"))
-        raw_year = row.get("master_release_year") if row.get("master_release_year") is not None else row.get("release_year")
-        try:
-            release_year = int(raw_year) if raw_year is not None else None
-        except (TypeError, ValueError):
-            release_year = None
-        suggestion = db.recommend_owned_item_location(
-            size_group=preferred_size_group,
-            artist_or_brand=artist_or_brand,
-            release_year=release_year,
-            released_date=_clean_text(row.get("released_date")),
-            domain_code=_normalize_domain_code(row.get("domain_code") or row.get("master_domain_code")),
-            item_title=item_title,
-            exclude_owned_item_id=owned_item_id,
-            incoming_thickness_mm=int(row["thickness_mm"]) if row.get("thickness_mm") not in (None, "") else None,
-            incoming_format_name=_clean_text(row.get("format_name")),
-            incoming_package_hint=_clean_text(row.get("notes")),
-        )
-        slot_id = int(suggestion.get("recommended_storage_slot_id") or 0)
-        slot = db.get_storage_slot(slot_id) if slot_id > 0 else None
-        result.append(
-            OwnedItemLocationRecommendationItem(
-                owned_item_id=owned_item_id,
-                recommended_storage_slot_id=slot_id or None,
-                slot_code=str((slot or {}).get("slot_code") or suggestion.get("slot_code") or "").strip() or None,
-                display_name=str((slot or {}).get("display_name") or "").strip() or None,
-                cabinet_name=str((slot or {}).get("cabinet_name") or "").strip() or None,
-                column_code=str((slot or {}).get("column_code") or "").strip() or None,
-                cell_code=str((slot or {}).get("cell_code") or "").strip() or None,
-                candidate_slots=[
-                    OwnedItemLocationRecommendationCandidateSlot(
-                        storage_slot_id=int(candidate.get("storage_slot_id") or 0) or None,
-                        slot_code=str(candidate.get("slot_code") or "").strip() or None,
-                        display_name=str(candidate.get("display_name") or "").strip() or None,
-                        cabinet_name=str(candidate.get("cabinet_name") or "").strip() or None,
-                        column_code=str(candidate.get("column_code") or "").strip() or None,
-                        cell_code=str(candidate.get("cell_code") or "").strip() or None,
-                    )
-                    for candidate in (suggestion.get("candidate_slots") or [])
-                    if isinstance(candidate, dict)
-                ],
-                anchor_owned_item_id=int(suggestion.get("anchor_owned_item_id") or 0) or None,
-                anchor_position=str(suggestion.get("anchor_position") or "").strip().upper() or None,
-                used_fallback_slot=bool(suggestion.get("used_fallback_slot")),
-                reason=str(suggestion.get("reason") or "").strip() or None,
-            )
-        )
-    return result
-
-
 def _build_label_id(category: str, owned_item_id: int) -> str:
     prefix = LABEL_PREFIX_BY_CATEGORY.get(category, "IT")
     return f"{prefix}-{owned_item_id:06d}"
@@ -6618,425 +5920,6 @@ def _to_owned_item_list_item(row: dict[str, object]) -> OwnedItemListItem:
     return OwnedItemListItem(**row2)
 
 
-@app.get("/owned-items/{owned_item_id}/shelf-window", response_model=OwnedAlbumShelfWindowResponse)
-def get_owned_item_shelf_window(
-    owned_item_id: int,
-    window: int = Query(default=6, ge=1, le=20),
-) -> OwnedAlbumShelfWindowResponse:
-    data = db.get_music_shelf_window(owned_item_id=owned_item_id, window=window)
-    if data is None:
-        raise HTTPException(status_code=404, detail="owned music item not found")
-
-    items = [_to_owned_item_list_item(row) for row in data.get("items", [])]
-    return OwnedAlbumShelfWindowResponse(
-        center_owned_item_id=int(data["center_owned_item_id"]),
-        previous_owned_item_id=data.get("previous_owned_item_id"),
-        next_owned_item_id=data.get("next_owned_item_id"),
-        items=items,
-    )
-
-
-@app.get("/owned-items/{owned_item_id}/related-versions", response_model=RelatedAlbumVersionsResponse)
-def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsResponse:
-    base_row = db.get_owned_item_list_row(owned_item_id)
-    if base_row is None or str(base_row.get("category") or "") not in MUSIC_CATEGORIES:
-        raise HTTPException(status_code=404, detail="owned music item not found")
-
-    def _to_items(rows: list[dict[str, object]]) -> list[OwnedItemListItem]:
-        out: list[OwnedItemListItem] = []
-        seen: set[int] = set()
-        for row in rows:
-            oid = int(row.get("id") or 0)
-            if oid <= 0 or oid in seen:
-                continue
-            seen.add(oid)
-            out.append(_to_owned_item_list_item(row))
-        return out
-
-    bound = db.get_album_master_binding_for_owned_item(owned_item_id)
-    if bound:
-        rows = db.list_owned_items_by_album_master(int(bound["album_master_id"]))
-        if not rows:
-            rows = [base_row]
-        preferred_source = str(bound.get("source_code") or "").strip().upper() or None
-        preferred_master_external_id = str(bound.get("source_master_id") or "").strip() or None
-        if preferred_source not in {"DISCOGS", "MANIADB"} or not preferred_master_external_id:
-            external_refs = db.list_album_master_external_refs(int(bound["album_master_id"]))
-            supported_ref = next(
-                (
-                    row
-                    for row in external_refs
-                    if str(row.get("source_code") or "").strip().upper() in {"DISCOGS", "MANIADB"}
-                    and str(row.get("source_master_id") or "").strip()
-                ),
-                None,
-            )
-            if supported_ref:
-                preferred_source = str(supported_ref.get("source_code") or "").strip().upper() or preferred_source
-                preferred_master_external_id = str(supported_ref.get("source_master_id") or "").strip() or preferred_master_external_id
-            else:
-                supported_row = next(
-                    (
-                        row
-                        for row in rows
-                        if str(row.get("source_code") or "").strip().upper() in {"DISCOGS", "MANIADB"}
-                        and str(row.get("source_external_id") or "").strip()
-                    ),
-                    None,
-                )
-                if supported_row:
-                    preferred_source = str(supported_row.get("source_code") or "").strip().upper() or preferred_source
-                    preferred_master_external_id = (
-                        str(supported_row.get("source_external_id") or "").strip() or preferred_master_external_id
-                    )
-        return RelatedAlbumVersionsResponse(
-            owned_item_id=owned_item_id,
-            relation_type="ALBUM_MASTER_BIND",
-            source=preferred_source,
-            master_external_id=preferred_master_external_id,
-            album_master_id=int(bound["album_master_id"]),
-            title=str(bound.get("title") or "").strip() or None,
-            artist_or_brand=str(bound.get("artist_or_brand") or "").strip() or None,
-            sort_artist_name=str(bound.get("sort_artist_name") or "").strip() or None,
-            release_year=int(bound["release_year"]) if bound.get("release_year") not in (None, "") else None,
-            domain_code=str(bound.get("domain_code") or "").strip() or None,
-            source_release_year=int(bound["source_release_year"]) if bound.get("source_release_year") not in (None, "") else None,
-            source_domain_code=str(bound.get("source_domain_code") or "").strip() or None,
-            override_release_year=int(bound["override_release_year"]) if bound.get("override_release_year") not in (None, "") else None,
-            override_domain_code=str(bound.get("override_domain_code") or "").strip() or None,
-            override_note=str(bound.get("override_note") or "").strip() or None,
-            has_manual_correction=bool(
-                bound.get("override_release_year") not in (None, "")
-                or str(bound.get("override_domain_code") or "").strip()
-                or str(bound.get("override_note") or "").strip()
-            ),
-            items=_to_items(rows),
-        )
-
-    source_code = str(base_row.get("source_code") or "").strip().upper()
-    source_external_id = str(base_row.get("source_external_id") or "").strip()
-    if _source_supports_master_auto_link(source_code) and source_external_id:
-        master_ref = resolve_release_master_reference(source=source_code, external_id=source_external_id)
-        if master_ref:
-            master_source = str(master_ref.get("source") or source_code).strip().upper()
-            master_external_id = str(master_ref.get("master_external_id") or "").strip()
-            external_ids = _source_master_variant_external_ids(
-                source_code=master_source,
-                master_external_id=master_external_id,
-                release_external_id=source_external_id,
-            )
-
-            rows = db.list_owned_items_by_source_external_ids(
-                source_code=source_code,
-                source_external_ids=sorted(external_ids),
-            )
-            if rows:
-                return RelatedAlbumVersionsResponse(
-                    owned_item_id=owned_item_id,
-                    relation_type="SOURCE_MASTER",
-                    source=master_source,
-                    master_external_id=master_external_id or None,
-                    title=str(master_ref.get("title") or "").strip() or None,
-                    artist_or_brand=str(master_ref.get("artist_or_brand") or "").strip() or None,
-                    items=_to_items(rows),
-                )
-
-    return RelatedAlbumVersionsResponse(
-        owned_item_id=owned_item_id,
-        relation_type="NONE",
-        items=_to_items([base_row]),
-    )
-
-
-@app.get("/owned-items/{owned_item_id}/relations")
-def get_owned_item_relations(owned_item_id: int, request: Request) -> dict[str, Any]:
-    _require_admin_request(request)
-    owned_row = db.get_owned_item(owned_item_id)
-    if owned_row is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-    scope_kind, scope_key, uses_shared = _resolve_owned_item_relation_scope(owned_row)
-    bound_master = db.get_album_master_binding_for_owned_item(owned_item_id)
-
-    with db.get_conn() as conn:
-        relation_rows = conn.execute(
-            """
-            SELECT
-              id,
-              relation_type,
-              target_kind,
-              target_ref,
-              note,
-              display_order
-            FROM owned_item_relation
-            WHERE source_scope_kind = ?
-              AND source_scope_key = ?
-            ORDER BY display_order ASC, id ASC
-            """,
-            (scope_kind, scope_key),
-        ).fetchall()
-
-        relation_dicts = [dict(row) for row in relation_rows]
-
-        album_master_ids: set[int] = set()
-        product_group_ids: set[int] = set()
-        owned_item_target_ids: set[int] = set()
-        for row in relation_dicts:
-            target_kind = str(row.get("target_kind") or "").strip().upper()
-            target_ref = str(row.get("target_ref") or "").strip()
-            try:
-                target_id = int(target_ref)
-            except (TypeError, ValueError):
-                target_id = 0
-            if target_id <= 0:
-                continue
-            if target_kind == "ALBUM_MASTER":
-                album_master_ids.add(target_id)
-            elif target_kind == "PRODUCT_GROUP":
-                product_group_ids.add(target_id)
-            elif target_kind == "OWNED_ITEM":
-                owned_item_target_ids.add(target_id)
-
-        album_master_map: dict[int, dict[str, Any]] = {}
-        if album_master_ids:
-            placeholders = ",".join("?" for _ in album_master_ids)
-            rows = conn.execute(
-                f"""
-                SELECT id, title, artist_or_brand
-                FROM album_master
-                WHERE id IN ({placeholders})
-                """,
-                list(album_master_ids),
-            ).fetchall()
-            album_master_map = {int(row["id"]): dict(row) for row in rows}
-
-        product_group_map: dict[int, dict[str, Any]] = {}
-        if product_group_ids:
-            placeholders = ",".join("?" for _ in product_group_ids)
-            rows = conn.execute(
-                f"""
-                SELECT id, group_type, group_name
-                FROM product_group
-                WHERE id IN ({placeholders})
-                """,
-                list(product_group_ids),
-            ).fetchall()
-            product_group_map = {int(row["id"]): dict(row) for row in rows}
-
-        owned_item_map: dict[int, dict[str, Any]] = {}
-        for target_id in owned_item_target_ids:
-            brief = _fetch_owned_item_relation_brief(conn, target_id)
-            if brief is not None:
-                owned_item_map[target_id] = brief
-
-        master_links: list[dict[str, Any]] = []
-        series_memberships: list[dict[str, Any]] = []
-        box_memberships: list[dict[str, Any]] = []
-        related_releases: list[dict[str, Any]] = []
-
-        def _register_relation(entry: dict[str, Any], relation_type: str) -> None:
-            if relation_type == "MASTER_CHILD":
-                master_links.append(entry)
-            elif relation_type == "SERIES_MEMBER":
-                series_memberships.append(entry)
-            elif relation_type == "BOX_MEMBER_OF":
-                box_memberships.append(entry)
-            elif relation_type == "RELATED_RELEASE":
-                related_releases.append(entry)
-
-        for row in relation_dicts:
-            relation_type = str(row.get("relation_type") or "").strip().upper()
-            target_kind = str(row.get("target_kind") or "").strip().upper()
-            target_ref = str(row.get("target_ref") or "").strip()
-            entry: dict[str, Any] = {
-                "relation_type": relation_type,
-                "target_kind": target_kind,
-                "target_ref": target_ref,
-                "note": str(row.get("note") or "").strip() or None,
-                "display_order": int(row.get("display_order") or 0),
-            }
-
-            target_id = 0
-            try:
-                target_id = int(target_ref)
-            except (TypeError, ValueError):
-                target_id = 0
-
-            if target_kind == "ALBUM_MASTER" and target_id > 0:
-                entry["album_master_id"] = target_id
-                master_row = album_master_map.get(target_id)
-                if master_row:
-                    entry["target_label"] = str(master_row.get("title") or "").strip() or None
-                    entry["artist_or_brand"] = str(master_row.get("artist_or_brand") or "").strip() or None
-            elif target_kind == "PRODUCT_GROUP" and target_id > 0:
-                entry["product_group_id"] = target_id
-                group_row = product_group_map.get(target_id)
-                if group_row:
-                    entry["product_group_type"] = str(group_row.get("group_type") or "").strip().upper() or None
-                    entry["target_label"] = str(group_row.get("group_name") or "").strip() or None
-            elif target_kind == "OWNED_ITEM" and target_id > 0:
-                entry["target_owned_item_id"] = target_id
-                item_row = owned_item_map.get(target_id)
-                if item_row:
-                    entry["target_category"] = str(item_row.get("category") or "").strip().upper() or None
-                    entry["target_copy_group_key"] = str(item_row.get("copy_group_key") or "").strip() or None
-                    entry["artist_or_brand"] = str(item_row.get("artist_or_brand") or "").strip() or None
-                    entry["target_label"] = _owned_item_relation_label(item_row)
-            elif target_kind == "COPY_GROUP" and target_ref:
-                entry["target_copy_group_key"] = target_ref
-
-            _register_relation(entry, relation_type)
-
-        if bound_master:
-            master_id = int(bound_master.get("album_master_id") or 0)
-            if master_id > 0 and not any(
-                str(row.get("target_kind") or "").strip().upper() == "ALBUM_MASTER"
-                and str(row.get("target_ref") or "").strip() == str(master_id)
-                for row in master_links
-            ):
-                master_links.insert(
-                    0,
-                    {
-                        "relation_type": "MASTER_CHILD",
-                        "target_kind": "ALBUM_MASTER",
-                        "target_ref": str(master_id),
-                        "target_label": str(bound_master.get("title") or "").strip() or None,
-                        "album_master_id": master_id,
-                        "artist_or_brand": str(bound_master.get("artist_or_brand") or "").strip() or None,
-                        "display_order": 0,
-                    },
-                )
-
-        target_conditions = ["(target_kind = 'OWNED_ITEM' AND target_ref = ?)"]
-        target_params: list[Any] = [str(owned_item_id)]
-        copy_group_key = str(owned_row.get("copy_group_key") or "").strip()
-        if copy_group_key:
-            target_conditions.append("(target_kind = 'COPY_GROUP' AND target_ref = ?)")
-            target_params.append(copy_group_key)
-
-        box_components: list[dict[str, Any]] = []
-        seen_component_ids: set[int] = set()
-        if target_conditions:
-            box_rows = conn.execute(
-                f"""
-                SELECT source_scope_kind, source_scope_key, note
-                FROM owned_item_relation
-                WHERE relation_type = 'BOX_MEMBER_OF'
-                  AND ({' OR '.join(target_conditions)})
-                ORDER BY display_order ASC, id ASC
-                """,
-                target_params,
-            ).fetchall()
-            for row in box_rows:
-                scope_kind = str(row.get("source_scope_kind") or "").strip().upper()
-                scope_key = str(row.get("source_scope_key") or "").strip()
-                note = str(row.get("note") or "").strip() or None
-                source_rows: list[dict[str, Any]] = []
-                if scope_kind == "OWNED_ITEM":
-                    try:
-                        source_id = int(scope_key)
-                    except (TypeError, ValueError):
-                        source_id = 0
-                    if source_id > 0:
-                        brief = _fetch_owned_item_relation_brief(conn, source_id)
-                        if brief:
-                            source_rows = [brief]
-                        else:
-                            source_rows = [{"id": source_id, "category": None, "copy_group_key": None}]
-                elif scope_kind == "COPY_GROUP" and scope_key:
-                    source_rows = _fetch_owned_item_relation_group_items(conn, scope_key)
-                for source_row in source_rows:
-                    source_id = int(source_row.get("id") or 0)
-                    if source_id <= 0 or source_id in seen_component_ids:
-                        continue
-                    seen_component_ids.add(source_id)
-                    box_components.append(
-                        {
-                            "source_owned_item_id": source_id,
-                            "source_item_name": _owned_item_relation_label(source_row)
-                            if source_row.get("id")
-                            else f"owned_item_id={source_id}",
-                            "source_copy_group_key": str(source_row.get("copy_group_key") or "").strip() or None,
-                            "source_category": str(source_row.get("category") or "").strip().upper() or None,
-                            "note": note,
-                        }
-                    )
-
-    return {
-        "uses_shared_relation_scope": uses_shared,
-        "scope_key": scope_key if uses_shared else None,
-        "master_links": master_links,
-        "series_memberships": series_memberships,
-        "box_memberships": box_memberships,
-        "related_releases": related_releases,
-        "box_components": box_components,
-    }
-
-
-@app.put("/owned-items/{owned_item_id}/relations")
-def save_owned_item_relations(
-    owned_item_id: int,
-    payload: OwnedItemRelationSaveRequest,
-    request: Request,
-) -> dict[str, Any]:
-    _require_admin_request(request)
-    owned_row = db.get_owned_item(owned_item_id)
-    if owned_row is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-    scope_kind, scope_key, _ = _resolve_owned_item_relation_scope(owned_row)
-
-    normalized: list[tuple[str, str, str, str | None, int]] = []
-    seen: set[tuple[str, str, str]] = set()
-    for index, rel in enumerate(payload.relations):
-        relation_type = str(rel.relation_type or "").strip().upper()
-        target_kind = str(rel.target_kind or "").strip().upper()
-        target_ref = str(rel.target_ref or "").strip()
-        if not relation_type or not target_kind or not target_ref:
-            continue
-        key = (relation_type, target_kind, target_ref)
-        if key in seen:
-            continue
-        seen.add(key)
-        display_order = int(rel.display_order if rel.display_order is not None else index)
-        note = str(rel.note or "").strip() or None
-        normalized.append((relation_type, target_kind, target_ref, note, display_order))
-
-    now = db.utc_now_iso()
-    with db.get_conn() as conn:
-        conn.execute(
-            "DELETE FROM owned_item_relation WHERE source_scope_kind = ? AND source_scope_key = ?",
-            (scope_kind, scope_key),
-        )
-        for relation_type, target_kind, target_ref, note, display_order in normalized:
-            conn.execute(
-                """
-                INSERT INTO owned_item_relation (
-                  source_scope_kind,
-                  source_scope_key,
-                  relation_type,
-                  target_kind,
-                  target_ref,
-                  display_order,
-                  note,
-                  created_at,
-                  updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    scope_kind,
-                    scope_key,
-                    relation_type,
-                    target_kind,
-                    target_ref,
-                    display_order,
-                    note,
-                    now,
-                    now,
-                ),
-            )
-
-    return get_owned_item_relations(owned_item_id, request)
-
-
 @app.get("/product-groups")
 def list_product_groups(
     request: Request,
@@ -7107,92 +5990,6 @@ def create_product_group(payload: ProductGroupCreateRequest, request: Request) -
     if row is None:
         raise HTTPException(status_code=500, detail="failed to create product group")
     return dict(row)
-
-
-@app.get("/owned-item-relation-targets")
-def search_owned_item_relation_targets(
-    request: Request,
-    kind: Literal["owned_item"] = Query(default="owned_item"),
-    q: str = Query(default=""),
-    owned_item_id: int | None = Query(default=None, ge=1),
-    limit: int = Query(default=12, ge=1, le=50),
-) -> dict[str, Any]:
-    _require_admin_request(request)
-    query_text = str(q or "").strip().lower()
-    if not query_text:
-        return {"items": []}
-    like = f"%{query_text}%"
-    params: list[Any] = [like, like, like]
-    exclude_sql = ""
-    if owned_item_id:
-        exclude_sql = "AND oi.id <> ?"
-        params.append(int(owned_item_id))
-    params.append(limit)
-    with db.get_conn() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT
-              oi.id,
-              oi.category,
-              oi.copy_group_key,
-              oi.item_name_override,
-              mid.artist_or_brand,
-              am.title AS master_title
-            FROM owned_item oi
-            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
-            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-              AND (
-                LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-                OR LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
-                OR LOWER(COALESCE(am.title, '')) LIKE ?
-              )
-              {exclude_sql}
-            ORDER BY oi.updated_at DESC, oi.id DESC
-            LIMIT ?
-            """,
-            params,
-        ).fetchall()
-
-    items = []
-    for row in rows:
-        data = dict(row)
-        label = _owned_item_relation_label(data)
-        copy_group_key = str(data.get("copy_group_key") or "").strip() or None
-        if copy_group_key:
-            scope_kind = "COPY_GROUP"
-            scope_key = copy_group_key
-        else:
-            scope_kind = "OWNED_ITEM"
-            scope_key = str(int(data.get("id") or 0))
-        items.append(
-            {
-                "owned_item_id": int(data.get("id") or 0),
-                "label": label,
-                "category": str(data.get("category") or "").strip().upper() or None,
-                "copy_group_key": copy_group_key,
-                "scope_kind": scope_kind,
-                "scope_key": scope_key,
-            }
-        )
-
-    return {"items": items}
-
-
-@app.get("/owned-items/{owned_item_id}/copies", response_model=list[OwnedItemListItem])
-def get_owned_item_copies(owned_item_id: int) -> list[OwnedItemListItem]:
-    base_row = db.get_owned_item_list_row(owned_item_id)
-    if base_row is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    copy_group_key = str(base_row.get("copy_group_key") or "").strip()
-    if not copy_group_key:
-        return [_to_owned_item_list_item(base_row)]
-
-    rows = db.list_owned_items_by_copy_group(copy_group_key)
-    if not rows:
-        rows = [base_row]
-    return [_to_owned_item_list_item(row) for row in rows]
 
 
 def _build_duplicate_payload_from_existing_item(
@@ -7272,69 +6069,6 @@ def _build_duplicate_payload_from_existing_item(
         }
 
     return payload
-
-
-@app.post("/owned-items/{owned_item_id}/duplicate", response_model=OwnedItemDuplicateResponse)
-def duplicate_owned_item(
-    owned_item_id: int,
-    payload: OwnedItemDuplicateRequest,
-) -> OwnedItemDuplicateResponse:
-    base_row = db.get_owned_item(owned_item_id)
-    if base_row is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    detail_row = db.get_owned_item_detail(owned_item_id)
-    bound = db.get_album_master_binding_for_owned_item(owned_item_id)
-    linked_master_id = int(bound["album_master_id"]) if bound else int(base_row.get("linked_album_master_id") or 0)
-    if linked_master_id <= 0 or not db.album_master_exists(linked_master_id):
-        linked_master_id = None
-
-    copy_group_key = str(base_row.get("copy_group_key") or "").strip()
-    notices: list[str] = []
-    if not copy_group_key:
-        copy_group_key = f"COPY-{uuid4().hex[:12].upper()}"
-        db.set_owned_item_copy_group(owned_item_id=owned_item_id, copy_group_key=copy_group_key)
-        notices.append(f"원본 상품 copy_group 지정: {copy_group_key}")
-
-    create_payload = _build_duplicate_payload_from_existing_item(
-        base_row=base_row,
-        detail_row=detail_row,
-        copy_group_key=copy_group_key,
-        linked_master_id=linked_master_id,
-    )
-    create_model = OwnedItemCreate(**create_payload)
-    normalized = create_model.model_dump()
-    _normalize_music_detail_payload(normalized)
-    _normalize_goods_detail_payload(normalized)
-
-    created_ids: list[int] = []
-    seen_notices: set[str] = set()
-    resolved_master_id = int(normalized.get("linked_album_master_id") or 0)
-    duplicate_count = max(1, int(payload.count or 1))
-
-    for _ in range(duplicate_count):
-        owned_new_id = db.insert_owned_item(dict(normalized))
-        created_ids.append(owned_new_id)
-        resolved_master_id, link_notices = _apply_post_create_links(
-            payload=create_model,
-            owned_item_id=owned_new_id,
-            preferred_master_id=resolved_master_id,
-        )
-        for msg in link_notices:
-            text = str(msg or "").strip()
-            if text and text not in seen_notices:
-                seen_notices.add(text)
-                notices.append(text)
-
-    shown_ids = ", ".join(str(v) for v in created_ids[:8])
-    tail = f" 외 {len(created_ids) - 8}건" if len(created_ids) > 8 else ""
-    notices.insert(0, f"복제본 {duplicate_count}건 생성 완료 (owned_item_id: {shown_ids}{tail})")
-    return OwnedItemDuplicateResponse(
-        source_owned_item_id=owned_item_id,
-        copy_group_key=copy_group_key,
-        created_ids=created_ids,
-        notices=notices,
-    )
 
 
 def _annotate_owned_flags(candidates: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -7427,162 +6161,6 @@ def _album_master_variant_item_from_owned_row(row: dict[str, Any], source_code: 
         owned_count=1,
         raw={},
     )
-
-
-@app.post("/album-masters/search", response_model=AlbumMasterSearchResponse)
-def search_album_masters(payload: AlbumMasterSearchRequest) -> AlbumMasterSearchResponse:
-    direct_candidates = _build_direct_album_master_candidates(payload.query, source=payload.source)
-    if direct_candidates is not None:
-        candidates = direct_candidates
-    else:
-        candidates = search_album_master_candidates(
-            query=payload.query,
-            source=payload.source,
-            limit=payload.limit,
-            artist_or_brand=payload.artist_or_brand,
-            title=payload.title,
-        )
-    return AlbumMasterSearchResponse(query=payload.query, candidates=candidates)
-
-
-@app.get("/album-masters/variants", response_model=AlbumMasterVariantsResponse)
-def get_album_master_variants_api(
-    source: str = Query(pattern="^(DISCOGS|MANIADB)$"),
-    master_external_id: str = Query(min_length=1, max_length=128),
-    album_master_id: int | None = Query(default=None, ge=1),
-    limit: int | None = Query(default=None, ge=1, le=200),
-    page: int = Query(default=1, ge=1),
-    page_size: int | None = Query(default=None, ge=1, le=100),
-    catalog_no: str | None = Query(default=None, max_length=120),
-    barcode: str | None = Query(default=None, max_length=120),
-) -> AlbumMasterVariantsResponse:
-    source_u = str(source or "").strip().upper()
-    effective_master_external_id = str(master_external_id or "").strip()
-    page_size_n = int(page_size or min(int(limit or 30), 100))
-    page_n = max(1, int(page))
-    catalog_no_q = str(catalog_no or "").strip() or None
-    barcode_q = str(barcode or "").strip() or None
-    fallback_member_rows: list[dict[str, Any]] = []
-    member_rows_for_source = (
-        [
-            row
-            for row in db.list_owned_items_by_album_master(int(album_master_id or 0))
-            if str(row.get("source_code") or "").strip().upper() == source_u
-        ]
-        if int(album_master_id or 0) > 0
-        else []
-    )
-    source_master_refs = (
-        db.list_album_master_external_refs(int(album_master_id or 0), source_code=source_u)
-        if int(album_master_id or 0) > 0
-        else []
-    )
-    if source_u == "DISCOGS":
-        requested_master_external_id = effective_master_external_id
-        effective_master_external_id, corrected = _resolve_discogs_master_id_from_album_context(
-            master_external_id=effective_master_external_id,
-            album_master_id=album_master_id,
-        )
-        if corrected and int(album_master_id or 0) > 0:
-            db.normalize_album_master_source_id(
-                album_master_id=int(album_master_id or 0),
-                source_code="DISCOGS",
-                source_master_id=effective_master_external_id,
-            )
-        elif member_rows_for_source:
-            if not source_master_refs or any(
-                str(row.get("source_external_id") or "").strip() == requested_master_external_id
-                for row in member_rows_for_source
-            ):
-                fallback_member_rows = member_rows_for_source
-    elif member_rows_for_source:
-        if not source_master_refs or any(
-            str(row.get("source_external_id") or "").strip() == effective_master_external_id
-            for row in member_rows_for_source
-        ):
-            fallback_member_rows = member_rows_for_source
-    if fallback_member_rows:
-        total_count = len(fallback_member_rows)
-        start = max(0, (page_n - 1) * page_size_n)
-        page_rows = fallback_member_rows[start : start + page_size_n]
-        annotated = [_album_master_variant_item_from_owned_row(row, source_u) for row in page_rows]
-        return AlbumMasterVariantsResponse(
-            source=source_u,
-            master_external_id=effective_master_external_id,
-            items=annotated,
-            page=page_n,
-            page_size=page_size_n,
-            total_count=total_count,
-            has_next=(start + page_size_n) < total_count,
-            filtered=False,
-            filter_catalog_no=None,
-            filter_barcode=None,
-            truncated=False,
-        )
-    paged = get_album_master_variants_page(
-        source=source_u,
-        master_external_id=effective_master_external_id,
-        page=page_n,
-        page_size=page_size_n,
-        catalog_no=catalog_no_q,
-        barcode=barcode_q,
-        include_details=bool(barcode_q),
-    )
-    items = [row for row in (paged.get("items") if isinstance(paged, dict) else []) if isinstance(row, dict)]
-    external_ids = sorted({str(row.get("external_id") or "").strip() for row in items if str(row.get("external_id") or "").strip()})
-    owned_counts = db.get_owned_counts_by_source(source_u, external_ids) if external_ids else {}
-    annotated: list[dict[str, Any]] = []
-    for row in items:
-        ext = str(row.get("external_id") or "").strip()
-        cnt = int(owned_counts.get(ext, 0)) if ext else 0
-        row2 = dict(row)
-        row2["is_owned"] = cnt > 0
-        row2["owned_count"] = cnt
-        annotated.append(row2)
-    return AlbumMasterVariantsResponse(
-        source=source_u,
-        master_external_id=effective_master_external_id,
-        items=annotated,
-        page=int(paged.get("page") or page_n),
-        page_size=int(paged.get("page_size") or page_size_n),
-        total_count=(
-            int(paged.get("total_count"))
-            if isinstance(paged.get("total_count"), int) and int(paged.get("total_count")) >= 0
-            else None
-        ),
-        has_next=bool(paged.get("has_next")),
-        filtered=bool(paged.get("filtered")),
-        filter_catalog_no=str(paged.get("filter_catalog_no") or "").strip() or None,
-        filter_barcode=str(paged.get("filter_barcode") or "").strip() or None,
-        truncated=bool(paged.get("truncated")),
-    )
-
-
-@app.post("/album-masters/bind", response_model=AlbumMasterBindResponse)
-def bind_album_master(payload: AlbumMasterBindRequest) -> AlbumMasterBindResponse:
-    master_domain_code = _infer_album_master_domain_code(
-        source_code=payload.source,
-        title=payload.title,
-        artist_or_brand=payload.artist_or_brand,
-        raw=payload.raw,
-    )
-    album_master_id = db.upsert_album_master(
-        source_code=payload.source,
-        source_master_id=payload.master_external_id,
-        title=payload.title,
-        artist_or_brand=payload.artist_or_brand,
-        domain_code=master_domain_code,
-        release_year=payload.release_year,
-        raw=payload.raw,
-    )
-    linked_count = db.bind_album_master_members(
-        album_master_id=album_master_id,
-        owned_item_ids=payload.owned_item_ids,
-        replace_existing=payload.replace_existing,
-    )
-    for owned_item_id in payload.owned_item_ids:
-        db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
-    return AlbumMasterBindResponse(album_master_id=album_master_id, linked_count=linked_count)
 
 
 def _infer_music_category_from_format(format_name: str | None) -> str:
@@ -7688,272 +6266,6 @@ def _merge_variant_with_release_snapshot(
             continue
         merged[key] = value
     return merged
-
-
-@app.post("/album-masters/import-variants", response_model=AlbumMasterImportVariantsResponse)
-def import_album_master_variants(payload: AlbumMasterImportVariantsRequest) -> AlbumMasterImportVariantsResponse:
-    source = str(payload.source or "").strip().upper()
-    target_master_id = int(payload.linked_album_master_id or 0)
-    effective_master_external_id = str(payload.master_external_id or "").strip()
-    if source == "DISCOGS":
-        effective_master_external_id, corrected = _resolve_discogs_master_id_from_album_context(
-            master_external_id=effective_master_external_id,
-            album_master_id=payload.linked_album_master_id,
-        )
-        if corrected and target_master_id > 0:
-            normalized_master_id = db.normalize_album_master_source_id(
-                album_master_id=target_master_id,
-                source_code="DISCOGS",
-                source_master_id=effective_master_external_id,
-            )
-            if normalized_master_id > 0:
-                target_master_id = normalized_master_id
-    selected_external_ids = [
-        str(v).strip()
-        for v in payload.selected_variant_external_ids
-        if str(v).strip()
-    ]
-    selected_external_ids = list(dict.fromkeys(selected_external_ids))
-    variant_by_external: dict[str, dict[str, Any]] = {}
-
-    if selected_external_ids:
-        selected_set = set(selected_external_ids)
-        page = 1
-        page_size = 100
-        scan_guard = 0
-        while selected_set and scan_guard < 200:
-            paged = get_album_master_variants_page(
-                source=source,
-                master_external_id=effective_master_external_id,
-                page=page,
-                page_size=page_size,
-                include_details=False,
-            )
-            items = [row for row in (paged.get("items") if isinstance(paged, dict) else []) if isinstance(row, dict)]
-            if not items:
-                break
-            for row in items:
-                ext = str(row.get("external_id") or "").strip()
-                if not ext:
-                    continue
-                if ext in selected_set and ext not in variant_by_external:
-                    variant_by_external[ext] = row
-            if not bool(paged.get("has_next")):
-                break
-            page += 1
-            scan_guard += 1
-    else:
-        variants = get_album_master_variants(
-            source=source,
-            master_external_id=effective_master_external_id,
-            limit=200,
-            include_details=(source == "DISCOGS"),
-        )
-        for row in variants:
-            ext = str(row.get("external_id") or "").strip()
-            if not ext:
-                continue
-            if ext not in variant_by_external:
-                variant_by_external[ext] = row
-        selected_external_ids = list(variant_by_external.keys())
-
-    if not variant_by_external and not selected_external_ids:
-        raise HTTPException(status_code=404, detail="master variants not found")
-    if not selected_external_ids:
-        raise HTTPException(status_code=400, detail="no variant external ids selected")
-
-    notices: list[str] = []
-    if effective_master_external_id and effective_master_external_id != str(payload.master_external_id or "").strip():
-        notices.append(
-            f"Discogs 마스터 ID 보정: {payload.master_external_id} -> {effective_master_external_id}"
-        )
-    if target_master_id > 0:
-        if not db.album_master_exists(target_master_id):
-            raise HTTPException(status_code=400, detail=f"linked_album_master_id not found: {target_master_id}")
-    else:
-        master_title, master_artist, master_year, master_raw = _resolve_master_seed_from_variants(
-            payload=payload,
-            variant_by_external=variant_by_external,
-            selected_external_ids=selected_external_ids,
-        )
-        target_master_id = db.upsert_album_master(
-            source_code=source,
-            source_master_id=effective_master_external_id,
-            title=master_title,
-            artist_or_brand=master_artist,
-            domain_code=_infer_album_master_domain_code(
-                explicit_domain_code=payload.domain_code,
-                source_code=source,
-                title=master_title,
-                artist_or_brand=master_artist,
-                raw=master_raw,
-                linked_album_master_id=payload.linked_album_master_id,
-            ),
-            release_year=master_year,
-            raw=master_raw,
-        )
-        notices.append(f"마스터 생성/갱신: album_master_id={target_master_id}")
-
-    source_owned_counts = db.get_owned_counts_by_source(source, selected_external_ids)
-    existing_rows = db.list_owned_items_by_source_external_ids(source, selected_external_ids)
-    existing_ids_by_external: dict[str, list[int]] = {}
-    for row in existing_rows:
-        ext = str(row.get("source_external_id") or "").strip()
-        owned_item_id = int(row.get("id") or 0)
-        if not ext or owned_item_id <= 0:
-            continue
-        existing_ids_by_external.setdefault(ext, []).append(owned_item_id)
-
-    created_items: list[AlbumMasterImportCreatedItem] = []
-    skipped_items: list[AlbumMasterImportSkippedItem] = []
-    existing_ids_for_bind: set[int] = set()
-
-    for ext in selected_external_ids:
-        variant_base = variant_by_external.get(ext)
-        if variant_base is None:
-            skipped_items.append(
-                AlbumMasterImportSkippedItem(
-                    external_id=ext,
-                    reason="not_found_in_master_variants",
-                    owned_count=0,
-                )
-            )
-            continue
-        snapshot = get_source_release_snapshot(source=source, external_id=ext)
-        variant = _merge_variant_with_release_snapshot(variant_base, snapshot)
-
-        owned_count = int(source_owned_counts.get(ext, 0))
-        if payload.skip_if_owned and owned_count > 0:
-            for existing_id in existing_ids_by_external.get(ext, []):
-                if existing_id > 0:
-                    existing_ids_for_bind.add(existing_id)
-            skipped_items.append(
-                AlbumMasterImportSkippedItem(
-                    external_id=ext,
-                    reason="already_owned",
-                    owned_count=owned_count,
-                )
-            )
-            continue
-
-        category = _infer_music_category_from_format(str(variant.get("format_name") or ""))
-        artist = str(variant.get("artist_or_brand") or "").strip() or None
-        title = str(variant.get("title") or "").strip() or f"{source}#{ext}"
-        name_bits = [artist, title]
-        item_name_override = " - ".join([v for v in name_bits if v]) or title
-        track_list_raw = variant.get("track_list")
-        track_list = track_list_raw if isinstance(track_list_raw, list) else []
-        mapped_domain = _normalize_domain_code(variant.get("domain_code")) or ""
-        mapped_release_type = str(variant.get("release_type") or "").strip().upper()
-        if mapped_release_type not in RELEASE_TYPES:
-            mapped_release_type = ""
-
-        create_payload = {
-            "category": category,
-            "size_group": _default_size_group_for_category(category),
-            "preferred_storage_size_group": _default_size_group_for_category(category),
-            "quantity": int(payload.quantity or 1),
-            "is_second_hand": bool(payload.is_second_hand),
-            "status": "IN_COLLECTION",
-            "signature_type": "NONE",
-            "source_code": source,
-            "source_external_id": ext,
-            "domain_code": payload.domain_code or (mapped_domain or None),
-            "release_type": payload.release_type or (mapped_release_type or None),
-            "linked_album_master_id": target_master_id,
-            "linked_artist_name": None,
-            "item_name_override": item_name_override,
-            "purchase_source": payload.purchase_source,
-            "memory_note": payload.memory_note,
-            "subtype_option_ids": list(payload.subtype_option_ids or []),
-            "soundtrack_option_ids": list(payload.soundtrack_option_ids or []),
-            "music_detail": {
-                "format_name": category,
-                "is_promotional_not_for_sale": False,
-                "artist_or_brand": artist,
-                "release_year": variant.get("release_year"),
-                "released_date": variant.get("released_date"),
-                "barcode": str(variant.get("barcode") or "").strip() or None,
-                "label_name": str(variant.get("label_name") or "").strip() or None,
-                "catalog_no": _discogs_catalog_no(variant.get("catalog_no")),
-                "cover_image_url": str(variant.get("cover_image_url") or "").strip() or None,
-                "track_list": [str(v).strip() for v in track_list if str(v).strip()],
-                "media_type": str(variant.get("media_type") or "").strip() or None,
-                "genres": _clean_string_list(variant.get("genres")),
-                "styles": _clean_string_list(variant.get("styles")),
-                "disc_count": variant.get("disc_count"),
-                "speed_rpm": variant.get("speed_rpm"),
-                "has_obi": _normalize_has_obi_input(variant.get("has_obi")),
-                "runout_matrix": _clean_runout_list(variant.get("runout_matrix")),
-                "pressing_country": variant.get("pressing_country"),
-                "source_notes": _clean_text(variant.get("source_notes")),
-                "credits": _clean_string_list(variant.get("credits")),
-                "identifier_items": _clean_dict_list(variant.get("identifier_items")),
-                "image_items": _clean_dict_list(variant.get("image_items")),
-                "company_items": _clean_dict_list(variant.get("company_items")),
-                "series": _clean_string_list(variant.get("series")),
-                "format_items": _clean_dict_list(variant.get("format_items")),
-                "track_items": _clean_dict_list(variant.get("track_items")),
-                "label_items": _clean_dict_list(variant.get("label_items")),
-            },
-        }
-
-        try:
-            created = create_owned_item(OwnedItemCreate(**create_payload))
-        except HTTPException as exc:
-            skipped_items.append(
-                AlbumMasterImportSkippedItem(
-                    external_id=ext,
-                    reason=str(exc.detail or f"create_failed_{exc.status_code}"),
-                    owned_count=owned_count,
-                )
-            )
-            continue
-        except Exception as exc:
-            skipped_items.append(
-                AlbumMasterImportSkippedItem(
-                    external_id=ext,
-                    reason=f"create_failed: {exc}",
-                    owned_count=owned_count,
-                )
-            )
-            continue
-
-        created_items.append(
-            AlbumMasterImportCreatedItem(
-                external_id=ext,
-                owned_item_id=int(created.owned_item_id),
-                label_id=str(created.label_id),
-                category=category,
-                format_name=str(variant.get("format_name") or "").strip() or category,
-                title=item_name_override,
-            )
-        )
-
-    if existing_ids_for_bind:
-        db.bind_album_master_members(
-            album_master_id=target_master_id,
-            owned_item_ids=sorted(existing_ids_for_bind),
-            replace_existing=False,
-        )
-        for existing_id in sorted(existing_ids_for_bind):
-            db.set_owned_item_linked_album_master(owned_item_id=existing_id, album_master_id=target_master_id)
-        notices.append(
-            f"이미 보유 중인 상품 {len(existing_ids_for_bind)}건을 선택 마스터에 연결했습니다."
-        )
-
-    linked_count = len(db.list_owned_items_by_album_master(target_master_id))
-    return AlbumMasterImportVariantsResponse(
-        album_master_id=target_master_id,
-        source=source,
-        master_external_id=effective_master_external_id,
-        created_count=len(created_items),
-        skipped_count=len(skipped_items),
-        linked_count=linked_count,
-        created_items=created_items,
-        skipped_items=skipped_items,
-        notices=notices,
-    )
 
 
 def _search_compact_text(value: Any) -> str:
@@ -8194,173 +6506,6 @@ def _ensure_discogs_cover_preview(release_id: str) -> tuple[Path, str]:
     return target_path, media_type
 
 
-@app.get("/album-masters", response_model=list[AlbumMasterListItem])
-def list_album_masters(
-    response: Response,
-    source: str | None = Query(default=None, pattern="^(DISCOGS|MANIADB|MANUAL)$"),
-    q: str | None = Query(default=None),
-    artist_or_brand: str | None = Query(default=None),
-    item_name: str | None = Query(default=None),
-    catalog_no: str | None = Query(default=None),
-    barcode: str | None = Query(default=None),
-    release_year: int | None = Query(default=None, ge=1900, le=2100),
-    category: str | None = Query(default=None, pattern="^(LP|CD|CASSETTE|8TRACK|DIGITAL|REEL_TO_REEL|T_SHIRT|POSTER|LIGHT_STICK|HAT|BAG|CUP|OTHER)$"),
-    media_only: bool = Query(default=False),
-    domain_code: str | None = Query(default=None, pattern="^(KOREA|JAPAN|GREATER_CHINA|WESTERN|OTHER_ASIA|WORLD_OTHER|UNKNOWN)$"),
-    release_type: str | None = Query(default=None, pattern="^(ALBUM|EP|SINGLE)$"),
-    include_total: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-) -> list[AlbumMasterListItem]:
-    match_query = str(item_name or q or "").strip()
-    fetch_limit = limit
-    fetch_offset = offset
-    if match_query:
-        fetch_limit = min(500, max(limit, offset + (limit * 5)))
-        fetch_offset = 0
-    rows = db.list_album_masters(
-        source_code=source,
-        q=q,
-        artist_or_brand=artist_or_brand,
-        item_name=item_name,
-        catalog_no=catalog_no,
-        barcode=barcode,
-        release_year=release_year,
-        category=category,
-        media_only=media_only,
-        domain_code=domain_code,
-        release_type=release_type,
-        limit=fetch_limit,
-        offset=fetch_offset,
-    )
-    if include_total:
-        total = db.count_album_masters(
-            source_code=source,
-            q=q,
-            artist_or_brand=artist_or_brand,
-            item_name=item_name,
-            catalog_no=catalog_no,
-            barcode=barcode,
-            release_year=release_year,
-            category=category,
-            media_only=media_only,
-            domain_code=domain_code,
-            release_type=release_type,
-        )
-        response.headers["X-Total-Count"] = str(total)
-    result: list[AlbumMasterListItem] = []
-    for row in rows:
-        row2 = dict(row)
-        audio_count = int(row2.get("audio_asset_count") or 0)
-        row2["audio_asset_count"] = audio_count
-        row2["has_audio"] = audio_count > 0
-        preview_text = str(row2.pop("member_preview_text", "") or "").strip()
-        preview_items: list[str] = []
-        if preview_text:
-            seen_preview: set[str] = set()
-            for raw in preview_text.split(" || "):
-                text = str(raw or "").strip()
-                if not text or text in seen_preview:
-                    continue
-                seen_preview.add(text)
-                preview_items.append(text)
-        row2["member_preview"] = preview_items
-        location_preview_text = str(row2.pop("member_location_preview_text", "") or "").strip()
-        location_preview_items: list[str] = []
-        if location_preview_text:
-            seen_locations: set[str] = set()
-            for raw in location_preview_text.split(" || "):
-                text = str(raw or "").strip()
-                if not text or text in seen_locations:
-                    continue
-                seen_locations.add(text)
-                location_preview_items.append(text)
-        row2["member_location_preview"] = location_preview_items
-        member_location_actions, member_items_preview = _album_master_member_context(int(row2.get("id") or 0))
-        row2["member_location_actions"] = member_location_actions
-        row2["member_items_preview"] = member_items_preview
-        row2["matched_track_preview"] = (
-            db.list_album_master_track_matches(int(row2.get("id") or 0), match_query, limit=3)
-            if match_query
-            else []
-        )
-        result.append(AlbumMasterListItem(**row2))
-    if match_query:
-        result.sort(key=lambda row: _album_master_search_sort_key(row, match_query))
-        result = result[offset : offset + limit]
-    return result
-
-
-@app.patch("/album-masters/{album_master_id}/sort-artist-name", response_model=AlbumMasterSortArtistUpdateResponse)
-def update_album_master_sort_artist_name(
-    album_master_id: int,
-    payload: AlbumMasterSortArtistUpdateRequest,
-) -> AlbumMasterSortArtistUpdateResponse:
-    updated = db.update_album_master_sort_artist_name(
-        album_master_id=album_master_id,
-        sort_artist_name=payload.sort_artist_name,
-    )
-    if updated is None:
-        raise HTTPException(status_code=404, detail="album_master not found")
-    return AlbumMasterSortArtistUpdateResponse(
-        album_master_id=int(updated["id"]),
-        sort_artist_name=str(updated.get("sort_artist_name") or "").strip() or None,
-    )
-
-
-@app.patch("/album-masters/{album_master_id}/correction", response_model=AlbumMasterCorrectionUpdateResponse)
-def update_album_master_correction(
-    album_master_id: int,
-    payload: AlbumMasterCorrectionUpdateRequest,
-) -> AlbumMasterCorrectionUpdateResponse:
-    updated = db.update_album_master_correction(
-        album_master_id=album_master_id,
-        release_year=payload.release_year,
-        domain_code=payload.domain_code,
-        override_note=payload.override_note,
-    )
-    if updated is None:
-        raise HTTPException(status_code=404, detail="album_master not found")
-    return AlbumMasterCorrectionUpdateResponse(
-        album_master_id=int(updated["id"]),
-        release_year=int(updated["release_year"]) if updated.get("release_year") not in (None, "") else None,
-        domain_code=str(updated.get("domain_code") or "").strip() or None,
-        source_release_year=(
-            int(updated["source_release_year"]) if updated.get("source_release_year") not in (None, "") else None
-        ),
-        source_domain_code=str(updated.get("source_domain_code") or "").strip() or None,
-        override_release_year=(
-            int(updated["override_release_year"]) if updated.get("override_release_year") not in (None, "") else None
-        ),
-        override_domain_code=str(updated.get("override_domain_code") or "").strip() or None,
-        override_note=str(updated.get("override_note") or "").strip() or None,
-        has_manual_correction=bool(updated.get("has_manual_correction")),
-    )
-
-
-@app.get("/album-masters/{album_master_id}/members", response_model=list[OwnedItemListItem])
-def list_album_master_members(album_master_id: int) -> list[OwnedItemListItem]:
-    rows = db.list_owned_items_by_album_master(album_master_id=album_master_id)
-    return [_to_owned_item_list_item(row) for row in rows]
-
-
-@app.delete("/album-masters/{album_master_id}", response_model=AlbumMasterDeleteResponse)
-def delete_album_master(
-    album_master_id: int,
-    cascade_items: bool = Query(default=False),
-) -> AlbumMasterDeleteResponse:
-    result = db.delete_album_master(album_master_id=album_master_id, cascade_items=cascade_items)
-    if result is None:
-        raise HTTPException(status_code=404, detail="album_master not found")
-    return AlbumMasterDeleteResponse(
-        album_master_id=album_master_id,
-        deleted=True,
-        cascade_items=bool(cascade_items),
-        removed_member_links=int(result.get("removed_member_links") or 0),
-        deleted_owned_item_count=int(result.get("deleted_owned_item_count") or 0),
-    )
-
-
 def _album_master_source_priority(source_code: str) -> int:
     code = str(source_code or "").strip().upper()
     if code == "DISCOGS":
@@ -8383,109 +6528,6 @@ def _pick_duplicate_merge_target_id(duplicates: list[dict[str, Any]]) -> int | N
     )
     target_id = int(ranked[0].get("album_master_id") or 0)
     return target_id if target_id > 0 else None
-
-
-@app.get("/album-masters/{album_master_id}/duplicates", response_model=AlbumMasterDuplicateCheckResponse)
-def get_album_master_duplicates(
-    album_master_id: int,
-    limit: int = Query(default=20, ge=1, le=100),
-) -> AlbumMasterDuplicateCheckResponse:
-    if not db.album_master_exists(album_master_id):
-        raise HTTPException(status_code=404, detail="album_master not found")
-    rows = db.list_duplicate_album_masters(album_master_id=album_master_id, limit=limit)
-    duplicates: list[AlbumMasterDuplicateItem] = []
-    for row in rows:
-        duplicate_master_id = int(row.get("album_master_id") or 0)
-        if duplicate_master_id <= 0:
-            continue
-        source_code = str(row.get("source_code") or "").strip().upper()
-        if source_code not in {"DISCOGS", "MANIADB", "MUSICBRAINZ", "MANUAL"}:
-            source_code = "MANUAL"
-        release_year: int | None = None
-        raw_year = row.get("release_year")
-        try:
-            release_year = int(raw_year) if raw_year is not None and str(raw_year).strip() else None
-        except (TypeError, ValueError):
-            release_year = None
-        duplicates.append(
-            AlbumMasterDuplicateItem(
-                album_master_id=duplicate_master_id,
-                source_code=source_code,
-                source_master_id=str(row.get("source_master_id") or "").strip(),
-                title=str(row.get("title") or "").strip() or f"Master {duplicate_master_id}",
-                artist_or_brand=str(row.get("artist_or_brand") or "").strip() or None,
-                release_year=release_year,
-                member_count=int(row.get("member_count") or 0),
-                updated_at=str(row.get("updated_at") or "").strip() or None,
-            )
-        )
-    suggested_target_album_master_id = _pick_duplicate_merge_target_id(rows)
-    return AlbumMasterDuplicateCheckResponse(
-        album_master_id=album_master_id,
-        duplicate_count=len(duplicates),
-        suggested_target_album_master_id=suggested_target_album_master_id,
-        duplicates=duplicates,
-    )
-
-
-@app.post("/album-masters/{album_master_id}/merge", response_model=AlbumMasterMergeResponse)
-def merge_album_master(
-    request: Request,
-    album_master_id: int,
-    payload: AlbumMasterMergeRequest,
-) -> AlbumMasterMergeResponse:
-    if not db.album_master_exists(album_master_id):
-        raise HTTPException(status_code=404, detail="album_master not found")
-    source_id = int(album_master_id)
-    target_id = int(payload.target_album_master_id)
-    if source_id == target_id:
-        count_rows = db.list_owned_items_by_album_master(target_id)
-        return AlbumMasterMergeResponse(
-            source_album_master_id=source_id,
-            target_album_master_id=target_id,
-            moved_member_count=0,
-            target_member_count=len(count_rows),
-            merge_history_id=None,
-            merged=False,
-        )
-    try:
-        result = db.merge_album_masters(
-            source_album_master_id=source_id,
-            target_album_master_id=target_id,
-            merged_by=_read_auth_username(request),
-        )
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    return AlbumMasterMergeResponse(
-        source_album_master_id=int(result.get("source_album_master_id") or source_id),
-        target_album_master_id=int(result.get("target_album_master_id") or target_id),
-        moved_member_count=int(result.get("moved_member_count") or 0),
-        target_member_count=int(result.get("target_member_count") or 0),
-        merge_history_id=int(result["merge_history_id"]) if result.get("merge_history_id") is not None else None,
-        merged=True,
-    )
-
-
-@app.get("/album-masters/merge-history", response_model=list[AlbumMasterMergeHistoryItem])
-def get_album_master_merge_history(
-    limit: int = Query(default=10, ge=1, le=50),
-) -> list[AlbumMasterMergeHistoryItem]:
-    rows = db.list_album_master_merge_history(limit=limit)
-    return [AlbumMasterMergeHistoryItem(**row) for row in rows]
-
-
-@app.post("/album-masters/merge-history/latest/rollback", response_model=AlbumMasterMergeRollbackResponse)
-def rollback_latest_album_master_merge(request: Request) -> AlbumMasterMergeRollbackResponse:
-    try:
-        result = db.rollback_latest_album_master_merge(rolled_back_by=_read_auth_username(request))
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return AlbumMasterMergeRollbackResponse(**result)
 
 
 @app.get("/discogs/identity", response_model=DiscogsIdentityResponse)
@@ -9965,6 +8007,11 @@ def _ensure_owned_item_master_link(owned_item_id: int) -> tuple[int, list[str]]:
             db.set_owned_item_linked_album_master(owned_item_id=oid, album_master_id=linked_master_id)
             return linked_master_id, notices
 
+    # `create_owned_item_auto_master` moved to app.api.owned_items in the
+    # router split; importing it lazily inside the helper avoids a hard
+    # cycle (this module imports the router file at the very bottom).
+    from .api.owned_items import create_owned_item_auto_master
+
     auto = create_owned_item_auto_master(oid)
     linked_master_id = int(auto.album_master_id or 0)
     if linked_master_id <= 0:
@@ -10132,86 +8179,6 @@ def _apply_new_item_location_recommendation(payload: OwnedItemCreate, owned_item
     return notices
 
 
-@app.post("/owned-items", response_model=OwnedItemCreateResponse)
-def create_owned_item(payload: OwnedItemCreate) -> OwnedItemCreateResponse:
-    _validate_signature(payload)
-    _validate_collection_rank(payload)
-    _validate_slot(payload.size_group, payload.storage_slot_id)
-    _validate_second_hand_music(payload)
-    if (payload.source_code and not payload.source_external_id) or (payload.source_external_id and not payload.source_code):
-        raise HTTPException(status_code=400, detail="source_code and source_external_id must be provided together")
-    linked_master_id = int(payload.linked_album_master_id or 0)
-    if linked_master_id > 0 and not db.album_master_exists(linked_master_id):
-        raise HTTPException(status_code=400, detail=f"linked_album_master_id not found: {linked_master_id}")
-
-    normalized_payload = payload.model_dump()
-    normalized_payload["size_group"] = _normalize_size_group_code(
-        normalized_payload.get("size_group"),
-        _default_size_group_for_category(normalized_payload.get("category") or payload.category),
-    )
-    normalized_payload["preferred_storage_size_group"] = _preferred_storage_size_group(
-        normalized_payload.get("preferred_storage_size_group"),
-        normalized_payload.get("size_group"),
-    )
-    _normalize_music_detail_payload(normalized_payload)
-    _normalize_goods_detail_payload(normalized_payload)
-    requested_quantity = max(1, int(normalized_payload.get("quantity") or 1))
-    create_count = requested_quantity if requested_quantity > 1 else 1
-
-    copy_group_key = str(normalized_payload.get("copy_group_key") or "").strip() or None
-    if create_count > 1 and not copy_group_key:
-        copy_group_key = f"COPY-{uuid4().hex[:12].upper()}"
-
-    created_ids: list[int] = []
-    notices: list[str] = []
-    seen_notices: set[str] = set()
-    resolved_master_id = linked_master_id
-
-    for _ in range(create_count):
-        one_payload = dict(normalized_payload)
-        one_payload["quantity"] = 1
-        if copy_group_key:
-            one_payload["copy_group_key"] = copy_group_key
-
-        owned_item_id = db.insert_owned_item(one_payload)
-        created_ids.append(owned_item_id)
-        resolved_master_id, item_notices = _apply_post_create_links(
-            payload=payload,
-            owned_item_id=owned_item_id,
-            preferred_master_id=resolved_master_id,
-        )
-        localized_artist_name = _apply_discogs_korean_artist_name_to_owned_item(owned_item_id)
-        location_notices = _apply_new_item_location_recommendation(payload=payload, owned_item_id=owned_item_id)
-        for msg in item_notices:
-            text = str(msg or "").strip()
-            if text and text not in seen_notices:
-                seen_notices.add(text)
-                notices.append(text)
-        if localized_artist_name:
-            text = f"Discogs 국내 아티스트명을 한글로 정규화했습니다: {localized_artist_name}"
-            if text not in seen_notices:
-                seen_notices.add(text)
-                notices.append(text)
-        for msg in location_notices:
-            text = str(msg or "").strip()
-            if text and text not in seen_notices:
-                seen_notices.add(text)
-                notices.append(text)
-
-    if create_count > 1:
-        shown_ids = ", ".join(str(v) for v in created_ids[:8])
-        tail = f" 외 {len(created_ids) - 8}건" if len(created_ids) > 8 else ""
-        notices.insert(0, f"동일 상품 복제본 {create_count}건을 개별 인스턴스로 생성했습니다. (owned_item_id: {shown_ids}{tail})")
-
-    first_id = int(created_ids[0])
-    return OwnedItemCreateResponse(
-        owned_item_id=first_id,
-        label_id=_build_label_id(payload.category, first_id),
-        linked_album_master_id=resolved_master_id if resolved_master_id > 0 else None,
-        notices=notices,
-    )
-
-
 def _build_manual_master_seed_from_owned_row(owned_item_id: int, row: dict[str, Any]) -> tuple[str, str | None, int | None, dict[str, Any]]:
     category = str(row.get("category") or "LP").strip().upper()
     title = str(row.get("item_name_override") or "").strip()
@@ -10250,199 +8217,6 @@ def _build_manual_master_seed_from_owned_row(owned_item_id: int, row: dict[str, 
         "source_external_id": row.get("source_external_id"),
     }
     return title, artist, release_year, raw
-
-
-@app.post("/owned-items/{owned_item_id}/auto-master", response_model=OwnedItemAutoMasterResponse)
-def create_owned_item_auto_master(owned_item_id: int) -> OwnedItemAutoMasterResponse:
-    row = db.get_owned_item_detail(owned_item_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    existing_bind = db.get_album_master_binding_for_owned_item(owned_item_id)
-    if existing_bind is not None:
-        album_master_id = int(existing_bind["album_master_id"])
-        source_code = str(existing_bind.get("source_code") or "MANUAL").strip().upper()
-        if source_code not in {"DISCOGS", "MANIADB", "MUSICBRAINZ", "MANUAL"}:
-            source_code = "MANUAL"
-        source_master_id = str(existing_bind.get("source_master_id") or "").strip()
-        title = str(existing_bind.get("title") or "").strip() or f"Master {album_master_id}"
-        linked_count = len(db.list_owned_items_by_album_master(album_master_id))
-        db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
-        return OwnedItemAutoMasterResponse(
-            owned_item_id=owned_item_id,
-            album_master_id=album_master_id,
-            source_code=source_code,
-            source_master_id=source_master_id,
-            title=title,
-            linked_count=linked_count,
-            notices=["이미 연결된 마스터를 사용했습니다."],
-        )
-
-    notices: list[str] = []
-    source_code = str(row.get("source_code") or "").strip().upper()
-    source_external_id = str(row.get("source_external_id") or "").strip()
-    if _source_supports_master_auto_link(source_code) and source_external_id:
-        notices.extend(
-            _link_source_master_for_created_item(
-                source_code=source_code,
-                source_external_id=source_external_id,
-                owned_item_id=owned_item_id,
-            )
-        )
-        discogs_bind = db.get_album_master_binding_for_owned_item(owned_item_id)
-        if discogs_bind is not None:
-            album_master_id = int(discogs_bind["album_master_id"])
-            source_master_id = str(discogs_bind.get("source_master_id") or "").strip()
-            title = str(discogs_bind.get("title") or "").strip() or f"{source_code} Master {source_master_id}"
-            linked_count = len(db.list_owned_items_by_album_master(album_master_id))
-            db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
-            return OwnedItemAutoMasterResponse(
-                owned_item_id=owned_item_id,
-                album_master_id=album_master_id,
-                source_code=source_code,
-                source_master_id=source_master_id,
-                title=title,
-                linked_count=linked_count,
-                notices=notices,
-            )
-
-    master_title, master_artist, master_year, raw = _build_manual_master_seed_from_owned_row(
-        owned_item_id=owned_item_id,
-        row=row,
-    )
-    source_master_id = f"OWNED-{owned_item_id}"
-    album_master_id = db.upsert_album_master(
-        source_code="MANUAL",
-        source_master_id=source_master_id,
-        title=master_title,
-        artist_or_brand=master_artist,
-        domain_code=_infer_album_master_domain_code(
-            explicit_domain_code=row.get("domain_code"),
-            source_code="MANUAL",
-            title=master_title,
-            artist_or_brand=master_artist,
-            raw=raw,
-        ),
-        release_year=master_year,
-        raw=raw,
-    )
-    linked_count = db.bind_album_master_members(
-        album_master_id=album_master_id,
-        owned_item_ids=[owned_item_id],
-        replace_existing=False,
-    )
-    db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
-    notices.append("간편 등록 메타를 기준으로 신규 마스터를 생성했습니다.")
-    return OwnedItemAutoMasterResponse(
-        owned_item_id=owned_item_id,
-        album_master_id=album_master_id,
-        source_code="MANUAL",
-        source_master_id=source_master_id,
-        title=master_title,
-        linked_count=linked_count,
-        notices=notices,
-    )
-
-
-@app.get("/owned-items/{owned_item_id}", response_model=OwnedItemDetailResponse)
-def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
-    row = db.get_owned_item_detail(owned_item_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    category_code = str(row.get("category") or "")
-    music_detail = None
-    goods_detail = None
-    if category_code in MUSIC_CATEGORIES:
-        music_detail = {
-            "format_name": row.get("format_name") or category_code,
-            "is_promotional_not_for_sale": bool(row.get("is_promotional_not_for_sale")),
-            "artist_or_brand": row.get("artist_or_brand"),
-            "release_year": row.get("release_year"),
-            "released_date": row.get("released_date"),
-            "barcode": row.get("barcode"),
-            "label_name": row.get("label_name"),
-            "catalog_no": _discogs_catalog_no(row.get("catalog_no")),
-            "cover_image_url": row.get("cover_image_url"),
-            "track_list": row.get("track_list") or [],
-            "media_type": row.get("media_type"),
-            "genres": row.get("genres") or [],
-            "styles": row.get("styles") or [],
-            "disc_count": row.get("disc_count"),
-            "speed_rpm": row.get("speed_rpm"),
-            "has_obi": row.get("has_obi"),
-            "runout_matrix": row.get("runout_matrix"),
-            "pressing_country": row.get("pressing_country"),
-            "source_notes": row.get("source_notes"),
-            "credits": row.get("credits") or [],
-            "identifier_items": row.get("identifier_items") or [],
-            "image_items": row.get("image_items") or [],
-            "company_items": row.get("company_items") or [],
-            "series": row.get("series") or [],
-            "format_items": row.get("format_items") or [],
-            "track_items": row.get("track_items") or [],
-            "label_items": row.get("label_items") or [],
-            "cover_condition": row.get("cover_condition"),
-            "disc_condition": row.get("disc_condition"),
-        }
-    else:
-        goods_image_urls = row.get("goods_image_urls") or []
-        goods_primary_image_url = row.get("goods_primary_image_url")
-        poster_storage_spec = row.get("poster_storage_spec")
-        tshirt_size = row.get("tshirt_size")
-        cup_material = row.get("cup_material")
-        hat_size = row.get("hat_size")
-        if goods_image_urls or goods_primary_image_url or poster_storage_spec or tshirt_size or cup_material or hat_size:
-            goods_detail = {
-                "image_urls": goods_image_urls,
-                "primary_image_url": goods_primary_image_url,
-                "poster_storage_spec": poster_storage_spec,
-                "tshirt_size": tshirt_size,
-                "cup_material": cup_material,
-                "hat_size": hat_size,
-            }
-
-    return OwnedItemDetailResponse(
-        id=int(row["id"]),
-        label_id=_build_label_id(category_code, int(row["id"])),
-        master_item_id=row.get("master_item_id"),
-        category=category_code,
-        item_name_override=row.get("item_name_override"),
-        quantity=int(row.get("quantity") or 1),
-        is_second_hand=bool(row.get("is_second_hand")),
-        size_group=str(row.get("size_group") or "STD"),
-        preferred_storage_size_group=str(row.get("preferred_storage_size_group") or row.get("size_group") or "STD"),
-        status=str(row.get("status") or "IN_COLLECTION"),
-        condition_grade=row.get("condition_grade"),
-        signature_type=str(row.get("signature_type") or "NONE"),
-        source_code=row.get("source_code"),
-        source_external_id=row.get("source_external_id"),
-        linked_album_master_id=row.get("linked_album_master_id"),
-        linked_artist_name=row.get("linked_artist_name"),
-        copy_group_key=row.get("copy_group_key"),
-        domain_code=row.get("domain_code"),
-        release_type=row.get("release_type"),
-        purchase_price=row.get("purchase_price"),
-        currency_code=row.get("currency_code"),
-        purchase_source=row.get("purchase_source"),
-        memory_note=row.get("memory_note"),
-        display_rank=row.get("display_rank"),
-        order_key=row.get("order_key"),
-        storage_slot_id=row.get("storage_slot_id"),
-        slot_code=row.get("slot_code"),
-        thickness_mm=row.get("thickness_mm"),
-        notes=row.get("notes"),
-        created_at=str(row.get("created_at") or ""),
-        updated_at=row.get("updated_at"),
-        music_detail=music_detail,
-        goods_detail=goods_detail,
-        has_audio=bool(row.get("has_audio")),
-        audio_asset_count=int(row.get("audio_asset_count") or 0),
-        subtype_option_ids=row.get("subtype_option_ids") or [],
-        subtype_labels=row.get("subtype_labels") or [],
-        soundtrack_option_ids=row.get("soundtrack_option_ids") or [],
-        soundtrack_labels=row.get("soundtrack_labels") or [],
-    )
 
 
 def _merge_replace_text(incoming: Any, current: Any) -> str | None:
@@ -10715,178 +8489,6 @@ def _save_owned_item_update(
     )
 
 
-@app.patch("/owned-items/{owned_item_id}", response_model=OwnedItemCreateResponse)
-def update_owned_item(owned_item_id: int, payload: OwnedItemCreate) -> OwnedItemCreateResponse:
-    existing = db.get_owned_item(owned_item_id)
-    return _save_owned_item_update(owned_item_id=owned_item_id, payload=payload, existing=existing)
-
-
-@app.post("/owned-items/source-replace-bulk", response_model=OwnedItemSourceReplaceBulkResponse)
-def bulk_replace_owned_item_sources(payload: OwnedItemSourceReplaceBulkRequest) -> OwnedItemSourceReplaceBulkResponse:
-    results: list[OwnedItemSourceReplaceResult] = []
-    updated_count = 0
-
-    for item in payload.items:
-        owned_item_id = int(item.owned_item_id)
-        try:
-            replace_payload = _build_owned_item_payload_for_source_replace(
-                owned_item_id=owned_item_id,
-                candidate=item.candidate.model_dump(),
-            )
-            saved = _save_owned_item_update(owned_item_id=owned_item_id, payload=replace_payload)
-            updated_count += 1
-            results.append(
-                OwnedItemSourceReplaceResult(
-                    owned_item_id=owned_item_id,
-                    label_id=saved.label_id,
-                    updated=True,
-                    source_code=replace_payload.source_code,
-                    source_external_id=replace_payload.source_external_id,
-                    linked_album_master_id=saved.linked_album_master_id,
-                    notices=saved.notices,
-                )
-            )
-        except HTTPException as exc:
-            message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
-            results.append(
-                OwnedItemSourceReplaceResult(
-                    owned_item_id=owned_item_id,
-                    updated=False,
-                    error=message,
-                )
-            )
-        except Exception as exc:
-            results.append(
-                OwnedItemSourceReplaceResult(
-                    owned_item_id=owned_item_id,
-                    updated=False,
-                    error=str(exc),
-                )
-            )
-
-    failed_count = len([row for row in results if not row.updated])
-    return OwnedItemSourceReplaceBulkResponse(
-        requested_count=len(payload.items),
-        updated_count=updated_count,
-        failed_count=failed_count,
-        results=results,
-    )
-
-
-@app.post("/owned-items/bulk-update", response_model=OwnedItemBulkUpdateResponse)
-def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBulkUpdateResponse:
-    owned_item_ids = [int(v) for v in payload.owned_item_ids if int(v) > 0]
-    if not owned_item_ids:
-        raise HTTPException(status_code=400, detail="owned_item_ids is required")
-
-    status = str(payload.status or "").strip() or None
-    domain_code = _normalize_domain_code(payload.domain_code)
-    release_type = str(payload.release_type or "").strip().upper() or None
-    if release_type and release_type not in RELEASE_TYPES:
-        raise HTTPException(status_code=400, detail="invalid release_type")
-    is_second_hand = bool(payload.is_second_hand) if payload.is_second_hand is not None else None
-    purchase_source = payload.purchase_source.strip() if isinstance(payload.purchase_source, str) else None
-    append_memory_note = payload.append_memory_note.strip() if isinstance(payload.append_memory_note, str) else None
-    preferred_storage_size_group = str(payload.preferred_storage_size_group or "").strip().upper() or None
-    if preferred_storage_size_group and preferred_storage_size_group not in SIZE_GROUP_CODES:
-        raise HTTPException(status_code=400, detail="invalid preferred_storage_size_group")
-    if (
-        status is None
-        and domain_code is None
-        and release_type is None
-        and is_second_hand is None
-        and purchase_source is None
-        and append_memory_note is None
-        and preferred_storage_size_group is None
-    ):
-        raise HTTPException(status_code=400, detail="at least one field is required")
-
-    updated_item_ids = db.bulk_update_owned_items(
-        owned_item_ids,
-        status=status,
-        domain_code=domain_code,
-        release_type=release_type,
-        is_second_hand=is_second_hand,
-        purchase_source=purchase_source,
-        append_memory_note=append_memory_note,
-        preferred_storage_size_group=preferred_storage_size_group,
-    )
-    return OwnedItemBulkUpdateResponse(
-        requested_count=len({int(v) for v in owned_item_ids}),
-        updated_count=len(updated_item_ids),
-        updated_item_ids=updated_item_ids,
-    )
-
-
-@app.delete("/owned-items/{owned_item_id}", response_model=OwnedItemDeleteResponse)
-def delete_owned_item(owned_item_id: int) -> OwnedItemDeleteResponse:
-    deleted = db.delete_owned_item(owned_item_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-    return OwnedItemDeleteResponse(owned_item_id=owned_item_id, deleted=True)
-
-
-@app.patch("/owned-items/{owned_item_id}/slot", response_model=SlotUpdateResponse)
-def update_owned_item_slot(owned_item_id: int, payload: SlotUpdateRequest) -> SlotUpdateResponse:
-    existing = db.get_owned_item(owned_item_id)
-    if existing is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    _validate_slot(existing["size_group"], payload.storage_slot_id)
-    previous_slot_id = existing.get("storage_slot_id")
-    db.update_owned_item_slot(owned_item_id, payload.storage_slot_id)
-    if previous_slot_id != payload.storage_slot_id and payload.storage_slot_id is not None:
-        db.inherit_owned_item_domain_from_slot_if_missing(owned_item_id, int(payload.storage_slot_id))
-    if str(existing.get("status") or "").strip().upper() == "IN_COLLECTION" and previous_slot_id != payload.storage_slot_id:
-        if payload.storage_slot_id is not None:
-            db.realign_owned_item_order_after_slot_move(owned_item_id, int(payload.storage_slot_id))
-        else:
-            db.resequence_in_collection_order()
-
-    return SlotUpdateResponse(owned_item_id=owned_item_id, storage_slot_id=payload.storage_slot_id)
-
-
-@app.post("/owned-items/{owned_item_id}/restore-previous-slot")
-def restore_owned_item_previous_slot(owned_item_id: int) -> dict[str, Any]:
-    existing = db.get_owned_item(owned_item_id)
-    if existing is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    result = db.restore_owned_item_previous_slot(owned_item_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-    if not bool(result.get("restored")):
-        raise HTTPException(status_code=400, detail=str(result.get("reason") or "restore failed"))
-    if str(existing.get("status") or "").strip().upper() == "IN_COLLECTION":
-        restored_slot_id = result.get("storage_slot_id")
-        if restored_slot_id is not None:
-            db.realign_owned_item_order_after_slot_move(owned_item_id, int(restored_slot_id))
-        else:
-            db.resequence_in_collection_order()
-    return result
-
-
-@app.patch("/owned-items/{owned_item_id}/order", response_model=OrderMoveResponse)
-def move_owned_item_order(owned_item_id: int, payload: OrderMoveRequest) -> OrderMoveResponse:
-    try:
-        order_key = db.move_owned_item_order(
-            owned_item_id=owned_item_id,
-            target_owned_item_id=payload.target_owned_item_id,
-            position=payload.position,
-        )
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    return OrderMoveResponse(
-        owned_item_id=owned_item_id,
-        target_owned_item_id=payload.target_owned_item_id,
-        position=payload.position,
-        order_key=order_key,
-    )
-
-
 @app.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order", response_model=SlotOrderMoveResponse)
 def move_owned_item_slot_order(
     storage_slot_id: int,
@@ -10914,24 +8516,6 @@ def move_owned_item_slot_order(
         target_owned_item_id=payload.target_owned_item_id,
         position=payload.position,
         display_rank=display_rank,
-    )
-
-
-@app.post("/owned-items/{owned_item_id}/digital-links", response_model=DigitalLinkCreateResponse)
-def create_digital_link(
-    owned_item_id: int,
-    payload: DigitalLinkCreate,
-) -> DigitalLinkCreateResponse:
-    existing = db.get_owned_item(owned_item_id)
-    if existing is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    ids = db.insert_digital_link(owned_item_id, payload.model_dump())
-
-    return DigitalLinkCreateResponse(
-        owned_item_id=owned_item_id,
-        digital_asset_id=ids["digital_asset_id"],
-        link_id=ids["link_id"],
     )
 
 
@@ -11180,86 +8764,6 @@ def _assign_audio_files_to_tracks(track_list: list[str], files: list[Path]) -> l
     return assigned
 
 
-@app.get("/owned-items/{owned_item_id}/track-mappings", response_model=TrackMappingListResponse)
-def get_track_mappings(owned_item_id: int) -> TrackMappingListResponse:
-    existing = db.get_owned_item(owned_item_id)
-    if existing is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    track_list = db.get_owned_item_track_list(owned_item_id)
-    links = db.list_owned_item_track_links(owned_item_id)
-
-    grouped: dict[int, list[TrackMappedAssetItem]] = {}
-    for row in links:
-        track_no = int(row.get("track_no") or 0)
-        if track_no <= 0:
-            continue
-        grouped.setdefault(track_no, []).append(
-            TrackMappedAssetItem(
-                link_id=int(row["link_id"]),
-                digital_asset_id=int(row["digital_asset_id"]),
-                file_path=str(row["file_path"]),
-                duration_sec=row.get("duration_sec"),
-                note=row.get("note"),
-                created_at=str(row["created_at"]),
-            )
-        )
-
-    mappings: list[TrackMappingItem] = []
-    for idx, entry in enumerate(track_list, start=1):
-        mappings.append(
-            TrackMappingItem(
-                track_no=idx,
-                track_entry=entry,
-                assets=grouped.get(idx, []),
-            )
-        )
-
-    return TrackMappingListResponse(
-        owned_item_id=owned_item_id,
-        track_count=len(track_list),
-        mappings=mappings,
-    )
-
-
-@app.post("/owned-items/{owned_item_id}/track-mappings", response_model=TrackMappingCreateResponse)
-def create_track_mapping(
-    owned_item_id: int,
-    payload: TrackMappingCreateRequest,
-) -> TrackMappingCreateResponse:
-    existing = db.get_owned_item(owned_item_id)
-    if existing is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    track_list = db.get_owned_item_track_list(owned_item_id)
-    if not track_list:
-        raise HTTPException(status_code=400, detail="track_list not found for this owned_item")
-    if payload.track_no > len(track_list):
-        raise HTTPException(status_code=400, detail=f"track_no out of range (max={len(track_list)})")
-
-    track_entry = track_list[payload.track_no - 1]
-    note = payload.note.strip() if payload.note else track_entry
-    link_payload: dict[str, object] = {
-        "asset_type": "AUDIO",
-        "file_path": payload.file_path,
-        "link_type": "TRACK",
-        "file_hash": payload.file_hash,
-        "file_size_bytes": payload.file_size_bytes,
-        "duration_sec": payload.duration_sec,
-        "metadata_json": payload.metadata_json,
-        "track_no": payload.track_no,
-        "note": note,
-    }
-
-    ids = db.insert_digital_link(owned_item_id, link_payload)
-    return TrackMappingCreateResponse(
-        owned_item_id=owned_item_id,
-        track_no=payload.track_no,
-        digital_asset_id=ids["digital_asset_id"],
-        link_id=ids["link_id"],
-    )
-
-
 @app.post(
     "/owned-items/{owned_item_id}/track-mappings/bulk-from-dir",
     response_model=TrackMappingBulkFromDirResponse,
@@ -11412,3 +8916,17 @@ def manual_assign_track_mappings(
         replaced_existing_links=replaced_existing_links,
         mappings=mappings,
     )
+
+
+# Late-bound router registrations. The slices below reach into helpers
+# defined throughout this module, so we import their routers AFTER
+# everything has been declared rather than at the top. The auth and
+# admin routers higher up don't need the deferral, but registering them
+# here too would also work — we keep the early ones to minimise the diff.
+from .api.album_masters import router as album_masters_router  # noqa: E402
+from .api.owned_items import router as owned_items_router  # noqa: E402
+from .api.purchase_imports import router as purchase_imports_router  # noqa: E402
+
+app.include_router(album_masters_router)
+app.include_router(owned_items_router)
+app.include_router(purchase_imports_router)

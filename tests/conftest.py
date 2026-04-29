@@ -20,6 +20,7 @@ os.environ["LIBRARY_OPERATOR_PASSWORD"] = "operator-pass"
 os.environ["LIBRARY_AUTH_SESSION_SECRET"] = "test-session-secret"
 os.environ["LIBRARY_AUTH_COOKIE_SECURE"] = "0"
 os.environ["METADATA_SYNC_INTERVAL_MINUTES"] = "0"
+os.environ.setdefault("LIBRARY_PURCHASE_IMPORT_TOKEN", "test-purchase-import-token")
 
 from app.config import get_settings
 

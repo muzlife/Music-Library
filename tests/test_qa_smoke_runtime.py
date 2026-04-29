@@ -1,7 +1,8 @@
+import os
 from pathlib import Path
 
 
-ROOT = Path("/Volumes/Works/07.hahahoho")
+ROOT = Path(os.getenv("LIBRARY_PROJECT_ROOT") or Path(__file__).resolve().parents[1])
 SMOKE_SCRIPT = ROOT / "scripts" / "run_smoke_qa.py"
 
 

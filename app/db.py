@@ -6,7 +6,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Callable, Generator
 
 from .config import get_settings
 
@@ -931,6 +931,126 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# --------------------------------------------------------------------------- #
+# External response cache (Discogs / MusicBrainz / Aladin / CoverArtArchive)
+# --------------------------------------------------------------------------- #
+# Stable detail fetches (releases, masters, artists, …) are read repeatedly:
+# during a single search, during metadata sync, and again whenever an
+# operator opens the same item later. Without persistence, every restart of
+# the metadata sync worker pays the full external-API cost again. Caching
+# the bodies keyed by (source, kind, id) lets us:
+#   * drop steady-state outbound traffic to a fraction of what it was,
+#   * keep working — using slightly stale data — when a provider 5xx's, and
+#   * make repeated UI lookups instant.
+# TTL is enforced at read time so a stale row sticks around for `fallback`
+# until either the next refresh attempt succeeds or it gets purged.
+
+def get_cached_external_response(cache_key: str) -> dict[str, Any] | None:
+    """Return the cached row for `cache_key` or None.
+
+    The caller is responsible for honouring `expires_at`; this helper
+    returns whatever is stored so we can fall back to a stale entry when
+    the upstream provider is unhealthy.
+    """
+    key = str(cache_key or "").strip()
+    if not key:
+        return None
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT cache_key, source_code, body_json, status_code,
+                   fetched_at, expires_at, etag, last_modified
+            FROM external_response_cache
+            WHERE cache_key = ?
+            LIMIT 1
+            """,
+            (key,),
+        ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+
+def upsert_cached_external_response(
+    *,
+    cache_key: str,
+    source_code: str,
+    body_json: str,
+    status_code: int,
+    ttl_seconds: int,
+    etag: str | None = None,
+    last_modified: str | None = None,
+) -> None:
+    """Insert or replace a cached body. `body_json` is expected to already
+    be a JSON-serialised string; we don't reserialize so callers can store
+    raw provider payloads verbatim.
+    """
+    key = str(cache_key or "").strip()
+    if not key:
+        return
+    now_dt = datetime.now(timezone.utc)
+    expires_dt = now_dt + timedelta(seconds=max(0, int(ttl_seconds)))
+    with get_write_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO external_response_cache
+              (cache_key, source_code, body_json, status_code,
+               fetched_at, expires_at, etag, last_modified)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(cache_key) DO UPDATE SET
+              source_code = excluded.source_code,
+              body_json = excluded.body_json,
+              status_code = excluded.status_code,
+              fetched_at = excluded.fetched_at,
+              expires_at = excluded.expires_at,
+              etag = excluded.etag,
+              last_modified = excluded.last_modified
+            """,
+            (
+                key,
+                str(source_code or "").strip().upper() or "UNKNOWN",
+                str(body_json or ""),
+                int(status_code or 200),
+                now_dt.isoformat(),
+                expires_dt.isoformat(),
+                str(etag or "").strip() or None,
+                str(last_modified or "").strip() or None,
+            ),
+        )
+
+
+def touch_cached_external_response_expiry(cache_key: str, ttl_seconds: int) -> None:
+    """Refresh the `expires_at` of an existing cached row without rewriting
+    its body. Useful when a provider returns 304 Not Modified."""
+    key = str(cache_key or "").strip()
+    if not key:
+        return
+    now_dt = datetime.now(timezone.utc)
+    expires_dt = now_dt + timedelta(seconds=max(0, int(ttl_seconds)))
+    with get_write_conn() as conn:
+        conn.execute(
+            """
+            UPDATE external_response_cache
+            SET expires_at = ?, fetched_at = ?
+            WHERE cache_key = ?
+            """,
+            (expires_dt.isoformat(), now_dt.isoformat(), key),
+        )
+
+
+def purge_expired_external_responses() -> int:
+    """Delete cache rows whose `expires_at` is before `now`. Returns the
+    number of rows removed. Safe to call from a periodic job."""
+    now_text = datetime.now(timezone.utc).isoformat()
+    with get_write_conn() as conn:
+        cur = conn.execute(
+            "DELETE FROM external_response_cache "
+            "WHERE expires_at IS NOT NULL AND expires_at < ?",
+            (now_text,),
+        )
+        return int(cur.rowcount or 0)
+
+
 def _format_order_value(value: int) -> str:
     safe = value if value > 0 else ORDER_KEY_STEP
     return f"{safe:0{ORDER_KEY_WIDTH}d}"
@@ -1159,6 +1279,51 @@ def get_conn() -> Generator[sqlite3.Connection, None, None]:
         yield conn
         conn.commit()
     finally:
+        conn.close()
+
+
+@contextmanager
+def get_write_conn() -> Generator[sqlite3.Connection, None, None]:
+    """Connection that begins an IMMEDIATE transaction up-front.
+
+    Use this in place of `get_conn` for any function that performs multiple
+    write statements (inserts/updates/deletes) that must be a single atomic
+    unit, especially when concurrent writers (auto-backup thread, metadata
+    sync worker, user requests) might race for the SQLite WAL write lock.
+
+    With the default DEFERRED isolation, two writers that BEGIN at the same
+    time will both succeed initially and only collide on the first write,
+    which on busy systems leaves one of them with a partial work-set when
+    SQLITE_BUSY fires past the timeout. IMMEDIATE acquires the write lock
+    first, so contenders block at BEGIN — predictably and atomically.
+
+    The connection is configured with `isolation_level=None` (autocommit
+    mode) and we manage `BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` ourselves.
+    """
+    settings = get_settings()
+    _ensure_parent_dir(settings.db_path)
+    conn = sqlite3.connect(
+        settings.db_path,
+        timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
+        isolation_level=None,
+    )
+    conn.row_factory = sqlite3.Row
+    conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
+    conn.execute("PRAGMA journal_mode = WAL").fetchone()
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("BEGIN IMMEDIATE")
+    committed = False
+    try:
+        yield conn
+        conn.execute("COMMIT")
+        committed = True
+    finally:
+        if not committed:
+            try:
+                conn.execute("ROLLBACK")
+            except sqlite3.Error:
+                pass
         conn.close()
 
 
@@ -1611,8 +1776,23 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_auth_account_role ON auth_account (role, is_active, username);
             CREATE INDEX IF NOT EXISTS idx_purchase_import_queue_status ON purchase_import_queue (queue_status, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_purchase_import_queue_vendor ON purchase_import_queue (vendor_code, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_purchase_import_queue_source_ref ON purchase_import_queue (vendor_code, source_ref) WHERE source_ref IS NOT NULL;
             CREATE INDEX IF NOT EXISTS idx_owned_item_category_created_id ON owned_item (category, created_at DESC, id DESC);
             CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_move_created_owned ON owned_item_location_event (movement_kind, created_at DESC, owned_item_id, id DESC);
+
+            CREATE TABLE IF NOT EXISTS external_response_cache (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              cache_key TEXT NOT NULL UNIQUE,
+              source_code TEXT NOT NULL,
+              body_json TEXT NOT NULL,
+              status_code INTEGER NOT NULL DEFAULT 200,
+              fetched_at TEXT NOT NULL,
+              expires_at TEXT,
+              etag TEXT,
+              last_modified TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_external_response_cache_expires ON external_response_cache (expires_at) WHERE expires_at IS NOT NULL;
+            CREATE INDEX IF NOT EXISTS idx_external_response_cache_source ON external_response_cache (source_code, fetched_at DESC);
             """
         )
 
@@ -1649,9 +1829,21 @@ def ensure_startup_db_ready() -> None:
         init_db()
         return
 
+    # Fast path: if user_version already matches SCHEMA_VERSION, skip the
+    # legacy idempotent inspection entirely. This used to scan ~60 columns
+    # via PRAGMA table_info on every boot; with the version short-circuit
+    # in place we only re-pay that cost when the schema actually changes.
     conn = sqlite3.connect(settings.db_path, timeout=1)
     try:
         conn.row_factory = sqlite3.Row
+        if _read_user_version(conn) >= SCHEMA_VERSION:
+            # Seeders / cleanups remain idempotent and cheap; keep them
+            # running so manual DB edits don't drift away silently.
+            _seed_metadata_sources(conn)
+            _cleanup_overflow_slots(conn)
+            _seed_classification_options(conn)
+            return
+
         _apply_migrations(conn)
         _ensure_app_setting_table(conn)
         _ensure_recent_feed_indexes(conn)
@@ -1696,6 +1888,14 @@ def record_auto_backup_result(*, last_backup_at: str | None, last_backup_path: s
 def _column_exists(conn: sqlite3.Connection, table_name: str, column_name: str) -> bool:
     rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
     return any(str(row["name"]) == column_name for row in rows)
+
+
+def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
+    row = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        (str(table_name or ""),),
+    ).fetchone()
+    return row is not None
 
 
 def _purchase_import_vendor_check_sql() -> str:
@@ -1772,6 +1972,14 @@ def _ensure_purchase_import_queue_table(conn: sqlite3.Connection) -> None:
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_purchase_import_queue_vendor ON purchase_import_queue (vendor_code, created_at DESC)"
+    )
+    # Webhook-level dedupe lookup (vendor_code + source_ref). Partial index
+    # because most rows have NULL source_ref and we only care about webhook
+    # deliveries that carry one.
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_purchase_import_queue_source_ref "
+        "ON purchase_import_queue (vendor_code, source_ref) "
+        "WHERE source_ref IS NOT NULL"
     )
 
 
@@ -1980,6 +2188,11 @@ def _ensure_album_master_merge_history_table(conn: sqlite3.Connection) -> None:
 
 def _backfill_album_master_external_refs(conn: sqlite3.Connection) -> None:
     _ensure_album_master_external_ref_table(conn)
+    # The backfill SELECTs from album_master; if that table doesn't exist
+    # in the current DB (e.g. test fixture with a minimal schema), there's
+    # nothing to backfill — skip so the SELECT doesn't raise.
+    if not _table_exists(conn, "album_master"):
+        return
     now = utc_now_iso()
     conn.execute(
         """
@@ -2204,6 +2417,14 @@ def _migrate_owned_item_allow_goods(conn: sqlite3.Connection) -> None:
     ).fetchone()
     if not row or _owned_item_allows_goods(conn):
         return
+    # Defensive: the rewrite SELECTs from columns we expect a real
+    # owned_item to have (master_item_id, etc.). Test fixtures and
+    # partially-initialised DBs sometimes carry only the columns they care
+    # about; running the rewrite there would fail with "no such column".
+    # If the source schema doesn't have the canonical column set, skip —
+    # init_db() handles the create-from-scratch path for those.
+    if not _column_exists(conn, "owned_item", "master_item_id"):
+        return
 
     if conn.in_transaction:
         conn.commit()
@@ -2285,6 +2506,10 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
     ).fetchone()
     if not row or _owned_item_allows_extended_domains(conn):
         return
+    # See the matching guard in `_migrate_owned_item_allow_goods` —
+    # skip the rewrite when the source table is too minimal to copy.
+    if not _column_exists(conn, "owned_item", "master_item_id"):
+        return
 
     if conn.in_transaction:
         conn.commit()
@@ -2360,7 +2585,130 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
+SCHEMA_VERSION = 2
+"""Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
+
+The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
+Future schema changes should be added as new functions, registered in the
+dictionary below, and assigned the next integer.
+
+Version log:
+  1 — legacy idempotent pass (pre-versioning installs converge here).
+  2 — `external_response_cache` table for persisted Discogs/MusicBrainz/
+      Aladin/CoverArtArchive replies. See providers.cached_fetch_json.
+"""
+
+
+def _read_user_version(conn: sqlite3.Connection) -> int:
+    row = conn.execute("PRAGMA user_version").fetchone()
+    if row is None:
+        return 0
+    try:
+        return int(row[0])
+    except (TypeError, ValueError):
+        return 0
+
+
+def _set_user_version(conn: sqlite3.Connection, value: int) -> None:
+    # PRAGMA user_version doesn't accept bound parameters, so we coerce
+    # `value` to int explicitly to keep the SQL injection surface zero.
+    conn.execute(f"PRAGMA user_version = {int(value)}")
+
+
+def _migration_v1_legacy_idempotent_pass(conn: sqlite3.Connection) -> None:
+    """Pre-2026-04 schema convergence collapsed into version 1.
+
+    Every install that lands here either:
+      * was just initialised by `init_db()` (schema is current — these calls
+        are no-ops), or
+      * is an existing install upgrading past the version-tracking line —
+        the idempotent ALTER/PRAGMA-table_info checks bring it forward.
+
+    Once this runs, `user_version` is bumped to 1 and the slow per-boot
+    inspection is skipped on every subsequent restart.
+    """
+    _apply_migrations_legacy(conn)
+    _ensure_app_setting_table(conn)
+    _ensure_recent_feed_indexes(conn)
+
+
+def _migration_v2_add_external_response_cache(conn: sqlite3.Connection) -> None:
+    """Create the persisted external-response cache surface.
+
+    Stores Discogs/MusicBrainz/Aladin/CoverArtArchive bodies keyed by a
+    SHA-256-prefixed `cache_key`. The TTL is enforced at read time
+    (`expires_at` is a UTC ISO-8601 string), and a partial index over
+    `expires_at` keeps the periodic purge query cheap even when the table
+    grows past tens of thousands of entries.
+
+    See `providers.cached_fetch_json` for the read/write contract.
+    """
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS external_response_cache (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          cache_key TEXT NOT NULL UNIQUE,
+          source_code TEXT NOT NULL,
+          body_json TEXT NOT NULL,
+          status_code INTEGER NOT NULL DEFAULT 200,
+          fetched_at TEXT NOT NULL,
+          expires_at TEXT,
+          etag TEXT,
+          last_modified TEXT
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_external_response_cache_expires "
+        "ON external_response_cache (expires_at) WHERE expires_at IS NOT NULL"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_external_response_cache_source "
+        "ON external_response_cache (source_code, fetched_at DESC)"
+    )
+
+
+_MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
+    1: _migration_v1_legacy_idempotent_pass,
+    2: _migration_v2_add_external_response_cache,
+}
+
+
+def _run_pending_migrations(conn: sqlite3.Connection) -> int:
+    """Apply every migration whose version is greater than the DB's current
+    `user_version`, in numeric order. Returns the number of migrations
+    actually executed (0 if the DB was already at SCHEMA_VERSION).
+
+    Each migration runs in its own implicit transaction provided by the
+    connection's autocommit semantics (caller decides whether the wrapping
+    `get_conn`/`get_write_conn` already opened a transaction).
+    """
+    current = _read_user_version(conn)
+    if current >= SCHEMA_VERSION:
+        return 0
+    applied = 0
+    for version in sorted(_MIGRATIONS_BY_VERSION):
+        if version <= current:
+            continue
+        if version > SCHEMA_VERSION:
+            break
+        _MIGRATIONS_BY_VERSION[version](conn)
+        _set_user_version(conn, version)
+        applied += 1
+    return applied
+
+
 def _apply_migrations(conn: sqlite3.Connection) -> None:
+    """Public entry point — defers to the version-aware runner.
+
+    Existing call sites (`init_db`, `ensure_startup_db_ready`) keep using
+    this name; the version short-circuit means second-and-later boots stop
+    paying for the 60+ idempotent PRAGMA checks.
+    """
+    _run_pending_migrations(conn)
+
+
+def _apply_migrations_legacy(conn: sqlite3.Connection) -> None:
     _migrate_album_master_allow_manual(conn)
     _ensure_album_master_external_ref_table(conn)
     _ensure_album_master_merge_history_table(conn)
@@ -2370,26 +2718,31 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
     _migrate_owned_item_allow_goods(conn)
     _migrate_owned_item_allow_extended_domains(conn)
 
-    if not _column_exists(conn, "album_master", "domain_code"):
-        conn.execute(
-            f"ALTER TABLE album_master ADD COLUMN domain_code TEXT CHECK (domain_code IN ('{_domain_code_check_sql()}'))"
-        )
-    if not _column_exists(conn, "album_master", "sort_artist_name"):
-        conn.execute("ALTER TABLE album_master ADD COLUMN sort_artist_name TEXT")
-    if not _column_exists(conn, "album_master", "source_domain_code"):
-        conn.execute(
-            f"ALTER TABLE album_master ADD COLUMN source_domain_code TEXT CHECK (source_domain_code IN ('{_domain_code_check_sql()}'))"
-        )
-    if not _column_exists(conn, "album_master", "source_release_year"):
-        conn.execute("ALTER TABLE album_master ADD COLUMN source_release_year INTEGER")
-    if not _column_exists(conn, "album_master", "override_domain_code"):
-        conn.execute(
-            f"ALTER TABLE album_master ADD COLUMN override_domain_code TEXT CHECK (override_domain_code IN ('{_domain_code_check_sql()}'))"
-        )
-    if not _column_exists(conn, "album_master", "override_release_year"):
-        conn.execute("ALTER TABLE album_master ADD COLUMN override_release_year INTEGER")
-    if not _column_exists(conn, "album_master", "override_note"):
-        conn.execute("ALTER TABLE album_master ADD COLUMN override_note TEXT")
+    # Wrap the ALTER TABLE block on a table-exists check. `_column_exists`
+    # returns False for both missing-column AND missing-table; the latter
+    # would fail the ALTER, which is a problem when test fixtures create a
+    # minimal subset of the schema.
+    if _table_exists(conn, "album_master"):
+        if not _column_exists(conn, "album_master", "domain_code"):
+            conn.execute(
+                f"ALTER TABLE album_master ADD COLUMN domain_code TEXT CHECK (domain_code IN ('{_domain_code_check_sql()}'))"
+            )
+        if not _column_exists(conn, "album_master", "sort_artist_name"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN sort_artist_name TEXT")
+        if not _column_exists(conn, "album_master", "source_domain_code"):
+            conn.execute(
+                f"ALTER TABLE album_master ADD COLUMN source_domain_code TEXT CHECK (source_domain_code IN ('{_domain_code_check_sql()}'))"
+            )
+        if not _column_exists(conn, "album_master", "source_release_year"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN source_release_year INTEGER")
+        if not _column_exists(conn, "album_master", "override_domain_code"):
+            conn.execute(
+                f"ALTER TABLE album_master ADD COLUMN override_domain_code TEXT CHECK (override_domain_code IN ('{_domain_code_check_sql()}'))"
+            )
+        if not _column_exists(conn, "album_master", "override_release_year"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN override_release_year INTEGER")
+        if not _column_exists(conn, "album_master", "override_note"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN override_note TEXT")
     if _column_exists(conn, "album_master", "sort_artist_name"):
         conn.execute(
             """
@@ -2532,7 +2885,9 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         conn.execute(
             f"ALTER TABLE owned_item ADD COLUMN preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('{_size_group_check_sql()}'))"
         )
-    if _column_exists(conn, "owned_item", "preferred_storage_size_group"):
+    if _column_exists(conn, "owned_item", "preferred_storage_size_group") and _column_exists(
+        conn, "owned_item", "size_group"
+    ):
         conn.execute(
             """
             UPDATE owned_item
@@ -2726,11 +3081,33 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
           created_at TEXT NOT NULL,
           FOREIGN KEY (owned_item_id) REFERENCES owned_item(id) ON DELETE CASCADE
         );
-        CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_owned ON owned_item_location_event (owned_item_id, created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_from_slot ON owned_item_location_event (from_slot_code, created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_to_slot ON owned_item_location_event (to_slot_code, created_at DESC);
         """
     )
+    # The INDEX statements below reference columns that may not exist on
+    # an older / minimal location-event table — `CREATE TABLE IF NOT
+    # EXISTS` above is a no-op when the table already exists, so we have
+    # to gate each index on the column it sorts by.
+    if _column_exists(conn, "owned_item_location_event", "owned_item_id") and _column_exists(
+        conn, "owned_item_location_event", "created_at"
+    ):
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_owned "
+            "ON owned_item_location_event (owned_item_id, created_at DESC)"
+        )
+    if _column_exists(conn, "owned_item_location_event", "from_slot_code") and _column_exists(
+        conn, "owned_item_location_event", "created_at"
+    ):
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_from_slot "
+            "ON owned_item_location_event (from_slot_code, created_at DESC)"
+        )
+    if _column_exists(conn, "owned_item_location_event", "to_slot_code") and _column_exists(
+        conn, "owned_item_location_event", "created_at"
+    ):
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_to_slot "
+            "ON owned_item_location_event (to_slot_code, created_at DESC)"
+        )
     if not _column_exists(conn, "storage_slot", "cabinet_name"):
         conn.execute("ALTER TABLE storage_slot ADD COLUMN cabinet_name TEXT")
     if not _column_exists(conn, "storage_slot", "column_code"):
@@ -3169,6 +3546,115 @@ def insert_review_queue(
         )
 
 
+def bulk_insert_review_queue(rows: list[dict[str, Any]]) -> int:
+    """Bulk-insert N review_queue rows in a single IMMEDIATE transaction.
+
+    Each row in `rows` must contain the same keys as `insert_review_queue`'s
+    parameters: `batch_id`, `row_no`, `category`, `payload`, `candidate`,
+    `confidence`, `review_status`, `review_note`.
+
+    Replaces the prior pattern of "1 connection per row" — for a 1k-row CSV
+    upload that meant 1k transactions and 1k fsync barriers. With a single
+    write transaction wrapping `executemany`, the same workload commits in
+    one fsync. We measured this matters most when the disk is slower than
+    the metadata classifier (e.g., a network-mounted volume), where the
+    pre-change bottleneck was almost entirely commit overhead.
+    """
+    if not rows:
+        return 0
+    now = utc_now_iso()
+    payload_seq = [
+        (
+            int(row.get("batch_id") or 0),
+            row.get("row_no"),
+            row.get("category"),
+            json.dumps(row.get("payload") or {}, ensure_ascii=True),
+            json.dumps(row.get("candidate"), ensure_ascii=True)
+            if row.get("candidate") is not None
+            else None,
+            float(row.get("confidence") or 0.0),
+            str(row.get("review_status") or "NEEDS_REVIEW"),
+            row.get("review_note"),
+            now,
+        )
+        for row in rows
+    ]
+    with get_write_conn() as conn:
+        conn.executemany(
+            """
+            INSERT INTO review_queue
+              (batch_id, row_no, category, payload_json, candidate_json,
+               confidence_score, review_status, review_note, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            payload_seq,
+        )
+    return len(payload_seq)
+
+
+def bulk_finalize_csv_ingest(
+    batch_id: int,
+    totals: dict[str, int],
+    review_queue_rows: list[dict[str, Any]],
+) -> int:
+    """End-of-CSV writer: bulk-inserts review queue rows AND updates the
+    batch summary inside a single IMMEDIATE transaction so a failure
+    halfway through a 10k-row CSV either commits everything or nothing.
+
+    Returns the number of review_queue rows actually inserted.
+    """
+    now = utc_now_iso()
+    payload_seq = [
+        (
+            int(row.get("batch_id") or batch_id),
+            row.get("row_no"),
+            row.get("category"),
+            json.dumps(row.get("payload") or {}, ensure_ascii=True),
+            json.dumps(row.get("candidate"), ensure_ascii=True)
+            if row.get("candidate") is not None
+            else None,
+            float(row.get("confidence") or 0.0),
+            str(row.get("review_status") or "NEEDS_REVIEW"),
+            row.get("review_note"),
+            now,
+        )
+        for row in review_queue_rows
+    ]
+    inserted = 0
+    with get_write_conn() as conn:
+        if payload_seq:
+            conn.executemany(
+                """
+                INSERT INTO review_queue
+                  (batch_id, row_no, category, payload_json, candidate_json,
+                   confidence_score, review_status, review_note, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                payload_seq,
+            )
+            inserted = len(payload_seq)
+        conn.execute(
+            """
+            UPDATE ingestion_batch
+            SET total_count = ?,
+                matched_count = ?,
+                review_count = ?,
+                failed_count = ?,
+                completed_at = ?
+            WHERE id = ?
+            """,
+            (
+                int(totals.get("total") or 0),
+                int(totals.get("matched") or 0),
+                int(totals.get("review") or 0),
+                int(totals.get("failed") or 0),
+                now,
+                int(batch_id),
+            ),
+        )
+    return inserted
+
+
 def list_review_queue(
     review_status: str,
     category: str | None,
@@ -3215,7 +3701,10 @@ def insert_purchase_import_rows(
 ) -> list[int]:
     now = utc_now_iso()
     created_ids: list[int] = []
-    with get_conn() as conn:
+    # Multi-row INSERT path with row-level dedupe — wrap in IMMEDIATE so a
+    # concurrent worker (metadata sync, auto-backup) cannot squeeze a write
+    # between dedupe SELECT and INSERT and produce a duplicate.
+    with get_write_conn() as conn:
         _ensure_purchase_import_queue_table(conn)
         for row in rows:
             duplicate = _find_purchase_import_duplicate_in_conn(
@@ -3425,6 +3914,35 @@ def list_purchase_import_rows(
         item["raw_payload"] = json.loads(raw_payload) if raw_payload else {}
         items.append(item)
     return items
+
+
+def has_purchase_import_for_source_ref(vendor_code: str, source_ref: str) -> bool:
+    """Cheap webhook-level dedupe: returns True if a row with the same
+    (vendor_code, source_ref) has already been queued.
+
+    Gmail (and most webhook senders) re-deliver on transient delivery
+    failures. The row-level dedupe in `_find_purchase_import_duplicate_in_conn`
+    eventually catches duplicates, but it does so AFTER we've parsed HTML,
+    resolved vendor codes and looped over each row. This pre-check lets the
+    handler short-circuit a retry before any of that work runs.
+    """
+    vendor = str(vendor_code or "").strip().upper()
+    ref = str(source_ref or "").strip()
+    if not vendor or not ref:
+        return False
+    with get_conn() as conn:
+        _ensure_purchase_import_queue_table(conn)
+        row = conn.execute(
+            """
+            SELECT 1
+            FROM purchase_import_queue
+            WHERE vendor_code = ?
+              AND source_ref = ?
+            LIMIT 1
+            """,
+            (vendor, ref),
+        ).fetchone()
+    return row is not None
 
 
 def count_purchase_import_rows(*, queue_status: str | None = "PENDING", vendor_code: str | None = None) -> int:
@@ -3961,7 +4479,10 @@ def bulk_update_owned_items(
 
     now = utc_now_iso()
     note_text = str(append_memory_note or "").strip()
-    with get_conn() as conn:
+    # Bulk update touches every row in `ids` for status/domain/release_type
+    # and may append memory notes. IMMEDIATE keeps the batch atomic from a
+    # reader's perspective (the dashboard / export endpoints).
+    with get_write_conn() as conn:
         placeholders = ",".join("?" for _ in ids)
         rows = conn.execute(
             f"""
@@ -7402,7 +7923,12 @@ def merge_album_masters(
     if source_id <= 0 or target_id <= 0:
         raise ValueError("source/target album_master_id must be positive")
 
-    with get_conn() as conn:
+    # Album master merge fans into many UPDATEs (album_master_member,
+    # owned_item.linked_album_master_id, album_master_external_ref) and a
+    # final DELETE on the source row. Hold the write lock from the start so
+    # a concurrent metadata sync can't sneak an UPDATE on the source row
+    # mid-merge.
+    with get_write_conn() as conn:
         target_row = conn.execute(
             """
             SELECT id, source_code, source_master_id, title, artist_or_brand, sort_artist_name, domain_code, release_year, raw_json, created_at, updated_at
@@ -9632,7 +10158,9 @@ def register_storage_cabinet_slots(
     updated_count = 0
     now = utc_now_iso()
 
-    with get_conn() as conn:
+    # Inserts up to floors * cells slot rows. Wrap as IMMEDIATE so we don't
+    # half-register a cabinet under contention.
+    with get_write_conn() as conn:
         for floor_no in range(floor_begin, floor_begin + floors):
             floor_code = str(floor_no).zfill(floor_width)
             for cell_no in range(cell_begin, cell_begin + cells):
@@ -9705,7 +10233,10 @@ def delete_storage_cabinet(cabinet_name: str) -> dict[str, Any]:
     if not cabinet:
         raise ValueError("cabinet_name required")
 
-    with get_conn() as conn:
+    # Cabinet delete clears slot assignments on every owned_item in the
+    # cabinet, drops the slot rows, and writes location events for each.
+    # IMMEDIATE prevents a concurrent slot reassignment from leaking.
+    with get_write_conn() as conn:
         slot_rows = conn.execute(
             """
             SELECT id

@@ -7,7 +7,7 @@ import tarfile
 from pathlib import Path
 
 
-ROOT = Path("/Volumes/Works/07.hahahoho")
+ROOT = Path(os.getenv("LIBRARY_PROJECT_ROOT") or Path(__file__).resolve().parents[1])
 BOOTSTRAP_SCRIPT = ROOT / "deploy" / "scripts" / "bootstrap_macos_runtime.sh"
 LAUNCHD_SCRIPT = ROOT / "deploy" / "scripts" / "install_launchd_service.sh"
 CLOUDFLARE_SCRIPT = ROOT / "deploy" / "scripts" / "render_cloudflare_tunnel_config.sh"

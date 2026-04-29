@@ -6,7 +6,7 @@ import os
 import re
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import quote
 
 import httpx
@@ -16,6 +16,313 @@ from . import artist_context as artist_context_service
 
 logger = logging.getLogger(__name__)
 PROVIDER_SLOW_SEC = float(os.getenv("PROVIDER_SLOW_SEC", "1.2"))
+
+# --------------------------------------------------------------------------- #
+# Shared HTTP client + retry helpers
+# --------------------------------------------------------------------------- #
+# External providers (Discogs, MusicBrainz, ManiaDB, Aladin) intermittently
+# return 429 / 5xx and Discogs publishes an explicit per-minute quota. Without
+# retry/backoff the metadata sync worker bunches up failures whenever the rate
+# limit is touched. We centralise the transport here so every call site gets:
+#   * connection-level retries (httpx HTTPTransport.retries) — covers DNS /
+#     connection-reset errors that show up as transient httpx.ConnectError.
+#   * a small `_request_with_retry` wrapper that respects Retry-After and
+#     applies exponential backoff for 429 / 502 / 503 / 504.
+#
+# Long-form review note: PROVIDER_HTTP_RETRY_MAX_ATTEMPTS / _BACKOFF_BASE_SEC
+# are env-tunable so QA/prod can dial it down without code changes.
+
+PROVIDER_HTTP_TIMEOUT_SEC = float(os.getenv("PROVIDER_HTTP_TIMEOUT_SEC", "15.0"))
+PROVIDER_HTTP_CONNECT_RETRIES = int(os.getenv("PROVIDER_HTTP_CONNECT_RETRIES", "2"))
+PROVIDER_HTTP_RETRY_MAX_ATTEMPTS = max(0, int(os.getenv("PROVIDER_HTTP_RETRY_MAX_ATTEMPTS", "3")))
+PROVIDER_HTTP_RETRY_BACKOFF_BASE_SEC = max(
+    0.1, float(os.getenv("PROVIDER_HTTP_RETRY_BACKOFF_BASE_SEC", "1.0"))
+)
+PROVIDER_HTTP_RETRY_BACKOFF_CAP_SEC = max(
+    PROVIDER_HTTP_RETRY_BACKOFF_BASE_SEC,
+    float(os.getenv("PROVIDER_HTTP_RETRY_BACKOFF_CAP_SEC", "30.0")),
+)
+_PROVIDER_RETRY_STATUSES = frozenset({429, 502, 503, 504})
+
+
+def _make_http_client(
+    *,
+    timeout: float | None = None,
+    follow_redirects: bool = False,
+    transport_retries: int | None = None,
+) -> httpx.Client:
+    """Construct an httpx.Client with shared defaults + connect-level retries."""
+    retries = PROVIDER_HTTP_CONNECT_RETRIES if transport_retries is None else max(0, transport_retries)
+    transport = httpx.HTTPTransport(retries=retries)
+    return httpx.Client(
+        timeout=timeout if timeout is not None else PROVIDER_HTTP_TIMEOUT_SEC,
+        follow_redirects=follow_redirects,
+        transport=transport,
+    )
+
+
+def _parse_retry_after_header(value: Any) -> float | None:
+    """Best-effort parse of an HTTP Retry-After header.
+
+    Accepts both the integer/float "seconds" form and an HTTP-date form. On
+    any parse failure returns None so the caller can fall back to backoff.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        seconds = float(text)
+        if seconds < 0:
+            return None
+        return seconds
+    except (TypeError, ValueError):
+        pass
+    try:
+        from email.utils import parsedate_to_datetime
+        dt = parsedate_to_datetime(text)
+        if dt is None:
+            return None
+        from datetime import datetime, timezone
+        delta = (dt - datetime.now(tz=dt.tzinfo or timezone.utc)).total_seconds()
+        return max(0.0, delta)
+    except Exception:
+        return None
+
+
+def _request_with_retry(
+    client: httpx.Client,
+    method: str,
+    url: str,
+    *,
+    max_attempts: int | None = None,
+    backoff_base_sec: float | None = None,
+    backoff_cap_sec: float | None = None,
+    **kwargs: Any,
+) -> httpx.Response:
+    """Perform an HTTP request with retry on 429/5xx + Retry-After honouring.
+
+    Connection-layer transient errors (httpx.ConnectError / ReadTimeout) are
+    retried with exponential backoff. The response is returned to the caller
+    untouched — call ``response.raise_for_status()`` if you need it.
+    """
+    attempts = PROVIDER_HTTP_RETRY_MAX_ATTEMPTS if max_attempts is None else max(0, max_attempts)
+    # Module-level defaults enforce a 0.1s floor to keep operators from
+    # accidentally hammering providers with sub-100ms backoffs. Per-call
+    # overrides intentionally bypass that floor (test fixtures want tight
+    # backoffs to keep CI fast) — we only require non-negative.
+    base = PROVIDER_HTTP_RETRY_BACKOFF_BASE_SEC if backoff_base_sec is None else max(0.0, backoff_base_sec)
+    cap = PROVIDER_HTTP_RETRY_BACKOFF_CAP_SEC if backoff_cap_sec is None else max(base, backoff_cap_sec)
+
+    last_exc: Exception | None = None
+    last_response: httpx.Response | None = None
+    method_upper = method.upper()
+    # Real httpx.Client supports `.request(method, url, ...)`. Test mocks
+    # often only implement the verbs they care about (e.g. `.get()`), so
+    # we prefer the verb-specific helper when present and only fall back
+    # to `.request()` when the client is a plain object without verbs.
+    method_specific = getattr(client, method_upper.lower(), None)
+
+    def _send_request() -> httpx.Response:
+        if callable(method_specific):
+            return method_specific(url, **kwargs)
+        return client.request(method_upper, url, **kwargs)
+
+    for attempt in range(attempts + 1):
+        try:
+            response = _send_request()
+        except (httpx.ConnectError, httpx.ReadTimeout, httpx.RemoteProtocolError) as exc:
+            last_exc = exc
+            if attempt >= attempts:
+                raise
+            sleep_for = min(cap, base * (2 ** attempt))
+            logger.warning(
+                "provider %s %s connection error (%s); retry %d/%d in %.2fs",
+                method_upper, url, exc.__class__.__name__, attempt + 1, attempts, sleep_for,
+            )
+            time.sleep(sleep_for)
+            continue
+
+        last_response = response
+        # Test mocks (DummyResponse in tests/test_ops_route_access.py) only
+        # implement what they need — `text` and `raise_for_status()`. Treat
+        # absent `status_code` as 200 so the retry path doesn't second-guess
+        # the mock and only kicks in for explicit 429/5xx responses.
+        status_code = getattr(response, "status_code", 200)
+        if status_code in _PROVIDER_RETRY_STATUSES and attempt < attempts:
+            retry_headers = getattr(response, "headers", {}) or {}
+            retry_after = _parse_retry_after_header(retry_headers.get("retry-after"))
+            sleep_for = retry_after if retry_after is not None else min(cap, base * (2 ** attempt))
+            logger.warning(
+                "provider %s %s -> %s; retry %d/%d in %.2fs (retry-after=%s)",
+                method_upper,
+                url,
+                status_code,
+                attempt + 1,
+                attempts,
+                sleep_for,
+                retry_headers.get("retry-after"),
+            )
+            try:
+                response.close()
+            except Exception:
+                pass
+            time.sleep(sleep_for)
+            continue
+
+        return response
+
+    # Unreachable in normal flow: loop either returns or re-raises.
+    if last_response is not None:
+        return last_response
+    if last_exc is not None:
+        raise last_exc
+    raise httpx.HTTPError(f"provider {method_upper} {url} failed without a response")
+
+
+def _get_with_retry(client: httpx.Client, url: str, **kwargs: Any) -> httpx.Response:
+    return _request_with_retry(client, "GET", url, **kwargs)
+
+
+def _post_with_retry(client: httpx.Client, url: str, **kwargs: Any) -> httpx.Response:
+    return _request_with_retry(client, "POST", url, **kwargs)
+
+
+_DEFAULT_PROVIDER_USER_AGENT_PLACEHOLDER = "your-email@example.com"
+
+
+def has_default_user_agent_placeholder() -> bool:
+    """True when the configured Discogs/MusicBrainz UA still contains the
+    placeholder contact address shipped in the example .env. Discogs and
+    MusicBrainz both require a meaningful UA, so we surface this loudly at
+    startup instead of silently sending a placeholder."""
+    settings = get_settings()
+    candidates = (settings.discogs_user_agent or "", settings.musicbrainz_user_agent or "")
+    return any(_DEFAULT_PROVIDER_USER_AGENT_PLACEHOLDER in str(value) for value in candidates)
+
+
+# --------------------------------------------------------------------------- #
+# Persisted external response cache (TTL-only, see app.db.external_response_cache)
+# --------------------------------------------------------------------------- #
+import hashlib  # noqa: E402  — keep cache plumbing co-located with the helper
+import json as _cache_json  # noqa: E402  — alias avoids shadowing other modules
+from datetime import datetime, timezone  # noqa: E402
+
+EXTERNAL_RESPONSE_CACHE_TTL_SECONDS = max(
+    60, int(os.getenv("EXTERNAL_RESPONSE_CACHE_TTL_SECONDS", str(7 * 24 * 3600)))
+)
+EXTERNAL_RESPONSE_CACHE_DISABLED = os.getenv("EXTERNAL_RESPONSE_CACHE_DISABLED", "").strip().lower() in {
+    "1", "true", "yes", "on", "y"
+}
+
+
+def build_external_cache_key(source_code: str, kind: str, identifier: str) -> str:
+    """Produce a stable, opaque cache key for a (source, kind, id) tuple.
+
+    We hash the joined tuple to keep the column compact and avoid relying on
+    callers to URL-escape arbitrary identifiers. SHA-256 is overkill for
+    non-cryptographic use but avoids any risk of collision in an
+    operator-managed dataset.
+    """
+    raw = "|".join(
+        str(v or "").strip().upper() if i == 0 else str(v or "").strip()
+        for i, v in enumerate((source_code, kind, identifier))
+    )
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return f"{str(source_code or 'UNKNOWN').strip().upper()}:{str(kind or 'misc').strip()}:{digest[:32]}"
+
+
+def _cache_entry_is_fresh(row: dict[str, Any]) -> bool:
+    expires_at_text = str(row.get("expires_at") or "").strip()
+    if not expires_at_text:
+        return False
+    try:
+        expires_at = datetime.fromisoformat(expires_at_text)
+    except ValueError:
+        return False
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return expires_at > datetime.now(timezone.utc)
+
+
+def cached_fetch_json(
+    *,
+    source_code: str,
+    kind: str,
+    identifier: str,
+    fetcher: "Callable[[], httpx.Response | None]",
+    ttl_seconds: int | None = None,
+    allow_stale_on_error: bool = True,
+) -> dict[str, Any] | None:
+    """Fetch JSON from a provider with TTL-based disk caching.
+
+    `fetcher` is a closure that performs the actual HTTP request and returns
+    the httpx.Response (or None on caller-detected failure). On a fresh
+    cache hit we never invoke `fetcher`; on a miss we call it, store the
+    body, and return the parsed JSON. On a fetch error with a stale row
+    available, we return the stale row so the metadata sync worker can keep
+    making progress when a provider 5xx's.
+
+    Returns None on hard failure (no cache + fetch failed).
+    """
+    # Imported here to avoid a circular import at module load time
+    # (`app.db` imports nothing from services, but `app.main` wires both).
+    from .. import db as _db_module
+
+    if EXTERNAL_RESPONSE_CACHE_DISABLED:
+        try:
+            response = fetcher()
+        except httpx.HTTPError:
+            return None
+        if response is None or response.status_code >= 400:
+            return None
+        try:
+            return response.json()
+        except ValueError:
+            return None
+
+    cache_key = build_external_cache_key(source_code, kind, identifier)
+    ttl = EXTERNAL_RESPONSE_CACHE_TTL_SECONDS if ttl_seconds is None else max(60, int(ttl_seconds))
+
+    cached_row = _db_module.get_cached_external_response(cache_key)
+    if cached_row is not None and _cache_entry_is_fresh(cached_row):
+        try:
+            return _cache_json.loads(cached_row["body_json"])
+        except (TypeError, ValueError):
+            # Fall through to a refetch if the stored body became unreadable.
+            pass
+
+    try:
+        response = fetcher()
+    except httpx.HTTPError:
+        response = None
+
+    if response is not None and response.status_code < 400:
+        try:
+            body = response.json()
+        except ValueError:
+            body = None
+        if body is not None:
+            try:
+                _db_module.upsert_cached_external_response(
+                    cache_key=cache_key,
+                    source_code=source_code,
+                    body_json=_cache_json.dumps(body, ensure_ascii=False),
+                    status_code=int(response.status_code),
+                    ttl_seconds=ttl,
+                    etag=response.headers.get("etag"),
+                    last_modified=response.headers.get("last-modified"),
+                )
+            except Exception:
+                logger.exception("failed to persist external response cache for %s", cache_key)
+            return body
+
+    if allow_stale_on_error and cached_row is not None:
+        try:
+            return _cache_json.loads(cached_row["body_json"])
+        except (TypeError, ValueError):
+            return None
+    return None
+
 
 @dataclass
 class Candidate:
@@ -326,11 +633,18 @@ def _fetch_discogs_master_detail(
     if not master_id_s:
         return None
 
-    try:
-        response = client.get(f"https://api.discogs.com/masters/{master_id_s}", headers=headers)
-        response.raise_for_status()
-        data = response.json()
-    except httpx.HTTPError:
+    def _fetch() -> httpx.Response:
+        return _get_with_retry(
+            client, f"https://api.discogs.com/masters/{master_id_s}", headers=headers
+        )
+
+    data = cached_fetch_json(
+        source_code="DISCOGS",
+        kind="master",
+        identifier=master_id_s,
+        fetcher=_fetch,
+    )
+    if not isinstance(data, dict):
         return None
 
     year = _safe_year(data.get("year"))
@@ -366,15 +680,23 @@ def _fetch_discogs_artist_detail(
     if not target_url and not target_artist_id:
         return None
 
-    try:
+    # Cache key prefers the numeric artist id when available so the same
+    # artist looked up by either resource_url or id maps to one entry.
+    cache_id = target_artist_id or target_url
+
+    def _fetch() -> httpx.Response:
         if target_url:
-            response = client.get(target_url, headers=headers)
-        else:
-            response = client.get(f"https://api.discogs.com/artists/{target_artist_id}", headers=headers)
-        response.raise_for_status()
-        data = response.json()
-    except httpx.HTTPError:
-        return None
+            return _get_with_retry(client, target_url, headers=headers)
+        return _get_with_retry(
+            client, f"https://api.discogs.com/artists/{target_artist_id}", headers=headers
+        )
+
+    data = cached_fetch_json(
+        source_code="DISCOGS",
+        kind="artist",
+        identifier=cache_id,
+        fetcher=_fetch,
+    )
     return data if isinstance(data, dict) else None
 
 
@@ -1122,9 +1444,9 @@ def _maniadb_search(query: str, limit: int = 5) -> list[Candidate]:
     if not encoded_query:
         return []
 
-    with httpx.Client(timeout=15.0, follow_redirects=True) as client:
+    with _make_http_client(follow_redirects=True) as client:
         album_started_at = time.perf_counter()
-        album_res = client.get(f"{base_url}/search/{encoded_query}/", params={"sr": "L"})
+        album_res = _get_with_retry(client, f"{base_url}/search/{encoded_query}/", params={"sr": "L"})
         album_elapsed = time.perf_counter() - album_started_at
         if album_elapsed >= PROVIDER_SLOW_SEC:
             logger.warning(
@@ -1138,7 +1460,7 @@ def _maniadb_search(query: str, limit: int = 5) -> list[Candidate]:
             return albums[:limit]
 
         artist_started_at = time.perf_counter()
-        artist_res = client.get(f"{base_url}/search/{encoded_query}/", params={"sr": "P"})
+        artist_res = _get_with_retry(client, f"{base_url}/search/{encoded_query}/", params={"sr": "P"})
         artist_elapsed = time.perf_counter() - artist_started_at
         if artist_elapsed >= PROVIDER_SLOW_SEC:
             logger.warning(
@@ -1177,7 +1499,7 @@ def _maniadb_search(query: str, limit: int = 5) -> list[Candidate]:
             if not alias_encoded_query:
                 continue
             alias_album_started_at = time.perf_counter()
-            alias_album_res = client.get(f"{base_url}/search/{alias_encoded_query}/", params={"sr": "L"})
+            alias_album_res = _get_with_retry(client, f"{base_url}/search/{alias_encoded_query}/", params={"sr": "L"})
             alias_album_elapsed = time.perf_counter() - alias_album_started_at
             if alias_album_elapsed >= PROVIDER_SLOW_SEC:
                 logger.warning(
@@ -1213,9 +1535,9 @@ def _discogs_search(params: dict[str, Any]) -> list[Candidate]:
     if headers is None:
         return []
 
-    with httpx.Client(timeout=15.0) as client:
+    with _make_http_client() as client:
         started_at = time.perf_counter()
-        response = client.get("https://api.discogs.com/database/search", params=params, headers=headers)
+        response = _get_with_retry(client, "https://api.discogs.com/database/search", params=params, headers=headers)
         elapsed = time.perf_counter() - started_at
         if elapsed >= PROVIDER_SLOW_SEC:
             logger.warning(
@@ -1252,8 +1574,8 @@ def discogs_identity() -> dict[str, Any] | None:
         return None
 
     try:
-        with httpx.Client(timeout=15.0) as client:
-            response = client.get("https://api.discogs.com/oauth/identity", headers=headers)
+        with _make_http_client() as client:
+            response = _get_with_retry(client, "https://api.discogs.com/oauth/identity", headers=headers)
             response.raise_for_status()
             data = response.json()
     except httpx.HTTPError:
@@ -1276,8 +1598,8 @@ def discogs_add_release_to_collection(release_id: str, folder_id: int = 1) -> di
     url = f"https://api.discogs.com/users/{username}/collection/folders/{folder_id}/releases/{release_id_s}"
 
     try:
-        with httpx.Client(timeout=15.0) as client:
-            response = client.post(url, headers=headers)
+        with _make_http_client() as client:
+            response = _post_with_retry(client, url, headers=headers)
             response.raise_for_status()
             payload: dict[str, Any] = {}
             if response.text.strip():
@@ -1321,7 +1643,7 @@ def _fetch_discogs_release_detail(
         return None
 
     try:
-        response = client.get(f"https://api.discogs.com/releases/{release_id}", headers=headers)
+        response = _get_with_retry(client, f"https://api.discogs.com/releases/{release_id}", headers=headers)
         response.raise_for_status()
         data = response.json()
     except httpx.HTTPError:
@@ -1451,7 +1773,7 @@ def _enrich_discogs_candidates(candidates: list[Candidate], max_items: int = 5) 
         return
 
     master_cache: dict[str, dict[str, Any] | None] = {}
-    with httpx.Client(timeout=15.0) as client:
+    with _make_http_client() as client:
         for candidate in candidates[:slice_size]:
             detail = _fetch_discogs_release_detail(
                 candidate.external_id,
@@ -1575,8 +1897,9 @@ def search_discogs_artist_name_variations(
     remember(artist_name_s)
 
     try:
-        with httpx.Client(timeout=15.0) as client:
-            response = client.get(
+        with _make_http_client() as client:
+            response = _get_with_retry(
+                client,
                 "https://api.discogs.com/database/search",
                 params={"q": artist_name_s, "type": "artist", "per_page": variation_limit},
                 headers=headers,
@@ -1590,11 +1913,11 @@ def search_discogs_artist_name_variations(
                 remember(row.get("title"))
                 detail = None
                 if resource_url:
-                    detail_response = client.get(resource_url, headers=headers)
+                    detail_response = _get_with_retry(client, resource_url, headers=headers)
                     detail_response.raise_for_status()
                     detail = detail_response.json()
                 elif artist_id:
-                    detail_response = client.get(f"https://api.discogs.com/artists/{artist_id}", headers=headers)
+                    detail_response = _get_with_retry(client, f"https://api.discogs.com/artists/{artist_id}", headers=headers)
                     detail_response.raise_for_status()
                     detail = detail_response.json()
                 if isinstance(detail, dict):
@@ -1632,7 +1955,7 @@ def resolve_discogs_preferred_korean_artist_name(
     headers = _discogs_headers()
     if headers is not None and raw_detail:
         try:
-            with httpx.Client(timeout=15.0) as client:
+            with _make_http_client() as client:
                 artists = raw_detail.get("artists")
                 if isinstance(artists, list):
                     for row in artists:
@@ -1678,8 +2001,8 @@ def _aladin_search(query: str, limit: int = 5) -> list[Candidate]:
         "Version": "20131101",
     }
 
-    with httpx.Client(timeout=15.0) as client:
-        response = client.get(settings.aladin_base_url, params=params)
+    with _make_http_client() as client:
+        response = _get_with_retry(client, settings.aladin_base_url, params=params)
         response.raise_for_status()
         data = response.json()
 
@@ -1750,8 +2073,8 @@ def search_discogs_master_by_query(query: str, limit: int = 10) -> list[dict[str
     }
 
     try:
-        with httpx.Client(timeout=15.0) as client:
-            response = client.get("https://api.discogs.com/database/search", params=params, headers=headers)
+        with _make_http_client() as client:
+            response = _get_with_retry(client, "https://api.discogs.com/database/search", params=params, headers=headers)
             response.raise_for_status()
             data = response.json()
     except httpx.HTTPError:
@@ -2124,7 +2447,8 @@ def _discogs_master_versions_fetch_page(
     headers: dict[str, str],
     client: httpx.Client,
 ) -> tuple[list[dict[str, Any]], int | None, int | None]:
-    response = client.get(
+    response = _get_with_retry(
+        client,
         f"https://api.discogs.com/masters/{master_external_id}/versions",
         params={"page": max(1, int(page)), "per_page": max(1, min(int(per_page), 100))},
         headers=headers,
@@ -2295,7 +2619,7 @@ def get_discogs_master_variants_page(
         return detail
 
     try:
-        with httpx.Client(timeout=20.0) as client:
+        with _make_http_client(timeout=20.0) as client:
             master_detail = _fetch_discogs_master_detail(master_external_id, headers=headers, client=client)
             if master_detail is not None:
                 master_cache[str(master_external_id)] = master_detail
@@ -2464,8 +2788,8 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
         return []
 
     try:
-        with httpx.Client(timeout=15.0, follow_redirects=True) as client:
-            response = client.get(f"{base_url}/album/{album_id}", params={"o": "l", "s": 0})
+        with _make_http_client(follow_redirects=True) as client:
+            response = _get_with_retry(client, f"{base_url}/album/{album_id}", params={"o": "l", "s": 0})
             response.raise_for_status()
             html_text = response.text
     except httpx.HTTPError:
@@ -2858,8 +3182,9 @@ def _musicbrainz_search(query: str, limit: int = 5) -> list[Candidate]:
     settings = get_settings()
     headers = {"User-Agent": settings.musicbrainz_user_agent}
 
-    with httpx.Client(timeout=15.0) as client:
-        response = client.get(
+    with _make_http_client() as client:
+        response = _get_with_retry(
+            client,
             "https://musicbrainz.org/ws/2/release/",
             params={"query": query, "fmt": "json", "limit": limit},
             headers=headers,
@@ -2884,22 +3209,28 @@ def _musicbrainz_cover_art_image_items(
     settings = get_settings()
     headers = {"User-Agent": settings.musicbrainz_user_agent}
     own_client = client is None
-    http_client = client or httpx.Client(timeout=15.0)
-    try:
-        response = http_client.get(
+    http_client = client or _make_http_client()
+
+    def _fetch() -> httpx.Response:
+        return _get_with_retry(
+            http_client,
             f"https://coverartarchive.org/release/{quote(release_id_s)}",
             headers=headers,
         )
-        if response.status_code == 404:
-            return []
-        response.raise_for_status()
-        data = response.json()
-    except httpx.HTTPError:
-        return []
+
+    try:
+        data = cached_fetch_json(
+            source_code="COVERARTARCHIVE",
+            kind="release-images",
+            identifier=release_id_s,
+            fetcher=_fetch,
+        )
     finally:
         if own_client:
             http_client.close()
 
+    if not isinstance(data, dict):
+        return []
     rows = data.get("images") or []
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -2946,17 +3277,23 @@ def _fetch_musicbrainz_release_snapshot(
     settings = get_settings()
     headers = {"User-Agent": settings.musicbrainz_user_agent}
     own_client = client is None
-    http_client = client or httpx.Client(timeout=15.0)
-    try:
-        response = http_client.get(
+    http_client = client or _make_http_client()
+
+    def _fetch() -> httpx.Response:
+        return _get_with_retry(
+            http_client,
             f"https://musicbrainz.org/ws/2/release/{quote(release_id_s)}",
             params={"fmt": "json", "inc": "release-groups+artists+labels+recordings+media"},
             headers=headers,
         )
-        response.raise_for_status()
-        raw_detail = response.json()
-    except httpx.HTTPError:
-        return None
+
+    try:
+        raw_detail = cached_fetch_json(
+            source_code="MUSICBRAINZ",
+            kind="release",
+            identifier=release_id_s,
+            fetcher=_fetch,
+        )
     finally:
         if own_client:
             http_client.close()
@@ -3065,7 +3402,7 @@ def _enrich_musicbrainz_candidates(candidates: list[Candidate], max_items: int =
     slice_size = max(0, min(len(candidates), max_items))
     if slice_size == 0:
         return
-    with httpx.Client(timeout=15.0) as client:
+    with _make_http_client() as client:
         for candidate in candidates[:slice_size]:
             detail = _fetch_musicbrainz_release_snapshot(candidate.external_id, client=client)
             if not detail:
@@ -3206,7 +3543,7 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
             return None
         try:
             master_cache: dict[str, dict[str, Any] | None] = {}
-            with httpx.Client(timeout=15.0) as client:
+            with _make_http_client() as client:
                 detail = _fetch_discogs_release_detail(
                     ext,
                     headers=headers,
@@ -3314,7 +3651,7 @@ def resolve_release_master_reference(source: str, external_id: str) -> dict[str,
         if headers is None:
             return None
         try:
-            with httpx.Client(timeout=15.0) as client:
+            with _make_http_client() as client:
                 started_at = time.perf_counter()
                 detail = _fetch_discogs_release_detail(ext, headers=headers, client=client)
                 elapsed = time.perf_counter() - started_at
@@ -3395,8 +3732,9 @@ def resolve_release_master_reference(source: str, external_id: str) -> dict[str,
         settings = get_settings()
         headers = {"User-Agent": settings.musicbrainz_user_agent}
         try:
-            with httpx.Client(timeout=15.0) as client:
-                response = client.get(
+            with _make_http_client() as client:
+                response = _get_with_retry(
+                    client,
                     f"https://musicbrainz.org/ws/2/release/{quote(ext)}",
                     params={"fmt": "json", "inc": "release-groups+artists"},
                     headers=headers,
