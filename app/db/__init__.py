@@ -6450,123 +6450,10 @@ def update_album_master_sort_artist_name(album_master_id: int, sort_artist_name:
     return dict(row) if row else None
 
 
-def get_album_master_correction_state(album_master_id: int) -> dict[str, Any] | None:
-    master_id = int(album_master_id or 0)
-    if master_id <= 0:
-        return None
-    with get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT
-              id,
-              release_year,
-              domain_code,
-              source_release_year,
-              source_domain_code,
-              override_release_year,
-              override_domain_code,
-              override_note
-            FROM album_master
-            WHERE id = ?
-            LIMIT 1
-            """,
-            (master_id,),
-        ).fetchone()
-    if row is None:
-        return None
-    data = dict(row)
-    data["domain_code"] = _normalize_domain_code_value(data.get("domain_code"))
-    data["source_domain_code"] = _normalize_domain_code_value(data.get("source_domain_code")) or data["domain_code"]
-    data["override_domain_code"] = _normalize_domain_code_value(data.get("override_domain_code"))
-    data["source_release_year"] = (
-        int(data["source_release_year"]) if data.get("source_release_year") not in (None, "") else data.get("release_year")
-    )
-    data["override_release_year"] = (
-        int(data["override_release_year"]) if data.get("override_release_year") not in (None, "") else None
-    )
-    data["release_year"] = int(data["release_year"]) if data.get("release_year") not in (None, "") else None
-    data["override_note"] = str(data.get("override_note") or "").strip() or None
-    data["has_manual_correction"] = bool(
-        data.get("override_release_year") is not None
-        or data.get("override_domain_code")
-        or data.get("override_note")
-    )
-    return data
-
-
-def update_album_master_correction(
-    album_master_id: int,
-    *,
-    release_year: int | None,
-    domain_code: str | None,
-    override_note: str | None,
-) -> dict[str, Any] | None:
-    master_id = int(album_master_id or 0)
-    if master_id <= 0:
-        return None
-    normalized_domain_code = _normalize_domain_code_value(domain_code)
-    normalized_note = str(override_note or "").strip() or None
-    release_year_value = int(release_year) if release_year is not None else None
-    now = utc_now_iso()
-
-    with get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT
-              id,
-              release_year,
-              domain_code,
-              source_release_year,
-              source_domain_code
-            FROM album_master
-            WHERE id = ?
-            LIMIT 1
-            """,
-            (master_id,),
-        ).fetchone()
-        if row is None:
-            return None
-        current = dict(row)
-        source_release_year = (
-            int(current["source_release_year"])
-            if current.get("source_release_year") not in (None, "")
-            else (int(current["release_year"]) if current.get("release_year") not in (None, "") else None)
-        )
-        source_domain_code = _normalize_domain_code_value(current.get("source_domain_code")) or _normalize_domain_code_value(
-            current.get("domain_code")
-        )
-        effective_release_year = release_year_value if release_year_value is not None else source_release_year
-        effective_domain_code = normalized_domain_code if normalized_domain_code else source_domain_code
-
-        cur = conn.execute(
-            """
-            UPDATE album_master
-            SET release_year = ?,
-                domain_code = ?,
-                source_release_year = ?,
-                source_domain_code = ?,
-                override_release_year = ?,
-                override_domain_code = ?,
-                override_note = ?,
-                updated_at = ?
-            WHERE id = ?
-            """,
-            (
-                effective_release_year,
-                effective_domain_code,
-                source_release_year,
-                source_domain_code,
-                release_year_value,
-                normalized_domain_code,
-                normalized_note,
-                now,
-                master_id,
-            ),
-        )
-        if int(cur.rowcount or 0) <= 0:
-            return None
-
-    return get_album_master_correction_state(master_id)
+# `get_album_master_correction_state` and
+# `update_album_master_correction` live in
+# app/db/album_master_correction.py and are re-exported from this
+# package's __init__ at the bottom of the file.
 
 
 def set_owned_item_linked_album_master(owned_item_id: int, album_master_id: int | None) -> bool:
@@ -8397,4 +8284,8 @@ from .album_master_external_ref import (  # noqa: E402
     ensure_album_master_external_ref,
     get_album_master_id_by_external_ref,
     list_album_master_external_refs,
+)
+from .album_master_correction import (  # noqa: E402
+    get_album_master_correction_state,
+    update_album_master_correction,
 )
