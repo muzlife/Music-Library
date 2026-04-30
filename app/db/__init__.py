@@ -6296,82 +6296,10 @@ def merge_album_masters(
     }
 
 
-def bind_album_master_members(
-    album_master_id: int,
-    owned_item_ids: list[int],
-    replace_existing: bool = True,
-) -> int:
-    unique_ids = sorted({int(v) for v in owned_item_ids if int(v) > 0})
-    now = utc_now_iso()
-
-    with get_conn() as conn:
-        if replace_existing:
-            conn.execute("DELETE FROM album_master_member WHERE album_master_id = ?", (album_master_id,))
-
-        valid_ids: list[int] = []
-        if unique_ids:
-            placeholders = ",".join("?" for _ in unique_ids)
-            rows = conn.execute(
-                f"SELECT id FROM owned_item WHERE id IN ({placeholders})",
-                unique_ids,
-            ).fetchall()
-            valid_id_set = {int(r["id"]) for r in rows}
-            valid_ids = [v for v in unique_ids if v in valid_id_set]
-
-        if valid_ids:
-            conn.executemany(
-                """
-                INSERT OR IGNORE INTO album_master_member
-                  (album_master_id, owned_item_id, created_at)
-                VALUES (?, ?, ?)
-                """,
-                [(album_master_id, owned_item_id, now) for owned_item_id in valid_ids],
-            )
-        _sync_album_master_domain_code_in_conn(conn, album_master_id)
-
-        row = conn.execute(
-            "SELECT COUNT(*) AS cnt FROM album_master_member WHERE album_master_id = ?",
-            (album_master_id,),
-        ).fetchone()
-    return int(row["cnt"]) if row else 0
-
-
-def album_master_exists(album_master_id: int) -> bool:
-    mid = int(album_master_id or 0)
-    if mid <= 0:
-        return False
-    with get_conn() as conn:
-        row = conn.execute("SELECT id FROM album_master WHERE id = ?", (mid,)).fetchone()
-        return row is not None
-
-
-def update_album_master_sort_artist_name(album_master_id: int, sort_artist_name: str | None) -> dict[str, Any] | None:
-    master_id = int(album_master_id or 0)
-    if master_id <= 0:
-        return None
-    normalized_value = str(sort_artist_name or "").strip() or None
-    now = utc_now_iso()
-    with get_conn() as conn:
-        cur = conn.execute(
-            """
-            UPDATE album_master
-            SET sort_artist_name = ?, updated_at = ?
-            WHERE id = ?
-            """,
-            (normalized_value, now, master_id),
-        )
-        if int(cur.rowcount or 0) <= 0:
-            return None
-        row = conn.execute(
-            """
-            SELECT id, sort_artist_name
-            FROM album_master
-            WHERE id = ?
-            LIMIT 1
-            """,
-            (master_id,),
-        ).fetchone()
-    return dict(row) if row else None
+# `bind_album_master_members`, `album_master_exists`, and
+# `update_album_master_sort_artist_name` live in
+# app/db/album_master_member.py and are re-exported from this
+# package's __init__ at the bottom of the file.
 
 
 # `get_album_master_correction_state` and
@@ -6962,72 +6890,9 @@ def count_album_masters(
     return int(row["cnt"]) if row else 0
 
 
-def list_album_master_members(album_master_id: int) -> list[dict[str, Any]]:
-    with get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-              oi.id AS owned_item_id,
-              oi.category,
-              oi.item_name_override,
-              oi.quantity,
-              oi.status,
-              mid.format_name
-            FROM album_master_member amm
-            JOIN owned_item oi ON oi.id = amm.owned_item_id
-            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-            WHERE amm.album_master_id = ?
-            ORDER BY oi.category ASC, oi.id ASC
-            """,
-            (album_master_id,),
-        ).fetchall()
-    return [dict(row) for row in rows]
-
-
-def delete_album_master(album_master_id: int, cascade_items: bool = False) -> dict[str, int] | None:
-    master_id = int(album_master_id or 0)
-    if master_id <= 0:
-        return None
-
-    with get_conn() as conn:
-        existing = conn.execute(
-            "SELECT id FROM album_master WHERE id = ?",
-            (master_id,),
-        ).fetchone()
-        if existing is None:
-            return None
-
-        member_rows = conn.execute(
-            """
-            SELECT DISTINCT owned_item_id
-            FROM album_master_member
-            WHERE album_master_id = ?
-            """,
-            (master_id,),
-        ).fetchall()
-        member_ids = [int(r["owned_item_id"]) for r in member_rows if r["owned_item_id"] is not None]
-        removed_member_links = len(member_ids)
-
-        deleted_owned_item_count = 0
-        if cascade_items and member_ids:
-            placeholders = ",".join("?" for _ in member_ids)
-            cur_items = conn.execute(
-                f"DELETE FROM owned_item WHERE id IN ({placeholders})",
-                member_ids,
-            )
-            deleted_owned_item_count = int(cur_items.rowcount or 0)
-
-        cur_master = conn.execute(
-            "DELETE FROM album_master WHERE id = ?",
-            (master_id,),
-        )
-        if int(cur_master.rowcount or 0) <= 0:
-            return None
-
-    return {
-        "removed_member_links": removed_member_links,
-        "deleted_owned_item_count": deleted_owned_item_count,
-    }
+# `list_album_master_members` and `delete_album_master` live in
+# app/db/album_master_member.py and are re-exported from this
+# package's __init__ at the bottom of the file.
 
 
 def recommend_owned_item_location(
@@ -8216,4 +8081,11 @@ from .album_master_correction import (  # noqa: E402
 from .album_master_duplicates import (  # noqa: E402
     _album_master_source_priority,
     list_duplicate_album_masters,
+)
+from .album_master_member import (  # noqa: E402
+    album_master_exists,
+    bind_album_master_members,
+    delete_album_master,
+    list_album_master_members,
+    update_album_master_sort_artist_name,
 )
