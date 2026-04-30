@@ -19086,7 +19086,6 @@
                 <option>DISCOGS</option>
                 <option>ALADIN</option>
                 <option>MANIADB</option>
-                <option>MUSICBRAINZ</option>
               </select>
             </div>
             <div>
@@ -19542,7 +19541,6 @@
               <option value="AUTO">AUTO</option>
               <option value="DISCOGS">Discogs</option>
               <option value="MANIADB">ManiaDB</option>
-              <option value="MUSICBRAINZ">MusicBrainz</option>
             </select>
           </div>
           <div>
@@ -20620,7 +20618,7 @@
           <ol>
             <li data-i18n="manual.ops.providers.item1">메타 공급자별 API 키나 기본 접속값을 여기서 직접 입력합니다.</li>
             <li data-i18n="manual.ops.providers.item2">secret 값은 새 값을 넣을 때만 변경되고, 비워두면 기존 설정을 유지합니다.</li>
-            <li data-i18n="manual.ops.providers.item3">Discogs/Aladin은 API 키 설정 여부를 먼저 확인하고, ManiaDB/MusicBrainz는 기본 주소와 User-Agent를 점검합니다.</li>
+            <li data-i18n="manual.ops.providers.item3">Discogs/Aladin은 API 키 설정 여부를 먼저 확인하고, ManiaDB는 기본 주소와 User-Agent를 점검합니다.</li>
             <li data-i18n="manual.ops.providers.item4">저장 후에는 `미디어 > 등록/수집`이나 `메타 동기화`에서 바로 반영 결과를 확인합니다.</li>
           </ol>
           <div class="manual-block-note" data-i18n="manual.ops.providers.note">1차 범위는 메타 공급자만 다룹니다. Home Assistant나 구매 webhook 같은 다른 연동은 여기 넣지 않습니다.</div>
@@ -20642,8 +20640,9 @@
                   <div id="opsProviderDiscogsTokenState" class="mini muted u-mt-6" data-i18n="ops.providers.field.secret.missing">미설정</div>
                 </div>
                 <div>
-                  <label for="opsProviderDiscogsUserAgent" data-i18n="ops.providers.field.discogs_user_agent.label">Discogs User-Agent</label>
-                  <input id="opsProviderDiscogsUserAgent" data-i18n-placeholder="ops.providers.field.discogs_user_agent.placeholder" placeholder="예: hahahoho-library/0.1 (contact: ops@example.com)" />
+                  <label for="opsProviderDiscogsContactEmail" data-i18n="ops.providers.field.discogs_contact_email.label">연락처 이메일</label>
+                  <input id="opsProviderDiscogsContactEmail" type="email" data-i18n-placeholder="ops.providers.field.discogs_contact_email.placeholder" placeholder="예: ops@example.com" />
+                  <div id="opsProviderDiscogsUaPreview" class="mini muted u-mt-6"></div>
                 </div>
               </div>
               <div class="ops-provider-group-actions">
@@ -20675,17 +20674,6 @@
               </div>
               <div class="ops-provider-group-actions">
                 <button id="opsProviderManiadbSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.providers.action.save_item">저장</button>
-              </div>
-            </section>
-            <section class="ops-provider-group ops-provider-group--single">
-              <div class="ops-provider-group-grid">
-                <div>
-                  <label for="opsProviderMusicbrainzUserAgent" data-i18n="ops.providers.field.musicbrainz_user_agent.label">MusicBrainz User-Agent</label>
-                  <input id="opsProviderMusicbrainzUserAgent" data-i18n-placeholder="ops.providers.field.musicbrainz_user_agent.placeholder" placeholder="예: hahahoho-library/0.1 (contact: ops@example.com)" />
-                </div>
-              </div>
-              <div class="ops-provider-group-actions">
-                <button id="opsProviderMusicbrainzSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.providers.action.save_item">저장</button>
               </div>
             </section>
             <section class="ops-provider-group ops-provider-group--pair">
@@ -20988,7 +20976,7 @@
 
   <script>
     const MUSIC_CATEGORIES = new Set(["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"]);
-    const SOURCE_MANAGED_CODES = new Set(["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"]);
+    const SOURCE_MANAGED_CODES = new Set(["DISCOGS", "MANIADB", "ALADIN"]);
     const DOMAIN_CODES = new Set(["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]);
     const RELEASE_TYPES = new Set(["ALBUM", "EP", "SINGLE"]);
     const SOURCE_WORKBENCH_QUEUE_KEY = "sourceWorkbenchQueue.v1";
@@ -22402,7 +22390,7 @@
         "media.register.purchase.queue.details.title": "후보 메타 치환",
         "media.register.purchase.queue.details.query_prefix": "조회 기준: {query}",
         "media.register.purchase.queue.details.query_empty": "조회 기준이 없습니다.",
-        "media.register.purchase.queue.details.empty": "후보가 없습니다. `후보 조회`를 눌러 Discogs / ManiaDB / MusicBrainz 후보를 불러오세요.",
+        "media.register.purchase.queue.details.empty": "후보가 없습니다. `후보 조회`를 눌러 Discogs / ManiaDB 후보를 불러오세요.",
         "media.register.purchase.queue.details.loading": "후보 조회 중...",
         "media.register.purchase.queue.field.artist_override.label": "아티스트명 수정 검색",
         "media.register.purchase.queue.field.item_override.label": "상품명 수정 검색",
@@ -22762,6 +22750,8 @@
         "ops.providers.title": "연동/API 설정",
         "ops.providers.intro": "메타 공급자별 API 키와 기본 연결값을 관리합니다. secret 값은 새 값을 입력할 때만 변경됩니다.",
         "ops.providers.field.discogs_token.label": "Discogs Token",
+        "ops.providers.field.discogs_contact_email.label": "연락처 이메일",
+        "ops.providers.field.discogs_contact_email.placeholder": "예: ops@example.com",
         "ops.providers.field.discogs_user_agent.label": "Discogs User-Agent",
         "ops.providers.field.discogs_user_agent.placeholder": "예: hahahoho-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.aladin_ttb_key.label": "Aladin TTB Key",
@@ -22769,8 +22759,6 @@
         "ops.providers.field.aladin_base_url.placeholder": "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
         "ops.providers.field.maniadb_base_url.label": "ManiaDB Base URL",
         "ops.providers.field.maniadb_base_url.placeholder": "http://www.maniadb.com",
-        "ops.providers.field.musicbrainz_user_agent.label": "MusicBrainz User-Agent",
-        "ops.providers.field.musicbrainz_user_agent.placeholder": "예: hahahoho-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.deepl_auth_key.label": "DeepL Auth Key",
         "ops.providers.field.deepl_base_url.label": "DeepL Base URL",
         "ops.providers.field.deepl_base_url.placeholder": "https://api-free.deepl.com/v2/translate",
@@ -23033,7 +23021,7 @@
         "manual.ops.providers.summary": "연동/API 설정 활용 매뉴얼",
         "manual.ops.providers.item1": "메타 공급자별 API 키나 기본 접속값을 여기서 직접 입력합니다.",
         "manual.ops.providers.item2": "secret 값은 새 값을 넣을 때만 변경되고, 비워두면 기존 설정을 유지합니다.",
-        "manual.ops.providers.item3": "Discogs/Aladin은 API 키 설정 여부를 먼저 확인하고, ManiaDB/MusicBrainz는 기본 주소와 User-Agent를 점검합니다.",
+        "manual.ops.providers.item3": "Discogs/Aladin은 API 키 설정 여부를 먼저 확인하고, ManiaDB는 기본 주소와 User-Agent를 점검합니다.",
         "manual.ops.providers.item4": "저장 후에는 `미디어 > 등록/수집`이나 `메타 동기화`에서 바로 반영 결과를 확인합니다.",
         "manual.ops.providers.note": "1차 범위는 메타 공급자만 다룹니다. Home Assistant나 구매 webhook 같은 다른 연동은 여기 넣지 않습니다.",
         "manual.ops.export.summary": "백업/내보내기 페이지 활용 매뉴얼",
@@ -24981,7 +24969,7 @@
         "media.register.purchase.queue.details.title": "Replace with Candidate Metadata",
         "media.register.purchase.queue.details.query_prefix": "Lookup basis: {query}",
         "media.register.purchase.queue.details.query_empty": "No lookup basis available.",
-        "media.register.purchase.queue.details.empty": "No candidates yet. Use `Load Candidates` to fetch Discogs / ManiaDB / MusicBrainz matches.",
+        "media.register.purchase.queue.details.empty": "No candidates yet. Use `Load Candidates` to fetch Discogs / ManiaDB matches.",
         "media.register.purchase.queue.details.loading": "Loading candidates...",
         "media.register.purchase.queue.field.artist_override.label": "Override artist lookup",
         "media.register.purchase.queue.field.item_override.label": "Override item lookup",
@@ -25341,6 +25329,8 @@
         "ops.providers.title": "Provider / API Settings",
         "ops.providers.intro": "Manage API keys and default connection values for metadata providers. Secret values change only when you enter a new value.",
         "ops.providers.field.discogs_token.label": "Discogs Token",
+        "ops.providers.field.discogs_contact_email.label": "Contact Email",
+        "ops.providers.field.discogs_contact_email.placeholder": "e.g. ops@example.com",
         "ops.providers.field.discogs_user_agent.label": "Discogs User-Agent",
         "ops.providers.field.discogs_user_agent.placeholder": "e.g. hahahoho-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.aladin_ttb_key.label": "Aladin TTB Key",
@@ -25348,8 +25338,6 @@
         "ops.providers.field.aladin_base_url.placeholder": "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
         "ops.providers.field.maniadb_base_url.label": "ManiaDB Base URL",
         "ops.providers.field.maniadb_base_url.placeholder": "http://www.maniadb.com",
-        "ops.providers.field.musicbrainz_user_agent.label": "MusicBrainz User-Agent",
-        "ops.providers.field.musicbrainz_user_agent.placeholder": "e.g. hahahoho-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.deepl_auth_key.label": "DeepL Auth Key",
         "ops.providers.field.deepl_base_url.label": "DeepL Base URL",
         "ops.providers.field.deepl_base_url.placeholder": "https://api-free.deepl.com/v2/translate",
@@ -25612,7 +25600,7 @@
         "manual.ops.providers.summary": "Provider / API Settings Guide",
         "manual.ops.providers.item1": "Enter API keys or default connection values for metadata providers here.",
         "manual.ops.providers.item2": "Secret values change only when you enter a new value. Leaving them blank keeps the current setting.",
-        "manual.ops.providers.item3": "Check Discogs and Aladin key status first, then review the base URL and user-agent for ManiaDB and MusicBrainz.",
+        "manual.ops.providers.item3": "Check Discogs and Aladin key status first, then review the base URL and user-agent for ManiaDB.",
         "manual.ops.providers.item4": "After saving, verify the result right away in `Media > Register/Collect` or `Metadata Sync`.",
         "manual.ops.providers.note": "This first pass only covers metadata providers. Home Assistant and purchase webhook settings stay out of this screen.",
         "manual.ops.export.summary": "Backup / Export Guide",
@@ -27576,7 +27564,7 @@
         "media.register.purchase.queue.details.title": "候補メタへ置換",
         "media.register.purchase.queue.details.query_prefix": "照会基準: {query}",
         "media.register.purchase.queue.details.query_empty": "照会基準がありません。",
-        "media.register.purchase.queue.details.empty": "候補がありません。`候補取得` を押して Discogs / ManiaDB / MusicBrainz の候補を読み込んでください。",
+        "media.register.purchase.queue.details.empty": "候補がありません。`候補取得` を押して Discogs / ManiaDB の候補を読み込んでください。",
         "media.register.purchase.queue.details.loading": "候補を読み込み中...",
         "media.register.purchase.queue.field.artist_override.label": "アーティスト名修正検索",
         "media.register.purchase.queue.field.item_override.label": "商品名修正検索",
@@ -27932,6 +27920,8 @@
         "ops.providers.title": "連携 / API設定",
         "ops.providers.intro": "メタ供給元ごとのAPIキーと基本接続値を管理します。secret値は新しい値を入力したときだけ変更されます。",
         "ops.providers.field.discogs_token.label": "Discogs Token",
+        "ops.providers.field.discogs_contact_email.label": "連絡先メール",
+        "ops.providers.field.discogs_contact_email.placeholder": "例: ops@example.com",
         "ops.providers.field.discogs_user_agent.label": "Discogs User-Agent",
         "ops.providers.field.discogs_user_agent.placeholder": "例: hahahoho-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.aladin_ttb_key.label": "Aladin TTB Key",
@@ -27939,8 +27929,6 @@
         "ops.providers.field.aladin_base_url.placeholder": "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
         "ops.providers.field.maniadb_base_url.label": "ManiaDB Base URL",
         "ops.providers.field.maniadb_base_url.placeholder": "http://www.maniadb.com",
-        "ops.providers.field.musicbrainz_user_agent.label": "MusicBrainz User-Agent",
-        "ops.providers.field.musicbrainz_user_agent.placeholder": "例: hahahoho-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.deepl_auth_key.label": "DeepL Auth Key",
         "ops.providers.field.deepl_base_url.label": "DeepL Base URL",
         "ops.providers.field.deepl_base_url.placeholder": "https://api-free.deepl.com/v2/translate",
@@ -28203,7 +28191,7 @@
         "manual.ops.providers.summary": "連携 / API設定ガイド",
         "manual.ops.providers.item1": "メタ供給元ごとのAPIキーや基本接続値をここで直接入力します。",
         "manual.ops.providers.item2": "secret値は新しい値を入力したときだけ変更され、空欄のままなら既存設定を維持します。",
-        "manual.ops.providers.item3": "Discogs / Aladin はAPIキー設定状態を先に確認し、ManiaDB / MusicBrainz は基本URLと User-Agent を点検します。",
+        "manual.ops.providers.item3": "Discogs / Aladin はAPIキー設定状態を先に確認し、ManiaDB は基本URLと User-Agent を点検します。",
         "manual.ops.providers.item4": "保存後は `メディア > 登録/収集` または `メタ同期` で反映結果をすぐ確認します。",
         "manual.ops.providers.note": "1次範囲はメタ供給元のみです。Home Assistant や購入 webhook など他の連携はここに入れません。",
         "manual.ops.export.summary": "バックアップ / エクスポートページ利用ガイド",
@@ -34852,7 +34840,6 @@
                     <option value="DISCOGS" ${String(state?.source || "AUTO").trim().toUpperCase() === "DISCOGS" ? "selected" : ""}>DISCOGS</option>
                     <option value="MANIADB" ${String(state?.source || "AUTO").trim().toUpperCase() === "MANIADB" ? "selected" : ""}>MANIADB</option>
                     <option value="ALADIN" ${String(state?.source || "AUTO").trim().toUpperCase() === "ALADIN" ? "selected" : ""}>ALADIN</option>
-                    <option value="MUSICBRAINZ" ${String(state?.source || "AUTO").trim().toUpperCase() === "MUSICBRAINZ" ? "selected" : ""}>MUSICBRAINZ</option>
                   </select>
                 </div>
                 <div class="purchase-import-candidate-search-field">
@@ -35625,7 +35612,6 @@
       if (code === "DISCOGS") return "Discogs";
       if (code === "MANIADB") return "ManiaDB";
       if (code === "ALADIN") return "Aladin";
-      if (code === "MUSICBRAINZ") return "MusicBrainz";
       return code;
     }
 
@@ -43216,7 +43202,7 @@
 
     function buildLinkedOwnedPayloadFromMetaCandidate(c, albumMasterId) {
       const sourceCodeRaw = String(c?.source || "").trim().toUpperCase();
-      const sourceCode = ["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"].includes(sourceCodeRaw)
+      const sourceCode = ["DISCOGS", "MANIADB", "ALADIN"].includes(sourceCodeRaw)
         ? sourceCodeRaw
         : null;
       const sourceExternalId = String(c?.external_id || "").trim() || null;
@@ -43338,7 +43324,7 @@
     function buildRegisterLookupSourceCandidates(source) {
       const primary = String(source || "AUTO").trim().toUpperCase() || "AUTO";
       if (primary === "AUTO") return ["AUTO"];
-      const fallbacks = ["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"].filter((sourceCode) => sourceCode !== primary);
+      const fallbacks = ["DISCOGS", "MANIADB", "ALADIN"].filter((sourceCode) => sourceCode !== primary);
       return [primary, ...fallbacks];
     }
 
@@ -50979,10 +50965,13 @@
         "opsProviderDeeplAuthKeyState",
         t(data.deepl_auth_key_configured ? "ops.providers.field.secret.configured" : "ops.providers.field.secret.missing")
       );
-      $("opsProviderDiscogsUserAgent").value = String(data.discogs_user_agent || "");
+      const _discogs_ua = String(data.discogs_user_agent || "");
+      const _emailMatch = _discogs_ua.match(/contact:\s*([^\s)]+)/);
+      $("opsProviderDiscogsContactEmail").value = _emailMatch ? _emailMatch[1] : "";
+      const _uaPreview = $("opsProviderDiscogsUaPreview");
+      if (_uaPreview) _uaPreview.textContent = _discogs_ua ? `User-Agent: ${_discogs_ua}` : "";
       $("opsProviderAladinBaseUrl").value = String(data.aladin_base_url || "");
       $("opsProviderManiadbBaseUrl").value = String(data.maniadb_base_url || "");
-      $("opsProviderMusicbrainzUserAgent").value = String(data.musicbrainz_user_agent || "");
       $("opsProviderDeeplBaseUrl").value = String(data.deepl_base_url || "");
     }
 
@@ -51007,7 +50996,6 @@
         "discogs_user_agent",
         "aladin_base_url",
         "maniadb_base_url",
-        "musicbrainz_user_agent",
         "deepl_base_url",
       ]);
     }
@@ -51018,10 +51006,12 @@
         discogs_token: $("opsProviderDiscogsToken").value.trim() || null,
         aladin_ttb_key: $("opsProviderAladinTtbKey").value.trim() || null,
         deepl_auth_key: $("opsProviderDeeplAuthKey").value.trim() || null,
-        discogs_user_agent: $("opsProviderDiscogsUserAgent").value.trim() || null,
+        discogs_user_agent: (() => {
+          const _email = $("opsProviderDiscogsContactEmail")?.value.trim();
+          return _email ? `hahahoho-library/0.1 (contact: ${_email})` : null;
+        })(),
         aladin_base_url: $("opsProviderAladinBaseUrl").value.trim() || null,
         maniadb_base_url: $("opsProviderManiadbBaseUrl").value.trim() || null,
-        musicbrainz_user_agent: $("opsProviderMusicbrainzUserAgent").value.trim() || null,
         deepl_base_url: $("opsProviderDeeplBaseUrl").value.trim() || null,
       };
       const payload = Object.fromEntries(
@@ -51620,9 +51610,6 @@
     ]));
     $("opsProviderManiadbSaveBtn")?.addEventListener("click", () => saveOpsProviderSettingsFields([
       "maniadb_base_url",
-    ]));
-    $("opsProviderMusicbrainzSaveBtn")?.addEventListener("click", () => saveOpsProviderSettingsFields([
-      "musicbrainz_user_agent",
     ]));
     $("opsProviderDeeplSaveBtn")?.addEventListener("click", () => saveOpsProviderSettingsFields([
       "deepl_auth_key",

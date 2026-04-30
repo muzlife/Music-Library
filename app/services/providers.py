@@ -1990,29 +1990,57 @@ def _aladin_search(query: str, limit: int = 5) -> list[Candidate]:
     if not settings.aladin_ttb_key:
         return []
 
-    params = {
-        "ttbkey": settings.aladin_ttb_key,
-        "Query": query,
-        "QueryType": "Keyword",
-        "SearchTarget": "Music",
-        "MaxResults": max(1, min(limit, 50)),
-        "start": 1,
-        "output": "js",
-        "Version": "20131101",
-    }
+    # SearchTarget=Music 을 먼저 시도하고, 결과가 없으면 All 로 재시도.
+    # 알라딘 TTB API 는 Music 카테고리 결과가 비어있거나 errorCode 를 내려주는 경우가 있음.
+    for search_target in ("Music", "All"):
+        params = {
+            "ttbkey": settings.aladin_ttb_key,
+            "Query": query,
+            "QueryType": "Keyword",
+            "SearchTarget": search_target,
+            "MaxResults": max(1, min(limit, 50)),
+            "start": 1,
+            "output": "js",
+            "Version": "20131101",
+        }
 
-    with _make_http_client() as client:
-        response = _get_with_retry(client, settings.aladin_base_url, params=params)
-        response.raise_for_status()
-        data = response.json()
+        with _make_http_client() as client:
+            response = _get_with_retry(client, settings.aladin_base_url, params=params)
+            response.raise_for_status()
+            try:
+                data = response.json()
+            except ValueError:
+                logger.warning(
+                    "aladin search query=%r target=%s: non-JSON response (len=%d)",
+                    query, search_target, len(response.text),
+                )
+                continue
 
-    return _parse_aladin_candidates(data, query=query)
+        # 알라딘은 200 OK 이면서 errorCode 를 body 에 포함하는 경우가 있음
+        if "errorCode" in data:
+            logger.warning(
+                "aladin search query=%r target=%s: API error %s – %s",
+                query, search_target, data.get("errorCode"), data.get("errorMessage"),
+            )
+            continue
+
+        candidates = _parse_aladin_candidates(data, query=query)
+        if candidates:
+            return candidates
+
+        logger.debug(
+            "aladin search query=%r target=%s: totalResults=%s, no items returned",
+            query, search_target, data.get("totalResults"),
+        )
+
+    return []
 
 
 def search_aladin_by_barcode(barcode: str, limit: int = 5) -> list[dict[str, Any]]:
     try:
         candidates = _aladin_search(barcode, limit=limit)
-    except (httpx.HTTPError, ValueError):
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("aladin barcode search %r failed: %s", barcode, exc)
         return []
     return [c.to_dict() for c in candidates]
 
@@ -2020,7 +2048,8 @@ def search_aladin_by_barcode(barcode: str, limit: int = 5) -> list[dict[str, Any
 def search_aladin_by_query(query: str, limit: int = 5) -> list[dict[str, Any]]:
     try:
         candidates = _aladin_search(query, limit=limit)
-    except (httpx.HTTPError, ValueError):
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("aladin query search %r failed: %s", query, exc)
         return []
     return [c.to_dict() for c in candidates]
 
@@ -3422,7 +3451,8 @@ def _enrich_musicbrainz_candidates(candidates: list[Candidate], max_items: int =
 def search_musicbrainz_by_barcode(barcode: str, limit: int = 5) -> list[dict[str, Any]]:
     try:
         candidates = _musicbrainz_search(f"barcode:{barcode}", limit=limit)
-    except httpx.HTTPError:
+    except httpx.HTTPError as exc:
+        logger.warning("musicbrainz barcode search %r failed: %s", barcode, exc)
         return []
     _enrich_musicbrainz_candidates(candidates, max_items=min(limit, 3))
     return [c.to_dict() for c in candidates]
@@ -3431,7 +3461,8 @@ def search_musicbrainz_by_barcode(barcode: str, limit: int = 5) -> list[dict[str
 def search_musicbrainz_by_query(query: str, limit: int = 5) -> list[dict[str, Any]]:
     try:
         candidates = _musicbrainz_search(query, limit=limit)
-    except httpx.HTTPError:
+    except httpx.HTTPError as exc:
+        logger.warning("musicbrainz query search %r failed: %s", query, exc)
         return []
     _enrich_musicbrainz_candidates(candidates, max_items=min(limit, 3))
     return [c.to_dict() for c in candidates]
@@ -3483,24 +3514,14 @@ def search_music_metadata(
         if query:
             return search_maniadb_by_query(query, limit=limit)[: max(1, limit)]
         return []
-    if source_u == "MUSICBRAINZ":
-        if barcode:
-            return search_musicbrainz_by_barcode(barcode, limit=limit)[: max(1, limit)]
-        if query:
-            return search_musicbrainz_by_query(query, limit=limit)[: max(1, limit)]
-        return []
-
     if barcode:
         discogs = search_discogs_by_barcode(barcode, limit=limit)
         if discogs:
             candidates.extend(discogs)
-            if not is_media:
-                candidates.extend(search_musicbrainz_by_barcode(barcode, limit=max(1, limit // 2)))
         else:
             aladin = search_aladin_by_barcode(barcode, limit=limit)
             if aladin:
                 candidates.extend(aladin)
-            candidates.extend(search_musicbrainz_by_barcode(barcode, limit=max(1, limit // 2)))
     elif query:
         discogs: list[dict[str, Any]] = search_discogs_by_query(query, limit=limit)
         if not discogs and (artist_or_brand or title):
@@ -3512,13 +3533,10 @@ def search_music_metadata(
             )
         if discogs:
             candidates.extend(discogs)
-        maniadb: list[dict[str, Any]] = []
         if has_korean_query:
             maniadb = search_maniadb_by_query(query, limit=max(1, limit // 2 if discogs else limit))
             candidates.extend(maniadb)
             candidates.extend(search_aladin_by_query(query, limit=max(1, limit // 2)))
-        if not (is_media and (discogs or maniadb)):
-            candidates.extend(search_musicbrainz_by_query(query, limit=max(1, limit // 2)))
 
     # De-dup by source/external_id while keeping best confidence.
     dedup: dict[tuple[str, str], dict[str, Any]] = {}

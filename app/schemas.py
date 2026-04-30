@@ -27,10 +27,10 @@ SignatureType = Literal["NONE", "IN_PERSON", "PURCHASE_INCLUDED", "UNKNOWN"]
 ReviewStatus = Literal["AUTO_APPROVED", "NEEDS_REVIEW", "APPROVED", "REJECTED"]
 AssetType = Literal["AUDIO", "IMAGE", "DOCUMENT", "VIDEO"]
 LinkType = Literal["FULL_ALBUM", "TRACK", "SCAN", "REFERENCE", "PROOF"]
-ExternalSourceCode = Literal["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"]
-AlbumMasterSource = Literal["AUTO", "DISCOGS", "MANIADB", "MUSICBRAINZ"]
-AlbumMasterBoundSource = Literal["DISCOGS", "MANIADB", "MUSICBRAINZ", "MANUAL"]
-MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB", "MUSICBRAINZ"]
+ExternalSourceCode = Literal["DISCOGS", "MANIADB", "ALADIN"]
+AlbumMasterSource = Literal["AUTO", "DISCOGS", "MANIADB"]
+AlbumMasterBoundSource = Literal["DISCOGS", "MANIADB", "MANUAL"]
+MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB"]
 MetadataSyncSource = Literal["ALL", "DISCOGS", "MANIADB", "ALADIN"]
 DomainCode = Literal["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]
 ReleaseType = Literal["ALBUM", "EP", "SINGLE"]
@@ -112,7 +112,7 @@ class BarcodePlacementRecommendationRequest(BaseModel):
     title: str | None = None
     release_year: int | None = Field(default=None, ge=1900, le=2100)
     barcode: str | None = None
-    source: Literal["DISCOGS", "MANIADB", "MUSICBRAINZ", "ALADIN", "AUTO"] | None = None
+    source: Literal["DISCOGS", "MANIADB", "ALADIN", "AUTO"] | None = None
     package_hint: str | None = None
     thickness_mm: int | None = Field(default=None, ge=1)
 
@@ -774,7 +774,7 @@ class OwnedItemAutoMasterResponse(BaseModel):
 
 
 class AlbumMasterImportVariantsRequest(BaseModel):
-    source: Literal["DISCOGS", "MANIADB", "MUSICBRAINZ"]
+    source: Literal["DISCOGS", "MANIADB"]
     master_external_id: str = Field(min_length=1, max_length=128)
     title: str | None = None
     artist_or_brand: str | None = None
@@ -1565,7 +1565,6 @@ class MetadataProviderSettingsResponse(BaseModel):
     discogs_user_agent: str
     aladin_base_url: str
     maniadb_base_url: str
-    musicbrainz_user_agent: str
     deepl_base_url: str
 
 
@@ -1576,7 +1575,6 @@ class MetadataProviderSettingsUpdateRequest(BaseModel):
     discogs_user_agent: str | None = Field(default=None, max_length=4000)
     aladin_base_url: str | None = Field(default=None, max_length=4000)
     maniadb_base_url: str | None = Field(default=None, max_length=4000)
-    musicbrainz_user_agent: str | None = Field(default=None, max_length=4000)
     deepl_base_url: str | None = Field(default=None, max_length=4000)
 
 
