@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Generator
 
-from .config import get_settings
+from ..config import get_settings
 
 ORDER_KEY_WIDTH = 12
 ORDER_KEY_STEP = 1024
