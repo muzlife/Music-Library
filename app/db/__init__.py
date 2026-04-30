@@ -1917,23 +1917,9 @@ def _ensure_recent_feed_indexes(conn: sqlite3.Connection) -> None:
         )
 
 
-def _ensure_auth_account_table(conn: sqlite3.Connection) -> None:
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS auth_account (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          username TEXT NOT NULL UNIQUE,
-          password_hash TEXT NOT NULL,
-          role TEXT NOT NULL CHECK (role IN ('ADMIN', 'OPERATOR')),
-          is_active INTEGER NOT NULL DEFAULT 1,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        )
-        """
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_auth_account_role ON auth_account (role, is_active, username)"
-    )
+# `_ensure_auth_account_table` lives in app.db.auth_account now and is
+# re-exported at the bottom of this module so existing call sites keep
+# working unchanged.
 
 
 def _ensure_purchase_import_queue_table(conn: sqlite3.Connection) -> None:
@@ -5361,72 +5347,9 @@ def update_customer_track_request(
     return get_customer_track_request(int(request_id))
 
 
-def list_auth_accounts() -> list[dict[str, Any]]:
-    with get_conn() as conn:
-        _ensure_auth_account_table(conn)
-        rows = conn.execute(
-            """
-            SELECT id, username, password_hash, role, is_active, created_at, updated_at
-            FROM auth_account
-            ORDER BY
-              CASE WHEN role = 'ADMIN' THEN 0 ELSE 1 END,
-              LOWER(username) ASC,
-              id ASC
-            """
-        ).fetchall()
-    return [dict(row) for row in rows]
-
-
-def get_auth_account_by_username(username: str) -> dict[str, Any] | None:
-    key = str(username or "").strip()
-    if not key:
-        return None
-    with get_conn() as conn:
-        _ensure_auth_account_table(conn)
-        row = conn.execute(
-            """
-            SELECT *
-            FROM auth_account
-            WHERE username = ?
-            LIMIT 1
-            """,
-            (key,),
-        ).fetchone()
-    return dict(row) if row else None
-
-
-def upsert_auth_account(username: str, password_hash: str, role: str, is_active: bool = True) -> dict[str, Any] | None:
-    key = str(username or "").strip()
-    hashed = str(password_hash or "").strip()
-    role_code = str(role or "").strip().upper()
-    if not key or not hashed or role_code not in {"ADMIN", "OPERATOR"}:
-        return None
-    now = utc_now_iso()
-    with get_conn() as conn:
-        _ensure_auth_account_table(conn)
-        conn.execute(
-            """
-            INSERT INTO auth_account (username, password_hash, role, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(username) DO UPDATE SET
-              password_hash = excluded.password_hash,
-              role = excluded.role,
-              is_active = excluded.is_active,
-              updated_at = excluded.updated_at
-            """,
-            (key, hashed, role_code, 1 if is_active else 0, now, now),
-        )
-    return get_auth_account_by_username(key)
-
-
-def delete_auth_account(username: str) -> bool:
-    key = str(username or "").strip()
-    if not key:
-        return False
-    with get_conn() as conn:
-        _ensure_auth_account_table(conn)
-        cur = conn.execute("DELETE FROM auth_account WHERE username = ?", (key,))
-    return int(cur.rowcount or 0) > 0
+# Auth-account CRUD (`list_auth_accounts`, `get_auth_account_by_username`,
+# `upsert_auth_account`, `delete_auth_account`) lives in app.db.auth_account
+# now and is re-exported at the bottom of this module.
 
 
 def _owned_item_select_query() -> str:
@@ -11396,3 +11319,18 @@ def insert_digital_link(owned_item_id: int, payload: dict[str, Any]) -> dict[str
         link_id = int(link_cur.lastrowid)
 
     return {"digital_asset_id": asset_id, "link_id": link_id}
+
+
+# --------------------------------------------------------------------------- #
+# Domain submodule re-exports (db.py package split)
+# --------------------------------------------------------------------------- #
+# The auth-account surface lives in app.db.auth_account. Re-exporting it
+# here keeps the public `db.list_auth_accounts(...)` API identical to the
+# pre-split module so neither callers nor tests need touching.
+from .auth_account import (  # noqa: E402
+    _ensure_auth_account_table,
+    delete_auth_account,
+    get_auth_account_by_username,
+    list_auth_accounts,
+    upsert_auth_account,
+)
