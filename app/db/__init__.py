@@ -5992,85 +5992,9 @@ def promote_album_master_source(
     return master_id
 
 
-def _album_master_source_priority(source_code: str) -> int:
-    code = str(source_code or "").strip().upper()
-    if code == "DISCOGS":
-        return 0
-    if code == "MANIADB":
-        return 1
-    if code == "MUSICBRAINZ":
-        return 2
-    return 3
-
-
-def list_duplicate_album_masters(album_master_id: int, limit: int = 20) -> list[dict[str, Any]]:
-    master_id = int(album_master_id or 0)
-    if master_id <= 0:
-        return []
-    limit_n = max(1, min(100, int(limit or 20)))
-
-    with get_conn() as conn:
-        source_row = conn.execute(
-            """
-            SELECT id, title, artist_or_brand, release_year
-            FROM album_master
-            WHERE id = ?
-            LIMIT 1
-            """,
-            (master_id,),
-        ).fetchone()
-        if source_row is None:
-            return []
-
-        norm_title = str(source_row["title"] or "").strip().lower()
-        norm_artist = str(source_row["artist_or_brand"] or "").strip().lower()
-        if not norm_title:
-            return []
-        base_year = source_row["release_year"]
-
-        rows = conn.execute(
-            """
-            SELECT
-              am.id AS album_master_id,
-              am.source_code,
-              am.source_master_id,
-              am.title,
-              am.artist_or_brand,
-              am.release_year,
-              am.updated_at,
-              (
-                SELECT COUNT(*)
-                FROM album_master_member amm
-                WHERE amm.album_master_id = am.id
-              ) AS member_count
-            FROM album_master am
-            WHERE am.id <> ?
-              AND LOWER(TRIM(COALESCE(am.title, ''))) = ?
-              AND LOWER(TRIM(COALESCE(am.artist_or_brand, ''))) = ?
-              AND (
-                ? IS NULL
-                OR am.release_year = ?
-                OR am.release_year IS NULL
-              )
-            ORDER BY
-              CASE am.source_code
-                WHEN 'DISCOGS' THEN 0
-                WHEN 'MANIADB' THEN 1
-                ELSE 2
-              END ASC,
-              CASE
-                WHEN ? IS NOT NULL AND am.release_year = ? THEN 0
-                ELSE 1
-              END ASC,
-              member_count DESC,
-              am.updated_at DESC,
-              am.id DESC
-            LIMIT ?
-            """,
-            (master_id, norm_title, norm_artist, base_year, base_year, base_year, base_year, limit_n),
-        ).fetchall()
-
-    return [dict(row) for row in rows]
+# `_album_master_source_priority` and `list_duplicate_album_masters`
+# live in app/db/album_master_duplicates.py and are re-exported from
+# this package's __init__ at the bottom of the file.
 
 
 # `_json_loads_or_default` lives in app/db/album_master_merge_history.py
@@ -8288,4 +8212,8 @@ from .album_master_external_ref import (  # noqa: E402
 from .album_master_correction import (  # noqa: E402
     get_album_master_correction_state,
     update_album_master_correction,
+)
+from .album_master_duplicates import (  # noqa: E402
+    _album_master_source_priority,
+    list_duplicate_album_masters,
 )
