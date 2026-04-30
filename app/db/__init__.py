@@ -5266,117 +5266,14 @@ def list_owned_items_by_album_master(album_master_id: int) -> list[dict[str, Any
     return [_normalize_owned_item_row(dict(row)) for row in rows]
 
 
-def get_album_master_id_by_external_ref(source_code: str, source_master_id: str) -> int | None:
-    source_u = str(source_code or "").strip().upper()
-    source_master = str(source_master_id or "").strip()
-    if not source_u or not source_master:
-        return None
-    with get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT album_master_id
-            FROM album_master_external_ref
-            WHERE source_code = ? AND source_master_id = ?
-            LIMIT 1
-            """,
-            (source_u, source_master),
-        ).fetchone()
-    if row is None:
-        return None
-    return int(row["album_master_id"] or 0) or None
-
-
-def list_album_master_external_refs(
-    album_master_id: int,
-    source_code: str | None = None,
-) -> list[dict[str, Any]]:
-    master_id = int(album_master_id or 0)
-    if master_id <= 0:
-        return []
-    query = """
-        SELECT
-          id,
-          album_master_id,
-          source_code,
-          source_master_id,
-          title_hint,
-          artist_or_brand_hint,
-          release_year,
-          raw_json,
-          created_at,
-          updated_at
-        FROM album_master_external_ref
-        WHERE album_master_id = ?
-    """
-    params: list[Any] = [master_id]
-    source_u = str(source_code or "").strip().upper()
-    if source_u:
-        query += " AND source_code = ?"
-        params.append(source_u)
-    query += " ORDER BY updated_at DESC, id DESC"
-    with get_conn() as conn:
-        rows = conn.execute(query, params).fetchall()
-    return [dict(row) for row in rows]
-
-
-def ensure_album_master_external_ref(
-    album_master_id: int,
-    source_code: str,
-    source_master_id: str,
-    title_hint: str | None = None,
-    artist_or_brand_hint: str | None = None,
-    release_year: int | None = None,
-    raw: dict[str, Any] | None = None,
-) -> int:
-    master_id = int(album_master_id or 0)
-    source_u = str(source_code or "").strip().upper()
-    source_master = str(source_master_id or "").strip()
-    if master_id <= 0 or not source_u or not source_master:
-        raise ValueError("album_master_id, source_code, source_master_id required")
-
-    now = utc_now_iso()
-    raw_json = json.dumps(raw or {}, ensure_ascii=True)
-    with get_conn() as conn:
-        conn.execute(
-            """
-            INSERT INTO album_master_external_ref
-              (album_master_id, source_code, source_master_id, title_hint, artist_or_brand_hint, release_year, raw_json, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(source_code, source_master_id) DO UPDATE SET
-              album_master_id = excluded.album_master_id,
-              title_hint = COALESCE(excluded.title_hint, album_master_external_ref.title_hint),
-              artist_or_brand_hint = COALESCE(excluded.artist_or_brand_hint, album_master_external_ref.artist_or_brand_hint),
-              release_year = COALESCE(excluded.release_year, album_master_external_ref.release_year),
-              raw_json = CASE
-                           WHEN TRIM(COALESCE(excluded.raw_json, '{}')) IN ('', '{}') THEN album_master_external_ref.raw_json
-                           ELSE excluded.raw_json
-                         END,
-              updated_at = excluded.updated_at
-            """,
-            (
-                master_id,
-                source_u,
-                source_master,
-                str(title_hint or "").strip() or None,
-                str(artist_or_brand_hint or "").strip() or None,
-                release_year,
-                raw_json,
-                now,
-                now,
-            ),
-        )
-        row = conn.execute(
-            """
-            SELECT id
-            FROM album_master_external_ref
-            WHERE source_code = ? AND source_master_id = ?
-            LIMIT 1
-            """,
-            (source_u, source_master),
-        ).fetchone()
-    if row is None:
-        raise RuntimeError("album_master_external_ref upsert failed")
-    return int(row["id"])
+# `get_album_master_id_by_external_ref`,
+# `list_album_master_external_refs`, and
+# `ensure_album_master_external_ref` live in
+# app/db/album_master_external_ref.py and are re-exported from this
+# package's __init__ at the bottom of the file. Internal callers in
+# this module (upsert_album_master, normalize_album_master_source_id,
+# promote_album_master_source) resolve them via the package surface
+# at call time, after the bottom-of-file imports have run.
 
 
 def list_owned_items_by_copy_group(copy_group_key: str) -> list[dict[str, Any]]:
@@ -8495,4 +8392,9 @@ from .auto_backup import (  # noqa: E402
 from .album_master_merge_history import (  # noqa: E402
     list_album_master_merge_history,
     rollback_latest_album_master_merge,
+)
+from .album_master_external_ref import (  # noqa: E402
+    ensure_album_master_external_ref,
+    get_album_master_id_by_external_ref,
+    list_album_master_external_refs,
 )
