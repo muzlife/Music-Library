@@ -389,7 +389,6 @@ _METADATA_PROVIDER_ENV_KEYS = (
     "DISCOGS_USER_AGENT",
     "ALADIN_BASE_URL",
     "MANIADB_BASE_URL",
-    "MUSICBRAINZ_USER_AGENT",
     "DEEPL_BASE_URL",
 )
 
@@ -432,7 +431,6 @@ def _metadata_provider_settings_payload() -> dict[str, Any]:
         "discogs_user_agent": str(settings.discogs_user_agent or ""),
         "aladin_base_url": str(settings.aladin_base_url or ""),
         "maniadb_base_url": str(settings.maniadb_base_url or ""),
-        "musicbrainz_user_agent": str(settings.musicbrainz_user_agent or ""),
         "deepl_base_url": str(settings.deepl_base_url or ""),
     }
 
@@ -761,11 +759,6 @@ def _parse_direct_source_reference(query: str | None, *, source: str = "AUTO") -
         if album_match:
             return {"source": "MANIADB", "kind": "album", "external_id": str(album_match.group(1))}
 
-    if allows("MUSICBRAINZ"):
-        musicbrainz_match = _DIRECT_MB_RELEASE_PATTERN.search(text)
-        if musicbrainz_match:
-            return {"source": "MUSICBRAINZ", "kind": "release", "external_id": str(musicbrainz_match.group(1))}
-
     return None
 
 
@@ -893,7 +886,7 @@ def _build_album_master_candidate_from_master_reference(source: str, master_exte
         if variants:
             preview = variants[0]
             variant_count = len(variants)
-    if source_code not in {"DISCOGS", "MANIADB", "MUSICBRAINZ"}:
+    if source_code not in {"DISCOGS", "MANIADB"}:
         return None
     return {
         "source": source_code,
@@ -3292,8 +3285,6 @@ def save_metadata_provider_settings(
         updates["ALADIN_BASE_URL"] = payload.aladin_base_url.strip()
     if payload.maniadb_base_url is not None and payload.maniadb_base_url.strip():
         updates["MANIADB_BASE_URL"] = payload.maniadb_base_url.strip()
-    if payload.musicbrainz_user_agent is not None and payload.musicbrainz_user_agent.strip():
-        updates["MUSICBRAINZ_USER_AGENT"] = payload.musicbrainz_user_agent.strip()
     if payload.deepl_base_url is not None and payload.deepl_base_url.strip():
         updates["DEEPL_BASE_URL"] = payload.deepl_base_url.strip()
     if updates:
@@ -7700,13 +7691,11 @@ def _source_master_notice_prefix(source_code: str) -> str:
         return "Discogs"
     if source_u == "MANIADB":
         return "ManiaDB"
-    if source_u == "MUSICBRAINZ":
-        return "MusicBrainz"
     return source_u or "Source"
 
 
 def _source_supports_master_auto_link(source_code: str) -> bool:
-    return str(source_code or "").strip().upper() in {"DISCOGS", "MANIADB", "MUSICBRAINZ"}
+    return str(source_code or "").strip().upper() in {"DISCOGS", "MANIADB"}
 
 
 def _source_master_variant_external_ids(
@@ -8268,7 +8257,7 @@ def _build_owned_item_payload_for_source_replace(owned_item_id: int, candidate: 
 
     source_code_raw = str(candidate.get("source") or "").strip().upper()
     source_external_id = str(candidate.get("external_id") or "").strip()
-    if source_code_raw not in {"DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"} or not source_external_id:
+    if source_code_raw not in {"DISCOGS", "MANIADB", "ALADIN"} or not source_external_id:
         raise HTTPException(status_code=400, detail="candidate source/external_id is invalid")
 
     category = _infer_music_category_from_format(candidate.get("format_name") or detail_row.get("format_name") or existing_category)
