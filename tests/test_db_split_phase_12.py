@@ -59,19 +59,32 @@ def test_init_py_no_longer_redefines_external_ref_callables() -> None:
 
 
 def test_internal_callers_still_invoke_ensure_through_package_surface() -> None:
-    """`upsert_album_master`, `normalize_album_master_source_id`, and
-    `promote_album_master_source` still call `ensure_album_master_external_ref`
-    by bare name — that name must resolve via the package's bottom-of-file
-    re-exports at call time, not via a local def."""
+    """In Phase 19 the three internal callers
+    (upsert_album_master, normalize_album_master_source_id,
+    promote_album_master_source) moved out of __init__.py into
+    app/db/album_master_core.py. They still call
+    `ensure_album_master_external_ref` by bare name — that name must
+    now resolve via `from app.db import ensure_album_master_external_ref`
+    at album_master_core's module-load time, NOT via a local def."""
     init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
-    # We expect at least 3 bare-name call sites left in __init__.py.
+    core_path = REPO_ROOT / "app" / "db" / "album_master_core.py"
+    core_src = core_path.read_text("utf-8") if core_path.exists() else ""
+
+    # We expect at least 3 bare-name call sites in album_master_core.py
+    # (the post-Phase-19 home for those three writers).
     call_pattern = re.compile(r"\bensure_album_master_external_ref\(")
-    matches = call_pattern.findall(init_src)
-    assert len(matches) >= 3, (
+    core_matches = call_pattern.findall(core_src)
+    assert len(core_matches) >= 3, (
         f"expected ≥3 internal `ensure_album_master_external_ref(` call "
-        f"sites left in app/db/__init__.py, found {len(matches)}"
+        f"sites in app/db/album_master_core.py, found {len(core_matches)}"
     )
-    # And the function MUST be re-exported from the bottom of __init__.py.
+    # And album_master_core.py MUST import it from the package surface.
+    assert "from app.db import" in core_src and "ensure_album_master_external_ref" in core_src, (
+        "app/db/album_master_core.py must import "
+        "ensure_album_master_external_ref from the app.db package surface"
+    )
+    # __init__.py MUST re-export the external_ref module so the import
+    # in album_master_core resolves at album_master_core's load time.
     assert "from .album_master_external_ref import" in init_src, (
         "app/db/__init__.py is missing the album_master_external_ref re-export"
     )

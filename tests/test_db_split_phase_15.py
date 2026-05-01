@@ -57,17 +57,20 @@ def test_init_py_no_longer_redefines_member_callables() -> None:
         )
 
 
-def test_sync_domain_code_helper_still_in_init_py() -> None:
-    """`_sync_album_master_domain_code_in_conn` is shared with the
-    promote / normalise / merge writers and a legacy migration path
-    that all stay in __init__.py. The bind path here imports it from
-    the package surface."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
-    assert "def _sync_album_master_domain_code_in_conn(" in init_src, (
-        "_sync_album_master_domain_code_in_conn must remain in "
-        "app/db/__init__.py — it's used by promote/normalise/merge "
-        "writers that haven't been moved yet"
+def test_sync_domain_code_helper_resolves_through_package_surface() -> None:
+    """`_sync_album_master_domain_code_in_conn` was originally in
+    __init__.py; in Phase 19 it moved to app/db/album_master_core.py.
+    What matters for `bind_album_master_members` is that the helper
+    is reachable via `app.db.<name>` at module-load time. Pin the
+    package-surface contract instead of the no-longer-true location."""
+    assert hasattr(db, "_sync_album_master_domain_code_in_conn"), (
+        "_sync_album_master_domain_code_in_conn must remain reachable "
+        "via the app.db package surface — bind_album_master_members "
+        "imports it via `from app.db import _sync_album_master_domain_code_in_conn`"
     )
+    # Confirm bind path still resolves the same callable identity.
+    from app.db import album_master_member as amm_module_local
+    assert amm_module_local._sync_album_master_domain_code_in_conn is db._sync_album_master_domain_code_in_conn
 
 
 def test_legacy_member_paths_still_work() -> None:

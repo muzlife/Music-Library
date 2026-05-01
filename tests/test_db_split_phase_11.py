@@ -67,15 +67,22 @@ def test_init_py_no_longer_redefines_merge_history_callables() -> None:
         )
 
 
-def test_snapshot_helper_still_lives_in_init_py() -> None:
-    """`_snapshot_album_master_record` is also called by the still-in-
-    __init__.py `merge_album_masters` writer, and `_normalize_domain_code_value`
-    is used 25+ times across the package. They must NOT have been
-    moved with the merge-history slice."""
+def test_snapshot_helper_resolves_through_package_surface() -> None:
+    """At Phase 11's commit, `_snapshot_album_master_record` lived in
+    __init__.py because `merge_album_masters` (still in __init__.py
+    at that point) needed it. In Phase 19 both moved together to
+    `app/db/album_master_core.py`. What the merge-history rollback
+    path actually needs is for the helper to be reachable somewhere —
+    the post-Phase-19 contract is "via app.db package surface". Pin
+    that instead of the no-longer-true location.
+
+    `_normalize_domain_code_value` IS still a cross-cutting helper
+    that stays in __init__.py — pin that.
+    """
     init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
-    assert "def _snapshot_album_master_record(" in init_src, (
-        "_snapshot_album_master_record must remain in app/db/__init__.py — "
-        "it's called by merge_album_masters which is still in __init__.py"
+    assert hasattr(db, "_snapshot_album_master_record"), (
+        "_snapshot_album_master_record must remain reachable via the "
+        "app.db package surface — Phase 19 moved it to album_master_core."
     )
     assert "def _normalize_domain_code_value(" in init_src, (
         "_normalize_domain_code_value must remain in app/db/__init__.py — "
