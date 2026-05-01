@@ -1218,15 +1218,123 @@ def _infer_format_from_text(format_text: str | None) -> str | None:
     return None
 
 
+# ---------------------------------------------------------------------------
+# Aladin title/artist cleaning helpers
+#
+# Aladin 상품명은 "Led Zeppelin II [LP]", "Abbey Road (2CD) 리마스터링 수입반" 처럼
+# 미디어 포맷·디스크 수·에디션·유통 구분이 상품명에 혼재한다.
+# 마스터 명(title)에는 순수 앨범 이름만 남기고 포맷 정보는 format_name 필드로 분리한다.
+#
+# author 필드는 "비틀즈 (아티스트)", "김광석 (가수)" 형태로 역할 표기가 붙는다.
+# ---------------------------------------------------------------------------
+
+# 대괄호 안 포맷 토큰 추출 – e.g. "[2LP]", "[CD+DVD]", "[카세트]"
+_ALADIN_FORMAT_BRACKET_RE = re.compile(
+    r"\["
+    r"(\d*\s*(?:LP|VINYL|CD|SACD|DVD|BLU-?RAY|카세트|CASSETTE|TAPE)"
+    r"(?:[^\]]*)?)"
+    r"\]",
+    re.IGNORECASE,
+)
+
+# 소괄호 안 포맷 토큰 추출 – e.g. "(2CD)", "(LP)", "(CD)", "(CD+도서)"
+_ALADIN_FORMAT_PAREN_RE = re.compile(
+    r"\("
+    r"(\d*\s*(?:LP|VINYL|CD|SACD|DVD|BLU-?RAY|카세트|CASSETTE|TAPE)"
+    r"(?:[^)]*)?)"
+    r"\)",
+    re.IGNORECASE,
+)
+
+# 대괄호 블록 전체 제거 (포맷 추출 후 적용)
+_ALADIN_BRACKET_STRIP_RE = re.compile(r"\[[^\]]*\]")
+
+# 소괄호 안 노이즈 패턴 제거 – 포맷/패키징/에디션/유통 구분
+_ALADIN_PAREN_NOISE_RE = re.compile(
+    r"\("
+    r"(?:"
+    # 디스크수 + 포맷 (e.g. 2CD, 3LP, CD+DVD)
+    r"\d*\s*(?:LP|VINYL|CD|SACD|DVD|BLU-?RAY|카세트|CASSETTE|TAPE)[^)]*"
+    # 유통 구분
+    r"|수입반?|내수반?|일본반?|국내반?|정품"
+    # 한정·에디션 (한국어)
+    r"|한정반?|초도\s*한정|한정판|특별판|스탠다드\s*에디션|디럭스\s*에디션|스페셜\s*에디션"
+    # 에디션 (영문)
+    r"|(?:Deluxe|Standard|Limited|Special|Collector['’s]*|Expanded|Super\s*Deluxe)\s*(?:Box\s*)?Edition"
+    # 주년 기념
+    r"|\d+(?:th|st|nd|rd)\s*Anniversary(?:\s*Edition)?"
+    r"|Anniversary\s*Edition"
+    # 리마스터
+    r"|(?:\d{4}\s*)?Remaster(?:ed|ing)?"
+    r"|리마스터(?:링)?"
+    # 세트 구성
+    r"|전\s*\d+매|\d+매\s*세트|\d+\s*Disc\s*Set"
+    # 재발매
+    r"|재발매|재발|재반"
+    r")"
+    r"\)",
+    re.IGNORECASE,
+)
+
+# 제목 끝에 붙는 독립 노이즈 단어 (공백 구분)
+_ALADIN_TITLE_TRAILING_NOISE_RE = re.compile(
+    r"\s+(?:수입반?|내수반?|일본반?|국내반?|한정반?|초도한정|리마스터링?|Remastered?|재발매|재반)$",
+    re.IGNORECASE,
+)
+
+# author 필드 역할 표기 제거 – e.g. "(아티스트)", "(가수)", "(작곡가)"
+_ALADIN_AUTHOR_ROLE_RE = re.compile(
+    r"\s*\((?:아티스트|가수|뮤지션|밴드|그룹|작곡가?|작사가?|편곡가?|연주|보컬|래퍼|프로듀서)\)",
+    re.IGNORECASE,
+)
+
+# 복수 아티스트 구분자 정규화 – 알라딘은 쉼표로 여럿 연결하기도 함
+_ALADIN_AUTHOR_MULTI_RE = re.compile(r"\s*,\s*(?=[가-힣A-Za-z])")
+
+
+def _extract_format_from_aladin_title(title: str) -> str | None:
+    """대괄호/소괄호 안 포맷 토큰에서 format_name 추출."""
+    m = _ALADIN_FORMAT_BRACKET_RE.search(title) or _ALADIN_FORMAT_PAREN_RE.search(title)
+    return _infer_format_from_text(m.group(1)) if m else None
+
+
+def _clean_aladin_title(title: str) -> str:
+    """알라딘 상품명에서 미디어 포맷·에디션·유통 노이즈를 제거하고 순수 앨범명만 반환."""
+    t = _ALADIN_BRACKET_STRIP_RE.sub("", title)         # [...] 전체 제거
+    t = _ALADIN_PAREN_NOISE_RE.sub("", t)               # (...) 노이즈 제거
+    t = _ALADIN_TITLE_TRAILING_NOISE_RE.sub("", t)      # 말미 단독 노이즈어 제거
+    t = re.sub(r"\s{2,}", " ", t).strip().rstrip("-–—·").strip()
+    return t if t else title                             # 모두 지워지면 원본 유지
+
+
+def _clean_aladin_artist(author: str) -> str:
+    """알라딘 author 필드에서 역할 표기를 제거하고 아티스트명만 반환."""
+    a = _ALADIN_AUTHOR_ROLE_RE.sub("", author)
+    # 복수 아티스트: 첫 번째만 사용 (대표 아티스트)
+    a = _ALADIN_AUTHOR_MULTI_RE.split(a)[0]
+    return a.strip() or author
+
+
 def _parse_aladin_candidates(data: dict[str, Any], query: str | None) -> list[Candidate]:
     rows = data.get("item") or []
     out: list[Candidate] = []
 
     for row in rows:
-        title = str(row.get("title") or "")
-        artist = str(row.get("author") or "") or None
+        raw_title = str(row.get("title") or "")
+        raw_artist = str(row.get("author") or "") or None
         barcode = row.get("isbn13") or row.get("isbn")
         category_name = row.get("categoryName")
+
+        # --- 정제 ---
+        title = _clean_aladin_title(raw_title)
+        artist = _clean_aladin_artist(raw_artist) if raw_artist else None
+
+        # --- 포맷: 상품명 토큰 우선, 카테고리 보완 ---
+        format_name = (
+            _extract_format_from_aladin_title(raw_title)
+            or _infer_format_from_aladin_category(category_name)
+        )
+
         sim = _token_similarity(query or "", f"{artist or ''} {title}".strip())
         confidence = 0.60 + (0.33 * sim)
         if barcode and query and _normalize_text(str(barcode)) == _normalize_text(query):
@@ -1243,7 +1351,7 @@ def _parse_aladin_candidates(data: dict[str, Any], query: str | None) -> list[Ca
                 artist_or_brand=artist,
                 release_year=_safe_year(year_token),
                 country="KR",
-                format_name=_infer_format_from_aladin_category(category_name),
+                format_name=format_name,
                 barcode=str(barcode) if barcode else None,
                 catalog_no=None,
                 label_name=str(row.get("publisher") or "") or None,
