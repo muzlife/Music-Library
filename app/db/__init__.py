@@ -3463,19 +3463,8 @@ def bulk_update_owned_items(
     return updated_ids
 
 
-def set_owned_item_copy_group(owned_item_id: int, copy_group_key: str | None) -> bool:
-    now = utc_now_iso()
-    key = str(copy_group_key or "").strip() or None
-    with get_conn() as conn:
-        cur = conn.execute(
-            """
-            UPDATE owned_item
-            SET copy_group_key = ?, updated_at = ?
-            WHERE id = ?
-            """,
-            (key, now, owned_item_id),
-        )
-        return int(cur.rowcount or 0) > 0
+# `set_owned_item_copy_group` lives in app/db/owned_item_copy_group.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
 def delete_owned_item(owned_item_id: int) -> bool:
@@ -5151,54 +5140,12 @@ def get_owned_item_list_row(owned_item_id: int) -> dict[str, Any] | None:
 # re-exported from this package's __init__ at the bottom of the file.
 
 
-def list_owned_items_by_copy_group(copy_group_key: str) -> list[dict[str, Any]]:
-    key = str(copy_group_key or "").strip()
-    if not key:
-        return []
-
-    query = (
-        _owned_item_select_query()
-        + """
-        WHERE oi.copy_group_key = ?
-        ORDER BY
-          CASE WHEN oi.order_key IS NULL OR TRIM(oi.order_key) = '' THEN 1 ELSE 0 END,
-          oi.order_key ASC,
-          CASE WHEN oi.display_rank IS NULL THEN 1 ELSE 0 END,
-          oi.display_rank ASC,
-          oi.created_at DESC,
-          oi.id DESC
-        """
-    )
-    with get_conn() as conn:
-        rows = conn.execute(query, (key,)).fetchall()
-    return [_normalize_owned_item_row(dict(row)) for row in rows]
+# `list_owned_items_by_copy_group` lives in app/db/owned_item_copy_group.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
-def list_owned_items_by_source_external_ids(source_code: str, source_external_ids: list[str]) -> list[dict[str, Any]]:
-    cleaned = sorted({str(v).strip() for v in source_external_ids if str(v).strip()})
-    if not source_code or not cleaned:
-        return []
-
-    placeholders = ",".join("?" for _ in cleaned)
-    query = (
-        _owned_item_select_query()
-        + f"""
-        WHERE oi.source_code = ?
-          AND oi.source_external_id IN ({placeholders})
-          AND oi.status IN ('IN_COLLECTION', 'LOANED', 'ARCHIVED')
-        ORDER BY
-          CASE WHEN oi.order_key IS NULL OR TRIM(oi.order_key) = '' THEN 1 ELSE 0 END,
-          oi.order_key ASC,
-          CASE WHEN oi.display_rank IS NULL THEN 1 ELSE 0 END,
-          oi.display_rank ASC,
-          oi.created_at DESC,
-          oi.id DESC
-        """
-    )
-    params: list[Any] = [source_code, *cleaned]
-    with get_conn() as conn:
-        rows = conn.execute(query, params).fetchall()
-    return [_normalize_owned_item_row(dict(row)) for row in rows]
+# `list_owned_items_by_source_external_ids` lives in app/db/owned_item_copy_group.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
 def get_owned_counts_by_source(source_code: str, source_external_ids: list[str]) -> dict[str, int]:
@@ -5964,4 +5911,9 @@ from .owned_item_track_links import (  # noqa: E402
     delete_owned_item_track_links,
     list_owned_item_audio_directory_links,
     list_owned_item_track_links,
+)
+from .owned_item_copy_group import (  # noqa: E402
+    list_owned_items_by_copy_group,
+    list_owned_items_by_source_external_ids,
+    set_owned_item_copy_group,
 )
