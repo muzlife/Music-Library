@@ -7843,46 +7843,8 @@ def move_owned_item_slot_display_rank(
     return display_rank
 
 
-def insert_digital_link(owned_item_id: int, payload: dict[str, Any]) -> dict[str, int]:
-    now = utc_now_iso()
-    with get_conn() as conn:
-        asset_cur = conn.execute(
-            """
-            INSERT INTO digital_asset
-              (asset_type, file_path, file_hash, file_size_bytes, duration_sec, metadata_json, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                payload["asset_type"],
-                payload["file_path"],
-                payload.get("file_hash"),
-                payload.get("file_size_bytes"),
-                payload.get("duration_sec"),
-                json.dumps(payload.get("metadata_json", {}), ensure_ascii=True),
-                now,
-                now,
-            ),
-        )
-        asset_id = int(asset_cur.lastrowid)
-
-        link_cur = conn.execute(
-            """
-            INSERT INTO owned_item_digital_link
-              (owned_item_id, digital_asset_id, link_type, track_no, note, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                owned_item_id,
-                asset_id,
-                payload["link_type"],
-                payload.get("track_no"),
-                payload.get("note"),
-                now,
-            ),
-        )
-        link_id = int(link_cur.lastrowid)
-
-    return {"digital_asset_id": asset_id, "link_id": link_id}
+# `insert_digital_link` lives in app/db/digital_link.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
 # --------------------------------------------------------------------------- #
@@ -8024,4 +7986,7 @@ from .album_master_member import (  # noqa: E402
 )
 from .album_master_tracks import (  # noqa: E402
     list_album_master_track_matches,
+)
+from .digital_link import (  # noqa: E402
+    insert_digital_link,
 )
