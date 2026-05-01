@@ -6781,76 +6781,9 @@ def list_album_masters(
     return [dict(row) for row in rows]
 
 
-def list_album_master_track_matches(album_master_id: int, query_text: str, limit: int = 3) -> list[str]:
-    master_id = int(album_master_id or 0)
-    clean_query = str(query_text or "").strip()
-    if master_id <= 0 or not clean_query:
-        return []
-
-    token_groups = _search_token_groups(clean_query)
-    with get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-              mid.track_list_json,
-              mid.track_items_json
-            FROM album_master_member amm
-            JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
-            WHERE amm.album_master_id = ?
-            ORDER BY amm.id ASC
-            """,
-            (master_id,),
-        ).fetchall()
-
-    matches: list[str] = []
-    seen: set[str] = set()
-
-    def _push(value: Any) -> None:
-        text = str(value or "").strip()
-        key = text.lower()
-        if not text or key in seen:
-            return
-        if not _matches_search_text(text, clean_query, token_groups):
-            return
-        seen.add(key)
-        matches.append(text)
-
-    def _parse_json_string_list(raw: Any) -> list[str]:
-        if not raw:
-            return []
-        try:
-            parsed = json.loads(str(raw))
-        except json.JSONDecodeError:
-            return []
-        if not isinstance(parsed, list):
-            return []
-        return [str(v).strip() for v in parsed if str(v).strip()]
-
-    def _parse_json_dict_list(raw: Any) -> list[dict[str, Any]]:
-        if not raw:
-            return []
-        try:
-            parsed = json.loads(str(raw))
-        except json.JSONDecodeError:
-            return []
-        if not isinstance(parsed, list):
-            return []
-        return [row for row in parsed if isinstance(row, dict)]
-
-    for row in rows:
-        track_list = _parse_json_string_list(row["track_list_json"])
-        track_items = _parse_json_dict_list(row["track_items_json"])
-        for track in track_list:
-            _push(track)
-        for item in track_items:
-            if not isinstance(item, dict):
-                continue
-            _push(item.get("display"))
-            _push(item.get("title"))
-        if len(matches) >= max(1, int(limit)):
-            break
-
-    return matches[: max(1, int(limit))]
+# `list_album_master_track_matches` lives in
+# app/db/album_master_tracks.py and is re-exported from this
+# package's __init__ at the bottom of the file.
 
 
 def count_album_masters(
@@ -8088,4 +8021,7 @@ from .album_master_member import (  # noqa: E402
     delete_album_master,
     list_album_master_members,
     update_album_master_sort_artist_name,
+)
+from .album_master_tracks import (  # noqa: E402
+    list_album_master_track_matches,
 )
