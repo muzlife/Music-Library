@@ -2609,10 +2609,10 @@ def _build_music_detail_for_sync(
         return incoming_list
 
     updated_fields: list[str] = []
-    category = str(candidate.get("category") or "LP").upper()
+    category = str(candidate.get("category") or "CD").upper()
     format_name = str(candidate.get("format_name") or category).upper()
     if format_name not in MUSIC_CATEGORIES:
-        format_name = category if category in MUSIC_CATEGORIES else "LP"
+        format_name = category if category in MUSIC_CATEGORIES else "CD"
 
     existing_tracks = _clean_track_list(candidate.get("track_list"))
     snapshot_tracks = _clean_track_list(snapshot.get("track_list"))
@@ -3987,7 +3987,7 @@ def _purchase_import_rows_for_save(
 
 
 def _purchase_queue_base_context(row: dict[str, Any]) -> tuple[str, str, str, str]:
-    media_format = _purchase_import_media_format_or_default(row.get("vendor_code"), row.get("media_format")) or "LP"
+    media_format = _purchase_import_media_format_or_default(row.get("vendor_code"), row.get("media_format")) or "CD"
     category = _infer_music_category_from_format(media_format)
     size_group = _default_size_group_for_category(category)
     seller_name = _clean_text(row.get("seller_name")) or _clean_text(row.get("vendor_code")) or "PURCHASE_IMPORT"
@@ -6000,7 +6000,7 @@ def _build_duplicate_payload_from_existing_item(
         "linked_album_master_id": linked_master_id,
         "linked_artist_name": base_row.get("linked_artist_name"),
         "copy_group_key": copy_group_key,
-        "category": str(base_row.get("category") or "").strip().upper() or "LP",
+        "category": str(base_row.get("category") or "").strip().upper() or "CD",
         "domain_code": base_row.get("domain_code"),
         "release_type": base_row.get("release_type"),
         "item_name_override": base_row.get("item_name_override"),
@@ -6160,6 +6160,8 @@ def _infer_music_category_from_format(format_name: str | None) -> str:
         return "REEL_TO_REEL"
     if "8-TRACK" in text or "8 TRACK" in text or "8TRACK" in text:
         return "8TRACK"
+    if "DIGITAL SINGLE" in text or "DIGITAL EP" in text or "DIGITAL ALBUM" in text:
+        return "CD"
     if "DIGITAL" in text or "FILE" in text or "DOWNLOAD" in text:
         return "DIGITAL"
     if "CASSETTE" in text or text in {"TAPE", "MC"}:
@@ -6168,7 +6170,7 @@ def _infer_music_category_from_format(format_name: str | None) -> str:
         return "CD"
     if "LP" in text or "VINYL" in text or "12" in text or "10" in text or "7" in text:
         return "LP"
-    return "LP"
+    return "CD"
 
 
 def _default_size_group_for_category(category: str) -> str:
@@ -8169,7 +8171,7 @@ def _apply_new_item_location_recommendation(payload: OwnedItemCreate, owned_item
 
 
 def _build_manual_master_seed_from_owned_row(owned_item_id: int, row: dict[str, Any]) -> tuple[str, str | None, int | None, dict[str, Any]]:
-    category = str(row.get("category") or "LP").strip().upper()
+    category = str(row.get("category") or "CD").strip().upper()
     title = str(row.get("item_name_override") or "").strip()
     artist = str(row.get("artist_or_brand") or row.get("linked_artist_name") or "").strip() or None
     release_year: int | None

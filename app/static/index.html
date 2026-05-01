@@ -5544,7 +5544,6 @@
     }
 
     .ops-library-slot-preview-thumb {
-      aspect-ratio: 1 / 1;
       border-radius: 10px;
       border: 1px solid rgba(71, 85, 105, 0.24);
       background: linear-gradient(180deg, rgba(29, 36, 45, 0.98), rgba(22, 28, 36, 0.98));
@@ -5554,6 +5553,7 @@
       color: #8e99a7;
       font-size: 0.62rem;
       font-weight: 700;
+      min-height: 48px;
     }
 
     .ops-library-slot-preview-item.active .ops-library-slot-preview-thumb {
@@ -5563,8 +5563,7 @@
 
     .ops-library-slot-preview-thumb img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
       display: block;
     }
 
@@ -6219,8 +6218,8 @@
 
     .operator-cover img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;
       display: block;
     }
 
@@ -6590,7 +6589,8 @@
 
     #homeEditCoverImagePreview .table-cover-thumb {
       width: 64px;
-      height: 64px;
+      height: auto;
+      min-height: 44px;
       border-radius: 8px;
     }
 
@@ -6771,7 +6771,6 @@
 
     #barcodeResults .album-result-cover {
       width: 64px;
-      height: 64px;
     }
 
     .result-item.pick {
@@ -6970,7 +6969,7 @@
     .album-result-cover {
       position: relative;
       width: 76px;
-      height: 76px;
+      min-height: 52px;
       border: 1px solid var(--line);
       border-radius: 8px;
       overflow: hidden;
@@ -6988,8 +6987,7 @@
 
     .album-result-cover img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
       display: block;
     }
 
@@ -7686,8 +7684,8 @@
 
     .table-cover-thumb img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;
       display: block;
     }
 
@@ -7922,8 +7920,8 @@
 
     .admin-barcode-candidate-cover img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;
       display: block;
     }
 
@@ -8506,8 +8504,8 @@
 
     .source-workbench-cover img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;
       display: block;
     }
 
@@ -10025,7 +10023,7 @@
     .dashboard-slot-covercard-cover {
       position: relative;
       width: 100%;
-      aspect-ratio: 1 / 1;
+      min-height: 72px;
       border: 1px solid var(--line);
       border-radius: 10px;
       overflow: hidden;
@@ -10046,9 +10044,9 @@
 
     .dashboard-slot-covercard-cover img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
       display: block;
+      padding: 0;
     }
 
     .dashboard-slot-covercard-check {
@@ -10361,8 +10359,8 @@
 
     .dashboard-slot-listitem-cover img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;
       display: block;
     }
 
