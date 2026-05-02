@@ -587,6 +587,10 @@ def infer_domain_code(
 
     source_code = str(source or "").strip().upper()
     if source_code == "MANIADB":
+        # ManiaDB는 국내 DB이지만 외국 앨범의 국내발매반도 수록한다.
+        # 아티스트명이 라틴(한글 없음)이면 외국 아티스트로 간주해 미분류 반환.
+        if artist_text and not _contains_hangul(artist_text):
+            return None
         return "KOREA"
     return None
 
@@ -1470,7 +1474,11 @@ def _parse_maniadb_album_candidates(
                 },
                 media_type=None,
                 release_type=None,
-                domain_code="KOREA",
+                domain_code=infer_domain_code(
+                    artist_or_brand=artist,
+                    country="KR",
+                    source="MANIADB",
+                ),
                 genres=[],
                 styles=[],
             )
@@ -1968,7 +1976,9 @@ def _enrich_maniadb_candidates(candidates: list[Candidate], max_items: int = 5) 
         candidate.track_list = detail.get("track_list") or candidate.track_list
         candidate.barcode = detail.get("barcode") or candidate.barcode
         if not candidate.domain_code:
-            candidate.domain_code = "KOREA"
+            # 라틴 아티스트는 KOREA로 강제하지 않는다 (국내발매반일 수 있음)
+            if _contains_hangul(str(candidate.artist_or_brand or "")):
+                candidate.domain_code = "KOREA"
         candidate.raw["detail"] = detail.get("raw")
 
 
@@ -2573,7 +2583,11 @@ def _parse_maniadb_release_legend(
         "format_name": format_name,
         "media_type": format_name,
         "release_type": None,
-        "domain_code": "KOREA",
+        "domain_code": infer_domain_code(
+            artist_or_brand=album_artist,
+            country="KR",
+            source="MANIADB",
+        ),
         "genres": [],
         "styles": [],
         "label_name": label_name,
@@ -3751,7 +3765,11 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
             "format_name": target.get("format_name"),
             "media_type": target.get("media_type"),
             "release_type": target.get("release_type"),
-            "domain_code": target.get("domain_code") or "KOREA",
+            "domain_code": target.get("domain_code") or infer_domain_code(
+                artist_or_brand=target.get("artist_or_brand"),
+                country="KR",
+                source="MANIADB",
+            ),
             "genres": target.get("genres") or [],
             "styles": target.get("styles") or [],
             "artist_or_brand": target.get("artist_or_brand"),
