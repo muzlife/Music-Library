@@ -3384,24 +3384,9 @@ def delete_owned_item(owned_item_id: int) -> bool:
         return int(cur.rowcount or 0) > 0
 
 
-def get_owned_item(owned_item_id: int) -> dict[str, Any] | None:
-    with get_conn() as conn:
-        row = conn.execute(
-            "SELECT * FROM owned_item WHERE id = ?",
-            (owned_item_id,),
-        ).fetchone()
-        if row is None:
-            return None
-        return dict(row)
-
-
-def get_owned_item_detail(owned_item_id: int) -> dict[str, Any] | None:
-    query = _owned_item_select_query() + " WHERE oi.id = ? LIMIT 1"
-    with get_conn() as conn:
-        row = conn.execute(query, (owned_item_id,)).fetchone()
-    if row is None:
-        return None
-    return _normalize_owned_item_row(dict(row))
+# `get_owned_item` and `get_owned_item_detail` live in
+# app/db/owned_item_read.py and are re-exported from this package's
+# __init__ at the bottom of the file.
 
 
 # `get_owned_item_location_snapshot` lives in app/db/owned_item_track.py and is
@@ -5296,6 +5281,14 @@ from .purchase_import import (  # noqa: E402
 from .owned_item_track import (  # noqa: E402
     get_owned_item_location_snapshot,
     get_owned_item_track_list,
+)
+# owned_item_read MUST be re-exported BEFORE customer_track_request
+# (which imports `get_owned_item_detail` at module-load time) AND
+# BEFORE owned_item_order (which imports `get_owned_item` at
+# module-load time).
+from .owned_item_read import (  # noqa: E402
+    get_owned_item,
+    get_owned_item_detail,
 )
 from .customer_track_request import (  # noqa: E402
     count_customer_track_requests,
