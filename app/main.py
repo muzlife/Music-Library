@@ -888,11 +888,18 @@ def _build_album_master_candidate_from_master_reference(source: str, master_exte
             variant_count = len(variants)
     if source_code not in {"DISCOGS", "MANIADB"}:
         return None
+    # ManiaDB는 항상 가요(KOREA). Discogs는 preview에서 가져오되 없으면 None.
+    domain_code: str | None
+    if source_code == "MANIADB":
+        domain_code = "KOREA"
+    else:
+        domain_code = _clean_text((preview or {}).get("domain_code")) or None
     return {
         "source": source_code,
         "master_external_id": str(master_external_id or "").strip(),
         "title": _clean_text((preview or {}).get("title")) or f"{source_code} Master #{master_external_id}",
         "artist_or_brand": _clean_text((preview or {}).get("artist_or_brand")),
+        "domain_code": domain_code,
         "release_year": (preview or {}).get("release_year"),
         "label_name": _clean_text((preview or {}).get("label_name")),
         "catalog_no": _discogs_catalog_no((preview or {}).get("catalog_no")),

@@ -46950,15 +46950,16 @@
       $("category").value = category;
       $("formatName").value = category;
       $("sizeGroup").value = inferSizeGroupFromMetadata(category, c);
-      const mappedDomain = pickMappedDomain(c.domain_code);
+      // ManiaDB는 항상 가요(KOREA) — domain_code가 없더라도 강제 적용
+      const sourceUpper = String(c.source || "").trim().toUpperCase();
+      const isManiadb = sourceUpper === "MANIADB";
+      const effectiveDomainCode = isManiadb ? "KOREA" : c.domain_code;
+      const mappedDomain = pickMappedDomain(effectiveDomainCode);
       const mappedReleaseType = pickMappedReleaseType(c.release_type);
       if (mappedDomain) {
         const artistText = String(c.artist_or_brand || "").trim();
         const artistHasHangul = /[가-힣ㄱ-ㆎ]/.test(artistText);
         const artistHasKana  = /[぀-ヿ一-鿿]/.test(artistText);
-        // ManiaDB는 항상 가요(KOREA) — 아티스트명이 영문이어도 보정하지 않는다.
-        const sourceUpper = String(c.source || "").trim().toUpperCase();
-        const isManiadb = sourceUpper === "MANIADB";
         // 후보 도메인이 KOREA인데 아티스트명이 라틴이면 WESTERN으로 자동보정
         // (ManiaDB 소스는 제외 — 영문 표기 한국 아티스트 다수)
         if (!isManiadb && mappedDomain === "KOREA" && artistText && !artistHasHangul && !artistHasKana) {
