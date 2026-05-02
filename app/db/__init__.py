@@ -1522,13 +1522,15 @@ def _cleanup_pop_korean_sort_names(conn: sqlite3.Connection) -> None:
 
 
 def _sync_album_master_domain_from_owned_items(conn: sqlite3.Connection) -> None:
-    """album_master.domain_code가 'KOREA'이지만 연결된 owned_item이
-    모두 비가요(WESTERN/WORLD_OTHER 등)인 경우, owned_item의 도메인으로 정정한다.
+    """album_master.domain_code가 'KOREA'이지만 아티스트명에 한글이 없는
+    (라틴 알파벳) 팝 아티스트 앨범의 domain_code를 WESTERN으로 정정한다.
 
-    팝 아티스트를 한글 표기명(예: 에어서플라이, 아-하, 아바)으로 등록하면
-    artist_or_brand에 한글이 포함되어 infer_domain_code가 'KOREA'를 반환한다.
-    그러나 실제 owned_item은 WESTERN으로 올바르게 분류되어 있으므로,
-    owned_item의 합의된 도메인을 album_master에 역으로 반영한다.
+    두 가지 케이스를 처리한다:
+    A) owned_item.domain_code = WESTERN (한글 표기명 등록으로 오분류)
+       → owned_item 도메인으로 album_master 업데이트
+    B) owned_item.domain_code = KOREA (국내 면세점 등 구매 경로 영향으로 오분류)
+       → 라틴 아티스트이고 infer_domain_code가 KOREA가 아닌 경우
+       → album_master + owned_item 모두 WESTERN으로 업데이트
 
     override_domain_code가 설정된 레코드는 수정하지 않는다.
     """
@@ -1541,9 +1543,14 @@ def _sync_album_master_domain_from_owned_items(conn: sqlite3.Connection) -> None
     if not _column_exists(conn, "owned_item", "linked_album_master_id"):
         return
 
+    import json
+    import re as _re
+    _hangul = _re.compile(r"[가-힣ㄱ-ㆎ]")
+    _kana = _re.compile(r"[぀-ヿㇰ-ㇿ]")
+
     # KOREA로 분류된 album_master 중 override 없는 것 대상
     candidates = conn.execute("""
-        SELECT id
+        SELECT id, artist_or_brand, source_code, raw_json
         FROM album_master
         WHERE domain_code = 'KOREA'
           AND (override_domain_code IS NULL OR TRIM(override_domain_code) = '')
@@ -1553,10 +1560,11 @@ def _sync_album_master_domain_from_owned_items(conn: sqlite3.Connection) -> None
     fixed = 0
     for row in candidates:
         am_id = row["id"]
+        artist = str(row["artist_or_brand"] or "").strip()
 
         # 연결된 owned_item 도메인 목록
         oi_rows = conn.execute("""
-            SELECT DISTINCT TRIM(domain_code) AS dc
+            SELECT id, TRIM(domain_code) AS dc
             FROM owned_item
             WHERE linked_album_master_id = ?
               AND domain_code IS NOT NULL
@@ -1568,27 +1576,120 @@ def _sync_album_master_domain_from_owned_items(conn: sqlite3.Connection) -> None
 
         domains = {r["dc"] for r in oi_rows}
 
-        # 모든 연결 owned_item이 비가요인 경우만 수정
-        if "KOREA" in domains:
+        # Case A: owned_item이 모두 비가요 → owned_item 다수결 도메인으로 album_master 수정
+        if "KOREA" not in domains:
+            counts = conn.execute("""
+                SELECT TRIM(domain_code) AS dc, COUNT(*) AS cnt
+                FROM owned_item
+                WHERE linked_album_master_id = ?
+                  AND domain_code IS NOT NULL AND TRIM(domain_code) <> ''
+                GROUP BY TRIM(domain_code)
+                ORDER BY cnt DESC, TRIM(domain_code) ASC
+                LIMIT 1
+            """, (am_id,)).fetchone()
+            new_domain = counts["dc"] if counts else "WESTERN"
+            conn.execute(
+                "UPDATE album_master SET domain_code = ?, source_domain_code = ?, updated_at = ? WHERE id = ?",
+                (new_domain, new_domain, now, am_id),
+            )
+            fixed += 1
             continue
 
-        # 다수결 도메인 결정 (없으면 WESTERN 기본)
-        counts = conn.execute("""
-            SELECT TRIM(domain_code) AS dc, COUNT(*) AS cnt
-            FROM owned_item
-            WHERE linked_album_master_id = ?
-              AND domain_code IS NOT NULL AND TRIM(domain_code) <> ''
-            GROUP BY TRIM(domain_code)
-            ORDER BY cnt DESC, TRIM(domain_code) ASC
-            LIMIT 1
-        """, (am_id,)).fetchone()
+        # Case B: owned_item 중 KOREA가 있지만, 아티스트가 라틴 문자인 경우
+        # infer_domain_code로 재계산해서 KOREA가 아니면 WESTERN으로 수정
+        if artist and not _hangul.search(artist) and not _kana.search(artist):
+            try:
+                rj = json.loads(row["raw_json"] or "{}")
+            except Exception:
+                rj = {}
+            from app.services.providers import infer_domain_code
+            new_code = infer_domain_code(
+                genres=rj.get("genres") or rj.get("genre") or [],
+                styles=rj.get("styles") or rj.get("style") or [],
+                country=rj.get("country"),
+                artist_or_brand=artist,
+                title=rj.get("title"),
+                label_name=rj.get("label") or rj.get("label_name"),
+                source=str(row["source_code"] or ""),
+            )
+            if new_code != "KOREA":
+                conn.execute(
+                    "UPDATE album_master SET domain_code = 'WESTERN', source_domain_code = 'WESTERN', updated_at = ? WHERE id = ?",
+                    (now, am_id),
+                )
+                # 연결된 owned_item 중 KOREA인 것도 WESTERN으로 수정
+                for oi in oi_rows:
+                    if oi["dc"] == "KOREA":
+                        conn.execute(
+                            "UPDATE owned_item SET domain_code = 'WESTERN', updated_at = ? WHERE id = ?",
+                            (now, oi["id"]),
+                        )
+                fixed += 1
 
-        new_domain = counts["dc"] if counts else "WESTERN"
+    if fixed:
+        conn.commit()
 
+
+def _restore_latin_artist_names_from_ext_ref(conn: sqlite3.Connection) -> None:
+    """album_master.artist_or_brand가 한글로 덮어써진 경우,
+    album_master_external_ref의 영문 hint로 복원한다.
+
+    backfill_discogs_korean_artist_names 실행 시 domain_code='KOREA'인
+    팝 아티스트에게도 한글 이름이 기록될 수 있다.
+    ext_ref.artist_or_brand_hint가 영문(라틴)이고
+    album_master.artist_or_brand가 한글인 경우만 대상으로 한다.
+
+    연결된 owned_item.linked_artist_name이 한글인 경우도 NULL로 리셋한다.
+    """
+    if not _column_exists(conn, "album_master", "artist_or_brand"):
+        return
+    if not _table_exists(conn, "album_master_external_ref"):
+        return
+
+    import re as _re
+    _hangul = _re.compile(r"[가-힣ㄱ-ㆎ]")
+
+    rows = conn.execute("""
+        SELECT am.id, am.artist_or_brand, am.domain_code,
+               ref.artist_or_brand_hint AS hint
+        FROM album_master am
+        JOIN album_master_external_ref ref ON ref.album_master_id = am.id
+        WHERE am.artist_or_brand IS NOT NULL
+          AND TRIM(am.artist_or_brand) <> ''
+        GROUP BY am.id
+        HAVING MIN(ref.id)
+    """).fetchall()
+
+    now = utc_now_iso()
+    fixed = 0
+    for row in rows:
+        am_artist = str(row["artist_or_brand"] or "").strip()
+        hint = str(row["hint"] or "").strip()
+        # album_master.artist_or_brand가 한글이고 ext_ref hint가 영문인 경우
+        if not _hangul.search(am_artist):
+            continue
+        if not hint or _hangul.search(hint):
+            continue
+
+        # 영문 hint로 복원
         conn.execute(
-            "UPDATE album_master SET domain_code = ?, source_domain_code = ?, updated_at = ? WHERE id = ?",
-            (new_domain, new_domain, now, am_id),
+            "UPDATE album_master SET artist_or_brand = ?, updated_at = ? WHERE id = ?",
+            (hint, now, row["id"]),
         )
+
+        # owned_item.linked_artist_name이 한글이면 NULL 처리
+        ois = conn.execute("""
+            SELECT id, linked_artist_name FROM owned_item
+            WHERE linked_album_master_id = ?
+              AND linked_artist_name IS NOT NULL
+        """, (row["id"],)).fetchall()
+        for oi in ois:
+            if _hangul.search(str(oi["linked_artist_name"] or "")):
+                conn.execute(
+                    "UPDATE owned_item SET linked_artist_name = NULL, updated_at = ? WHERE id = ?",
+                    (now, oi["id"]),
+                )
+
         fixed += 1
 
     if fixed:
@@ -1633,6 +1734,7 @@ def ensure_startup_db_ready() -> None:
             _seed_metadata_sources(conn)
             _cleanup_overflow_slots(conn)
             _cleanup_pop_korean_sort_names(conn)
+            _restore_latin_artist_names_from_ext_ref(conn)
             _sync_album_master_domain_from_owned_items(conn)
             _seed_classification_options(conn)
             return
@@ -1643,6 +1745,7 @@ def ensure_startup_db_ready() -> None:
         _seed_metadata_sources(conn)
         _cleanup_overflow_slots(conn)
         _cleanup_pop_korean_sort_names(conn)
+        _restore_latin_artist_names_from_ext_ref(conn)
         _sync_album_master_domain_from_owned_items(conn)
         _seed_classification_options(conn)
     finally:
