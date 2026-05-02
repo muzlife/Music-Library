@@ -13,21 +13,23 @@
       --line: #d9e0e5;
       --brand: #0f766e;
       --brand-soft: #d9f4f0;
-      --selected-accent: #8b5cf6;
-      --selected-accent-strong: #7c3aed;
-      --selected-accent-deep: #4c1d95;
-      --selected-surface: #f3e8ff;
-      --selected-surface-soft: #faf5ff;
-      --selected-ring: rgba(139, 92, 246, 0.36);
-      --selected-shadow-soft: rgba(76, 29, 149, 0.16);
-      --size-accent-std: #b45309;
-      --size-accent-book: #2563eb;
-      --size-accent-lp: #0f766e;
-      --size-accent-lp10: #14b8a6;
-      --size-accent-lp7: #0891b2;
-      --size-accent-oversize: #7c3aed;
-      --size-accent-cassette: #db2777;
-      --size-accent-tape: #4338ca;
+      /* taste-skill: LILA BAN 적용 — Purple → Teal */
+      --selected-accent: #0f766e;
+      --selected-accent-strong: #0d6660;
+      --selected-accent-deep: #0a4f4a;
+      --selected-surface: #d9f4f0;
+      --selected-surface-soft: #f0faf9;
+      --selected-ring: rgba(15, 118, 110, 0.28);
+      --selected-shadow-soft: rgba(15, 118, 110, 0.12);
+      /* taste-skill: Saturation < 65% — 포맷 칩 채도 조정 */
+      --size-accent-std: #c47b30;
+      --size-accent-book: #5d89b4;
+      --size-accent-lp: #4a9e98;
+      --size-accent-lp10: #5eaaa4;
+      --size-accent-lp7: #4f8fa8;
+      --size-accent-oversize: #7a7aa8;
+      --size-accent-cassette: #b06b8b;
+      --size-accent-tape: #6670a8;
       --size-accent-goods: #64748b;
       --accent: #9a5937;
       --accent-soft: #f6e3d8;
@@ -35,6 +37,9 @@
       --ok: #0a7f43;
       --shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
       --radius: 14px;
+      /* taste-skill: 숫자 전용 mono 폰트 (VISUAL_DENSITY 7~8) */
+      --font-sans: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
       --action-btn-size: 40px;
       --action-icon-size: 16px;
     }
@@ -58,7 +63,7 @@
       --muted: #b3bfcc;
       --line: rgba(137, 151, 171, 0.22);
       --app-body-background:
-        radial-gradient(1200px 620px at 0% -12%, rgba(255, 122, 26, 0.14) 0%, transparent 54%),
+        radial-gradient(1200px 620px at 0% -12%, rgba(232, 98, 10, 0.14) 0%, transparent 54%),
         radial-gradient(960px 520px at 100% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 46%),
         linear-gradient(180deg, #06090d 0%, #0a1016 48%, #06090d 100%);
       --theme-shell-surface: rgba(10, 14, 20, 0.98);
@@ -67,7 +72,7 @@
       --theme-shell-text: #eef3f8;
       --theme-shell-text-muted: #b3bfcc;
       --theme-shell-text-subtle: #a2afbe;
-      --theme-shell-accent: #ff7a1a;
+      --theme-shell-accent: #e8620a; /* taste-skill: 채도 낮춤 (100% → ~72%) */
       --theme-help-drawer-bg: linear-gradient(180deg, rgba(13, 17, 23, 0.99), rgba(18, 23, 29, 0.99));
       --theme-help-drawer-border: rgba(137, 151, 171, 0.22);
       --theme-help-text: #f2f6fb;
@@ -78,7 +83,7 @@
       --theme-admin-text: #f2f6fb;
       --theme-admin-text-muted: #d0d9e4;
       --theme-admin-text-meta: #b6c3d2;
-      --theme-admin-accent: #ff7a1a;
+      --theme-admin-accent: #e8620a; /* taste-skill: 채도 낮춤 */
       --theme-admin-link: #7dd3fc;
       --theme-admin-link-hover: #e0f2fe;
       --theme-dashboard-panel: #10161d;
@@ -96,7 +101,7 @@
       --muted: #394b5f;
       --line: rgba(82, 100, 120, 0.38);
       --app-body-background:
-        radial-gradient(1200px 620px at 0% -12%, rgba(255, 122, 26, 0.06) 0%, transparent 54%),
+        radial-gradient(1200px 620px at 0% -12%, rgba(232, 98, 10, 0.06) 0%, transparent 54%),
         radial-gradient(960px 520px at 100% 0%, rgba(56, 189, 248, 0.04) 0%, transparent 46%),
         linear-gradient(180deg, #94a2ae 0%, #9daab7 48%, #909daa 100%);
       --theme-shell-surface: rgba(198, 207, 216, 0.95);
@@ -1630,7 +1635,7 @@
     .hero h1 {
       margin: 0;
       font-size: 1.28rem;
-      letter-spacing: 0.2px;
+      letter-spacing: -0.02em; /* taste-skill: 대형 타이틀 tight tracking */
     }
 
     .hero-topbar {
@@ -2622,8 +2627,8 @@
       right: 18px;
       transform: rotate(-7deg);
       background:
-        linear-gradient(145deg, rgba(255, 122, 26, 0.18), rgba(11, 16, 22, 0.92)),
-        linear-gradient(135deg, rgba(255, 122, 26, 0.3), rgba(56, 189, 248, 0.12));
+        linear-gradient(145deg, rgba(232, 98, 10, 0.18), rgba(11, 16, 22, 0.92)),
+        linear-gradient(135deg, rgba(232, 98, 10, 0.3), rgba(56, 189, 248, 0.12));
     }
 
     .admin-shell-media--cd {
@@ -2634,7 +2639,7 @@
       border-radius: 999px;
       background:
         radial-gradient(circle at center, rgba(255,255,255,0.42) 0 16%, rgba(148, 163, 184, 0.18) 16% 21%, transparent 21%),
-        linear-gradient(135deg, rgba(255, 122, 26, 0.4), rgba(56, 189, 248, 0.16));
+        linear-gradient(135deg, rgba(232, 98, 10, 0.4), rgba(56, 189, 248, 0.16));
     }
 
     .admin-shell-media--cassette {
@@ -2645,7 +2650,7 @@
       transform: rotate(8deg);
       background:
         linear-gradient(145deg, rgba(255,255,255,0.08), rgba(11, 16, 22, 0.92)),
-        linear-gradient(135deg, rgba(255, 122, 26, 0.2), rgba(148, 163, 184, 0.12));
+        linear-gradient(135deg, rgba(232, 98, 10, 0.2), rgba(148, 163, 184, 0.12));
     }
 
     .admin-shell-media--cassette::before,
@@ -2712,6 +2717,9 @@
       justify-content: center;
       text-align: center;
       box-shadow: none;
+      /* taste-skill MOTION_INTENSITY:6 */
+      transition: background-color 120ms ease, border-color 120ms ease,
+                  color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
     }
 
     .tab-btn.same-as-home {
@@ -2849,6 +2857,9 @@
       font-size: 0.76rem;
       font-weight: 700;
       cursor: pointer;
+      /* taste-skill MOTION_INTENSITY:6 */
+      transition: background-color 120ms ease, border-color 120ms ease,
+                  color 120ms ease, box-shadow 120ms ease;
     }
 
     .subtab-btn.active {
@@ -4296,7 +4307,7 @@
       --help-dot-bg: rgba(18, 23, 29, 0.98);
       --help-dot-border: rgba(137, 151, 171, 0.18);
       --help-dot-text: #ffbf8a;
-      --help-dot-focus-ring: rgba(255, 122, 26, 0.18);
+      --help-dot-focus-ring: rgba(232, 98, 10, 0.18);
       --help-popover-bg: rgba(13, 17, 23, 0.98);
       --help-popover-border: rgba(137, 151, 171, 0.18);
       --help-popover-text: #eef3f8;
@@ -4572,7 +4583,10 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: transform 120ms ease, filter 120ms ease;
+      /* taste-skill MOTION_INTENSITY:6 — subtle micro-motion */
+      transition: transform 120ms ease, filter 120ms ease,
+                  background-color 120ms ease, border-color 120ms ease,
+                  color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
     }
 
     .btn:hover { filter: brightness(1.05); }
@@ -4846,8 +4860,8 @@
       position: absolute;
       border-radius: 6px;
       background:
-        linear-gradient(145deg, rgba(255, 122, 26, 0.18), rgba(10, 14, 19, 0.92)),
-        linear-gradient(135deg, rgba(255, 122, 26, 0.24), rgba(56, 189, 248, 0.1));
+        linear-gradient(145deg, rgba(232, 98, 10, 0.18), rgba(10, 14, 19, 0.92)),
+        linear-gradient(135deg, rgba(232, 98, 10, 0.24), rgba(56, 189, 248, 0.1));
       border: 1px solid rgba(126, 148, 171, 0.22);
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
     }
@@ -4859,7 +4873,7 @@
       border-radius: 4px;
       background:
         radial-gradient(circle at 26% 24%, rgba(255,255,255,0.22), transparent 18%),
-        linear-gradient(135deg, rgba(255, 122, 26, 0.16), transparent 46%),
+        linear-gradient(135deg, rgba(232, 98, 10, 0.16), transparent 46%),
         linear-gradient(145deg, rgba(71, 85, 105, 0.06), rgba(11, 16, 22, 0.62));
       border: 1px solid rgba(255,255,255,0.12);
     }
@@ -4880,12 +4894,12 @@
       transform: rotate(8deg);
       background:
         linear-gradient(145deg, rgba(15, 23, 42, 0.16), rgba(10, 14, 19, 0.92)),
-        linear-gradient(135deg, rgba(255, 122, 26, 0.2), rgba(148, 163, 184, 0.12));
+        linear-gradient(135deg, rgba(232, 98, 10, 0.2), rgba(148, 163, 184, 0.12));
     }
 
     .ops-home-note {
       position: absolute;
-      color: rgba(255, 122, 26, 0.78);
+      color: rgba(232, 98, 10, 0.78);
       font-weight: 700;
       text-shadow: 0 8px 14px rgba(0, 0, 0, 0.18);
       user-select: none;
@@ -5077,7 +5091,7 @@
       place-items: center;
       border: 1px solid var(--admin-console-panel-border, rgba(137, 151, 171, 0.22));
       background: var(--admin-console-panel-bg, rgba(18, 23, 29, 0.98));
-      color: var(--admin-console-accent, #ff7a1a);
+      color: var(--admin-console-accent, #e8620a);
       font-size: 1rem;
     }
 
@@ -5193,6 +5207,8 @@
       text-align: left;
       line-height: 1.1;
       padding-top: 8px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .ops-library-mini-map-cells {
@@ -5285,7 +5301,7 @@
     }
 
     .ops-library-mini-map-cell.active {
-      background: color-mix(in srgb, var(--tile-bg, rgba(18, 25, 33, 0.96)) 90%, rgba(255, 122, 26, 0.16) 10%);
+      background: color-mix(in srgb, var(--tile-bg, rgba(18, 25, 33, 0.96)) 90%, rgba(232, 98, 10, 0.16) 10%);
       color: var(--selected-accent-deep);
       border-color: var(--selected-accent-strong);
       box-shadow:
@@ -5343,13 +5359,15 @@
       align-items: center;
       padding: 2px 6px;
       border-radius: 0;
-      background: rgba(255, 122, 26, 0.14);
-      border: 1px solid rgba(255, 122, 26, 0.24);
-      color: #ffbf8a;
+      /* taste-skill: 채도 낮춤 #e8620a 기준 */
+      background: rgba(232, 98, 10, 0.14);
+      border: 1px solid rgba(232, 98, 10, 0.24);
+      color: var(--theme-admin-accent, #e8620a);
       font-size: 0.53rem;
       font-weight: 800;
       line-height: 1;
       letter-spacing: 0.02em;
+      font-family: var(--font-mono); /* taste-skill: 숫자 배지 mono */
     }
 
     .ops-library-slot-preview {
@@ -5459,6 +5477,7 @@
       font-weight: 800;
       letter-spacing: 0.01em;
       box-shadow: 0 2px 8px rgba(124, 45, 18, 0.24);
+      font-family: var(--font-mono); /* taste-skill: 숫자 배지 mono */
     }
 
     .ops-library-slot-preview-format {
@@ -5716,7 +5735,8 @@
 
     .operator-helper-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      /* taste-skill: 3-equal BANNED → helper 첫 셀 와이드 */
+      grid-template-columns: 2fr 1fr 1fr;
       gap: 6px;
     }
 
@@ -5741,6 +5761,7 @@
       color: #0f172a;
       line-height: 1.3;
       word-break: break-word;
+      font-family: var(--font-mono); /* taste-skill: helper 수치 mono */
     }
 
     .operator-helper-actions {
@@ -7010,7 +7031,7 @@
 
     #registeredMasterMergeCard.registered-master-merge-console {
       border: 1px solid rgba(120, 136, 158, 0.24);
-      border-top: 2px solid rgba(255, 122, 26, 0.54);
+      border-top: 2px solid rgba(232, 98, 10, 0.54);
       border-radius: 0;
       background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));
       box-shadow: none;
@@ -7165,7 +7186,7 @@
     }
 
     .registered-master-merge-commandbar {
-      border-top: 2px solid rgba(255, 122, 26, 0.36);
+      border-top: 2px solid rgba(232, 98, 10, 0.36);
     }
 
     .registered-master-merge-results-panel {
@@ -7173,7 +7194,7 @@
     }
 
     .registered-master-merge-workspace-panel {
-      border-top: 2px solid rgba(255, 122, 26, 0.24);
+      border-top: 2px solid rgba(232, 98, 10, 0.24);
     }
 
     .registered-master-merge-log-panel {
@@ -7494,7 +7515,7 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--admin-console-accent, #ff7a1a);
+      color: var(--admin-console-accent, #e8620a);
     }
 
     .media-search-inline-editor-grid {
@@ -9871,7 +9892,8 @@
 
     .dashboard-cabinet-overview-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      /* taste-skill: 3-equal BANNED → 앵커 셀 강조 비대칭 */
+      grid-template-columns: 2fr 1fr 1fr;
       gap: 12px;
       align-content: start;
       margin-top: 0;
@@ -9910,6 +9932,9 @@
       font-size: 1.24rem;
       color: var(--ink);
       line-height: 1.1;
+      letter-spacing: -0.02em; /* taste-skill: 대형 숫자 tight tracking */
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .dashboard-slot-viewtools {
@@ -10002,6 +10027,7 @@
       font-size: 0.76rem;
       color: color-mix(in srgb, var(--theme-dashboard-text, var(--ink)) 82%, var(--theme-dashboard-text-muted, var(--muted)) 18%);
       font-weight: 700;
+      font-family: var(--font-mono); /* taste-skill: VISUAL_DENSITY>7 → 숫자 mono */
     }
 
     .dashboard-slot-covercard {
@@ -10170,6 +10196,8 @@
       font-size: 0.68rem;
       font-weight: 700;
       line-height: 1;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
     }
 
@@ -11199,7 +11227,7 @@
       --console-panel: var(--theme-dashboard-panel);
       --console-panel-soft: var(--theme-dashboard-panel-soft);
       --console-border: var(--theme-dashboard-border);
-      --console-accent: #ff7a1a;
+      --console-accent: #e8620a; /* taste-skill: 채도 낮춤 */
       --console-text: var(--theme-dashboard-text);
       --console-text-dim: var(--theme-dashboard-text-dim);
       --console-text-muted: var(--theme-dashboard-text-muted);
@@ -11250,40 +11278,48 @@
     }
 
     .admin-console-shell .manual-block {
-      border: 1px solid var(--admin-console-panel-border);
+      /* taste-skill §3 Rule 4: divide 패턴 */
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
       border-radius: 0;
-      background: var(--admin-console-panel-bg-2);
+      background: transparent;
       box-shadow: none;
       color: var(--admin-console-text);
     }
 
     .admin-console-shell .table-wrap {
-      border: 1px solid var(--admin-console-panel-border);
+      /* taste-skill §3 Rule 4: divide 패턴 */
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
       border-radius: 0;
-      background: var(--admin-console-panel-bg-2);
+      background: transparent;
       box-shadow: none;
     }
 
     .admin-console-shell .result-list {
-      border: 1px solid var(--admin-console-panel-border);
+      /* taste-skill §3 Rule 4: divide 패턴 — 결과 목록 */
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
       border-radius: 0;
-      background: var(--admin-console-panel-bg-2);
+      background: transparent;
       box-shadow: none;
-      padding: 8px;
+      padding: 8px 0;
     }
 
     .admin-console-shell .result-item {
-      border: 1px solid var(--admin-console-panel-border);
+      /* taste-skill §3 Rule 4: divide 패턴 — 결과 아이템 */
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
       border-radius: 0;
-      background: var(--admin-console-panel-bg);
+      background: transparent;
       box-shadow: none;
       color: var(--admin-console-text);
     }
 
     .admin-console-shell .result-item.pick {
-      border-color: rgba(255, 122, 26, 0.16);
+      border-color: rgba(232, 98, 10, 0.16);
       background: linear-gradient(180deg, rgba(17, 21, 27, 0.98), rgba(14, 18, 24, 0.98));
-      box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.06);
+      box-shadow: 0 0 0 1px rgba(232, 98, 10, 0.06);
       color: var(--admin-console-text);
     }
 
@@ -11322,7 +11358,7 @@
 
     .admin-console-shell :is(button:not(.page-help-trigger), .btn, .icon-btn, .icon-symbol-btn):hover,
     .admin-console-shell :is(button:not(.page-help-trigger), .btn, .icon-btn, .icon-symbol-btn):focus-visible {
-      border-color: rgba(255, 122, 26, 0.28);
+      border-color: rgba(232, 98, 10, 0.28);
       background: rgba(18, 23, 29, 0.98);
       color: var(--admin-console-text);
       box-shadow: none;
@@ -11331,8 +11367,8 @@
 
     .admin-console-shell :is(.btn.secondary):hover,
     .admin-console-shell :is(.btn.secondary):focus-visible {
-      border-color: rgba(255, 122, 26, 0.72);
-      background: rgba(255, 122, 26, 0.78);
+      border-color: rgba(232, 98, 10, 0.72);
+      background: rgba(232, 98, 10, 0.78);
       color: #fff7ed;
     }
 
@@ -11384,7 +11420,7 @@
 
     .admin-console-shell .page-help-trigger:hover,
     .admin-console-shell .page-help-trigger:focus-visible {
-      border-color: rgba(255, 122, 26, 0.28);
+      border-color: rgba(232, 98, 10, 0.28);
       background: rgba(22, 28, 35, 0.98);
       color: #ffbf8a;
       box-shadow: none;
@@ -11417,7 +11453,7 @@
 
     .admin-console-shell :is(.help-dot:hover, .help-dot:focus, .section-help-dot:hover, .section-help-dot:focus) {
       background: rgba(22, 28, 35, 0.98);
-      border-color: rgba(255, 122, 26, 0.28);
+      border-color: rgba(232, 98, 10, 0.28);
       color: #ffbf8a;
       box-shadow: none;
     }
@@ -11465,6 +11501,13 @@
       color: var(--admin-console-text);
     }
 
+    /* taste-skill §3 Rule 4: VISUAL_DENSITY>7 → divide 패턴 (운영 홈 피드 리스트) */
+    .admin-console-shell :is(.operator-recent-section, .operator-recent-item, .operator-result-item, .operator-request-item) {
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
+      background: transparent;
+    }
+
     .admin-console-shell :is(.operator-helper-cell, .ops-placement-hint-row, .operator-cover, .operator-label-chip, .operator-feed-pagebtn) {
       border-color: rgba(137, 151, 171, 0.18);
       background: var(--admin-console-panel-bg);
@@ -11489,14 +11532,16 @@
     }
 
     .admin-console-shell :is(.operator-feed-filters .btn.active, .operator-feed-pagebtn.active) {
-      background: rgba(255, 122, 26, 0.12);
-      border-color: rgba(255, 122, 26, 0.32);
+      /* taste-skill: #e8620a → #e8620a 채도 낮춤 */
+      background: rgba(232, 98, 10, 0.12);
+      border-color: rgba(232, 98, 10, 0.32);
       color: var(--admin-console-text);
     }
 
     .admin-console-shell :is(.operator-feed-pagebtn:hover, .operator-feed-pagebtn:focus-visible, .operator-title-side-location-btn:hover, .operator-title-side-location-btn:focus-visible, .operator-recent-repair-btn:hover, .operator-recent-repair-btn:focus-visible, .operator-feed-filters .btn:hover, .operator-feed-filters .btn:focus-visible, .operator-helper-actions .btn:hover, .operator-helper-actions .btn:focus-visible, .ops-library-slot-preview-link:hover, .ops-library-slot-preview-link:focus-visible) {
       background: rgba(19, 24, 32, 0.98);
-      border-color: rgba(255, 122, 26, 0.28);
+      /* taste-skill: #e8620a → #e8620a 채도 낮춤 */
+      border-color: rgba(232, 98, 10, 0.28);
       color: var(--admin-console-text);
     }
 
@@ -11509,20 +11554,20 @@
     }
 
     .admin-console-shell .result-item.pick :is(.operator-label-chip, .home-master-member-preview-code) {
-      border-color: rgba(255, 122, 26, 0.16);
+      border-color: rgba(232, 98, 10, 0.16);
       background: rgba(10, 14, 20, 0.82);
       color: var(--admin-console-text-meta);
     }
 
     .admin-console-shell .home-master-member-preview-item.is-context-selected {
-      border-color: rgba(255, 122, 26, 0.16);
+      border-color: rgba(232, 98, 10, 0.16);
       border-radius: 0;
       background: linear-gradient(180deg, rgba(17, 21, 27, 0.96), rgba(14, 18, 24, 0.96));
-      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.06);
+      box-shadow: inset 0 0 0 1px rgba(232, 98, 10, 0.06);
     }
 
     .admin-console-shell .home-master-member-preview-item.is-context-selected:first-child {
-      border-top: 1px solid rgba(255, 122, 26, 0.16);
+      border-top: 1px solid rgba(232, 98, 10, 0.16);
     }
 
     .admin-console-shell .ops-artist-context-card {
@@ -11721,9 +11766,11 @@
     #tabManage .admin-console-main :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
     #tabRegister.admin-console-shell :is(.manual-block, .result-list, .table-wrap, .status, .compact-line),
     #sourceWorkbenchCard.admin-console-shell :is(.manual-block, .result-list, .table-wrap, .status, .compact-line) {
-      border: 1px solid var(--admin-console-panel-border);
+      /* taste-skill §3 Rule 4: divide 패턴 — 등록/소스 워크벤치 */
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
       border-radius: 0;
-      background: var(--admin-console-panel-bg-2);
+      background: transparent;
       box-shadow: none;
       color: var(--admin-console-text);
     }
@@ -11784,9 +11831,9 @@
     }
 
     #tabManage :is(.home-product-edit-kicker, .home-master-lookup-kicker) {
-      border: 1px solid rgba(255, 122, 26, 0.2);
+      border: 1px solid rgba(232, 98, 10, 0.2);
       border-radius: 0;
-      background: rgba(255, 122, 26, 0.08);
+      background: rgba(232, 98, 10, 0.08);
       color: #ffbf8a;
     }
 
@@ -11896,7 +11943,7 @@
     }
 
     #tabManage .home-copy-group.same {
-      border-color: rgba(255, 122, 26, 0.16);
+      border-color: rgba(232, 98, 10, 0.16);
       background: linear-gradient(180deg, rgba(18, 23, 29, 0.98), rgba(14, 18, 24, 0.98));
     }
 
@@ -11995,9 +12042,9 @@
     }
 
     #tabManage :is(.home-goods-zone-kicker, .home-master-load-btn) {
-      border-color: rgba(255, 122, 26, 0.2) !important;
+      border-color: rgba(232, 98, 10, 0.2) !important;
       border-radius: 0;
-      background: rgba(255, 122, 26, 0.08) !important;
+      background: rgba(232, 98, 10, 0.08) !important;
       color: #ffbf8a !important;
       box-shadow: none !important;
     }
@@ -12032,9 +12079,9 @@
     }
 
     #sourceWorkbenchCard.admin-console-shell :is(.source-workbench-row.selected, .source-workbench-candidate.selected) {
-      border-color: rgba(255, 122, 26, 0.38);
+      border-color: rgba(232, 98, 10, 0.38);
       background: linear-gradient(180deg, rgba(35, 25, 18, 0.98), rgba(24, 19, 15, 0.98));
-      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(232, 98, 10, 0.12);
     }
 
     #sourceWorkbenchCard.admin-console-shell :is(.source-workbench-title, .source-workbench-candidate-title, .source-queue-title) {
@@ -12058,8 +12105,8 @@
     }
 
     #sourceWorkbenchCard.admin-console-shell .source-workbench-edition-summary {
-      border-color: rgba(255, 122, 26, 0.22);
-      background: rgba(255, 122, 26, 0.08);
+      border-color: rgba(232, 98, 10, 0.22);
+      background: rgba(232, 98, 10, 0.08);
       color: var(--admin-console-text-muted);
     }
 
@@ -12344,15 +12391,15 @@
     }
 
     #tabRegister.admin-console-shell #barcodeResults .album-result.is-owned {
-      border-color: rgba(255, 122, 26, 0.24);
+      border-color: rgba(232, 98, 10, 0.24);
       background: var(--admin-console-panel-bg);
-      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(232, 98, 10, 0.08);
     }
 
     #tabRegister.admin-console-shell #barcodeResults .album-result.pick {
-      border-color: rgba(255, 122, 26, 0.16);
+      border-color: rgba(232, 98, 10, 0.16);
       background: linear-gradient(180deg, rgba(17, 21, 27, 0.98), rgba(14, 18, 24, 0.98));
-      box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.06);
+      box-shadow: 0 0 0 1px rgba(232, 98, 10, 0.06);
     }
 
     #tabRegister.admin-console-shell #barcodeResults .album-result-cover {
@@ -12398,8 +12445,8 @@
     }
 
     #tabRegister.admin-console-shell #barcodeResults .admin-barcode-candidate-flag.owned {
-      border-color: rgba(255, 122, 26, 0.42);
-      background: rgba(255, 122, 26, 0.14);
+      border-color: rgba(232, 98, 10, 0.42);
+      background: rgba(232, 98, 10, 0.14);
       color: #ffd4b5;
     }
 
@@ -12424,14 +12471,18 @@
 
     .goods-shell.admin-console-shell .goods-surface > .card,
     .goods-shell.admin-console-shell .goods-surface > .manual-block {
-      border-color: var(--admin-console-panel-border);
-      background: var(--admin-console-panel-bg);
+      /* taste-skill §3 Rule 4: divide 패턴 */
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
+      background: transparent;
     }
 
     .goods-shell.admin-console-shell .goods-map-section {
-      border-color: rgba(137, 151, 171, 0.14);
+      /* taste-skill §3 Rule 4: divide 패턴 */
+      border: none;
+      border-top: 1px solid rgba(137, 151, 171, 0.24);
       border-radius: 0;
-      background: var(--admin-console-panel-bg-2);
+      background: transparent;
       color: var(--admin-console-text);
       box-shadow: none;
     }
@@ -12453,17 +12504,30 @@
     }
 
     .goods-shell.admin-console-shell .goods-target-row {
-      border-color: rgba(137, 151, 171, 0.14);
+      /* taste-skill §3 Rule 4: divide 패턴 */
+      border: none;
+      border-top: 1px solid rgba(137, 151, 171, 0.24);
       border-radius: 0;
-      background: var(--admin-console-panel-bg);
+      background: transparent;
       color: var(--admin-console-text);
       box-shadow: none;
     }
 
-    .goods-shell.admin-console-shell .ops-compact-extra-fields {
-      border-color: var(--admin-console-panel-border);
+    /* goods-result-item divide 패턴 */
+    .goods-shell.admin-console-shell .goods-result-item {
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
       border-radius: 0;
-      background: var(--admin-console-panel-bg-2);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .goods-shell.admin-console-shell .ops-compact-extra-fields {
+      /* taste-skill §3 Rule 4: divide 패턴 */
+      border: none;
+      border-top: 1px solid var(--admin-console-panel-border);
+      border-radius: 0;
+      background: transparent;
       color: var(--admin-console-text);
       box-shadow: none;
     }
@@ -12477,7 +12541,7 @@
     }
 
     .goods-shell.admin-console-shell .ops-compact-extra-fields > summary:focus-visible {
-      outline: 1px solid rgba(255, 122, 26, 0.32);
+      outline: 1px solid rgba(232, 98, 10, 0.32);
       outline-offset: 2px;
       border-radius: 0;
     }
@@ -13456,7 +13520,7 @@
     .dashboard-screen {
       padding: 12px;
       background:
-        linear-gradient(180deg, rgba(255, 122, 26, 0.05), rgba(255, 122, 26, 0) 22%),
+        linear-gradient(180deg, rgba(232, 98, 10, 0.05), rgba(232, 98, 10, 0) 22%),
         #05080c;
     }
 
@@ -13496,7 +13560,8 @@
 
     .dashboard-hero-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      /* taste-skill: 비대칭 2fr+1fr+1fr (3-equal-column BANNED) */
+      grid-template-columns: 2fr 1fr 1fr;
       gap: 6px;
       margin-bottom: 8px;
     }
@@ -13511,6 +13576,13 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+    }
+
+    /* taste-skill: 2fr 앵커 카드 강조 — 수치값 크게, 좌 border 강조 */
+    .dashboard-hero-card.accent-main,
+    .dashboard-hero-card.accent-collector {
+      padding: 8px 10px;
+      min-height: 86px;
     }
 
     .dashboard-hero-card.accent-main {
@@ -13563,6 +13635,15 @@
       font-size: 1.32rem;
       line-height: 1;
       color: #0f172a;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em; /* taste-skill: 대형 숫자 tight tracking */
+    }
+
+    /* 2fr 앵커 카드는 숫자 더 크게 */
+    .dashboard-hero-card.accent-main strong,
+    .dashboard-hero-card.accent-collector strong {
+      font-size: 1.64rem;
     }
 
     .dashboard-hero-card.accent-main strong {
@@ -13587,6 +13668,8 @@
       font-style: normal;
       font-weight: 800;
       margin-left: 2px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .dashboard-main-grid {
@@ -13598,7 +13681,8 @@
 
     .dashboard-secondary-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      /* taste-skill: 3-equal BANNED → 주요 패널 와이드 비대칭 */
+      grid-template-columns: 2fr 1fr 1fr;
       gap: 10px;
       align-items: start;
     }
@@ -13640,7 +13724,7 @@
     #homeDashboardCard.dashboard-console-shell {
       padding: 14px;
       border: 1px solid rgba(120, 136, 158, 0.24);
-      border-top: 2px solid rgba(255, 122, 26, 0.54);
+      border-top: 2px solid rgba(232, 98, 10, 0.54);
       border-radius: 0;
       background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));
       box-shadow: none;
@@ -13671,7 +13755,7 @@
       margin-bottom: 12px;
       padding: 12px 14px;
       border: 1px solid var(--console-border);
-      border-top: 2px solid rgba(255, 122, 26, 0.32);
+      border-top: 2px solid rgba(232, 98, 10, 0.32);
       border-radius: 0;
       background: rgba(18, 23, 29, 0.98);
       align-items: flex-start;
@@ -13700,15 +13784,16 @@
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card {
       min-height: 88px;
       border-radius: 0;
-      border: 1px solid var(--console-border);
-      background: rgba(18, 23, 29, 0.98);
+      /* divide 패턴: top border만 유지, 좌우하 제거로 밀도감 향상 */
+      border: none;
+      border-top: 1px solid var(--console-border);
+      background: transparent;
       box-shadow: none;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-main {
-      background: rgba(18, 23, 29, 0.98);
-      border-top: 2px solid rgba(255, 122, 26, 0.72);
-      border-color: rgba(255, 122, 26, 0.34);
+      background: rgba(15, 118, 110, 0.12);
+      border-top: 2px solid rgba(15, 118, 110, 0.7); /* teal accent (orange → teal) */
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-media,
@@ -13716,20 +13801,19 @@
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-collector,
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-linked,
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-quality {
-      background: rgba(18, 23, 29, 0.98);
-      border-color: rgba(137, 151, 171, 0.18);
+      background: transparent;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-media {
-      border-top: 2px solid rgba(56, 189, 248, 0.24);
+      border-top: 2px solid rgba(56, 189, 248, 0.22);
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-placement {
-      border-top: 2px solid rgba(184, 196, 210, 0.22);
+      border-top: 2px solid rgba(184, 196, 210, 0.2);
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-collector {
-      border-top: 2px solid rgba(255, 196, 122, 0.2);
+      border-top: 2px solid rgba(15, 118, 110, 0.3); /* teal 계열로 통일 */
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-linked {
@@ -13738,6 +13822,21 @@
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-quality {
       border-top: 2px solid rgba(34, 197, 94, 0.22);
+    }
+
+    /* taste-skill §3 Rule 4: panel-head divide — 섹션 타이틀과 콘텐츠 분리선 */
+    #homeDashboardCard.dashboard-console-shell .dashboard-panel-head {
+      border-bottom: 1px solid var(--console-border);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    /* taste-skill §3 Rule 4: dashboard-panel border-radius 플래튼 */
+    #homeDashboardCard.dashboard-console-shell .dashboard-panel {
+      border-radius: 0;
+      border-color: var(--console-border);
+      background: transparent;
+      box-shadow: none;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-hero-card strong,
@@ -13756,20 +13855,24 @@
       grid-template-columns: 1fr;
     }
 
+    /* taste-skill §3 Rule 4: VISUAL_DENSITY>7 → divide 패턴 (full border BANNED) */
     #homeDashboardCard.dashboard-console-shell .dashboard-console-panel {
-      border: 1px solid var(--console-border);
+      border: none;
+      border-top: 1px solid var(--console-border);
       border-radius: 0;
-      background: var(--theme-dashboard-panel);
+      background: transparent;
       box-shadow: none;
+      padding-top: 12px;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--rail {
-      background: var(--theme-dashboard-panel-soft);
-      border-left: 2px solid rgba(255, 122, 26, 0.22);
+      background: transparent;
+      border-left: 2px solid rgba(15, 118, 110, 0.28); /* teal accent */
+      padding-left: 12px;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-console-panel--primary {
-      border-top: 2px solid rgba(255, 122, 26, 0.22);
+      border-top: 2px solid rgba(15, 118, 110, 0.4); /* teal accent */
     }
 
     #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-map-shell, .dashboard-cabinet-detail, .dashboard-slot-rack-surface, .dashboard-slot-bulk-popover, .dashboard-workbench-toolbar, .dashboard-surface-dock, .dashboard-cabinet-board, .dashboard-slot-grid-panel) {
@@ -13939,7 +14042,7 @@
       margin-top: 6px;
       padding: 8px 10px;
       border: 1px solid rgba(184, 196, 210, 0.14);
-      border-left: 2px solid rgba(255, 122, 26, 0.72);
+      border-left: 2px solid rgba(232, 98, 10, 0.72);
       border-radius: 6px;
       background: rgba(18, 23, 29, 0.98);
       box-shadow: none;
@@ -13947,8 +14050,8 @@
 
     #homeDashboardCard.dashboard-console-shell .dashboard-selection-box {
       border-radius: 6px;
-      border: 1px solid rgba(255, 122, 26, 0.72);
-      background: rgba(255, 122, 26, 0.05);
+      border: 1px solid rgba(232, 98, 10, 0.72);
+      background: rgba(232, 98, 10, 0.05);
       box-shadow: none;
     }
 
@@ -14001,8 +14104,8 @@
 
     #homeDashboardCard.dashboard-console-shell :is(.btn.secondary),
     #registeredMasterMergeCard.registered-master-merge-console :is(.btn.secondary) {
-      border-color: rgba(255, 122, 26, 0.82);
-      background: rgba(255, 122, 26, 0.88);
+      border-color: rgba(232, 98, 10, 0.82);
+      background: rgba(232, 98, 10, 0.88);
       color: #fff4ec;
     }
 
@@ -14063,15 +14166,15 @@
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-board:hover {
-      border-color: rgba(255, 122, 26, 0.18);
+      border-color: rgba(232, 98, 10, 0.18);
       background: linear-gradient(180deg, rgba(19, 25, 32, 0.98), rgba(15, 20, 27, 0.98));
       box-shadow: none;
       transform: translateY(-1px);
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-cabinet-board.active {
-      border-color: rgba(255, 122, 26, 0.32);
-      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.08);
+      border-color: rgba(232, 98, 10, 0.32);
+      box-shadow: inset 0 0 0 1px rgba(232, 98, 10, 0.08);
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-slot-shelfcover {
@@ -14107,21 +14210,21 @@
     }
 
     #homeDashboardCard.dashboard-console-shell :is(.dashboard-slot-editbtn:hover, .dashboard-slot-locatebtn:hover, .dashboard-slot-grid-nav:hover, .dashboard-slot-grid-nav:focus-visible, .dashboard-slot-sidearrow:hover, .dashboard-slot-sidearrow:focus-visible, .dashboard-workbench-warning-action:hover, .dashboard-workbench-warning-action:focus-visible) {
-      border-color: rgba(255, 122, 26, 0.32);
+      border-color: rgba(232, 98, 10, 0.32);
       background: rgba(18, 23, 29, 0.98);
       color: var(--console-text);
       box-shadow: none;
     }
 
     #homeDashboardCard.dashboard-console-shell .dashboard-slot-selectbtn.is-selected {
-      border-color: rgba(255, 122, 26, 0.72);
-      background: linear-gradient(180deg, rgba(255, 122, 26, 0.32), rgba(255, 122, 26, 0.18));
+      border-color: rgba(232, 98, 10, 0.72);
+      background: linear-gradient(180deg, rgba(232, 98, 10, 0.32), rgba(232, 98, 10, 0.18));
       color: #fff7ed;
       box-shadow: inset 0 0 0 1px rgba(255, 237, 213, 0.12);
     }
 
     #homeDashboardCard.dashboard-console-shell :is(#homeDashSlotItems.drop-ready, #homeDashSlotItems.drop-ready.dashboard-slot-shelfview) {
-      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.32);
+      box-shadow: inset 0 0 0 1px rgba(232, 98, 10, 0.32);
       filter: none;
       background: linear-gradient(180deg, rgba(23, 29, 36, 0.98), rgba(17, 22, 29, 0.98));
     }
@@ -14312,9 +14415,10 @@
     }
 
     .dashboard-slot-legend-chip.size-oversize {
-      border-color: #ddd6fe;
-      background: #f5f3ff;
-      color: #6d28d9;
+      /* taste-skill: LILA BAN — purple 완전 제거, --size-accent-oversize 토큰 기반 */
+      border-color: #c4c4d8;
+      background: #f0f0f5;
+      color: var(--size-accent-oversize);
     }
 
     .dashboard-slot-legend-chip.size-oversize::before {
@@ -14605,6 +14709,8 @@
       color: #475569;
       white-space: normal;
       text-align: right;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .dashboard-cabinet-summary-meta {
@@ -14640,6 +14746,8 @@
       color: #475569;
       line-height: 1.1;
       padding-top: 8px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .dashboard-cabinet-map-cells {
@@ -14759,22 +14867,22 @@
     .dashboard-cabinet-map-cell.drag-over,
     .dashboard-cabinet-map-cell.drop-ready {
       transform: translateY(-1px);
-      border-color: rgba(255, 122, 26, 0.34);
-      background: color-mix(in srgb, var(--tile-bg, rgba(18, 25, 33, 0.96)) 96%, rgba(255, 122, 26, 0.08) 4%);
+      border-color: rgba(232, 98, 10, 0.34);
+      background: color-mix(in srgb, var(--tile-bg, rgba(18, 25, 33, 0.96)) 96%, rgba(232, 98, 10, 0.08) 4%);
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
     }
 
     .dashboard-cabinet-map-cell.active {
       border-color: var(--selected-accent-strong);
-      background: color-mix(in srgb, var(--tile-bg, rgba(18, 25, 33, 0.96)) 90%, rgba(255, 122, 26, 0.16) 10%);
+      background: color-mix(in srgb, var(--tile-bg, rgba(18, 25, 33, 0.96)) 90%, rgba(232, 98, 10, 0.16) 10%);
       color: var(--selected-accent-deep);
       box-shadow: 0 0 0 4px var(--selected-ring), 0 14px 24px var(--selected-shadow-soft);
       transform: translateY(-1px);
     }
 
     .dashboard-cabinet-map-cell.active::before {
-      background: rgba(255, 122, 26, 0.72);
-      border-color: rgba(255, 122, 26, 0.72);
+      background: rgba(232, 98, 10, 0.72);
+      border-color: rgba(232, 98, 10, 0.72);
     }
 
     .dashboard-cabinet-map-cell.active :is(
@@ -15119,6 +15227,8 @@
       color: var(--muted);
       text-align: right;
       white-space: nowrap;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .dashboard-floor-cells {
@@ -15745,6 +15855,7 @@
       font-size: 0.66rem;
       font-weight: 800;
       line-height: 1;
+      font-family: var(--font-mono); /* taste-skill: 경고 배지 숫자 mono */
     }
     .dashboard-workbench-warning-badge--muted {
       background: rgba(148, 163, 184, 0.18);
@@ -15983,6 +16094,7 @@
       font-size: 0.64rem;
       font-weight: 700;
       letter-spacing: 0.01em;
+      font-family: var(--font-mono); /* taste-skill: 숫자 배지 mono */
     }
 
     .dashboard-activity-badge.in {
@@ -16037,6 +16149,10 @@
       font-weight: 800;
       line-height: 1;
       color: #0f766e;
+      /* taste-skill: 대형 숫자 mono + tight tracking */
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
     }
 
     .dashboard-slot-card.unassigned .dashboard-slot-count {
@@ -16244,9 +16360,13 @@
       .home-edit-grid-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .ops-library-slot-preview-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
       .option-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-      .dashboard-hero-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .dashboard-hero-grid { grid-template-columns: 2fr 1fr 1fr; }
       .dashboard-hero-card { padding: 5px 6px; min-height: 74px; }
+      .dashboard-hero-card.accent-main,
+      .dashboard-hero-card.accent-collector { padding: 7px 8px; min-height: 82px; }
       .dashboard-hero-card strong { font-size: 1.18rem; }
+      .dashboard-hero-card.accent-main strong,
+      .dashboard-hero-card.accent-collector strong { font-size: 1.44rem; }
       .dashboard-kicker { font-size: 0.56rem; }
       .dashboard-stat-line { font-size: 0.58rem; }
       .dashboard-main-grid { grid-template-columns: 1fr; }
@@ -16356,9 +16476,13 @@
       .source-workbench-diff-status-badge { grid-column: 2 / -1; }
       .admin-barcode-intake-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .ops-provider-group-grid { grid-template-columns: 1fr; }
-      .dashboard-hero-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .dashboard-hero-grid { grid-template-columns: 2fr 1fr 1fr; }
       .dashboard-hero-card { padding: 4px 5px; min-height: 70px; }
+      .dashboard-hero-card.accent-main,
+      .dashboard-hero-card.accent-collector { padding: 6px 7px; min-height: 76px; }
       .dashboard-hero-card strong { font-size: 1.06rem; }
+      .dashboard-hero-card.accent-main strong,
+      .dashboard-hero-card.accent-collector strong { font-size: 1.28rem; }
       .dashboard-kicker { font-size: 0.52rem; }
       .dashboard-stat-line { font-size: 0.55rem; }
       .dashboard-topbar { align-items: flex-start; flex-direction: column; }
@@ -16504,9 +16628,14 @@
       .source-workbench-diff-cover-compare { grid-template-columns: 1fr; }
       .option-grid { grid-template-columns: 1fr 1fr; }
       .kpi { grid-template-columns: 1fr 1fr; }
+      /* taste-skill MOBILE OVERRIDE — 760px 이하 단순 2열 */
       .dashboard-hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .dashboard-hero-card { padding: 4px; min-height: 66px; }
-      .dashboard-hero-card strong { font-size: 0.96rem; }
+      .dashboard-hero-card.accent-main,
+      .dashboard-hero-card.accent-collector { padding: 4px; min-height: 66px; }
+      .dashboard-hero-card strong,
+      .dashboard-hero-card.accent-main strong,
+      .dashboard-hero-card.accent-collector strong { font-size: 0.96rem; }
       .dashboard-kicker { font-size: 0.48rem; }
       .dashboard-stat-line { font-size: 0.5rem; gap: 1px; }
       .dashboard-workbench-search { grid-template-columns: 1fr; }
@@ -16908,6 +17037,14 @@
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.4),
         0 1px 0 rgba(121, 136, 154, 0.1) !important;
+    }
+
+    /* taste-skill MOTION_INTENSITY:6 — prefers-reduced-motion 존중 */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 1ms !important;
+        animation-duration: 1ms !important;
+      }
     }
 
   </style>
