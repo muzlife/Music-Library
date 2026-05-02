@@ -459,40 +459,112 @@ LEGACY_DOMAIN_CODE_MAP = {
 }
 DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"}
 GREATER_CHINA_COUNTRIES = {
-    "CN", "CHN", "CHINA",
-    "TW", "TWN", "TAIWAN",
+    # 중국 본토
+    "CN", "CHN", "CHINA", "MAINLAND CHINA", "PEOPLES REPUBLIC OF CHINA",
+    # 대만
+    "TW", "TWN", "TAIWAN", "REPUBLIC OF CHINA",
+    # 홍콩
     "HK", "HKG", "HONG KONG",
-    "MO", "MAC", "MACAU",
+    # 마카오
+    "MO", "MAC", "MACAU", "MACAO",
 }
 OTHER_ASIA_COUNTRIES = {
+    # 동남아
     "TH", "THA", "THAILAND",
-    "VN", "VNM", "VIETNAM",
+    "VN", "VNM", "VIETNAM", "VIET NAM",
     "PH", "PHL", "PHILIPPINES",
     "ID", "IDN", "INDONESIA",
     "MY", "MYS", "MALAYSIA",
     "SG", "SGP", "SINGAPORE",
+    "MM", "MMR", "MYANMAR", "BURMA",
+    "KH", "KHM", "CAMBODIA",
+    "LA", "LAO", "LAOS",
+    "BN", "BRN", "BRUNEI",
+    "TL", "TLS", "TIMOR LESTE", "EAST TIMOR",
+    # 남아시아
     "IN", "IND", "INDIA",
+    "PK", "PAK", "PAKISTAN",
+    "BD", "BGD", "BANGLADESH",
+    "LK", "LKA", "SRI LANKA", "CEYLON",
+    "NP", "NPL", "NEPAL",
+    "BT", "BTN", "BHUTAN",
+    "MV", "MDV", "MALDIVES",
+    # 중앙아시아
+    "MN", "MNG", "MONGOLIA",
+    "KZ", "KAZ", "KAZAKHSTAN",
+    "UZ", "UZB", "UZBEKISTAN",
+    "TM", "TKM", "TURKMENISTAN",
+    "KG", "KGZ", "KYRGYZSTAN",
+    "TJ", "TJK", "TAJIKISTAN",
 }
 WESTERN_COUNTRIES = {
+    # 북미
     "US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA",
-    "GB", "UK", "GBR", "UNITED KINGDOM", "ENGLAND",
     "CA", "CAN", "CANADA",
+    "MX", "MEX", "MEXICO",
+    # 영국·아일랜드
+    "GB", "UK", "GBR", "UNITED KINGDOM", "ENGLAND", "SCOTLAND", "WALES",
+    "IE", "IRL", "IRELAND",
+    # 오세아니아
     "AU", "AUS", "AUSTRALIA",
     "NZ", "NZL", "NEW ZEALAND",
+    # 서유럽
     "FR", "FRA", "FRANCE",
-    "DE", "DEU", "GERMANY",
+    "DE", "DEU", "GERMANY", "WEST GERMANY",
     "IT", "ITA", "ITALY",
     "ES", "ESP", "SPAIN",
     "PT", "PRT", "PORTUGAL",
+    "NL", "NLD", "NETHERLANDS", "HOLLAND",
+    "BE", "BEL", "BELGIUM",
+    "CH", "CHE", "SWITZERLAND",
+    "AT", "AUT", "AUSTRIA",
+    "LU", "LUX", "LUXEMBOURG",
+    # 북유럽
     "SE", "SWE", "SWEDEN",
     "NO", "NOR", "NORWAY",
     "DK", "DNK", "DENMARK",
     "FI", "FIN", "FINLAND",
-    "NL", "NLD", "NETHERLANDS",
-    "BE", "BEL", "BELGIUM",
-    "IE", "IRL", "IRELAND",
-    "CH", "CHE", "SWITZERLAND",
-    "AT", "AUT", "AUSTRIA",
+    "IS", "ISL", "ICELAND",
+    # 남유럽·지중해
+    "GR", "GRC", "GREECE",
+    "TR", "TUR", "TURKEY", "TURKIYE",
+    "CY", "CYP", "CYPRUS",
+    "MT", "MLT", "MALTA",
+    "HR", "HRV", "CROATIA",
+    "SI", "SVN", "SLOVENIA",
+    "RS", "SRB", "SERBIA",
+    "ME", "MNE", "MONTENEGRO",
+    "BA", "BIH", "BOSNIA AND HERZEGOVINA", "BOSNIA",
+    "MK", "MKD", "NORTH MACEDONIA", "MACEDONIA",
+    "AL", "ALB", "ALBANIA",
+    # 동유럽·발트
+    "PL", "POL", "POLAND",
+    "CZ", "CZE", "CZECH REPUBLIC", "CZECHIA", "CZECHOSLOVAKIA",
+    "SK", "SVK", "SLOVAKIA",
+    "HU", "HUN", "HUNGARY",
+    "RO", "ROU", "ROMANIA",
+    "BG", "BGR", "BULGARIA",
+    "EE", "EST", "ESTONIA",
+    "LV", "LVA", "LATVIA",
+    "LT", "LTU", "LITHUANIA",
+    "UA", "UKR", "UKRAINE",
+    "BY", "BLR", "BELARUS",
+    "MD", "MDA", "MOLDOVA",
+    "RU", "RUS", "RUSSIA", "USSR", "SOVIET UNION",
+    # 중동·이스라엘 (서양 음악 시장 주요국)
+    "IL", "ISR", "ISRAEL",
+    # 남아프리카·라틴 (Discogs에서 서양권 팝이 이 국가로 발매되는 경우가 많음)
+    "ZA", "ZAF", "SOUTH AFRICA",
+    "BR", "BRA", "BRAZIL",
+    "AR", "ARG", "ARGENTINA",
+    "CL", "CHL", "CHILE",
+    "CO", "COL", "COLOMBIA",
+    "VE", "VEN", "VENEZUELA",
+    "PE", "PER", "PERU",
+    "UY", "URY", "URUGUAY",
+    # Discogs 특수값 — 유럽 공통반·전세계 공통반
+    "EUROPE",
+    "WORLDWIDE", "WORLD",
 }
 
 
