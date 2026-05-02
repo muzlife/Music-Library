@@ -1521,6 +1521,80 @@ def _cleanup_pop_korean_sort_names(conn: sqlite3.Connection) -> None:
         conn.commit()
 
 
+def _sync_album_master_domain_from_owned_items(conn: sqlite3.Connection) -> None:
+    """album_master.domain_code가 'KOREA'이지만 연결된 owned_item이
+    모두 비가요(WESTERN/WORLD_OTHER 등)인 경우, owned_item의 도메인으로 정정한다.
+
+    팝 아티스트를 한글 표기명(예: 에어서플라이, 아-하, 아바)으로 등록하면
+    artist_or_brand에 한글이 포함되어 infer_domain_code가 'KOREA'를 반환한다.
+    그러나 실제 owned_item은 WESTERN으로 올바르게 분류되어 있으므로,
+    owned_item의 합의된 도메인을 album_master에 역으로 반영한다.
+
+    override_domain_code가 설정된 레코드는 수정하지 않는다.
+    """
+    if not _column_exists(conn, "album_master", "domain_code"):
+        return
+    if not _column_exists(conn, "album_master", "override_domain_code"):
+        return
+    if not _column_exists(conn, "owned_item", "domain_code"):
+        return
+    if not _column_exists(conn, "owned_item", "linked_album_master_id"):
+        return
+
+    # KOREA로 분류된 album_master 중 override 없는 것 대상
+    candidates = conn.execute("""
+        SELECT id
+        FROM album_master
+        WHERE domain_code = 'KOREA'
+          AND (override_domain_code IS NULL OR TRIM(override_domain_code) = '')
+    """).fetchall()
+
+    now = utc_now_iso()
+    fixed = 0
+    for row in candidates:
+        am_id = row["id"]
+
+        # 연결된 owned_item 도메인 목록
+        oi_rows = conn.execute("""
+            SELECT DISTINCT TRIM(domain_code) AS dc
+            FROM owned_item
+            WHERE linked_album_master_id = ?
+              AND domain_code IS NOT NULL
+              AND TRIM(domain_code) <> ''
+        """, (am_id,)).fetchall()
+
+        if not oi_rows:
+            continue  # 연결된 owned_item 없음 → 건드리지 않음
+
+        domains = {r["dc"] for r in oi_rows}
+
+        # 모든 연결 owned_item이 비가요인 경우만 수정
+        if "KOREA" in domains:
+            continue
+
+        # 다수결 도메인 결정 (없으면 WESTERN 기본)
+        counts = conn.execute("""
+            SELECT TRIM(domain_code) AS dc, COUNT(*) AS cnt
+            FROM owned_item
+            WHERE linked_album_master_id = ?
+              AND domain_code IS NOT NULL AND TRIM(domain_code) <> ''
+            GROUP BY TRIM(domain_code)
+            ORDER BY cnt DESC, TRIM(domain_code) ASC
+            LIMIT 1
+        """, (am_id,)).fetchone()
+
+        new_domain = counts["dc"] if counts else "WESTERN"
+
+        conn.execute(
+            "UPDATE album_master SET domain_code = ?, source_domain_code = ?, updated_at = ? WHERE id = ?",
+            (new_domain, new_domain, now, am_id),
+        )
+        fixed += 1
+
+    if fixed:
+        conn.commit()
+
+
 def ensure_startup_db_ready() -> None:
     settings = get_settings()
     db_path = Path(settings.db_path)
@@ -1559,6 +1633,7 @@ def ensure_startup_db_ready() -> None:
             _seed_metadata_sources(conn)
             _cleanup_overflow_slots(conn)
             _cleanup_pop_korean_sort_names(conn)
+            _sync_album_master_domain_from_owned_items(conn)
             _seed_classification_options(conn)
             return
 
@@ -1568,6 +1643,7 @@ def ensure_startup_db_ready() -> None:
         _seed_metadata_sources(conn)
         _cleanup_overflow_slots(conn)
         _cleanup_pop_korean_sort_names(conn)
+        _sync_album_master_domain_from_owned_items(conn)
         _seed_classification_options(conn)
     finally:
         conn.close()
