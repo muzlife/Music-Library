@@ -671,6 +671,26 @@ def _fetch_discogs_master_detail(
         if isinstance(first, dict):
             artist_or_brand = _pick_first_text(first.get("anv")) or _pick_first_text(first.get("name"))
 
+    # 마스터의 main_release(원반)를 조회해 원산지 국가를 구한다.
+    # 개별 릴리즈의 country는 '제조국(pressing country)'이므로 한국반이면
+    # "South Korea"가 되어 팝 앨범이 가요로 오분류된다.
+    # 마스터 → main_release의 country는 원래 출신국이므로 도메인 추론에 적합하다.
+    master_country: str | None = None
+    main_release_id = str(data.get("main_release") or "").strip()
+    if main_release_id:
+        def _fetch_main() -> httpx.Response:
+            return _get_with_retry(
+                client, f"https://api.discogs.com/releases/{main_release_id}", headers=headers
+            )
+        main_data = cached_fetch_json(
+            source_code="DISCOGS",
+            kind="release",
+            identifier=main_release_id,
+            fetcher=_fetch_main,
+        )
+        if isinstance(main_data, dict):
+            master_country = _pick_first_text(main_data.get("country")) or None
+
     return {
         "master_external_id": master_id_s,
         "master_title": _pick_first_text(data.get("title")),
@@ -680,6 +700,7 @@ def _fetch_discogs_master_detail(
         "master_released_date": str(year) if year is not None else None,
         "master_genres": _unique_text_list(data.get("genres")),
         "master_styles": _unique_text_list(data.get("styles")),
+        "master_country": master_country,  # main_release 원산지 국가
         "raw_master": data,
     }
 
@@ -1841,10 +1862,15 @@ def _fetch_discogs_release_detail(
 
     genres = release_genres or master_genres
     styles = release_styles or master_styles
+    # 도메인 추론에 사용할 국가: 마스터(원반) 국가 우선, 없으면 이 릴리즈의 제조국.
+    # 한국반(pressing country="South Korea")을 마스터 원산지(예: US/UK)로 교정해
+    # 팝 앨범이 가요로 오분류되는 것을 방지한다.
+    master_country = master_detail.get("master_country") if master_detail else None
+    infer_country = master_country or data.get("country")
     domain_code = _discogs_domain_code(
         genres=genres,
         styles=styles,
-        country=data.get("country"),
+        country=infer_country,
         artist_or_brand=_pick_first_text((data.get("artists") or [{}])[0].get("name")) if isinstance(data.get("artists"), list) and data.get("artists") else None,
         title=data.get("title"),
         label_name=label_name,
@@ -1870,6 +1896,7 @@ def _fetch_discogs_release_detail(
         "master_released_date": master_released_date,
         "master_genres": master_genres,
         "master_styles": master_styles,
+        "master_country": master_country,
         "source_notes": source_notes,
         "credits": credits,
         "identifier_items": identifier_items,
