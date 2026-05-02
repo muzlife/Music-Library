@@ -46956,11 +46956,15 @@
         const artistText = String(c.artist_or_brand || "").trim();
         const artistHasHangul = /[가-힣ㄱ-ㆎ]/.test(artistText);
         const artistHasKana  = /[぀-ヿ一-鿿]/.test(artistText);
+        // ManiaDB는 항상 가요(KOREA) — 아티스트명이 영문이어도 보정하지 않는다.
+        const sourceUpper = String(c.source || "").trim().toUpperCase();
+        const isManiadb = sourceUpper === "MANIADB";
         // 후보 도메인이 KOREA인데 아티스트명이 라틴이면 WESTERN으로 자동보정
-        if (mappedDomain === "KOREA" && artistText && !artistHasHangul && !artistHasKana) {
+        // (ManiaDB 소스는 제외 — 영문 표기 한국 아티스트 다수)
+        if (!isManiadb && mappedDomain === "KOREA" && artistText && !artistHasHangul && !artistHasKana) {
           $("domainCode").value = "WESTERN";
           setStatus("createStatus", "ok", `도메인을 팝(WESTERN)으로 자동보정했습니다 — 아티스트명 "${artistText}" 이(가) 영문입니다. 틀리면 직접 수정하세요.`);
-        } else if (mappedDomain === "JAPAN" && artistText && !artistHasKana && !artistHasHangul) {
+        } else if (!isManiadb && mappedDomain === "JAPAN" && artistText && !artistHasKana && !artistHasHangul) {
           $("domainCode").value = "WESTERN";
           setStatus("createStatus", "ok", `도메인을 팝(WESTERN)으로 자동보정했습니다 — 아티스트명 "${artistText}" 이(가) 영문입니다. 틀리면 직접 수정하세요.`);
         } else {
@@ -49242,7 +49246,10 @@
           ).trim();
           const _hasHangul = /[가-힣ㄱ-ㆎ]/.test(_artistCheck);
           const _hasKana   = /[぀-ヿ一-鿿]/.test(_artistCheck);
-          if (_artistCheck && !_hasHangul && !_hasKana) {
+          // ManiaDB 후보는 항상 가요 — 영문 표기 한국 아티스트가 많으므로 도메인 검증 면제
+          const _candidateSource = String(selectedCandidate?.source || "").trim().toUpperCase();
+          const _isManiadb = _candidateSource === "MANIADB";
+          if (!_isManiadb && _artistCheck && !_hasHangul && !_hasKana) {
             if (_domainVal === "KOREA") {
               setStatus("createStatus", "err",
                 `⚠ 도메인 불일치: 아티스트 "${_artistCheck}"는 영문인데 도메인이 '가요'입니다. ` +
