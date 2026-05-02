@@ -575,22 +575,20 @@ def infer_domain_code(
 
     country_code = _country_domain_code(country)
     if country_code:
-        # country="Korea" 또는 "Japan"인 경우: 아티스트명에 해당 문자가 없으면
-        # 외국 앨범의 국내발매반(라이선스반)으로 판단하여 분류하지 않음.
-        # 예) Beatles 한국반 → country="Korea"지만 팝으로 유지해야 함.
-        # 단, 아티스트 정보가 없을 때는 country를 그대로 사용.
-        if country_code == "KOREA" and artist_text and not _contains_hangul(artist_text):
+        # country="Korea"/"Japan"은 제작국(pressing country)이지 아티스트 국적이 아님.
+        # Discogs에서 한국반(country="South Korea")으로 등록된 팝 앨범이 가요로
+        # 분류되는 것을 막기 위해, 아티스트명에 해당 문자가 없으면(비어 있는 경우 포함)
+        # 항상 분류를 거부한다.
+        # ※ 가요 아티스트는 artist_or_brand에 한글이 있으므로 위의
+        #    _contains_hangul(content_combined) 체크에서 이미 "KOREA"를 반환한다.
+        if country_code == "KOREA" and not _contains_hangul(artist_text):
             return None
-        if country_code == "JAPAN" and artist_text and not _contains_kana(artist_text):
+        if country_code == "JAPAN" and not _contains_kana(artist_text):
             return None
         return country_code
 
     source_code = str(source or "").strip().upper()
     if source_code == "MANIADB":
-        # ManiaDB는 국내 DB이지만 외국 앨범의 국내발매반도 수록한다.
-        # 아티스트명이 라틴(한글 없음)이면 외국 아티스트로 간주해 미분류 반환.
-        if artist_text and not _contains_hangul(artist_text):
-            return None
         return "KOREA"
     return None
 
@@ -1474,11 +1472,7 @@ def _parse_maniadb_album_candidates(
                 },
                 media_type=None,
                 release_type=None,
-                domain_code=infer_domain_code(
-                    artist_or_brand=artist,
-                    country="KR",
-                    source="MANIADB",
-                ),
+                domain_code="KOREA",
                 genres=[],
                 styles=[],
             )
@@ -1976,9 +1970,7 @@ def _enrich_maniadb_candidates(candidates: list[Candidate], max_items: int = 5) 
         candidate.track_list = detail.get("track_list") or candidate.track_list
         candidate.barcode = detail.get("barcode") or candidate.barcode
         if not candidate.domain_code:
-            # 라틴 아티스트는 KOREA로 강제하지 않는다 (국내발매반일 수 있음)
-            if _contains_hangul(str(candidate.artist_or_brand or "")):
-                candidate.domain_code = "KOREA"
+            candidate.domain_code = "KOREA"
         candidate.raw["detail"] = detail.get("raw")
 
 
@@ -2583,11 +2575,7 @@ def _parse_maniadb_release_legend(
         "format_name": format_name,
         "media_type": format_name,
         "release_type": None,
-        "domain_code": infer_domain_code(
-            artist_or_brand=album_artist,
-            country="KR",
-            source="MANIADB",
-        ),
+        "domain_code": "KOREA",
         "genres": [],
         "styles": [],
         "label_name": label_name,
@@ -3765,11 +3753,7 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
             "format_name": target.get("format_name"),
             "media_type": target.get("media_type"),
             "release_type": target.get("release_type"),
-            "domain_code": target.get("domain_code") or infer_domain_code(
-                artist_or_brand=target.get("artist_or_brand"),
-                country="KR",
-                source="MANIADB",
-            ),
+            "domain_code": target.get("domain_code") or "KOREA",
             "genres": target.get("genres") or [],
             "styles": target.get("styles") or [],
             "artist_or_brand": target.get("artist_or_brand"),
