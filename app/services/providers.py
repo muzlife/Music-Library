@@ -552,6 +552,7 @@ def infer_domain_code(
     artist_text = str(artist_or_brand or "").strip()
     title_text = str(title or "").strip()
     label_text = str(label_name or "").strip()
+    # label_text 포함 전체 텍스트 (장르·스타일 키워드 검색에만 사용)
     combined = " ".join(v for v in [genre_text, style_text, artist_text, title_text, label_text] if v).strip()
     combined_lower = combined.lower()
 
@@ -562,13 +563,26 @@ def infer_domain_code(
     if any(token in combined_lower for token in ["c-pop", "c pop", "mandopop", "cantopop"]):
         return "GREATER_CHINA"
 
-    if _contains_hangul(combined):
+    # 한글·가나 문자 판별은 콘텐츠 필드(장르·스타일·아티스트·타이틀)만 사용.
+    # label_name은 배급사(유통사) 이름이므로 제외한다:
+    # 예) "소니뮤직코리아", "유니버설뮤직코리아"는 외국 앨범 국내 배급사이므로
+    #     이것만으로 가요로 분류하면 팝 국내발매반이 잘못 분류됨.
+    content_combined = " ".join(v for v in [genre_text, style_text, artist_text, title_text] if v).strip()
+    if _contains_hangul(content_combined):
         return "KOREA"
-    if _contains_kana(combined):
+    if _contains_kana(content_combined):
         return "JAPAN"
 
     country_code = _country_domain_code(country)
     if country_code:
+        # country="Korea" 또는 "Japan"인 경우: 아티스트명에 해당 문자가 없으면
+        # 외국 앨범의 국내발매반(라이선스반)으로 판단하여 분류하지 않음.
+        # 예) Beatles 한국반 → country="Korea"지만 팝으로 유지해야 함.
+        # 단, 아티스트 정보가 없을 때는 country를 그대로 사용.
+        if country_code == "KOREA" and artist_text and not _contains_hangul(artist_text):
+            return None
+        if country_code == "JAPAN" and artist_text and not _contains_kana(artist_text):
+            return None
         return country_code
 
     source_code = str(source or "").strip().upper()

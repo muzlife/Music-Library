@@ -1475,7 +1475,50 @@ def init_db() -> None:
         _ensure_recent_feed_indexes(conn)
         _seed_metadata_sources(conn)
         _cleanup_overflow_slots(conn)
+        _cleanup_pop_korean_sort_names(conn)
         _seed_classification_options(conn)
+
+
+_HANGUL_RE = re.compile(r"[가-힣ㄱ-ㆎ]")
+
+
+def _cleanup_pop_korean_sort_names(conn: sqlite3.Connection) -> None:
+    """팝(가요 외) 앨범에 잘못 적용된 한글 정렬명을 제거한다.
+
+    `infer_domain_code` 버그로 인해 팝 국내발매(라이선스)반의 domain_code 가
+    'KOREA'로 잘못 지정된 경우, 아티스트 현지화 로직이 외국 아티스트에게도
+    한글 sort_artist_name을 부여할 수 있다.
+    이 함수는 domain_code가 'KOREA'가 아닌데 sort_artist_name에 한글이 있는
+    레코드를 찾아 sort_artist_name을 NULL로 리셋한다.
+    """
+    if not _column_exists(conn, "album_master", "sort_artist_name"):
+        return
+    if not _column_exists(conn, "album_master", "domain_code"):
+        return
+
+    rows = conn.execute(
+        """
+        SELECT id, sort_artist_name
+        FROM album_master
+        WHERE domain_code IS NOT NULL
+          AND TRIM(domain_code) NOT IN ('', 'KOREA')
+          AND sort_artist_name IS NOT NULL
+          AND TRIM(sort_artist_name) <> ''
+        """
+    ).fetchall()
+
+    now = utc_now_iso()
+    fixed = 0
+    for row in rows:
+        if _HANGUL_RE.search(str(row["sort_artist_name"] or "")):
+            conn.execute(
+                "UPDATE album_master SET sort_artist_name = NULL, updated_at = ? WHERE id = ?",
+                (now, row["id"]),
+            )
+            fixed += 1
+
+    if fixed:
+        conn.commit()
 
 
 def ensure_startup_db_ready() -> None:
@@ -1515,6 +1558,7 @@ def ensure_startup_db_ready() -> None:
             # running so manual DB edits don't drift away silently.
             _seed_metadata_sources(conn)
             _cleanup_overflow_slots(conn)
+            _cleanup_pop_korean_sort_names(conn)
             _seed_classification_options(conn)
             return
 
@@ -1523,6 +1567,7 @@ def ensure_startup_db_ready() -> None:
         _ensure_recent_feed_indexes(conn)
         _seed_metadata_sources(conn)
         _cleanup_overflow_slots(conn)
+        _cleanup_pop_korean_sort_names(conn)
         _seed_classification_options(conn)
     finally:
         conn.close()
