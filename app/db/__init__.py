@@ -1656,6 +1656,7 @@ def _restore_latin_artist_names_from_ext_ref(conn: sqlite3.Connection) -> None:
         JOIN album_master_external_ref ref ON ref.album_master_id = am.id
         WHERE am.artist_or_brand IS NOT NULL
           AND TRIM(am.artist_or_brand) <> ''
+          AND COALESCE(TRIM(am.domain_code), '') NOT IN ('KOREA', '')
         GROUP BY am.id
         HAVING MIN(ref.id)
     """).fetchall()
@@ -1734,8 +1735,8 @@ def ensure_startup_db_ready() -> None:
             _seed_metadata_sources(conn)
             _cleanup_overflow_slots(conn)
             _cleanup_pop_korean_sort_names(conn)
-            _restore_latin_artist_names_from_ext_ref(conn)
             _sync_album_master_domain_from_owned_items(conn)
+            _restore_latin_artist_names_from_ext_ref(conn)
             _seed_classification_options(conn)
             return
 
@@ -1745,8 +1746,8 @@ def ensure_startup_db_ready() -> None:
         _seed_metadata_sources(conn)
         _cleanup_overflow_slots(conn)
         _cleanup_pop_korean_sort_names(conn)
-        _restore_latin_artist_names_from_ext_ref(conn)
         _sync_album_master_domain_from_owned_items(conn)
+        _restore_latin_artist_names_from_ext_ref(conn)
         _seed_classification_options(conn)
     finally:
         conn.close()
