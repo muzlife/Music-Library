@@ -44,6 +44,7 @@ from app.db import (  # noqa: E402  — package surface
     _storage_slot_sort_key,
     get_conn,
     get_owned_item,
+    list_owned_items_for_storage_slot,
     utc_now_iso,
 )
 

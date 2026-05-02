@@ -3404,63 +3404,8 @@ def get_owned_item_detail(owned_item_id: int) -> dict[str, Any] | None:
     return _normalize_owned_item_row(dict(row))
 
 
-def get_owned_item_location_snapshot(owned_item_id: int) -> dict[str, Any] | None:
-    with get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT
-              oi.id,
-              oi.storage_slot_id,
-              ss.slot_code,
-              ss.cabinet_name,
-              ss.column_code,
-              ss.cell_code,
-              ss.allowed_size_group,
-              ss.is_overflow_zone,
-              (
-                SELECT e.from_slot_code
-                FROM owned_item_location_event e
-                WHERE e.owned_item_id = oi.id
-                  AND TRIM(COALESCE(e.from_slot_code, '')) <> ''
-                ORDER BY e.created_at DESC, e.id DESC
-                LIMIT 1
-              ) AS previous_slot_code,
-              (
-                SELECT e.from_slot_display_name
-                FROM owned_item_location_event e
-                WHERE e.owned_item_id = oi.id
-                  AND TRIM(COALESCE(e.from_slot_display_name, '')) <> ''
-                ORDER BY e.created_at DESC, e.id DESC
-                LIMIT 1
-              ) AS previous_slot_display_name
-            FROM owned_item oi
-            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
-            WHERE oi.id = ?
-            LIMIT 1
-            """,
-            (int(owned_item_id),),
-        ).fetchone()
-    if row is None:
-        return None
-    data = dict(row)
-    current_display_name = "미배치"
-    if data.get("storage_slot_id") is not None:
-        current_display_name = _storage_slot_display_name(
-            {
-                "slot_code": data.get("slot_code"),
-                "cabinet_name": data.get("cabinet_name"),
-                "column_code": data.get("column_code"),
-                "cell_code": data.get("cell_code"),
-                "allowed_size_group": data.get("allowed_size_group"),
-                "is_overflow_zone": data.get("is_overflow_zone"),
-            }
-        )
-    return {
-        "current_slot_code": data.get("slot_code"),
-        "current_slot_display_name": current_display_name,
-        "previous_slot_code": str(data.get("previous_slot_code") or "").strip() or None,
-        "previous_slot_display_name": str(data.get("previous_slot_display_name") or "").strip() or None,
-    }
+# `get_owned_item_location_snapshot` lives in app/db/owned_item_track.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
 def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, Any]]:
@@ -5080,31 +5025,8 @@ def get_owned_counts_by_source(source_code: str, source_external_ids: list[str])
     return {str(r["source_external_id"]): int(r["cnt"]) for r in rows}
 
 
-def get_owned_item_track_list(owned_item_id: int) -> list[str]:
-    with get_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT track_list_json
-            FROM music_item_detail
-            WHERE owned_item_id = ?
-            """,
-            (owned_item_id,),
-        ).fetchone()
-
-    if row is None or row["track_list_json"] is None:
-        return []
-
-    raw = str(row["track_list_json"])
-    if not raw.strip():
-        return []
-    try:
-        values = json.loads(raw)
-    except json.JSONDecodeError:
-        return []
-
-    if not isinstance(values, list):
-        return []
-    return [str(v).strip() for v in values if str(v).strip()]
+# `get_owned_item_track_list` lives in app/db/owned_item_track.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
 def list_metadata_sync_candidates(
@@ -5366,6 +5288,14 @@ from .purchase_import import (  # noqa: E402
     insert_purchase_import_rows,
     list_purchase_import_rows,
     update_purchase_import_row,
+)
+# owned_item_track MUST be re-exported BEFORE customer_track_request
+# AND owned_item_slot, because both modules import
+# `get_owned_item_location_snapshot` from the package surface at
+# module-load time.
+from .owned_item_track import (  # noqa: E402
+    get_owned_item_location_snapshot,
+    get_owned_item_track_list,
 )
 from .customer_track_request import (  # noqa: E402
     count_customer_track_requests,
