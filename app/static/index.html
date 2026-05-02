@@ -46952,7 +46952,21 @@
       $("sizeGroup").value = inferSizeGroupFromMetadata(category, c);
       const mappedDomain = pickMappedDomain(c.domain_code);
       const mappedReleaseType = pickMappedReleaseType(c.release_type);
-      if (mappedDomain) $("domainCode").value = mappedDomain;
+      if (mappedDomain) {
+        const artistText = String(c.artist_or_brand || "").trim();
+        const artistHasHangul = /[가-힣ㄱ-ㆎ]/.test(artistText);
+        const artistHasKana  = /[぀-ヿ一-鿿]/.test(artistText);
+        // 후보 도메인이 KOREA인데 아티스트명이 라틴이면 WESTERN으로 자동보정
+        if (mappedDomain === "KOREA" && artistText && !artistHasHangul && !artistHasKana) {
+          $("domainCode").value = "WESTERN";
+          setStatus("createStatus", "ok", `도메인을 팝(WESTERN)으로 자동보정했습니다 — 아티스트명 "${artistText}" 이(가) 영문입니다. 틀리면 직접 수정하세요.`);
+        } else if (mappedDomain === "JAPAN" && artistText && !artistHasKana && !artistHasHangul) {
+          $("domainCode").value = "WESTERN";
+          setStatus("createStatus", "ok", `도메인을 팝(WESTERN)으로 자동보정했습니다 — 아티스트명 "${artistText}" 이(가) 영문입니다. 틀리면 직접 수정하세요.`);
+        } else {
+          $("domainCode").value = mappedDomain;
+        }
+      }
       if (mappedReleaseType) $("releaseType").value = mappedReleaseType;
       const nameBits = [c.artist_or_brand, c.title].filter(Boolean);
       if (nameBits.length) {
@@ -49218,6 +49232,44 @@
           setStatus("createStatus", "ok", t("media.register.direct.status.cancelled"));
           return;
         }
+        // ── 도메인 불일치 검증 ──────────────────────────────────────────────
+        if (isMusicCategory()) {
+          const _domainVal   = String(payload.domain_code || "").trim().toUpperCase();
+          const _artistCheck = String(
+            payload.music_detail?.artist_or_brand ||
+            payload.linked_artist_name ||
+            payload.item_name_override || ""
+          ).trim();
+          const _hasHangul = /[가-힣ㄱ-ㆎ]/.test(_artistCheck);
+          const _hasKana   = /[぀-ヿ一-鿿]/.test(_artistCheck);
+          if (_artistCheck && !_hasHangul && !_hasKana) {
+            if (_domainVal === "KOREA") {
+              setStatus("createStatus", "err",
+                `⚠ 도메인 불일치: 아티스트 "${_artistCheck}"는 영문인데 도메인이 '가요'입니다. ` +
+                `팝(WESTERN)으로 바꾸거나, 맞다면 다시 저장 버튼을 누르세요.`
+              );
+              $("domainCode").focus();
+              return;
+            }
+            if (_domainVal === "JAPAN") {
+              setStatus("createStatus", "err",
+                `⚠ 도메인 불일치: 아티스트 "${_artistCheck}"는 영문인데 도메인이 '제이팝'입니다. ` +
+                `팝(WESTERN)으로 바꾸거나, 맞다면 다시 저장 버튼을 누르세요.`
+              );
+              $("domainCode").focus();
+              return;
+            }
+          }
+          if (_artistCheck && _hasHangul && _domainVal === "WESTERN") {
+            setStatus("createStatus", "err",
+              `⚠ 도메인 불일치: 아티스트 "${_artistCheck}"는 한글인데 도메인이 '팝'입니다. ` +
+              `가요(KOREA)로 바꾸거나, 맞다면 다시 저장 버튼을 누르세요.`
+            );
+            $("domainCode").focus();
+            return;
+          }
+        }
+        // ────────────────────────────────────────────────────────────────────
         setStatus("createStatus", "ok", t("media.register.direct.status.saving"));
 
         const res = await fetch("/owned-items", {
