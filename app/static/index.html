@@ -36862,6 +36862,16 @@
       return String($("homeDashSlotSortMode")?.value || "NAME_ASC").trim().toUpperCase() || "NAME_ASC";
     }
 
+    function normalizeArtistSortKey(text) {
+      const v = String(text || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+      return v.replace(/^(the|an?)\s+(.+)$/, "$2, $1");
+    }
+
+    function normalizeTitleSortKey(text) {
+      const v = String(text || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+      return v.replace(/^(the|an?)\s+(.+)$/, "$2, $1");
+    }
+
     function normalizeDashboardReleaseSortValue(value) {
       const text = String(value || "").trim();
       if (!text) return "";
@@ -36878,21 +36888,36 @@
       return candidates[0] || "9999-99-99";
     }
 
-    function sortDashboardSlotItems(items) {
+    function sortDashboardSlotItems(items, slotRow) {
       const list = Array.isArray(items) ? [...items] : [];
-      const sortMode = dashboardSlotSortModeValue();
+      const cabinetPolicy = String(slotRow?.cabinet_sort_policy || "ARTIST_RELEASE_TITLE").trim().toUpperCase();
       list.sort((a, b) => {
-        if (sortMode === "NAME_ASC") {
-          const artistA = String(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
-          const artistB = String(b?.master_sort_artist_name || b?.artist_or_brand || b?.linked_artist_name || b?.master_artist_or_brand || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+        if (cabinetPolicy === "LABEL_ID") {
+          const labelA = String(a?.label_id || "").trim().toLocaleLowerCase();
+          const labelB = String(b?.label_id || "").trim().toLocaleLowerCase();
+          const labelCompare = labelA.localeCompare(labelB);
+          if (labelCompare !== 0) return labelCompare;
+        } else if (cabinetPolicy === "TITLE_RELEASE") {
+          const titleA = normalizeTitleSortKey(a?.master_title || a?.item_title || a?.item_name_override || "");
+          const titleB = normalizeTitleSortKey(b?.master_title || b?.item_title || b?.item_name_override || "");
+          const titleCompare = titleA.localeCompare(titleB);
+          if (titleCompare !== 0) return titleCompare;
+          const releaseA = dashboardPreferredReleaseSortValue(a);
+          const releaseB = dashboardPreferredReleaseSortValue(b);
+          const releaseCompare = releaseA.localeCompare(releaseB);
+          if (releaseCompare !== 0) return releaseCompare;
+        } else {
+          // ARTIST_RELEASE_TITLE (default) — article-stripped
+          const artistA = normalizeArtistSortKey(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "");
+          const artistB = normalizeArtistSortKey(b?.master_sort_artist_name || b?.artist_or_brand || b?.linked_artist_name || b?.master_artist_or_brand || "");
           const artistCompare = artistA.localeCompare(artistB);
           if (artistCompare !== 0) return artistCompare;
           const releaseA = dashboardPreferredReleaseSortValue(a);
           const releaseB = dashboardPreferredReleaseSortValue(b);
           const releaseCompare = releaseA.localeCompare(releaseB);
           if (releaseCompare !== 0) return releaseCompare;
-          const titleA = String(a?.master_title || a?.item_title || a?.item_name_override || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
-          const titleB = String(b?.master_title || b?.item_title || b?.item_name_override || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+          const titleA = normalizeTitleSortKey(a?.master_title || a?.item_title || a?.item_name_override || "");
+          const titleB = normalizeTitleSortKey(b?.master_title || b?.item_title || b?.item_name_override || "");
           const titleCompare = titleA.localeCompare(titleB);
           if (titleCompare !== 0) return titleCompare;
         }
@@ -38097,16 +38122,16 @@
         const warningCompare = Number(dashboardWorkbenchNeedsSortWarning(b)) - Number(dashboardWorkbenchNeedsSortWarning(a));
         if (warningCompare !== 0) return warningCompare;
         if (sortMode === "NAME_ASC") {
-          const artistA = String(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
-          const artistB = String(b?.master_sort_artist_name || b?.artist_or_brand || b?.linked_artist_name || b?.master_artist_or_brand || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+          const artistA = normalizeArtistSortKey(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "");
+          const artistB = normalizeArtistSortKey(b?.master_sort_artist_name || b?.artist_or_brand || b?.linked_artist_name || b?.master_artist_or_brand || "");
           const artistCompare = artistA.localeCompare(artistB);
           if (artistCompare !== 0) return artistCompare;
           const releaseA = dashboardPreferredReleaseSortValue(a);
           const releaseB = dashboardPreferredReleaseSortValue(b);
           const releaseCompare = releaseA.localeCompare(releaseB);
           if (releaseCompare !== 0) return releaseCompare;
-          const titleA = String(a?.master_title || a?.item_title || a?.item_name_override || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
-          const titleB = String(b?.master_title || b?.item_title || b?.item_name_override || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+          const titleA = normalizeTitleSortKey(a?.master_title || a?.item_title || a?.item_name_override || "");
+          const titleB = normalizeTitleSortKey(b?.master_title || b?.item_title || b?.item_name_override || "");
           const titleCompare = titleA.localeCompare(titleB);
           if (titleCompare !== 0) return titleCompare;
         }
@@ -38932,9 +38957,9 @@
 
       if (!slotRow) {
         const snapshotItems = Array.isArray(homeDashboardSlotSelectionSnapshot) ? homeDashboardSlotSelectionSnapshot : [];
-        const visibleSnapshotItems = sortDashboardSlotItems(filterDashboardSlotItemsByMedia(snapshotItems));
         const sourceSlotCode = String(snapshotItems[0]?.slot_code || "").trim();
         const sourceSlotRow = sourceSlotCode ? getDashboardSlotRow(sourceSlotCode) : null;
+        const visibleSnapshotItems = sortDashboardSlotItems(filterDashboardSlotItemsByMedia(snapshotItems), sourceSlotRow);
         if (visibleSnapshotItems.length && sourceSlotRow) {
           const sliceInfo = dashboardSlotPageSlice(visibleSnapshotItems, sourceSlotRow);
           titleEl.textContent = t("dashboard.selection.title");
@@ -38999,7 +39024,7 @@
         return;
       }
 
-      const items = sortDashboardSlotItems(filterDashboardSlotItemsByMedia(Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : []));
+      const items = sortDashboardSlotItems(filterDashboardSlotItemsByMedia(Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : []), slotRow);
       if (!items.length) {
         root.innerHTML = `<div class='mini muted'>${escapeHtml(t("dashboard.cover_flow.state.empty"))}</div>`;
         setSlotMeta(t("dashboard.cover_flow.state.empty"));
