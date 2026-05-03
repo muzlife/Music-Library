@@ -62,6 +62,15 @@ from app.db import (  # noqa: E402  — package surface
     utc_now_iso,
 )
 
+# Article-stripping SQL helper (strips leading The/A/An for ORDER BY)
+_STRIP_ARTICLE_SQL = (
+    "CASE"
+    " WHEN LOWER(TRIM({col})) LIKE 'the %' THEN TRIM(SUBSTR(TRIM({col}), 5))"
+    " WHEN LOWER(TRIM({col})) LIKE 'an %'  THEN TRIM(SUBSTR(TRIM({col}), 4))"
+    " WHEN LOWER(TRIM({col})) LIKE 'a %'   THEN TRIM(SUBSTR(TRIM({col}), 3))"
+    " ELSE TRIM({col}) END"
+)
+
 
 def _derive_storage_slot_parts(
     slot_code: str | None,
@@ -256,26 +265,44 @@ def list_owned_items_for_storage_slot(
         "THEN printf('%04d-99-99', COALESCE(am.release_year, base.release_year)) ELSE '' END"
         ")"
     )
+    _artist_sort_sql = _STRIP_ARTICLE_SQL.format(
+        col="LOWER(COALESCE(am.sort_artist_name, base.artist_or_brand, am.artist_or_brand, base.linked_artist_name, ''))"
+    )
+    _title_sort_sql = _STRIP_ARTICLE_SQL.format(
+        col="LOWER(COALESCE(am.title, base.item_name_override, ''))"
+    )
     if cabinet_sort_policy == "LABEL_ID":
         order_by_sql = """
           CASE WHEN base.display_rank IS NULL THEN 1 ELSE 0 END,
           base.display_rank ASC,
           base.id ASC
         """
-    else:
+    elif cabinet_sort_policy == "TITLE_RELEASE":
         order_by_sql = f"""
           CASE WHEN base.display_rank IS NULL THEN 1 ELSE 0 END,
           base.display_rank ASC,
-          LOWER(TRIM(COALESCE(am.sort_artist_name, base.artist_or_brand, am.artist_or_brand, base.linked_artist_name, ''))) ASC,
+          {_title_sort_sql} ASC,
           CASE WHEN {master_release_sort_sql} = '' THEN 1 ELSE 0 END,
           {master_release_sort_sql} ASC,
           CASE WHEN base.released_date IS NULL OR TRIM(base.released_date) = '' THEN 1 ELSE 0 END,
           TRIM(COALESCE(base.released_date, '')) ASC,
-          LOWER(TRIM(COALESCE(am.title, base.item_name_override, ''))) ASC,
+          {_artist_sort_sql} ASC,
           CASE WHEN base.order_key IS NULL OR TRIM(base.order_key) = '' THEN 1 ELSE 0 END,
           base.order_key ASC,
+          base.id ASC
+        """
+    else:
+        order_by_sql = f"""
           CASE WHEN base.display_rank IS NULL THEN 1 ELSE 0 END,
           base.display_rank ASC,
+          {_artist_sort_sql} ASC,
+          CASE WHEN {master_release_sort_sql} = '' THEN 1 ELSE 0 END,
+          {master_release_sort_sql} ASC,
+          CASE WHEN base.released_date IS NULL OR TRIM(base.released_date) = '' THEN 1 ELSE 0 END,
+          TRIM(COALESCE(base.released_date, '')) ASC,
+          {_title_sort_sql} ASC,
+          CASE WHEN base.order_key IS NULL OR TRIM(base.order_key) = '' THEN 1 ELSE 0 END,
+          base.order_key ASC,
           base.id ASC
         """
     query = f"""
@@ -348,7 +375,7 @@ def list_owned_items_for_storage_slot(
         korean_artist_by_master_id = _preferred_korean_artist_by_master_ids(
             [int(item.get("linked_album_master_id") or 0) for item in items]
         )
-        items.sort(key=lambda row: _owned_item_storage_sort_key(row, korean_artist_by_master_id))
+        items.sort(key=lambda row: _owned_item_storage_sort_key(row, korean_artist_by_master_id, cabinet_sort_policy))
     return items
 
 
