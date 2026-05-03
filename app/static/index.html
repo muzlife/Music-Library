@@ -47568,6 +47568,7 @@
             <strong>${escapeHtml(title)}</strong>
             <div class="result-meta">
               <span class="tag home-master-source-chip">${escapeHtml(c.source || "-")}</span>
+              ${String(c.domain_code || "").trim() ? `<span class="operator-domain-badge domain-${escapeHtml(String(c.domain_code).toUpperCase())}">${escapeHtml(dashboardDomainLabel(String(c.domain_code)))}</span>` : ""}
               ${ownedBadge}
               ${discogsMetaHtml || `
                 <span>${escapeHtml(t("common.meta.format", { value: formatLabel }))}</span>
