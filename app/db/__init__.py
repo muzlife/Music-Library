@@ -1762,61 +1762,77 @@ def _fix_hangul_artist_domain_corrections(conn: sqlite3.Connection) -> None:
     이 함수는 linked owned_item.artist_or_brand 에 한글이 포함된 album_master를
     KOREA로 일괄 교정한다. override_domain_code가 명시된 레코드는 건드리지 않는다.
     """
+    import logging as _logging
+
+    _log = _logging.getLogger(__name__)
+
     if not _table_exists(conn, "album_master"):
         return
     if not _table_exists(conn, "owned_item"):
         return
     if not _column_exists(conn, "album_master", "domain_code"):
         return
+    if not _column_exists(conn, "album_master", "override_domain_code"):
+        return
+    if not _column_exists(conn, "album_master", "source_domain_code"):
+        return
     if not _column_exists(conn, "owned_item", "linked_album_master_id"):
         return
-
-    import re as _re
-
-    _hangul = _re.compile(r"[가-힣ㄱ-ㆎ]")
-
-    # non-KOREA, override 없는 album_master + linked owned_item 아티스트명 일괄 조회
-    rows = conn.execute(
-        """
-        SELECT am.id, oi.artist_or_brand AS oi_artist
-        FROM album_master am
-        JOIN owned_item oi ON oi.linked_album_master_id = am.id
-        WHERE COALESCE(TRIM(am.domain_code), '') != 'KOREA'
-          AND (am.override_domain_code IS NULL OR TRIM(am.override_domain_code) = '')
-          AND oi.artist_or_brand IS NOT NULL
-          AND TRIM(oi.artist_or_brand) != ''
-        """
-    ).fetchall()
-
-    # 한글 포함 owned_item을 가진 album_master id 수집
-    hangul_am_ids: set[int] = set()
-    for row in rows:
-        if _hangul.search(str(row["oi_artist"] or "")):
-            hangul_am_ids.add(row["id"])
-
-    if not hangul_am_ids:
+    if not _column_exists(conn, "owned_item", "artist_or_brand"):
         return
 
-    now = utc_now_iso()
-    for am_id in hangul_am_ids:
-        conn.execute(
-            """
-            UPDATE album_master
-            SET domain_code = 'KOREA',
-                source_domain_code = CASE
-                    WHEN source_domain_code IS NULL OR TRIM(source_domain_code) = ''
-                    THEN 'KOREA'
-                    ELSE source_domain_code
-                END,
-                updated_at = ?
-            WHERE id = ?
-              AND COALESCE(TRIM(domain_code), '') != 'KOREA'
-              AND (override_domain_code IS NULL OR TRIM(override_domain_code) = '')
-            """,
-            (now, am_id),
-        )
+    try:
+        import re as _re
 
-    conn.commit()
+        _hangul = _re.compile(r"[가-힣ㄱ-ㆎ]")
+
+        # non-KOREA, override 없는 album_master + linked owned_item 아티스트명 일괄 조회
+        rows = conn.execute(
+            """
+            SELECT am.id, oi.artist_or_brand AS oi_artist
+            FROM album_master am
+            JOIN owned_item oi ON oi.linked_album_master_id = am.id
+            WHERE COALESCE(TRIM(am.domain_code), '') != 'KOREA'
+              AND (am.override_domain_code IS NULL OR TRIM(am.override_domain_code) = '')
+              AND oi.artist_or_brand IS NOT NULL
+              AND TRIM(oi.artist_or_brand) != ''
+            """
+        ).fetchall()
+
+        # 한글 포함 owned_item을 가진 album_master id 수집
+        hangul_am_ids: set[int] = set()
+        for row in rows:
+            if _hangul.search(str(row["oi_artist"] or "")):
+                hangul_am_ids.add(row["id"])
+
+        if not hangul_am_ids:
+            return
+
+        now = utc_now_iso()
+        for am_id in hangul_am_ids:
+            conn.execute(
+                """
+                UPDATE album_master
+                SET domain_code = 'KOREA',
+                    source_domain_code = CASE
+                        WHEN source_domain_code IS NULL OR TRIM(source_domain_code) = ''
+                        THEN 'KOREA'
+                        ELSE source_domain_code
+                    END,
+                    updated_at = ?
+                WHERE id = ?
+                  AND COALESCE(TRIM(domain_code), '') != 'KOREA'
+                  AND (override_domain_code IS NULL OR TRIM(override_domain_code) = '')
+                """,
+                (now, am_id),
+            )
+
+        conn.commit()
+
+    except Exception as exc:  # noqa: BLE001
+        _log.warning(
+            "_fix_hangul_artist_domain_corrections skipped due to error: %s", exc
+        )
 
 
 def _fix_known_domain_corrections(conn: sqlite3.Connection) -> None:
