@@ -1753,14 +1753,15 @@ def _fix_maniadb_domain_corrections(conn: sqlite3.Connection) -> None:
 
 
 def _fix_hangul_artist_domain_corrections(conn: sqlite3.Connection) -> None:
-    """한글 아티스트명 owned_item과 연결된 album_master의 domain_code를 KOREA로 교정한다.
-    (멱등 실행 안전)
+    """한글이 포함된 item_name_override를 가진 owned_item에 연결된 album_master의
+    domain_code를 KOREA로 교정한다. (멱등 실행 안전)
 
     Discogs/MANUAL 소스로 등록된 album_master는 아티스트명이 로마자(예: "Seo Taiji",
     "Park Hyo Shin", "Hyukoh")로 기록되어 WESTERN으로 오분류되는 경우가 있다.
 
-    이 함수는 linked owned_item.artist_or_brand 에 한글이 포함된 album_master를
-    KOREA로 일괄 교정한다. override_domain_code가 명시된 레코드는 건드리지 않는다.
+    owned_item.item_name_override("강산에 - Kiss", "서태지 - ..." 등)에 한글이
+    포함된 경우를 한국 아티스트의 신호로 사용한다.
+    override_domain_code가 명시된 레코드는 건드리지 않는다.
     """
     import logging as _logging
 
@@ -1778,7 +1779,7 @@ def _fix_hangul_artist_domain_corrections(conn: sqlite3.Connection) -> None:
         return
     if not _column_exists(conn, "owned_item", "linked_album_master_id"):
         return
-    if not _column_exists(conn, "owned_item", "artist_or_brand"):
+    if not _column_exists(conn, "owned_item", "item_name_override"):
         return
 
     try:
@@ -1786,23 +1787,23 @@ def _fix_hangul_artist_domain_corrections(conn: sqlite3.Connection) -> None:
 
         _hangul = _re.compile(r"[가-힣ㄱ-ㆎ]")
 
-        # non-KOREA, override 없는 album_master + linked owned_item 아티스트명 일괄 조회
+        # non-KOREA, override 없는 album_master + linked owned_item의 item_name_override 조회
         rows = conn.execute(
             """
-            SELECT am.id, oi.artist_or_brand AS oi_artist
+            SELECT am.id, oi.item_name_override AS oi_name
             FROM album_master am
             JOIN owned_item oi ON oi.linked_album_master_id = am.id
             WHERE COALESCE(TRIM(am.domain_code), '') != 'KOREA'
               AND (am.override_domain_code IS NULL OR TRIM(am.override_domain_code) = '')
-              AND oi.artist_or_brand IS NOT NULL
-              AND TRIM(oi.artist_or_brand) != ''
+              AND oi.item_name_override IS NOT NULL
+              AND TRIM(oi.item_name_override) != ''
             """
         ).fetchall()
 
-        # 한글 포함 owned_item을 가진 album_master id 수집
+        # 한글 포함 item_name_override를 가진 album_master id 수집
         hangul_am_ids: set[int] = set()
         for row in rows:
-            if _hangul.search(str(row["oi_artist"] or "")):
+            if _hangul.search(str(row["oi_name"] or "")):
                 hangul_am_ids.add(row["id"])
 
         if not hangul_am_ids:
@@ -2150,7 +2151,6 @@ def ensure_startup_db_ready() -> None:
             _sync_album_master_domain_from_owned_items(conn)
             _restore_latin_artist_names_from_ext_ref(conn)
             _fix_maniadb_domain_corrections(conn)
-            _fix_hangul_artist_domain_corrections(conn)
             _fix_known_domain_corrections(conn)
             _cleanup_pop_hangul_artist_names(conn)
             _seed_classification_options(conn)
@@ -2165,7 +2165,6 @@ def ensure_startup_db_ready() -> None:
         _sync_album_master_domain_from_owned_items(conn)
         _restore_latin_artist_names_from_ext_ref(conn)
         _fix_maniadb_domain_corrections(conn)
-        _fix_hangul_artist_domain_corrections(conn)
         _fix_known_domain_corrections(conn)
         _cleanup_pop_hangul_artist_names(conn)
         _seed_classification_options(conn)
@@ -3710,6 +3709,7 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
         oi.created_at,
         oi.status,
         oi.signature_type,
+        oi.domain_code            AS item_domain_code,
         mid.format_name,
         mid.artist_or_brand,
         mid.released_date,
@@ -3723,6 +3723,10 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
         mid.track_list_json,
         mid.track_items_json,
         COALESCE(oi.item_name_override, am.title) AS item_title,
+        am.domain_code            AS master_domain_code,
+        am.source_domain_code,
+        am.override_domain_code,
+        am.sort_artist_name       AS master_sort_artist_name,
         ss.slot_code,
         ss.cabinet_name,
         ss.column_code,

@@ -4170,6 +4170,12 @@ def operator_catalog_search(
         category_code = str(row.get("category") or "")
         owned_item_id = int(row.get("id") or 0)
         runout_values = [str(v or "").strip() for v in row.get("runout_matrix") or [] if str(v or "").strip()]
+        _item_dc = str(row.get("item_domain_code") or "").strip() or None
+        _master_dc = str(row.get("master_domain_code") or "").strip() or None
+        _override_dc = str(row.get("override_domain_code") or "").strip() or None
+        _effective_dc = _item_dc or _master_dc or None
+        _am_id = int(row.get("linked_album_master_id") or 0) or None
+        _sort_artist = str(row.get("master_sort_artist_name") or "").strip() or None
         items.append(
             OperatorCatalogSearchItem(
                 owned_item_id=owned_item_id,
@@ -4200,6 +4206,11 @@ def operator_catalog_search(
                 matched_track_count=int(row.get("matched_track_count") or 0),
                 track_items=row.get("track_items") or [],
                 track_list=row.get("track_list") or [],
+                album_master_id=_am_id,
+                effective_domain_code=_effective_dc,
+                master_domain_code=_master_dc,
+                override_domain_code=_override_dc,
+                sort_artist_name=_sort_artist,
             )
         )
     return OperatorCatalogSearchResponse(query=q, total_count=len(items), items=items)

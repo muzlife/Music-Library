@@ -6429,6 +6429,59 @@
       align-content: start;
     }
 
+    .operator-domain-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid transparent;
+      line-height: 1.3;
+    }
+    .operator-domain-badge.domain-KOREA    { background: rgba(20,184,166,0.12); color: #0f766e; border-color: rgba(20,184,166,0.3); }
+    .operator-domain-badge.domain-JAPAN    { background: rgba(239,68,68,0.10);  color: #b91c1c; border-color: rgba(239,68,68,0.25); }
+    .operator-domain-badge.domain-WESTERN  { background: rgba(59,130,246,0.10); color: #1d4ed8; border-color: rgba(59,130,246,0.25); }
+    .operator-domain-badge.domain-GREATER_CHINA { background: rgba(234,179,8,0.12); color: #a16207; border-color: rgba(234,179,8,0.3); }
+    .operator-domain-badge.domain-OTHER_ASIA    { background: rgba(168,85,247,0.10); color: #7e22ce; border-color: rgba(168,85,247,0.25); }
+    .operator-domain-badge.domain-WORLD_OTHER   { background: rgba(107,114,128,0.10); color: #374151; border-color: rgba(107,114,128,0.25); }
+    .operator-domain-badge.domain-UNKNOWN  { background: rgba(107,114,128,0.08); color: #6b7280; border-color: rgba(107,114,128,0.2); }
+    .operator-domain-badge.is-overridden::before { content: "✓ "; font-size: 0.65rem; }
+    .operator-domain-fix-btn {
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink-muted, #64748b);
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .operator-domain-fix-btn:hover { background: var(--paper); color: var(--ink); }
+    .operator-domain-fix-form {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+    }
+    .operator-domain-fix-form select,
+    .operator-domain-fix-form input[type="text"] {
+      font-size: 0.75rem;
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--field, var(--paper));
+      color: var(--ink);
+    }
+    .operator-domain-fix-form input[type="text"] { min-width: 120px; }
+
     .operator-status-badges {
       display: inline-flex;
       align-items: center;
@@ -21609,6 +21662,14 @@
         "operator.lookup.status.repair_discogs_master.progress": "Discogs 마스터 연결 복구 중...",
         "operator.lookup.status.repair_discogs_master.done": "Discogs 마스터 연결을 다시 확인했습니다.",
         "operator.lookup.status.repair_discogs_master.failed": "Discogs 마스터 복구 실패",
+        "operator.lookup.domain.fix_btn": "도메인 수정",
+        "operator.lookup.domain.fix_save": "저장",
+        "operator.lookup.domain.fix_cancel": "취소",
+        "operator.lookup.domain.fix_sort_artist_placeholder": "정렬명(예: 강산에)",
+        "operator.lookup.domain.status.saving": "도메인 저장 중...",
+        "operator.lookup.domain.status.done": "도메인 확정 완료",
+        "operator.lookup.domain.status.failed": "도메인 저장 실패",
+        "operator.lookup.domain.no_master": "앨범 마스터 없음",
         "operator.feed.track.label": "곡",
         "operator.feed.track.empty": "곡 일치 항목이 없으면 상품 기준으로 현재 위치를 확인하세요.",
         "operator.helper.kicker": "운영 도우미",
@@ -24212,6 +24273,14 @@
         "operator.lookup.status.repair_discogs_master.progress": "Repairing the Discogs master link...",
         "operator.lookup.status.repair_discogs_master.done": "Discogs master link checked again.",
         "operator.lookup.status.repair_discogs_master.failed": "Failed to repair the Discogs master link",
+        "operator.lookup.domain.fix_btn": "Fix domain",
+        "operator.lookup.domain.fix_save": "Save",
+        "operator.lookup.domain.fix_cancel": "Cancel",
+        "operator.lookup.domain.fix_sort_artist_placeholder": "Sort artist (e.g. Kang San-eh)",
+        "operator.lookup.domain.status.saving": "Saving domain...",
+        "operator.lookup.domain.status.done": "Domain confirmed",
+        "operator.lookup.domain.status.failed": "Failed to save domain",
+        "operator.lookup.domain.no_master": "No album master",
         "operator.feed.track.label": "Track",
         "operator.feed.track.empty": "If there is no track match, check the current location from the item itself.",
         "operator.helper.kicker": "Ops Helper",
@@ -26811,6 +26880,14 @@
         "operator.lookup.status.repair_discogs_master.progress": "Discogs マスター連携を復旧中...",
         "operator.lookup.status.repair_discogs_master.done": "Discogs マスター連携を再確認しました。",
         "operator.lookup.status.repair_discogs_master.failed": "Discogs マスター復旧に失敗しました",
+        "operator.lookup.domain.fix_btn": "ドメイン修正",
+        "operator.lookup.domain.fix_save": "保存",
+        "operator.lookup.domain.fix_cancel": "キャンセル",
+        "operator.lookup.domain.fix_sort_artist_placeholder": "ソート名(例: Kang San-eh)",
+        "operator.lookup.domain.status.saving": "ドメイン保存中...",
+        "operator.lookup.domain.status.done": "ドメイン確定",
+        "operator.lookup.domain.status.failed": "ドメイン保存失敗",
+        "operator.lookup.domain.no_master": "アルバムマスターなし",
         "operator.feed.track.label": "曲",
         "operator.feed.track.empty": "曲一致がない場合は商品基準で現在位置を確認してください。",
         "operator.helper.kicker": "運用ヘルパー",
@@ -34395,6 +34472,16 @@
           rightButtons.push(`<button class="btn ghost tiny" type="button" data-operator-open-manage="${ownedItemId}">${escapeHtml(t("media.manage.search.action.open_detail_manage"))}</button>`);
         }
         const actionsHtml = rightButtons.length ? rightButtons.join("") : "";
+        // 도메인 배지
+        const effectiveDc = String(row.effective_domain_code || "").trim().toUpperCase();
+        const isOverridden = Boolean(row.override_domain_code);
+        const albumMasterId = Number(row.album_master_id || 0);
+        const domainBadgeHtml = effectiveDc
+          ? `<span class="operator-domain-badge domain-${escapeHtml(effectiveDc)}${isOverridden ? " is-overridden" : ""}">${escapeHtml(dashboardDomainLabel(effectiveDc))}</span>`
+          : "";
+        const domainFixBtnHtml = albumMasterId > 0
+          ? `<button class="operator-domain-fix-btn" type="button" data-operator-domain-fix="${albumMasterId}" data-current-sort-artist="${escapeHtml(String(row.sort_artist_name || "").trim())}" data-current-domain="${escapeHtml(effectiveDc)}">${escapeHtml(t("operator.lookup.domain.fix_btn"))}</button>`
+          : "";
         return `
           <div class="operator-result-item" data-operator-context-source="search" data-operator-context-index="${index}">
             <div class="operator-cover">${coverHtml}</div>
@@ -34405,6 +34492,8 @@
               <div class="operator-secondary-line">
                 <div class="operator-secondary-line-main">
                   <span class="operator-label-chip">${escapeHtml(String(row.label_id || "").trim() || "-")}</span>
+                  ${domainBadgeHtml}
+                  ${domainFixBtnHtml}
                   ${whenText ? `<span class="operator-title-side-meta"><strong>${escapeHtml(whenLabel)}</strong> ${escapeHtml(whenText)}</span>` : ""}
                 </div>
                 ${currentLocationButton}
@@ -34469,6 +34558,67 @@
             setStatus("operatorLookupStatus", "err", err.message || t("operator.lookup.status.repair_discogs_master.failed"));
           }
         }
+        return;
+      }
+      // 도메인 수정 버튼
+      const domainFixBtn = e.target.closest("[data-operator-domain-fix]");
+      if (domainFixBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const masterId = Number(domainFixBtn.getAttribute("data-operator-domain-fix") || 0);
+        if (masterId <= 0) {
+          setStatus("operatorLookupStatus", "err", t("operator.lookup.domain.no_master"));
+          return;
+        }
+        // 이미 폼이 열려 있으면 닫기
+        const existingForm = domainFixBtn.parentElement.querySelector(".operator-domain-fix-form");
+        if (existingForm) { existingForm.remove(); return; }
+        // 다른 열린 폼 닫기
+        document.querySelectorAll(".operator-domain-fix-form").forEach((f) => f.remove());
+        const currentDc = String(domainFixBtn.getAttribute("data-current-domain") || "").trim();
+        const currentSortArtist = String(domainFixBtn.getAttribute("data-current-sort-artist") || "").trim();
+        const DOMAIN_OPTIONS = ["KOREA","JAPAN","GREATER_CHINA","WESTERN","OTHER_ASIA","WORLD_OTHER","UNKNOWN"];
+        const optionsHtml = DOMAIN_OPTIONS.map((dc) =>
+          `<option value="${dc}"${dc === currentDc ? " selected" : ""}>${escapeHtml(dashboardDomainLabel(dc))}</option>`
+        ).join("");
+        const form = document.createElement("div");
+        form.className = "operator-domain-fix-form";
+        form.innerHTML = `
+          <select class="domain-fix-select">${optionsHtml}</select>
+          <input type="text" class="domain-fix-sort" placeholder="${escapeHtml(t("operator.lookup.domain.fix_sort_artist_placeholder"))}" value="${escapeHtml(currentSortArtist)}" />
+          <button class="btn ghost tiny domain-fix-save-btn" type="button">${escapeHtml(t("operator.lookup.domain.fix_save"))}</button>
+          <button class="btn ghost tiny domain-fix-cancel-btn" type="button">${escapeHtml(t("operator.lookup.domain.fix_cancel"))}</button>
+        `;
+        domainFixBtn.parentElement.appendChild(form);
+        form.querySelector(".domain-fix-cancel-btn").addEventListener("click", () => form.remove());
+        form.querySelector(".domain-fix-save-btn").addEventListener("click", async () => {
+          const newDc = String(form.querySelector(".domain-fix-select").value || "").trim().toUpperCase() || null;
+          const newSort = String(form.querySelector(".domain-fix-sort").value || "").trim() || null;
+          try {
+            setStatus("operatorLookupStatus", "ok", t("operator.lookup.domain.status.saving"));
+            const corrRes = await fetch(`/album-masters/${masterId}/correction`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ domain_code: newDc }),
+            });
+            const corrData = await safeJson(corrRes);
+            if (!corrRes.ok) throw new Error(corrData.detail || t("operator.lookup.domain.status.failed"));
+            if (newSort) {
+              const sortRes = await fetch(`/album-masters/${masterId}/sort-artist-name`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sort_artist_name: newSort }),
+              });
+              const sortData = await safeJson(sortRes);
+              if (!sortRes.ok) throw new Error(sortData.detail || t("operator.lookup.domain.status.failed"));
+            }
+            form.remove();
+            await loadOperatorLookupResults();
+            setStatus("operatorLookupStatus", "ok", t("operator.lookup.domain.status.done"));
+          } catch (err) {
+            setStatus("operatorLookupStatus", "err", err.message || t("operator.lookup.domain.status.failed"));
+          }
+        });
         return;
       }
       setOpsLibraryContextSelectionFromTarget(e.target, { pin: true });

@@ -336,6 +336,12 @@ class OperatorCatalogSearchItem(BaseModel):
     matched_track_count: int = 0
     track_items: list[dict[str, Any]] = Field(default_factory=list)
     track_list: list[str] = Field(default_factory=list)
+    # 도메인 정보 (수정 UI 지원)
+    album_master_id: int | None = None         # album_master.id (도메인 수정 API 호출용)
+    effective_domain_code: str | None = None   # 실제 표시 도메인 (item 우선, 없으면 master)
+    master_domain_code: str | None = None      # album_master.domain_code (자동 추정값)
+    override_domain_code: str | None = None    # 수동 확정 여부 (not null → 확정)
+    sort_artist_name: str | None = None        # album_master.sort_artist_name (교정 UI 표시)
 
 
 class OperatorCatalogSearchResponse(BaseModel):
