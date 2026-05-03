@@ -6401,6 +6401,7 @@ def _album_master_member_context(album_master_id: int, preview_limit: int = 8) -
                 "cover_image_url": str(item.get("cover_image_url") or "").strip() or None,
                 "created_at": str(item.get("created_at") or "").strip() or None,
                 "released_date": released_date,
+                "master_release_year": int(item["master_release_year"]) if item.get("master_release_year") else None,
                 "pressing_country": str(item.get("pressing_country") or "").strip() or None,
                 "label_name": str(item.get("label_name") or "").strip() or None,
                 "catalog_no": str(item.get("catalog_no") or "").strip() or None,

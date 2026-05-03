@@ -43961,7 +43961,9 @@
     }
 
     function homeMasterMemberPreviewMetaLine(item) {
-      const releaseDate = String(item?.released_date || "").trim();
+      const releaseDate = item?.master_release_year
+        ? String(item.master_release_year)
+        : String(item?.released_date || "").trim();
       const releaseCountry = String(item?.pressing_country || item?.country || "").trim() || "-";
       const labelName = String(item?.label_name || "").trim();
       const catalogNo = String(item?.catalog_no || "").trim();
