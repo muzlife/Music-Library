@@ -847,6 +847,7 @@ class AlbumMasterMemberPreviewItem(BaseModel):
     cover_image_url: str | None = None
     created_at: str | None = None
     released_date: str | None = None
+    master_release_year: int | None = None
     pressing_country: str | None = None
     label_name: str | None = None
     catalog_no: str | None = None
