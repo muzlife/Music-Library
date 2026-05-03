@@ -6459,6 +6459,35 @@
       background-position: right 5px center;
       background-size: 7px 5px;
     }
+    .ingest-artist-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 2px 0 4px;
+    }
+    .ingest-artist-edit-label {
+      font-size: 0.67rem;
+      font-weight: 600;
+      color: var(--ink-muted, #64748b);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .ingest-artist-name-input {
+      font-size: 0.75rem;
+      border: 1px solid var(--line, #e2e8f0);
+      border-radius: 4px;
+      padding: 2px 7px;
+      background: var(--surface, #fff);
+      color: var(--ink, #1e293b);
+      flex: 1;
+      min-width: 0;
+      line-height: 1.4;
+    }
+    .ingest-artist-name-input:focus {
+      outline: none;
+      border-color: var(--accent, #14b8a6);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #14b8a6) 18%, transparent);
+    }
     .operator-domain-fix-btn {
       font-size: 0.68rem;
       padding: 1px 6px;
@@ -23758,6 +23787,8 @@
         "media.register.api_lookup.action.save_loading": "저장 중...",
         "media.register.api_lookup.action.save_queued": "저장 대기",
         "media.register.api_lookup.field.domain.label": "도메인",
+        "media.register.api_lookup.field.artist.label": "아티스트",
+        "media.register.api_lookup.field.artist.placeholder": "아티스트명 수정",
         "common.unslotted": "미배치",
         "media.manage.cover.status.uploading": "커버 업로드 중...",
         "media.manage.cover.status.uploaded": "커버 직접 등록 완료",
@@ -26346,6 +26377,8 @@
         "media.register.api_lookup.action.save_loading": "Saving...",
         "media.register.api_lookup.action.save_queued": "Queued",
         "media.register.api_lookup.field.domain.label": "Domain",
+        "media.register.api_lookup.field.artist.label": "Artist",
+        "media.register.api_lookup.field.artist.placeholder": "Edit artist name",
         "common.unslotted": "Unslotted",
         "media.manage.cover.status.uploading": "Uploading cover...",
         "media.manage.cover.status.uploaded": "Cover uploaded",
@@ -28946,6 +28979,8 @@
         "media.register.api_lookup.action.save_loading": "保存中...",
         "media.register.api_lookup.action.save_queued": "保存待機",
         "media.register.api_lookup.field.domain.label": "ドメイン",
+        "media.register.api_lookup.field.artist.label": "アーティスト",
+        "media.register.api_lookup.field.artist.placeholder": "アーティスト名を修正",
         "common.unslotted": "未配置",
         "media.manage.cover.status.uploading": "カバーをアップロード中...",
         "media.manage.cover.status.uploaded": "カバーを登録しました",
@@ -47580,10 +47615,13 @@
           .map((dc) => `<option value="${dc}"${dc === currentDomainCode ? " selected" : ""}>${dc ? escapeHtml(dashboardDomainLabel(dc)) : escapeHtml(t("common.unspecified"))}</option>`)
           .join("");
         const domainSelectHtml = `<select class="ingest-domain-select operator-domain-badge${currentDomainCode ? ` domain-${escapeHtml(currentDomainCode)}` : ""}" data-register-lookup-domain="${index}" title="${escapeHtml(t("media.register.api_lookup.field.domain.label"))}">${domainOptions}</select>`;
+        const artistName = String(c.artist_or_brand || "").trim();
+        const artistEditHtml = `<div class="ingest-artist-edit-row"><span class="ingest-artist-edit-label">${escapeHtml(t("media.register.api_lookup.field.artist.label"))}</span><input class="ingest-artist-name-input" type="text" data-register-lookup-artist="${index}" value="${escapeHtml(artistName)}" placeholder="${escapeHtml(t("media.register.api_lookup.field.artist.placeholder"))}" autocomplete="off"></div>`;
         box.innerHTML = `
           <div class="album-result-cover">${cover}</div>
           <div class="album-result-main">
             <strong>${escapeHtml(title)}</strong>
+            ${artistEditHtml}
             <div class="result-meta">
               <span class="tag home-master-source-chip">${escapeHtml(c.source || "-")}</span>
               ${domainSelectHtml}
@@ -53424,6 +53462,14 @@
       submitAdminBarcodeIntake();
     });
     document.addEventListener("keydown", handleGlobalBarcodeScannerKeydown, true);
+    $("barcodeResults").addEventListener("input", (e) => {
+      const artistInput = e.target.closest("[data-register-lookup-artist]");
+      if (!artistInput) return;
+      const idx = Number(artistInput.getAttribute("data-register-lookup-artist") || -1);
+      const candidate = registerLookupCandidates[idx];
+      if (!candidate) return;
+      candidate.artist_or_brand = String(artistInput.value || "").trim() || null;
+    });
     $("barcodeResults").addEventListener("change", (e) => {
       const domainSel = e.target.closest("[data-register-lookup-domain]");
       if (domainSel) {
@@ -53432,7 +53478,6 @@
         if (!candidate) return;
         const newDc = String(domainSel.value || "").trim().toUpperCase() || null;
         candidate.domain_code = newDc;
-        // update the select's own class to reflect new color
         domainSel.className = `ingest-domain-select operator-domain-badge${newDc ? ` domain-${newDc}` : ""}`;
       }
     });
