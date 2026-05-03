@@ -4450,7 +4450,7 @@ def get_collection_dashboard() -> dict[str, Any]:
 
     slot_count_map = {int(row["storage_slot_id"]): int(row["cnt"] or 0) for row in slot_count_rows if row["storage_slot_id"] is not None}
     slot_policy_map: dict[int, str] = {
-        int(row["id"]): _normalize_cabinet_sort_policy_value(row.get("cabinet_sort_policy"))
+        int(row["id"]): _normalize_cabinet_sort_policy_value(row["cabinet_sort_policy"])
         for row in slot_rows
         if row["id"] is not None
     }
