@@ -683,7 +683,9 @@ def _preferred_owned_item_artist_sort_value(
         row.get("artist_or_brand"),
         row.get("master_artist_or_brand"),
     ]
-    is_korea = str(row.get("domain_code") or row.get("master_domain_code") or "").strip().upper() == "KOREA"
+    domain = str(row.get("domain_code") or row.get("master_domain_code") or "").strip().upper()
+    is_korea = domain == "KOREA"
+    is_non_latin_domain = domain in ("KOREA", "JAPAN", "GREATER_CHINA", "OTHER_ASIA")
     if is_korea:
         master_id = int(row.get("linked_album_master_id") or 0)
         if master_id > 0:
@@ -695,11 +697,20 @@ def _preferred_owned_item_artist_sort_value(
                 normalized = _normalize_artist_sort_text(candidate)
                 if normalized:
                     return normalized
+    # 비라틴 도메인(KOREA 제외)이나 Latin 도메인에서는 한글 후보를 먼저 건너뜀
+    # — WESTERN 등 라틴 도메인 아이템에 한글 아티스트명이 잘못 등록된 경우 방어
+    latin_result = None
     for candidate in candidates:
         normalized = _normalize_artist_sort_text(candidate)
-        if normalized:
-            return normalized
-    return ""
+        if not normalized:
+            continue
+        if not is_non_latin_domain and _contains_hangul(candidate):
+            # 라틴 도메인인데 한글 후보 → 마지막 수단으로만 사용
+            if latin_result is None:
+                latin_result = normalized
+            continue
+        return normalized
+    return latin_result or ""
 
 
 def _owned_item_storage_sort_key(
