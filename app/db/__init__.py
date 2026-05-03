@@ -16,7 +16,7 @@ SQLITE_BUSY_TIMEOUT_MS = 30_000
 DASHBOARD_MOVE_WINDOW_DAYS = 1
 SIZE_GROUP_CODES = ("STD", "BOOK", "LP", "LP10", "LP7", "OVERSIZE", "CASSETTE", "8TRACK", "REEL_TO_REEL", "GOODS")
 DOMAIN_CODES = ("KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN")
-CABINET_SORT_POLICIES = ("ARTIST_RELEASE_TITLE", "LABEL_ID")
+CABINET_SORT_POLICIES = ("ARTIST_RELEASE_TITLE", "LABEL_ID", "TITLE_RELEASE")
 GOODS_RELATION_TYPE_CODES = ("SERIES", "VARIANT", "SET_MEMBER", "RELATED", "PROMO_FOR")
 LEGACY_DOMAIN_CODE_MAP = {
     "KOREAN": "KOREA",
@@ -569,6 +569,11 @@ def _normalize_artist_sort_text(text: Any) -> str:
     return value.casefold()
 
 
+def _normalize_title_sort_text(text: Any) -> str:
+    """앨범 타이틀 정렬용 — 관사(The/A/An) 제외 후 casefold."""
+    return _normalize_artist_sort_text(text)
+
+
 def _normalize_released_date_sort_text(text: Any) -> str:
     return str(text or "").strip()
 
@@ -700,6 +705,7 @@ def _preferred_owned_item_artist_sort_value(
 def _owned_item_storage_sort_key(
     row: dict[str, Any],
     korean_artist_by_master_id: dict[int, str] | None = None,
+    sort_policy: str = "ARTIST_RELEASE_TITLE",
 ) -> tuple[Any, ...]:
     release_year = row.get("master_release_year")
     try:
@@ -711,7 +717,7 @@ def _owned_item_storage_sort_key(
         release_year_value,
     )
     released_date_value = _normalize_released_date_sort_text(row.get("released_date"))
-    title_value = _normalize_artist_sort_text(row.get("master_title") or row.get("item_name_override"))
+    title_value = _normalize_title_sort_text(row.get("master_title") or row.get("item_name_override"))
     order_key = str(row.get("order_key") or "").strip()
     display_rank = row.get("display_rank")
     try:
@@ -724,13 +730,25 @@ def _owned_item_storage_sort_key(
             display_rank_value,
             int(row.get("id") or 0),
         )
-    artist_value = _preferred_owned_item_artist_sort_value(row, korean_artist_by_master_id)
-    title_first_group = _title_first_group_artist_key(artist_value)
     common_tail = (
         1 if not order_key else 0,
         order_key,
         int(row.get("id") or 0),
     )
+    # TITLE_RELEASE: 상품명(관사 제외) → 발매일 → 아티스트 순
+    if sort_policy == "TITLE_RELEASE":
+        artist_value = _preferred_owned_item_artist_sort_value(row, korean_artist_by_master_id)
+        return (
+            1,
+            title_value,
+            master_release_sort_value,
+            1 if not released_date_value else 0,
+            released_date_value or "9999-99-99",
+            artist_value,
+            *common_tail,
+        )
+    artist_value = _preferred_owned_item_artist_sort_value(row, korean_artist_by_master_id)
+    title_first_group = _title_first_group_artist_key(artist_value)
     if title_first_group:
         return (
             1,
@@ -769,7 +787,8 @@ def owned_item_storage_sort_changed(
     if previous_slot_id is None or previous_slot_id != next_slot_id:
         return False
     slot = get_storage_slot(previous_slot_id) or {}
-    if _normalize_cabinet_sort_policy_value(slot.get("cabinet_sort_policy")) == "LABEL_ID":
+    slot_sort_policy = _normalize_cabinet_sort_policy_value(slot.get("cabinet_sort_policy"))
+    if slot_sort_policy == "LABEL_ID":
         return False
     master_ids: list[int] = []
     for row in (previous_row, next_row):
@@ -780,9 +799,10 @@ def owned_item_storage_sort_changed(
         if master_id > 0:
             master_ids.append(master_id)
     korean_artist_by_master_id = _preferred_korean_artist_by_master_ids(master_ids)
-    return _owned_item_storage_sort_key(previous_row, korean_artist_by_master_id) != _owned_item_storage_sort_key(
+    return _owned_item_storage_sort_key(previous_row, korean_artist_by_master_id, slot_sort_policy) != _owned_item_storage_sort_key(
         next_row,
         korean_artist_by_master_id,
+        slot_sort_policy,
     )
 
 
@@ -816,6 +836,7 @@ def _extract_collection_dashboard_release_year(row: dict[str, Any]) -> int | Non
 
 def _build_collection_dashboard_first_item_hints(
     slot_item_map: dict[int, list[dict[str, Any]]],
+    slot_policy_map: dict[int, str] | None = None,
 ) -> dict[int, dict[str, Any]]:
     master_ids = [
         int(row.get("linked_album_master_id") or 0)
@@ -828,9 +849,10 @@ def _build_collection_dashboard_first_item_hints(
     for slot_id, rows in slot_item_map.items():
         if not rows:
             continue
+        slot_sort_policy = (slot_policy_map or {}).get(slot_id, "ARTIST_RELEASE_TITLE")
         ordered_rows = sorted(
             rows,
-            key=lambda row: _owned_item_storage_sort_key(row, korean_artist_by_master_id),
+            key=lambda row: _owned_item_storage_sort_key(row, korean_artist_by_master_id, slot_sort_policy),
         )
         first_row = ordered_rows[0] if ordered_rows else None
         if not first_row:
@@ -1050,7 +1072,7 @@ def init_db() -> None:
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               slot_code TEXT NOT NULL UNIQUE,
               allowed_size_group TEXT NOT NULL CHECK (allowed_size_group IN ('{_size_group_check_sql()}')),
-              cabinet_sort_policy TEXT NOT NULL DEFAULT 'ARTIST_RELEASE_TITLE' CHECK (cabinet_sort_policy IN ('ARTIST_RELEASE_TITLE', 'LABEL_ID')),
+              cabinet_sort_policy TEXT NOT NULL DEFAULT 'ARTIST_RELEASE_TITLE' CHECK (cabinet_sort_policy IN ('ARTIST_RELEASE_TITLE', 'LABEL_ID', 'TITLE_RELEASE')),
               cabinet_domain_code TEXT CHECK (cabinet_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
               max_thickness_mm INTEGER,
               cabinet_group_name TEXT,
@@ -3203,7 +3225,7 @@ def _apply_migrations_legacy(conn: sqlite3.Connection) -> None:
         SET cabinet_sort_policy = 'ARTIST_RELEASE_TITLE'
         WHERE cabinet_sort_policy IS NULL
            OR TRIM(cabinet_sort_policy) = ''
-           OR UPPER(TRIM(cabinet_sort_policy)) NOT IN ('ARTIST_RELEASE_TITLE', 'LABEL_ID')
+           OR UPPER(TRIM(cabinet_sort_policy)) NOT IN ('ARTIST_RELEASE_TITLE', 'LABEL_ID', 'TITLE_RELEASE')
         """
     )
     rows = conn.execute(
@@ -4348,7 +4370,7 @@ def get_collection_dashboard() -> dict[str, Any]:
 
         slot_rows = conn.execute(
             """
-            SELECT id, slot_code, cabinet_name, cabinet_domain_code, cabinet_group_name, cabinet_group_order, column_code, cell_code, allowed_size_group, is_overflow_zone
+            SELECT id, slot_code, cabinet_name, cabinet_domain_code, cabinet_group_name, cabinet_group_order, column_code, cell_code, allowed_size_group, is_overflow_zone, cabinet_sort_policy
             FROM storage_slot
             """
         ).fetchall()
@@ -4427,13 +4449,18 @@ def get_collection_dashboard() -> dict[str, Any]:
         ).fetchone()
 
     slot_count_map = {int(row["storage_slot_id"]): int(row["cnt"] or 0) for row in slot_count_rows if row["storage_slot_id"] is not None}
+    slot_policy_map: dict[int, str] = {
+        int(row["id"]): _normalize_cabinet_sort_policy_value(row.get("cabinet_sort_policy"))
+        for row in slot_rows
+        if row["id"] is not None
+    }
     slot_item_map: dict[int, list[dict[str, Any]]] = {}
     for row in slot_item_rows:
         storage_slot_id = int(row["storage_slot_id"] or 0)
         if storage_slot_id <= 0:
             continue
         slot_item_map.setdefault(storage_slot_id, []).append(dict(row))
-    slot_first_item_hint_map = _build_collection_dashboard_first_item_hints(slot_item_map)
+    slot_first_item_hint_map = _build_collection_dashboard_first_item_hints(slot_item_map, slot_policy_map)
     slot_in_map = {str(row["slot_code"] or "UNASSIGNED"): int(row["cnt"] or 0) for row in slot_in_rows}
     slot_out_map = {str(row["slot_code"] or "UNASSIGNED"): int(row["cnt"] or 0) for row in slot_out_rows}
     structured_slots = [dict(row) for row in slot_rows]

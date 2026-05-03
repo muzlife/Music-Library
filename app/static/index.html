@@ -20461,6 +20461,7 @@
               <select id="opsCabinetSortPolicy">
                 <option value="ARTIST_RELEASE_TITLE" data-i18n="common.sort_policy.artist_release_title">아티스트/발매/앨범</option>
                 <option value="LABEL_ID" data-i18n="common.sort_policy.label_id">등록 코드 순</option>
+                <option value="TITLE_RELEASE" data-i18n="common.sort_policy.title_release">상품명/발매순</option>
               </select>
             </div>
             <div>
@@ -22769,6 +22770,7 @@
         "common.size_group.goods": "컬렉터블",
         "common.sort_policy.artist_release_title": "아티스트/발매/앨범",
         "common.sort_policy.label_id": "등록 코드 순",
+        "common.sort_policy.title_release": "상품명/발매순",
         "ops.cabinet.title": "장식장 등록",
         "ops.cabinet.intro": "장식장명과 열 수, 칸 수를 넣으면 슬롯이 일괄 생성됩니다. 비정형 구조는 아래 개별 슬롯 관리에서 보정합니다.",
         "ops.cabinet.field.name.label": "장식장명",
@@ -25359,6 +25361,7 @@
         "common.size_group.goods": "Collectible",
         "common.sort_policy.artist_release_title": "Artist / Release / Album",
         "common.sort_policy.label_id": "Registration Code Order",
+        "common.sort_policy.title_release": "Title / Release Order",
         "ops.cabinet.title": "Cabinet Setup",
         "ops.cabinet.intro": "Enter the cabinet name, column count, and cell count to generate slots in bulk. Use the individual slot manager below for irregular layouts.",
         "ops.cabinet.field.name.label": "Cabinet Name",
@@ -27972,6 +27975,7 @@
         "common.size_group.goods": "コレクタブル",
         "common.sort_policy.artist_release_title": "アーティスト / 発売 / アルバム",
         "common.sort_policy.label_id": "登録コード順",
+        "common.sort_policy.title_release": "商品名 / 発売順",
         "ops.cabinet.title": "キャビネット登録",
         "ops.cabinet.intro": "キャビネット名、列数、スロット数を入力するとスロットが一括生成されます。非定形構造は下の個別スロット管理で補正します。",
         "ops.cabinet.field.name.label": "キャビネット名",
@@ -36014,6 +36018,7 @@
     function cabinetSortPolicyLabel(value) {
       const code = String(value || "").trim().toUpperCase();
       if (code === "LABEL_ID") return t("common.sort_policy.label_id");
+      if (code === "TITLE_RELEASE") return t("common.sort_policy.title_release");
       return t("common.sort_policy.artist_release_title");
     }
 
