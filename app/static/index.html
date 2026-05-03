@@ -47462,6 +47462,20 @@
         setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.candidate_not_found"));
         return;
       }
+      // Flush any pending edits from DOM inputs directly (belt-and-suspenders over the input event)
+      const barcodeResultsEl = $("barcodeResults");
+      if (barcodeResultsEl) {
+        const artistInputEl = barcodeResultsEl.querySelector(`[data-register-lookup-artist="${index}"]`);
+        if (artistInputEl) {
+          const editedArtist = String(artistInputEl.value || "").trim();
+          if (editedArtist) candidate.artist_or_brand = editedArtist;
+        }
+        const domainSelEl = barcodeResultsEl.querySelector(`[data-register-lookup-domain="${index}"]`);
+        if (domainSelEl) {
+          const editedDomain = String(domainSelEl.value || "").trim().toUpperCase() || null;
+          candidate.domain_code = editedDomain;
+        }
+      }
       const key = registerLookupCandidateKey(candidate, index);
       if (registerLookupSavingKey === key || registerLookupQueuedKeys.has(key)) {
         setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.already_queued"));
