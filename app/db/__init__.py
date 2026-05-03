@@ -1752,6 +1752,73 @@ def _fix_maniadb_domain_corrections(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _fix_hangul_artist_domain_corrections(conn: sqlite3.Connection) -> None:
+    """한글 아티스트명 owned_item과 연결된 album_master의 domain_code를 KOREA로 교정한다.
+    (멱등 실행 안전)
+
+    Discogs/MANUAL 소스로 등록된 album_master는 아티스트명이 로마자(예: "Seo Taiji",
+    "Park Hyo Shin", "Hyukoh")로 기록되어 WESTERN으로 오분류되는 경우가 있다.
+
+    이 함수는 linked owned_item.artist_or_brand 에 한글이 포함된 album_master를
+    KOREA로 일괄 교정한다. override_domain_code가 명시된 레코드는 건드리지 않는다.
+    """
+    if not _table_exists(conn, "album_master"):
+        return
+    if not _table_exists(conn, "owned_item"):
+        return
+    if not _column_exists(conn, "album_master", "domain_code"):
+        return
+    if not _column_exists(conn, "owned_item", "linked_album_master_id"):
+        return
+
+    import re as _re
+
+    _hangul = _re.compile(r"[가-힣ㄱ-ㆎ]")
+
+    # non-KOREA, override 없는 album_master + linked owned_item 아티스트명 일괄 조회
+    rows = conn.execute(
+        """
+        SELECT am.id, oi.artist_or_brand AS oi_artist
+        FROM album_master am
+        JOIN owned_item oi ON oi.linked_album_master_id = am.id
+        WHERE COALESCE(TRIM(am.domain_code), '') != 'KOREA'
+          AND (am.override_domain_code IS NULL OR TRIM(am.override_domain_code) = '')
+          AND oi.artist_or_brand IS NOT NULL
+          AND TRIM(oi.artist_or_brand) != ''
+        """
+    ).fetchall()
+
+    # 한글 포함 owned_item을 가진 album_master id 수집
+    hangul_am_ids: set[int] = set()
+    for row in rows:
+        if _hangul.search(str(row["oi_artist"] or "")):
+            hangul_am_ids.add(row["id"])
+
+    if not hangul_am_ids:
+        return
+
+    now = utc_now_iso()
+    for am_id in hangul_am_ids:
+        conn.execute(
+            """
+            UPDATE album_master
+            SET domain_code = 'KOREA',
+                source_domain_code = CASE
+                    WHEN source_domain_code IS NULL OR TRIM(source_domain_code) = ''
+                    THEN 'KOREA'
+                    ELSE source_domain_code
+                END,
+                updated_at = ?
+            WHERE id = ?
+              AND COALESCE(TRIM(domain_code), '') != 'KOREA'
+              AND (override_domain_code IS NULL OR TRIM(override_domain_code) = '')
+            """,
+            (now, am_id),
+        )
+
+    conn.commit()
+
+
 def _fix_known_domain_corrections(conn: sqlite3.Connection) -> None:
     """수동 확인된 도메인/아티스트명 오류를 일괄 교정한다. (멱등 실행 안전)
 
@@ -2067,6 +2134,7 @@ def ensure_startup_db_ready() -> None:
             _sync_album_master_domain_from_owned_items(conn)
             _restore_latin_artist_names_from_ext_ref(conn)
             _fix_maniadb_domain_corrections(conn)
+            _fix_hangul_artist_domain_corrections(conn)
             _fix_known_domain_corrections(conn)
             _cleanup_pop_hangul_artist_names(conn)
             _seed_classification_options(conn)
@@ -2081,6 +2149,7 @@ def ensure_startup_db_ready() -> None:
         _sync_album_master_domain_from_owned_items(conn)
         _restore_latin_artist_names_from_ext_ref(conn)
         _fix_maniadb_domain_corrections(conn)
+        _fix_hangul_artist_domain_corrections(conn)
         _fix_known_domain_corrections(conn)
         _cleanup_pop_hangul_artist_names(conn)
         _seed_classification_options(conn)
