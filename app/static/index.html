@@ -6449,6 +6449,16 @@
     .operator-domain-badge.domain-WORLD_OTHER   { background: rgba(107,114,128,0.10); color: #374151; border-color: rgba(107,114,128,0.25); }
     .operator-domain-badge.domain-UNKNOWN  { background: rgba(107,114,128,0.08); color: #6b7280; border-color: rgba(107,114,128,0.2); }
     .operator-domain-badge.is-overridden::before { content: "✓ "; font-size: 0.65rem; }
+    select.ingest-domain-select {
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      padding: 2px 18px 2px 7px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='currentColor'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 5px center;
+      background-size: 7px 5px;
+    }
     .operator-domain-fix-btn {
       font-size: 0.68rem;
       padding: 1px 6px;
@@ -23747,6 +23757,7 @@
         "media.register.api_lookup.action.save_owned": "보유 상품 저장",
         "media.register.api_lookup.action.save_loading": "저장 중...",
         "media.register.api_lookup.action.save_queued": "저장 대기",
+        "media.register.api_lookup.field.domain.label": "도메인",
         "common.unslotted": "미배치",
         "media.manage.cover.status.uploading": "커버 업로드 중...",
         "media.manage.cover.status.uploaded": "커버 직접 등록 완료",
@@ -26334,6 +26345,7 @@
         "media.register.api_lookup.action.save_owned": "Save Owned Item",
         "media.register.api_lookup.action.save_loading": "Saving...",
         "media.register.api_lookup.action.save_queued": "Queued",
+        "media.register.api_lookup.field.domain.label": "Domain",
         "common.unslotted": "Unslotted",
         "media.manage.cover.status.uploading": "Uploading cover...",
         "media.manage.cover.status.uploaded": "Cover uploaded",
@@ -28933,6 +28945,7 @@
         "media.register.api_lookup.action.save_owned": "所蔵商品を保存",
         "media.register.api_lookup.action.save_loading": "保存中...",
         "media.register.api_lookup.action.save_queued": "保存待機",
+        "media.register.api_lookup.field.domain.label": "ドメイン",
         "common.unslotted": "未配置",
         "media.manage.cover.status.uploading": "カバーをアップロード中...",
         "media.manage.cover.status.uploaded": "カバーを登録しました",
@@ -47562,13 +47575,18 @@
           ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(t("common.no_cover"));
         const registerButtonHtml = `<button class="btn ghost admin-barcode-result-save-btn" type="button" data-register-lookup-save="${index}" ${isSaving || isQueued ? "disabled" : ""}>${escapeHtml(isSaving ? t("media.register.api_lookup.action.save_loading") : (isQueued ? t("media.register.api_lookup.action.save_queued") : t("media.register.api_lookup.action.save_owned")))}</button>`;
+        const currentDomainCode = String(c.domain_code || "").trim().toUpperCase();
+        const domainOptions = ["", "KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]
+          .map((dc) => `<option value="${dc}"${dc === currentDomainCode ? " selected" : ""}>${dc ? escapeHtml(dashboardDomainLabel(dc)) : escapeHtml(t("common.unspecified"))}</option>`)
+          .join("");
+        const domainSelectHtml = `<select class="ingest-domain-select operator-domain-badge${currentDomainCode ? ` domain-${escapeHtml(currentDomainCode)}` : ""}" data-register-lookup-domain="${index}" title="${escapeHtml(t("media.register.api_lookup.field.domain.label"))}">${domainOptions}</select>`;
         box.innerHTML = `
           <div class="album-result-cover">${cover}</div>
           <div class="album-result-main">
             <strong>${escapeHtml(title)}</strong>
             <div class="result-meta">
               <span class="tag home-master-source-chip">${escapeHtml(c.source || "-")}</span>
-              ${String(c.domain_code || "").trim() ? `<span class="operator-domain-badge domain-${escapeHtml(String(c.domain_code).toUpperCase())}">${escapeHtml(dashboardDomainLabel(String(c.domain_code)))}</span>` : ""}
+              ${domainSelectHtml}
               ${ownedBadge}
               ${discogsMetaHtml || `
                 <span>${escapeHtml(t("common.meta.format", { value: formatLabel }))}</span>
@@ -53406,6 +53424,18 @@
       submitAdminBarcodeIntake();
     });
     document.addEventListener("keydown", handleGlobalBarcodeScannerKeydown, true);
+    $("barcodeResults").addEventListener("change", (e) => {
+      const domainSel = e.target.closest("[data-register-lookup-domain]");
+      if (domainSel) {
+        const idx = Number(domainSel.getAttribute("data-register-lookup-domain") || -1);
+        const candidate = registerLookupCandidates[idx];
+        if (!candidate) return;
+        const newDc = String(domainSel.value || "").trim().toUpperCase() || null;
+        candidate.domain_code = newDc;
+        // update the select's own class to reflect new color
+        domainSel.className = `ingest-domain-select operator-domain-badge${newDc ? ` domain-${newDc}` : ""}`;
+      }
+    });
     $("barcodeResults").addEventListener("click", (e) => {
       const saveBtn = e.target.closest("[data-register-lookup-save]");
       if (saveBtn) {
