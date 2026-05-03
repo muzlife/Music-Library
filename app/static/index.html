@@ -17450,12 +17450,9 @@
                             <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
                           </select>
                         </div>
-                        <div class="dashboard-slot-toolbar-filter">
-                          <label for="homeDashSlotSortMode" data-i18n="dashboard.cover_flow.field.sort_mode.label">정렬</label>
-                          <select id="homeDashSlotSortMode">
-                            <option value="CREATED_DESC" data-i18n="dashboard.cover_flow.field.sort_mode.option.created_desc">등록순</option>
-                            <option value="NAME_ASC" selected data-i18n="dashboard.cover_flow.field.sort_mode.option.name_asc">이름순</option>
-                          </select>
+                        <div class="dashboard-slot-toolbar-filter dashboard-slot-toolbar-filter--readonly">
+                          <span class="dashboard-slot-sort-policy-hint-label muted mini" data-i18n="dashboard.cover_flow.field.sort_policy.label">정렬 기준</span>
+                          <span id="homeDashSlotSortPolicyLabel" class="dashboard-slot-sort-policy-hint-value mini">—</span>
                         </div>
                         <div class="dashboard-slot-pagebar">
                           <div id="homeDashSlotPageInfo" class="dashboard-slot-pageinfo">0 / 0</div>
@@ -21439,6 +21436,7 @@
         "dashboard.cover_flow.field.sort_mode.label": "정렬",
         "dashboard.cover_flow.field.sort_mode.option.created_desc": "등록순",
         "dashboard.cover_flow.field.sort_mode.option.name_asc": "이름순",
+        "dashboard.cover_flow.field.sort_policy.label": "정렬 기준",
         "dashboard.workbench.title": "이동 작업대",
         "dashboard.workbench.meta": "클릭 선택, 상세 관리, 이동 시작 후 왼쪽 칸 클릭",
         "dashboard.workbench.mode.unslotted": "미배치",
@@ -24054,6 +24052,7 @@
         "dashboard.cover_flow.field.sort_mode.label": "Sort",
         "dashboard.cover_flow.field.sort_mode.option.created_desc": "Registration",
         "dashboard.cover_flow.field.sort_mode.option.name_asc": "Name",
+        "dashboard.cover_flow.field.sort_policy.label": "Sort policy",
         "dashboard.workbench.title": "Move Workbench",
         "dashboard.workbench.meta": "Click to select, open detail manage, then start move mode and click a slot on the left.",
         "dashboard.workbench.mode.unslotted": "Unslotted",
@@ -26669,6 +26668,7 @@
         "dashboard.cover_flow.field.sort_mode.label": "並び順",
         "dashboard.cover_flow.field.sort_mode.option.created_desc": "登録順",
         "dashboard.cover_flow.field.sort_mode.option.name_asc": "名前順",
+        "dashboard.cover_flow.field.sort_policy.label": "並び基準",
         "dashboard.workbench.title": "移動作業台",
         "dashboard.workbench.meta": "クリックで選択し、詳細管理を開き、「移動開始」後に左側のスロットを押して移動します。",
         "dashboard.workbench.mode.unslotted": "未配置",
@@ -38195,9 +38195,7 @@
           select.value = ["ANY", "KOREA", "JAPAN", "GREATER_CHINA", "OTHER_ASIA"].includes(domainFilter) ? domainFilter : "ANY";
         }
       }
-      if ($("homeDashSlotSortMode")) {
-        $("homeDashSlotSortMode").value = ["CREATED_DESC", "NAME_ASC"].includes(slotSortMode) ? slotSortMode : "NAME_ASC";
-      }
+      // homeDashSlotSortMode removed — no pref restore needed
       if ($("homeDashSearchArtist")) {
         $("homeDashSearchArtist").value = String(prefs?.artist || "");
       }
@@ -38908,6 +38906,10 @@
       const root = $("homeDashSlotItems");
       if (!titleEl || !metaEl || !root) return;
       homeDashboardHoveredItemId = null;
+      const policyLabelEl = $("homeDashSlotSortPolicyLabel");
+      if (policyLabelEl) {
+        policyLabelEl.textContent = slotRow ? cabinetSortPolicyLabel(slotRow.cabinet_sort_policy) : "—";
+      }
       root.classList.remove(
         "dashboard-cabinet-overview-grid",
         "dashboard-slot-pagegrid",
@@ -52987,11 +52989,7 @@
       resetDashboardSlotPage();
       renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
     });
-    $("homeDashSlotSortMode").addEventListener("change", () => {
-      saveDashboardWorkbenchPreferences();
-      resetDashboardSlotPage();
-      renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
-    });
+    // homeDashSlotSortMode removed — sort order is now determined by cabinet_sort_policy
     $("homeDashSlotPageSize")?.addEventListener("change", (e) => {
       homeDashboardSlotPageSizeOverride = String(e.target.value || "").trim();
       resetDashboardSlotPage();
