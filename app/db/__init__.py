@@ -2687,7 +2687,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -2698,6 +2698,9 @@ Version log:
   1 — legacy idempotent pass (pre-versioning installs converge here).
   2 — `external_response_cache` table for persisted Discogs/MusicBrainz/
       Aladin/CoverArtArchive replies. See providers.cached_fetch_json.
+  3 — `goods_item.linked_owned_item_id` nullable FK → owned_item.
+      Links a collectible (goods_item) to a specific owned product (owned_item)
+      for the 상품 연계 수집품 (2-3) feature.
 """
 
 
@@ -2770,9 +2773,30 @@ def _migration_v2_add_external_response_cache(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v3_add_goods_item_owned_link(conn: sqlite3.Connection) -> None:
+    """Add linked_owned_item_id to goods_item.
+
+    Enables the 상품 연계 수집품 (2-3) feature: a collectible registered in the
+    수집품 tab can be associated with a specific owned product (owned_item).
+    The FK is SET NULL on delete so removing the owned item doesn't cascade
+    to the collectible itself.
+    """
+    if _table_exists(conn, "goods_item"):
+        if not _column_exists(conn, "goods_item", "linked_owned_item_id"):
+            conn.execute(
+                "ALTER TABLE goods_item ADD COLUMN linked_owned_item_id INTEGER "
+                "REFERENCES owned_item(id) ON DELETE SET NULL"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_goods_item_linked_owned "
+                "ON goods_item (linked_owned_item_id) WHERE linked_owned_item_id IS NOT NULL"
+            )
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
+    3: _migration_v3_add_goods_item_owned_link,
 }
 
 
@@ -4753,191 +4777,12 @@ def get_owned_counts_by_source(source_code: str, source_external_ids: list[str])
 # re-exported from this package's __init__ at the bottom of the file.
 
 
-def list_metadata_sync_candidates(
-    source_code: str | None,
-    only_missing: bool,
-    limit: int,
-    offset: int = 0,
-) -> list[dict[str, Any]]:
-    query = """
-      SELECT
-        oi.id,
-        oi.category,
-        oi.source_code,
-        oi.source_external_id,
-        mid.format_name,
-        mid.artist_or_brand,
-        mid.release_year,
-        mid.released_date,
-        mid.barcode,
-        mid.label_name,
-        mid.catalog_no,
-        mid.cover_image_url,
-        mid.track_list_json,
-        mid.media_type,
-        mid.genres_json,
-        mid.styles_json,
-        mid.disc_count,
-        mid.speed_rpm,
-        mid.has_obi,
-        mid.runout_matrix,
-        mid.runout_matrix_json,
-        mid.pressing_country,
-        mid.source_notes,
-        mid.credits_json,
-        mid.identifier_items_json,
-        mid.image_items_json,
-        mid.company_items_json,
-        mid.series_json,
-        mid.format_items_json,
-        mid.track_items_json,
-        mid.label_items_json,
-        mid.is_promotional_not_for_sale,
-        mid.sleeve_condition AS cover_condition,
-        mid.media_condition AS disc_condition
-      FROM owned_item oi
-      LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-      WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-        AND oi.source_code IS NOT NULL
-        AND TRIM(COALESCE(oi.source_external_id, '')) <> ''
-    """
-    params: list[Any] = []
-    if source_code:
-        query += " AND oi.source_code = ?"
-        params.append(source_code)
-
-    if only_missing:
-        query += """
-          AND (
-            mid.owned_item_id IS NULL
-            OR TRIM(COALESCE(mid.label_name, '')) = ''
-            OR TRIM(COALESCE(mid.catalog_no, '')) = ''
-            OR TRIM(COALESCE(mid.cover_image_url, '')) = ''
-            OR TRIM(COALESCE(mid.barcode, '')) = ''
-            OR TRIM(COALESCE(mid.media_type, '')) = ''
-            OR mid.genres_json IS NULL
-            OR TRIM(COALESCE(mid.genres_json, '')) = ''
-            OR TRIM(COALESCE(mid.genres_json, '')) = '[]'
-            OR mid.styles_json IS NULL
-            OR TRIM(COALESCE(mid.styles_json, '')) = ''
-            OR TRIM(COALESCE(mid.styles_json, '')) = '[]'
-            OR mid.track_list_json IS NULL
-            OR TRIM(COALESCE(mid.track_list_json, '')) = ''
-            OR TRIM(COALESCE(mid.track_list_json, '')) = '[]'
-          )
-        """
-
-    query += """
-      ORDER BY oi.updated_at ASC, oi.id ASC
-      LIMIT ? OFFSET ?
-    """
-    params.extend([max(1, int(limit)), max(0, int(offset))])
-
-    with get_conn() as conn:
-        rows = conn.execute(query, params).fetchall()
-
-    out: list[dict[str, Any]] = []
-    for row in rows:
-        item = dict(row)
-        raw_tracks = item.pop("track_list_json", None)
-        if raw_tracks:
-            try:
-                parsed = json.loads(raw_tracks)
-                item["track_list"] = [str(v).strip() for v in parsed if str(v).strip()] if isinstance(parsed, list) else []
-            except json.JSONDecodeError:
-                item["track_list"] = []
-        else:
-            item["track_list"] = []
-
-        raw_genres = item.pop("genres_json", None)
-        if raw_genres:
-            try:
-                parsed_genres = json.loads(raw_genres)
-                item["genres"] = [str(v).strip() for v in parsed_genres if str(v).strip()] if isinstance(parsed_genres, list) else []
-            except json.JSONDecodeError:
-                item["genres"] = []
-        else:
-            item["genres"] = []
-
-        raw_styles = item.pop("styles_json", None)
-        if raw_styles:
-            try:
-                parsed_styles = json.loads(raw_styles)
-                item["styles"] = [str(v).strip() for v in parsed_styles if str(v).strip()] if isinstance(parsed_styles, list) else []
-            except json.JSONDecodeError:
-                item["styles"] = []
-        else:
-            item["styles"] = []
-
-        runout_values: list[str] = []
-        raw_runout_json = item.pop("runout_matrix_json", None)
-        if raw_runout_json:
-            try:
-                parsed_runout = json.loads(raw_runout_json)
-                runout_values = [str(v).strip() for v in parsed_runout if str(v).strip()] if isinstance(parsed_runout, list) else []
-            except json.JSONDecodeError:
-                runout_values = []
-        if not runout_values:
-            legacy_runout = str(item.get("runout_matrix") or "").strip()
-            if legacy_runout:
-                runout_values = [p.strip() for p in legacy_runout.split("|") if p.strip()]
-        item["runout_matrix"] = runout_values
-
-        def _parse_json_string_list(raw: Any) -> list[str]:
-            if not raw:
-                return []
-            try:
-                parsed = json.loads(str(raw))
-            except json.JSONDecodeError:
-                return []
-            if not isinstance(parsed, list):
-                return []
-            return [str(v).strip() for v in parsed if str(v).strip()]
-
-        def _parse_json_dict_list(raw: Any) -> list[dict[str, Any]]:
-            if not raw:
-                return []
-            try:
-                parsed = json.loads(str(raw))
-            except json.JSONDecodeError:
-                return []
-            if not isinstance(parsed, list):
-                return []
-            return [row for row in parsed if isinstance(row, dict)]
-
-        item["credits"] = _parse_json_string_list(item.pop("credits_json", None))
-        item["identifier_items"] = _parse_json_dict_list(item.pop("identifier_items_json", None))
-        item["image_items"] = _parse_json_dict_list(item.pop("image_items_json", None))
-        item["company_items"] = _parse_json_dict_list(item.pop("company_items_json", None))
-        item["series"] = _parse_json_string_list(item.pop("series_json", None))
-        item["format_items"] = _parse_json_dict_list(item.pop("format_items_json", None))
-        item["track_items"] = _parse_json_dict_list(item.pop("track_items_json", None))
-        item["label_items"] = _parse_json_dict_list(item.pop("label_items_json", None))
-
-        item["is_promotional_not_for_sale"] = bool(item.get("is_promotional_not_for_sale"))
-        if item.get("has_obi") is not None:
-            item["has_obi"] = True if int(item.get("has_obi")) == 1 else None
-        out.append(item)
-    return out
+# `list_metadata_sync_candidates` lives in app/db/metadata_sync.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
-def upsert_music_detail(owned_item_id: int, music_detail: dict[str, Any]) -> None:
-    now = utc_now_iso()
-    with get_conn() as conn:
-        _upsert_music_item_detail_in_conn(
-            conn,
-            owned_item_id=owned_item_id,
-            music_detail=music_detail,
-            now=now,
-        )
-        conn.execute(
-            """
-            UPDATE owned_item
-            SET updated_at = ?
-            WHERE id = ?
-            """,
-            (now, owned_item_id),
-        )
+# `upsert_music_detail` lives in app/db/metadata_sync.py and is
+# re-exported from this package's __init__ at the bottom of the file.
 
 
 # `list_owned_item_track_links`,
@@ -5205,6 +5050,10 @@ from .ops_home_recent import (  # noqa: E402
     get_ops_home_recent_sections,
     list_ops_home_recent_moved_items,
     list_ops_home_recent_registered_items,
+)
+from .metadata_sync import (  # noqa: E402
+    list_metadata_sync_candidates,
+    upsert_music_detail,
 )
 # owned_item_write MUST be the LAST re-export — it depends on
 # helpers from album_master_core, owned_item_slot,
