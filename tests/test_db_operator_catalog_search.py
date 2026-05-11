@@ -36,6 +36,13 @@ def isolated_operator_search_db(tmp_path, monkeypatch) -> Iterator[None]:
 def record_search_sql(monkeypatch) -> Iterator[list[str]]:
     statements: list[str] = []
     original_get_conn = db.get_conn
+    # Phase 33: search_operator_catalog now lives in
+    # app/db/operator_search.py and binds get_conn at module-load
+    # time via `from app.db import get_conn`. Patch both the package
+    # surface AND the submodule's bound name so RecordingConnection
+    # captures the SQL statements regardless of how the implementation
+    # resolves the helper.
+    from app.db import operator_search as _operator_search_module
 
     @contextmanager
     def wrapped_get_conn():
@@ -43,10 +50,12 @@ def record_search_sql(monkeypatch) -> Iterator[list[str]]:
             yield RecordingConnection(conn, statements)
 
     monkeypatch.setattr(db, "get_conn", wrapped_get_conn)
+    monkeypatch.setattr(_operator_search_module, "get_conn", wrapped_get_conn)
     try:
         yield statements
     finally:
         monkeypatch.setattr(db, "get_conn", original_get_conn)
+        monkeypatch.setattr(_operator_search_module, "get_conn", original_get_conn)
 
 
 def insert_music_owned_item(
