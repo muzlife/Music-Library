@@ -69,6 +69,7 @@ def test_cross_cutting_helpers_still_in_init_py() -> None:
     __init__.py so the submodule can pull them via the package
     surface."""
     init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
+    # These helpers genuinely stay in __init__.py.
     for name in (
         "_normalize_domain_code_value",
         "_normalize_recommendation_text",
@@ -79,13 +80,21 @@ def test_cross_cutting_helpers_still_in_init_py() -> None:
         "_storage_slot_sort_key",
         "_title_first_group_artist_key",
         "_compact_search_sql_expr",
-        "_backfill_order_keys",
         "build_storage_slot_occupancy_summary",
     ):
         assert f"def {name}(" in init_src, (
             f"{name} must remain in app/db/__init__.py — recommendation "
             f"submodule pulls it via the package surface"
         )
+    # `_backfill_order_keys` was originally in __init__.py at Phase 18's
+    # commit; in Phase 34 it moved to app/db/order_keys.py. What matters
+    # for the recommendation submodule is that the helper is reachable
+    # via the app.db package surface at module-load time. Pin THAT
+    # contract instead of the no-longer-true location.
+    assert hasattr(db, "_backfill_order_keys"), (
+        "_backfill_order_keys must remain reachable via the app.db package "
+        "surface — location_recommendation imports it at module-load time"
+    )
     assert "SIZE_GROUP_CODES" in init_src, (
         "SIZE_GROUP_CODES constant must remain in app/db/__init__.py"
     )
