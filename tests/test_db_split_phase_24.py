@@ -59,11 +59,12 @@ def test_init_py_no_longer_redefines_owned_item_order_callables() -> None:
         )
 
 
-def test_order_key_helpers_still_in_init_py() -> None:
-    """The display_rank / order-key helpers stay in __init__.py
-    because they are shared with insert / update writers that
-    haven't been moved yet."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
+def test_order_key_helpers_resolve_through_package_surface() -> None:
+    """The display_rank / order-key helpers were originally in
+    __init__.py at Phase 24's commit. In Phase 34 they all moved
+    to app/db/order_keys.py. What matters for owned_item_order is
+    that they remain reachable via `from app.db import ...` at
+    module-load time. Pin that contract."""
     for name in (
         "_backfill_order_keys",
         "_compute_between_order_value",
@@ -71,12 +72,17 @@ def test_order_key_helpers_still_in_init_py() -> None:
         "_next_order_key_in_conn",
         "_parse_order_value",
         "_rebalance_in_collection_order",
-        "_storage_slot_sort_key",
     ):
-        assert f"def {name}(" in init_src, (
-            f"{name} must remain in app/db/__init__.py — "
-            f"owned_item_order pulls it via the package surface"
+        assert hasattr(db, name), (
+            f"{name} must remain reachable via the app.db package "
+            f"surface — owned_item_order imports it at module-load time"
         )
+    # `_storage_slot_sort_key` is a genuine __init__.py resident.
+    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
+    assert "def _storage_slot_sort_key(" in init_src, (
+        "_storage_slot_sort_key must remain in app/db/__init__.py — "
+        "it is a cross-cutting sort helper used 5+ times across the package"
+    )
 
 
 def test_legacy_owned_item_order_paths_still_work() -> None:

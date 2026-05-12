@@ -84,20 +84,30 @@ def test_reexport_ordering_owned_item_write_is_last() -> None:
         )
 
 
-def test_owned_item_helpers_still_in_init_py() -> None:
-    """Cross-cutting helpers used by the write path stay in init."""
+def test_owned_item_helpers_reachable_via_package_surface() -> None:
+    """Cross-cutting helpers used by the write path. The owned_item-
+    and music/goods-detail helpers genuinely stay in __init__.py;
+    the order-key helpers (originally in __init__) moved to
+    app/db/order_keys.py in Phase 34 but still resolve through the
+    package surface."""
     init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
     for name in (
         "_owned_item_select_query",
         "_normalize_owned_item_row",
         "_upsert_music_item_detail_in_conn",
         "_upsert_goods_item_detail_in_conn",
-        "_backfill_order_keys",
-        "_next_order_key_in_conn",
     ):
         assert f"def {name}(" in init_src, (
             f"{name} must remain in app/db/__init__.py — "
             f"owned_item_write pulls it via the package surface"
+        )
+    # The order-key helpers moved to order_keys.py at Phase 34.
+    # What matters for owned_item_write is they're reachable via
+    # `from app.db import ...` at module-load time.
+    for name in ("_backfill_order_keys", "_next_order_key_in_conn"):
+        assert hasattr(db, name), (
+            f"{name} must remain reachable via the app.db package "
+            f"surface — owned_item_write imports it at module-load time"
         )
 
 
