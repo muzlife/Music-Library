@@ -1391,6 +1391,23 @@ _ALADIN_TITLE_TRAILING_NOISE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# 수상·홍보 정보 추출 – title 말미의 " - YYYY 한국대중음악상 xxx 수상" 등
+# 해당 구간을 title에서 제거하고 source_notes로 이동한다.
+_ALADIN_PROMO_NOTICE_RE = re.compile(
+    r"\s*[-–—]\s*"
+    r"("
+    r"(?:\d{4}\s*)?"
+    r"(?:한국대중음악상|대중음악상|가요대상|음악대상|음반대상|방송음악상|음악총연합|한국음반산업협회)"
+    r"[^[\]（）【】\n]*"
+    r"|(?:올해의\s*(?:음반|앨범|아티스트)|이달의\s*(?:음반|앨범))[^[\]（）【】\n]*"
+    r"|(?:수상|선정|추천)\s*(?:음반|앨범)[^[\]（）【】\n]*"
+    r")",
+    re.IGNORECASE,
+)
+
+# 알라딘 title에 아티스트명이 접두어로 붙는 구분자 패턴: "아티스트 - 앨범", "아티스트 / 앨범"
+_ALADIN_ARTIST_PREFIX_SEP_RE = re.compile(r"^(.+?)\s*[-–—/]\s*(.+)$")
+
 # author 필드 역할 표기 제거 – e.g. "(아티스트)", "(가수)", "(작곡가)"
 _ALADIN_AUTHOR_ROLE_RE = re.compile(
     r"\s*\((?:아티스트|가수|뮤지션|밴드|그룹|작곡가?|작사가?|편곡가?|연주|보컬|래퍼|프로듀서)\)",
@@ -1416,6 +1433,26 @@ def _clean_aladin_title(title: str) -> str:
     return t if t else title                             # 모두 지워지면 원본 유지
 
 
+def _extract_aladin_promo_notice(title: str) -> tuple[str, str | None]:
+    """수상·홍보 정보를 title에서 분리한다.
+
+    Returns:
+        (cleaned_title, notice_or_None)
+        notice는 source_notes에 기록하고, title에는 순수 앨범명만 남긴다.
+    """
+    notices: list[str] = []
+
+    def _collect(m: re.Match) -> str:
+        notices.append(m.group(1).strip())
+        return ""
+
+    cleaned = _ALADIN_PROMO_NOTICE_RE.sub(_collect, title)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip().rstrip("-–—·").strip()
+    cleaned = cleaned if cleaned else title
+    notice = " | ".join(notices) if notices else None
+    return cleaned, notice
+
+
 def _clean_aladin_artist(author: str) -> str:
     """알라딘 author 필드에서 역할 표기를 제거하고 아티스트명만 반환."""
     a = _ALADIN_AUTHOR_ROLE_RE.sub("", author)
@@ -1438,6 +1475,38 @@ def _parse_aladin_candidates(data: dict[str, Any], query: str | None) -> list[Ca
         title = _clean_aladin_title(raw_title)
         artist = _clean_aladin_artist(raw_artist) if raw_artist else None
 
+        # --- 수상·홍보 정보 분리 (source_notes로 이동) ---
+        title, promo_notice = _extract_aladin_promo_notice(title)
+
+        # --- 아티스트 접두어 제거 ---
+        # 알라딘은 상품명을 "아티스트명 - 앨범명" 형태로 제공하는 경우가 많다.
+        # artist가 이미 별도 필드에 있으므로, title 앞의 아티스트 중복을 제거한다.
+        # e.g. artist="제이통", title="제이통 - 흙" → title="흙"
+        if artist and title:
+            # 정규화된 아티스트명과 비교 (대소문자·공백 무시)
+            artist_norm = re.sub(r"\s+", "", artist.lower())
+            for sep in (" - ", " – ", " — ", " / "):
+                candidate_prefix = artist + sep
+                if title.lower().startswith(candidate_prefix.lower()):
+                    stripped = title[len(candidate_prefix):].strip()
+                    if stripped:  # 뒤에 내용이 있을 때만 적용
+                        title = stripped
+                    break
+                # 공백 없는 정규화 비교 (아티스트명의 변형 대응)
+                title_norm = re.sub(r"\s+", "", title.lower())
+                if title_norm.startswith(artist_norm + re.sub(r"\s+", "", sep.lower())):
+                    # sep 위치를 원본 title에서 찾아 분리
+                    m = re.match(
+                        r"^" + re.escape(artist) + r"\s*" + re.escape(sep.strip()) + r"\s*",
+                        title,
+                        re.IGNORECASE,
+                    )
+                    if m:
+                        stripped = title[m.end():].strip()
+                        if stripped:
+                            title = stripped
+                        break
+
         # --- 포맷: 상품명 토큰 우선, 카테고리 보완 ---
         format_name = (
             _extract_format_from_aladin_title(raw_title)
@@ -1451,6 +1520,10 @@ def _parse_aladin_candidates(data: dict[str, Any], query: str | None) -> list[Ca
 
         pub_date = str(row.get("pubDate") or "")
         year_token = pub_date.split("-")[0] if pub_date else None
+        released_date = pub_date if pub_date else None
+
+        raw_cover = str(row.get("cover") or "") or None
+        cover_image_url = raw_cover.replace("/coversum/", "/cover/") if raw_cover else None
 
         out.append(
             Candidate(
@@ -1464,12 +1537,13 @@ def _parse_aladin_candidates(data: dict[str, Any], query: str | None) -> list[Ca
                 barcode=str(barcode) if barcode else None,
                 catalog_no=None,
                 label_name=str(row.get("publisher") or "") or None,
-                cover_image_url=str(row.get("cover") or "") or None,
+                cover_image_url=cover_image_url,
                 track_list=[],
                 confidence=min(max(confidence, 0.0), 1.0),
                 raw=row,
                 media_type=None,
                 release_type=None,
+                source_notes=promo_notice,
                 domain_code=infer_domain_code(
                     country="KR",
                     artist_or_brand=artist,
@@ -1479,6 +1553,7 @@ def _parse_aladin_candidates(data: dict[str, Any], query: str | None) -> list[Ca
                 ),
                 genres=[],
                 styles=[],
+                released_date=released_date,
             )
         )
 
@@ -2225,6 +2300,7 @@ def _aladin_search(query: str, limit: int = 5) -> list[Candidate]:
             "start": 1,
             "output": "js",
             "Version": "20131101",
+            "Cover": "Big",  # 200px (TTB API 공식 최대 해상도). 기본값 Mid=85px
         }
 
         with _make_http_client() as client:
