@@ -42916,7 +42916,11 @@
         hat: "editHatSizeWrap",
       });
       if (isMusic) {
-        $("editFormatName").value = category;
+        // format_name stores packaging labels (e.g., "Box Set, Gatefold").
+        // Only set a default when the field is empty — never overwrite real packaging values.
+        if (!$("editFormatName").value) {
+          $("editFormatName").value = category;
+        }
       }
       setDisplayMode($("homeEditTrackPanel"), isMusic ? "grid" : "none");
       syncHomeSourceManagedMetaUi();
