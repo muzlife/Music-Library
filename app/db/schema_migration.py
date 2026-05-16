@@ -496,7 +496,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 7
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -516,6 +516,12 @@ Version log:
   5 — `album_master.override_title` and `album_master.override_artist_or_brand`
       TEXT columns. Supports the unified correction editor that lets operators
       override title and artist/brand alongside release_year / domain_code.
+  6 — `music_item_detail.package_contents` TEXT, `is_limited_edition` INTEGER,
+      `edition_number` TEXT columns. Supports 패키지 구성 checkboxes,
+      한정판 checkbox and 넘버링 field in the owned-item edit form.
+  7 — `music_item_detail.format_name` CHECK 제약 제거 (테이블 재생성).
+      Pydantic 스키마를 str | None 으로 완화했으나 SQLite 레벨 CHECK 가
+      남아 있어 Vinyl 등 자유 형식 값 저장 시 500 에러 발생.
 """
 
 
@@ -640,12 +646,135 @@ def _migration_v4_add_disc_type(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE music_item_detail ADD COLUMN disc_type TEXT")
 
 
+def _migration_v7_drop_format_name_check(conn: sqlite3.Connection) -> None:
+    """`music_item_detail.format_name` CHECK 제약 제거 (테이블 재생성).
+
+    SQLite는 ALTER TABLE DROP CONSTRAINT 를 지원하지 않으므로
+    동일 스키마에서 CHECK 만 제거한 새 테이블로 데이터를 이전한다.
+    v4(disc_type), v6(package_contents, is_limited_edition, edition_number)
+    컬럼도 포함해 재생성한다.
+    """
+    if not _table_exists(conn, "music_item_detail"):
+        return
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='music_item_detail'"
+    ).fetchone()
+    if row is None:
+        return
+    # CHECK 제약이 이미 없으면 스킵
+    if "CHECK" not in str(row[0] or "").upper():
+        return
+
+    if conn.in_transaction:
+        conn.commit()
+
+    conn.execute("PRAGMA foreign_keys = OFF")
+    try:
+        conn.executescript(
+            """
+            BEGIN;
+            DROP TABLE IF EXISTS music_item_detail_new;
+            CREATE TABLE music_item_detail_new (
+              owned_item_id       INTEGER PRIMARY KEY,
+              format_name         TEXT,
+              is_promotional_not_for_sale INTEGER NOT NULL DEFAULT 0,
+              artist_or_brand     TEXT,
+              release_year        INTEGER,
+              released_date       TEXT,
+              barcode             TEXT,
+              label_name          TEXT,
+              catalog_no          TEXT,
+              cover_image_url     TEXT,
+              track_list_json     TEXT,
+              media_type          TEXT,
+              genres_json         TEXT,
+              styles_json         TEXT,
+              media_condition     TEXT,
+              sleeve_condition    TEXT,
+              disc_count          INTEGER,
+              speed_rpm           INTEGER,
+              has_obi             INTEGER,
+              runout_matrix       TEXT,
+              runout_matrix_json  TEXT,
+              pressing_country    TEXT,
+              source_notes        TEXT,
+              credits_json        TEXT,
+              identifier_items_json TEXT,
+              image_items_json    TEXT,
+              company_items_json  TEXT,
+              series_json         TEXT,
+              format_items_json   TEXT,
+              track_items_json    TEXT,
+              label_items_json    TEXT,
+              created_at          TEXT NOT NULL,
+              updated_at          TEXT NOT NULL,
+              disc_type           TEXT,
+              package_contents    TEXT,
+              is_limited_edition  INTEGER,
+              edition_number      TEXT,
+              FOREIGN KEY (owned_item_id) REFERENCES owned_item(id) ON DELETE CASCADE
+            );
+            INSERT INTO music_item_detail_new (
+              owned_item_id, format_name, is_promotional_not_for_sale,
+              artist_or_brand, release_year, released_date, barcode,
+              label_name, catalog_no, cover_image_url, track_list_json,
+              media_type, genres_json, styles_json,
+              media_condition, sleeve_condition, disc_count, speed_rpm,
+              has_obi, runout_matrix, runout_matrix_json, pressing_country,
+              source_notes, credits_json, identifier_items_json, image_items_json,
+              company_items_json, series_json, format_items_json, track_items_json,
+              label_items_json, created_at, updated_at,
+              disc_type, package_contents, is_limited_edition, edition_number
+            )
+            SELECT
+              owned_item_id, format_name, is_promotional_not_for_sale,
+              artist_or_brand, release_year, released_date, barcode,
+              label_name, catalog_no, cover_image_url, track_list_json,
+              media_type, genres_json, styles_json,
+              media_condition, sleeve_condition, disc_count, speed_rpm,
+              has_obi, runout_matrix, runout_matrix_json, pressing_country,
+              source_notes, credits_json, identifier_items_json, image_items_json,
+              company_items_json, series_json, format_items_json, track_items_json,
+              label_items_json, created_at, updated_at,
+              disc_type, package_contents, is_limited_edition, edition_number
+            FROM music_item_detail;
+            DROP TABLE music_item_detail;
+            ALTER TABLE music_item_detail_new RENAME TO music_item_detail;
+            COMMIT;
+            """
+        )
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.execute("PRAGMA foreign_keys = ON")
+
+
+def _migration_v6_add_package_contents_limited_edition(conn: sqlite3.Connection) -> None:
+    """`music_item_detail` columns for 패키지 구성, 한정판, 넘버링.
+
+    package_contents   — comma-joined list of included items (부클릿, 포토카드, …)
+    is_limited_edition — 0/1 flag for 한정판 여부
+    edition_number     — free-text numbering e.g. "5/1000"
+    """
+    if not _table_exists(conn, "music_item_detail"):
+        return
+    if not _column_exists(conn, "music_item_detail", "package_contents"):
+        conn.execute("ALTER TABLE music_item_detail ADD COLUMN package_contents TEXT")
+    if not _column_exists(conn, "music_item_detail", "is_limited_edition"):
+        conn.execute("ALTER TABLE music_item_detail ADD COLUMN is_limited_edition INTEGER")
+    if not _column_exists(conn, "music_item_detail", "edition_number"):
+        conn.execute("ALTER TABLE music_item_detail ADD COLUMN edition_number TEXT")
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
     3: _migration_v3_add_goods_item_owned_link,
     4: _migration_v4_add_disc_type,
     5: _migration_v5_add_album_master_override_title_artist,
+    6: _migration_v6_add_package_contents_limited_edition,
+    7: _migration_v7_drop_format_name_check,
 }
 
 
