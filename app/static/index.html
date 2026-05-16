@@ -32665,6 +32665,18 @@
       return `<a href="${href}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
     }
 
+    function discogsMasterLinkHtml(masterSourceId, label = "Discogs 마스터") {
+      const id = String(masterSourceId || "").trim();
+      if (!id) return "";
+      return `<a href="https://www.discogs.com/master/${encodeURIComponent(id)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+    }
+
+    function maniadbAlbumLinkHtml(albumId, label = "ManiaDB 앨범") {
+      const id = String(albumId || "").trim();
+      if (!id) return "";
+      return `<a href="http://www.maniadb.com/album/${encodeURIComponent(id)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+    }
+
     function buildDiscogsStandardMetaHtml(row, opts = {}) {
       const sourceCode = normalizeSourceCode(row?.source || "");
       if (!sourceCode) return "";
@@ -43954,6 +43966,10 @@
         const link = discogsReleaseLinkHtml(source, externalId, t("media.manage.source_link.discogs_product"));
         return link ? t("media.manage.source_link.product_path", { link }) : "";
       }
+      if (source === "MANIADB") {
+        const link = maniadbAlbumLinkHtml(externalId, "ManiaDB 상품 열기");
+        return link ? t("media.manage.source_link.product_path", { link }) : "";
+      }
       return "";
     }
 
@@ -44729,6 +44745,8 @@
           artist_or_brand: masterArtistResolved,
           release_year: masterReleaseYearResolved,
           cover_image_url: masterCoverResolved,
+          master_source_code: masterData?.source_code || null,
+          master_source_id: masterData?.source_master_id || null,
           items,
           collectibles,
         };
@@ -46181,12 +46199,24 @@
       const coverUrl = (typeof normalizeRenderableCoverUrl === "function")
         ? normalizeRenderableCoverUrl(rawCover)
         : rawCover;
-      // 마스터 소스 링크: items[0]의 source_code/source_external_id 우선, 마스터 수준 fallback
-      const linkSource = homeMasterInfo.source || firstItem?.source_code;
-      const linkExtId  = homeMasterInfo.master_external_id || firstItem?.source_external_id;
-      const masterLink = (typeof discogsReleaseLinkHtml === "function")
-        ? discogsReleaseLinkHtml(linkSource, linkExtId, "Discogs")
-        : "";
+      // 마스터 수준 링크: Discogs master / ManiaDB 앨범 (album_master.source_master_id 기반)
+      const msc = String(homeMasterInfo.master_source_code || "").trim().toUpperCase();
+      const msid = String(homeMasterInfo.master_source_id || "").trim();
+      const masterLinkParts = [];
+      if (msc === "DISCOGS" && msid) {
+        masterLinkParts.push(discogsMasterLinkHtml(msid, "Discogs 마스터"));
+      } else if (msc === "MANIADB" && msid) {
+        masterLinkParts.push(maniadbAlbumLinkHtml(msid, "ManiaDB 마스터"));
+      }
+      // 원본 경로: 현재 선택된 상품의 개별 릴리즈 링크 (상품 변경 시 함께 갱신)
+      const itemSrc = String(homeSelectedSourceCode || "").trim().toUpperCase();
+      const itemExtId = String(homeSelectedSourceExternalId || "").trim();
+      if (itemSrc === "DISCOGS" && itemExtId) {
+        masterLinkParts.push(discogsReleaseLinkHtml(itemSrc, itemExtId, "원본 릴리즈"));
+      } else if (itemSrc === "MANIADB" && itemExtId) {
+        masterLinkParts.push(maniadbAlbumLinkHtml(itemExtId, "원본 릴리즈"));
+      }
+      const masterLink = masterLinkParts.join(" · ");
       setHtmlIfPresent("homeMasterMetaCover",
         coverUrl
           ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
