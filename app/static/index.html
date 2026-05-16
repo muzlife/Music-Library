@@ -3308,10 +3308,123 @@
       background: linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 90%, var(--bg) 10%) 100%);
     }
 
-    #homeManageMasterSection {
+    #homeSection1MasterInfo,
+    #homeSection2ProductInfo,
+    #homeSection3MasterDelete {
       margin-top: 12px;
       display: grid;
       gap: 12px;
+    }
+    #homeSection21OwnedItem,
+    #homeSection22ProductAdd,
+    #homeSection22FromMaster,
+    #homeSection22FromSource,
+    #homeProductLinkedGoodsSection {
+      display: grid;
+      gap: 8px;
+    }
+
+    /* 마스터 메타 카드 */
+    #homeMasterMetaCard {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--paper) 60%, var(--bg) 40%);
+      border: 1px solid var(--line);
+    }
+    .home-unified-edit-details {
+      margin-top: 10px;
+      border: 1px solid var(--color-border, #e0e0e0);
+      border-radius: 6px;
+      background: var(--color-surface-alt, #fafafa);
+    }
+    .home-unified-edit-details > summary.home-unified-edit-summary {
+      cursor: pointer;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted, #888);
+      list-style: none;
+      user-select: none;
+    }
+    .home-unified-edit-details > summary.home-unified-edit-summary::marker,
+    .home-unified-edit-details > summary.home-unified-edit-summary::-webkit-details-marker {
+      display: none;
+    }
+    .home-unified-edit-details[open] > summary.home-unified-edit-summary::after { content: " ▲"; font-size: 10px; }
+    .home-unified-edit-details:not([open]) > summary.home-unified-edit-summary::after { content: " ▼"; font-size: 10px; }
+    .home-unified-edit-body {
+      padding: 10px 12px 14px;
+    }
+    .home-unified-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted, #888);
+      margin-bottom: 6px;
+    }
+    .home-unified-section-divider {
+      border-top: 1px solid var(--color-border, #e0e0e0);
+      margin-top: 14px;
+      padding-top: 12px;
+    }
+    .home-master-meta-cover {
+      flex-shrink: 0;
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--line);
+    }
+    .home-master-meta-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .home-master-meta-cover-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: var(--muted);
+    }
+    .home-master-meta-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .home-master-meta-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .home-master-meta-artist {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .home-product-add-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--paper) 78%, var(--brand) 22%);
+      color: var(--brand);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     #homeCabinetSection {
@@ -6630,11 +6743,78 @@
 
     .home-edit-track-panel {
       display: grid;
-      gap: 6px;
-      padding: 6px;
+      gap: 10px;
+      padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--paper);
+    }
+
+    .home-music-product-split {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    #homeEditLeftPane {
+      flex: 2;
+      min-width: 0;
+    }
+    #homeEditTrackPanel {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    /* ── 통합 편집 프레임 ── */
+    .home-edit-section-frame {
+      margin-top: 6px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .home-edit-section-frame .music-box {
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      margin-top: 0;
+      padding: 10px 14px 12px;
+    }
+    .home-edit-section-frame #homeEditorProductBlock {
+      margin-top: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      border-top: 1px dashed var(--line);
+    }
+    /* ── 상품 ID strip (커버아트 우측) ── */
+    .home-edit-item-id-strip {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .home-edit-item-id-field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .home-edit-item-id-field label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .home-edit-item-id-field input[readonly] {
+      font-size: 0.82rem;
+      padding: 2px 6px;
+      max-width: 140px;
+      min-width: 50px;
+      background: color-mix(in srgb, var(--bg) 72%, var(--paper) 28%);
+      color: var(--muted);
+      border-color: var(--line);
+      cursor: default;
     }
 
     .home-edit-track-summary {
@@ -13492,7 +13672,7 @@
       color: #28495f;
     }
 
-    body[data-theme="day"] #tabManage :is(#homeLinkedGoodsPanel, #homeEditorProductBlock, #homeMasterAddBlock) {
+    body[data-theme="day"] #tabManage :is(#homeLinkedGoodsPanel, #homeMasterAddBlock) {
       border-color: rgba(92, 110, 128, 0.68) !important;
       background: linear-gradient(180deg, rgba(246, 250, 253, 0.996), rgba(235, 241, 247, 0.992)) !important;
       box-shadow:
@@ -16602,6 +16782,7 @@
       .home-search-grid-bottom { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .home-search-action button { width: auto; }
       .home-edit-info-split.with-track { grid-template-columns: 1fr; }
+      .home-music-product-split { flex-direction: column; }
     }
 
     @media (max-width: 760px) {
@@ -17164,7 +17345,7 @@
           <div id="adminTabs" class="tabs u-hidden-initial">
             <button id="tabHomeBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.dashboard">대시보드</button>
             <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
-            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">컬렉터블</button>
+            <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">수집품</button>
             <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
           </div>
           <div class="admin-shell-row-actions">
@@ -17332,11 +17513,11 @@
             </div>
           </div>
           <div class="dashboard-hero-card accent-media">
-            <span class="dashboard-kicker" data-i18n="dashboard.card.media_collectibles">미디어 / 컬렉터블</span>
+            <span class="dashboard-kicker" data-i18n="dashboard.card.media_collectibles">미디어 / 수집품</span>
             <strong id="homeDashMusic">0</strong>
             <div class="dashboard-stat-line">
               <span data-i18n="dashboard.stat.media">음반</span>
-              <span><span data-i18n="dashboard.stat.collectibles">컬렉터블</span> <em id="homeDashGoods">0</em></span>
+              <span><span data-i18n="dashboard.stat.collectibles">수집품</span> <em id="homeDashGoods">0</em></span>
             </div>
           </div>
           <div class="dashboard-hero-card accent-placement">
@@ -17552,7 +17733,7 @@
                               <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
                               <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
                               <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
-                              <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                              <option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
                             </select>
                           </div>
                           <div>
@@ -17970,7 +18151,7 @@
           <div class="manual-block-body">
             <ol>
               <li data-i18n="manual.media_manage.item1">미디어 > 검색 화면에서 고른 마스터/상품을 여기서 실제로 수정합니다.</li>
-              <li data-i18n="manual.media_manage.item2">장식장 위치 정보, 소스 메타, 상품 편집, 연계 컬렉터블을 같은 흐름에서 확인합니다.</li>
+              <li data-i18n="manual.media_manage.item2">장식장 위치 정보, 소스 메타, 상품 편집, 연계 수집품을 같은 흐름에서 확인합니다.</li>
               <li data-i18n="manual.media_manage.item3">메타 수정 후 저장하고, 필요하면 대시보드에서 실제 칸 이동을 이어갑니다.</li>
               <li data-i18n="manual.media_manage.item4">소스 자체를 교체해야 하면 소스 보강으로 이동합니다.</li>
             </ol>
@@ -17985,302 +18166,360 @@
           </div>
         </section>
 
-      <section id="homeEditorCard" class="card u-mt-0 u-hidden-initial">
+            <section id="homeEditorCard" class="card u-mt-0 u-hidden-initial">
         <div id="homeEditorSelectedLabel" class="mini" data-i18n="media.manage.selected_label">선택된 상품</div>
         <div id="homeAcquisitionSourceInfo" class="result-item mini u-mt-8 u-hidden-initial"></div>
         <div id="homeAcquisitionSourceLink" class="mini u-mt-4 u-hidden-initial"></div>
         <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6 u-hidden-initial">credits: -</div>
         <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4 u-hidden-initial">matrix/identifiers: -</div>
-        <div id="homeCabinetSection">
+
+        <!-- ══ 섹션 1: 마스터 정보 ══ -->
+        <div id="homeSection1MasterInfo">
           <div class="section-divider u-mt-8">
-            <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
+            <h2><span data-i18n="media.manage.section1.title">1. 마스터 정보</span></h2>
           </div>
-          <div class="shelf-toolbar">
-            <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
-            <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
-            <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
-          </div>
-          <div class="shelf-track-wrap">
-            <div id="homeEditShelfTrack" class="shelf-track"></div>
-          </div>
-          <div id="homeEditShelfStatus" class="status"></div>
-          <div class="row u-mt-6 u-flex-between-center-wrap">
-            <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
-            <div class="row home-manage-actions-right">
-              <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
-              <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
+          <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
+          <div id="homeMasterMetaCard" class="u-hidden-initial">
+            <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
+            <div class="home-master-meta-info">
+              <div id="homeMasterMetaTitle" class="home-master-meta-title"></div>
+              <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
+              <div id="homeMasterMetaYear" class="mini muted"></div>
+              <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
+              <input id="editOwnedId" type="hidden" />
+              <input id="editLabelId" type="hidden" />
+              <input id="editLinkedAlbumMasterId" type="hidden" />
             </div>
           </div>
-          <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
-          <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
-        </div>
-
-        <div id="homeEditorStandaloneMount" class="u-mt-10"></div>
-
-        <div id="homeEditMusicBox" class="music-box u-hidden-initial">
-          <div id="homeEditMusicSourceSummary" class="source-meta-summary">
-            <div class="source-meta-summary-head">
-              <strong data-i18n="media.manage.source_meta.title">소스 메타 요약</strong>
-              <span id="homeEditMusicSourceSummaryHint" class="mini" data-i18n="media.manage.source_meta.hint">외부 소스 메타는 후보 교체로 갱신</span>
-            </div>
-            <div id="homeEditMusicSourceSummaryMain" class="compact-line">-</div>
-            <div id="homeEditMusicSourceSummarySub" class="compact-line">-</div>
-            <div id="homeEditMusicSourceSummaryExtra" class="compact-line">-</div>
-            <div id="homeEditMusicSourceSummaryOps" class="compact-line">-</div>
-            <details id="homeEditMusicSourceTracksWrap" class="source-meta-details">
-              <summary id="homeEditMusicSourceTracksSummary" data-i18n="media.manage.source_meta.tracks_summary">곡 리스트 0곡</summary>
-              <div id="homeEditMusicSourceTracks" class="source-meta-tracklist" data-i18n="media.manage.source_meta.tracks_empty">-</div>
-            </details>
-          </div>
-          <div id="homeEditMusicMetaFieldsA" class="grid-12 grid-12--from-6">
-            <div class="span-2">
-              <label for="editArtistName" data-i18n="media.manage.field.artist_name.label">아티스트명</label>
-              <input id="editArtistName" data-i18n-placeholder="media.manage.field.artist_name.placeholder" placeholder="예: 산울림" />
-            </div>
-            <div>
-              <label for="editMediaType" data-i18n="media.manage.field.media_type.label">미디어 타입(원본)</label>
-              <input id="editMediaType" data-i18n-placeholder="media.manage.field.media_type.placeholder" placeholder="예: Vinyl / CD / Cassette" />
-            </div>
-          </div>
-          <div id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6 u-mt-6">
-            <div class="span-2">
-              <label for="editLabelName" data-i18n="media.manage.field.label_name.label">레이블</label>
-              <input id="editLabelName" data-i18n-placeholder="media.manage.field.label_name.placeholder" placeholder="예: Ecole de Gorae" />
-            </div>
-            <div>
-              <label for="editCatalogNo" data-i18n="media.manage.field.catalog_no.label">카탈로그 번호</label>
-              <input id="editCatalogNo" data-i18n-placeholder="media.manage.field.catalog_no.placeholder" placeholder="예: MVKL-1113" />
-            </div>
-            <div class="span-2">
-              <label for="editRunoutMatrix" data-i18n="media.manage.field.runout_matrix.label">런아웃 매트릭스</label>
-              <input id="editRunoutMatrix" data-i18n-placeholder="media.manage.field.runout_matrix.placeholder" placeholder="예: A1/B1" />
-            </div>
-            <div>
-              <label for="editPressingCountry" data-i18n="media.manage.field.pressing_country.label">프레싱 국가</label>
-              <input id="editPressingCountry" data-i18n-placeholder="media.manage.field.pressing_country.placeholder" placeholder="예: South Korea" />
-            </div>
-          </div>
-          <div class="grid-6 u-mt-6">
-            <div id="homeEditDiscCountWrap">
-              <label for="editDiscCount" data-i18n="media.manage.field.disc_count.label">디스크 수</label>
-              <input id="editDiscCount" type="number" min="1" />
-            </div>
-            <div id="homeEditSpeedRpmWrap">
-              <label for="editSpeedRpm">RPM</label>
-              <input id="editSpeedRpm" type="number" min="1" />
-            </div>
-          </div>
-          <div id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6 u-mt-6">
-            <div class="span-2">
-              <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
-              <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." />
-            </div>
-            <div class="span-2">
-              <label for="editStyles" data-i18n="media.manage.field.styles.label">스타일 (쉼표 구분)</label>
-              <input id="editStyles" data-i18n-placeholder="media.manage.field.styles.placeholder" placeholder="예: K-Rock, Prog Rock" />
-            </div>
-          </div>
-          <div id="homeEditTrackListWrap" class="u-mt-6">
-            <label for="editTrackList" data-i18n="media.manage.field.track_list.label">곡 리스트 (한 줄에 1곡)</label>
-            <textarea id="editTrackList"></textarea>
-          </div>
-        </div>
-
-        <div id="homeEditorProductBlock">
-          <div class="home-product-edit-kicker" data-i18n="media.manage.product.kicker">바로 수정 가능</div>
-          <div id="homeEditInfoSplit" class="home-edit-info-split">
-            <div id="homeEditProductPane">
-              <div class="section-divider">
-                <h2 data-i18n="media.manage.product.title">상품 정보</h2>
+          <!-- 통합 수정 패널 (기본 접힘) -->
+          <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial">
+            <summary class="home-unified-edit-summary">수정 / 편집</summary>
+            <div class="home-unified-edit-body">
+              <div class="home-unified-section-label">마스터 수정</div>
+              <div id="homeMasterCorrectionRow" class="row u-mt-0 u-row-end-gap-8-wrap">
+                <label class="u-fixed-label-130">
+                  <div class="dashboard-selected-sort-artist-label mini">
+                    <span>아티스트명</span><span class="help-dot" tabindex="0" data-help="운영 기준 아티스트명. 비우면 소스 기준을 따릅니다.">?</span>
+                  </div>
+                  <input id="homeMasterCorrectionArtist" type="text" style="width:160px" placeholder="예: 산울림" />
+                </label>
+                <label class="u-fixed-label-160">
+                  <div class="dashboard-selected-sort-artist-label mini">
+                    <span>앨범명</span><span class="help-dot" tabindex="0" data-help="운영 기준 앨범명. 비우면 소스 기준을 따릅니다.">?</span>
+                  </div>
+                  <input id="homeMasterCorrectionTitle" type="text" style="width:200px" placeholder="예: 산울림 - 제13집" />
+                </label>
+                <label class="u-fixed-label-130">
+                  <div class="dashboard-selected-sort-artist-label mini">
+                    <span data-i18n="media.manage.master.correction.field.release_year.label">발매연도</span><span class="help-dot" tabindex="0" data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
+                  </div>
+                  <input id="homeMasterCorrectionReleaseYear" type="number" min="1900" max="2100" placeholder="예: 1978" />
+                </label>
+                <label class="u-fixed-label-160">
+                  <div class="dashboard-selected-sort-artist-label mini">
+                    <span data-i18n="media.manage.master.correction.field.domain_code.label">도메인</span><span class="help-dot" tabindex="0" data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
+                  </div>
+                  <select id="homeMasterCorrectionDomainCode">
+                    <option value=""></option>
+                    <option value="KOREA" data-i18n="common.domain.korea">가요</option>
+                    <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
+                    <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
+                    <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
+                    <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
+                    <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
+                    <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
+                  </select>
+                </label>
+                <label class="u-flex-1-280">
+                  <div class="dashboard-selected-sort-artist-label mini">
+                    <span data-i18n="media.manage.master.correction.field.note.label">교정 메모</span><span class="help-dot" tabindex="0" data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다.">?</span>
+                  </div>
+                  <input id="homeMasterCorrectionNote" type="text" placeholder="예: Discogs는 재반 기준, 내부 정렬은 원발매 기준" />
+                </label>
+                <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
+                <div id="homeMasterCorrectionSourceHint" class="mini u-flex-1-280" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
               </div>
-              <div id="homeEditProductCoreFields" class="ops-compact-form-grid home-manage-product-compact-grid">
-                <div id="homeEditProductCoreRowA" class="ops-compact-form-row home-manage-product-row--primary">
-                  <div>
-                    <label for="editOwnedId">owned_item_id</label>
-                    <input id="editOwnedId" readonly />
-                  </div>
-                  <div>
-                    <label for="editLabelId" data-i18n="media.manage.product.field.label_id.label">견출지 ID</label>
-                    <input id="editLabelId" readonly />
-                  </div>
-                  <div>
-                    <label for="editItemName" data-i18n="media.manage.product.field.item_name.label">상품명</label>
-                    <input id="editItemName" data-i18n-placeholder="media.manage.product.field.item_name.placeholder" placeholder="예: 산울림 - 제13집" />
-                  </div>
-                  <div>
-                    <label for="editLinkedAlbumMasterId" data-i18n="media.manage.product.field.linked_album_master_id.label">연계 앨범 마스터 ID(내부)</label>
-                    <input id="editLinkedAlbumMasterId" type="number" min="1" data-i18n-placeholder="media.manage.product.field.linked_album_master_id.placeholder" placeholder="예: 2" readonly />
-                  </div>
-                  <div>
-                    <label for="editSlotId" data-i18n="media.manage.product.field.slot_id.label">보관 슬롯</label>
-                    <select id="editSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
-                  </div>
-                </div>
-                <div id="homeEditProductCoreRowB" class="ops-compact-form-row home-manage-product-row--secondary">
-                  <div id="homeEditLinkedArtistWrap">
-                    <label for="editLinkedArtistName" data-i18n="media.manage.product.field.linked_artist_name.label">연계 아티스트명 (앨범 모호 시)</label>
-                    <input id="editLinkedArtistName" data-i18n-placeholder="media.manage.product.field.linked_artist_name.placeholder" placeholder="예: 산울림" />
-                  </div>
-                  <div>
-                    <label for="editPreferredStorageSizeGroup" data-i18n="media.manage.product.field.preferred_size.label">권장 보관 규격</label>
-                    <select id="editPreferredStorageSizeGroup">
-                      <option value="STD" data-i18n="common.size_group.std">CD</option>
-                      <option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option>
-                      <option value="LP" data-i18n="common.size_group.lp">LP</option>
-                      <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
-                      <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
-                      <option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option>
-                      <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
-                      <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
-                      <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option>
-                      <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label for="editDomainCode" data-i18n="media.manage.product.field.domain_code.label">도메인</label>
-                    <select id="editDomainCode">
-                      <option value="" data-i18n="common.unspecified">미지정</option>
-                      <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                      <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                      <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                      <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                      <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                      <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
-                      <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label for="editStatus" data-i18n="media.manage.product.field.status.label">상태</label>
-                    <select id="editStatus">
-                      <option>IN_COLLECTION</option>
-                      <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label for="editSignatureType" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
-                    <select id="editSignatureType">
-                      <option>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label for="editDisplayRank" data-i18n="media.manage.product.field.display_rank.label">진열 순서(display_rank)</label>
-                    <input id="editDisplayRank" type="number" />
-                  </div>
-                </div>
+              <div id="homeMasterCorrectionStatus" class="status"></div>
+              <div id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master">
+                <label class="dashboard-selected-sort-artist-label mini" for="homeMasterSortArtistName">
+                  <span data-i18n="media.manage.master.sort_artist.label">정렬 아티스트명</span><span class="help-dot" tabindex="0" data-help="같은 앨범 마스터의 LP, CD 등 모든 미디어 정렬에 공통으로 적용됩니다.">?</span>
+                </label>
+                <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
+                <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+                <div class="dashboard-selected-sort-artist-note mini" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
               </div>
-              <input id="editCategory" type="hidden" value="LP" />
-              <input id="editSizeGroup" type="hidden" value="STD" />
-              <input id="editReleaseType" type="hidden" value="" />
-              <input id="editFormatName" type="hidden" value="LP" />
-              <input id="editReleasedDate" type="hidden" />
-              <input id="editGenres" type="hidden" />
-              <input id="editBarcode" type="hidden" />
-              <details id="homeEditProductExtraDetails" class="ops-compact-extra-fields">
-                <summary>구매 / 컨디션 / 커버 / 메모</summary>
-                <div class="ops-compact-extra-fields-body home-manage-product-extra-grid">
-                  <div class="ops-compact-form-row home-manage-product-extra-row--pricing">
-                    <div>
-                      <label for="editPurchaseSource" data-i18n="media.manage.product.field.purchase_source.label">구매처</label>
-                      <input id="editPurchaseSource" data-i18n-placeholder="media.manage.product.field.purchase_source.placeholder" placeholder="예: 홍대 중고매장" />
+              <div id="homeMasterSortArtistStatus" class="status"></div>
+              <!-- 상품 수정 폼 (section 2-1에서 이동) -->
+              <div class="home-unified-section-divider home-unified-section-label">상품 수정</div>
+            <div id="homeEditMusicProductSplit" class="home-music-product-split">
+            <div id="homeEditLeftPane">
+            <div class="home-edit-section-frame">
+            <div id="homeEditMusicBox" class="music-box u-hidden-initial">
+                      <div id="homeEditMusicSourceSummary" class="source-meta-summary">
+                        <div class="source-meta-summary-head">
+                          <strong data-i18n="media.manage.source_meta.title">소스 메타 요약</strong>
+                          <span id="homeEditMusicSourceSummaryHint" class="mini" data-i18n="media.manage.source_meta.hint">외부 소스 메타는 후보 교체로 갱신</span>
+                        </div>
+                        <div id="homeEditMusicSourceSummaryMain" class="compact-line">-</div>
+                        <div id="homeEditMusicSourceSummarySub" class="compact-line">-</div>
+                        <div id="homeEditMusicSourceSummaryExtra" class="compact-line">-</div>
+                        <div id="homeEditMusicSourceSummaryOps" class="compact-line">-</div>
+                        <details id="homeEditMusicSourceTracksWrap" class="source-meta-details">
+                          <summary id="homeEditMusicSourceTracksSummary" data-i18n="media.manage.source_meta.tracks_summary">곡 리스트 0곡</summary>
+                          <div id="homeEditMusicSourceTracks" class="source-meta-tracklist" data-i18n="media.manage.source_meta.tracks_empty">-</div>
+                        </details>
+                      </div>
+                      <div class="u-mb-4"><strong>상품 정보</strong></div>
+                      <div id="homeEditMusicMetaFieldsA" class="grid-12 grid-12--from-6">
+                        <div class="span-2">
+                          <label for="editArtistName" data-i18n="media.manage.field.artist_name.label">아티스트명</label>
+                          <input id="editArtistName" data-i18n-placeholder="media.manage.field.artist_name.placeholder" placeholder="예: 산울림" />
+                        </div>
+                        <div class="span-2">
+                          <label for="editItemName" data-i18n="media.manage.product.field.item_name.label">상품명</label>
+                          <input id="editItemName" data-i18n-placeholder="media.manage.product.field.item_name.placeholder" placeholder="예: 산울림 - 제13집" />
+                        </div>
+                        <div>
+                          <label for="editDomainCode" data-i18n="media.manage.product.field.domain_code.label">도메인</label>
+                          <select id="editDomainCode">
+                            <option value="" data-i18n="common.unspecified">미지정</option>
+                            <option value="KOREA" data-i18n="common.domain.korea">가요</option>
+                            <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
+                            <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
+                            <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
+                            <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
+                            <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
+                            <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label for="editMediaType" data-i18n="media.manage.field.media_type.label">미디어 타입(원본)</label>
+                          <input id="editMediaType" data-i18n-placeholder="media.manage.field.media_type.placeholder" placeholder="예: Vinyl / CD / Cassette" />
+                        </div>
+                      </div>
+                      <div id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6 u-mt-6">
+                        <div class="span-2">
+                          <label for="editLabelName" data-i18n="media.manage.field.label_name.label">레이블</label>
+                          <input id="editLabelName" data-i18n-placeholder="media.manage.field.label_name.placeholder" placeholder="예: Ecole de Gorae" />
+                        </div>
+                        <div>
+                          <label for="editCatalogNo" data-i18n="media.manage.field.catalog_no.label">카탈로그 번호</label>
+                          <input id="editCatalogNo" data-i18n-placeholder="media.manage.field.catalog_no.placeholder" placeholder="예: MVKL-1113" />
+                        </div>
+                        <div>
+                          <label for="editBarcode">바코드</label>
+                          <input id="editBarcode" placeholder="예: 8809049750425" />
+                        </div>
+                        <div class="span-2">
+                          <label for="editStyles" data-i18n="media.manage.field.styles.label">스타일 (쉼표 구분)</label>
+                          <input id="editStyles" data-i18n-placeholder="media.manage.field.styles.placeholder" placeholder="예: K-Rock, Prog Rock" />
+                        </div>
+                      </div>
+                      <div class="grid-6 u-mt-6">
+                        <div id="homeEditFormatNameWrap">
+                          <label for="editFormatName">패키징</label>
+                          <input id="editFormatName" placeholder="예: Gatefold, Digipak" />
+                        </div>
+                        <div id="homeEditDiscCountWrap">
+                          <label for="editDiscCount" data-i18n="media.manage.field.disc_count.label">디스크 수</label>
+                          <input id="editDiscCount" type="number" min="1" />
+                        </div>
+                        <div id="homeEditSpeedRpmWrap">
+                          <label for="editSpeedRpm">RPM</label>
+                          <input id="editSpeedRpm" type="number" min="1" />
+                        </div>
+                        <div id="homeEditDiscTypeWrap">
+                          <label for="editDiscType">디스크 유형</label>
+                          <select id="editDiscType">
+                            <option value="">미지정</option>
+                            <option value="Standard">Standard</option>
+                            <option value="Picture">Picture Disc</option>
+                            <option value="Shaped">Shaped Disc</option>
+                            <option value="Colored">Colored Vinyl</option>
+                            <option value="Clear">Clear Vinyl</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6 u-mt-6">
+                        <div class="span-3">
+                          <label for="editRunoutMatrix" data-i18n="media.manage.field.runout_matrix.label">런아웃 매트릭스</label>
+                          <input id="editRunoutMatrix" data-i18n-placeholder="media.manage.field.runout_matrix.placeholder" placeholder="예: A1/B1" />
+                        </div>
+                        <div>
+                          <label for="editPressingCountry" data-i18n="media.manage.field.pressing_country.label">프레싱 국가</label>
+                          <input id="editPressingCountry" data-i18n-placeholder="media.manage.field.pressing_country.placeholder" placeholder="예: South Korea" />
+                        </div>
+                        <div class="span-2">
+                          <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
+                          <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." />
+                        </div>
+                      </div>
+<details id="homeEditProductExtraDetails" class="ops-compact-extra-fields">
+                        <summary>구매 / 컨디션 / 커버 / 메모</summary>
+                        <div class="ops-compact-extra-fields-body home-manage-product-extra-grid">
+                          <div class="ops-compact-form-row home-manage-product-extra-row--pricing">
+                            <div>
+                              <label for="editPurchaseSource" data-i18n="media.manage.product.field.purchase_source.label">구매처</label>
+                              <input id="editPurchaseSource" data-i18n-placeholder="media.manage.product.field.purchase_source.placeholder" placeholder="예: 홍대 중고매장" />
+                            </div>
+                            <div>
+                              <label for="editConditionGrade" data-i18n="media.manage.product.field.condition_grade.label">일반 컨디션 메모</label>
+                              <input id="editConditionGrade" data-i18n-placeholder="media.manage.product.field.condition_grade.placeholder" placeholder="예: Very Good" />
+                            </div>
+                            <div>
+                              <label for="editPurchasePrice" data-i18n="media.manage.product.field.purchase_price.label">구매 가격</label>
+                              <input id="editPurchasePrice" type="number" min="0" step="0.01" data-i18n-placeholder="media.manage.product.field.purchase_price.placeholder" placeholder="예: 49800" />
+                            </div>
+                            <div>
+                              <label for="editCurrencyCode" data-i18n="media.manage.product.field.currency_code.label">통화</label>
+                              <select id="editCurrencyCode">
+                                <option value="KRW">KRW</option>
+                                <option value="USD">USD</option>
+                                <option value="GBP">GBP</option>
+                                <option value="JPY">JPY</option>
+                                <option value="EUR">EUR</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div id="homeEditMusicOpsRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid u-mt-0 u-hidden-initial">
+                            <div>
+                              <label for="editCoverCondition" data-i18n="media.manage.product.field.cover_condition.label">커버 컨디션</label>
+                              <select id="editCoverCondition">
+                                <option value="">-</option>
+                                <option value="M">M (Mint)</option>
+                                <option value="NM">NM / M- (Near Mint)</option>
+                                <option value="VG+">VG+ / E (Excellent)</option>
+                                <option value="VG">VG</option>
+                                <option value="G+">G+ / VG-</option>
+                                <option value="G">G</option>
+                                <option value="F">F (Fair)</option>
+                                <option value="P">P (Poor)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="editDiscCondition" data-i18n="media.manage.product.field.disc_condition.label">알판 컨디션</label>
+                              <select id="editDiscCondition">
+                                <option value="">-</option>
+                                <option value="M">M (Mint)</option>
+                                <option value="NM">NM / M- (Near Mint)</option>
+                                <option value="VG+">VG+ / E (Excellent)</option>
+                                <option value="VG">VG</option>
+                                <option value="G+">G+ / VG-</option>
+                                <option value="G">G</option>
+                                <option value="F">F (Fair)</option>
+                                <option value="P">P (Poor)</option>
+                              </select>
+                            </div>
+                            <label class="inline-check u-mt-20">
+                              <input id="editHasObi" type="checkbox" />
+                              <span data-i18n="media.manage.product.field.has_obi.label">OBI 포함</span>
+                            </label>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                          </div>
+                          <div id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid u-mt-0 u-hidden-initial">
+                            <div class="span-4">
+                              <label for="homeEditCoverImagePaste" data-i18n="media.manage.product.field.cover_upload.label">커버 직접 등록 / 붙여넣기 / URL</label>
+                              <div class="u-flex-stretch-gap-6">
+                                <input id="homeEditCoverImageFile" class="u-maxw-220" type="file" accept="image/*" />
+                                <textarea
+                                  id="homeEditCoverImagePaste"
+                                  class="image-paste-box u-minh-38 u-flex-1"
+                                  data-i18n-placeholder="media.manage.product.field.cover_upload.placeholder"
+                                  placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
+                                ></textarea>
+                              </div>
+                            </div>
+                            <div class="span-2">
+                              <label data-i18n="media.manage.product.field.current_cover.label">현재 커버</label>
+                              <div class="home-edit-cover-meta-box">
+                                <div id="homeEditCoverImagePreview" class="image-chip-list"><span class="mini" data-i18n="media.manage.product.state.no_cover">없음</span></div>
+                                <div id="homeEditCoverCatalogMeta" class="home-edit-cover-meta-text" data-i18n="media.manage.product.state.no_catalog_meta">카탈로그 정보 없음</div>
+                                <div id="homeEditCoverSourceLink" class="home-edit-cover-link u-hidden-initial"></div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="home-product-note u-mt-0">
+                            <label for="editMemoryNote" data-i18n="media.manage.product.field.memory_note.label">기억 메모</label>
+                            <textarea id="editMemoryNote"></textarea>
+                          </div>
+                          <div class="home-edit-flag-row home-product-flags">
+                            <label class="inline-check">
+                              <input id="editIsSecondHand" type="checkbox" />
+                              <span data-i18n="media.manage.product.field.is_second_hand.label">중고 상품</span>
+                            </label>
+                            <label class="inline-check">
+                              <input id="editPromoNfs" type="checkbox" />
+                              <span data-i18n="media.manage.product.field.promo_nfs.label">홍보반 / Not For Sale</span>
+                            </label>
+                          </div>
+                        </div>
+                      </details>
                     </div>
-                    <div>
-                      <label for="editConditionGrade" data-i18n="media.manage.product.field.condition_grade.label">일반 컨디션 메모</label>
-                      <input id="editConditionGrade" data-i18n-placeholder="media.manage.product.field.condition_grade.placeholder" placeholder="예: Very Good" />
-                    </div>
-                    <div>
-                      <label for="editPurchasePrice" data-i18n="media.manage.product.field.purchase_price.label">구매 가격</label>
-                      <input id="editPurchasePrice" type="number" min="0" step="0.01" data-i18n-placeholder="media.manage.product.field.purchase_price.placeholder" placeholder="예: 49800" />
-                    </div>
-                    <div>
-                      <label for="editCurrencyCode" data-i18n="media.manage.product.field.currency_code.label">통화</label>
-                      <select id="editCurrencyCode">
-                        <option value="KRW">KRW</option>
-                        <option value="USD">USD</option>
-                        <option value="GBP">GBP</option>
-                        <option value="JPY">JPY</option>
-                        <option value="EUR">EUR</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div id="homeEditMusicOpsRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid u-mt-0 u-hidden-initial">
-                    <div>
-                      <label for="editCoverCondition" data-i18n="media.manage.product.field.cover_condition.label">커버 컨디션</label>
-                      <select id="editCoverCondition">
-                        <option value="">-</option>
-                        <option value="M">M (Mint)</option>
-                        <option value="NM">NM / M- (Near Mint)</option>
-                        <option value="VG+">VG+ / E (Excellent)</option>
-                        <option value="VG">VG</option>
-                        <option value="G+">G+ / VG-</option>
-                        <option value="G">G</option>
-                        <option value="F">F (Fair)</option>
-                        <option value="P">P (Poor)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label for="editDiscCondition" data-i18n="media.manage.product.field.disc_condition.label">알판 컨디션</label>
-                      <select id="editDiscCondition">
-                        <option value="">-</option>
-                        <option value="M">M (Mint)</option>
-                        <option value="NM">NM / M- (Near Mint)</option>
-                        <option value="VG+">VG+ / E (Excellent)</option>
-                        <option value="VG">VG</option>
-                        <option value="G+">G+ / VG-</option>
-                        <option value="G">G</option>
-                        <option value="F">F (Fair)</option>
-                        <option value="P">P (Poor)</option>
-                      </select>
-                    </div>
-                    <label class="inline-check u-mt-20">
-                      <input id="editHasObi" type="checkbox" />
-                      <span data-i18n="media.manage.product.field.has_obi.label">OBI 포함</span>
-                    </label>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                  </div>
-                  <div id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid u-mt-0 u-hidden-initial">
-                    <div class="span-4">
-                      <label for="homeEditCoverImagePaste" data-i18n="media.manage.product.field.cover_upload.label">커버 직접 등록 / 붙여넣기 / URL</label>
-                      <div class="u-flex-stretch-gap-6">
-                        <input id="homeEditCoverImageFile" class="u-maxw-220" type="file" accept="image/*" />
-                        <textarea
-                          id="homeEditCoverImagePaste"
-                          class="image-paste-box u-minh-38 u-flex-1"
-                          data-i18n-placeholder="media.manage.product.field.cover_upload.placeholder"
-                          placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
-                        ></textarea>
+            <div id="homeEditorProductBlock">
+                      <div id="homeEditInfoSplit" class="home-edit-info-split">
+                        <div id="homeEditProductPane">
+                          <div class="u-mb-4"><strong>부가 정보</strong></div>
+                          <div id="homeEditProductCoreFields" class="ops-compact-form-row home-manage-product-row--primary">
+                            <div>
+                              <label for="editSlotId" data-i18n="media.manage.product.field.slot_id.label">보관 슬롯</label>
+                              <select id="editSlotId"><option value="" data-i18n="common.unspecified">미지정</option></select>
+                            </div>
+                            <div id="homeEditLinkedArtistWrap">
+                              <label for="editLinkedArtistName" data-i18n="media.manage.product.field.linked_artist_name.label">연계 아티스트명</label>
+                              <input id="editLinkedArtistName" data-i18n-placeholder="media.manage.product.field.linked_artist_name.placeholder" placeholder="예: 산울림" />
+                            </div>
+                            <div>
+                              <label for="editPreferredStorageSizeGroup" data-i18n="media.manage.product.field.preferred_size.label">보관 규격</label>
+                              <select id="editPreferredStorageSizeGroup" style="max-width:110px">
+                                <option value="STD" data-i18n="common.size_group.std">CD</option>
+                                <option value="BOOK" data-i18n="common.size_group.book">CD확장</option>
+                                <option value="LP" data-i18n="common.size_group.lp">LP</option>
+                                <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
+                                <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
+                                <option value="OVERSIZE" data-i18n="common.size_group.oversize">박스셋</option>
+                                <option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option>
+                                <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
+                                <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel</option>
+                                <option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="editStatus" data-i18n="media.manage.product.field.status.label">상태</label>
+                              <select id="editStatus">
+                                <option>IN_COLLECTION</option>
+                                <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="editSignatureType" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
+                              <select id="editSignatureType">
+                                <option>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="editDisplayRank" data-i18n="media.manage.product.field.display_rank.label">진열 순서</label>
+                              <input id="editDisplayRank" type="number" />
+                            </div>
+                          </div>
+                          <input id="editCategory" type="hidden" value="LP" />
+                          <input id="editSizeGroup" type="hidden" value="STD" />
+                          <input id="editReleaseType" type="hidden" value="" />
+                          <input id="editReleasedDate" type="hidden" />
+                          <input id="editGenres" type="hidden" />
+                        </div>
+
                       </div>
                     </div>
-                    <div class="span-2">
-                      <label data-i18n="media.manage.product.field.current_cover.label">현재 커버</label>
-                      <div class="home-edit-cover-meta-box">
-                        <div id="homeEditCoverImagePreview" class="image-chip-list"><span class="mini" data-i18n="media.manage.product.state.no_cover">없음</span></div>
-                        <div id="homeEditCoverCatalogMeta" class="home-edit-cover-meta-text" data-i18n="media.manage.product.state.no_catalog_meta">카탈로그 정보 없음</div>
-                        <div id="homeEditCoverSourceLink" class="home-edit-cover-link u-hidden-initial"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="home-product-note u-mt-0">
-                    <label for="editMemoryNote" data-i18n="media.manage.product.field.memory_note.label">기억 메모</label>
-                    <textarea id="editMemoryNote"></textarea>
-                  </div>
-                  <div class="home-edit-flag-row home-product-flags">
-                    <label class="inline-check">
-                      <input id="editIsSecondHand" type="checkbox" />
-                      <span data-i18n="media.manage.product.field.is_second_hand.label">중고 상품</span>
-                    </label>
-                    <label class="inline-check">
-                      <input id="editPromoNfs" type="checkbox" />
-                      <span data-i18n="media.manage.product.field.promo_nfs.label">홍보반 / Not For Sale</span>
-                    </label>
-                  </div>
-                </div>
-              </details>
-            </div>
-
+            </div><!-- /home-edit-section-frame -->
+            </div><!-- /homeEditLeftPane -->
             <div id="homeEditTrackPanel" class="home-edit-track-panel u-hidden-initial">
-              <div class="section-divider u-mt-0">
+              <div id="homeEditTrackListWrap">
+                <label for="editTrackList" data-i18n="media.manage.field.track_list.label">곡 리스트 (한 줄에 1곡)</label>
+                <textarea id="editTrackList"></textarea>
+              </div>
+              <div class="section-divider">
                 <h2 data-i18n="media.manage.product.field.track_info.title">곡 정보</h2>
               </div>
               <div id="homeEditTrackInfoSummary" class="home-edit-track-summary" data-i18n="media.manage.product.field.track_info.empty">곡 정보가 없습니다.</div>
@@ -18288,412 +18527,433 @@
                 <div class="muted" data-i18n="media.manage.product.field.track_info.empty">곡 정보가 없습니다.</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div id="homeEditGoodsBox" class="music-box">
-          <div>
-            <label for="editGoodsImageUrls" data-i18n="media.manage.goods.field.image_urls.label">사진 URL (줄바꿈, 복수)</label>
-            <textarea id="editGoodsImageUrls" data-i18n-placeholder="media.manage.goods.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
-          </div>
-          <div class="grid-3 u-mt-10">
-            <div id="editPosterSpecWrap">
-              <label for="editPosterStorageSpec" data-i18n="media.manage.goods.field.poster_storage_spec.label">포스터 보관 규격</label>
-              <input id="editPosterStorageSpec" data-i18n-placeholder="media.manage.goods.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
             </div>
-            <div id="editTshirtSizeWrap">
-              <label for="editTshirtSize" data-i18n="media.manage.goods.field.tshirt_size.label">티셔츠 사이즈</label>
-              <input id="editTshirtSize" data-i18n-placeholder="media.manage.goods.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
+            <div id="homeEditGoodsBox" class="music-box">
+                      <div>
+                        <label for="editGoodsImageUrls" data-i18n="media.manage.goods.field.image_urls.label">사진 URL (줄바꿈, 복수)</label>
+                        <textarea id="editGoodsImageUrls" data-i18n-placeholder="media.manage.goods.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
+                      </div>
+                      <div class="grid-3 u-mt-10">
+                        <div id="editPosterSpecWrap">
+                          <label for="editPosterStorageSpec" data-i18n="media.manage.goods.field.poster_storage_spec.label">포스터 보관 규격</label>
+                          <input id="editPosterStorageSpec" data-i18n-placeholder="media.manage.goods.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
+                        </div>
+                        <div id="editTshirtSizeWrap">
+                          <label for="editTshirtSize" data-i18n="media.manage.goods.field.tshirt_size.label">티셔츠 사이즈</label>
+                          <input id="editTshirtSize" data-i18n-placeholder="media.manage.goods.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
+                        </div>
+                        <div id="editCupMaterialWrap">
+                          <label for="editCupMaterial" data-i18n="media.manage.goods.field.cup_material.label">컵 재질</label>
+                          <input id="editCupMaterial" data-i18n-placeholder="media.manage.goods.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
+                        </div>
+                      </div>
+                      <div class="grid-3 u-mt-10">
+                        <div id="editHatSizeWrap">
+                          <label for="editHatSize" data-i18n="media.manage.goods.field.hat_size.label">모자 사이즈</label>
+                          <input id="editHatSize" data-i18n-placeholder="media.manage.goods.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
+                        </div>
+                        <div></div>
+                        <div></div>
+                      </div>
+                    </div>
+            <div id="homeEditorActionBlock">
+                    <div id="homeEditorActionRow" class="row home-manage-actions-right u-mt-12">
+                      <button id="homeEditSaveBtn" class="btn" data-i18n="media.manage.product.action.save">수정 저장</button>
+                      <button id="homeEditDeleteBtn" class="btn ghost" type="button" data-i18n="media.manage.product.action.delete">삭제</button>
+                    </div>
+                    <div id="homeEditStatus" class="status"></div>
+                    </div>
             </div>
-            <div id="editCupMaterialWrap">
-              <label for="editCupMaterial" data-i18n="media.manage.goods.field.cup_material.label">컵 재질</label>
-              <input id="editCupMaterial" data-i18n-placeholder="media.manage.goods.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
-            </div>
-          </div>
-          <div class="grid-3 u-mt-10">
-            <div id="editHatSizeWrap">
-              <label for="editHatSize" data-i18n="media.manage.goods.field.hat_size.label">모자 사이즈</label>
-              <input id="editHatSize" data-i18n-placeholder="media.manage.goods.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
-            </div>
-            <div></div>
-            <div></div>
-          </div>
-        </div>
-
-        <details id="homeProductRelationSection" class="home-manage-secondary-block goods-map-section u-mt-10 u-hidden-initial">
-          <summary class="home-manage-secondary-summary" data-i18n="media.manage.product_relation.title">상품 관계</summary>
-          <div class="mini home-master-lookup-note" data-i18n="media.manage.product_relation.subtitle">마스터, 시리즈, 박스세트, 연관 발매를 함께 관리</div>
-          <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
-
-          <div class="goods-map-section compact-stack u-grid-cols-1">
-            <div class="compact-stack-grid">
-              <div class="result-head span-2 u-mb-0">
-                <strong data-i18n="media.manage.product_relation.block.master">마스터 하위</strong>
-                <span class="mini" data-i18n="media.manage.product_relation.block.master_note">기존 앨범 마스터 연계를 기준으로 표시합니다.</span>
-              </div>
-              <div id="homeProductRelationMasterList" class="goods-chip-list span-2"></div>
-            </div>
-          </div>
-
-          <div class="goods-map-section compact-stack">
-            <div class="compact-stack-grid">
-              <div class="result-head span-2 u-mb-0">
-                <strong data-i18n="media.manage.product_relation.block.series">시리즈 소속</strong>
-              </div>
-              <div id="homeProductRelationSeriesList" class="goods-chip-list span-2"></div>
-              <div class="span-2">
-                <label for="homeProductRelationSeriesQuery" class="mini" data-i18n="media.manage.product_relation.field.series_query.label">시리즈명</label>
-                <input id="homeProductRelationSeriesQuery" data-i18n-placeholder="media.manage.product_relation.field.series_query.placeholder" placeholder="예: Blue Note 70th" />
-              </div>
-            </div>
-            <div class="compact-stack-actions">
-              <button id="homeProductRelationSeriesSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
-              <button id="homeProductRelationCreateGroupBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.create_series">시리즈 생성</button>
-            </div>
-            <div id="homeProductRelationSeriesResults" class="goods-target-results span-2"></div>
-          </div>
-
-          <div class="goods-map-section compact-stack">
-            <div class="compact-stack-grid">
-              <div class="result-head span-2 u-mb-0">
-                <strong data-i18n="media.manage.product_relation.block.release">박스세트 / 연관 발매</strong>
-              </div>
-              <div id="homeProductRelationReleaseList" class="goods-chip-list span-2"></div>
-              <div>
-                <label for="homeProductRelationType" class="mini" data-i18n="media.manage.product_relation.field.relation_type.label">관계 타입</label>
-                <select id="homeProductRelationType">
-                  <option value="BOX_MEMBER_OF" data-i18n="media.manage.product_relation.type.box_member_of">박스 구성품</option>
-                  <option value="RELATED_RELEASE" data-i18n="media.manage.product_relation.type.related_release">연관 발매</option>
-                </select>
-              </div>
-              <div>
-                <label for="homeProductRelationNote" class="mini" data-i18n="media.manage.product_relation.field.note.label">관계 메모</label>
-                <input id="homeProductRelationNote" data-i18n-placeholder="media.manage.product_relation.field.note.placeholder" placeholder="선택 메모" />
-              </div>
-              <div class="span-2">
-                <label for="homeProductRelationReleaseQuery" class="mini" data-i18n="media.manage.product_relation.field.release_query.label">상품 검색</label>
-                <input id="homeProductRelationReleaseQuery" data-i18n-placeholder="media.manage.product_relation.field.release_query.placeholder" placeholder="예: 박스세트명 / 연관 발매명" />
-              </div>
-            </div>
-            <div class="compact-stack-actions">
-              <button id="homeProductRelationSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
-            </div>
-            <div id="homeProductRelationReleaseResults" class="goods-target-results span-2"></div>
-          </div>
-
-          <div class="goods-map-section compact-stack u-grid-cols-1">
-            <div class="compact-stack-grid">
-              <div class="result-head span-2 u-mb-0">
-                <strong data-i18n="media.manage.product_relation.block.components">박스 구성품</strong>
-              </div>
-              <div id="homeProductRelationComponentList" class="goods-target-results span-2"></div>
-            </div>
-          </div>
-
-          <div class="compact-stack u-mt-6">
-            <div id="homeProductRelationStatus" class="status span-2"></div>
-            <div class="compact-stack-actions span-2">
-              <button id="homeProductRelationSaveBtn" class="btn ghost" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
-            </div>
-          </div>
-        </details>
-
-        <div id="homeEditorActionBlock">
-        <div id="homeEditorActionRow" class="row home-manage-actions-right u-mt-12">
-          <button id="homeEditSaveBtn" class="btn" data-i18n="media.manage.product.action.save">수정 저장</button>
-          <button id="homeEditDeleteBtn" class="btn ghost" type="button" data-i18n="media.manage.product.action.delete">삭제</button>
-        </div>
-        <div id="homeEditStatus" class="status"></div>
-        </div>
-
-        <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack u-hidden-initial">
-          <div class="compact-stack-grid">
-            <div class="home-goods-zone-kicker span-2" data-i18n="media.manage.collectibles.kicker">컬렉터블 전용 영역</div>
-            <div class="mini home-goods-zone-note span-2" data-i18n="media.manage.collectibles.note">음반/상품 편집 구역과 분리된 연계 컬렉터블 목록입니다.</div>
-            <div class="section-divider span-2 u-mt-8">
-              <h2 data-i18n="media.manage.collectibles.title">연계 컬렉터블</h2>
-            </div>
-            <div id="homeMasterGoodsList" class="related-list span-2"></div>
-          </div>
-        </div>
-
-        <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack">
-          <div class="compact-stack-grid">
-            <div class="mini muted span-2 u-mt-0" data-i18n="media.manage.collectibles.panel_intro">컬렉터블 등록과 검색은 상단 `컬렉터블` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
-            <div class="section-divider span-2 u-mt-10">
-              <h2 data-i18n="media.manage.collectibles.panel_title">마스터 연계 컬렉터블</h2>
-            </div>
-            <div class="mini span-2 u-mt-6" data-i18n="media.manage.collectibles.panel_note">콜라보, 레이블 행사 컬렉터블, 단독 컬렉터블은 `컬렉터블` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.</div>
-            <div class="span-2">
-              <label data-i18n="media.manage.collectibles.field.current_master">현재 연계 기준</label>
-              <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
-            </div>
-          </div>
-          <div class="home-linked-goods-register-row">
-            <div class="home-linked-goods-register-action">
-              <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">컬렉터블 탭에서 연계 컬렉터블 등록</button>
-              <span class="help-dot" tabindex="0" data-help-key="media.manage.collectibles.register_method.help">?</span>
-            </div>
-          </div>
-          <div id="homeLinkedGoodsStatus" class="status span-2"></div>
-          <div id="homeLinkedGoodsLegacyFields" class="span-2 u-hidden-initial" hidden>
-            <div class="grid-6">
-              <div>
-                <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
-                <select id="homeLinkedGoodsCategory">
-                  <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
-                  <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
-                </select>
-              </div>
-              <div class="span-2">
-                <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
-                <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
-              </div>
-              <div>
-                <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
-                <select id="homeLinkedGoodsSizeGroup">
-                  <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
-                </select>
-              </div>
-            </div>
-            <div class="grid-6 u-mt-6">
-              <div>
-                <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
-                <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
-              </div>
-              <div class="span-2">
-                <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
-                <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
-              </div>
-              <div id="homeLinkedPosterSpecWrap">
-                <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
-                <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
-              </div>
-              <div id="homeLinkedTshirtSizeWrap">
-                <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
-                <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
-              </div>
-              <div id="homeLinkedCupMaterialWrap">
-                <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
-                <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
-              </div>
-              <div id="homeLinkedHatSizeWrap">
-                <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
-                <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
-              </div>
-            </div>
-            <div class="grid-6 u-mt-6">
-              <div class="span-2">
-                <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
-                <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
-              </div>
-              <div class="span-2">
-                <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
-                <textarea
-                  id="homeLinkedGoodsImagePaste"
-                  class="image-paste-box"
-                  data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
-                  placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
-                ></textarea>
-              </div>
-              <div class="span-2">
-                <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
-                <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
-              </div>
-            </div>
-            <input id="homeLinkedGoodsImageUrls" type="hidden" />
-          </div>
-        </div>
-
-        <div id="homeManageMasterSection">
-          <div class="home-master-lookup-kicker" data-i18n="media.manage.master.structure.kicker">마스터 / 연계 작업</div>
-          <div class="mini home-master-lookup-note" data-i18n="media.manage.master.structure.note">이 영역에서는 마스터 묶음 확인, 다른 소스 후보 검토, 연계 상품 추가를 다룹니다. 개별 상품의 빠른 수정은 위 편집 패널에서 진행합니다.</div>
+          </details>
           <div id="homeMasterSummarySection" class="u-hidden-initial">
-            <div class="section-divider u-mt-10">
-              <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
-            </div>
-            <div id="homeMasterStatus" class="status"></div>
-            <div id="homeMasterMeta" class="compact-line u-mt-6"></div>
-            <div id="homeMasterCorrectionRow" class="row u-mt-6 u-row-end-gap-8-wrap u-hidden-initial">
-              <label class="u-fixed-label-130">
-                <div class="dashboard-selected-sort-artist-label mini">
-                  <span data-i18n="media.manage.master.correction.field.release_year.label">운영 발매연도</span><span class="help-dot" tabindex="0" data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
-                </div>
-                <input id="homeMasterCorrectionReleaseYear" type="number" min="1900" max="2100" placeholder="예: 1978" />
-              </label>
-              <label class="u-fixed-label-160">
-                <div class="dashboard-selected-sort-artist-label mini">
-                  <span data-i18n="media.manage.master.correction.field.domain_code.label">운영 도메인</span><span class="help-dot" tabindex="0" data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
-                </div>
-                <select id="homeMasterCorrectionDomainCode">
-                  <option value=""></option>
-                  <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                  <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                  <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                  <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                  <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                  <option value="WORLD_OTHER" data-i18n="common.domain.world_other">월드 기타</option>
-                  <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                </select>
-              </label>
-              <label class="u-flex-1-280">
-                <div class="dashboard-selected-sort-artist-label mini">
-                  <span data-i18n="media.manage.master.correction.field.note.label">교정 메모</span><span class="help-dot" tabindex="0" data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다. 이후 소스 교체나 재정렬 때 참고용으로 사용합니다.">?</span>
-                </div>
-                <input id="homeMasterCorrectionNote" type="text" placeholder="예: Discogs는 재반 기준, 내부 정렬은 원발매 기준" />
-              </label>
-              <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
-              <div id="homeMasterCorrectionSourceHint" class="mini u-flex-1-280" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
-            </div>
-            <div id="homeMasterCorrectionStatus" class="status"></div>
-            <div id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master u-hidden-initial">
-              <label class="dashboard-selected-sort-artist-label mini" for="homeMasterSortArtistName">
-                <span data-i18n="media.manage.master.sort_artist.label">정렬 아티스트명</span><span class="help-dot" tabindex="0" data-help="같은 앨범 마스터의 LP, CD 등 모든 미디어 정렬에 공통으로 적용됩니다. 현지 표기 기준으로 순서를 맞추고 싶을 때 사용합니다.">?</span>
-              </label>
-              <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-              <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
-              <div class="dashboard-selected-sort-artist-note mini" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
-            </div>
-            <div id="homeMasterSortArtistStatus" class="status"></div>
-            <div id="homeMasterRelatedList" class="related-list"></div>
-          </div>
+                      <div class="section-divider u-mt-10">
+                        <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
+                      </div>
+                      <div id="homeMasterStatus" class="status"></div>
+                      <div id="homeMasterMeta" class="compact-line u-mt-6"></div>
+                    </div>
           <div id="homeMasterActionMount"></div>
           <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
-            <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
-          </div>
-          <div id="homeMasterAddBlock">
-          <div class="home-master-lookup-kicker" data-i18n="media.manage.master.lookup.kicker">후보 조회</div>
-          <div class="section-divider u-mt-0">
-            <h2 data-i18n="media.manage.master.lookup.title">마스터 후보 조회 / 연결</h2>
-          </div>
-          <div class="mini home-master-lookup-note" data-i18n="media.manage.master.lookup.note">필요할 때만 펼쳐 현재 상품과 연결할 마스터 후보를 확인합니다. 빠른 상품 수정은 위에서, 다른 소스 상품 추가는 아래 블록에서 이어집니다.</div>
-          <input id="homeMasterAddCatalogNo" type="hidden" />
-          <input id="homeMasterAddBarcode" type="hidden" />
-          <button id="homeMasterAddResetBtn" type="button" hidden aria-hidden="true"></button>
-          <div id="homeMasterAddActionRow" class="row home-manage-actions-right">
-            <button id="homeMasterAddLoadBtn" class="btn ghost home-master-load-btn" type="button" data-i18n="media.manage.master.lookup.action.load">조회</button>
-          </div>
-          <div id="homeMasterAddStatus" class="status"></div>
-          <details id="homeMasterLookupResultsDetails" class="home-manage-secondary-block u-mt-8 u-hidden-initial">
-            <summary class="home-master-results-summary home-manage-secondary-summary" data-i18n="media.manage.master.lookup.results.toggle">조회 후보 보기 / 접기</summary>
-            <div id="homeMasterAddResultsHead" class="result-head">
-              <strong data-i18n="media.manage.master.lookup.results.title">조회 결과</strong>
-              <span class="mini" id="homeMasterAddCount" data-i18n="common.count.zero_items">0건</span>
-            </div>
-            <div id="homeMasterAddResultsPager" class="pager">
-              <div class="pager-left">
-                <div id="homeMasterAddPageInfo" class="mini">page 1</div>
-              </div>
-              <div class="pager-right">
-                <div class="row home-manage-actions-right">
-                  <button id="homeMasterAddPrevBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--previous" type="button" title="이전" aria-label="이전" data-i18n="common.previous" data-i18n-title="common.previous" data-i18n-aria-label="common.previous">이전</button>
-                  <button id="homeMasterAddNextBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--next" type="button" title="다음" aria-label="다음" data-i18n="common.next" data-i18n-title="common.next" data-i18n-aria-label="common.next">다음</button>
-                </div>
-              </div>
-            </div>
-            <div id="homeMasterAddResults" class="result-list"></div>
-          </details>
-          </div>
-
-          <div id="homeEditorMetaFetchBlock" class="u-mt-8">
-          <details id="homeMasterFetchDetails" class="home-manage-secondary-block u-mt-12">
-            <summary class="home-manage-secondary-summary" data-i18n="media.manage.master.fetch.title">다른 소스 상품 추가 (선택)</summary>
-            <p class="mini home-manage-secondary-note u-mt-8" data-i18n="media.manage.master.fetch.note">현재 마스터에 없는 상품을 다른 소스에서 찾아 연계 상품으로 추가합니다. 기존 상품의 소스 교체는 `소스 보강` 탭에서 처리합니다.</p>
-            <div class="grid-6">
-              <div>
-                <label for="homeMetaSource" data-i18n="media.manage.master.fetch.field.source.label">검색 소스</label>
-                <select id="homeMetaSource">
-                  <option>AUTO</option>
-                  <option>DISCOGS</option>
-                  <option>ALADIN</option>
-                  <option selected>MANIADB</option>
-                </select>
-              </div>
-              <div class="span-5">
-                <div class="meta-search-grid">
-                  <div class="meta-search-box">
-                    <div class="result-head u-mb-0">
-                      <strong data-i18n="media.manage.master.fetch.barcode.title">바코드 조회</strong>
-                      <span class="mini">EAN / UPC</span>
+                      <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
                     </div>
-                    <div class="meta-search-row">
-                      <div>
-                        <label for="homeMetaBarcode" data-i18n="media.manage.master.fetch.barcode.field.label">바코드</label>
-                        <input id="homeMetaBarcode" data-i18n-placeholder="media.manage.master.fetch.barcode.field.placeholder" placeholder="예: 8809338405141" />
+          <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack u-hidden-initial">
+                    <div class="compact-stack-grid">
+                      <div class="home-goods-zone-kicker span-2" data-i18n="media.manage.collectibles.kicker">수집품 전용 영역</div>
+                      <div class="mini home-goods-zone-note span-2" data-i18n="media.manage.collectibles.note">음반/상품 편집 구역과 분리된 연계 수집품 목록입니다.</div>
+                      <div class="section-divider span-2 u-mt-8">
+                        <h2 data-i18n="media.manage.collectibles.title">연계 수집품</h2>
                       </div>
-                      <button id="homeMetaBarcodeBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.barcode.action.lookup">바코드 조회</button>
+                      <div id="homeMasterGoodsList" class="related-list span-2"></div>
                     </div>
                   </div>
-                  <div class="meta-search-box">
-                    <div class="result-head u-mb-0">
-                      <strong data-i18n="media.manage.master.fetch.query.title">무바코드 조회</strong>
-                      <span class="mini" data-i18n="media.manage.master.fetch.query.meta">아티스트명 / 상품명 / 카탈로그</span>
-                    </div>
-                    <div class="meta-search-row">
-                      <div>
-                        <label for="homeMetaQuery" data-i18n="media.manage.master.fetch.query.field.label">조회어</label>
-                        <input id="homeMetaQuery" data-i18n-placeholder="media.manage.master.fetch.query.field.placeholder" placeholder="예: 산울림 13집 MVKL-1113" />
+          <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack">
+                    <div class="compact-stack-grid">
+                      <div class="mini muted span-2 u-mt-0" data-i18n="media.manage.collectibles.panel_intro">수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
+                      <div class="section-divider span-2 u-mt-10">
+                        <h2 data-i18n="media.manage.collectibles.panel_title">마스터 연계 수집품</h2>
                       </div>
-                      <button id="homeMetaQueryBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.query.action.lookup">무바코드 조회</button>
+                      <div class="mini span-2 u-mt-6" data-i18n="media.manage.collectibles.panel_note">콜라보, 레이블 행사 수집품, 단독 수집품은 `수집품` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.</div>
+                      <div class="span-2">
+                        <label data-i18n="media.manage.collectibles.field.current_master">현재 연계 기준</label>
+                        <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
+                      </div>
+                    </div>
+                    <div class="home-linked-goods-register-row">
+                      <div class="home-linked-goods-register-action">
+                        <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">수집품 탭에서 연계 수집품 등록</button>
+                        <span class="help-dot" tabindex="0" data-help-key="media.manage.collectibles.register_method.help">?</span>
+                      </div>
+                    </div>
+                    <div id="homeLinkedGoodsStatus" class="status span-2"></div>
+                    <div id="homeLinkedGoodsLegacyFields" class="span-2 u-hidden-initial" hidden>
+                      <div class="grid-6">
+                        <div>
+                          <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
+                          <select id="homeLinkedGoodsCategory">
+                            <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
+                            <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
+                          </select>
+                        </div>
+                        <div class="span-2">
+                          <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
+                          <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
+                        </div>
+                        <div>
+                          <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
+                          <select id="homeLinkedGoodsSizeGroup">
+                            <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="grid-6 u-mt-6">
+                        <div>
+                          <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
+                          <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
+                        </div>
+                        <div class="span-2">
+                          <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
+                          <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
+                        </div>
+                        <div id="homeLinkedPosterSpecWrap">
+                          <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
+                          <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
+                        </div>
+                        <div id="homeLinkedTshirtSizeWrap">
+                          <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
+                          <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
+                        </div>
+                        <div id="homeLinkedCupMaterialWrap">
+                          <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
+                          <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
+                        </div>
+                        <div id="homeLinkedHatSizeWrap">
+                          <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
+                          <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
+                        </div>
+                      </div>
+                      <div class="grid-6 u-mt-6">
+                        <div class="span-2">
+                          <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
+                          <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
+                        </div>
+                        <div class="span-2">
+                          <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
+                          <textarea
+                            id="homeLinkedGoodsImagePaste"
+                            class="image-paste-box"
+                            data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
+                            placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
+                          ></textarea>
+                        </div>
+                        <div class="span-2">
+                          <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
+                          <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
+                        </div>
+                      </div>
+                      <input id="homeLinkedGoodsImageUrls" type="hidden" />
+                    </div>
+                  </div>
+        </div>
+
+        <!-- ══ 섹션 2: 상품 정보 ══ -->
+        <div id="homeSection2ProductInfo">
+          <div class="section-divider u-mt-12">
+            <h2><span data-i18n="media.manage.section2.title">2. 상품 정보</span></h2>
+          </div>
+          <div id="homeCabinetSection">
+                    <div class="section-divider u-mt-8">
+                      <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
+                    </div>
+                    <div class="shelf-toolbar">
+                      <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
+                      <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
+                      <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
+                    </div>
+                    <div class="shelf-track-wrap">
+                      <div id="homeEditShelfTrack" class="shelf-track"></div>
+                    </div>
+                    <div id="homeEditShelfStatus" class="status"></div>
+                    <div class="row u-mt-6 u-flex-between-center-wrap">
+                      <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
+                      <div class="row home-manage-actions-right">
+                        <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
+                        <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
+                      </div>
+                    </div>
+                    <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
+                    <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
+                  </div>
+          <div id="homeEditorStandaloneMount" class="u-mt-10"></div>
+
+          <!-- 2-1: 보유 상품 -->
+          <div id="homeSection21OwnedItem">
+            <div class="section-divider u-mt-8">
+              <h2><span data-i18n="media.manage.section2_1.title">2-1. 보유 상품</span></h2>
+            </div>
+            <!-- 마스터 하위 전체 상품 목록 (클릭 시 하단 편집 폼 활성) -->
+            <div id="homeMasterRelatedList" class="related-list"></div>
+            <details id="homeProductRelationSection" class="home-manage-secondary-block goods-map-section u-mt-10 u-hidden-initial">
+                      <summary class="home-manage-secondary-summary" data-i18n="media.manage.product_relation.title">상품 관계</summary>
+                      <div class="mini home-master-lookup-note" data-i18n="media.manage.product_relation.subtitle">마스터, 시리즈, 박스세트, 연관 발매를 함께 관리</div>
+                      <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
+
+                      <div class="goods-map-section compact-stack u-grid-cols-1">
+                        <div class="compact-stack-grid">
+                          <div class="result-head span-2 u-mb-0">
+                            <strong data-i18n="media.manage.product_relation.block.master">마스터 하위</strong>
+                            <span class="mini" data-i18n="media.manage.product_relation.block.master_note">기존 앨범 마스터 연계를 기준으로 표시합니다.</span>
+                          </div>
+                          <div id="homeProductRelationMasterList" class="goods-chip-list span-2"></div>
+                        </div>
+                      </div>
+
+                      <div class="goods-map-section compact-stack">
+                        <div class="compact-stack-grid">
+                          <div class="result-head span-2 u-mb-0">
+                            <strong data-i18n="media.manage.product_relation.block.series">시리즈 소속</strong>
+                          </div>
+                          <div id="homeProductRelationSeriesList" class="goods-chip-list span-2"></div>
+                          <div class="span-2">
+                            <label for="homeProductRelationSeriesQuery" class="mini" data-i18n="media.manage.product_relation.field.series_query.label">시리즈명</label>
+                            <input id="homeProductRelationSeriesQuery" data-i18n-placeholder="media.manage.product_relation.field.series_query.placeholder" placeholder="예: Blue Note 70th" />
+                          </div>
+                        </div>
+                        <div class="compact-stack-actions">
+                          <button id="homeProductRelationSeriesSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
+                          <button id="homeProductRelationCreateGroupBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.create_series">시리즈 생성</button>
+                        </div>
+                        <div id="homeProductRelationSeriesResults" class="goods-target-results span-2"></div>
+                      </div>
+
+                      <div class="goods-map-section compact-stack">
+                        <div class="compact-stack-grid">
+                          <div class="result-head span-2 u-mb-0">
+                            <strong data-i18n="media.manage.product_relation.block.release">박스세트 / 연관 발매</strong>
+                          </div>
+                          <div id="homeProductRelationReleaseList" class="goods-chip-list span-2"></div>
+                          <div>
+                            <label for="homeProductRelationType" class="mini" data-i18n="media.manage.product_relation.field.relation_type.label">관계 타입</label>
+                            <select id="homeProductRelationType">
+                              <option value="BOX_MEMBER_OF" data-i18n="media.manage.product_relation.type.box_member_of">박스 구성품</option>
+                              <option value="RELATED_RELEASE" data-i18n="media.manage.product_relation.type.related_release">연관 발매</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label for="homeProductRelationNote" class="mini" data-i18n="media.manage.product_relation.field.note.label">관계 메모</label>
+                            <input id="homeProductRelationNote" data-i18n-placeholder="media.manage.product_relation.field.note.placeholder" placeholder="선택 메모" />
+                          </div>
+                          <div class="span-2">
+                            <label for="homeProductRelationReleaseQuery" class="mini" data-i18n="media.manage.product_relation.field.release_query.label">상품 검색</label>
+                            <input id="homeProductRelationReleaseQuery" data-i18n-placeholder="media.manage.product_relation.field.release_query.placeholder" placeholder="예: 박스세트명 / 연관 발매명" />
+                          </div>
+                        </div>
+                        <div class="compact-stack-actions">
+                          <button id="homeProductRelationSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
+                        </div>
+                        <div id="homeProductRelationReleaseResults" class="goods-target-results span-2"></div>
+                      </div>
+
+                      <div class="goods-map-section compact-stack u-grid-cols-1">
+                        <div class="compact-stack-grid">
+                          <div class="result-head span-2 u-mb-0">
+                            <strong data-i18n="media.manage.product_relation.block.components">박스 구성품</strong>
+                          </div>
+                          <div id="homeProductRelationComponentList" class="goods-target-results span-2"></div>
+                        </div>
+                      </div>
+
+                      <div class="compact-stack u-mt-6">
+                        <div id="homeProductRelationStatus" class="status span-2"></div>
+                        <div class="compact-stack-actions span-2">
+                          <button id="homeProductRelationSaveBtn" class="btn ghost" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
+                        </div>
+                      </div>
+                    </details>
+          </div>
+
+          <!-- 2-2: 상품 추가 (마스터에서 / 다른소스에서) -->
+          <div id="homeSection22ProductAdd">
+            <div class="section-divider u-mt-12">
+              <h2><span data-i18n="media.manage.section2_2.title">2-2. 상품 추가</span></h2>
+            </div>
+
+            <!-- 2-2-A: 마스터에서 추가 (현 마스터와 연결할 후보 검색) -->
+            <div id="homeSection22FromMaster">
+              <div id="homeMasterAddBlock">
+                <div class="home-product-add-kicker" data-i18n="media.manage.section2_2.from_master.kicker">마스터에서 추가</div>
+                <div class="section-divider u-mt-4">
+                  <h3 data-i18n="media.manage.section2_2.from_master.title">마스터 후보 조회 / 연결</h3>
+                </div>
+                <div class="mini home-master-lookup-note" data-i18n="media.manage.master.lookup.note">필요할 때만 펼쳐 현재 상품과 연결할 마스터 후보를 확인합니다. 빠른 상품 수정은 위에서, 다른 소스 상품 추가는 아래 블록에서 이어집니다.</div>
+                <input id="homeMasterAddCatalogNo" type="hidden" />
+                <input id="homeMasterAddBarcode" type="hidden" />
+                <button id="homeMasterAddResetBtn" type="button" hidden aria-hidden="true"></button>
+                <div id="homeMasterAddActionRow" class="row home-manage-actions-right">
+                  <button id="homeMasterAddLoadBtn" class="btn ghost home-master-load-btn" type="button" data-i18n="media.manage.master.lookup.action.load">조회</button>
+                </div>
+                <div id="homeMasterAddStatus" class="status"></div>
+                <details id="homeMasterLookupResultsDetails" class="home-manage-secondary-block u-mt-8 u-hidden-initial">
+                  <summary class="home-master-results-summary home-manage-secondary-summary" data-i18n="media.manage.master.lookup.results.toggle">조회 후보 보기 / 접기</summary>
+                  <div id="homeMasterAddResultsHead" class="result-head">
+                    <strong data-i18n="media.manage.master.lookup.results.title">조회 결과</strong>
+                    <span class="mini" id="homeMasterAddCount" data-i18n="common.count.zero_items">0건</span>
+                  </div>
+                  <div id="homeMasterAddResultsPager" class="pager">
+                    <div class="pager-left">
+                      <div id="homeMasterAddPageInfo" class="mini">page 1</div>
+                    </div>
+                    <div class="pager-right">
+                      <div class="row home-manage-actions-right">
+                        <button id="homeMasterAddPrevBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--previous" type="button" title="이전" aria-label="이전" data-i18n="common.previous" data-i18n-title="common.previous" data-i18n-aria-label="common.previous">이전</button>
+                        <button id="homeMasterAddNextBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--next" type="button" title="다음" aria-label="다음" data-i18n="common.next" data-i18n-title="common.next" data-i18n-aria-label="common.next">다음</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="homeMasterAddResults" class="result-list"></div>
+                </details>
+              </div>
+            </div>
+
+            <!-- 2-2-B: 다른소스에서 추가 (바코드/쿼리 검색) -->
+            <div id="homeSection22FromSource">
+              <div class="home-product-add-kicker" data-i18n="media.manage.section2_2.from_source.kicker">다른소스에서 추가</div>
+              <div class="section-divider u-mt-4">
+                <h3 data-i18n="media.manage.section2_2.from_source.title">바코드 / 소스 검색으로 추가</h3>
+              </div>
+              <p class="mini home-manage-secondary-note u-mt-4" data-i18n="media.manage.master.fetch.note">현재 마스터에 없는 상품을 다른 소스에서 찾아 연계 상품으로 추가합니다. 기존 상품의 소스 교체는 `소스 보강` 탭에서 처리합니다.</p>
+              <div class="grid-6">
+                <div>
+                  <label for="homeMetaSource" data-i18n="media.manage.master.fetch.field.source.label">검색 소스</label>
+                  <select id="homeMetaSource">
+                    <option>AUTO</option>
+                    <option>DISCOGS</option>
+                    <option>ALADIN</option>
+                    <option selected>MANIADB</option>
+                  </select>
+                </div>
+                <div class="span-5">
+                  <div class="meta-search-grid">
+                    <div class="meta-search-box">
+                      <div class="result-head u-mb-0">
+                        <strong data-i18n="media.manage.master.fetch.barcode.title">바코드 조회</strong>
+                        <span class="mini">EAN / UPC</span>
+                      </div>
+                      <div class="meta-search-row">
+                        <div>
+                          <label for="homeMetaBarcode" data-i18n="media.manage.master.fetch.barcode.field.label">바코드</label>
+                          <input id="homeMetaBarcode" data-i18n-placeholder="media.manage.master.fetch.barcode.field.placeholder" placeholder="예: 8809338405141" />
+                        </div>
+                        <button id="homeMetaBarcodeBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.barcode.action.lookup">바코드 조회</button>
+                      </div>
+                    </div>
+                    <div class="meta-search-box">
+                      <div class="result-head u-mb-0">
+                        <strong data-i18n="media.manage.master.fetch.query.title">무바코드 조회</strong>
+                        <span class="mini" data-i18n="media.manage.master.fetch.query.meta">아티스트명 / 상품명 / 카탈로그</span>
+                      </div>
+                      <div class="meta-search-row">
+                        <div>
+                          <label for="homeMetaQuery" data-i18n="media.manage.master.fetch.query.field.label">조회어</label>
+                          <input id="homeMetaQuery" data-i18n-placeholder="media.manage.master.fetch.query.field.placeholder" placeholder="예: 산울림 13집 MVKL-1113" />
+                        </div>
+                        <button id="homeMetaQueryBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.query.action.lookup">무바코드 조회</button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+              <div class="row u-mt-8 u-hidden-initial">
+                <div class="mini"><span data-i18n="media.manage.master.fetch.current_source">현재 소스 링크</span>: <span id="homeMetaLinkedSource">-</span></div>
+              </div>
+              <div id="homeMetaStatus" class="status"></div>
+              <div class="result-head u-mt-10">
+                <strong data-i18n="media.manage.master.fetch.results.title">추가 후보</strong>
+                <span class="mini" id="homeMetaCount" data-i18n="common.count.zero_items">0건</span>
+              </div>
+              <div id="homeMetaResults" class="result-list"></div>
             </div>
-            <div class="row u-mt-8 u-hidden-initial">
-              <div class="mini"><span data-i18n="media.manage.master.fetch.current_source">현재 소스 링크</span>: <span id="homeMetaLinkedSource">-</span></div>
-            </div>
-            <div id="homeMetaStatus" class="status"></div>
-            <div class="result-head u-mt-10">
-              <strong data-i18n="media.manage.master.fetch.results.title">추가 후보</strong>
-              <span class="mini" id="homeMetaCount" data-i18n="common.count.zero_items">0건</span>
-            </div>
-            <div id="homeMetaResults" class="result-list"></div>
-          </details>
           </div>
 
+          <!-- 2-3: 상품 연계 수집품 -->
+          <div id="homeProductLinkedGoodsSection">
+            <div class="section-divider u-mt-12">
+              <h2><span data-i18n="media.manage.section2_3.title">2-3. 상품 연계 수집품</span></h2>
+            </div>
+            <div class="mini muted u-mt-6" data-i18n="media.manage.section2_3.note">현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.</div>
+            <div id="homeProductLinkedGoodsList" class="related-list u-mt-6"></div>
+            <div class="home-linked-goods-register-row u-mt-8">
+              <div class="home-linked-goods-register-action">
+                <button id="homeProductLinkedGoodsOpenBtn" class="btn ghost" type="button" data-i18n="media.manage.section2_3.action.open_register">수집품 탭에서 연계 수집품 등록</button>
+              </div>
+            </div>
+            <div id="homeProductLinkedGoodsStatus" class="status"></div>
+          </div>
+        </div>
+
+        <!-- ══ 섹션 3: 마스터 삭제 ══ -->
+        <div id="homeSection3MasterDelete">
           <div class="home-master-danger-zone">
-            <div class="section-divider u-mt-0">
-              <h2 data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</h2>
-            </div>
-            <div class="mini" data-i18n="media.manage.master.delete.note">상품 편집을 먼저 마친 뒤, 정말 필요할 때만 사용하세요. 연결 상품까지 함께 삭제할 수 있습니다.</div>
-            <div id="homeMasterDeleteActions" class="row home-manage-actions-right">
-              <label class="inline-check u-maxw-250">
-                <input id="homeMasterDeleteCascade" type="checkbox" />
-                <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
-              </label>
-              <button id="homeMasterDeleteBtn" class="btn ghost" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
-            </div>
-          </div>
+                      <div class="section-divider u-mt-0">
+                        <h2 data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</h2>
+                      </div>
+                      <div class="mini" data-i18n="media.manage.master.delete.note">상품 편집을 먼저 마친 뒤, 정말 필요할 때만 사용하세요. 연결 상품까지 함께 삭제할 수 있습니다.</div>
+                      <div id="homeMasterDeleteActions" class="row home-manage-actions-right">
+                        <label class="inline-check u-maxw-250">
+                          <input id="homeMasterDeleteCascade" type="checkbox" />
+                          <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
+                        </label>
+                        <button id="homeMasterDeleteBtn" class="btn ghost" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
+                      </div>
+                    </div>
         </div>
 
         <div id="homeTrackMapBox" class="music-box u-hidden-initial" hidden>
-          <div class="section-divider u-mt-0">
-            <h2 data-i18n="media.manage.track_map.directory.title">보유 음원 디렉토리</h2>
-          </div>
-          <div>
-            <label for="homeTrackMapDir" data-i18n="media.manage.track_map.directory.field.path.label">음원 디렉토리 경로</label>
-            <div class="u-flex-center-gap-6">
-              <input id="homeTrackMapDir" class="u-flex-1" data-i18n-placeholder="media.manage.track_map.directory.field.path.placeholder" placeholder="/Volumes/Music/Sanulrim/2집" />
-              <button id="homeTrackMapPickDirBtn" class="btn ghost btn-inline-fit-nowrap" type="button" data-i18n="media.manage.track_map.directory.action.pick">폴더 선택</button>
-            </div>
-          </div>
-          <input id="homeTrackMapReplace" type="checkbox" checked hidden />
-          <div id="homeTrackMapStatus" class="status"></div>
-          <div id="homeTrackMapMappedInfo" class="compact-line u-mt-6" data-i18n="media.manage.track_map.directory.state.none">매핑된 디렉토리가 없습니다.</div>
-          <div id="homeTrackFileListMeta" class="compact-line u-mt-4"></div>
-          <div class="table-wrap u-mt-4 u-maxh-160-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="media.manage.track_map.directory.table.file">파일</th>
-                  <th data-i18n="media.manage.track_map.directory.table.size_bytes">크기(Byte)</th>
-                </tr>
-              </thead>
-              <tbody id="homeTrackFileListBody"></tbody>
-            </table>
-          </div>
-        </div>
+                  <div class="section-divider u-mt-0">
+                    <h2 data-i18n="media.manage.track_map.directory.title">보유 음원 디렉토리</h2>
+                  </div>
+                  <div>
+                    <label for="homeTrackMapDir" data-i18n="media.manage.track_map.directory.field.path.label">음원 디렉토리 경로</label>
+                    <div class="u-flex-center-gap-6">
+                      <input id="homeTrackMapDir" class="u-flex-1" data-i18n-placeholder="media.manage.track_map.directory.field.path.placeholder" placeholder="/Volumes/Music/Sanulrim/2집" />
+                      <button id="homeTrackMapPickDirBtn" class="btn ghost btn-inline-fit-nowrap" type="button" data-i18n="media.manage.track_map.directory.action.pick">폴더 선택</button>
+                    </div>
+                  </div>
+                  <input id="homeTrackMapReplace" type="checkbox" checked hidden />
+                  <div id="homeTrackMapStatus" class="status"></div>
+                  <div id="homeTrackMapMappedInfo" class="compact-line u-mt-6" data-i18n="media.manage.track_map.directory.state.none">매핑된 디렉토리가 없습니다.</div>
+                  <div id="homeTrackFileListMeta" class="compact-line u-mt-4"></div>
+                  <div class="table-wrap u-mt-4 u-maxh-160-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th data-i18n="media.manage.track_map.directory.table.file">파일</th>
+                          <th data-i18n="media.manage.track_map.directory.table.size_bytes">크기(Byte)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="homeTrackFileListBody"></tbody>
+                    </table>
+                  </div>
+                </div>
 
       </section>
       </div>
@@ -18706,28 +18966,28 @@
       <section class="card goods-shell admin-console-shell">
         <div>
           <div class="page-help-title-row">
-            <h2><span data-i18n="collectibles.title">컬렉터블</span></h2>
+            <h2><span data-i18n="collectibles.title">수집품</span></h2>
             <button class="page-help-trigger" type="button" data-page-help-open="collectibles" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
           </div>
-          <div class="mini" data-i18n="collectibles.subtitle">포스터, 머그잔, 모자, 티셔츠 같은 컬렉터블을 독립적으로 등록하고 검색한 뒤, 필요하면 마스터/아티스트/레이블에 매핑합니다.</div>
+          <div class="mini" data-i18n="collectibles.subtitle">포스터, 머그잔, 모자, 티셔츠 같은 수집품을 독립적으로 등록하고 검색한 뒤, 필요하면 마스터/아티스트/레이블에 매핑합니다.</div>
         </div>
         <details class="manual-block page-help-source" data-page-help-source="collectibles" hidden>
-          <summary data-i18n="manual.collectibles.summary">컬렉터블 활용 매뉴얼</summary>
+          <summary data-i18n="manual.collectibles.summary">수집품 활용 매뉴얼</summary>
           <div class="manual-block-body">
             <ol>
-              <li data-i18n="manual.collectibles.item1">컬렉터블을 먼저 독립 상품으로 등록합니다.</li>
+              <li data-i18n="manual.collectibles.item1">수집품을 먼저 독립 상품으로 등록합니다.</li>
               <li data-i18n="manual.collectibles.item2">필요하면 앨범 마스터, 아티스트, 레이블과 선택적으로 연결합니다.</li>
-              <li data-i18n="manual.collectibles.item3">연결이 없는 컬렉터블도 그대로 유효한 레코드로 관리합니다.</li>
-              <li data-i18n="manual.collectibles.item4">`컬렉터블 검색`에서 찾고, `컬렉터블 관리`에서 위치와 매핑을 수정합니다.</li>
+              <li data-i18n="manual.collectibles.item3">연결이 없는 수집품도 그대로 유효한 레코드로 관리합니다.</li>
+              <li data-i18n="manual.collectibles.item4">`수집품 검색`에서 찾고, `수집품 관리`에서 위치와 매핑을 수정합니다.</li>
             </ol>
             <div class="manual-block-note" data-i18n="manual.collectibles.note">1차 구현은 관리자 전용입니다. 아티스트/레이블 매핑은 독립 엔티티가 없어 문자열 기준으로 관리합니다.</div>
           </div>
         </details>
 
-        <div class="goods-mode-tabs" role="tablist" aria-label="컬렉터블 화면 모드" data-i18n-aria-label="collectibles.mode.aria">
-          <button id="goodsSearchModeBtn" class="subtab-btn active" type="button" data-i18n="collectibles.mode.search">컬렉터블 검색</button>
-          <button id="goodsManageModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.manage">컬렉터블 관리</button>
-          <button id="goodsRegisterModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.register">컬렉터블 등록</button>
+        <div class="goods-mode-tabs" role="tablist" aria-label="수집품 화면 모드" data-i18n-aria-label="collectibles.mode.aria">
+          <button id="goodsSearchModeBtn" class="subtab-btn active" type="button" data-i18n="collectibles.mode.search">수집품 검색</button>
+          <button id="goodsManageModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.manage">수집품 관리</button>
+          <button id="goodsRegisterModeBtn" class="subtab-btn" type="button" data-i18n="collectibles.mode.register">수집품 등록</button>
         </div>
 
         <div id="goodsSearchSurface" class="goods-surface active admin-console-main">
@@ -18787,7 +19047,7 @@
                   </select>
                 </div>
                 <div>
-                  <label for="goodsSearchCollectibleRelationState" data-i18n="collectibles.search.field.collectible_relation_state.label">컬렉터블 연계</label>
+                  <label for="goodsSearchCollectibleRelationState" data-i18n="collectibles.search.field.collectible_relation_state.label">수집품 연계</label>
                   <select id="goodsSearchCollectibleRelationState">
                     <option value="ANY" data-i18n="collectibles.search.collectible_relation_state.any">전체</option>
                     <option value="LINKED" data-i18n="collectibles.search.collectible_relation_state.linked">연계 있음</option>
@@ -18819,7 +19079,7 @@
             </div>
             <div id="goodsSearchStatus" class="status"></div>
             <div class="result-head u-mt-10">
-              <strong data-i18n="collectibles.search.results_heading">등록된 컬렉터블</strong>
+              <strong data-i18n="collectibles.search.results_heading">등록된 수집품</strong>
               <span id="goodsSearchCount" class="mini" data-i18n="common.count.zero_items">0건</span>
             </div>
             <div id="goodsSearchResults" class="goods-result-list"></div>
@@ -18828,12 +19088,12 @@
 
         <div id="goodsManageSurface" class="goods-surface admin-console-main">
           <section id="goodsManageEmptyState" class="card admin-manage-empty-state active">
-            <strong data-i18n="collectibles.manage.empty_title">먼저 컬렉터블을 선택하세요.</strong>
-            <div class="mini u-mt-6" data-i18n="collectibles.manage.empty_body">`컬렉터블 검색`에서 원하는 컬렉터블을 찾은 뒤, 여기서 위치와 매핑을 수정합니다.</div>
+            <strong data-i18n="collectibles.manage.empty_title">먼저 수집품을 선택하세요.</strong>
+            <div class="mini u-mt-6" data-i18n="collectibles.manage.empty_body">`수집품 검색`에서 원하는 수집품을 찾은 뒤, 여기서 위치와 매핑을 수정합니다.</div>
           </section>
           <section id="goodsManageContent" class="card u-hidden-initial">
             <div class="result-head">
-              <strong id="goodsManageHeading" data-i18n="collectibles.manage.default_heading">선택된 컬렉터블</strong>
+              <strong id="goodsManageHeading" data-i18n="collectibles.manage.default_heading">선택된 수집품</strong>
               <span id="goodsManageMeta" class="mini">-</span>
             </div>
             <section id="goodsManageBasicSection" class="goods-map-section u-mt-10">
@@ -18872,7 +19132,7 @@
                   <div>
                     <label for="goodsManageSizeGroup" data-i18n="collectibles.manage.field.size_group.label">보관 규격</label>
                     <select id="goodsManageSizeGroup">
-                      <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                      <option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
                       <option value="LP" data-i18n="common.size_group.lp">LP</option>
                       <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
                       <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
@@ -18903,7 +19163,7 @@
                 </div>
                 <div id="goodsManageCoreRowB" class="ops-compact-form-row goods-manage-compact-row--secondary">
                   <div>
-                    <label for="goodsManageName" data-i18n="collectibles.manage.field.name.label">컬렉터블명</label>
+                    <label for="goodsManageName" data-i18n="collectibles.manage.field.name.label">수집품명</label>
                     <input id="goodsManageName" data-i18n-placeholder="collectibles.manage.field.name.placeholder" placeholder="예: 산울림 2집 포스터" />
                   </div>
                   <div>
@@ -18911,8 +19171,8 @@
                     <textarea id="goodsManageDescription" data-i18n-placeholder="collectibles.manage.field.description.placeholder" placeholder="예: 투어 현장 판매 포스터"></textarea>
                   </div>
                   <div class="ops-compact-form-actions">
-                    <button id="goodsManageSaveBtn" class="btn" type="button" data-i18n="collectibles.manage.save">컬렉터블 저장</button>
-                    <button id="goodsManageDeleteBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.delete">컬렉터블 삭제</button>
+                    <button id="goodsManageSaveBtn" class="btn" type="button" data-i18n="collectibles.manage.save">수집품 저장</button>
+                    <button id="goodsManageDeleteBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.delete">수집품 삭제</button>
                   </div>
                 </div>
               </div>
@@ -18941,12 +19201,12 @@
 
             <section id="goodsManageCollectibleLinksSection" class="goods-map-section">
               <div class="result-head u-mb-0">
-                <strong data-i18n="collectibles.manage.map.collectible.title">컬렉터블 연계</strong>
+                <strong data-i18n="collectibles.manage.map.collectible.title">수집품 연계</strong>
                 <span class="mini" data-i18n="collectibles.manage.map.collectible.subtitle">시리즈/변형/세트/프로모 관계 관리</span>
               </div>
               <div id="goodsCollectibleRelationMapList" class="goods-chip-list"></div>
               <div id="goodsManageCollectibleLookupControls" class="compact-stack u-mt-8">
-                <input id="goodsManageCollectibleQuery" data-i18n-placeholder="collectibles.manage.map.collectible.query.placeholder" placeholder="연결할 컬렉터블 검색" />
+                <input id="goodsManageCollectibleQuery" data-i18n-placeholder="collectibles.manage.map.collectible.query.placeholder" placeholder="연결할 수집품 검색" />
                 <div class="compact-stack-actions">
                   <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.collectible.action.search">조회</button>
                 </div>
@@ -18970,7 +19230,7 @@
                   </div>
                 </div>
                 <div class="compact-stack-actions">
-                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.map.collectible.action.save">컬렉터블 연계 저장</button>
+                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.map.collectible.action.save">수집품 연계 저장</button>
                 </div>
               </div>
               <div id="goodsManageRelationStatus" class="status"></div>
@@ -18996,7 +19256,7 @@
 
         <div id="goodsRegisterSurface" class="goods-surface admin-console-main">
           <section class="card u-mt-0">
-            <div class="mini" data-i18n="collectibles.register.intro">컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.</div>
+            <div class="mini" data-i18n="collectibles.register.intro">수집품을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.</div>
             <div id="goodsRegisterCoreFields" class="ops-compact-form-grid goods-register-compact-grid u-mt-10">
               <div id="goodsRegisterCoreRowA" class="ops-compact-form-row goods-register-compact-row--primary">
                 <div>
@@ -19018,7 +19278,7 @@
                 <div>
                   <label for="goodsRegisterSizeGroup" data-i18n="collectibles.register.field.size_group.label">보관 규격</label>
                   <select id="goodsRegisterSizeGroup">
-                    <option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                    <option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
                     <option value="LP" data-i18n="common.size_group.lp">LP</option>
                     <option value="LP10" data-i18n="common.size_group.lp10">10인치</option>
                     <option value="LP7" data-i18n="common.size_group.lp7">7인치</option>
@@ -19056,12 +19316,16 @@
               </div>
               <div id="goodsRegisterCoreRowB" class="ops-compact-form-row goods-register-compact-row--secondary">
                 <div>
-                  <label for="goodsRegisterName" data-i18n="collectibles.register.field.name.label">컬렉터블명</label>
+                  <label for="goodsRegisterName" data-i18n="collectibles.register.field.name.label">수집품명</label>
                   <input id="goodsRegisterName" data-i18n-placeholder="collectibles.register.field.name.placeholder" placeholder="예: 산울림 투어 포스터" />
                 </div>
                 <div>
                   <label for="goodsRegisterAlbumMasterId" data-i18n="collectibles.register.field.album_master_id.label">연계 마스터 ID(선택)</label>
                   <input id="goodsRegisterAlbumMasterId" type="number" min="1" />
+                </div>
+                <div>
+                  <label for="goodsRegisterLinkedOwnedItemId" data-i18n="collectibles.register.field.linked_owned_item_id.label">연계 상품 ID(선택)</label>
+                  <input id="goodsRegisterLinkedOwnedItemId" type="number" min="1" data-i18n-placeholder="collectibles.register.field.linked_owned_item_id.placeholder" placeholder="예: 42" />
                 </div>
                 <div>
                   <label for="goodsRegisterArtistNames" data-i18n="collectibles.register.field.artist_names.label">연계 아티스트명(쉼표 구분)</label>
@@ -19072,7 +19336,7 @@
                   <input id="goodsRegisterLabelNames" data-i18n-placeholder="collectibles.register.field.label_names.placeholder" placeholder="예: 서울음반, 서라벌레코드" />
                 </div>
                 <div class="ops-compact-form-actions">
-                  <button id="goodsRegisterSaveBtn" class="btn" type="button" data-i18n="collectibles.register.save">컬렉터블 등록</button>
+                  <button id="goodsRegisterSaveBtn" class="btn" type="button" data-i18n="collectibles.register.save">수집품 등록</button>
                 </div>
               </div>
             </div>
@@ -19392,7 +19656,7 @@
           <div>
             <label for="sizeGroup" data-i18n="media.register.detail.field.size_group.label">보관 규격</label>
             <select id="sizeGroup">
-              <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" selected data-i18n="common.size_group.lp">LP</option><option value="LP10" data-i18n="common.size_group.lp10">10인치</option><option value="LP7" data-i18n="common.size_group.lp7">7인치</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option><option value="8TRACK" data-i18n="common.size_group.8track">8-track</option><option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option><option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+              <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" selected data-i18n="common.size_group.lp">LP</option><option value="LP10" data-i18n="common.size_group.lp10">10인치</option><option value="LP7" data-i18n="common.size_group.lp7">7인치</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option><option value="8TRACK" data-i18n="common.size_group.8track">8-track</option><option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
             </select>
           </div>
           <div>
@@ -19909,7 +20173,7 @@
 
     <section id="opsOwnedLookupCard" class="card u-mt-14 u-hidden-initial">
       <h2 data-i18n="media.register.owned_lookup.title">등록된 아이템 조회</h2>
-      <p class="sub" data-i18n="media.register.owned_lookup.subtitle">저장된 앨범/컬렉터블을 필터로 확인합니다. (최신순)</p>
+      <p class="sub" data-i18n="media.register.owned_lookup.subtitle">저장된 앨범/수집품을 필터로 확인합니다. (최신순)</p>
       <div class="grid-3">
         <div>
           <label for="ownedCategory" data-i18n="media.register.owned_lookup.field.category.label">카테고리</label>
@@ -20450,7 +20714,7 @@
             <div>
               <label for="opsCabinetSizeGroup" data-i18n="ops.cabinet.field.size_group.label">규격</label>
               <select id="opsCabinetSizeGroup">
-                <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="LP10" data-i18n="common.size_group.lp10">10인치</option><option value="LP7" data-i18n="common.size_group.lp7">7인치</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option><option value="8TRACK" data-i18n="common.size_group.8track">8-track</option><option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option><option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="LP10" data-i18n="common.size_group.lp10">10인치</option><option value="LP7" data-i18n="common.size_group.lp7">7인치</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option><option value="8TRACK" data-i18n="common.size_group.8track">8-track</option><option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
               </select>
             </div>
             <div>
@@ -20661,7 +20925,7 @@
             <div class="ops-slot-inline-field ops-slot-inline-field--size">
               <label for="opsSlotSizeGroup" data-i18n="ops.slot.field.size_group.label">규격</label>
               <select id="opsSlotSizeGroup">
-                <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="LP10" data-i18n="common.size_group.lp10">10인치</option><option value="LP7" data-i18n="common.size_group.lp7">7인치</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option><option value="8TRACK" data-i18n="common.size_group.8track">8-track</option><option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option><option value="GOODS" data-i18n="common.size_group.goods">컬렉터블</option>
+                <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="LP10" data-i18n="common.size_group.lp10">10인치</option><option value="LP7" data-i18n="common.size_group.lp7">7인치</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="CASSETTE" data-i18n="common.size_group.cassette">카세트</option><option value="8TRACK" data-i18n="common.size_group.8track">8-track</option><option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel-to-reel</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
               </select>
             </div>
             <div class="ops-slot-inline-actions">
@@ -21283,6 +21547,8 @@
     let homeMasterInfo = null;
     let homeLinkedCollectibles = [];
     let homeLinkedCollectiblesLoading = false;
+    let homeProductLinkedGoods = [];
+    let homeProductLinkedGoodsLoading = false;
     let homeOwnedItemRelationView = null;
     let homeOwnedItemRelationMasterEntries = [];
     let homeOwnedItemEditableRelations = [];
@@ -21382,7 +21648,7 @@
         "nav.dashboard": "대시보드",
         "nav.camera": "카메라",
         "nav.media": "미디어",
-        "nav.collectibles": "컬렉터블",
+        "nav.collectibles": "수집품",
         "nav.ops": "운영/연계",
         "nav.ops_home": "운영 홈",
         "nav.cabinets": "장식장",
@@ -21391,7 +21657,7 @@
         "dashboard.action.search": "검색",
         "dashboard.action.new_item": "신규 등록",
         "dashboard.card.library": "전체 라이브러리",
-        "dashboard.card.media_collectibles": "미디어 / 컬렉터블",
+        "dashboard.card.media_collectibles": "미디어 / 수집품",
         "dashboard.card.placement": "배치 현황",
         "dashboard.card.collector": "콜렉터 요소",
         "dashboard.card.source": "소스 현황",
@@ -21399,7 +21665,7 @@
         "dashboard.stat.in_collection": "소장 중",
         "dashboard.stat.recent_30": "최근 30일 등록",
         "dashboard.stat.media": "미디어",
-        "dashboard.stat.collectibles": "컬렉터블",
+        "dashboard.stat.collectibles": "수집품",
         "dashboard.stat.slotted": "배치 완료",
         "dashboard.stat.unslotted": "미배치",
         "dashboard.stat.recent_move_1d": "최근 1일 이동 건",
@@ -21419,7 +21685,7 @@
         "dashboard.mapping.legend.size_book": "CD 확장형",
         "dashboard.mapping.legend.size_oversize": "LP 박스셋",
         "dashboard.mapping.legend.size_cassette": "카세트",
-        "dashboard.mapping.legend.size_goods": "컬렉터블",
+        "dashboard.mapping.legend.size_goods": "수집품",
         "dashboard.mapping.nav.prev": "이전 장식장",
         "dashboard.mapping.nav.next": "다음 장식장",
         "dashboard.cabinet.action.close": "닫기",
@@ -22074,13 +22340,13 @@
         "media.manage.product.field.linked_album_master_id.label": "연계 앨범 마스터 ID(내부)",
         "media.manage.product.field.linked_album_master_id.placeholder": "예: 2",
         "media.manage.product.field.slot_id.label": "보관 슬롯",
-        "media.manage.product.field.linked_artist_name.label": "연계 아티스트명 (앨범 모호 시)",
+        "media.manage.product.field.linked_artist_name.label": "연계 아티스트명",
         "media.manage.product.field.linked_artist_name.placeholder": "예: 산울림",
-        "media.manage.product.field.preferred_size.label": "권장 보관 규격",
+        "media.manage.product.field.preferred_size.label": "보관 규격",
         "media.manage.product.field.domain_code.label": "도메인",
         "media.manage.product.field.status.label": "상태",
         "media.manage.product.field.signature_type.label": "싸인 유형",
-        "media.manage.product.field.display_rank.label": "진열 순서(display_rank)",
+        "media.manage.product.field.display_rank.label": "진열 순서",
         "media.manage.product.field.purchase_source.label": "구매처",
         "media.manage.product.field.purchase_source.placeholder": "예: 홍대 중고매장",
         "media.manage.product.field.condition_grade.label": "일반 컨디션 메모",
@@ -22113,28 +22379,28 @@
         "media.manage.goods.field.cup_material.placeholder": "예: 머그 / 스텐 / 유리",
         "media.manage.goods.field.hat_size.label": "모자 사이즈",
         "media.manage.goods.field.hat_size.placeholder": "예: 58cm / Free",
-        "media.manage.collectibles.kicker": "컬렉터블 전용 영역",
-        "media.manage.collectibles.note": "음반/상품 편집 구역과 분리된 연계 컬렉터블 목록입니다.",
-        "media.manage.collectibles.title": "연계 컬렉터블",
-        "media.manage.collectibles.panel_intro": "컬렉터블 등록과 검색은 상단 `컬렉터블` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.",
-        "media.manage.collectibles.panel_title": "마스터 연계 컬렉터블",
-        "media.manage.collectibles.panel_note": "콜라보, 레이블 행사 컬렉터블, 단독 컬렉터블은 `컬렉터블` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.",
+        "media.manage.collectibles.kicker": "수집품 전용 영역",
+        "media.manage.collectibles.note": "음반/상품 편집 구역과 분리된 연계 수집품 목록입니다.",
+        "media.manage.collectibles.title": "연계 수집품",
+        "media.manage.collectibles.panel_intro": "수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.",
+        "media.manage.collectibles.panel_title": "마스터 연계 수집품",
+        "media.manage.collectibles.panel_note": "콜라보, 레이블 행사 수집품, 단독 수집품은 `수집품` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.",
         "media.manage.collectibles.field.current_master": "현재 연계 기준",
         "media.manage.collectibles.field.register_method": "등록 방식",
-        "media.manage.collectibles.register_method.body": "`컬렉터블 > 컬렉터블 등록`으로 이동해 기본 정보와 매핑을 함께 입력합니다.",
-        "media.manage.collectibles.register_method.help": "`컬렉터블 > 컬렉터블 등록`으로 이동해 기본 정보와 매핑을 함께 입력합니다.",
-        "media.manage.collectibles.action.open_register": "컬렉터블 탭에서 연계 컬렉터블 등록",
-        "media.manage.collectibles.action.manage": "컬렉터블 관리",
+        "media.manage.collectibles.register_method.body": "`수집품 > 수집품 등록`으로 이동해 기본 정보와 매핑을 함께 입력합니다.",
+        "media.manage.collectibles.register_method.help": "`수집품 > 수집품 등록`으로 이동해 기본 정보와 매핑을 함께 입력합니다.",
+        "media.manage.collectibles.action.open_register": "수집품 탭에서 연계 수집품 등록",
+        "media.manage.collectibles.action.manage": "수집품 관리",
         "media.manage.collectibles.meta.mapping": "연계",
         "media.manage.collectibles.state.no_master": "현재 선택된 앨범 마스터가 없습니다.",
         "media.manage.collectibles.state.no_master_selected": "현재 선택된 앨범 마스터가 없습니다. 먼저 앨범을 선택하세요.",
-        "media.manage.collectibles.state.loading": "연계 컬렉터블 조회 중...",
-        "media.manage.collectibles.status.load_failed": "연계 컬렉터블 조회 실패",
-        "media.manage.collectibles.state.empty": "연계 컬렉터블이 없습니다.",
+        "media.manage.collectibles.state.loading": "연계 수집품 조회 중...",
+        "media.manage.collectibles.status.load_failed": "연계 수집품 조회 실패",
+        "media.manage.collectibles.state.empty": "연계 수집품이 없습니다.",
         "media.manage.collectibles.status.master_required": "먼저 앨범(마스터)을 선택하세요.",
-        "media.manage.collectibles.status.item_name_required": "연계 컬렉터블명을 입력하세요.",
-        "media.manage.collectibles.status.registering": "연계 컬렉터블 등록 중...",
-        "media.manage.collectibles.status.register_failed": "연계 컬렉터블 등록 실패",
+        "media.manage.collectibles.status.item_name_required": "연계 수집품명을 입력하세요.",
+        "media.manage.collectibles.status.registering": "연계 수집품 등록 중...",
+        "media.manage.collectibles.status.register_failed": "연계 수집품 등록 실패",
         "media.manage.collectibles.status.registered": "등록 완료: {label_id}",
         "media.search.status.loading": "보유 앨범(마스터) 검색 중...",
         "media.manage.search.member_count": "상품 {count}",
@@ -22249,6 +22515,17 @@
         "media.manage.master.edit.source_summary": "마스터 소스: {source}#{source_master_id} / 버전을 선택해 수정하세요.",
         "media.manage.master.edit.status.loading_first_item": "상품 정보 로딩 중...",
         "media.manage.master.edit.status.no_linked_items": "이 마스터에 연결된 보유 상품이 없습니다.",
+        "media.manage.section1.title": "1. 마스터 정보",
+        "media.manage.section2.title": "2. 상품 정보",
+        "media.manage.section2_1.title": "2-1. 보유 상품",
+        "media.manage.section2_2.title": "2-2. 상품 추가",
+        "media.manage.section2_2.from_master.kicker": "마스터에서 추가",
+        "media.manage.section2_2.from_master.title": "마스터 후보 조회 / 연결",
+        "media.manage.section2_2.from_source.kicker": "다른소스에서 추가",
+        "media.manage.section2_2.from_source.title": "바코드 / 소스 검색으로 추가",
+        "media.manage.section2_3.title": "2-3. 상품 연계 수집품",
+        "media.manage.section2_3.note": "현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.",
+        "media.manage.section2_3.action.open_register": "수집품 탭에서 연계 수집품 등록",
         "media.manage.master.structure.kicker": "마스터 / 연계 작업",
         "media.manage.master.structure.note": "이 영역에서는 마스터 묶음 확인, 다른 소스 후보 검토, 연계 상품 추가를 다룹니다. 개별 상품의 빠른 수정은 위 편집 패널에서 진행합니다.",
         "media.manage.master.lookup.title": "마스터 후보 조회 / 연결",
@@ -22318,7 +22595,7 @@
         "media.manage.master.members.status.master_required": "마스터를 먼저 선택하세요.",
         "media.manage.master.members.status.loading": "마스터/연계 상품 조회 중...",
         "media.manage.master.members.status.load_failed": "마스터/연계 상품 조회 실패",
-        "media.manage.master.members.status.loaded": "연계 상품 조회 완료: 음반 {music_count} / 컬렉터블 {collectible_count}",
+        "media.manage.master.members.status.loaded": "연계 상품 조회 완료: 음반 {music_count} / 수집품 {collectible_count}",
         "media.manage.master.members.state.no_owned_items": "이 마스터에 연결된 보유 상품이 없습니다.",
         "media.manage.master.item.duplicate.required_master": "먼저 앨범(마스터)을 선택하세요.",
         "media.manage.master.item.duplicate.required_item": "복제할 상품을 선택하세요.",
@@ -22347,7 +22624,7 @@
         "media.manage.related_versions.relation.album_master_bind": "수동 묶음 기준",
         "media.manage.related_versions.relation.source_master": "소스 마스터 자동 추론",
         "media.manage.related_versions.relation.none": "연계 정보 없음",
-        "media.manage.related_versions.summary": "연계 기준: {relation} | master: {source} | 앨범: {title} / 아티스트: {artist}{sort_artist} | 음반 {music_count} / 컬렉터블 {collectible_count}",
+        "media.manage.related_versions.summary": "연계 기준: {relation} | master: {source} | 앨범: {title} / 아티스트: {artist}{sort_artist} | 음반 {music_count} / 수집품 {collectible_count}",
         "media.manage.related_versions.summary.sort_artist": " | 정렬 아티스트: {name}",
         "media.manage.related_versions.state.empty_versions": "묶인 버전이 없습니다.",
         "media.manage.related_versions.state.empty_music_versions": "묶인 음반 버전이 없습니다.",
@@ -22675,65 +22952,65 @@
         "media.register.batch.field.notes.label": "노트",
         "media.register.batch.field.notes.placeholder": "예: 2026-02-28 1차 업로드",
         "media.register.batch.action.upload": "CSV 업로드 실행",
-        "collectibles.title": "컬렉터블",
-        "collectibles.subtitle": "포스터, 머그잔, 모자, 티셔츠 같은 컬렉터블을 독립적으로 등록하고 검색한 뒤, 필요하면 마스터/아티스트/레이블에 매핑합니다.",
-        "collectibles.mode.search": "컬렉터블 검색",
-        "collectibles.mode.manage": "컬렉터블 관리",
-        "collectibles.mode.register": "컬렉터블 등록",
+        "collectibles.title": "수집품",
+        "collectibles.subtitle": "포스터, 머그잔, 모자, 티셔츠 같은 수집품을 독립적으로 등록하고 검색한 뒤, 필요하면 마스터/아티스트/레이블에 매핑합니다.",
+        "collectibles.mode.search": "수집품 검색",
+        "collectibles.mode.manage": "수집품 관리",
+        "collectibles.mode.register": "수집품 등록",
         "collectibles.search.field.query.label": "검색어",
         "collectibles.search.field.query.placeholder": "예: 포스터, 머그잔, 투어 티셔츠",
         "collectibles.search.field.artist.label": "연계 아티스트",
         "collectibles.search.field.artist.placeholder": "예: 산울림",
-        "collectibles.search.results_heading": "등록된 컬렉터블",
-        "collectibles.manage.empty_title": "먼저 컬렉터블을 선택하세요.",
-        "collectibles.manage.empty_body": "`컬렉터블 검색`에서 원하는 컬렉터블을 찾은 뒤, 여기서 위치와 매핑을 수정합니다.",
-        "collectibles.manage.default_heading": "선택된 컬렉터블",
-        "collectibles.manage.field.name.label": "컬렉터블명",
+        "collectibles.search.results_heading": "등록된 수집품",
+        "collectibles.manage.empty_title": "먼저 수집품을 선택하세요.",
+        "collectibles.manage.empty_body": "`수집품 검색`에서 원하는 수집품을 찾은 뒤, 여기서 위치와 매핑을 수정합니다.",
+        "collectibles.manage.default_heading": "선택된 수집품",
+        "collectibles.manage.field.name.label": "수집품명",
         "collectibles.manage.field.name.placeholder": "예: 산울림 2집 포스터",
         "collectibles.manage.field.description.label": "설명",
         "collectibles.manage.field.description.placeholder": "예: 투어 현장 판매 포스터",
-        "collectibles.manage.save": "컬렉터블 저장",
-        "collectibles.manage.delete": "컬렉터블 삭제",
-        "collectibles.register.field.name.label": "컬렉터블명",
+        "collectibles.manage.save": "수집품 저장",
+        "collectibles.manage.delete": "수집품 삭제",
+        "collectibles.register.field.name.label": "수집품명",
         "collectibles.register.field.name.placeholder": "예: 산울림 투어 포스터",
         "collectibles.register.field.artist_names.label": "연계 아티스트명(쉼표 구분)",
         "collectibles.register.field.artist_names.placeholder": "예: 산울림, 김창완",
-        "collectibles.register.save": "컬렉터블 등록",
-        "collectibles.search.loading": "컬렉터블 검색 중...",
-        "collectibles.search.empty": "조회된 컬렉터블이 없습니다.",
-        "collectibles.status.search.loading": "컬렉터블 검색 중...",
-        "collectibles.status.search.complete": "컬렉터블 검색 완료: {count}",
+        "collectibles.register.save": "수집품 등록",
+        "collectibles.search.loading": "수집품 검색 중...",
+        "collectibles.search.empty": "조회된 수집품이 없습니다.",
+        "collectibles.status.search.loading": "수집품 검색 중...",
+        "collectibles.status.search.complete": "수집품 검색 완료: {count}",
         "collectibles.mapping.state.empty": "아직 연결된 항목이 없습니다.",
         "collectibles.mapping.results.empty": "조회 결과가 없습니다.",
         "collectibles.mapping.action.connect": "연결",
         "collectibles.search.meta.quantity": "수량 {quantity}",
         "collectibles.search.meta.links": "연계 {count}건",
-        "collectibles.search.meta.collectible_relations": "컬렉터블 연계 {count}건",
-        "collectibles.status.search.failed": "컬렉터블 검색 실패",
-        "collectibles.manage.status.loading": "컬렉터블 정보 로드 중... goods_item_id={id}",
-        "collectibles.manage.status.load_failed": "컬렉터블 상세 조회 실패",
-        "collectibles.manage.status.select_first": "먼저 관리할 컬렉터블을 선택하세요.",
-        "collectibles.manage.status.save_progress": "컬렉터블 저장 중...",
-        "collectibles.manage.status.save_complete": "컬렉터블 저장 완료: goods_item_id={id}",
-        "collectibles.manage.status.save_failed": "컬렉터블 저장 실패",
-        "collectibles.manage.status.delete_select_first": "먼저 삭제할 컬렉터블을 선택하세요.",
-        "collectibles.manage.status.delete_confirm": "컬렉터블을 삭제할까요?\n\n컬렉터블명: {name}",
-        "collectibles.manage.status.delete_progress": "컬렉터블 삭제 중...",
-        "collectibles.manage.status.delete_complete": "컬렉터블 삭제 완료: {name}",
-        "collectibles.manage.status.delete_failed": "컬렉터블 삭제 실패",
+        "collectibles.search.meta.collectible_relations": "수집품 연계 {count}건",
+        "collectibles.status.search.failed": "수집품 검색 실패",
+        "collectibles.manage.status.loading": "수집품 정보 로드 중... goods_item_id={id}",
+        "collectibles.manage.status.load_failed": "수집품 상세 조회 실패",
+        "collectibles.manage.status.select_first": "먼저 관리할 수집품을 선택하세요.",
+        "collectibles.manage.status.save_progress": "수집품 저장 중...",
+        "collectibles.manage.status.save_complete": "수집품 저장 완료: goods_item_id={id}",
+        "collectibles.manage.status.save_failed": "수집품 저장 실패",
+        "collectibles.manage.status.delete_select_first": "먼저 삭제할 수집품을 선택하세요.",
+        "collectibles.manage.status.delete_confirm": "수집품을 삭제할까요?\n\n수집품명: {name}",
+        "collectibles.manage.status.delete_progress": "수집품 삭제 중...",
+        "collectibles.manage.status.delete_complete": "수집품 삭제 완료: {name}",
+        "collectibles.manage.status.delete_failed": "수집품 삭제 실패",
         "collectibles.mapping.query_empty": "검색어를 입력하세요.",
         "collectibles.mapping.status.lookup_progress": "마스터 후보 조회 중...",
         "collectibles.mapping.status.lookup_complete": "마스터 후보 조회 완료",
         "collectibles.mapping.status.lookup_failed": "마스터 후보 조회 실패",
-        "collectibles.mapping.status.select_first": "먼저 관리할 컬렉터블을 선택하세요.",
-        "collectibles.mapping.status.save_progress": "컬렉터블 매핑 저장 중...",
-        "collectibles.mapping.status.save_complete": "컬렉터블 매핑 저장 완료: goods_item_id={id}",
-        "collectibles.mapping.status.save_failed": "컬렉터블 매핑 저장 실패",
-        "collectibles.register.status.save_progress": "컬렉터블 등록 중...",
-        "collectibles.register.status.save_complete": "컬렉터블 등록 완료: goods_item_id={id}",
-        "collectibles.register.status.save_failed": "컬렉터블 등록 실패",
-        "collectibles.register.status.start_linked": "현재 마스터 기준으로 연계 컬렉터블 등록을 시작합니다. album_master_id={id}",
-        "collectibles.register.status.start_independent": "독립 컬렉터블 등록을 시작합니다.",
+        "collectibles.mapping.status.select_first": "먼저 관리할 수집품을 선택하세요.",
+        "collectibles.mapping.status.save_progress": "수집품 매핑 저장 중...",
+        "collectibles.mapping.status.save_complete": "수집품 매핑 저장 완료: goods_item_id={id}",
+        "collectibles.mapping.status.save_failed": "수집품 매핑 저장 실패",
+        "collectibles.register.status.save_progress": "수집품 등록 중...",
+        "collectibles.register.status.save_complete": "수집품 등록 완료: goods_item_id={id}",
+        "collectibles.register.status.save_failed": "수집품 등록 실패",
+        "collectibles.register.status.start_linked": "현재 마스터 기준으로 연계 수집품 등록을 시작합니다. album_master_id={id}",
+        "collectibles.register.status.start_independent": "독립 수집품 등록을 시작합니다.",
         "ops.subtab.cabinet": "장식장",
         "ops.subtab.slot": "슬롯",
         "ops.subtab.camera": "카메라",
@@ -22765,7 +23042,7 @@
         "common.size_group.cassette": "카세트",
         "common.size_group.8track": "8-track",
         "common.size_group.reel_to_reel": "Reel-to-reel",
-        "common.size_group.goods": "컬렉터블",
+        "common.size_group.goods": "수집품",
         "common.sort_policy.artist_release_title": "아티스트/발매/앨범",
         "common.sort_policy.label_id": "등록 코드 순",
         "common.sort_policy.title_release": "상품명/발매순",
@@ -23183,7 +23460,7 @@
         "manual.media_search.note": "이 화면은 찾기와 선택에 집중합니다. 실제 수정은 관리 화면에서 이어갑니다.",
         "manual.media_manage.summary": "관리 페이지 활용 매뉴얼",
         "manual.media_manage.item1": "미디어 > 검색 화면에서 고른 마스터/상품을 여기서 실제로 수정합니다.",
-        "manual.media_manage.item2": "장식장 위치 정보, 소스 메타, 상품 편집, 연계 컬렉터블을 같은 흐름에서 확인합니다.",
+        "manual.media_manage.item2": "장식장 위치 정보, 소스 메타, 상품 편집, 연계 수집품을 같은 흐름에서 확인합니다.",
         "manual.media_manage.item3": "메타 수정 후 저장하고, 필요하면 대시보드에서 실제 칸 이동을 이어갑니다.",
         "manual.media_manage.item4": "소스 자체를 교체해야 하면 소스 보강으로 이동합니다.",
         "manual.media_manage.note": "이 화면은 편집과 확인 중심입니다. 검색은 상단 미디어 > 검색에서 시작합니다.",
@@ -23211,11 +23488,11 @@
         "manual.register_batch.item3": "업로드 후 자동 확정되지 않은 항목은 검수 큐에서 확인하고 필요한 값만 보정합니다.",
         "manual.register_batch.item4": "대량 등록이 끝나면 `미디어 > 관리` 또는 `대시보드`에서 후속 정리를 이어갑니다.",
         "manual.register_batch.note": "확정값이 많을수록 검수량이 줄어듭니다. 초기 대량 입력은 이 화면, 세부 수정은 다른 탭에서 나눠 처리하는 편이 안정적입니다.",
-        "manual.collectibles.summary": "컬렉터블 활용 매뉴얼",
-        "manual.collectibles.item1": "컬렉터블을 먼저 독립 상품으로 등록합니다.",
+        "manual.collectibles.summary": "수집품 활용 매뉴얼",
+        "manual.collectibles.item1": "수집품을 먼저 독립 상품으로 등록합니다.",
         "manual.collectibles.item2": "필요하면 앨범 마스터, 아티스트, 레이블과 선택적으로 연결합니다.",
-        "manual.collectibles.item3": "연결이 없는 컬렉터블도 그대로 유효한 레코드로 관리합니다.",
-        "manual.collectibles.item4": "`컬렉터블 검색`에서 찾고, `컬렉터블 관리`에서 위치와 매핑을 수정합니다.",
+        "manual.collectibles.item3": "연결이 없는 수집품도 그대로 유효한 레코드로 관리합니다.",
+        "manual.collectibles.item4": "`수집품 검색`에서 찾고, `수집품 관리`에서 위치와 매핑을 수정합니다.",
         "manual.collectibles.note": "1차 구현은 관리자 전용입니다. 아티스트/레이블 매핑은 독립 엔티티가 없어 문자열 기준으로 관리합니다.",
         "manual.ops.summary": "운영/연계 활용 매뉴얼",
         "manual.ops.item1": "운영 구조를 점검하거나 장식장, 계정, 백업 같은 관리 항목을 다룰 때 이 탭을 엽니다.",
@@ -23285,7 +23562,7 @@
         "help.register.api_lookup": "첫 스캔은 조회, 같은 바코드 재스캔이나 Enter는 확정 저장을 위한 작업대입니다. Discogs 우선, 국내 구보는 ManiaDB 보강을 기본으로 사용합니다.",
         "help.register.purchase_import": "Amazon / eBay / 알라딘 / YES24 주문 파일(MHTML/HTML/TXT)을 올려 구매 정보를 큐로 가져오는 화면입니다. 먼저 미리보기로 파싱 결과를 확인하고, 수입 큐에 저장한 다음, 큐에서 보유 상품 생성으로 확정 등록합니다.",
         "help.register.csv_import": "엑셀이나 CSV로 정리한 목록을 한 번에 올리는 영역입니다. 초기 대량 입력에 가장 효율적이며, 장식장명/열/칸이나 Discogs release_id가 있으면 검수 부담을 크게 줄일 수 있습니다.",
-        "help.collectibles.overview": "컬렉터블은 음반과 분리된 독립 관리 대상으로 등록합니다. 필요할 때만 앨범 마스터, 아티스트, 레이블과 선택적으로 연결합니다.",
+        "help.collectibles.overview": "수집품은 음반과 분리된 독립 관리 대상으로 등록합니다. 필요할 때만 앨범 마스터, 아티스트, 레이블과 선택적으로 연결합니다.",
         "help.ops.system_status": "운영자가 서버가 살아있는지 바로 확인하는 영역입니다. 앱 헬스체크, 메타 동기화 상태, 외부 접속 주소, 로그 위치를 한 번에 보여줍니다. 접속 이상이 있으면 여기 상태와 launchd 로그부터 확인하면 됩니다.",
         "help.ops.cabinet": "장식장 이름과 규격, 열 수, 칸 수를 기준으로 슬롯을 일괄 생성합니다. 정렬 정책은 전시형 장식장은 아티스트/발매/앨범, 증설/보관 장식장은 등록 코드 순으로 두는 것이 운영에 유리합니다.",
         "help.ops.camera_settings": "운영과 관리 공용으로 보는 카메라를 등록하는 영역입니다. 카메라명과 설명으로 식별하고, 스트림 또는 스냅샷 연결만 관리합니다.",
@@ -23295,7 +23572,7 @@
         "help.ops.export": "라이브러리 DB 전체 백업과 운영용 CSV 내보내기를 받는 영역입니다. 대량 수정 전이나 장식장 재배치 전에는 DB 백업을 먼저 받아두는 것이 안전합니다.",
         "help.ops.restore": "자동 백업 주기와 저장 경로를 설정하고, 백업 DB 파일을 업로드해 복구합니다. 복구 전에는 현재 DB를 같은 경로에 한 번 더 안전 백업합니다.",
 
-        "collectibles.mode.aria": '컬렉터블 화면 모드',
+        "collectibles.mode.aria": '수집품 화면 모드',
         "collectibles.category.poster": '포스터',
         "collectibles.category.t_shirt": '티셔츠',
         "collectibles.category.light_stick": '응원봉',
@@ -23312,7 +23589,7 @@
         "collectibles.search.field.album_master_id.label": '연계 마스터 ID',
         "collectibles.search.field.album_master_id.placeholder": '예: 197',
         "collectibles.search.field.linked_state.label": '연계 상태',
-        "collectibles.search.field.collectible_relation_state.label": '컬렉터블 연계',
+        "collectibles.search.field.collectible_relation_state.label": '수집품 연계',
         "collectibles.search.field.collectible_relation_type.label": '관계 타입',
         "collectibles.search.field.slot_id.label": '보관 슬롯',
         "collectibles.search.linked_state.any": '전체',
@@ -23327,7 +23604,7 @@
         "collectibles.relation_type.set_member": '세트 구성',
         "collectibles.relation_type.related": '관련',
         "collectibles.relation_type.promo_for": '프로모 연계',
-        "collectibles.manage.field.id.label": '컬렉터블 ID',
+        "collectibles.manage.field.id.label": '수집품 ID',
         "collectibles.manage.field.category.label": '카테고리',
         "collectibles.manage.field.quantity.label": '수량',
         "collectibles.manage.field.status.label": '상태',
@@ -23341,16 +23618,16 @@
         "collectibles.manage.map.album_master.subtitle": '연결할 앨범 마스터를 검색해 추가합니다.',
         "collectibles.manage.map.album_master.query.placeholder": '예: 김윤아',
         "collectibles.manage.map.album_master.action.search": '마스터 검색',
-        "collectibles.manage.map.collectible.title": '컬렉터블 연계',
+        "collectibles.manage.map.collectible.title": '수집품 연계',
         "collectibles.manage.map.collectible.subtitle": '시리즈/변형/세트/프로모 관계를 관리합니다.',
-        "collectibles.manage.map.collectible.query.placeholder": '연결할 컬렉터블 검색',
+        "collectibles.manage.map.collectible.query.placeholder": '연결할 수집품 검색',
         "collectibles.manage.map.collectible.action.search": '조회',
         "collectibles.manage.map.collectible.field.relation_type.label": '관계 타입',
         "collectibles.manage.map.collectible.field.relation_note.label": '관계 메모(선택)',
         "collectibles.manage.map.collectible.field.relation_note.placeholder": '관계 메모(선택)',
-        "collectibles.manage.map.collectible.action.save": '컬렉터블 연계 저장',
+        "collectibles.manage.map.collectible.action.save": '수집품 연계 저장',
         "collectibles.manage.map.artist.title": '아티스트 매핑',
-        "collectibles.manage.map.artist.subtitle": '이 컬렉터블과 연결할 아티스트명을 추가합니다.',
+        "collectibles.manage.map.artist.subtitle": '이 수집품과 연결할 아티스트명을 추가합니다.',
         "collectibles.manage.map.artist.placeholder": '예: 김윤아',
         "collectibles.manage.map.artist.action.add": '아티스트 추가',
         "collectibles.manage.map.label.title": '레이블 매핑',
@@ -23359,7 +23636,7 @@
         "collectibles.manage.map.label.action.add": '레이블 추가',
         "collectibles.manage.action.save_mappings": '매핑 저장',
         "collectibles.manage.action.save_album_master_mappings": '마스터 매핑 저장',
-        "collectibles.register.intro": '컬렉터블을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.',
+        "collectibles.register.intro": '수집품을 먼저 독립 레코드로 등록하고, 필요하면 생성 시점에 기본 매핑을 함께 넣습니다.',
         "collectibles.register.field.category.label": '카테고리',
         "collectibles.register.field.quantity.label": '수량',
         "collectibles.register.field.status.label": '상태',
@@ -23372,6 +23649,8 @@
         "collectibles.register.field.image_urls.label": '이미지 URL',
         "collectibles.register.field.image_urls.placeholder": '줄바꿈으로 여러 URL 입력',
         "collectibles.register.field.album_master_id.label": '기본 연계 마스터 ID(선택)',
+        "collectibles.register.field.linked_owned_item_id.label": '연계 상품 ID(선택)',
+        "collectibles.register.field.linked_owned_item_id.placeholder": '예: 42',
         "collectibles.register.field.label_names.label": '연계 레이블명(쉼표 구분)',
         "collectibles.register.field.label_names.placeholder": '예: Beatball, MRC',
         "media.register.direct.field.quantity.label": '수량',
@@ -23803,7 +24082,7 @@
         "media.manage.collectibles.image.status.urls_applied": "붙여넣기 URL 반영: {count}건",
         "media.manage.collectibles.status.master_required": "먼저 앨범(마스터)을 선택하세요.",
         "media.manage.collectibles.status.item_name_required": "연계 상품명을 입력하세요.",
-        "media.manage.collectibles.status.registering": "연계 컬렉터블 등록 중...",
+        "media.manage.collectibles.status.registering": "연계 수집품 등록 중...",
         "media.manage.collectibles.status.registered": "등록 완료: {label_id}",
         "media.manage.tracks.empty": "곡 정보가 없습니다.",
         "media.manage.tracks.count": "{count}곡",
@@ -23923,7 +24202,7 @@
         "media.register.purchase.queue.status.created": "생성 완료",
         "media.register.purchase.queue.status.ignored": "무시",
         "media.register.owned_lookup.title": "등록된 아이템 조회",
-        "media.register.owned_lookup.subtitle": "저장된 앨범/컬렉터블을 필터로 확인합니다. (최신순)",
+        "media.register.owned_lookup.subtitle": "저장된 앨범/수집품을 필터로 확인합니다. (최신순)",
         "media.register.owned_lookup.field.category.label": "카테고리",
         "media.register.owned_lookup.field.status.label": "상태",
         "media.register.owned_lookup.field.limit.label": "조회 개수",
@@ -24841,6 +25120,17 @@
         "media.manage.master.edit.source_summary": "Master source: {source}#{source_master_id} / Select a version to edit.",
         "media.manage.master.edit.status.loading_first_item": "Loading item details...",
         "media.manage.master.edit.status.no_linked_items": "There are no owned items linked to this master.",
+        "media.manage.section1.title": "1. Master Info",
+        "media.manage.section2.title": "2. Product Info",
+        "media.manage.section2_1.title": "2-1. Owned Item",
+        "media.manage.section2_2.title": "2-2. Add Product",
+        "media.manage.section2_2.from_master.kicker": "From Master",
+        "media.manage.section2_2.from_master.title": "Master Candidate Lookup / Link",
+        "media.manage.section2_2.from_source.kicker": "From Other Source",
+        "media.manage.section2_2.from_source.title": "Add via Barcode / Source Search",
+        "media.manage.section2_3.title": "2-3. Linked Collectibles",
+        "media.manage.section2_3.note": "Collectibles directly linked to the current owned item.",
+        "media.manage.section2_3.action.open_register": "Register linked collectibles in Collectibles tab",
         "media.manage.master.structure.kicker": "Master / relationship work",
         "media.manage.master.structure.note": "Use this area for master grouping, candidate review, and linked-item additions. Keep quick item edits in the panel above.",
         "media.manage.master.lookup.title": "Review / link master candidates",
@@ -25964,6 +26254,8 @@
         "collectibles.register.field.image_urls.label": 'Image URLs',
         "collectibles.register.field.image_urls.placeholder": 'Enter one URL per line',
         "collectibles.register.field.album_master_id.label": 'Default Linked Master ID (optional)',
+        "collectibles.register.field.linked_owned_item_id.label": 'Linked owned item ID (optional)',
+        "collectibles.register.field.linked_owned_item_id.placeholder": 'e.g. 42',
         "collectibles.register.field.label_names.label": 'Linked Label Names (comma-separated)',
         "collectibles.register.field.label_names.placeholder": 'e.g. Beatball, MRC',
         "media.register.direct.field.quantity.label": 'Quantity',
@@ -27420,6 +27712,17 @@
         "media.manage.master.edit.source_summary": "マスターソース: {source}#{source_master_id} / バージョンを選んで修正してください。",
         "media.manage.master.edit.status.loading_first_item": "商品情報を読み込み中...",
         "media.manage.master.edit.status.no_linked_items": "このマスターに連携された所蔵商品がありません。",
+        "media.manage.section1.title": "1. マスター情報",
+        "media.manage.section2.title": "2. 商品情報",
+        "media.manage.section2_1.title": "2-1. 所蔵商品",
+        "media.manage.section2_2.title": "2-2. 商品追加",
+        "media.manage.section2_2.from_master.kicker": "マスターから追加",
+        "media.manage.section2_2.from_master.title": "マスター候補検索 / 連携",
+        "media.manage.section2_2.from_source.kicker": "他ソースから追加",
+        "media.manage.section2_2.from_source.title": "バーコード / ソース検索で追加",
+        "media.manage.section2_3.title": "2-3. 商品連携収集品",
+        "media.manage.section2_3.note": "現在の所蔵商品(owned_item)に直接連携された収集品一覧です。",
+        "media.manage.section2_3.action.open_register": "収集品タブで連携収集品を登録",
         "media.manage.master.structure.kicker": "マスター / 連携作業",
         "media.manage.master.structure.note": "この領域ではマスター束ね確認、候補確認、連携商品の追加を扱います。個別商品のクイック修正は上の編集パネルで進めてください。",
         "media.manage.master.lookup.title": "マスター候補照会 / 連携",
@@ -28568,6 +28871,8 @@
         "collectibles.register.field.image_urls.label": '画像URL',
         "collectibles.register.field.image_urls.placeholder": '改行区切りで複数URLを入力',
         "collectibles.register.field.album_master_id.label": '基本連携マスターID(任意)',
+        "collectibles.register.field.linked_owned_item_id.label": '連携商品ID（任意）',
+        "collectibles.register.field.linked_owned_item_id.placeholder": '例: 42',
         "collectibles.register.field.label_names.label": '連携レーベル名（カンマ区切り）',
         "collectibles.register.field.label_names.placeholder": '例: Beatball, MRC',
         "media.register.direct.field.quantity.label": '数量',
@@ -29742,7 +30047,7 @@
         cell_code: "해당 열 안에서 좌우 배치 위치를 구분하는 칸 번호입니다. 예: 01, 02, 03",
         domain_code: "장식장 대분류 기준입니다. 가요, 제이팝, 그 외 중 어디에 배치할지 정하는 값입니다.",
         release_type: "발매 성격 구분입니다. 정규 앨범, EP, 싱글처럼 앨범 단위 분류에 사용합니다.",
-        size_group: "장식장에 들어가는 물리 규격입니다. CD, CD 확장형, LP, 10인치, 7인치, LP 박스셋, 카세트, 8-track, Reel-to-reel, 컬렉터블을 구분합니다.",
+        size_group: "장식장에 들어가는 물리 규격입니다. CD, CD 확장형, LP, 10인치, 7인치, LP 박스셋, 카세트, 8-track, Reel-to-reel, 수집품을 구분합니다.",
         format_name: "내가 보유한 상품의 포맷입니다. LP, CD, Cassette 같은 실제 매체 구분입니다.",
         media_type: "원본 소스가 가진 매체 표기입니다. Discogs 등의 원문을 그대로 보존할 때 사용합니다.",
         released_date: "현재 선택한 상품 버전의 발매일입니다. 최초 발매일이 아니라 해당 버전 기준 날짜를 넣습니다.",
@@ -30861,16 +31166,13 @@
     }
 
     function renderHomeTrackInfoPanel() {
-      const split = $("homeEditInfoSplit");
       const panel = $("homeEditTrackPanel");
       const summary = $("homeEditTrackInfoSummary");
       const list = $("homeEditTrackInfoList");
-      if (!split || !panel || !summary || !list) return;
+      if (!panel || !summary || !list) return;
 
       const isMusic = MUSIC_CATEGORIES.has($("editCategory").value);
       if (!isMusic) {
-        split.classList.remove("with-track");
-        setDisplayMode(panel, "none");
         summary.textContent = t("media.manage.tracks.empty");
         list.innerHTML = `<div class="muted">${escapeHtml(t("media.manage.tracks.empty"))}</div>`;
         return;
@@ -30903,8 +31205,6 @@
         });
       }
 
-      split.classList.add("with-track");
-      setDisplayMode(panel, "grid");
       summary.textContent = rows.length ? t("media.manage.tracks.count", { count: rows.length }) : t("media.manage.tracks.empty");
       if (!rows.length) {
         list.innerHTML = `<div class="muted">${escapeHtml(t("media.manage.tracks.empty"))}</div>`;
@@ -35573,16 +35873,34 @@
       }
       setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.queue.status.create_candidate_loading", { id }));
       try {
+        const requestBody = { candidate };
+        console.log("[createOwnedItemFromPurchaseQueueCandidate] Sending POST request:", {
+          queueId: id,
+          candidateData: requestBody,
+          timestamp: new Date().toISOString(),
+        });
         const res = await fetch(`/purchase-imports/${id}/create-owned-item-from-candidate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ candidate }),
+          body: JSON.stringify(requestBody),
         });
         const data = await safeJson(res);
+        console.log("[createOwnedItemFromPurchaseQueueCandidate] Response received:", {
+          status: res.status,
+          ok: res.ok,
+          data,
+          timestamp: new Date().toISOString(),
+        });
         if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.queue.status.create_candidate_failed")));
         const noticeText = Array.isArray(data.notices) && data.notices.length
           ? ` / ${data.notices.join(" / ")}`
           : "";
+        console.log("[createOwnedItemFromPurchaseQueueCandidate] Success:", {
+          ownedItemId: data.owned_item_id,
+          labelId: data.label_id,
+          linkedAlbumMasterId: data.linked_album_master_id,
+          notices: data.notices,
+        });
         setStatus("purchaseImportQueueStatus", "ok", t("media.register.purchase.queue.status.create_candidate_complete", {
           id: data.owned_item_id,
           label: data.label_id,
@@ -35595,6 +35913,11 @@
           homeSearchOwnedItems({ resetPage: true }),
         ]);
       } catch (err) {
+        console.error("[createOwnedItemFromPurchaseQueueCandidate] Error occurred:", {
+          error: err?.message || String(err),
+          stack: err?.stack,
+          timestamp: new Date().toISOString(),
+        });
         setStatus("purchaseImportQueueStatus", "err", errorMessageText(err, t("media.register.purchase.queue.status.create_candidate_failed")));
       }
     }
@@ -41091,6 +41414,9 @@
       });
       homeInlineEditorCollapsed = false;
       await openMediaSearchDetailManage(masterId, targetOwnedItemId);
+      requestAnimationFrame(() => {
+        $("homeSection21OwnedItem")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }
 
     async function refreshHomeManageContext(ownedItemId, opts = {}) {
@@ -42396,8 +42722,6 @@
       const isSourceManaged = isMusic && isHomeSourceManagedItem();
       setHiddenIfPresent("homeEditMusicMetaFieldsA", isSourceManaged);
       setHiddenIfPresent("homeEditMusicMetaFieldsB", isSourceManaged);
-      setHiddenIfPresent("homeEditDiscCountWrap", isSourceManaged);
-      setHiddenIfPresent("homeEditSpeedRpmWrap", isSourceManaged);
       setHiddenIfPresent("homeEditMusicMetaFieldsC", isSourceManaged);
       setHiddenIfPresent("homeEditTrackListWrap", isSourceManaged);
       if (!isMusic) {
@@ -42426,6 +42750,7 @@
       if (isMusic) {
         $("editFormatName").value = category;
       }
+      setDisplayMode($("homeEditTrackPanel"), isMusic ? "grid" : "none");
       syncHomeSourceManagedMetaUi();
       renderHomeTrackInfoPanel();
     }
@@ -42774,9 +43099,8 @@
       const host = $("homeMasterInlineEditorHost");
       if (!host) return;
       const blocks = [
-        $("homeEditMusicBox"),
+        $("homeEditMusicProductSplit"),
         $("homeEditGoodsBox"),
-        $("homeEditorProductBlock"),
         $("homeEditorActionBlock"),
         $("homeMasterGoodsSection"),
       ].filter((node) => node);
@@ -42798,6 +43122,7 @@
     }
 
     function mountHomeMasterActionBlocks() {
+      // DOM is statically structured since v3 restructuring; no-op.
       const manageSection = $("homeManageMasterSection");
       const mount = $("homeMasterActionMount");
       const addBlock = $("homeMasterAddBlock");
@@ -42952,43 +43277,44 @@
     }
 
     function syncHomeMasterSortArtistEditor() {
-      const row = $("homeMasterSortArtistRow");
       const input = $("homeMasterSortArtistName");
       const saveBtn = $("homeMasterSortArtistSaveBtn");
-      if (!row || !input || !saveBtn) return;
+      if (!input || !saveBtn) return;
       const masterId = Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0);
       if (masterId <= 0) {
-        setDisplayMode(row, "none");
         input.value = "";
         saveBtn.disabled = true;
         setStatus("homeMasterSortArtistStatus", "ok", "");
         return;
       }
-      setDisplayMode(row, "grid");
       input.value = String(homeMasterInfo?.sort_artist_name || "").trim();
       saveBtn.disabled = false;
     }
 
     function syncHomeMasterCorrectionEditor() {
-      const row = $("homeMasterCorrectionRow");
+      const unifiedDetails = $("homeEditUnifiedDetails");
       const releaseYearInput = $("homeMasterCorrectionReleaseYear");
       const domainCodeInput = $("homeMasterCorrectionDomainCode");
       const noteInput = $("homeMasterCorrectionNote");
+      const titleInput = $("homeMasterCorrectionTitle");
+      const artistInput = $("homeMasterCorrectionArtist");
       const saveBtn = $("homeMasterCorrectionSaveBtn");
       const sourceHint = $("homeMasterCorrectionSourceHint");
-      if (!row || !releaseYearInput || !domainCodeInput || !noteInput || !saveBtn || !sourceHint) return;
+      if (!releaseYearInput || !domainCodeInput || !noteInput || !saveBtn || !sourceHint) return;
       const masterId = Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0);
       if (masterId <= 0) {
-        setDisplayMode(row, "none");
+        if (unifiedDetails) unifiedDetails.classList.add("u-hidden-initial");
         releaseYearInput.value = "";
         domainCodeInput.value = "";
         noteInput.value = "";
+        if (titleInput) titleInput.value = "";
+        if (artistInput) artistInput.value = "";
         saveBtn.disabled = true;
         sourceHint.textContent = t("media.manage.master.correction.source_hint_pending");
         setStatus("homeMasterCorrectionStatus", "ok", "");
         return;
       }
-      setDisplayMode(row, "flex");
+      if (unifiedDetails) unifiedDetails.classList.remove("u-hidden-initial");
       releaseYearInput.value = String(
         homeMasterInfo?.override_release_year
         ?? homeMasterInfo?.release_year
@@ -43000,6 +43326,8 @@
         || ""
       ).trim().toUpperCase();
       noteInput.value = String(homeMasterInfo?.override_note || "").trim();
+      if (titleInput) titleInput.value = String(homeMasterInfo?.override_title || homeMasterInfo?.title || "").trim();
+      if (artistInput) artistInput.value = String(homeMasterInfo?.override_artist_or_brand || homeMasterInfo?.artist_or_brand || "").trim();
       const sourceReleaseYear = homeMasterInfo?.source_release_year ?? homeMasterInfo?.release_year ?? null;
       const sourceDomainCode = String(
         homeMasterInfo?.source_domain_code
@@ -43192,6 +43520,8 @@
       homeMasterInfo = null;
       homeLinkedCollectibles = [];
       homeLinkedCollectiblesLoading = false;
+      homeProductLinkedGoods = [];
+      homeProductLinkedGoodsLoading = false;
       homeOwnedItemRelationView = null;
       homeOwnedItemRelationMasterEntries = [];
       homeOwnedItemEditableRelations = [];
@@ -43224,7 +43554,7 @@
       setTextIfPresent("homeEditTrackInfoSummary", t("media.manage.product.field.track_info.empty"));
       setHtmlIfPresent("homeEditTrackInfoList", `<div class='muted'>${escapeHtml(t("media.manage.product.field.track_info.empty"))}</div>`);
       setDisplayIfPresent("homeEditTrackPanel", "none");
-      $("homeEditInfoSplit")?.classList.remove("with-track");
+      // homeEditTrackPanel display is controlled by syncHomeEditorMusicVisibility
       setDisplayIfPresent("homeEditMusicSourceSummary", "none");
       setDisplayIfPresent("homeEditMusicSourceTracksWrap", "none");
       syncHomeMasterInlineEditor();
@@ -43236,6 +43566,7 @@
       $("editReleasedDate").value = "";
       $("editDiscCount").value = "";
       $("editSpeedRpm").value = "";
+      if ($("editDiscType")) $("editDiscType").value = "";
       $("editRunoutMatrix").value = "";
       $("editPressingCountry").value = "";
       $("editHasObi").checked = false;
@@ -43244,7 +43575,7 @@
       $("editTshirtSize").value = "";
       $("editCupMaterial").value = "";
       $("editHatSize").value = "";
-      $("editLinkedAlbumMasterId").value = "";
+      if ($("editLinkedAlbumMasterId")) $("editLinkedAlbumMasterId").value = "";
       $("editLinkedArtistName").value = "";
       $("editPurchasePrice").value = "";
       $("editCurrencyCode").value = "KRW";
@@ -43539,9 +43870,8 @@
         applyCandidateCollectorToHomeDetail(c);
       }
 
-      const nameBits = [c.artist_or_brand, c.title].filter(Boolean);
-      if (nameBits.length) {
-        $("editItemName").value = nameBits.join(" - ");
+      if (c.title) {
+        $("editItemName").value = c.title;
       }
 
       if (c.source && c.external_id) {
@@ -44242,6 +44572,111 @@
         homeLinkedCollectiblesLoading = false;
         renderHomeLinkedCollectiblesSection();
       }
+    }
+
+    // ── 2-3: 상품 연계 수집품 ─────────────────────────────────────────────
+
+    function renderProductLinkedGoodsSection() {
+      const list = $("homeProductLinkedGoodsList");
+      const section = $("homeProductLinkedGoodsSection");
+      if (!list || !section) return;
+      const ownedItemId = Number(homeSelectedItemId || 0);
+      if (ownedItemId <= 0) {
+        list.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.empty"))}</div>`;
+        return;
+      }
+      if (homeProductLinkedGoodsLoading) {
+        list.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.loading"))}</div>`;
+        return;
+      }
+      if (!homeProductLinkedGoods.length) {
+        list.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.empty"))}</div>`;
+        return;
+      }
+      list.innerHTML = homeProductLinkedGoods
+        .map((row) => homeProductCollectibleItemHtml(row))
+        .join("");
+    }
+
+    function homeProductCollectibleItemHtml(row) {
+      const goodsItemId = Number(row?.id || 0);
+      const goodsName = String(row?.goods_name || "").trim() || "-";
+      const imageUrl = String(
+        row?.primary_image_url ||
+        (Array.isArray(row?.image_urls) ? row.image_urls[0] : "") ||
+        ""
+      ).trim();
+      const slotText = String(row?.slot_display_name || "").trim() || t("common.unspecified");
+      return `
+        <div class="goods-result-item home-master-collectible-item">
+          <div class="album-result-cover">
+            ${imageUrl
+              ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(goodsName)}" />`
+              : `<span>${escapeHtml(goodsCategoryLabel(row?.category))}</span>`}
+          </div>
+          <div class="album-result-main">
+            <strong>${escapeHtml(goodsName)}</strong>
+            <div class="goods-result-meta">
+              <span class="tag">${escapeHtml(goodsCategoryLabel(row?.category))}</span>
+              <span>${escapeHtml(goodsStatusLabel(row?.status))}</span>
+              <span>${escapeHtml(slotText)}</span>
+            </div>
+            <div class="row u-mt-4 u-flex-between-center-wrap">
+              <div class="mini">collectible_id: ${goodsItemId}</div>
+              <button
+                class="btn ghost tiny home-master-collectible-manage-btn"
+                type="button"
+                data-home-related-goods-id="${goodsItemId}"
+              >${escapeHtml(t("media.manage.collectibles.action.manage"))}</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadProductLinkedGoods(ownedItemId, requestSeq = 0) {
+      const targetId = Number(ownedItemId || 0);
+      if (targetId <= 0) {
+        homeProductLinkedGoods = [];
+        homeProductLinkedGoodsLoading = false;
+        renderProductLinkedGoodsSection();
+        return;
+      }
+      try {
+        homeProductLinkedGoodsLoading = true;
+        renderProductLinkedGoodsSection();
+        const res = await fetch(`/goods-items?owned_item_id=${targetId}&limit=200&offset=0`);
+        const data = await safeJson(res);
+        if (requestSeq && !isActiveHomeEditRequest(requestSeq)) return;
+        if (!res.ok) throw new Error(data.detail || t("media.manage.collectibles.status.load_failed"));
+        homeProductLinkedGoods = Array.isArray(data.items) ? data.items : [];
+      } catch (err) {
+        if (requestSeq && !isActiveHomeEditRequest(requestSeq)) return;
+        homeProductLinkedGoods = [];
+        setStatus("homeProductLinkedGoodsStatus", "err",
+          err.message || t("media.manage.collectibles.status.load_failed"));
+      } finally {
+        if (requestSeq && !isActiveHomeEditRequest(requestSeq)) return;
+        homeProductLinkedGoodsLoading = false;
+        renderProductLinkedGoodsSection();
+      }
+    }
+
+    function openGoodsRegisterFromProductContext() {
+      const ownedItemId = Number(homeSelectedItemId || 0);
+      openAdminConsole("collectibles");
+      switchGoodsMode("register");
+      resetGoodsRegisterForm({ preserveStatus: true });
+      if (ownedItemId > 0 && $("goodsRegisterLinkedOwnedItemId")) {
+        $("goodsRegisterLinkedOwnedItemId").value = String(ownedItemId);
+      }
+      setStatus(
+        "goodsRegisterStatusLine",
+        "ok",
+        ownedItemId > 0
+          ? t("collectibles.register.status.start_linked", { id: ownedItemId })
+          : t("collectibles.register.status.start_independent")
+      );
     }
 
     function homeMasterAddVariantItemHtml(row) {
@@ -45414,7 +45849,7 @@
             </div>
             <div class="row u-mt-4 u-flex-between-center-wrap">
               <div class="mini">
-                owned_item_id: ${row.id} (${escapeHtml(t("media.manage.related_versions.state.click_to_open"))})
+                owned_item_id: ${row.id} (${escapeHtml(t("media.manage.related_versions.state.click_to_open"))}) / 견출지: ${escapeHtml(String(row.label_id || "-"))}
                 ${!isMusic && memoText ? ` / ${escapeHtml(t("media.manage.goods.meta.memo"))}: ${escapeHtml(memoText)}` : ""}
               </div>
               ${dupControlHtml}
@@ -45515,12 +45950,55 @@
       `;
     }
 
+    function renderHomeMasterMetaCard() {
+      const card = $("homeMasterMetaCard");
+      if (!card) return;
+      if (!homeMasterInfo) {
+        card.classList.add("u-hidden-initial");
+        return;
+      }
+      // items[0]의 master_* 필드를 fallback으로 활용
+      const firstItem = Array.isArray(homeMasterInfo?.items) ? homeMasterInfo.items[0] : null;
+      const title  = homeMasterInfo.title  || firstItem?.master_title  || "-";
+      const artist = homeMasterInfo.artist_or_brand || firstItem?.master_artist_or_brand || firstItem?.artist_or_brand || "-";
+      const year   = homeMasterInfo.release_year
+        || homeMasterInfo.source_release_year
+        || firstItem?.master_release_year
+        || firstItem?.release_year
+        || null;
+      // 커버: 현재 로드된 상품 우선 → 마스터 항목 중 첫 커버
+      const rawCover =
+        (typeof homeLoadedMusicDetail !== "undefined" && homeLoadedMusicDetail?.cover_image_url) ||
+        (firstItem?.cover_image_url || "") ||
+        "";
+      const coverUrl = (typeof normalizeRenderableCoverUrl === "function")
+        ? normalizeRenderableCoverUrl(rawCover)
+        : rawCover;
+      // 마스터 소스 링크: items[0]의 source_code/source_external_id 우선, 마스터 수준 fallback
+      const linkSource = homeMasterInfo.source || firstItem?.source_code;
+      const linkExtId  = homeMasterInfo.master_external_id || firstItem?.source_external_id;
+      const masterLink = (typeof discogsReleaseLinkHtml === "function")
+        ? discogsReleaseLinkHtml(linkSource, linkExtId, "Discogs")
+        : "";
+      setHtmlIfPresent("homeMasterMetaCover",
+        coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+          : `<span class="home-master-meta-cover-placeholder">♪</span>`
+      );
+      setTextIfPresent("homeMasterMetaTitle",  title);
+      setTextIfPresent("homeMasterMetaArtist", artist);
+      setTextIfPresent("homeMasterMetaYear",   year ? String(year) : "");
+      setHtmlIfPresent("homeMasterMetaLink",   masterLink);
+      card.classList.remove("u-hidden-initial");
+    }
+
     function renderHomeRelatedVersions() {
       parkHomeMasterInlineEditor();
       if (!homeMasterInfo) {
         setTextIfPresent("homeMasterMeta", homeMasterMetaPlaceholderText());
         setHtmlIfPresent("homeMasterRelatedList", homeMasterRelatedPlaceholderHtml());
         setDisplayIfPresent("homeMasterSummarySection", "none");
+        renderHomeMasterMetaCard();
         renderHomeLinkedCollectiblesSection();
         syncHomeMasterLookupPromptState();
         syncHomeMasterInlineEditor();
@@ -45561,6 +46039,7 @@
         })
       );
       setDisplayIfPresent("homeMasterSummarySection", "block");
+      renderHomeMasterMetaCard();
       renderHomeLinkedCollectiblesSection();
       syncHomeMasterCorrectionEditor();
       syncHomeMasterSortArtistEditor();
@@ -45606,6 +46085,8 @@
       const releaseYearValue = releaseYearText ? releaseYearNumber : null;
       const domainCodeValue = String($("homeMasterCorrectionDomainCode")?.value || "").trim().toUpperCase() || null;
       const overrideNoteValue = $("homeMasterCorrectionNote")?.value.trim() || null;
+      const overrideTitleValue = $("homeMasterCorrectionTitle")?.value.trim() || null;
+      const overrideArtistValue = $("homeMasterCorrectionArtist")?.value.trim() || null;
       try {
         setStatus("homeMasterCorrectionStatus", "ok", t("media.manage.master.correction.status.saving"));
         const res = await fetch(`/album-masters/${masterId}/correction`, {
@@ -45615,6 +46096,8 @@
             release_year: releaseYearValue,
             domain_code: domainCodeValue,
             override_note: overrideNoteValue,
+            override_title: overrideTitleValue,
+            override_artist_or_brand: overrideArtistValue,
           }),
         });
         const data = await safeJson(res);
@@ -45627,6 +46110,10 @@
           homeMasterInfo.override_release_year = data.override_release_year || null;
           homeMasterInfo.override_domain_code = data.override_domain_code || null;
           homeMasterInfo.override_note = data.override_note || null;
+          homeMasterInfo.override_title = data.override_title || null;
+          homeMasterInfo.override_artist_or_brand = data.override_artist_or_brand || null;
+          if (data.override_title) homeMasterInfo.title = data.override_title;
+          if (data.override_artist_or_brand) homeMasterInfo.artist_or_brand = data.override_artist_or_brand;
           homeMasterInfo.has_manual_correction = Boolean(data.has_manual_correction);
         }
         const masterRow = Array.isArray(homeSearchResults)
@@ -45937,8 +46424,8 @@
         ? JSON.parse(JSON.stringify(data.music_detail))
         : null;
 
-      $("editOwnedId").value = String(data.id || "");
-      $("editLabelId").value = String(data.label_id || "");
+      if ($("editOwnedId")) $("editOwnedId").value = String(data.id || "");
+      if ($("editLabelId")) $("editLabelId").value = String(data.label_id || "");
       $("editCategory").value = data.category || "LP";
       $("editItemName").value = data.item_name_override || "";
       $("editSizeGroup").value = data.size_group || defaultSizeGroupForCategory(data.category);
@@ -45967,6 +46454,7 @@
       $("editCatalogNo").value = data.music_detail?.catalog_no || "";
       $("editDiscCount").value = data.music_detail?.disc_count ?? "";
       $("editSpeedRpm").value = data.music_detail?.speed_rpm ?? "";
+      if ($("editDiscType")) $("editDiscType").value = data.music_detail?.disc_type ?? "";
       $("editHasObi").checked = Boolean(data.music_detail?.has_obi);
       $("editRunoutMatrix").value = joinRunoutList(data.music_detail?.runout_matrix || []);
       $("editPressingCountry").value = data.music_detail?.pressing_country || "";
@@ -46006,6 +46494,7 @@
       renderHomeCollectorSummary(homeLoadedMusicDetail);
       renderHomeProductRelationSection();
       renderHomeSearchResults(homeSearchResults);
+      renderHomeMasterMetaCard();
       showHomeEditView();
       setStatus("homeEditStatus", "ok", t("media.manage.edit.status.selected", { id: data.id }));
       const locationSeed = {
@@ -46041,6 +46530,7 @@
         resetHomeMasterLookupUi({ clearInputs: true });
       }
       void loadHomeLinkedCollectibles(Number(data.linked_album_master_id || 0), requestSeq);
+      void loadProductLinkedGoods(Number(data.id || 0), requestSeq);
       homeAudioDirectoryMappings = [];
       homeAudioDirectoryFiles = [];
       renderHomeTrackMapBody([]);
@@ -46131,6 +46621,7 @@
           catalog_no: $("editCatalogNo").value.trim() || null,
           disc_count: normalizePositiveIntOrNull($("editDiscCount").value),
           speed_rpm: $("editSpeedRpm").value.trim() ? Number($("editSpeedRpm").value) : null,
+          disc_type: $("editDiscType")?.value.trim() || null,
           has_obi: $("editHasObi").checked ? true : null,
           runout_matrix: editRunout.length ? editRunout : collectorBase.runout_matrix,
           pressing_country: editPressingInput || collectorBase.pressing_country || null,
@@ -47205,9 +47696,8 @@
         }
       }
       if (mappedReleaseType) $("releaseType").value = mappedReleaseType;
-      const nameBits = [c.artist_or_brand, c.title].filter(Boolean);
-      if (nameBits.length) {
-        $("itemNameOverride").value = nameBits.join(" - ");
+      if (c.title) {
+        $("itemNameOverride").value = c.title;
       }
       if (c.label_name) $("labelName").value = c.label_name;
       if (c.catalog_no) $("catalogNo").value = c.catalog_no;
@@ -48293,6 +48783,7 @@
       $("goodsRegisterMemoryNote").value = "";
       $("goodsRegisterImageUrls").value = "";
       $("goodsRegisterAlbumMasterId").value = "";
+      $("goodsRegisterLinkedOwnedItemId").value = "";
       $("goodsRegisterArtistNames").value = "";
       $("goodsRegisterLabelNames").value = "";
       if (!options.preserveStatus) {
@@ -48868,6 +49359,9 @@
           memory_note: $("goodsRegisterMemoryNote").value.trim() || null,
           image_urls: splitLineList($("goodsRegisterImageUrls").value),
           album_master_ids: $("goodsRegisterAlbumMasterId").value ? [Number($("goodsRegisterAlbumMasterId").value)] : [],
+          linked_owned_item_id: $("goodsRegisterLinkedOwnedItemId")?.value?.trim()
+            ? Number($("goodsRegisterLinkedOwnedItemId").value)
+            : null,
           artist_names: splitCommaList($("goodsRegisterArtistNames").value),
           label_names: splitCommaList($("goodsRegisterLabelNames").value),
         };
@@ -52444,6 +52938,7 @@
       setHomeLinkedGoodsImageEntries(next);
     });
     $("homeLinkedGoodsCreateBtn").addEventListener("click", openGoodsRegisterFromManageContext);
+    $("homeProductLinkedGoodsOpenBtn")?.addEventListener("click", openGoodsRegisterFromProductContext);
     $("homeEditShelfPrevBtn").addEventListener("click", () => moveHomeEditShelf(-1));
     $("homeEditShelfNextBtn").addEventListener("click", () => moveHomeEditShelf(1));
     $("homeMetaBarcodeBtn").addEventListener("click", searchHomeMetadataByBarcode);
@@ -53468,6 +53963,7 @@
     };
     $("homeMasterRelatedList").addEventListener("click", handleHomeRelatedListClick);
     $("homeMasterGoodsList").addEventListener("click", handleHomeRelatedListClick);
+    $("homeProductLinkedGoodsList")?.addEventListener("click", handleHomeRelatedListClick);
     $("homeMasterInlineEditorHost").addEventListener("click", (e) => {
       e.stopPropagation();
     });
