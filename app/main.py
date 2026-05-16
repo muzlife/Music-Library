@@ -358,6 +358,14 @@ HTML_NO_CACHE_HEADERS = {
     "Pragma": "no-cache",
     "Expires": "0",
 }
+# QA 환경: APP_ENV=qa 로 설정 → 엄격한 no-store + Clear-Site-Data
+# 상용 환경: ?v=hash URL 버전닝으로 캐시 버스팅 → max-age 허용, Clear-Site-Data 제거
+def _is_qa_env() -> bool:
+    return os.getenv("APP_ENV", "production").lower() in {"qa", "dev", "staging"}
+
+HTML_PROD_CACHE_HEADERS = {
+    "Cache-Control": "no-cache",  # ETag 기반 조건부 요청 허용 (304 응답)
+}
 PURCHASE_ITEM_FETCH_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -4015,6 +4023,9 @@ def _purchase_queue_memory_note(row: dict[str, Any], candidate: dict[str, Any] |
         external_id = str(candidate.get("external_id") or "").strip()
         if source and external_id:
             memory_bits.append(f"메타 후보: {source}#{external_id}")
+        candidate_source_notes = _clean_text(candidate.get("source_notes"))
+        if candidate_source_notes:
+            memory_bits.append(f"소스 메모: {candidate_source_notes}")
     memory_note = " | ".join(memory_bits)
     return memory_note
 
@@ -4647,7 +4658,12 @@ def _build_ops_placement_hint_payload(owned_item_id: int) -> dict[str, Any]:
         or _clean_text(detail_row.get("artist_or_brand"))
         or _clean_text(detail_row.get("master_artist_or_brand"))
     )
-    item_title = _clean_text(detail_row.get("item_name_override")) or _clean_text(detail_row.get("master_title"))
+    _raw_item_name = _clean_text(detail_row.get("item_name_override")) or _clean_text(detail_row.get("master_title"))
+    item_title = (
+        f"{artist_or_brand} - {_raw_item_name}"
+        if artist_or_brand and _clean_text(detail_row.get("item_name_override"))
+        else _raw_item_name
+    )
     raw_year = detail_row.get("master_release_year") if detail_row.get("master_release_year") is not None else detail_row.get("release_year")
     try:
         release_year = int(raw_year) if raw_year is not None else None
@@ -4904,7 +4920,27 @@ def admin_shell(request: Request):
     role = _read_auth_role(request)
     if not _is_admin_role(role):
         return RedirectResponse("/ops", status_code=303)
-    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+    # 캐시 버스팅: 파일 MD5 기반 버전 → 배포할 때마다 새 URL로 강제 새로고침
+    import hashlib
+    v = request.query_params.get("v")
+    try:
+        file_hash = hashlib.md5((STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+    except Exception:
+        file_hash = "0"
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/admin?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        # QA에서만 Clear-Site-Data로 브라우저 캐시 전체 초기화
+        if _is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    # QA: no-store + Clear-Site-Data (항상 최신 파일 강제)
+    # 상용: no-cache (ETag 조건부 요청 허용 → 304로 빠른 응답)
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @app.get("/ui", include_in_schema=False)
@@ -5403,6 +5439,7 @@ def get_goods_items(
     domain_code: DomainCode | None = Query(default=None),
     artist_name: str | None = Query(default=None),
     album_master_id: int | None = Query(default=None, ge=1),
+    owned_item_id: int | None = Query(default=None, ge=1),
     label_name: str | None = Query(default=None),
     storage_slot_id: int | None = Query(default=None, ge=1),
     linked_state: GoodsLinkedState = Query(default="ANY"),
@@ -5419,6 +5456,7 @@ def get_goods_items(
         domain_code=domain_code,
         artist_name=artist_name,
         album_master_id=album_master_id,
+        owned_item_id=owned_item_id,
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,
@@ -5434,6 +5472,7 @@ def get_goods_items(
         domain_code=domain_code,
         artist_name=artist_name,
         album_master_id=album_master_id,
+        owned_item_id=owned_item_id,
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,
@@ -7654,6 +7693,10 @@ def _normalize_music_detail_payload(normalized_payload: dict[str, object]) -> No
     music_detail["styles"] = styles
     music_detail["disc_count"] = disc_count
     music_detail["speed_rpm"] = speed_rpm
+    music_detail["disc_type"] = (music_detail.get("disc_type") or "").strip() or None
+    music_detail["package_contents"] = (music_detail.get("package_contents") or "").strip() or None
+    music_detail["is_limited_edition"] = music_detail.get("is_limited_edition")
+    music_detail["edition_number"] = (music_detail.get("edition_number") or "").strip() or None
     music_detail["has_obi"] = has_obi
     music_detail["runout_matrix"] = runout_matrix
     music_detail["pressing_country"] = pressing_country
@@ -8284,10 +8327,8 @@ def _build_owned_item_payload_for_source_replace(owned_item_id: int, candidate: 
     category = _infer_music_category_from_format(candidate.get("format_name") or detail_row.get("format_name") or existing_category)
     item_title = _clean_text(candidate.get("title"))
     artist_name = _merge_replace_text(candidate.get("artist_or_brand"), detail_row.get("artist_or_brand") or base_row.get("linked_artist_name"))
-    if artist_name and item_title:
-        item_name_override = f"{artist_name} - {item_title}"
-    else:
-        item_name_override = item_title or _clean_text(detail_row.get("item_name_override")) or _clean_text(base_row.get("item_name_override"))
+    # item_name_override는 순수 앨범명만 저장. 디스플레이명(아티스트 + 앨범)은 쿼리 레이어에서 조합.
+    item_name_override = item_title or _clean_text(detail_row.get("item_name_override")) or _clean_text(base_row.get("item_name_override"))
 
     memory_note_parts = []
     existing_memory_note = _clean_text(base_row.get("memory_note"))
