@@ -79,6 +79,7 @@ class MetadataCandidate(BaseModel):
     styles: list[str] = Field(default_factory=list)
     disc_count: int | None = None
     speed_rpm: int | None = None
+    disc_type: str | None = None
     has_obi: bool | None = None
     runout_matrix: list[str] = Field(default_factory=list)
     pressing_country: str | None = None
@@ -196,6 +197,7 @@ class GoodsItemCreateRequest(GoodsItemBase):
     album_master_ids: list[int] = Field(default_factory=list)
     artist_names: list[str] = Field(default_factory=list)
     label_names: list[str] = Field(default_factory=list)
+    linked_owned_item_id: int | None = Field(default=None, ge=1)
 
 
 class GoodsItemUpdateRequest(BaseModel):
@@ -214,6 +216,7 @@ class GoodsItemUpdateRequest(BaseModel):
     tshirt_size: str | None = None
     cup_material: str | None = None
     hat_size: str | None = None
+    linked_owned_item_id: int | None = Field(default=None, ge=1)
 
 
 class GoodsItemMappingUpdateRequest(BaseModel):
@@ -247,6 +250,7 @@ class GoodsItemResponse(GoodsItemBase):
     id: int
     slot_code: str | None = None
     slot_display_name: str | None = None
+    linked_owned_item_id: int | None = None
     album_master_mappings: list[GoodsItemAlbumMasterMapping] = Field(default_factory=list)
     artist_mappings: list[str] = Field(default_factory=list)
     label_mappings: list[str] = Field(default_factory=list)
@@ -653,6 +657,7 @@ class AlbumMasterVariantItem(BaseModel):
     track_list: list[str] = Field(default_factory=list)
     disc_count: int | None = None
     speed_rpm: int | None = None
+    disc_type: str | None = None
     has_obi: bool | None = None
     runout_matrix: list[str] = Field(default_factory=list)
     pressing_country: str | None = None
@@ -925,6 +930,7 @@ class MusicDetailCreate(BaseModel):
     sleeve_condition: str | None = None
     disc_count: int | None = Field(default=None, ge=1)
     speed_rpm: int | None = None
+    disc_type: str | None = None
     has_obi: bool | None = None
     runout_matrix: list[str] = Field(default_factory=list)
     pressing_country: str | None = None
@@ -1243,6 +1249,8 @@ class AlbumMasterCorrectionUpdateRequest(BaseModel):
     release_year: int | None = Field(default=None, ge=1900, le=2100)
     domain_code: DomainCode | None = None
     override_note: str | None = None
+    override_title: str | None = None
+    override_artist_or_brand: str | None = None
 
 
 class AlbumMasterCorrectionUpdateResponse(BaseModel):
@@ -1254,6 +1262,8 @@ class AlbumMasterCorrectionUpdateResponse(BaseModel):
     override_release_year: int | None = None
     override_domain_code: DomainCode | None = None
     override_note: str | None = None
+    override_title: str | None = None
+    override_artist_or_brand: str | None = None
     has_manual_correction: bool = False
 
 

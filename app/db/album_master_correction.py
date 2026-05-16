@@ -53,7 +53,9 @@ def get_album_master_correction_state(album_master_id: int) -> dict[str, Any] | 
               source_domain_code,
               override_release_year,
               override_domain_code,
-              override_note
+              override_note,
+              override_title,
+              override_artist_or_brand
             FROM album_master
             WHERE id = ?
             LIMIT 1
@@ -74,10 +76,14 @@ def get_album_master_correction_state(album_master_id: int) -> dict[str, Any] | 
     )
     data["release_year"] = int(data["release_year"]) if data.get("release_year") not in (None, "") else None
     data["override_note"] = str(data.get("override_note") or "").strip() or None
+    data["override_title"] = str(data.get("override_title") or "").strip() or None
+    data["override_artist_or_brand"] = str(data.get("override_artist_or_brand") or "").strip() or None
     data["has_manual_correction"] = bool(
         data.get("override_release_year") is not None
         or data.get("override_domain_code")
         or data.get("override_note")
+        or data.get("override_title")
+        or data.get("override_artist_or_brand")
     )
     return data
 
@@ -88,12 +94,16 @@ def update_album_master_correction(
     release_year: int | None,
     domain_code: str | None,
     override_note: str | None,
+    override_title: str | None = None,
+    override_artist_or_brand: str | None = None,
 ) -> dict[str, Any] | None:
     master_id = int(album_master_id or 0)
     if master_id <= 0:
         return None
     normalized_domain_code = _normalize_domain_code_value(domain_code)
     normalized_note = str(override_note or "").strip() or None
+    normalized_title = str(override_title or "").strip() or None
+    normalized_artist = str(override_artist_or_brand or "").strip() or None
     release_year_value = int(release_year) if release_year is not None else None
     now = utc_now_iso()
 
@@ -136,6 +146,10 @@ def update_album_master_correction(
                 override_release_year = ?,
                 override_domain_code = ?,
                 override_note = ?,
+                override_title = ?,
+                override_artist_or_brand = ?,
+                title = COALESCE(?, title),
+                artist_or_brand = COALESCE(?, artist_or_brand),
                 updated_at = ?
             WHERE id = ?
             """,
@@ -147,6 +161,10 @@ def update_album_master_correction(
                 release_year_value,
                 normalized_domain_code,
                 normalized_note,
+                normalized_title,
+                normalized_artist,
+                normalized_title,
+                normalized_artist,
                 now,
                 master_id,
             ),

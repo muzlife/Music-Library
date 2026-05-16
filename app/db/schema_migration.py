@@ -496,7 +496,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -513,6 +513,9 @@ Version log:
   4 — `music_item_detail.disc_type` TEXT column. Was added to
       _apply_migrations_legacy after DBs already passed v1, so it was never
       applied to existing installs. Fixes INSERT 500 error on owned-item create.
+  5 — `album_master.override_title` and `album_master.override_artist_or_brand`
+      TEXT columns. Supports the unified correction editor that lets operators
+      override title and artist/brand alongside release_year / domain_code.
 """
 
 
@@ -605,6 +608,22 @@ def _migration_v3_add_goods_item_owned_link(conn: sqlite3.Connection) -> None:
             )
 
 
+def _migration_v5_add_album_master_override_title_artist(conn: sqlite3.Connection) -> None:
+    """`album_master.override_title` and `album_master.override_artist_or_brand` TEXT columns.
+
+    Supports the unified correction editor (운영자 수동 보정 통합 패널) that lets
+    operators override the displayed title and artist/brand alongside the existing
+    override_release_year / override_domain_code / override_note fields.
+    When set, the effective `title` and `artist_or_brand` columns are also updated
+    via COALESCE so the main catalog reflects the correction immediately.
+    """
+    if _table_exists(conn, "album_master"):
+        if not _column_exists(conn, "album_master", "override_title"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN override_title TEXT")
+        if not _column_exists(conn, "album_master", "override_artist_or_brand"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN override_artist_or_brand TEXT")
+
+
 def _migration_v4_add_disc_type(conn: sqlite3.Connection) -> None:
     """`music_item_detail.disc_type` TEXT column.
 
@@ -626,6 +645,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     2: _migration_v2_add_external_response_cache,
     3: _migration_v3_add_goods_item_owned_link,
     4: _migration_v4_add_disc_type,
+    5: _migration_v5_add_album_master_override_title_artist,
 }
 
 
