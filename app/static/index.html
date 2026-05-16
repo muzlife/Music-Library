@@ -18339,6 +18339,10 @@
                           <label for="editBarcode">바코드</label>
                           <input id="editBarcode" placeholder="예: 8809049750425" />
                         </div>
+                        <div>
+                          <label for="editReleasedDate">상품 발매일</label>
+                          <input id="editReleasedDate" placeholder="예: 2023-05-10" />
+                        </div>
                         <div class="span-2">
                           <label for="editStyles" data-i18n="media.manage.field.styles.label">스타일 (쉼표 구분)</label>
                           <input id="editStyles" data-i18n-placeholder="media.manage.field.styles.placeholder" placeholder="예: K-Rock, Prog Rock" />
@@ -18347,7 +18351,15 @@
                       <div class="grid-6 u-mt-6">
                         <div id="homeEditMediaTypeWrap">
                           <label for="editMediaType" data-i18n="media.manage.field.media_type.label">미디어 타입(원본)</label>
-                          <input id="editMediaType" data-i18n-placeholder="media.manage.field.media_type.placeholder" placeholder="예: Vinyl / CD / Cassette" />
+                          <select id="editMediaType">
+                            <option value="">미지정</option>
+                            <option value="Vinyl">Vinyl</option>
+                            <option value="CD">CD</option>
+                            <option value="Cassette">Cassette</option>
+                            <option value="8Track">8Track</option>
+                            <option value="Digital">Digital</option>
+                            <option value="Reel-to-Reel">Reel-to-Reel</option>
+                          </select>
                         </div>
                         <div id="homeEditFormatNameWrap" class="span-2">
                           <label>패키징</label>
@@ -18542,7 +18554,6 @@
                           <input id="editCategory" type="hidden" value="LP" />
                           <input id="editSizeGroup" type="hidden" value="STD" />
                           <input id="editReleaseType" type="hidden" value="" />
-                          <input id="editReleasedDate" type="hidden" />
                           <input id="editGenres" type="hidden" />
                         </div>
 
@@ -52886,7 +52897,7 @@
       syncHomeEditorMusicVisibility();
       renderHomeProductRelationSection();
     });
-    $("editMediaType").addEventListener("input", _syncVinylOnlyFields);
+    $("editMediaType").addEventListener("change", _syncVinylOnlyFields);
     $("editItemName").addEventListener("input", syncHomeMasterInlineEditor);
     $("homeMasterCorrectionSaveBtn").addEventListener("click", saveHomeMasterCorrection);
     $("homeMasterSortArtistSaveBtn").addEventListener("click", saveHomeMasterSortArtistName);
