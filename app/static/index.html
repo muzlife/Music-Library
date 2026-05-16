@@ -18361,14 +18361,14 @@
                           <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
                             <label for="editSignatureType" style="font-size:0.72rem;color:var(--ink);opacity:0.7;margin-bottom:1px;" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
                             <select id="editSignatureType" style="font-size:0.78rem;padding:2px 3px;max-width:120px;">
-                              <option>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
+                              <option value="NONE">없음</option><option value="IN_PERSON">직접 받음</option><option value="PURCHASE_INCLUDED">구매 포함</option><option value="UNKNOWN">확인 필요</option>
                             </select>
                           </div>
                           <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
                             <label for="editStatus" style="font-size:0.72rem;color:var(--ink);opacity:0.7;margin-bottom:1px;" data-i18n="media.manage.product.field.status.label">상태</label>
                             <select id="editStatus" style="font-size:0.78rem;padding:2px 3px;max-width:120px;">
-                              <option>IN_COLLECTION</option>
-                              <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
+                              <option value="IN_COLLECTION">소장 중</option>
+                              <option value="LOANED">대여</option><option value="SOLD">판매</option><option value="LOST">분실</option><option value="ARCHIVED">보관</option>
                             </select>
                           </div>
                         </div>
@@ -19773,8 +19773,8 @@
           <div>
             <label for="status" data-i18n="media.register.detail.field.status.label">상태</label>
             <select id="status">
-              <option selected>IN_COLLECTION</option>
-              <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
+              <option value="IN_COLLECTION" selected>소장 중</option>
+              <option value="LOANED">대여</option><option value="SOLD">판매</option><option value="LOST">분실</option><option value="ARCHIVED">보관</option>
             </select>
           </div>
         </div>
@@ -19798,7 +19798,7 @@
           <div>
             <label for="signatureType" data-i18n="media.register.detail.field.signature_type.label">싸인 유형</label>
             <select id="signatureType">
-              <option selected>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
+              <option value="NONE" selected>없음</option><option value="IN_PERSON">직접 받음</option><option value="PURCHASE_INCLUDED">구매 포함</option><option value="UNKNOWN">확인 필요</option>
             </select>
           </div>
         </div>
@@ -20273,8 +20273,8 @@
           <label for="ownedStatus" data-i18n="media.register.owned_lookup.field.status.label">상태</label>
           <select id="ownedStatus">
             <option value="" data-i18n="common.all">전체</option>
-            <option selected>IN_COLLECTION</option>
-            <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
+            <option value="IN_COLLECTION" selected>소장 중</option>
+            <option value="LOANED">대여</option><option value="SOLD">판매</option><option value="LOST">분실</option><option value="ARCHIVED">보관</option>
           </select>
         </div>
         <div>
