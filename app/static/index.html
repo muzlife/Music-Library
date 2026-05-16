@@ -12187,6 +12187,18 @@
       color: var(--admin-console-text);
     }
 
+    /* 다크모드: 마스터 수정 영역(details) 배경 */
+    #tabManage .home-unified-edit-details {
+      border-color: rgba(137, 151, 171, 0.18);
+      background: var(--admin-console-panel-bg-2);
+    }
+    #tabManage .home-unified-edit-details > summary.home-unified-edit-summary {
+      color: var(--admin-console-text-meta);
+    }
+    #tabManage .home-unified-edit-details > summary.home-unified-edit-summary:hover {
+      color: var(--admin-console-text);
+    }
+
     #tabManage .ops-compact-extra-fields > summary::before {
       color: var(--admin-console-text-meta);
     }
@@ -13713,6 +13725,18 @@
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.58) !important,
         0 1px 0 rgba(121, 136, 154, 0.16) !important;
+    }
+
+    body[data-theme="day"] #tabManage .home-unified-edit-details {
+      border-color: rgba(94, 112, 130, 0.62);
+      background: linear-gradient(180deg, rgba(243, 247, 251, 0.997), rgba(232, 239, 246, 0.993));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.48), 0 1px 0 rgba(118,133,150,0.12);
+    }
+    body[data-theme="day"] #tabManage .home-unified-edit-details > summary.home-unified-edit-summary {
+      color: #4a6276;
+    }
+    body[data-theme="day"] #tabManage .home-unified-edit-details > summary.home-unified-edit-summary:hover {
+      color: #1b3144;
     }
 
     body[data-theme="day"] #tabManage #homeMasterSummarySection {
@@ -18208,6 +18232,31 @@
         <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6 u-hidden-initial">credits: -</div>
         <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4 u-hidden-initial">matrix/identifiers: -</div>
 
+        <!-- ══ 장식장 / 위치 정보 (최상단) ══ -->
+        <div id="homeCabinetSection">
+                    <div class="section-divider u-mt-8">
+                      <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
+                    </div>
+                    <div class="shelf-toolbar">
+                      <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
+                      <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
+                      <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
+                    </div>
+                    <div class="shelf-track-wrap">
+                      <div id="homeEditShelfTrack" class="shelf-track"></div>
+                    </div>
+                    <div id="homeEditShelfStatus" class="status"></div>
+                    <div class="row u-mt-6 u-flex-between-center-wrap">
+                      <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
+                      <div class="row home-manage-actions-right">
+                        <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
+                        <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
+                      </div>
+                    </div>
+                    <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
+                    <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
+                  </div>
+
         <!-- ══ 섹션 1: 마스터 정보 ══ -->
         <div id="homeSection1MasterInfo">
           <div class="section-divider u-mt-8">
@@ -18603,6 +18652,9 @@
               <div id="homeEditTrackListWrap">
                 <label for="editTrackList" data-i18n="media.manage.field.track_list.label">곡 리스트 (한 줄에 1곡)</label>
                 <textarea id="editTrackList"></textarea>
+                <div class="row home-manage-actions-right u-mt-4">
+                  <button id="homeEditTrackSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product.field.track_list.save">곡 리스트 저장</button>
+                </div>
               </div>
               <div class="section-divider">
                 <h2 data-i18n="media.manage.product.field.track_info.title">곡 정보</h2>
@@ -18661,17 +18713,9 @@
           <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
                       <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
                     </div>
-          <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack u-hidden-initial">
-                    <div class="compact-stack-grid">
-                      <div class="home-goods-zone-kicker span-2" data-i18n="media.manage.collectibles.kicker">수집품 전용 영역</div>
-                      <div class="mini home-goods-zone-note span-2" data-i18n="media.manage.collectibles.note">음반/상품 편집 구역과 분리된 연계 수집품 목록입니다.</div>
-                      <div class="section-divider span-2 u-mt-8">
-                        <h2 data-i18n="media.manage.collectibles.title">연계 수집품</h2>
-                      </div>
-                      <div id="homeMasterGoodsList" class="related-list span-2"></div>
-                    </div>
-                  </div>
-          <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack">
+          <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details u-hidden-initial">
+            <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
+          <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack" style="border:none;background:none;box-shadow:none;margin-top:0;">
                     <div class="compact-stack-grid">
                       <div class="mini muted span-2 u-mt-0" data-i18n="media.manage.collectibles.panel_intro">수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
                       <div class="section-divider span-2 u-mt-10">
@@ -18758,36 +18802,11 @@
                       <input id="homeLinkedGoodsImageUrls" type="hidden" />
                     </div>
                   </div>
+          </details>
         </div>
 
         <!-- ══ 섹션 2: 상품 정보 ══ -->
         <div id="homeSection2ProductInfo">
-          <div class="section-divider u-mt-12">
-            <h2><span data-i18n="media.manage.section2.title">2. 상품 정보</span></h2>
-          </div>
-          <div id="homeCabinetSection">
-                    <div class="section-divider u-mt-8">
-                      <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
-                    </div>
-                    <div class="shelf-toolbar">
-                      <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
-                      <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
-                      <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
-                    </div>
-                    <div class="shelf-track-wrap">
-                      <div id="homeEditShelfTrack" class="shelf-track"></div>
-                    </div>
-                    <div id="homeEditShelfStatus" class="status"></div>
-                    <div class="row u-mt-6 u-flex-between-center-wrap">
-                      <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
-                      <div class="row home-manage-actions-right">
-                        <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
-                        <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
-                      </div>
-                    </div>
-                    <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
-                    <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
-                  </div>
           <div id="homeEditorStandaloneMount" class="u-mt-10"></div>
 
           <!-- 2-1: 보유 상품 -->
@@ -18885,11 +18904,9 @@
             <!-- 2-2-A: 마스터에서 추가 (현 마스터와 연결할 후보 검색) -->
             <div id="homeSection22FromMaster">
               <div id="homeMasterAddBlock">
-                <div class="home-product-add-kicker" data-i18n="media.manage.section2_2.from_master.kicker">마스터에서 추가</div>
                 <div class="section-divider u-mt-4">
-                  <h3 data-i18n="media.manage.section2_2.from_master.title">마스터 후보 조회 / 연결</h3>
+                  <h3 data-i18n="media.manage.section2_2.from_master.title">마스터 연계 추가<span class="section-help-dot" tabindex="0" data-help="필요할 때만 펼쳐 현재 상품과 연결할 마스터 후보를 확인합니다. 빠른 상품 수정은 위에서, 다른 소스 상품 추가는 아래 블록에서 이어집니다.">?</span></h3>
                 </div>
-                <div class="mini home-master-lookup-note" data-i18n="media.manage.master.lookup.note">필요할 때만 펼쳐 현재 상품과 연결할 마스터 후보를 확인합니다. 빠른 상품 수정은 위에서, 다른 소스 상품 추가는 아래 블록에서 이어집니다.</div>
                 <input id="homeMasterAddCatalogNo" type="hidden" />
                 <input id="homeMasterAddBarcode" type="hidden" />
                 <button id="homeMasterAddResetBtn" type="button" hidden aria-hidden="true"></button>
@@ -18921,11 +18938,9 @@
 
             <!-- 2-2-B: 다른소스에서 추가 (바코드/쿼리 검색) -->
             <div id="homeSection22FromSource">
-              <div class="home-product-add-kicker" data-i18n="media.manage.section2_2.from_source.kicker">다른소스에서 추가</div>
-              <div class="section-divider u-mt-4">
-                <h3 data-i18n="media.manage.section2_2.from_source.title">바코드 / 소스 검색으로 추가</h3>
+              <div class="section-divider u-mt-10">
+                <h3 data-i18n="media.manage.section2_2.from_source.title">다른소스에서 추가<span class="section-help-dot" tabindex="0" data-help="현재 마스터에 없는 상품을 다른 소스에서 찾아 연계 상품으로 추가합니다. 기존 상품의 소스 교체는 '소스 보강' 탭에서 처리합니다.">?</span></h3>
               </div>
-              <p class="mini home-manage-secondary-note u-mt-4" data-i18n="media.manage.master.fetch.note">현재 마스터에 없는 상품을 다른 소스에서 찾아 연계 상품으로 추가합니다. 기존 상품의 소스 교체는 `소스 보강` 탭에서 처리합니다.</p>
               <div class="grid-6">
                 <div>
                   <label for="homeMetaSource" data-i18n="media.manage.master.fetch.field.source.label">검색 소스</label>
@@ -18982,9 +18997,18 @@
           <!-- 2-3: 상품 연계 수집품 -->
           <div id="homeProductLinkedGoodsSection">
             <div class="section-divider u-mt-12">
-              <h2><span data-i18n="media.manage.section2_3.title">2-3. 상품 연계 수집품</span></h2>
+              <h2><span data-i18n="media.manage.section2_3.title">2-3. 상품 연계 수집품</span><span class="section-help-dot" tabindex="0" data-help="현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.">?</span></h2>
             </div>
-            <div class="mini muted u-mt-6" data-i18n="media.manage.section2_3.note">현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.</div>
+            <!-- 마스터 연계 수집품 (섹션 1에서 이동) -->
+            <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack u-hidden-initial u-mt-6">
+                    <div class="compact-stack-grid">
+                      <div class="section-divider span-2 u-mt-0">
+                        <h2 data-i18n="media.manage.collectibles.title">연계 수집품<span class="section-help-dot" tabindex="0" data-help="음반/상품 편집 구역과 분리된 연계 수집품 목록입니다.">?</span></h2>
+                      </div>
+                      <div id="homeMasterGoodsList" class="related-list span-2"></div>
+                    </div>
+                  </div>
+            <!-- 상품 직접 연계 수집품 -->
             <div id="homeProductLinkedGoodsList" class="related-list u-mt-6"></div>
             <div class="home-linked-goods-register-row u-mt-8">
               <div class="home-linked-goods-register-action">
@@ -22451,6 +22475,7 @@
         "media.manage.product.field.is_second_hand.label": "중고 상품",
         "media.manage.product.field.promo_nfs.label": "홍보반 / Not For Sale",
         "media.manage.product.field.track_info.title": "곡 정보",
+        "media.manage.product.field.track_list.save": "곡 리스트 저장",
         "media.manage.product.field.track_info.empty": "곡 정보가 없습니다.",
         "media.manage.product.action.save": "수정 저장",
         "media.manage.product.action.delete": "삭제",
@@ -22469,6 +22494,7 @@
         "media.manage.collectibles.title": "연계 수집품",
         "media.manage.collectibles.panel_intro": "수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.",
         "media.manage.collectibles.panel_title": "마스터 연계 수집품",
+        "media.manage.collectibles.panel_details_summary": "마스터연계 / 수집품",
         "media.manage.collectibles.panel_note": "콜라보, 레이블 행사 수집품, 단독 수집품은 `수집품` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.",
         "media.manage.collectibles.field.current_master": "현재 연계 기준",
         "media.manage.collectibles.field.register_method": "등록 방식",
@@ -22605,9 +22631,9 @@
         "media.manage.section2_1.title": "2-1. 보유 상품",
         "media.manage.section2_2.title": "2-2. 상품 추가",
         "media.manage.section2_2.from_master.kicker": "마스터에서 추가",
-        "media.manage.section2_2.from_master.title": "마스터 후보 조회 / 연결",
+        "media.manage.section2_2.from_master.title": "마스터 연계 추가",
         "media.manage.section2_2.from_source.kicker": "다른소스에서 추가",
-        "media.manage.section2_2.from_source.title": "바코드 / 소스 검색으로 추가",
+        "media.manage.section2_2.from_source.title": "다른소스에서 추가",
         "media.manage.section2_3.title": "2-3. 상품 연계 수집품",
         "media.manage.section2_3.note": "현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.",
         "media.manage.section2_3.action.open_register": "수집품 탭에서 연계 수집품 등록",
@@ -43274,7 +43300,6 @@
         $("homeEditMusicProductSplit"),
         $("homeEditGoodsBox"),
         $("homeEditorActionBlock"),
-        $("homeMasterGoodsSection"),
       ].filter((node) => node);
       for (const block of blocks) {
         if (block.parentElement !== host) {
@@ -43300,17 +43325,9 @@
       const addBlock = $("homeMasterAddBlock");
       const metaBlock = $("homeEditorMetaFetchBlock");
       const productRelationSection = $("homeProductRelationSection");
-      const goodsSection = $("homeMasterGoodsSection");
-      const linkedGoodsPanel = $("homeLinkedGoodsPanel");
       if (!manageSection || !mount || !addBlock || !metaBlock) return;
       if (productRelationSection && productRelationSection.parentElement !== manageSection) {
         manageSection.insertBefore(productRelationSection, mount);
-      }
-      if (goodsSection && goodsSection.parentElement !== manageSection) {
-        manageSection.insertBefore(goodsSection, mount);
-      }
-      if (linkedGoodsPanel && linkedGoodsPanel.parentElement !== manageSection) {
-        manageSection.insertBefore(linkedGoodsPanel, mount);
       }
       if (addBlock.parentElement !== mount) {
         mount.appendChild(addBlock);
@@ -43416,19 +43433,23 @@
       const collectibles = Array.isArray(homeMasterInfo?.collectibles)
         ? homeMasterInfo.collectibles
         : homeLinkedCollectibles;
+      // 마스터 연계 수집품 섹션 (2-3에 위치)
       if (masterId <= 0) {
         setHtmlIfPresent("homeMasterGoodsList", `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.empty"))}</div>`);
         setDisplayIfPresent("homeMasterGoodsSection", "none");
-        setDisplayIfPresent("homeLinkedGoodsPanel", "block");
+        // 마스터 없으면 연계 패널 details 숨기기
+        const detailsEl = $("homeLinkedGoodsPanelDetails");
+        if (detailsEl) detailsEl.hidden = true;
         return;
       }
       setDisplayIfPresent("homeMasterGoodsSection", "block");
+      // 마스터 있으면 details 표시 (기본 접힘 상태 유지)
+      const detailsEl = $("homeLinkedGoodsPanelDetails");
+      if (detailsEl) detailsEl.hidden = false;
       if (!Array.isArray(homeMasterInfo?.collectibles) && homeLinkedCollectiblesLoading) {
         setHtmlIfPresent("homeMasterGoodsList", `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.loading"))}</div>`);
-        setDisplayIfPresent("homeLinkedGoodsPanel", "none");
         return;
       }
-      setDisplayIfPresent("homeLinkedGoodsPanel", collectibles.length ? "none" : "block");
       setHtmlIfPresent(
         "homeMasterGoodsList",
         collectibles.length
@@ -53094,6 +53115,7 @@
       setStatus("homeProductRelationStatus", "", "");
     });
     $("homeEditSaveBtn").addEventListener("click", saveHomeEditedItem);
+    $("homeEditTrackSaveBtn")?.addEventListener("click", saveHomeEditedItem);
     $("homeEditDeleteBtn").addEventListener("click", deleteHomeSelectedItem);
     $("homeMasterDeleteBtn").addEventListener("click", () => deleteHomeSelectedMaster());
     $("homeMasterAddLoadBtn").addEventListener("click", () => loadHomeManageMasterLookup({ resetPage: true }));
