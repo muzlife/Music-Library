@@ -4746,7 +4746,7 @@
       padding: 3px 6px;
       border: 1px dashed var(--line);
       border-radius: 8px;
-      background: #f8fafc;
+      background: color-mix(in srgb, var(--paper) 94%, var(--bg) 6%);
       min-height: 28px;
     }
 
@@ -4758,7 +4758,7 @@
 
     .inline-check span {
       font-size: 0.83rem;
-      color: #334155;
+      color: var(--ink);
       font-weight: 600;
     }
 
@@ -7710,6 +7710,7 @@
       gap: 4px 10px;
       margin-top: 4px;
       min-height: 1.4em;
+      color: var(--ink);
     }
 
     .edit-format-name-option {
@@ -7720,6 +7721,7 @@
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
+      color: var(--ink);
     }
 
     .edit-format-name-option input[type="checkbox"] {
@@ -18347,6 +18349,29 @@
                           <label for="editStyles" data-i18n="media.manage.field.styles.label">스타일 (쉼표 구분)</label>
                           <input id="editStyles" data-i18n-placeholder="media.manage.field.styles.placeholder" placeholder="예: K-Rock, Prog Rock" />
                         </div>
+                        <div class="span-2" style="display:flex;align-items:flex-end;gap:10px;padding-bottom:2px;flex-wrap:nowrap;">
+                          <label class="inline-check" style="flex-shrink:0;">
+                            <input id="editIsSecondHand" type="checkbox" />
+                            <span>새상품 여부</span>
+                          </label>
+                          <label class="inline-check" style="flex-shrink:0;">
+                            <input id="editPromoNfs" type="checkbox" />
+                            <span>홍보반 여부</span>
+                          </label>
+                          <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
+                            <label for="editSignatureType" style="font-size:0.72rem;color:var(--ink);opacity:0.7;margin-bottom:1px;" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
+                            <select id="editSignatureType" style="font-size:0.78rem;padding:2px 3px;max-width:120px;">
+                              <option>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
+                            </select>
+                          </div>
+                          <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
+                            <label for="editStatus" style="font-size:0.72rem;color:var(--ink);opacity:0.7;margin-bottom:1px;" data-i18n="media.manage.product.field.status.label">상태</label>
+                            <select id="editStatus" style="font-size:0.78rem;padding:2px 3px;max-width:120px;">
+                              <option>IN_COLLECTION</option>
+                              <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
+                            </select>
+                          </div>
+                        </div>
                       </div>
                       <div class="grid-6 u-mt-6">
                         <div id="homeEditMediaTypeWrap">
@@ -18405,6 +18430,37 @@
                         <div class="span-2">
                           <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
                           <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." />
+                        </div>
+                      </div>
+                      <div id="homeEditPackageContentsWrap" class="u-mt-6">
+                        <label style="display:block;margin-bottom:4px;">패키지 구성</label>
+                        <div id="editPackageContentsOptions" class="edit-format-name-options">
+                          <label class="edit-format-name-option"><input type="checkbox" value="부클릿" /><span>부클릿</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="리플릿" /><span>리플릿</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="미니포스터/타블로이드" /><span>미니포스터/타블로이드</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="엽서" /><span>엽서</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="스티커" /><span>스티커</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="북마크" /><span>북마크</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="렌티큘러/홀로그램카드" /><span>렌티큘러/홀로그램카드</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="포토카드" /><span>포토카드</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="필름컷" /><span>필름컷</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="보증서" /><span>보증서</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="응모권" /><span>응모권</span></label>
+                          <label id="editPackageContentsOtherLabel" class="edit-format-name-option">
+                            <input type="checkbox" value="__other__" id="editPackageContentsOtherCheck" />
+                            <span>기타</span>
+                          </label>
+                          <input id="editPackageContentsOtherText" type="text" placeholder="직접 입력" style="display:none;width:110px;font-size:0.8rem;padding:1px 4px;" />
+                        </div>
+                      </div>
+                      <div class="u-mt-6" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                        <label class="inline-check">
+                          <input id="editIsLimitedEdition" type="checkbox" />
+                          <span>한정판</span>
+                        </label>
+                        <div id="editEditionNumberWrap" class="u-hidden-initial" style="display:flex;align-items:center;gap:6px;">
+                          <label for="editEditionNumber" style="white-space:nowrap;font-size:0.82rem;">넘버링</label>
+                          <input id="editEditionNumber" type="text" placeholder="예: 5/1000" style="width:90px;" />
                         </div>
                       </div>
 <details id="homeEditProductExtraDetails" class="ops-compact-extra-fields">
@@ -18497,16 +18553,6 @@
                             <label for="editMemoryNote" data-i18n="media.manage.product.field.memory_note.label">기억 메모</label>
                             <textarea id="editMemoryNote"></textarea>
                           </div>
-                          <div class="home-edit-flag-row home-product-flags">
-                            <label class="inline-check">
-                              <input id="editIsSecondHand" type="checkbox" />
-                              <span data-i18n="media.manage.product.field.is_second_hand.label">중고 상품</span>
-                            </label>
-                            <label class="inline-check">
-                              <input id="editPromoNfs" type="checkbox" />
-                              <span data-i18n="media.manage.product.field.promo_nfs.label">홍보반 / Not For Sale</span>
-                            </label>
-                          </div>
                         </div>
                       </details>
                     </div>
@@ -18536,19 +18582,6 @@
                                 <option value="8TRACK" data-i18n="common.size_group.8track">8-track</option>
                                 <option value="REEL_TO_REEL" data-i18n="common.size_group.reel_to_reel">Reel</option>
                                 <option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label for="editStatus" data-i18n="media.manage.product.field.status.label">상태</label>
-                              <select id="editStatus">
-                                <option>IN_COLLECTION</option>
-                                <option>LOANED</option><option>SOLD</option><option>LOST</option><option>ARCHIVED</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label for="editSignatureType" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
-                              <select id="editSignatureType">
-                                <option>NONE</option><option>IN_PERSON</option><option>PURCHASE_INCLUDED</option><option>UNKNOWN</option>
                               </select>
                             </div>
                             <div>
@@ -29745,6 +29778,41 @@
       setHiddenIfPresent("homeEditSpeedRpmWrap", !isVinyl);
       setHiddenIfPresent("homeEditDiscTypeWrap", !isVinyl);
       _renderPackagingOptions(mediaVal);
+    }
+
+    function _loadPackageContents(value) {
+      const savedValues = String(value || "").split(",").map(s => s.trim()).filter(Boolean);
+      const container = $("editPackageContentsOptions");
+      if (!container) return;
+      const knownValues = new Set();
+      container.querySelectorAll('input[type="checkbox"]:not(#editPackageContentsOtherCheck)').forEach(cb => {
+        knownValues.add(cb.value);
+        cb.checked = savedValues.includes(cb.value);
+      });
+      const otherVals = savedValues.filter(v => !knownValues.has(v));
+      const otherCheck = $("editPackageContentsOtherCheck");
+      const otherText = $("editPackageContentsOtherText");
+      if (otherVals.length) {
+        if (otherCheck) otherCheck.checked = true;
+        if (otherText) { otherText.value = otherVals.join(", "); otherText.style.display = ""; }
+      } else {
+        if (otherCheck) otherCheck.checked = false;
+        if (otherText) { otherText.value = ""; otherText.style.display = "none"; }
+      }
+    }
+
+    function _collectPackageContents() {
+      const container = $("editPackageContentsOptions");
+      if (!container) return "";
+      const vals = [];
+      container.querySelectorAll('input[type="checkbox"]:not(#editPackageContentsOtherCheck):checked').forEach(cb => vals.push(cb.value));
+      const otherCheck = $("editPackageContentsOtherCheck");
+      const otherText = $("editPackageContentsOtherText");
+      if (otherCheck?.checked) {
+        const otherVals = String(otherText?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+        vals.push(...otherVals);
+      }
+      return vals.join(", ");
     }
 
     function isElementDisplayNone(el) {
@@ -41498,7 +41566,9 @@
         const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);
         if (masterId > 0) return masterId;
       }
-      return Number(homeSelectedMasterId || 0);
+      // Do not fall back to the old master — caller (openMediaSearchDetailManage)
+      // will fetch the item's own linked_album_master_id from the API when 0 is returned.
+      return 0;
     }
 
     async function openHomeOwnedItemFromManageContext(ownedItemId, opts = {}) {
@@ -43666,6 +43736,10 @@
       $("editDiscCount").value = "";
       $("editSpeedRpm").value = "";
       if ($("editDiscType")) $("editDiscType").value = "";
+      _loadPackageContents("");
+      if ($("editIsLimitedEdition")) $("editIsLimitedEdition").checked = false;
+      if ($("editEditionNumber")) $("editEditionNumber").value = "";
+      setHiddenIfPresent("editEditionNumberWrap", true);
       $("editRunoutMatrix").value = "";
       $("editPressingCountry").value = "";
       $("editHasObi").checked = false;
@@ -44601,24 +44675,35 @@
 
       try {
         setStatus("homeMasterStatus", "ok", t("media.manage.master.members.status.loading"));
-        const [res, collectiblesRes] = await Promise.all([
+        const [res, collectiblesRes, masterRes] = await Promise.all([
           fetch(`/album-masters/${masterId}/members`),
           fetch(`/goods-items?album_master_id=${masterId}&limit=200&offset=0`),
+          fetch(`/album-masters/${masterId}`),
         ]);
         const data = await safeJson(res);
         const collectiblesData = await safeJson(collectiblesRes);
+        const masterData = masterRes.ok ? await safeJson(masterRes) : null;
         if (!res.ok) throw new Error(data.detail || t("media.manage.master.members.status.load_failed"));
         if (!collectiblesRes.ok) throw new Error(collectiblesData.detail || t("media.manage.collectibles.status.load_failed"));
 
         const items = Array.isArray(data) ? data : [];
         const collectibles = Array.isArray(collectiblesData.items) ? collectiblesData.items : [];
+        // Derive master title/artist from the direct master API response (most reliable),
+        // then fall back to item-level master_title (from album_master JOIN).
+        // Never reuse the OLD homeMasterInfo fields — they belong to the previous master.
+        const masterTitleResolved = String(masterData?.title || items[0]?.master_title || "").trim() || null;
+        const masterArtistResolved = String(masterData?.artist_or_brand || items[0]?.master_artist_or_brand || "").trim() || null;
+        const masterReleaseYearResolved = masterData?.release_year ?? items[0]?.master_release_year ?? null;
+        const masterCoverResolved = masterData?.cover_image_url ?? items[0]?.cover_image_url ?? null;
         homeMasterInfo = {
           relation_type: "ALBUM_MASTER_BIND",
           source: context.source || null,
           master_external_id: context.masterExternalId || null,
           album_master_id: masterId,
-          title: context.title || null,
-          artist_or_brand: context.artist || null,
+          title: masterTitleResolved,
+          artist_or_brand: masterArtistResolved,
+          release_year: masterReleaseYearResolved,
+          cover_image_url: masterCoverResolved,
           items,
           collectibles,
         };
@@ -46540,7 +46625,7 @@
       $("editConditionGrade").value = data.condition_grade || "";
       $("editDisplayRank").value = data.display_rank ?? "";
       $("editMemoryNote").value = data.memory_note || "";
-      $("editIsSecondHand").checked = Boolean(data.is_second_hand);
+      $("editIsSecondHand").checked = !Boolean(data.is_second_hand);  // 새상품 여부: checked = 새상품 = NOT second_hand
       $("editPromoNfs").checked = Boolean(data.music_detail?.is_promotional_not_for_sale);
 
       $("editFormatName").value = data.music_detail?.format_name || "";
@@ -46552,6 +46637,10 @@
       $("editDiscCount").value = data.music_detail?.disc_count ?? "";
       $("editSpeedRpm").value = data.music_detail?.speed_rpm ?? "";
       if ($("editDiscType")) $("editDiscType").value = data.music_detail?.disc_type ?? "";
+      _loadPackageContents(data.music_detail?.package_contents || "");
+      $("editIsLimitedEdition").checked = Boolean(data.music_detail?.is_limited_edition);
+      $("editEditionNumber").value = data.music_detail?.edition_number || "";
+      setHiddenIfPresent("editEditionNumberWrap", !$("editIsLimitedEdition").checked);
       $("editHasObi").checked = Boolean(data.music_detail?.has_obi);
       $("editRunoutMatrix").value = joinRunoutList(data.music_detail?.runout_matrix || []);
       $("editPressingCountry").value = data.music_detail?.pressing_country || "";
@@ -46678,7 +46767,7 @@
         size_group: $("editSizeGroup").value,
         preferred_storage_size_group: $("editPreferredStorageSizeGroup").value || $("editSizeGroup").value,
         quantity: 1,
-        is_second_hand: $("editIsSecondHand").checked,
+        is_second_hand: !$("editIsSecondHand").checked,  // 새상품 여부: checked = 새상품 → NOT second_hand
         status: $("editStatus").value,
         signature_type: $("editSignatureType").value,
         source_code: homeSelectedSourceCode,
@@ -46720,6 +46809,9 @@
           disc_count: normalizePositiveIntOrNull($("editDiscCount").value),
           speed_rpm: $("editSpeedRpm").value.trim() ? Number($("editSpeedRpm").value) : null,
           disc_type: $("editDiscType")?.value.trim() || null,
+          package_contents: _collectPackageContents() || null,
+          is_limited_edition: $("editIsLimitedEdition").checked ? true : null,
+          edition_number: $("editEditionNumber").value.trim() || null,
           has_obi: $("editHasObi").checked ? true : null,
           runout_matrix: editRunout.length ? editRunout : collectorBase.runout_matrix,
           pressing_country: editPressingInput || collectorBase.pressing_country || null,
@@ -52903,6 +52995,13 @@
       renderHomeProductRelationSection();
     });
     $("editMediaType").addEventListener("change", _syncVinylOnlyFields);
+    $("editIsLimitedEdition").addEventListener("change", function() {
+      setHiddenIfPresent("editEditionNumberWrap", !this.checked);
+    });
+    $("editPackageContentsOtherCheck").addEventListener("change", function() {
+      const otherText = $("editPackageContentsOtherText");
+      if (otherText) otherText.style.display = this.checked ? "" : "none";
+    });
     $("editItemName").addEventListener("input", syncHomeMasterInlineEditor);
     $("homeMasterCorrectionSaveBtn").addEventListener("click", saveHomeMasterCorrection);
     $("homeMasterSortArtistSaveBtn").addEventListener("click", saveHomeMasterSortArtistName);
