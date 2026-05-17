@@ -18427,7 +18427,9 @@
                           <label for="editMediaType" data-i18n="media.manage.field.media_type.label">미디어 타입(원본)</label>
                           <select id="editMediaType">
                             <option value="">미지정</option>
-                            <option value="Vinyl">Vinyl</option>
+                            <option value="Vinyl">Vinyl (LP)</option>
+                            <option value='10"'>10"</option>
+                            <option value='7"'>7"</option>
                             <option value="CD">CD</option>
                             <option value="Cassette">Cassette</option>
                             <option value="8Track">8Track</option>
@@ -22425,7 +22427,7 @@
         "media.manage.source_meta.tracks_empty": "-",
         "media.manage.field.artist_name.label": "아티스트명",
         "media.manage.field.artist_name.placeholder": "예: 산울림",
-        "media.manage.field.media_type.label": "미디어 타입(원본)",
+        "media.manage.field.media_type.label": "상품 대표 미디어",
         "media.manage.field.media_type.placeholder": "예: Vinyl / CD / Cassette",
         "media.manage.field.label_name.label": "레이블",
         "media.manage.field.label_name.placeholder": "예: Ecole de Gorae",
@@ -23904,7 +23906,7 @@
         "media.register.detail.field.speed_rpm.placeholder": "예: 33",
         "media.register.detail.field.cover_condition.label": "커버 컨디션",
         "media.register.detail.field.disc_condition.label": "알판 컨디션",
-        "media.register.detail.field.media_type.label": "미디어 타입(원본)",
+        "media.register.detail.field.media_type.label": "상품 대표 미디어",
         "media.register.detail.field.media_type.placeholder": "예: Vinyl / CD / Cassette",
         "media.register.detail.field.pressing_country.label": "프레싱 국가",
         "media.register.detail.field.pressing_country.placeholder": "예: South Korea",
@@ -25039,7 +25041,7 @@
         "media.manage.source_meta.tracks_empty": "-",
         "media.manage.field.artist_name.label": "Artist",
         "media.manage.field.artist_name.placeholder": "e.g. Sanullim",
-        "media.manage.field.media_type.label": "Media Type (source)",
+        "media.manage.field.media_type.label": "Primary Media",
         "media.manage.field.media_type.placeholder": "e.g. Vinyl / CD / Cassette",
         "media.manage.field.label_name.label": "Label",
         "media.manage.field.label_name.placeholder": "e.g. Ecole de Gorae",
@@ -26516,7 +26518,7 @@
         "media.register.detail.field.speed_rpm.placeholder": "e.g. 33",
         "media.register.detail.field.cover_condition.label": "Cover Condition",
         "media.register.detail.field.disc_condition.label": "Disc Condition",
-        "media.register.detail.field.media_type.label": "Media Type (source)",
+        "media.register.detail.field.media_type.label": "Primary Media",
         "media.register.detail.field.media_type.placeholder": "e.g. Vinyl / CD / Cassette",
         "media.register.detail.field.pressing_country.label": "Pressing Country",
         "media.register.detail.field.pressing_country.placeholder": "e.g. South Korea",
@@ -27671,7 +27673,7 @@
         "media.manage.source_meta.tracks_empty": "-",
         "media.manage.field.artist_name.label": "アーティスト名",
         "media.manage.field.artist_name.placeholder": "例: サヌリム",
-        "media.manage.field.media_type.label": "メディアタイプ(原本)",
+        "media.manage.field.media_type.label": "代表メディア",
         "media.manage.field.media_type.placeholder": "例: Vinyl / CD / Cassette",
         "media.manage.field.label_name.label": "レーベル",
         "media.manage.field.label_name.placeholder": "例: Ecole de Gorae",
@@ -29140,7 +29142,7 @@
         "media.register.detail.field.speed_rpm.placeholder": "例: 33",
         "media.register.detail.field.cover_condition.label": "ジャケットコンディション",
         "media.register.detail.field.disc_condition.label": "盤コンディション",
-        "media.register.detail.field.media_type.label": "メディアタイプ（原文）",
+        "media.register.detail.field.media_type.label": "代表メディア",
         "media.register.detail.field.media_type.placeholder": "例: Vinyl / CD / Cassette",
         "media.register.detail.field.pressing_country.label": "プレス国",
         "media.register.detail.field.pressing_country.placeholder": "例: South Korea",
@@ -29873,7 +29875,7 @@
 
     function _mediaTypeToPackagingKey(mediaType) {
       const v = String(mediaType || "").toLowerCase();
-      if (/vinyl|lp/.test(v)) return "VINYL";
+      if (/vinyl|lp|7"|10"/.test(v)) return "VINYL";
       if (/\bcd\b|compact\s*disc/.test(v)) return "CD";
       return null;
     }
@@ -29908,7 +29910,7 @@
 
     function _syncVinylOnlyFields() {
       const mediaVal = String($("editMediaType")?.value || "").trim();
-      const isVinyl = /vinyl/i.test(mediaVal);
+      const isVinyl = /vinyl|7"|10"/i.test(mediaVal);
       setHiddenIfPresent("homeEditSpeedRpmWrap", !isVinyl);
       setHiddenIfPresent("homeEditDiscTypeWrap", !isVinyl);
       _renderPackagingOptions(mediaVal);
