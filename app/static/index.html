@@ -32672,9 +32672,28 @@
     }
 
     function maniadbAlbumLinkHtml(albumId, label = "ManiaDB 앨범") {
+      // 마스터(앨범) 수준 링크 — 쿼리 파라미터 없음
       const id = String(albumId || "").trim();
       if (!id) return "";
       return `<a href="http://www.maniadb.com/album/${encodeURIComponent(id)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+    }
+
+    // 소스별 개별 상품(릴리즈) 링크 — DISCOGS·MANIADB·ALADIN 통합
+    function itemSourceLinkHtml(sourceCode, externalId, label) {
+      const source = normalizeSourceCode(sourceCode);
+      const id = String(externalId || "").trim();
+      if (!id) return "";
+      if (source === "DISCOGS") {
+        return discogsReleaseLinkHtml(sourceCode, externalId, label || "Discogs");
+      }
+      if (source === "MANIADB") {
+        // ?o=l&s=1 = ManiaDB 상품 상세 뷰
+        return `<a href="http://www.maniadb.com/album/${encodeURIComponent(id)}?o=l&s=1" target="_blank" rel="noreferrer noopener">${escapeHtml(label || "ManiaDB")}</a>`;
+      }
+      if (source === "ALADIN") {
+        return `<a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label || "Aladin")}</a>`;
+      }
+      return "";
     }
 
     function buildDiscogsStandardMetaHtml(row, opts = {}) {
@@ -43962,15 +43981,13 @@
       const source = normalizeSourceCode(sourceCode);
       const externalId = String(sourceExternalId || "").trim();
       if (!externalId) return "";
-      if (source === "DISCOGS") {
-        const link = discogsReleaseLinkHtml(source, externalId, t("media.manage.source_link.discogs_product"));
-        return link ? t("media.manage.source_link.product_path", { link }) : "";
-      }
-      if (source === "MANIADB") {
-        const link = maniadbAlbumLinkHtml(externalId, "ManiaDB 상품 열기");
-        return link ? t("media.manage.source_link.product_path", { link }) : "";
-      }
-      return "";
+      const labelMap = {
+        DISCOGS: t("media.manage.source_link.discogs_product"),
+        MANIADB: "ManiaDB 상품 열기",
+        ALADIN: "Aladin 상품 열기",
+      };
+      const link = itemSourceLinkHtml(source, externalId, labelMap[source] || source);
+      return link ? t("media.manage.source_link.product_path", { link }) : "";
     }
 
     function clearHomeMetaCandidates() {
@@ -46019,7 +46036,7 @@
       const genreText = joinCommaList(row.genres || []) || "-";
       const barcodeText = String(row.barcode || "").trim();
       const labelCatText = `${row.label_name || "-"} / ${row.catalog_no || "-"}${barcodeText ? ` (${barcodeText})` : ""}`;
-      const discogsLink = discogsReleaseLinkHtml(row.source_code, row.source_external_id, "Discogs");
+      const discogsLink = itemSourceLinkHtml(row.source_code, row.source_external_id);
       const purchaseSource = String(row.purchase_source || "").trim();
       const memoText = cleanLinkedGoodsMemoryNote(row.memory_note);
       const goodsMeta = [
@@ -46211,11 +46228,8 @@
       // 원본 경로: 현재 선택된 상품의 개별 릴리즈 링크 (상품 변경 시 함께 갱신)
       const itemSrc = String(homeSelectedSourceCode || "").trim().toUpperCase();
       const itemExtId = String(homeSelectedSourceExternalId || "").trim();
-      if (itemSrc === "DISCOGS" && itemExtId) {
-        masterLinkParts.push(discogsReleaseLinkHtml(itemSrc, itemExtId, "원본 릴리즈"));
-      } else if (itemSrc === "MANIADB" && itemExtId) {
-        masterLinkParts.push(maniadbAlbumLinkHtml(itemExtId, "원본 릴리즈"));
-      }
+      const releaseLink = itemSourceLinkHtml(itemSrc, itemExtId, "원본 릴리즈");
+      if (releaseLink) masterLinkParts.push(releaseLink);
       const masterLink = masterLinkParts.join(" · ");
       setHtmlIfPresent("homeMasterMetaCover",
         coverUrl
