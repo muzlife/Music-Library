@@ -32687,8 +32687,16 @@
         return discogsReleaseLinkHtml(sourceCode, externalId, label || "Discogs");
       }
       if (source === "MANIADB") {
-        // ?o=l&s=1 = ManiaDB 상품 상세 뷰
-        return `<a href="http://www.maniadb.com/album/${encodeURIComponent(id)}?o=l&s=1" target="_blank" rel="noreferrer noopener">${escapeHtml(label || "ManiaDB")}</a>`;
+        // external_id 형식: "{album_id}" 또는 "{album_id}:{variant_seq}"
+        // URL: maniadb.com/album/{album_id}?o=l&s={variant_seq}
+        const colonIdx = id.indexOf(":");
+        const albumId = colonIdx >= 0 ? id.slice(0, colonIdx).trim() : id;
+        const variantSeq = colonIdx >= 0 ? id.slice(colonIdx + 1).trim() : "";
+        if (!albumId) return "";
+        const href = variantSeq
+          ? `http://www.maniadb.com/album/${encodeURIComponent(albumId)}?o=l&s=${encodeURIComponent(variantSeq)}`
+          : `http://www.maniadb.com/album/${encodeURIComponent(albumId)}`;
+        return `<a href="${href}" target="_blank" rel="noreferrer noopener">${escapeHtml(label || "ManiaDB")}</a>`;
       }
       if (source === "ALADIN") {
         return `<a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label || "Aladin")}</a>`;
@@ -46226,10 +46234,13 @@
         masterLinkParts.push(maniadbAlbumLinkHtml(msid, "ManiaDB 마스터"));
       }
       // 원본 경로: 현재 선택된 상품의 개별 릴리즈 링크 (상품 변경 시 함께 갱신)
+      // DISCOGS는 마스터 링크(discogs.com/master/*)가 이미 있으므로 릴리즈 링크 미표시
       const itemSrc = String(homeSelectedSourceCode || "").trim().toUpperCase();
       const itemExtId = String(homeSelectedSourceExternalId || "").trim();
-      const releaseLink = itemSourceLinkHtml(itemSrc, itemExtId, "원본 릴리즈");
-      if (releaseLink) masterLinkParts.push(releaseLink);
+      if (itemSrc !== "DISCOGS") {
+        const releaseLink = itemSourceLinkHtml(itemSrc, itemExtId, "원본 릴리즈");
+        if (releaseLink) masterLinkParts.push(releaseLink);
+      }
       const masterLink = masterLinkParts.join(" · ");
       setHtmlIfPresent("homeMasterMetaCover",
         coverUrl
