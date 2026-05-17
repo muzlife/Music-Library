@@ -18401,11 +18401,11 @@
                         <div class="span-2" style="display:flex;align-items:flex-end;gap:10px;padding-bottom:2px;flex-wrap:nowrap;">
                           <label class="inline-check" style="flex-shrink:0;">
                             <input id="editIsSecondHand" type="checkbox" />
-                            <span>새상품 여부</span>
+                            <span data-i18n="media.manage.product.field.is_new_item.label">새상품 여부</span>
                           </label>
                           <label class="inline-check" style="flex-shrink:0;">
                             <input id="editPromoNfs" type="checkbox" />
-                            <span>홍보반 여부</span>
+                            <span data-i18n="media.manage.product.field.is_promo.label">홍보반 여부</span>
                           </label>
                           <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
                             <label for="editSignatureType" style="font-size:0.72rem;color:var(--ink);opacity:0.7;margin-bottom:1px;" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
@@ -18436,7 +18436,7 @@
                           </select>
                         </div>
                         <div id="homeEditFormatNameWrap" class="span-2">
-                          <label>패키징</label>
+                          <label data-i18n="media.manage.field.packaging.label">패키징</label>
                           <input id="editFormatName" type="hidden" />
                           <div id="editFormatNameOptions" class="edit-format-name-options">
                             <span class="muted mini">미디어 타입 선택 시 옵션 표시</span>
@@ -18456,7 +18456,7 @@
                           </select>
                         </div>
                         <div id="homeEditDiscTypeWrap" class="u-hidden-initial">
-                          <label for="editDiscType">디스크 유형</label>
+                          <label for="editDiscType" data-i18n="media.manage.field.disc_type.label">디스크 유형</label>
                           <select id="editDiscType">
                             <option value="">미지정</option>
                             <option value="Standard">Standard</option>
@@ -18482,19 +18482,19 @@
                         </div>
                       </div>
                       <div id="homeEditPackageContentsWrap" class="u-mt-6">
-                        <label style="display:block;margin-bottom:4px;">패키지 구성</label>
+                        <label style="display:block;margin-bottom:4px;" data-i18n="media.manage.product.field.package_contents.label">패키지 구성</label>
                         <div id="editPackageContentsOptions" class="edit-format-name-options">
-                          <label class="edit-format-name-option"><input type="checkbox" value="부클릿" /><span>부클릿</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="리플릿" /><span>리플릿</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="미니포스터/타블로이드" /><span>미니포스터/타블로이드</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="엽서" /><span>엽서</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="스티커" /><span>스티커</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="북마크" /><span>북마크</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="렌티큘러/홀로그램카드" /><span>렌티큘러/홀로그램카드</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="포토카드" /><span>포토카드</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="필름컷" /><span>필름컷</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="보증서" /><span>보증서</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="응모권" /><span>응모권</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Booklet" /><span>Booklet</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Leaflet" /><span>Leaflet</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Mini Poster / Tabloid" /><span>Mini Poster / Tabloid</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Postcard" /><span>Postcard</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Sticker" /><span>Sticker</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Bookmark" /><span>Bookmark</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Lenticular / Hologram Card" /><span>Lenticular / Hologram Card</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Photo Card" /><span>Photo Card</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Film Cut" /><span>Film Cut</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Warranty Card" /><span>Warranty Card</span></label>
+                          <label class="edit-format-name-option"><input type="checkbox" value="Entry Form" /><span>Entry Form</span></label>
                           <label id="editPackageContentsOtherLabel" class="edit-format-name-option">
                             <input type="checkbox" value="__other__" id="editPackageContentsOtherCheck" />
                             <span>기타</span>
@@ -18505,10 +18505,10 @@
                       <div class="u-mt-6" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                         <label class="inline-check">
                           <input id="editIsLimitedEdition" type="checkbox" />
-                          <span>한정판</span>
+                          <span data-i18n="media.manage.product.field.is_limited_edition.label">한정판</span>
                         </label>
                         <div id="editEditionNumberWrap" class="u-hidden-initial" style="display:flex;align-items:center;gap:6px;">
-                          <label for="editEditionNumber" style="white-space:nowrap;font-size:0.82rem;">넘버링</label>
+                          <label for="editEditionNumber" style="white-space:nowrap;font-size:0.82rem;" data-i18n="media.manage.product.field.edition_number.label">넘버링</label>
                           <input id="editEditionNumber" type="text" placeholder="예: 5/1000" style="width:90px;" />
                         </div>
                       </div>
@@ -22441,6 +22441,13 @@
         "media.manage.field.styles.label": "스타일 (쉼표 구분)",
         "media.manage.field.styles.placeholder": "예: K-Rock, Prog Rock",
         "media.manage.field.track_list.label": "곡 리스트 (한 줄에 1곡)",
+        "media.manage.field.packaging.label": "패키징",
+        "media.manage.field.disc_type.label": "디스크 유형",
+        "media.manage.product.field.package_contents.label": "패키지 구성",
+        "media.manage.product.field.is_limited_edition.label": "한정판",
+        "media.manage.product.field.edition_number.label": "넘버링",
+        "media.manage.product.field.is_new_item.label": "새상품 여부",
+        "media.manage.product.field.is_promo.label": "홍보반 여부",
         "media.manage.product.kicker": "바로 수정 가능",
         "media.manage.product.title": "상품 정보",
         "media.manage.product.field.label_id.label": "견출지 ID",
@@ -25048,6 +25055,13 @@
         "media.manage.field.styles.label": "Styles (comma-separated)",
         "media.manage.field.styles.placeholder": "e.g. K-Rock, Prog Rock",
         "media.manage.field.track_list.label": "Track List (one per line)",
+        "media.manage.field.packaging.label": "Packaging",
+        "media.manage.field.disc_type.label": "Disc Type",
+        "media.manage.product.field.package_contents.label": "Package Contents",
+        "media.manage.product.field.is_limited_edition.label": "Limited Edition",
+        "media.manage.product.field.edition_number.label": "Numbering",
+        "media.manage.product.field.is_new_item.label": "New Item",
+        "media.manage.product.field.is_promo.label": "Promo",
         "media.manage.product.kicker": "Ready to Edit",
         "media.manage.product.title": "Item Details",
         "media.manage.product.field.label_id.label": "Sticker ID",
@@ -27673,6 +27687,13 @@
         "media.manage.field.styles.label": "スタイル (カンマ区切り)",
         "media.manage.field.styles.placeholder": "例: K-Rock, Prog Rock",
         "media.manage.field.track_list.label": "曲リスト (1行に1曲)",
+        "media.manage.field.packaging.label": "パッケージング",
+        "media.manage.field.disc_type.label": "ディスクタイプ",
+        "media.manage.product.field.package_contents.label": "パッケージ内容",
+        "media.manage.product.field.is_limited_edition.label": "限定版",
+        "media.manage.product.field.edition_number.label": "ナンバリング",
+        "media.manage.product.field.is_new_item.label": "新品",
+        "media.manage.product.field.is_promo.label": "プロモ",
         "media.manage.product.kicker": "すぐ修正可能",
         "media.manage.product.title": "商品情報",
         "media.manage.product.field.label_id.label": "ラベル ID",
@@ -29765,6 +29786,91 @@
       CD: ["Jewel Case", "Double Jewel", "Slim Jewel", "Digipak", "Paper Sleeve", "Slipcase", "Digibook", "Eco-pack", "DVD Size Digipak", "Keep Case", "Gimmick Case", "Box Set"],
     };
 
+    // 패키징 옵션 풍선도움말 (KO/EN/JA)
+    const PACKAGING_TOOLTIPS = {
+      ko: {
+        VINYL: {
+          "Single Jacket": "가장 일반적인 LP 커버. 앞면·뒷면 한 장 구성.",
+          "Gatefold": "두 겹으로 펼쳐지는 커버. 2LP나 특별 에디션에 주로 사용.",
+          "Triple-fold": "세 패널로 펼쳐지는 커버 (삼절 커버).",
+          "Gimmick Sleeve": "이형·반투명·홀로그램 등 특수 제작 슬리브.",
+          "Die-Cut Sleeve": "커버에 모양대로 구멍을 뚫은 다이컷 슬리브.",
+          "Pop-up Sleeve": "펼치면 입체물이 나타나는 팝업 슬리브.",
+          "Box Set": "여러 LP와 부속물을 박스에 담은 에디션.",
+        },
+        CD: {
+          "Jewel Case": "표준 투명 플라스틱 CD 케이스.",
+          "Double Jewel": "2CD용 또는 두꺼운 더블 케이스.",
+          "Slim Jewel": "더 얇은 슬림 플라스틱 케이스.",
+          "Digipak": "트레이가 내장된 종이(보드) 소재 케이스.",
+          "Paper Sleeve": "단순 종이 슬리브만 있는 포장.",
+          "Slipcase": "케이스에 끼워 넣는 외부 종이 슬립케이스.",
+          "Digibook": "하드커버 책자 형태의 케이스.",
+          "Eco-pack": "재활용 소재 또는 미니멀 패키징.",
+          "DVD Size Digipak": "DVD 크기의 대형 디지팩.",
+          "Keep Case": "DVD 케이스 형태의 플라스틱 케이스.",
+          "Gimmick Case": "특수 가공된 이형 케이스.",
+          "Box Set": "박스에 담은 멀티 CD 에디션.",
+        },
+      },
+      en: {
+        VINYL: {
+          "Single Jacket": "Standard single LP cover with front and back panels.",
+          "Gatefold": "Two-panel fold-open cover. Common for 2LP and special editions.",
+          "Triple-fold": "Three-panel fold-open cover.",
+          "Gimmick Sleeve": "Special-effect sleeve: die-cut, translucent, holographic, etc.",
+          "Die-Cut Sleeve": "Cover with a decorative die-cut cutout.",
+          "Pop-up Sleeve": "Sleeve with a 3D pop-up element when opened.",
+          "Box Set": "Multi-LP edition packaged in a box with extras.",
+        },
+        CD: {
+          "Jewel Case": "Standard transparent plastic CD case.",
+          "Double Jewel": "Double-width case for 2 CDs.",
+          "Slim Jewel": "Thinner version of the standard plastic jewel case.",
+          "Digipak": "Paper/board case with an integrated plastic tray.",
+          "Paper Sleeve": "Simple paper envelope sleeve only.",
+          "Slipcase": "Outer cardboard slip-in box around another case.",
+          "Digibook": "Hardcover book-style case.",
+          "Eco-pack": "Recycled material or minimal packaging.",
+          "DVD Size Digipak": "Larger digipak in DVD dimensions.",
+          "Keep Case": "Plastic case in DVD keep-case form.",
+          "Gimmick Case": "Special-effect or novelty case.",
+          "Box Set": "Multi-CD edition packaged in a box.",
+        },
+      },
+      ja: {
+        VINYL: {
+          "Single Jacket": "最も一般的な LP カバー。表と裏の 1 枚構成。",
+          "Gatefold": "見開きカバー。2LP や特別版によく使われます。",
+          "Triple-fold": "3 折りパネルのカバー（三折ジャケット）。",
+          "Gimmick Sleeve": "型抜き・半透明・ホログラムなど特殊加工スリーブ。",
+          "Die-Cut Sleeve": "型抜きで穴を開けたカバー。",
+          "Pop-up Sleeve": "開くと立体物が飛び出すスリーブ。",
+          "Box Set": "複数 LP と付属品をまとめたボックスセット。",
+        },
+        CD: {
+          "Jewel Case": "標準の透明プラスチック CD ケース。",
+          "Double Jewel": "2 枚組 CD 用または厚めのダブルケース。",
+          "Slim Jewel": "薄型スリムプラスチックケース。",
+          "Digipak": "トレイ付きの紙（ボード）製ケース。",
+          "Paper Sleeve": "シンプルな紙スリーブのみ。",
+          "Slipcase": "ケースに差し込む外装紙スリップケース。",
+          "Digibook": "ハードカバー本型ケース。",
+          "Eco-pack": "リサイクル素材またはミニマルパッケージ。",
+          "DVD Size Digipak": "DVD サイズの大型デジパック。",
+          "Keep Case": "DVD ケース形状のプラスチックケース。",
+          "Gimmick Case": "特殊加工の異形ケース。",
+          "Box Set": "複数 CD をまとめたボックスセット。",
+        },
+      },
+    };
+
+    function _getPackagingTooltip(key, opt) {
+      const locale = (typeof appLocale !== "undefined" ? appLocale : "ko") || "ko";
+      const byLocale = PACKAGING_TOOLTIPS[locale] || PACKAGING_TOOLTIPS.ko || {};
+      return (byLocale[key] || {})[opt] || (PACKAGING_TOOLTIPS.en[key] || {})[opt] || "";
+    }
+
     function _mediaTypeToPackagingKey(mediaType) {
       const v = String(mediaType || "").toLowerCase();
       if (/vinyl|lp/.test(v)) return "VINYL";
@@ -29784,7 +29890,9 @@
       }
       container.innerHTML = options.map(opt => {
         const checked = currentValues.includes(opt) ? " checked" : "";
-        return `<label class="edit-format-name-option"><input type="checkbox" value="${escapeHtml(opt)}"${checked}> ${escapeHtml(opt)}</label>`;
+        const tip = _getPackagingTooltip(key, opt);
+        const tipAttr = tip ? ` title="${escapeHtml(tip)}"` : "";
+        return `<label class="edit-format-name-option"${tipAttr}><input type="checkbox" value="${escapeHtml(opt)}"${checked}> ${escapeHtml(opt)}</label>`;
       }).join("");
       container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         cb.addEventListener("change", _onPackagingChange);
@@ -29806,8 +29914,25 @@
       _renderPackagingOptions(mediaVal);
     }
 
+    // 구(한국어) 패키지 구성 값 → 신(영문) 변환 맵 (하위 호환)
+    const _PKG_CONTENTS_KO_TO_EN = {
+      "부클릿": "Booklet",
+      "리플릿": "Leaflet",
+      "미니포스터/타블로이드": "Mini Poster / Tabloid",
+      "엽서": "Postcard",
+      "스티커": "Sticker",
+      "북마크": "Bookmark",
+      "렌티큘러/홀로그램카드": "Lenticular / Hologram Card",
+      "포토카드": "Photo Card",
+      "필름컷": "Film Cut",
+      "보증서": "Warranty Card",
+      "응모권": "Entry Form",
+    };
+
     function _loadPackageContents(value) {
-      const savedValues = String(value || "").split(",").map(s => s.trim()).filter(Boolean);
+      const rawValues = String(value || "").split(",").map(s => s.trim()).filter(Boolean);
+      // 구 한국어 값이 있으면 영문으로 자동 변환
+      const savedValues = rawValues.map(v => _PKG_CONTENTS_KO_TO_EN[v] || v);
       const container = $("editPackageContentsOptions");
       if (!container) return;
       const knownValues = new Set();
