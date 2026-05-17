@@ -2353,6 +2353,131 @@ def search_aladin_by_query(query: str, limit: int = 5) -> list[dict[str, Any]]:
     return [c.to_dict() for c in candidates]
 
 
+def _fetch_aladin_item_detail(item_id: str) -> dict[str, Any] | None:
+    """Fetch Aladin item detail via ItemLookUp API with Tracklist option."""
+    settings = get_settings()
+    if not settings.aladin_ttb_key:
+        return None
+    params = {
+        "ttbkey": settings.aladin_ttb_key,
+        "itemIdType": "ItemId",
+        "ItemId": str(item_id).strip(),
+        "output": "js",
+        "Version": "20131101",
+        "OptResult": "Tracklist",
+        "Cover": "Big",
+    }
+    try:
+        with _make_http_client() as client:
+            response = _get_with_retry(client, settings.aladin_lookup_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("aladin item lookup %r failed: %s", item_id, exc)
+        return None
+    if "errorCode" in data:
+        logger.warning(
+            "aladin item lookup %r API error %s: %s",
+            item_id, data.get("errorCode"), data.get("errorMessage"),
+        )
+        return None
+    items = data.get("item") or []
+    return items[0] if items else None
+
+
+def _parse_aladin_track_items(subinfo: dict[str, Any]) -> list[dict[str, Any]]:
+    """Parse Aladin subInfo.trackList into [{position, title, duration}] format."""
+    track_list = (subinfo or {}).get("trackList") or []
+    items = []
+    for track in track_list:
+        if not isinstance(track, dict):
+            continue
+        title = str(track.get("title") or "").strip()
+        if not title:
+            continue
+        position = str(track.get("no") or "").strip()
+        duration = str(track.get("runningTime") or "").strip()
+        items.append({"position": position, "title": title, "duration": duration})
+    return items
+
+
+def _fetch_aladin_tracks_from_web(item_id: str, isbn: str) -> list[dict[str, Any]]:
+    """Fetch tracklist by scraping Aladin product Introduce section (getContents.aspx).
+
+    The TTB API ``OptResult=Tracklist`` rarely returns trackList for music items;
+    the Introduce AJAX endpoint is more reliable.
+    """
+    url = "https://www.aladin.co.kr/shop/product/getContents.aspx"
+    params = {"ISBN": isbn, "name": "Introduce", "type": "0"}
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "ko-KR,ko;q=0.9",
+        "Referer": f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}",
+        "X-Requested-With": "XMLHttpRequest",
+    }
+    try:
+        with _make_http_client() as client:
+            response = _get_with_retry(client, url, params=params, headers=headers)
+            response.raise_for_status()
+            html = response.text
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("aladin web track fetch %r failed: %s", item_id, exc)
+        return []
+
+    # 수록곡 섹션 탐색
+    idx = html.find("수록곡")
+    if idx < 0:
+        return []
+
+    section = html[idx:]
+    # 다음 섹션 블록 전까지만 파싱 (5000자 제한)
+    next_section = section.find("Ere_prod_mconts_box", 100)
+    if 0 < next_section < 5000:
+        section = section[:next_section]
+    else:
+        section = section[:5000]
+
+    raw_items = re.findall(r"<li[^>]*>\s*<span[^>]*>([^<]+)</span>\s*</li>", section)
+    tracks: list[dict[str, Any]] = []
+    for raw in raw_items:
+        raw = raw.strip()
+        if not raw:
+            continue
+        # "1-1. 제목", "A-1. 제목", "1. 제목" 형태에서 위치 분리
+        pos_match = re.match(r"^(\d+-\d+|[A-Za-z]-\d+|\d+)\.\s+(.+)$", raw)
+        if pos_match:
+            position = pos_match.group(1)
+            title = pos_match.group(2).strip()
+        else:
+            position = str(len(tracks) + 1)
+            title = raw
+        tracks.append({"position": position, "title": title, "duration": ""})
+    return tracks
+
+
+def fetch_aladin_track_items(item_id: str) -> list[dict[str, Any]]:
+    """Public helper: fetch Aladin tracklist for a given ItemId. Returns [] on failure."""
+    try:
+        detail = _fetch_aladin_item_detail(item_id)
+        if not detail:
+            return []
+        # Web scraping (getContents.aspx Introduce) is more reliable than TTB API trackList
+        isbn = str(detail.get("isbn") or "").strip()
+        if isbn:
+            web_tracks = _fetch_aladin_tracks_from_web(item_id, isbn)
+            if web_tracks:
+                return web_tracks
+        # Fallback: TTB API subInfo.trackList
+        subinfo = detail.get("subInfo") if isinstance(detail.get("subInfo"), dict) else {}
+        return _parse_aladin_track_items(subinfo)
+    except Exception as exc:
+        logger.warning("fetch_aladin_track_items %r failed: %s", item_id, exc)
+        return []
+
+
 def search_maniadb_by_query(query: str, limit: int = 5) -> list[dict[str, Any]]:
     try:
         candidates = _maniadb_search(query=query, limit=limit)
@@ -3953,6 +4078,80 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
 
     if source_u == "MUSICBRAINZ":
         return _fetch_musicbrainz_release_snapshot(ext)
+
+    if source_u == "ALADIN":
+        detail = _fetch_aladin_item_detail(ext)
+        if not detail:
+            return None
+        raw_title = str(detail.get("title") or "")
+        raw_artist = str(detail.get("author") or "") or None
+        title = _clean_aladin_title(raw_title)
+        artist = _clean_aladin_artist(raw_artist) if raw_artist else None
+        title, promo_notice = _extract_aladin_promo_notice(title)
+        if artist and title:
+            for sep in (" - ", " – ", " — ", " / "):
+                if title.lower().startswith((artist + sep).lower()):
+                    stripped = title[len(artist) + len(sep):].strip()
+                    if stripped:
+                        title = stripped
+                    break
+        barcode = str(detail.get("isbn13") or detail.get("isbn") or "") or None
+        pub_date = str(detail.get("pubDate") or "")
+        year_token = pub_date.split("-")[0] if pub_date else None
+        raw_cover = str(detail.get("cover") or "") or None
+        cover_image_url = raw_cover.replace("/coversum/", "/cover/") if raw_cover else None
+        format_name = (
+            _extract_format_from_aladin_title(raw_title)
+            or _infer_format_from_aladin_category(detail.get("categoryName"))
+        )
+        # 웹 스크래핑(getContents.aspx Introduce) → TTB API subInfo.trackList 순서로 시도
+        isbn_code = str(detail.get("isbn") or "").strip()
+        track_items = (
+            _fetch_aladin_tracks_from_web(ext, isbn_code)
+            if isbn_code
+            else []
+        )
+        if not track_items:
+            subinfo = detail.get("subInfo") if isinstance(detail.get("subInfo"), dict) else {}
+            track_items = _parse_aladin_track_items(subinfo)
+        return {
+            "cover_image_url": cover_image_url,
+            "track_list": [t["title"] for t in track_items],
+            "track_items": track_items,
+            "label_name": str(detail.get("publisher") or "") or None,
+            "catalog_no": None,
+            "barcode": barcode,
+            "format_name": format_name,
+            "media_type": None,
+            "release_type": None,
+            "domain_code": infer_domain_code(
+                country="KR",
+                artist_or_brand=artist,
+                title=title,
+                label_name=detail.get("publisher"),
+                source="ALADIN",
+            ),
+            "genres": [],
+            "styles": [],
+            "artist_or_brand": artist,
+            "release_year": _safe_year(year_token),
+            "released_date": pub_date if pub_date else None,
+            "disc_count": None,
+            "speed_rpm": None,
+            "has_obi": None,
+            "runout_matrix": [],
+            "pressing_country": None,
+            "source_notes": promo_notice,
+            "credits": [],
+            "identifier_items": [],
+            "image_items": [],
+            "company_items": [],
+            "series": [],
+            "format_items": [],
+            "label_items": [],
+            "title": title,
+            "raw": detail,
+        }
 
     return None
 
