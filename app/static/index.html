@@ -5032,6 +5032,176 @@
       transform: rotate(7deg);
     }
 
+    /* ── Immersive ops-home design enhancements ── */
+
+    /* Hero: warmer accent border + subtle top glow */
+    .ops-home-hero {
+      border-color: rgba(232, 98, 10, 0.24);
+      background: linear-gradient(
+        170deg,
+        rgba(232, 98, 10, 0.05) 0%,
+        var(--theme-shell-surface) 40%
+      );
+    }
+
+    /* Kicker: tighter tracking + faint glow */
+    .ops-home-hero-kicker {
+      letter-spacing: 0.14em;
+      text-shadow: 0 0 14px rgba(232, 98, 10, 0.45);
+    }
+
+    /* Hero title: slightly larger, crisper */
+    .ops-home-hero-copy h1 {
+      font-size: 1.44rem;
+      letter-spacing: -0.025em;
+    }
+
+    /* Search bar: lift input on focus for depth */
+    .operator-searchbar {
+      border-radius: 10px;
+    }
+
+    /* Recent sections: accent left stripe on section head */
+    .operator-recent-section::before {
+      content: "";
+      position: absolute;
+      top: 12px;
+      bottom: 12px;
+      left: 0;
+      width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: var(--theme-shell-accent);
+      opacity: 0.55;
+    }
+    .operator-recent-section {
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Item cards: subtle hover lift */
+    .operator-recent-item,
+    .operator-result-item {
+      transition: box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .operator-recent-item:hover,
+    .operator-result-item:hover {
+      border-color: rgba(232, 98, 10, 0.28);
+      box-shadow: 0 2px 12px rgba(232, 98, 10, 0.08);
+    }
+
+    /* ── Hero background catalog grid ── */
+    @keyframes ops-cell-idle {
+      0%, 100% { opacity: var(--cell-lo); }
+      50%       { opacity: var(--cell-hi); }
+    }
+
+    .ops-hero-bg-grid {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 56%;
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 4px;
+      padding: 6px 8px;
+      pointer-events: none;
+      z-index: 0;
+      -webkit-mask-image: linear-gradient(to left,
+        rgba(0,0,0,0.55) 0%,
+        rgba(0,0,0,0.28) 55%,
+        transparent 100%
+      );
+      mask-image: linear-gradient(to left,
+        rgba(0,0,0,0.55) 0%,
+        rgba(0,0,0,0.28) 55%,
+        transparent 100%
+      );
+    }
+
+    .ops-hero-bg-grid .ops-cell {
+      border-radius: 2px;
+      --cell-lo: 0.06;
+      --cell-hi: 0.22;
+      background: var(--theme-shell-text-muted);
+      animation: ops-cell-idle var(--cell-dur, 4s) ease-in-out infinite;
+      animation-delay: var(--cell-delay, 0s);
+    }
+
+    .ops-hero-bg-grid .ops-cell.is-accent {
+      --cell-lo: 0.18;
+      --cell-hi: 0.58;
+      background: var(--theme-shell-accent);
+    }
+
+    .ops-hero-bg-grid .ops-cell.is-sky {
+      --cell-lo: 0.10;
+      --cell-hi: 0.38;
+      background: rgb(56, 189, 248);
+    }
+
+    /* ── Equalizer waveform ── */
+    @keyframes ops-eq-1 { 0%,100%{height:5px}  40%{height:16px} }
+    @keyframes ops-eq-2 { 0%,100%{height:12px} 50%{height:4px}  }
+    @keyframes ops-eq-3 { 0%,100%{height:4px}  35%{height:20px} }
+    @keyframes ops-eq-4 { 0%,100%{height:16px} 55%{height:7px}  }
+    @keyframes ops-eq-5 { 0%,100%{height:8px}  45%{height:14px} }
+    @keyframes ops-eq-6 { 0%,100%{height:14px} 30%{height:6px}  }
+    @keyframes ops-eq-7 { 0%,100%{height:6px}  60%{height:18px} }
+
+    .ops-home-hero-eq {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2.5px;
+      height: 20px;
+      vertical-align: middle;
+      margin-left: 9px;
+      opacity: 0.8;
+    }
+    .ops-home-hero-eq span {
+      display: block;
+      width: 3px;
+      border-radius: 2px 2px 1px 1px;
+      background: var(--theme-shell-accent);
+      animation-iteration-count: infinite;
+      animation-timing-function: ease-in-out;
+    }
+    .ops-home-hero-eq span:nth-child(1) { animation: ops-eq-1 1.1s infinite ease-in-out 0.00s; }
+    .ops-home-hero-eq span:nth-child(2) { animation: ops-eq-2 1.3s infinite ease-in-out 0.12s; }
+    .ops-home-hero-eq span:nth-child(3) { animation: ops-eq-3 0.9s infinite ease-in-out 0.24s; }
+    .ops-home-hero-eq span:nth-child(4) { animation: ops-eq-4 1.4s infinite ease-in-out 0.08s; }
+    .ops-home-hero-eq span:nth-child(5) { animation: ops-eq-5 1.0s infinite ease-in-out 0.36s; }
+    .ops-home-hero-eq span:nth-child(6) { animation: ops-eq-6 1.2s infinite ease-in-out 0.20s; }
+    .ops-home-hero-eq span:nth-child(7) { animation: ops-eq-7 0.95s infinite ease-in-out 0.44s; }
+
+    /* Live clock in hero */
+    .ops-home-hero-clock {
+      font-size: 0.7rem;
+      color: var(--theme-shell-text-subtle, #a2afbe);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+      display: block;
+      opacity: 0.85;
+    }
+
+    /* Recent section scan-line overlay */
+    .operator-recent-section::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 3px,
+        rgba(148, 163, 184, 0.025) 3px,
+        rgba(148, 163, 184, 0.025) 4px
+      );
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
     .ops-home-manual {
       margin-top: 0;
       background: rgba(255,255,255,0.62);
@@ -6835,9 +7005,9 @@
 
     .home-edit-track-row {
       display: grid;
-      grid-template-columns: 42px minmax(0, 1fr) auto;
-      gap: 6px;
-      align-items: start;
+      grid-template-columns: 42px minmax(0, 1fr) 56px 20px;
+      gap: 4px;
+      align-items: center;
       font-size: 0.78rem;
       color: #334155;
     }
@@ -6857,6 +7027,60 @@
     .home-edit-track-duration {
       color: #64748b;
       white-space: nowrap;
+    }
+
+    .home-edit-track-row input.home-edit-track-pos,
+    .home-edit-track-row input.home-edit-track-title,
+    .home-edit-track-row input.home-edit-track-duration {
+      border: none;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      font-size: 0.78rem;
+      color: var(--text, #334155);
+      padding: 2px 4px;
+      width: 100%;
+      border-radius: 3px;
+      box-sizing: border-box;
+    }
+    .home-edit-track-row input.home-edit-track-pos { color: #64748b; font-weight: 700; }
+    .home-edit-track-row input.home-edit-track-duration { color: #64748b; }
+    .home-edit-track-row input:focus {
+      outline: none;
+      border-bottom-color: var(--accent, #6366f1);
+      background: var(--bg, #f8fafc);
+    }
+    .home-edit-track-row-delete {
+      cursor: pointer;
+      color: var(--muted, #94a3b8);
+      font-size: 0.68rem;
+      line-height: 1;
+      padding: 2px;
+      background: none;
+      border: none;
+      opacity: 0.45;
+      border-radius: 3px;
+    }
+    .home-edit-track-row-delete:hover { opacity: 1; color: #ef4444; }
+    .home-edit-track-add-row {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 4px;
+    }
+    .home-edit-track-disc-header {
+      grid-column: 1 / -1;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted, #64748b);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 6px 4px 2px;
+      border-top: 1px dashed var(--line, #e2e8f0);
+      margin-top: 2px;
+    }
+    .home-edit-track-disc-header:first-child {
+      border-top: none;
+      margin-top: 0;
+      padding-top: 2px;
     }
 
     .home-edit-cover-meta-box {
@@ -7057,6 +7281,86 @@
       gap: 3px;
     }
 
+    .sync-item-log {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 0.75rem;
+    }
+    .sync-item-log-header {
+      display: grid;
+      grid-template-columns: 62px 52px 80px minmax(80px,1.2fr) minmax(0,2fr);
+      gap: 0 8px;
+      padding: 5px 8px;
+      background: var(--line);
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 0.7rem;
+      letter-spacing: 0.02em;
+    }
+    .sync-item-log-body {
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .sync-log-row {
+      display: grid;
+      grid-template-columns: 62px 52px 80px minmax(80px,1.2fr) minmax(0,2fr);
+      gap: 0 8px;
+      padding: 4px 8px;
+      border-top: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .sync-log-row:first-child { border-top: none; }
+    .sync-log-badge {
+      display: inline-block;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .sync-log-badge.updated  { background: #d1fae5; color: #065f46; }
+    .sync-log-badge.skipped  { background: #f3f4f6; color: #6b7280; }
+    .sync-log-badge.failed   { background: #fee2e2; color: #991b1b; }
+    body[data-theme="dark"] .sync-log-badge.updated { background: #064e3b; color: #6ee7b7; }
+    body[data-theme="dark"] .sync-log-badge.skipped { background: #1f2a37; color: #9ca3af; }
+    body[data-theme="dark"] .sync-log-badge.failed  { background: #450a0a; color: #fca5a5; }
+    .sync-log-id {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .sync-log-source {
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .sync-log-detail {
+      color: var(--ink);
+      word-break: break-all;
+    }
+    .sync-log-detail .fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+    .sync-log-detail .field-tag {
+      background: var(--line);
+      border-radius: 3px;
+      padding: 0 4px;
+      font-size: 0.65rem;
+    }
+    .sync-log-product-name {
+      font-weight: 500;
+      color: var(--ink);
+      word-break: break-word;
+    }
+    .sync-log-count {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+
     #barcodeResults .album-result {
       grid-template-columns: 64px minmax(0, 1fr);
       gap: 8px;
@@ -7064,6 +7368,7 @@
 
     #barcodeResults .album-result-cover {
       width: 64px;
+      height: 64px;
     }
 
     .result-item.pick {
@@ -13891,10 +14196,35 @@
 
     .dashboard-hero-grid {
       display: grid;
-      /* taste-skill: 비대칭 2fr+1fr+1fr (3-equal-column BANNED) */
-      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
       gap: 6px;
       margin-bottom: 8px;
+    }
+    .dashboard-hero-grid--5col {
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    }
+    .dashboard-hero-grid--3col {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .dashboard-hero-card.accent-status {
+      background: linear-gradient(160deg, #fafafe, #f0f0fa);
+      border-color: #d1d1ea;
+      border-top: 2px solid rgba(99, 102, 241, 0.35);
+    }
+    .dashboard-hero-card.accent-geo {
+      background: linear-gradient(160deg, #fdfaf6, #f7f2ec);
+      border-color: #e0d8ce;
+      border-top: 2px solid rgba(180, 120, 60, 0.32);
+    }
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-status,
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-geo {
+      background: transparent;
+    }
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-status {
+      border-top: 2px solid rgba(99, 102, 241, 0.28);
+    }
+    #homeDashboardCard.dashboard-console-shell .dashboard-hero-card.accent-geo {
+      border-top: 2px solid rgba(180, 120, 60, 0.28);
     }
 
     .dashboard-hero-card {
@@ -13909,23 +14239,13 @@
       justify-content: space-between;
     }
 
-    /* taste-skill: 2fr 앵커 카드 강조 — 수치값 크게, 좌 border 강조 */
-    .dashboard-hero-card.accent-main,
-    .dashboard-hero-card.accent-collector {
+    /* accent-main: 앵커 카드 — 수치값 크게, 좌 border 강조 */
+    .dashboard-hero-card.accent-main {
       padding: 8px 10px;
       min-height: 86px;
-    }
-
-    .dashboard-hero-card.accent-main {
-      background:
-        linear-gradient(145deg, rgba(15,118,110,0.95), rgba(21,94,117,0.96));
+      background: linear-gradient(145deg, rgba(15,118,110,0.95), rgba(21,94,117,0.96));
       border-color: rgba(13, 148, 136, 0.34);
       color: #f0fdfa;
-    }
-
-    .dashboard-hero-card.accent-media {
-      background: var(--dashboard-accent-soft);
-      border-color: #c8ddd5;
     }
 
     .dashboard-hero-card.accent-placement {
@@ -16691,7 +17011,7 @@
       .home-edit-grid-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .ops-library-slot-preview-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
       .option-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-      .dashboard-hero-grid { grid-template-columns: 2fr 1fr 1fr; }
+      .dashboard-hero-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
       .dashboard-hero-card { padding: 5px 6px; min-height: 74px; }
       .dashboard-hero-card.accent-main,
       .dashboard-hero-card.accent-collector { padding: 7px 8px; min-height: 82px; }
@@ -16807,7 +17127,7 @@
       .source-workbench-diff-status-badge { grid-column: 2 / -1; }
       .admin-barcode-intake-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .ops-provider-group-grid { grid-template-columns: 1fr; }
-      .dashboard-hero-grid { grid-template-columns: 2fr 1fr 1fr; }
+      .dashboard-hero-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
       .dashboard-hero-card { padding: 4px 5px; min-height: 70px; }
       .dashboard-hero-card.accent-main,
       .dashboard-hero-card.accent-collector { padding: 6px 7px; min-height: 76px; }
@@ -17416,20 +17736,17 @@
     </header>
 
     <section id="opsHomeHero" class="ops-home-hero u-hidden-initial">
+      <div id="opsHeroGrid" class="ops-hero-bg-grid" aria-hidden="true"></div>
       <div class="ops-home-hero-main">
         <div class="ops-home-hero-copy">
-          <span class="ops-home-hero-kicker" data-i18n="shell.ops.kicker">Operator Home</span>
+          <span class="ops-home-hero-kicker" data-i18n="shell.ops.kicker">Operator Home<span class="ops-home-hero-eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
           <h1 data-i18n="shell.ops.title">라이브러리 운영 홈</h1>
+          <span id="opsHeroClock" class="ops-home-hero-clock" aria-live="off"></span>
           <p data-i18n="shell.ops.subtitle">현장 조회, 위치 확인, 최근 흐름을 한 화면에서 정리합니다.</p>
         </div>
         <div class="ops-home-hero-side">
           <div id="opsUtilityMount" class="utility-mount"></div>
-          <div class="ops-home-hero-art" aria-hidden="true">
-            <span class="ops-home-record ops-home-record--a"></span>
-            <span class="ops-home-record ops-home-record--b"></span>
-            <span class="ops-home-note ops-home-note--one">♪</span>
-            <span class="ops-home-note ops-home-note--two">♬</span>
-          </div>
+          <div class="ops-home-hero-art" aria-hidden="true"></div>
         </div>
       </div>
       <details class="manual-block page-help-source ops-home-manual" data-page-help-source="ops-home" hidden>
@@ -17562,20 +17879,12 @@
             </button>
         </div>
       </div>
-        <div class="dashboard-hero-grid dashboard-console-telemetry">
+        <div class="dashboard-hero-grid dashboard-hero-grid--5col dashboard-console-telemetry">
           <div class="dashboard-hero-card accent-main">
             <span class="dashboard-kicker" data-i18n="dashboard.card.library">전체 라이브러리</span>
             <strong id="homeDashTotal">0</strong>
             <div class="dashboard-stat-line">
-              <span><span data-i18n="dashboard.stat.in_collection">소장 중</span> <em id="homeDashInCollection">0</em></span>
-              <span><span data-i18n="dashboard.stat.recent_30">최근 30일</span> <em id="homeDashRecent30">0</em></span>
-            </div>
-          </div>
-          <div class="dashboard-hero-card accent-media">
-            <span class="dashboard-kicker" data-i18n="dashboard.card.media_collectibles">미디어 / 수집품</span>
-            <strong id="homeDashMusic">0</strong>
-            <div class="dashboard-stat-line">
-              <span data-i18n="dashboard.stat.media">음반</span>
+              <span><span data-i18n="dashboard.stat.media">미디어</span> <em id="homeDashMusic">0</em></span>
               <span><span data-i18n="dashboard.stat.collectibles">수집품</span> <em id="homeDashGoods">0</em></span>
             </div>
           </div>
@@ -17587,26 +17896,47 @@
               <span><span data-i18n="dashboard.stat.recent_move_1d">최근 1일 이동 건</span> <em id="homeDashRecentMove1d">0</em></span>
             </div>
           </div>
-          <div class="dashboard-hero-card accent-collector">
-            <span class="dashboard-kicker" data-i18n="dashboard.card.collector">콜렉터 요소</span>
-            <strong id="homeDashSigned">0</strong>
-            <div class="dashboard-stat-line">
-              <span data-i18n="dashboard.stat.signed">싸인</span>
-              <span><span data-i18n="dashboard.stat.second_hand">중고</span> <em id="homeDashSecondHand">0</em></span>
-            </div>
-          </div>
           <div class="dashboard-hero-card accent-linked">
             <span class="dashboard-kicker" data-i18n="dashboard.card.source">소스 현황</span>
             <div id="homeDashSourceSummary" class="dashboard-source-summary-inline dashboard-stat-line"></div>
           </div>
           <div class="dashboard-hero-card accent-quality">
             <span class="dashboard-kicker" data-i18n="dashboard.card.connection_quality">연결 품질</span>
-            <strong id="homeDashSourceUnlinked">0</strong>
             <div class="dashboard-stat-line">
-              <span data-i18n="dashboard.stat.source_unlinked">소스 미연결</span>
+              <span><span data-i18n="dashboard.stat.source_unlinked">소스 미연결</span> <em id="homeDashSourceUnlinked">0</em></span>
               <span><span data-i18n="dashboard.stat.master_unlinked">마스터 미연결</span> <em id="homeDashMasterUnlinked">0</em></span>
               <span><span data-i18n="dashboard.stat.cover_missing">커버 없음</span> <em id="homeDashCoverMissing">0</em></span>
             </div>
+          </div>
+          <div class="dashboard-hero-card accent-collector">
+            <span class="dashboard-kicker" data-i18n="dashboard.card.collector">콜렉터 요소</span>
+            <div class="dashboard-stat-line">
+              <span><span data-i18n="dashboard.stat.direct_signed">직접 싸인</span> <em id="homeDashDirectSigned">0</em></span>
+              <span><span data-i18n="dashboard.stat.purchase_signed">구매시 싸인</span> <em id="homeDashPurchaseSigned">0</em></span>
+              <span><span data-i18n="dashboard.stat.limited">한정반</span> <em id="homeDashLimited">0</em></span>
+            </div>
+          </div>
+        </div>
+        <div class="dashboard-hero-grid dashboard-hero-grid--3col dashboard-console-telemetry">
+          <div class="dashboard-hero-card accent-quality">
+            <span class="dashboard-kicker" data-i18n="dashboard.card.metadata_completeness">메타데이터 완성도</span>
+            <div class="dashboard-stat-line">
+              <span><span data-i18n="dashboard.stat.genre_missing">장르 없음</span> <em id="homeDashGenreMissing">0</em></span>
+              <span><span data-i18n="dashboard.stat.format_missing">포맷 없음</span> <em id="homeDashFormatMissing">0</em></span>
+              <span><span data-i18n="dashboard.stat.catalog_missing">카탈로그 없음</span> <em id="homeDashCatalogMissing">0</em></span>
+            </div>
+          </div>
+          <div class="dashboard-hero-card accent-status">
+            <span class="dashboard-kicker" data-i18n="dashboard.card.status_summary">상태 현황</span>
+            <div class="dashboard-stat-line">
+              <span><span data-i18n="dashboard.stat.loaned">대출 중</span> <em id="homeDashLoaned">0</em></span>
+              <span><span data-i18n="dashboard.stat.sold">판매됨</span> <em id="homeDashSold">0</em></span>
+              <span><span data-i18n="dashboard.stat.lost">분실</span> <em id="homeDashLost">0</em></span>
+            </div>
+          </div>
+          <div class="dashboard-hero-card accent-geo">
+            <span class="dashboard-kicker" data-i18n="dashboard.card.pressing_country">프레싱 국가</span>
+            <div id="homeDashPressingCountry" class="dashboard-stat-line"></div>
           </div>
         </div>
         <div class="dashboard-main-grid dashboard-console-main">
@@ -18469,34 +18799,36 @@
                           </select>
                         </div>
                       </div>
-                      <div id="homeEditMusicMetaFieldsC" class="grid-12 grid-12--from-6 u-mt-6">
-                        <div class="span-3">
+                      <div id="homeEditVinylMetaRow" class="grid-12 grid-12--from-6 u-mt-6 u-hidden-initial">
+                        <div id="homeEditRunoutMatrixWrap" class="span-3">
                           <label for="editRunoutMatrix" data-i18n="media.manage.field.runout_matrix.label">런아웃 매트릭스</label>
                           <input id="editRunoutMatrix" data-i18n-placeholder="media.manage.field.runout_matrix.placeholder" placeholder="예: A1/B1" />
                         </div>
-                        <div>
+                        <div id="homeEditPressingCountryWrap" class="span-3">
                           <label for="editPressingCountry" data-i18n="media.manage.field.pressing_country.label">프레싱 국가</label>
                           <input id="editPressingCountry" data-i18n-placeholder="media.manage.field.pressing_country.placeholder" placeholder="예: South Korea" />
                         </div>
-                        <div class="span-2">
-                          <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
-                          <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." />
-                        </div>
+                      </div>
+                      <div class="u-mt-6">
+                        <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
+                        <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." style="width:100%;box-sizing:border-box;" />
                       </div>
                       <div id="homeEditPackageContentsWrap" class="u-mt-6">
                         <label style="display:block;margin-bottom:4px;" data-i18n="media.manage.product.field.package_contents.label">패키지 구성</label>
                         <div id="editPackageContentsOptions" class="edit-format-name-options">
-                          <label class="edit-format-name-option"><input type="checkbox" value="Booklet" /><span>Booklet</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Leaflet" /><span>Leaflet</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Mini Poster / Tabloid" /><span>Mini Poster / Tabloid</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Postcard" /><span>Postcard</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Sticker" /><span>Sticker</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Bookmark" /><span>Bookmark</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Lenticular / Hologram Card" /><span>Lenticular / Hologram Card</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Photo Card" /><span>Photo Card</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Film Cut" /><span>Film Cut</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Warranty Card" /><span>Warranty Card</span></label>
-                          <label class="edit-format-name-option"><input type="checkbox" value="Entry Form" /><span>Entry Form</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.inner_sleeve"><input type="checkbox" value="Insert / Inner Sleeve" /><span>Insert / Inner Sleeve</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.booklet"><input type="checkbox" value="Booklet" /><span>Booklet</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.photo_book"><input type="checkbox" value="Photo Book" /><span>Photo Book</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.leaflet"><input type="checkbox" value="Leaflet" /><span>Leaflet</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.mini_poster"><input type="checkbox" value="Mini Poster / Tabloid" /><span>Mini Poster / Tabloid</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.postcard"><input type="checkbox" value="Postcard" /><span>Postcard</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.sticker"><input type="checkbox" value="Sticker" /><span>Sticker</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.bookmark"><input type="checkbox" value="Bookmark" /><span>Bookmark</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.lenticular"><input type="checkbox" value="Lenticular / Hologram Card" /><span>Lenticular / Hologram Card</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.photo_card"><input type="checkbox" value="Photo Card" /><span>Photo Card</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.film_cut"><input type="checkbox" value="Film Cut" /><span>Film Cut</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.warranty_card"><input type="checkbox" value="Warranty Card" /><span>Warranty Card</span></label>
+                          <label class="edit-format-name-option" data-i18n-title="media.manage.pkg_contents.tip.entry_form"><input type="checkbox" value="Entry Form" /><span>Entry Form</span></label>
                           <label id="editPackageContentsOtherLabel" class="edit-format-name-option">
                             <input type="checkbox" value="__other__" id="editPackageContentsOtherCheck" />
                             <span>기타</span>
@@ -19685,6 +20017,7 @@
                 <option>DISCOGS</option>
                 <option>ALADIN</option>
                 <option>MANIADB</option>
+                <option>MUSICBRAINZ</option>
               </select>
             </div>
             <div>
@@ -21425,7 +21758,7 @@
             <button class="page-help-trigger" type="button" data-page-help-open="ops-meta-sync" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
           </div>
           <p class="sub" data-i18n="ops.meta_sync.subtitle">Discogs/ManiaDB 연동 상품의 누락 필드(아티스트, 발매일, 라벨, 카탈로그, 커버, 바코드, 트랙리스트)를 보강합니다.</p>
-          <div class="grid-3">
+          <div class="grid-4">
             <div>
               <label for="metaSyncSource" data-i18n="ops.meta_sync.field.source.label">대상 소스</label>
               <select id="metaSyncSource">
@@ -21440,11 +21773,21 @@
               <input id="metaSyncLimit" type="number" min="1" max="5000" value="300" />
             </div>
             <div>
+              <label for="metaSyncDelay" data-i18n="ops.meta_sync.field.delay.label">API 호출 간격(초)</label>
+              <input id="metaSyncDelay" type="number" min="0" max="60" step="0.5" value="1.5" />
+            </div>
+            <div>
               <label class="inline-check u-mt-22">
                 <input id="metaSyncOnlyMissing" type="checkbox" checked />
                 <span data-i18n="ops.meta_sync.field.only_missing.label">누락 필드만 보강</span>
               </label>
             </div>
+          </div>
+          <div class="row u-mt-6">
+            <label class="inline-check">
+              <input id="metaSyncSupplementDiscogs" type="checkbox" checked />
+              <span data-i18n="ops.meta_sync.field.supplement_discogs.label">Discogs 부가정보 병행 보강 (포맷·매트릭스·식별자 등)</span>
+            </label>
           </div>
           <div class="row u-mt-10">
             <button id="metaSyncStatusBtn" class="btn ghost" type="button" data-i18n="ops.meta_sync.action.reload">동기화 상태 새로고침</button>
@@ -21452,6 +21795,33 @@
           </div>
           <div id="metaSyncStatusBox" class="status"></div>
           <div id="metaSyncSummary" class="compact-line u-mt-8">-</div>
+          <div id="metaSyncItemLog" class="sync-item-log u-mt-10" hidden></div>
+        </section>
+      </div>
+
+      <div class="layout u-mt-16">
+        <section class="card">
+          <h2>알라딘 → Discogs 마스터 매칭</h2>
+          <p class="sub">알라딘 입수건의 바코드를 Discogs API로 조회해 마스터를 연결하고 포맷 정보를 업데이트합니다. 실행 시간은 건수에 비례합니다(약 2초/건).</p>
+          <div class="grid-3">
+            <div>
+              <label for="aladinDiscogsBackfillSleep">API 호출 간격(초)</label>
+              <input id="aladinDiscogsBackfillSleep" type="number" min="0.5" max="10" step="0.5" value="2.0" />
+            </div>
+            <div>
+              <label class="inline-check u-mt-22">
+                <input id="aladinDiscogsBackfillDryRun" type="checkbox" />
+                <span>Dry-run (DB 변경 없이 결과만 확인)</span>
+              </label>
+            </div>
+          </div>
+          <div class="row u-mt-10">
+            <button id="aladinDiscogsBackfillStatusBtn" class="btn ghost" type="button">상태 새로고침</button>
+            <button id="aladinDiscogsBackfillRunBtn" class="btn secondary" type="button">매칭 실행</button>
+          </div>
+          <div id="aladinDiscogsBackfillStatusBox" class="status"></div>
+          <div id="aladinDiscogsBackfillSummary" class="compact-line u-mt-8">-</div>
+          <div id="aladinDiscogsBackfillMatchedList" class="u-mt-8" style="display:none"></div>
         </section>
       </div>
       </div>
@@ -21575,6 +21945,17 @@
   <div id="shellBarcodeToast" class="shell-barcode-toast" aria-live="polite"></div>
 
   <script>
+    const _originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      let [resource, config] = args;
+      if (!config) config = {};
+      const newConfig = { ...config };
+      if (!newConfig.credentials) {
+        newConfig.credentials = "include";
+      }
+      return _originalFetch(resource, newConfig);
+    };
+
     const MUSIC_CATEGORIES = new Set(["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"]);
     const SOURCE_MANAGED_CODES = new Set(["DISCOGS", "MANIADB", "ALADIN"]);
     const DOMAIN_CODES = new Set(["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]);
@@ -21781,6 +22162,18 @@
         "dashboard.stat.unslotted": "미배치",
         "dashboard.stat.recent_move_1d": "최근 1일 이동 건",
         "dashboard.stat.signed": "싸인본",
+        "dashboard.stat.direct_signed": "직접 싸인",
+        "dashboard.stat.purchase_signed": "구매시 싸인",
+        "dashboard.stat.limited": "한정반",
+        "dashboard.card.metadata_completeness": "메타데이터 완성도",
+        "dashboard.stat.genre_missing": "장르 없음",
+        "dashboard.stat.format_missing": "포맷 없음",
+        "dashboard.stat.catalog_missing": "카탈로그 없음",
+        "dashboard.card.status_summary": "상태 현황",
+        "dashboard.stat.loaned": "대출 중",
+        "dashboard.stat.sold": "판매됨",
+        "dashboard.stat.lost": "분실",
+        "dashboard.card.pressing_country": "프레싱 국가",
         "dashboard.stat.second_hand": "중고",
         "dashboard.stat.source_unlinked": "소스 미연결",
         "dashboard.stat.master_unlinked": "마스터 미연결",
@@ -22446,6 +22839,19 @@
         "media.manage.field.packaging.label": "패키징",
         "media.manage.field.disc_type.label": "디스크 유형",
         "media.manage.product.field.package_contents.label": "패키지 구성",
+        "media.manage.pkg_contents.tip.inner_sleeve": "LP 내지 또는 별도 인쇄물 형태의 이너 슬리브. 가사·사진 인쇄 포함 가능",
+        "media.manage.pkg_contents.tip.booklet": "앨범 설명·가사·사진 등이 담긴 책자 형태 부속물",
+        "media.manage.pkg_contents.tip.photo_book": "아티스트 사진 위주로 구성된 대형 화보집 형태 부속물",
+        "media.manage.pkg_contents.tip.leaflet": "단면 또는 양면 인쇄물. 북클릿보다 얇은 형태",
+        "media.manage.pkg_contents.tip.mini_poster": "접힌 상태로 포함된 미니 포스터 또는 타블로이드 크기 인쇄물",
+        "media.manage.pkg_contents.tip.postcard": "엽서 형태의 카드",
+        "media.manage.pkg_contents.tip.sticker": "스티커 시트 또는 개별 스티커",
+        "media.manage.pkg_contents.tip.bookmark": "책갈피 형태의 부속물",
+        "media.manage.pkg_contents.tip.lenticular": "각도에 따라 이미지가 바뀌는 렌티큘러 또는 홀로그램 카드",
+        "media.manage.pkg_contents.tip.photo_card": "아티스트 사진이 인쇄된 카드. K-pop 앨범에 주로 포함",
+        "media.manage.pkg_contents.tip.film_cut": "필름 형태로 제작된 카드 또는 인화물",
+        "media.manage.pkg_contents.tip.warranty_card": "정품 보증 카드",
+        "media.manage.pkg_contents.tip.entry_form": "이벤트 응모권 또는 팬미팅 응모 카드",
         "media.manage.product.field.is_limited_edition.label": "한정판",
         "media.manage.product.field.edition_number.label": "넘버링",
         "media.manage.product.field.is_new_item.label": "새상품 여부",
@@ -23143,7 +23549,9 @@
         "ops.meta_sync.subtitle": "Discogs/ManiaDB 연동 상품의 누락 필드(아티스트, 발매일, 라벨, 카탈로그, 커버, 바코드, 트랙리스트)를 보강합니다.",
         "ops.meta_sync.field.source.label": "대상 소스",
         "ops.meta_sync.field.limit.label": "처리 개수(limit)",
+        "ops.meta_sync.field.delay.label": "API 호출 간격(초)",
         "ops.meta_sync.field.only_missing.label": "누락 필드만 보강",
+        "ops.meta_sync.field.supplement_discogs.label": "Discogs 부가정보 병행 보강 (포맷·매트릭스·식별자 등)",
         "ops.meta_sync.action.reload": "동기화 상태 새로고침",
         "ops.meta_sync.action.run": "지금 동기화 실행",
         "common.domain.korea": "가요",
@@ -24206,6 +24614,11 @@
         "media.manage.collectibles.status.registered": "등록 완료: {label_id}",
         "media.manage.tracks.empty": "곡 정보가 없습니다.",
         "media.manage.tracks.count": "{count}곡",
+        "media.manage.tracks.action.add": "+ 곡 추가",
+        "media.manage.tracks.action.delete": "삭제",
+        "media.manage.tracks.placeholder.title": "곡 제목",
+        "media.manage.tracks.disc_label": "Disc {disc}",
+        "media.manage.tracks.side_label": "Side {side}",
         "operator.request.error.list_failed": "요청곡 목록 조회 실패",
         "operator.request.error.create_failed": "요청곡 등록 실패",
         "operator.request.error.update_failed": "요청 상태 변경 실패",
@@ -24419,6 +24832,18 @@
         "dashboard.stat.unslotted": "Unslotted",
         "dashboard.stat.recent_move_1d": "Moved in Last Day",
         "dashboard.stat.signed": "Signed",
+        "dashboard.stat.direct_signed": "In-person Signed",
+        "dashboard.stat.purchase_signed": "Signed at Purchase",
+        "dashboard.stat.limited": "Limited Ed.",
+        "dashboard.card.metadata_completeness": "Metadata Completeness",
+        "dashboard.stat.genre_missing": "Genre Missing",
+        "dashboard.stat.format_missing": "Format Missing",
+        "dashboard.stat.catalog_missing": "Catalog Missing",
+        "dashboard.card.status_summary": "Status Overview",
+        "dashboard.stat.loaned": "On Loan",
+        "dashboard.stat.sold": "Sold",
+        "dashboard.stat.lost": "Lost",
+        "dashboard.card.pressing_country": "Pressing Origin",
         "dashboard.stat.second_hand": "Second-hand",
         "dashboard.stat.source_unlinked": "Source Unlinked",
         "dashboard.stat.master_unlinked": "Master Unlinked",
@@ -25060,6 +25485,19 @@
         "media.manage.field.packaging.label": "Packaging",
         "media.manage.field.disc_type.label": "Disc Type",
         "media.manage.product.field.package_contents.label": "Package Contents",
+        "media.manage.pkg_contents.tip.inner_sleeve": "Inner sleeve or printed insert; may include lyrics and photos",
+        "media.manage.pkg_contents.tip.booklet": "Bound booklet with liner notes, lyrics, and photos",
+        "media.manage.pkg_contents.tip.photo_book": "Large-format photo book featuring artist imagery",
+        "media.manage.pkg_contents.tip.leaflet": "Single or double-sided printed sheet, thinner than a booklet",
+        "media.manage.pkg_contents.tip.mini_poster": "Folded mini poster or tabloid-sized insert",
+        "media.manage.pkg_contents.tip.postcard": "Postcard-sized card included in the release",
+        "media.manage.pkg_contents.tip.sticker": "Sticker sheet or individual stickers",
+        "media.manage.pkg_contents.tip.bookmark": "Bookmark included as an accessory",
+        "media.manage.pkg_contents.tip.lenticular": "Lenticular or hologram card that changes image with viewing angle",
+        "media.manage.pkg_contents.tip.photo_card": "Photo card featuring artist imagery; common in K-pop releases",
+        "media.manage.pkg_contents.tip.film_cut": "Card or print made in a film strip format",
+        "media.manage.pkg_contents.tip.warranty_card": "Authenticity or warranty card",
+        "media.manage.pkg_contents.tip.entry_form": "Entry coupon for events or fan meetings",
         "media.manage.product.field.is_limited_edition.label": "Limited Edition",
         "media.manage.product.field.edition_number.label": "Numbering",
         "media.manage.product.field.is_new_item.label": "New Item",
@@ -25755,7 +26193,9 @@
         "ops.meta_sync.subtitle": "Fill missing fields for source-linked items from Discogs and ManiaDB, including artist, release date, label, catalog, cover, barcode, and tracklist.",
         "ops.meta_sync.field.source.label": "Source",
         "ops.meta_sync.field.limit.label": "Processing Limit",
+        "ops.meta_sync.field.delay.label": "API delay (sec)",
         "ops.meta_sync.field.only_missing.label": "Only fill missing fields",
+        "ops.meta_sync.field.supplement_discogs.label": "Supplement with Discogs extras (format, matrix, identifiers)",
         "ops.meta_sync.action.reload": "Refresh Sync Status",
         "ops.meta_sync.action.run": "Run Sync Now",
         "common.domain.korea": "K-Pop",
@@ -26818,6 +27258,11 @@
         "media.manage.collectibles.status.registered": "Registered: {label_id}",
         "media.manage.tracks.empty": "No track information.",
         "media.manage.tracks.count": "{count} tracks",
+        "media.manage.tracks.action.add": "+ Add Track",
+        "media.manage.tracks.action.delete": "Delete",
+        "media.manage.tracks.placeholder.title": "Track title",
+        "media.manage.tracks.disc_label": "Disc {disc}",
+        "media.manage.tracks.side_label": "Side {side}",
         "operator.request.error.list_failed": "Failed to load request list",
         "operator.request.error.create_failed": "Failed to register request",
         "operator.request.error.update_failed": "Failed to update request status",
@@ -27055,6 +27500,18 @@
         "dashboard.stat.unslotted": "未配置",
         "dashboard.stat.recent_move_1d": "直近1日移動件数",
         "dashboard.stat.signed": "サイン盤",
+        "dashboard.stat.direct_signed": "直筆サイン",
+        "dashboard.stat.purchase_signed": "購入時サイン入り",
+        "dashboard.stat.limited": "限定盤",
+        "dashboard.card.metadata_completeness": "メタデータ完成度",
+        "dashboard.stat.genre_missing": "ジャンルなし",
+        "dashboard.stat.format_missing": "フォーマットなし",
+        "dashboard.stat.catalog_missing": "カタログなし",
+        "dashboard.card.status_summary": "状態概況",
+        "dashboard.stat.loaned": "貸出中",
+        "dashboard.stat.sold": "売却済",
+        "dashboard.stat.lost": "紛失",
+        "dashboard.card.pressing_country": "プレス国",
         "dashboard.stat.second_hand": "中古",
         "dashboard.stat.source_unlinked": "ソース未連結",
         "dashboard.stat.master_unlinked": "マスター未連結",
@@ -27692,6 +28149,19 @@
         "media.manage.field.packaging.label": "パッケージング",
         "media.manage.field.disc_type.label": "ディスクタイプ",
         "media.manage.product.field.package_contents.label": "パッケージ内容",
+        "media.manage.pkg_contents.tip.inner_sleeve": "LPの内袋または別刷りインナースリーブ。歌詞・写真の印刷を含む場合あり",
+        "media.manage.pkg_contents.tip.booklet": "歌詞・解説・写真などをまとめた冊子形式の付属物",
+        "media.manage.pkg_contents.tip.photo_book": "アーティスト写真を中心に構成された大型フォトブック形式の付属物",
+        "media.manage.pkg_contents.tip.leaflet": "片面または両面印刷の紙。ブックレットより薄い形態",
+        "media.manage.pkg_contents.tip.mini_poster": "折り畳まれた状態で同梱されるミニポスターまたはタブロイドサイズの印刷物",
+        "media.manage.pkg_contents.tip.postcard": "はがき形式のカード",
+        "media.manage.pkg_contents.tip.sticker": "シールシートまたは個別ステッカー",
+        "media.manage.pkg_contents.tip.bookmark": "しおり形式の付属物",
+        "media.manage.pkg_contents.tip.lenticular": "見る角度によって画像が変わるレンチキュラーまたはホログラムカード",
+        "media.manage.pkg_contents.tip.photo_card": "アーティストの写真を印刷したカード。K-popアルバムに多く同梱",
+        "media.manage.pkg_contents.tip.film_cut": "フィルム形式で制作されたカードまたはプリント",
+        "media.manage.pkg_contents.tip.warranty_card": "正規品保証カード",
+        "media.manage.pkg_contents.tip.entry_form": "イベントやファンミーティングへの応募券",
         "media.manage.product.field.is_limited_edition.label": "限定版",
         "media.manage.product.field.edition_number.label": "ナンバリング",
         "media.manage.product.field.is_new_item.label": "新品",
@@ -28390,7 +28860,9 @@
         "ops.meta_sync.subtitle": "Discogs / ManiaDB 連携商品の不足フィールド（アーティスト、発売日、レーベル、カタログ、カバー、バーコード、トラックリスト）を補強します。",
         "ops.meta_sync.field.source.label": "対象ソース",
         "ops.meta_sync.field.limit.label": "処理件数(limit)",
+        "ops.meta_sync.field.delay.label": "API呼び出し間隔(秒)",
         "ops.meta_sync.field.only_missing.label": "不足フィールドのみ補強",
+        "ops.meta_sync.field.supplement_discogs.label": "Discogs付加情報を併用補強（フォーマット・マトリクス・識別子等）",
         "ops.meta_sync.action.reload": "同期状態を更新",
         "ops.meta_sync.action.run": "今すぐ同期実行",
         "common.domain.korea": "韓国",
@@ -29442,6 +29914,11 @@
         "media.manage.collectibles.status.registered": "登録完了: {label_id}",
         "media.manage.tracks.empty": "曲情報がありません。",
         "media.manage.tracks.count": "{count}曲",
+        "media.manage.tracks.action.add": "+ 曲を追加",
+        "media.manage.tracks.action.delete": "削除",
+        "media.manage.tracks.placeholder.title": "曲タイトル",
+        "media.manage.tracks.disc_label": "Disc {disc}",
+        "media.manage.tracks.side_label": "Side {side}",
         "operator.request.error.list_failed": "リクエスト曲一覧の読み込みに失敗しました",
         "operator.request.error.create_failed": "リクエスト曲の登録に失敗しました",
         "operator.request.error.update_failed": "リクエスト状態の変更に失敗しました",
@@ -29786,6 +30263,9 @@
     const PACKAGING_OPTIONS_BY_MEDIA = {
       VINYL: ["Single Jacket", "Gatefold", "Triple-fold", "Gimmick Sleeve", "Die-Cut Sleeve", "Pop-up Sleeve", "Box Set"],
       CD: ["Jewel Case", "Double Jewel", "Slim Jewel", "Digipak", "Paper Sleeve", "Slipcase", "Digibook", "Eco-pack", "DVD Size Digipak", "Keep Case", "Gimmick Case", "Box Set"],
+      CASSETTE: ["Standard Case", "Slipcase", "Box Set"],
+      EIGHT_TRACK: ["Standard"],
+      REEL: ["Standard Box"],
     };
 
     // 패키징 옵션 풍선도움말 (KO/EN/JA)
@@ -29814,6 +30294,17 @@
           "Gimmick Case": "특수 가공된 이형 케이스.",
           "Box Set": "박스에 담은 멀티 CD 에디션.",
         },
+        CASSETTE: {
+          "Standard Case": "일반 플라스틱 카세트 케이스.",
+          "Slipcase": "케이스를 감싸는 외부 종이 슬립케이스.",
+          "Box Set": "여러 카세트를 담은 박스 에디션.",
+        },
+        EIGHT_TRACK: {
+          "Standard": "표준 8트랙 카트리지 케이스.",
+        },
+        REEL: {
+          "Standard Box": "릴투릴 테이프용 표준 박스 케이스.",
+        },
       },
       en: {
         VINYL: {
@@ -29838,6 +30329,17 @@
           "Keep Case": "Plastic case in DVD keep-case form.",
           "Gimmick Case": "Special-effect or novelty case.",
           "Box Set": "Multi-CD edition packaged in a box.",
+        },
+        CASSETTE: {
+          "Standard Case": "Standard plastic cassette case.",
+          "Slipcase": "Outer cardboard slip-in sleeve over the case.",
+          "Box Set": "Multi-cassette edition in a box.",
+        },
+        EIGHT_TRACK: {
+          "Standard": "Standard 8-track cartridge housing.",
+        },
+        REEL: {
+          "Standard Box": "Standard reel-to-reel tape storage box.",
         },
       },
       ja: {
@@ -29864,6 +30366,17 @@
           "Gimmick Case": "特殊加工の異形ケース。",
           "Box Set": "複数 CD をまとめたボックスセット。",
         },
+        CASSETTE: {
+          "Standard Case": "標準のプラスチックカセットケース。",
+          "Slipcase": "ケースを包む外装紙スリップケース。",
+          "Box Set": "複数カセットをまとめたボックスセット。",
+        },
+        EIGHT_TRACK: {
+          "Standard": "標準の 8 トラックカートリッジケース。",
+        },
+        REEL: {
+          "Standard Box": "リールテープ用標準ボックスケース。",
+        },
       },
     };
 
@@ -29877,6 +30390,9 @@
       const v = String(mediaType || "").toLowerCase();
       if (/vinyl|lp|7"|10"/.test(v)) return "VINYL";
       if (/\bcd\b|compact\s*disc/.test(v)) return "CD";
+      if (/cassette/.test(v)) return "CASSETTE";
+      if (/8track|8-track/.test(v)) return "EIGHT_TRACK";
+      if (/reel/.test(v)) return "REEL";
       return null;
     }
 
@@ -29913,6 +30429,7 @@
       const isVinyl = /vinyl|7"|10"/i.test(mediaVal);
       setHiddenIfPresent("homeEditSpeedRpmWrap", !isVinyl);
       setHiddenIfPresent("homeEditDiscTypeWrap", !isVinyl);
+      setHiddenIfPresent("homeEditVinylMetaRow", !isVinyl);
       _renderPackagingOptions(mediaVal);
     }
 
@@ -31484,6 +32001,72 @@
       };
     }
 
+    function parseTracksFromText(text) {
+      const lines = String(text || "").split("\n");
+      const items = [];
+      let autoIdx = 0;
+      let currentSide = null;  // 'A', 'B', ... when [Side X] tag seen
+      let sideTrackIdx = 0;
+      let currentDisc = null;  // 1, 2, ... when [Disc N] tag seen
+      let discTrackIdx = 0;
+      for (const rawLine of lines) {
+        // Strip leading bullet markers: *, •, -, ·
+        let line = rawLine.trim().replace(/^[*•\-·]\s+/, "");
+        if (!line) continue;
+        autoIdx++;
+        let rest = line;
+        let duration = "";
+        // Extract duration at end: 3:45 / 1:03:45
+        const durMatch = rest.match(/\s+(\d{1,2}:\d{2}(?::\d{2})?)$/);
+        if (durMatch) {
+          duration = durMatch[1];
+          rest = rest.slice(0, -durMatch[0].length).trim();
+        }
+        // Detect and strip [Side X] / (Side X) tags → switch to side notation
+        const sideTagMatch = rest.match(/[\[(](?:Side\s*([A-Za-z])|([A-Za-z])\s*Side)[\])]/i);
+        if (sideTagMatch) {
+          currentSide = (sideTagMatch[1] || sideTagMatch[2]).toUpperCase();
+          sideTrackIdx = 0;
+          currentDisc = null;
+          rest = rest.replace(sideTagMatch[0], "").trim();
+        }
+        // Detect and strip [Disc N] / (Disc N) tags → switch to disc notation
+        const discTagMatch = rest.match(/[\[(]Disc\s*(\d+)[\])]/i);
+        if (discTagMatch) {
+          currentDisc = Number(discTagMatch[1]);
+          discTrackIdx = 0;
+          currentSide = null;
+          rest = rest.replace(discTagMatch[0], "").trim();
+        }
+        // If line was only a marker tag, skip (no track item)
+        if (!rest) { autoIdx--; continue; }
+        // Extract position at start (priority order):
+        //   disc-track:  1-1.  1-1  2-3.
+        //   vinyl/alpha: A1  B2  A1.
+        //   numbered:    1.  12  3
+        let position = String(autoIdx);
+        const posMatch = rest.match(/^(\d+-\d+\.?|[A-Za-z]-\d+\.?|[A-Ga-g]?\d+[a-z]?\.?)\s+/i);
+        if (posMatch) {
+          // Consume the position token from the title text
+          rest = rest.slice(posMatch[0].length).trim();
+        }
+        if (currentSide !== null) {
+          // Side mode: override position with A-1, B-2, ...
+          sideTrackIdx++;
+          position = `${currentSide}-${sideTrackIdx}`;
+        } else if (currentDisc !== null) {
+          // Disc mode: override position with 1-1, 2-3, ...
+          discTrackIdx++;
+          position = `${currentDisc}-${discTrackIdx}`;
+        } else if (posMatch) {
+          position = posMatch[1].replace(/\.$/, "");
+        }
+        if (!rest) continue;
+        items.push({ position, title: rest, duration });
+      }
+      return items;
+    }
+
     function renderHomeTrackInfoPanel() {
       const panel = $("homeEditTrackPanel");
       const summary = $("homeEditTrackInfoSummary");
@@ -31497,45 +32080,49 @@
         return;
       }
 
-      const trackItems = cleanDictList(homeLoadedMusicDetail?.track_items);
-      const trackLines = splitLineList($("editTrackList").value);
-      const rows = [];
-
-      if (trackItems.length) {
-        for (let idx = 0; idx < trackItems.length; idx += 1) {
-          const row = trackItems[idx] || {};
-          const title = String(row.title || "").trim();
-          if (!title) continue;
-          rows.push({
-            position: String(row.position || idx + 1).trim() || String(idx + 1),
-            title,
-            duration: String(row.duration || "").trim(),
-          });
-        }
-      }
-
-      if (!rows.length && trackLines.length) {
-        trackLines.forEach((title, idx) => {
-          rows.push({
-            position: String(idx + 1),
-            title,
-            duration: "",
-          });
-        });
-      }
-
-      summary.textContent = rows.length ? t("media.manage.tracks.count", { count: rows.length }) : t("media.manage.tracks.empty");
+      const rows = parseTracksFromText($("editTrackList").value);
+      summary.textContent = rows.length
+        ? t("media.manage.tracks.count", { count: rows.length })
+        : t("media.manage.tracks.empty");
       if (!rows.length) {
         list.innerHTML = `<div class="muted">${escapeHtml(t("media.manage.tracks.empty"))}</div>`;
         return;
       }
-      list.innerHTML = rows.map((row) => `
-        <div class="home-edit-track-row">
-          <div class="home-edit-track-pos">${escapeHtml(row.position)}</div>
-          <div class="home-edit-track-title">${escapeHtml(row.title)}</div>
-          <div class="home-edit-track-duration">${escapeHtml(row.duration || "")}</div>
-        </div>
-      `).join("");
+      // Detect disc-track (e.g. "1-1") or side-track (e.g. "A-1") grouping
+      const hasDiscTrack = rows.some((row) => /^\d+-\d+$/.test(String(row.position || "")));
+      const hasSideTrack = rows.some((row) => /^[A-Z]-\d+$/.test(String(row.position || "")));
+      const trackRow = (row) => `<div class="home-edit-track-row">
+        <div class="home-edit-track-pos">${escapeHtml(row.position)}</div>
+        <div class="home-edit-track-title">${escapeHtml(row.title)}</div>
+        <div class="home-edit-track-duration">${escapeHtml(row.duration)}</div>
+      </div>`;
+      if (hasSideTrack) {
+        let currentGroup = null;
+        list.innerHTML = rows.map((row) => {
+          const sideMatch = String(row.position || "").match(/^([A-Z])-(\d+)$/);
+          const group = sideMatch ? sideMatch[1] : null;
+          let header = "";
+          if (group && group !== currentGroup) {
+            currentGroup = group;
+            header = `<div class="home-edit-track-disc-header">${escapeHtml(t("media.manage.tracks.side_label", { side: group }))}</div>`;
+          }
+          return header + trackRow(row);
+        }).join("");
+      } else if (hasDiscTrack) {
+        let currentDisc = null;
+        list.innerHTML = rows.map((row) => {
+          const discMatch = String(row.position || "").match(/^(\d+)-(\d+)$/);
+          const disc = discMatch ? discMatch[1] : null;
+          let header = "";
+          if (disc && disc !== currentDisc) {
+            currentDisc = disc;
+            header = `<div class="home-edit-track-disc-header">${escapeHtml(t("media.manage.tracks.disc_label", { disc }))}</div>`;
+          }
+          return header + trackRow(row);
+        }).join("");
+      } else {
+        list.innerHTML = rows.map(trackRow).join("");
+      }
     }
 
     function applyCandidateCollectorToHomeDetail(candidate) {
@@ -31866,6 +32453,41 @@
       $("appHero")?.classList.remove("admin-shell-hero--compact");
       $("opsHomeHero")?.classList.remove("ops-home-hero--compact");
     }
+
+    /* ── Ops hero background catalog grid ── */
+    (function buildOpsHeroGrid() {
+      const grid = document.getElementById("opsHeroGrid");
+      if (!grid) return;
+      // Fill enough cells: 16 cols × rows determined by container height.
+      // We generate 16×6 = 96 cells; extras are clipped by overflow:hidden.
+      const TOTAL = 96;
+      const ACCENT = new Set([3, 11, 18, 26, 34, 42, 50, 59, 67, 75, 83]);
+      const SKY    = new Set([7, 15, 23, 31, 39, 47, 55, 63, 71, 79, 87]);
+      const DURS   = [3.2, 4.4, 5.0, 3.8, 4.6, 2.9, 5.4, 3.5, 4.1, 2.7];
+      const DELAYS = [-0.4, -1.2, -2.0, -2.8, -0.8, -1.6, -2.4, -3.2, -0.2, -1.8, -2.6, -0.6, -1.4, -3.0, -0.0, -2.2];
+      for (let i = 0; i < TOTAL; i++) {
+        const cell = document.createElement("span");
+        cell.className = "ops-cell" +
+          (ACCENT.has(i) ? " is-accent" : "") +
+          (SKY.has(i)    ? " is-sky"    : "");
+        cell.style.setProperty("--cell-dur",   DURS[i % DURS.length] + "s");
+        cell.style.setProperty("--cell-delay", DELAYS[i % DELAYS.length] + "s");
+        grid.appendChild(cell);
+      }
+    })();
+
+    /* ── Ops home live clock ── */
+    (function startOpsHeroClock() {
+      const el = document.getElementById("opsHeroClock");
+      if (!el) return;
+      const fmt = new Intl.DateTimeFormat("ko-KR", {
+        month: "numeric", day: "numeric", weekday: "short",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+      });
+      function tick() { el.textContent = fmt.format(new Date()); }
+      tick();
+      setInterval(tick, 1000);
+    })();
 
     const pageHelpDrawerState = {
       open: false,
@@ -34298,6 +34920,7 @@
     }
 
     async function openMediaSearchDetailManage(masterId, ownedItemId) {
+      openAdminConsole("media", { remember: false, mediaMode: "manage" });
       const targetMasterId = Number(masterId || 0);
       const targetOwnedItemId = Number(ownedItemId || 0);
       let resolvedMasterId = targetMasterId;
@@ -35729,7 +36352,6 @@
     }
 
     function buildPurchaseImportCandidateHtml(queueId, state, candidate, candidateIdx) {
-      const selected = Number(state?.selectedIdx) === Number(candidateIdx);
       const artistText = String(candidate?.artist_or_brand || "").trim() || t("common.unknown");
       const itemText = String(candidate?.title || "").trim() || t("common.no_title");
       const title = `${artistText} - ${itemText}`;
@@ -35745,7 +36367,7 @@
       const discogsLink = discogsReleaseLinkHtml(candidate?.source, candidate?.external_id, "Discogs");
       const discogsMetaHtml = buildDiscogsStandardMetaHtml(candidate, { includeOwnedCount: true, ownedCountClassName: "source-workbench-owned-pill" });
       return `
-        <div class="source-workbench-candidate ${selected ? "selected" : ""}">
+        <div class="source-workbench-candidate">
           <div class="source-workbench-cover">${cover}</div>
           <div class="source-workbench-candidate-main">
             <div class="source-workbench-candidate-title">${escapeHtml(artistText)} - ${escapeHtml(itemText)}</div>
@@ -35767,7 +36389,7 @@
             </div>
           </div>
           <div class="source-workbench-candidate-actions">
-            <button class="btn ghost tiny" type="button" data-purchase-import-select-candidate="${queueId}:${candidateIdx}">${selected ? t("media.source.action.selected") : t("media.source.action.select")}</button>
+            <button class="btn tiny" type="button" data-purchase-import-create-direct="${queueId}:${candidateIdx}">${escapeHtml(t("media.register.purchase.queue.action.create_from_candidate"))}</button>
           </div>
         </div>
       `;
@@ -35809,7 +36431,6 @@
       } else if (Array.isArray(state?.candidates) && state.candidates.length) {
         bodyHtml = `<div class="source-workbench-candidates">${state.candidates.map((candidate, idx) => buildPurchaseImportCandidateHtml(queueId, state, candidate, idx)).join("")}</div>`;
       }
-      const hasSelected = Number(state?.selectedIdx) >= 0 && Array.isArray(state?.candidates) && state.candidates[state.selectedIdx];
       return `
         <tr class="purchase-import-candidate-row">
           <td colspan="9">
@@ -35821,22 +36442,11 @@
                 </div>
                 <div class="row row-gap-6">
                   <button class="btn ghost tiny" type="button" data-purchase-import-enrich="${queueId}">${escapeHtml(t("media.register.purchase.queue.action.enrich"))}</button>
-                  <button class="btn ghost tiny" type="button" data-purchase-import-candidates="${queueId}">${escapeHtml(state?.loading ? t("media.register.purchase.queue.details.loading") : t("media.register.purchase.queue.action.lookup_candidates"))}</button>
                   <button class="btn ghost tiny" type="button" data-purchase-import-apply-artist="${queueId}" ${canApplyArtist ? "" : "disabled"}>${escapeHtml(t("media.register.purchase.queue.action.apply_candidate_artist"))}</button>
-                  <button class="btn tiny" type="button" data-purchase-import-create-candidate="${queueId}" ${hasSelected ? "" : "disabled"}>${escapeHtml(t("media.register.purchase.queue.action.create_from_candidate"))}</button>
                 </div>
               </div>
               ${purchaseImportAmazonMetaHtml(row)}
               <div class="purchase-import-candidate-search-row">
-                <div class="purchase-import-candidate-search-field purchase-import-candidate-search-field--source">
-                  <label class="mini" for="purchaseImportSourceOverride-${queueId}" data-i18n="media.register.purchase.queue.field.candidate_source.label">${escapeHtml(t("media.register.purchase.queue.field.candidate_source.label"))}</label>
-                  <select id="purchaseImportSourceOverride-${queueId}" data-purchase-import-source="${queueId}">
-                    <option value="AUTO" ${String(state?.source || "AUTO").trim().toUpperCase() === "AUTO" ? "selected" : ""}>AUTO</option>
-                    <option value="DISCOGS" ${String(state?.source || "AUTO").trim().toUpperCase() === "DISCOGS" ? "selected" : ""}>DISCOGS</option>
-                    <option value="MANIADB" ${String(state?.source || "AUTO").trim().toUpperCase() === "MANIADB" ? "selected" : ""}>MANIADB</option>
-                    <option value="ALADIN" ${String(state?.source || "AUTO").trim().toUpperCase() === "ALADIN" ? "selected" : ""}>ALADIN</option>
-                  </select>
-                </div>
                 <div class="purchase-import-candidate-search-field">
                   <label class="mini" for="purchaseImportArtistOverride-${queueId}">${escapeHtml(t("media.register.purchase.queue.field.artist_override.label"))}</label>
                   <input id="purchaseImportArtistOverride-${queueId}" type="text" value="${escapeHtml(String(state?.artistName || row?.artist_name || '').trim())}" data-purchase-import-artist="${queueId}" />
@@ -35848,6 +36458,14 @@
                 <div class="purchase-import-candidate-search-field">
                   <label class="mini" for="purchaseImportQueryOverride-${queueId}">${escapeHtml(t("media.register.purchase.queue.field.query_override.label"))}</label>
                   <input id="purchaseImportQueryOverride-${queueId}" type="text" value="${escapeHtml(String(state?.queryOverride || '').trim())}" data-purchase-import-query="${queueId}" />
+                </div>
+                <div class="purchase-import-candidate-search-field">
+                  <label class="mini">${escapeHtml(t("media.register.purchase.queue.field.candidate_source.label"))}</label>
+                  <div class="row row-gap-4">
+                    <button class="btn ghost tiny" type="button" data-purchase-import-candidates-source="${queueId}:DISCOGS">Discogs</button>
+                    <button class="btn ghost tiny" type="button" data-purchase-import-candidates-source="${queueId}:MANIADB">매니아디비</button>
+                    <button class="btn ghost tiny" type="button" data-purchase-import-candidates-source="${queueId}:ALADIN">알라딘</button>
+                  </div>
                 </div>
               </div>
               ${bodyHtml}
@@ -36220,11 +36838,12 @@
       }));
     }
 
-    async function createOwnedItemFromPurchaseQueueCandidate(queueId) {
+    async function createOwnedItemFromPurchaseQueueCandidate(queueId, candidateIdx = null) {
       const id = Number(queueId || 0);
       if (!id) return;
       const state = purchaseImportQueueStateFor(id);
-      const candidate = Array.isArray(state.candidates) ? state.candidates[state.selectedIdx] : null;
+      const idx = (candidateIdx !== null && Number.isFinite(Number(candidateIdx))) ? Number(candidateIdx) : state.selectedIdx;
+      const candidate = Array.isArray(state.candidates) ? state.candidates[idx] : null;
       if (!candidate) {
         setStatus("purchaseImportQueueStatus", "err", t("media.register.purchase.queue.status.create_candidate_requires_selection"));
         return;
@@ -40681,15 +41300,22 @@
 
     async function runMetadataSyncNow() {
       const limit = Math.max(1, Math.min(5000, Number($("metaSyncLimit").value || 300)));
+      const inter_item_delay_sec = Math.max(0, Math.min(60, Number($("metaSyncDelay").value ?? 1.5)));
       const payload = {
         source: $("metaSyncSource").value,
         only_missing: $("metaSyncOnlyMissing").checked,
+        supplement_discogs: $("metaSyncSupplementDiscogs").checked,
         limit,
-        include_item_results: false,
+        inter_item_delay_sec,
+        include_item_results: true,
       };
 
       try {
         setStatus("metaSyncStatusBox", "ok", t("ops.meta_sync.status.run_loading"));
+        const logEl = $("metaSyncItemLog");
+        if (logEl) { logEl.hidden = true; logEl.innerHTML = ""; }
+
+        // POST to start — server returns 202 immediately (avoids Cloudflare 524 timeout)
         const res = await fetch("/metadata-sync/run", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -40697,19 +41323,282 @@
         });
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || t("ops.meta_sync.status.run_failed"));
-        setStatus(
-          "metaSyncStatusBox",
-          "ok",
-          t("ops.meta_sync.status.run_complete", {
-            processed: data.processed_count,
-            updated: data.updated_count,
-            skipped: data.skipped_count,
-            failed: data.failed_count,
-          })
-        );
-        await loadMetadataSyncStatus();
+
+        // Poll /metadata-sync/status until running=false; render items incrementally
+        let renderedCount = 0;
+        let dot = 0;
+        while (true) {
+          await new Promise(r => setTimeout(r, 2000));
+          try {
+            const sRes = await fetch("/metadata-sync/status");
+            const sData = await safeJson(sRes);
+            if (!sRes.ok) break;
+            if (sData.running) {
+              dot = (dot + 1) % 4;
+              const liveItems = sData.in_progress_items || [];
+              const total = liveItems.length;
+              setStatus("metaSyncStatusBox", "ok",
+                t("ops.meta_sync.status.run_loading") + " " + ".".repeat(dot + 1) +
+                (total > 0 ? `  (${total})` : "")
+              );
+              // Append only newly processed items
+              if (liveItems.length > renderedCount) {
+                appendMetaSyncItemLogRows(liveItems.slice(renderedCount));
+                renderedCount = liveItems.length;
+              }
+              continue;
+            }
+            // Completed — render any remaining items from final result
+            const result = sData.last_result || {};
+            const finalItems = result.item_results || [];
+            if (finalItems.length > renderedCount) {
+              appendMetaSyncItemLogRows(finalItems.slice(renderedCount));
+            }
+            setStatus(
+              "metaSyncStatusBox",
+              "ok",
+              t("ops.meta_sync.status.run_complete", {
+                processed: result.processed_count ?? 0,
+                updated: result.updated_count ?? 0,
+                skipped: result.skipped_count ?? 0,
+                failed: result.failed_count ?? 0,
+              })
+            );
+            updateMetaSyncItemLogFooter(finalItems);
+            await loadMetadataSyncStatus();
+            break;
+          } catch (_) {
+            break;
+          }
+        }
       } catch (err) {
         setStatus("metaSyncStatusBox", "err", errorMessageText(err, t("ops.meta_sync.status.run_failed")));
+      }
+    }
+
+    function _buildSyncLogRow(item) {
+      const STATUS_CLASS = { UPDATED: "updated", SKIPPED: "skipped", FAILED: "failed" };
+      const row = document.createElement("div");
+      row.className = "sync-log-row";
+      const status = String(item.status || "").toUpperCase();
+      const cls = STATUS_CLASS[status] || "skipped";
+
+      let productHtml = "";
+      const name = String(item.display_name || "").trim();
+      const artist = String(item.artist_or_brand || "").trim();
+      const catalog = String(item.catalog_no || "").trim();
+      if (name) {
+        productHtml = `<span class="sync-log-product-name">${name}</span>`;
+        if (artist && artist !== name) productHtml += `<br><span style="color:var(--muted);font-size:0.65rem">${artist}</span>`;
+        if (catalog) productHtml += `<span style="color:var(--muted);font-size:0.65rem"> · ${catalog}</span>`;
+      } else if (artist || catalog) {
+        productHtml = `<span class="sync-log-product-name">${artist || "-"}</span>`;
+        if (catalog) productHtml += `<br><span style="color:var(--muted);font-size:0.65rem">${catalog}</span>`;
+      } else {
+        productHtml = `<span style="color:var(--muted)">-</span>`;
+      }
+
+      let detailHtml = "";
+      if (status === "UPDATED" && Array.isArray(item.updated_fields) && item.updated_fields.length > 0) {
+        const tags = item.updated_fields.map(f => `<span class="field-tag">${f}</span>`).join("");
+        detailHtml = `<div class="fields">${tags}</div>`;
+      } else if (item.reason) {
+        detailHtml = `<span style="color:var(--muted)">${item.reason}</span>`;
+      } else {
+        detailHtml = `<span style="color:var(--muted)">${item.source_external_id || "-"}</span>`;
+      }
+
+      row.innerHTML = `
+        <span><span class="sync-log-badge ${cls}">${status}</span></span>
+        <span class="sync-log-id">#${item.owned_item_id}</span>
+        <span class="sync-log-source">${item.source_code}</span>
+        <span class="sync-log-detail">${productHtml}</span>
+        <span class="sync-log-detail">${detailHtml}</span>
+      `;
+      return row;
+    }
+
+    function _getOrCreateSyncLogBody() {
+      const el = $("metaSyncItemLog");
+      if (!el) return null;
+      el.hidden = false;
+      if (!el.querySelector(".sync-item-log-header")) {
+        const header = document.createElement("div");
+        header.className = "sync-item-log-header";
+        header.innerHTML = `<span>상태</span><span>ID</span><span>소스</span><span>상품</span><span>내용</span>`;
+        el.appendChild(header);
+        const body = document.createElement("div");
+        body.className = "sync-item-log-body";
+        el.appendChild(body);
+        const foot = document.createElement("div");
+        foot.className = "sync-log-count";
+        el.appendChild(foot);
+      }
+      return el.querySelector(".sync-item-log-body");
+    }
+
+    function appendMetaSyncItemLogRows(newItems) {
+      if (!newItems || newItems.length === 0) return;
+      const body = _getOrCreateSyncLogBody();
+      if (!body) return;
+      newItems.forEach(item => body.appendChild(_buildSyncLogRow(item)));
+      // Scroll to bottom to show newest items
+      const el = $("metaSyncItemLog");
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+
+    function updateMetaSyncItemLogFooter(allItems) {
+      const el = $("metaSyncItemLog");
+      if (!el) return;
+      const foot = el.querySelector(".sync-log-count");
+      if (!foot) return;
+      const updated = (allItems || []).filter(i => i.status === "UPDATED").length;
+      const skipped = (allItems || []).filter(i => i.status === "SKIPPED").length;
+      const failed  = (allItems || []).filter(i => i.status === "FAILED").length;
+      foot.textContent = `총 ${(allItems || []).length}건 — 반영 ${updated} / 스킵 ${skipped} / 실패 ${failed}`;
+    }
+
+    function renderMetaSyncItemLog(items) {
+      const el = $("metaSyncItemLog");
+      if (!el) return;
+      el.innerHTML = "";
+      if (!items || items.length === 0) { el.hidden = true; return; }
+      appendMetaSyncItemLogRows(items);
+      updateMetaSyncItemLogFooter(items);
+    }
+
+    // -----------------------------------------------------------------------
+    // 알라딘 → Discogs 마스터 매칭 백필
+    // -----------------------------------------------------------------------
+    let _aladinDiscogsBackfillPoller = null;
+
+    function renderAladinDiscogsBackfillStatus(data) {
+      const summaryEl = $("aladinDiscogsBackfillSummary");
+      const listEl = $("aladinDiscogsBackfillMatchedList");
+      if (!summaryEl) return;
+
+      const running = Boolean(data?.running);
+      const lastErr = String(data?.last_error || "").trim();
+      const r = data?.last_result;
+
+      if (!r && !lastErr) {
+        summaryEl.textContent = running ? "⏳ 실행 중..." : "실행 이력 없음";
+        if (listEl) listEl.style.display = "none";
+        return;
+      }
+
+      if (lastErr && !r) {
+        summaryEl.textContent = `오류: ${lastErr}`;
+        if (listEl) listEl.style.display = "none";
+        return;
+      }
+
+      const dryTag = r.dry_run ? " [DRY-RUN]" : "";
+      const finishedAt = r.finished_at ? ` | 완료: ${r.finished_at}` : (running ? " | 실행 중..." : "");
+      summaryEl.textContent =
+        `${dryTag} 스캔 ${r.scanned}건 | 매칭 신규 ${r.master_created}건 | 이미연결 ${r.already_discogs}건 | detail업데이트 ${r.detail_updated}건 | crossref없음 ${r.no_crossref}건 | 오류 ${r.error}건${finishedAt}`;
+
+      const matched = Array.isArray(r.matched_items) ? r.matched_items : [];
+      if (!listEl) return;
+      if (matched.length === 0) {
+        listEl.style.display = "none";
+        return;
+      }
+      listEl.style.display = "";
+      listEl.innerHTML = `<div class="result-head u-mt-8"><strong>매칭된 항목 (${matched.length}건)</strong></div>` +
+        `<table style="width:100%;font-size:0.82em;border-collapse:collapse;margin-top:6px">` +
+        `<thead><tr style="border-bottom:1px solid var(--border)">` +
+        `<th style="text-align:left;padding:3px 6px">ID</th>` +
+        `<th style="text-align:left;padding:3px 6px">아티스트 / 타이틀</th>` +
+        `<th style="text-align:left;padding:3px 6px">포맷</th>` +
+        `<th style="text-align:left;padding:3px 6px">바코드</th>` +
+        `<th style="text-align:left;padding:3px 6px">레이블</th>` +
+        `<th style="text-align:left;padding:3px 6px">액션</th>` +
+        `</tr></thead><tbody>` +
+        matched.map(m => {
+          const discogsUrl = m.discogs_release_id
+            ? `<a href="https://www.discogs.com/release/${escapeHtml(String(m.discogs_release_id))}" target="_blank" rel="noreferrer">${escapeHtml(String(m.discogs_release_id))}</a>`
+            : "-";
+          const actionLabel = m.action === "created" ? "마스터 생성" : m.action === "dry_run" ? "DRY-RUN" : "detail만 업데이트";
+          return `<tr style="border-bottom:1px solid var(--border-light)">` +
+            `<td style="padding:3px 6px">${m.owned_item_id} / ${discogsUrl}</td>` +
+            `<td style="padding:3px 6px">${escapeHtml(String(m.artist || ""))} — ${escapeHtml(String(m.title || ""))}</td>` +
+            `<td style="padding:3px 6px">${escapeHtml(String(m.format || "-"))}</td>` +
+            `<td style="padding:3px 6px">${escapeHtml(String(m.barcode || "-"))}</td>` +
+            `<td style="padding:3px 6px">${escapeHtml(String(m.label || "-"))}</td>` +
+            `<td style="padding:3px 6px">${actionLabel}</td>` +
+            `</tr>`;
+        }).join("") +
+        `</tbody></table>`;
+    }
+
+    async function loadAladinDiscogsBackfillStatus() {
+      try {
+        setStatus("aladinDiscogsBackfillStatusBox", "ok", "상태 확인 중...");
+        const res = await fetch("/aladin-discogs-backfill/status");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || "상태 조회 실패");
+        renderAladinDiscogsBackfillStatus(data);
+
+        if (data.running) {
+          setStatus("aladinDiscogsBackfillStatusBox", "ok", "⏳ 실행 중... (자동 폴링 중)");
+          _startAladinDiscogsBackfillPoller();
+        } else {
+          setStatus("aladinDiscogsBackfillStatusBox", data.last_error ? "err" : "ok",
+            data.last_error ? `오류: ${data.last_error}` : "상태 확인 완료");
+          _stopAladinDiscogsBackfillPoller();
+        }
+      } catch (err) {
+        setStatus("aladinDiscogsBackfillStatusBox", "err", errorMessageText(err, "상태 조회 실패"));
+      }
+    }
+
+    function _startAladinDiscogsBackfillPoller() {
+      if (_aladinDiscogsBackfillPoller) return;
+      _aladinDiscogsBackfillPoller = setInterval(async () => {
+        try {
+          const res = await fetch("/aladin-discogs-backfill/status");
+          const data = await safeJson(res);
+          renderAladinDiscogsBackfillStatus(data);
+          if (!data.running) {
+            _stopAladinDiscogsBackfillPoller();
+            const runBtn = $("aladinDiscogsBackfillRunBtn");
+            if (runBtn) runBtn.disabled = false;
+            setStatus("aladinDiscogsBackfillStatusBox", data.last_error ? "err" : "ok",
+              data.last_error ? `오류: ${data.last_error}` : "✅ 완료");
+          }
+        } catch (_) {}
+      }, 5000);
+    }
+
+    function _stopAladinDiscogsBackfillPoller() {
+      if (_aladinDiscogsBackfillPoller) {
+        clearInterval(_aladinDiscogsBackfillPoller);
+        _aladinDiscogsBackfillPoller = null;
+      }
+    }
+
+    async function runAladinDiscogsBackfill() {
+      const dryRun = $("aladinDiscogsBackfillDryRun").checked;
+      const sleepSec = parseFloat($("aladinDiscogsBackfillSleep").value || "2.0");
+      const runBtn = $("aladinDiscogsBackfillRunBtn");
+
+      try {
+        setStatus("aladinDiscogsBackfillStatusBox", "ok", "⏳ 매칭 시작 요청 중...");
+        if (runBtn) runBtn.disabled = true;
+        const url = `/aladin-discogs-backfill/run?dry_run=${dryRun}&sleep_sec=${sleepSec}`;
+        const res = await fetch(url, { method: "POST" });
+        const data = await safeJson(res);
+        if (!res.ok) {
+          if (runBtn) runBtn.disabled = false;
+          throw new Error(data.detail || "실행 요청 실패");
+        }
+        setStatus("aladinDiscogsBackfillStatusBox", "ok",
+          `⏳ 실행 중${dryRun ? " (DRY-RUN)" : ""}... 완료까지 수분 소요. 자동으로 결과를 불러옵니다.`);
+        _startAladinDiscogsBackfillPoller();
+      } catch (err) {
+        if (runBtn) runBtn.disabled = false;
+        setStatus("aladinDiscogsBackfillStatusBox", "err", errorMessageText(err, "실행 요청 실패"));
       }
     }
 
@@ -43083,7 +43972,6 @@
       setHiddenIfPresent("homeEditMusicMetaFieldsA", isSourceManaged);
       setHiddenIfPresent("homeEditMusicMetaFieldsB", isSourceManaged);
       setHiddenIfPresent("homeEditMusicMetaFieldsC", isSourceManaged);
-      setHiddenIfPresent("homeEditTrackListWrap", isSourceManaged);
       if (!isMusic) {
         setDisplayIfPresent("homeEditMusicSourceSummary", "none");
         setDisplayIfPresent("homeEditMusicSourceTracksWrap", "none");
@@ -43220,7 +44108,7 @@
       $("quickDomainCode").value = "";
       $("quickPurchasePrice").value = "";
       $("quickCurrencyCode").value = "KRW";
-      $("quickIsSecondHand").checked = false;
+      $("quickIsSecondHand").checked = true;
       $("quickOpenEditAfterCreate").checked = false;
       setStatus("quickCreateStatus", "ok", "");
     }
@@ -43781,6 +44669,28 @@
         setTextIfPresent("homeDashMusic", formatCount(data.music_items));
         setTextIfPresent("homeDashGoods", formatCount(data.goods_items));
         setTextIfPresent("homeDashSigned", formatCount(data.signed_items));
+        setTextIfPresent("homeDashDirectSigned", formatCount(data.direct_signed_items ?? 0));
+        setTextIfPresent("homeDashPurchaseSigned", formatCount(data.purchase_signed_items ?? 0));
+        setTextIfPresent("homeDashLimited", formatCount(data.limited_items ?? 0));
+        setTextIfPresent("homeDashGenreMissing", formatCount(data.genre_missing_items ?? 0));
+        setTextIfPresent("homeDashFormatMissing", formatCount(data.format_missing_items ?? 0));
+        setTextIfPresent("homeDashCatalogMissing", formatCount(data.catalog_missing_items ?? 0));
+        setTextIfPresent("homeDashLoaned", formatCount(data.loaned_items ?? 0));
+        setTextIfPresent("homeDashSold", formatCount(data.sold_items ?? 0));
+        setTextIfPresent("homeDashLost", formatCount(data.lost_items ?? 0));
+        {
+          const pcEl = document.getElementById("homeDashPressingCountry");
+          if (pcEl) {
+            const countries = (data.by_pressing_country || []).slice(0, 5);
+            if (countries.length === 0) {
+              pcEl.textContent = "—";
+            } else {
+              pcEl.innerHTML = countries.map(c =>
+                `<span><em>${c.value}</em> ${formatCount(c.count)}</span>`
+              ).join("");
+            }
+          }
+        }
         setTextIfPresent("homeDashSecondHand", formatCount(data.second_hand_items));
         setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
         const placementRate = Number(data.in_collection_items || 0) > 0
@@ -44381,7 +45291,7 @@
     function buildRegisterLookupSourceCandidates(source) {
       const primary = String(source || "AUTO").trim().toUpperCase() || "AUTO";
       if (primary === "AUTO") return ["AUTO"];
-      const fallbacks = ["DISCOGS", "MANIADB", "ALADIN"].filter((sourceCode) => sourceCode !== primary);
+      const fallbacks = ["DISCOGS", "MANIADB", "ALADIN", "MUSICBRAINZ"].filter((sourceCode) => sourceCode !== primary);
       return [primary, ...fallbacks];
     }
 
@@ -44890,8 +45800,8 @@
         const masterCoverResolved = masterData?.cover_image_url ?? items[0]?.cover_image_url ?? null;
         homeMasterInfo = {
           relation_type: "ALBUM_MASTER_BIND",
-          source: context.source || null,
-          master_external_id: context.masterExternalId || null,
+          source: context.source || masterData?.source_code || null,
+          master_external_id: context.masterExternalId || masterData?.source_master_id || null,
           album_master_id: masterId,
           title: masterTitleResolved,
           artist_or_brand: masterArtistResolved,
@@ -44899,6 +45809,7 @@
           cover_image_url: masterCoverResolved,
           master_source_code: masterData?.source_code || null,
           master_source_id: masterData?.source_master_id || null,
+          master_release_id: masterData?.source_release_id || null,
           items,
           collectibles,
         };
@@ -46362,9 +47273,14 @@
       }
       // 원본 경로: 현재 선택된 상품의 개별 릴리즈 링크 (상품 변경 시 함께 갱신)
       // DISCOGS는 마스터 링크(discogs.com/master/*)가 이미 있으므로 릴리즈 링크 미표시
+      // 단, ALADIN 입수건이고 마스터가 DISCOGS인 경우 Discogs 릴리즈 링크를 "원본 릴리즈"로 표시
       const itemSrc = String(homeSelectedSourceCode || "").trim().toUpperCase();
       const itemExtId = String(homeSelectedSourceExternalId || "").trim();
-      if (itemSrc !== "DISCOGS") {
+      const masterReleaseId = String(homeMasterInfo?.master_release_id || "").trim();
+      if (itemSrc === "ALADIN" && msc === "DISCOGS" && masterReleaseId) {
+        const releaseLink = `<a href="https://www.discogs.com/release/${encodeURIComponent(masterReleaseId)}" target="_blank" rel="noreferrer noopener">원본 릴리즈</a>`;
+        masterLinkParts.push(releaseLink);
+      } else if (itemSrc !== "DISCOGS") {
         const releaseLink = itemSourceLinkHtml(itemSrc, itemExtId, "원본 릴리즈");
         if (releaseLink) masterLinkParts.push(releaseLink);
       }
@@ -46858,7 +47774,27 @@
       setConditionSelectValue("editCoverCondition", data.music_detail?.cover_condition || "");
       setConditionSelectValue("editDiscCondition", data.music_detail?.disc_condition || "");
       $("editCoverImageUrl").value = data.music_detail?.cover_image_url || "";
-      $("editTrackList").value = Array.isArray(data.music_detail?.track_list) ? data.music_detail.track_list.join("\n") : "";
+      {
+        const tl = Array.isArray(data.music_detail?.track_list) ? data.music_detail.track_list : [];
+        const ti = Array.isArray(data.music_detail?.track_items) ? data.music_detail.track_items : [];
+        const tiToText = (items) => items.map((row) => {
+          const pos = String(row.position || "").trim();
+          const title = String(row.title || "").trim();
+          const dur = String(row.duration || "").trim();
+          return [pos, title, dur].filter(Boolean).join(" ");
+        }).join("\n");
+        // Prefer track_items when they have meaningful positions (disc-track / vinyl alpha)
+        const hasRichPos = ti.some((row) => /\d+-\d+|[A-Za-z]-\d+|[A-Ga-g]\d/i.test(String(row.position || "")));
+        if (ti.length && hasRichPos) {
+          $("editTrackList").value = tiToText(ti);
+        } else if (tl.length) {
+          $("editTrackList").value = tl.join("\n");
+        } else if (ti.length) {
+          $("editTrackList").value = tiToText(ti);
+        } else {
+          $("editTrackList").value = "";
+        }
+      }
       const goodsImages = Array.isArray(data.goods_detail?.image_urls) ? data.goods_detail.image_urls : [];
       const goodsPrimary = String(data.goods_detail?.primary_image_url || "").trim();
       $("editGoodsImageUrls").value = joinLineList(goodsImages.length ? goodsImages : (goodsPrimary ? [goodsPrimary] : []));
@@ -47001,10 +47937,8 @@
         const collectorBase = buildCollectorPayload(homeSelectedSourceCode, homeLoadedMusicDetail || {});
         const editRunout = splitRunoutList($("editRunoutMatrix").value);
         const editPressingInput = $("editPressingCountry").value.trim();
-        const tracks = $("editTrackList").value
-          .split("\n")
-          .map((v) => v.trim())
-          .filter((v) => v);
+        const editedTrackItems = parseTracksFromText($("editTrackList").value);
+        const trackList = editedTrackItems.map((item) => item.title);
         payload.music_detail = {
           format_name: $("editFormatName").value,
           is_promotional_not_for_sale: $("editPromoNfs").checked,
@@ -47026,7 +47960,7 @@
           genres: splitCommaList($("editGenres").value),
           styles: splitCommaList($("editStyles").value),
           cover_image_url: $("editCoverImageUrl").value.trim() || null,
-          track_list: tracks,
+          track_list: trackList,
           cover_condition: normalizeConditionGradeValue($("editCoverCondition").value) || null,
           disc_condition: normalizeConditionGradeValue($("editDiscCondition").value) || null,
           source_notes: collectorBase.source_notes,
@@ -47036,7 +47970,7 @@
           company_items: collectorBase.company_items,
           series: collectorBase.series,
           format_items: collectorBase.format_items,
-          track_items: collectorBase.track_items,
+          track_items: editedTrackItems.length ? editedTrackItems : collectorBase.track_items || [],
           label_items: collectorBase.label_items
         };
       } else {
@@ -52818,15 +53752,16 @@
         applyPurchaseImportCandidateArtist(applyArtistBtn.getAttribute("data-purchase-import-apply-artist"));
         return;
       }
-      const selectCandidateBtn = e.target.closest("[data-purchase-import-select-candidate]");
-      if (selectCandidateBtn) {
-        const parts = String(selectCandidateBtn.getAttribute("data-purchase-import-select-candidate") || "").split(":");
-        selectPurchaseImportCandidate(parts[0], parts[1]);
+      const sourceQueryBtn = e.target.closest("[data-purchase-import-candidates-source]");
+      if (sourceQueryBtn) {
+        const parts = String(sourceQueryBtn.getAttribute("data-purchase-import-candidates-source") || "").split(":");
+        await loadPurchaseImportCandidates(parts[0], { source: parts[1] });
         return;
       }
-      const createCandidateBtn = e.target.closest("[data-purchase-import-create-candidate]");
-      if (createCandidateBtn) {
-        await createOwnedItemFromPurchaseQueueCandidate(createCandidateBtn.getAttribute("data-purchase-import-create-candidate"));
+      const createDirectBtn = e.target.closest("[data-purchase-import-create-direct]");
+      if (createDirectBtn) {
+        const parts = String(createDirectBtn.getAttribute("data-purchase-import-create-direct") || "").split(":");
+        await createOwnedItemFromPurchaseQueueCandidate(parts[0], Number(parts[1]));
         return;
       }
       const createBtn = e.target.closest("[data-purchase-import-create]");
@@ -52840,11 +53775,6 @@
       }
     });
     $("purchaseImportQueueBody").addEventListener("input", (e) => {
-      const sourceInput = e.target.closest("[data-purchase-import-source]");
-      if (sourceInput) {
-        updatePurchaseImportCandidateSearchText(sourceInput.getAttribute("data-purchase-import-source"), "source", sourceInput.value);
-        return;
-      }
       const artistInput = e.target.closest("[data-purchase-import-artist]");
       if (artistInput) {
         updatePurchaseImportCandidateSearchText(artistInput.getAttribute("data-purchase-import-artist"), "artist", artistInput.value);
@@ -52860,22 +53790,15 @@
         updatePurchaseImportCandidateSearchText(queryInput.getAttribute("data-purchase-import-query"), "query", queryInput.value);
       }
     });
-    $("purchaseImportQueueBody").addEventListener("change", (e) => {
-      const sourceInput = e.target.closest("[data-purchase-import-source]");
-      if (!sourceInput) return;
-      updatePurchaseImportCandidateSearchText(sourceInput.getAttribute("data-purchase-import-source"), "source", sourceInput.value);
-    });
     $("purchaseImportQueueBody").addEventListener("keydown", async (e) => {
       if (e.key !== "Enter") return;
-      const sourceInput = e.target.closest("[data-purchase-import-source]");
       const artistInput = e.target.closest("[data-purchase-import-artist]");
       const itemInput = e.target.closest("[data-purchase-import-item]");
       const queryInput = e.target.closest("[data-purchase-import-query]");
-      if (!sourceInput && !artistInput && !itemInput && !queryInput) return;
+      if (!artistInput && !itemInput && !queryInput) return;
       e.preventDefault();
       const queueId = String(
-        sourceInput?.getAttribute("data-purchase-import-source")
-        || artistInput?.getAttribute("data-purchase-import-artist")
+        artistInput?.getAttribute("data-purchase-import-artist")
         || itemInput?.getAttribute("data-purchase-import-item")
         || queryInput?.getAttribute("data-purchase-import-query")
         || ""
@@ -53115,6 +54038,8 @@
     $("opsExceptionBulkMasterBtn").addEventListener("click", bulkSendExceptionsToMasterWorkbench);
     $("metaSyncStatusBtn").addEventListener("click", loadMetadataSyncStatus);
     $("metaSyncRunBtn").addEventListener("click", runMetadataSyncNow);
+    $("aladinDiscogsBackfillStatusBtn").addEventListener("click", loadAladinDiscogsBackfillStatus);
+    $("aladinDiscogsBackfillRunBtn").addEventListener("click", runAladinDiscogsBackfill);
     $("quickCategory").addEventListener("change", syncQuickSizeGroup);
     $("quickCreateBtn").addEventListener("click", createQuickOwnedItem);
     $("quickResetBtn").addEventListener("click", resetQuickForm);
@@ -53298,6 +54223,7 @@
     });
     $("homeEditSaveBtn").addEventListener("click", saveHomeEditedItem);
     $("homeEditTrackSaveBtn")?.addEventListener("click", saveHomeEditedItem);
+    $("editTrackList")?.addEventListener("input", () => renderHomeTrackInfoPanel());
     $("homeEditDeleteBtn").addEventListener("click", deleteHomeSelectedItem);
     $("homeMasterDeleteBtn").addEventListener("click", () => deleteHomeSelectedMaster());
     $("homeMasterAddLoadBtn").addEventListener("click", () => loadHomeManageMasterLookup({ resetPage: true }));

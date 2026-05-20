@@ -142,9 +142,11 @@ from .services.matcher import MatchResult, classify_candidate, compose_query, va
 from .services.providers import (
     discogs_add_release_to_collection,
     discogs_identity,
+    fetch_aladin_track_items,
     has_default_user_agent_placeholder,
     infer_domain_code,
     get_source_release_snapshot,
+    get_discogs_snapshot_from_master_id,
     get_album_master_variants,
     get_album_master_variants_page,
     resolve_discogs_preferred_korean_artist_name,
@@ -238,6 +240,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Hahahoho Library API", version="0.1.0", lifespan=lifespan)
+
+
 OWNED_ITEM_SAVE_SLOW_SEC = float(os.getenv("OWNED_ITEM_SAVE_SLOW_SEC", "0.7"))
 MUSIC_CATEGORIES = {"LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"}
 DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"}
@@ -316,6 +320,11 @@ METADATA_SYNC_STOP_EVENT = threading.Event()
 METADATA_SYNC_THREAD: threading.Thread | None = None
 METADATA_SYNC_LAST_RESULT: MetadataSyncRunResponse | None = None
 METADATA_SYNC_LAST_ERROR: str | None = None
+METADATA_SYNC_IN_PROGRESS_ITEMS: list[Any] = []  # live feed; reset at sync start
+ALADIN_DISCOGS_BACKFILL_LOCK = threading.Lock()
+ALADIN_DISCOGS_BACKFILL_THREAD: threading.Thread | None = None
+ALADIN_DISCOGS_BACKFILL_LAST_RESULT: dict[str, Any] | None = None
+ALADIN_DISCOGS_BACKFILL_LAST_ERROR: str | None = None
 AUTO_BACKUP_LOCK = threading.Lock()
 AUTO_BACKUP_STOP_EVENT = threading.Event()
 AUTO_BACKUP_THREAD: threading.Thread | None = None
@@ -395,6 +404,7 @@ _METADATA_PROVIDER_ENV_KEYS = (
     "ALADIN_TTB_KEY",
     "DEEPL_AUTH_KEY",
     "DISCOGS_USER_AGENT",
+    "MUSICBRAINZ_USER_AGENT",
     "ALADIN_BASE_URL",
     "MANIADB_BASE_URL",
     "DEEPL_BASE_URL",
@@ -437,6 +447,7 @@ def _metadata_provider_settings_payload() -> dict[str, Any]:
         "aladin_ttb_key_configured": bool(settings.aladin_ttb_key),
         "deepl_auth_key_configured": bool(settings.deepl_auth_key),
         "discogs_user_agent": str(settings.discogs_user_agent or ""),
+        "musicbrainz_user_agent": str(settings.musicbrainz_user_agent or ""),
         "aladin_base_url": str(settings.aladin_base_url or ""),
         "maniadb_base_url": str(settings.maniadb_base_url or ""),
         "deepl_base_url": str(settings.deepl_base_url or ""),
@@ -449,8 +460,12 @@ async def auth_guard(request: Request, call_next):
         return await call_next(request)
 
     path = request.url.path.rstrip("/") or "/"
+    if request.method == "POST":
+        print(f"[DEBUG POST {path}] Headers:", request.headers)
+        print(f"[DEBUG POST {path}] Cookies:", request.cookies)
     allowed_paths = {
         "/health",
+        "/catalog-stats",
         "/login",
         "/auth/login",
         "/auth/logout",
@@ -766,6 +781,14 @@ def _parse_direct_source_reference(query: str | None, *, source: str = "AUTO") -
         album_match = re.search(r"(?i)(?:^album:|maniadb\.com/album/)(\d+(?::\d+)?)", text)
         if album_match:
             return {"source": "MANIADB", "kind": "album", "external_id": str(album_match.group(1))}
+
+    if allows("ALADIN"):
+        aladin_match = re.search(
+            r"(?i)(?:aladin\.co\.kr/(?:shop/w[Pp]roduct\.aspx|ttb/api/ItemLookUp\.aspx).*?[?&]ItemId=|^aladin[:/])(\d+)",
+            text,
+        )
+        if aladin_match:
+            return {"source": "ALADIN", "kind": "release", "external_id": str(aladin_match.group(1))}
 
     return None
 
@@ -2674,7 +2697,7 @@ def _run_metadata_sync(
     payload: MetadataSyncRunRequest,
     fail_when_running: bool = True,
 ) -> MetadataSyncRunResponse | None:
-    global METADATA_SYNC_LAST_RESULT, METADATA_SYNC_LAST_ERROR
+    global METADATA_SYNC_LAST_RESULT, METADATA_SYNC_LAST_ERROR, METADATA_SYNC_IN_PROGRESS_ITEMS
 
     acquired = METADATA_SYNC_LOCK.acquire(blocking=False)
     if not acquired:
@@ -2683,6 +2706,7 @@ def _run_metadata_sync(
         return None
 
     started_at = _now_iso()
+    METADATA_SYNC_IN_PROGRESS_ITEMS = []  # reset live feed
     try:
         source_u = str(payload.source or "ALL").upper()
         source_filter = None if source_u == "ALL" else source_u
@@ -2697,6 +2721,24 @@ def _run_metadata_sync(
         updated_count = 0
         skipped_count = 0
         failed_count = 0
+        # Track IDs that were processed but NOT updated via upsert_music_detail.
+        # We'll touch their owned_item.updated_at at the end so they don't
+        # repeatedly appear at the top of the sync queue (ORDER BY updated_at ASC).
+        non_updated_ids: list[int] = []
+
+        def _item_meta(row: dict[str, Any]) -> dict[str, Any]:
+            """로그 표시용 식별 메타 (display_name, artist_or_brand, catalog_no)."""
+            return {
+                "display_name": _clean_text(row.get("display_name")),
+                "artist_or_brand": _clean_text(row.get("artist_or_brand")),
+                "catalog_no": _clean_text(row.get("catalog_no")),
+            }
+
+        def _record(item: MetadataSyncItemResult) -> None:
+            """항목 결과를 실시간 피드 및 최종 결과 목록에 기록한다."""
+            METADATA_SYNC_IN_PROGRESS_ITEMS.append(item)
+            if payload.include_item_results:
+                item_results.append(item)
 
         for row in candidates:
             owned_item_id = int(row.get("id") or 0)
@@ -2704,46 +2746,79 @@ def _run_metadata_sync(
             source_external_id = str(row.get("source_external_id") or "").strip()
             if owned_item_id <= 0 or not source_code or not source_external_id:
                 failed_count += 1
-                if payload.include_item_results:
-                    item_results.append(
-                        MetadataSyncItemResult(
-                            owned_item_id=owned_item_id,
-                            source_code=source_code or "-",
-                            source_external_id=source_external_id or "-",
-                            status="FAILED",
-                            reason="invalid candidate data",
-                        )
-                    )
+                _record(MetadataSyncItemResult(
+                    owned_item_id=owned_item_id,
+                    source_code=source_code or "-",
+                    source_external_id=source_external_id or "-",
+                    status="FAILED",
+                    reason="invalid candidate data",
+                    **_item_meta(row),
+                ))
+                if owned_item_id > 0:
+                    non_updated_ids.append(owned_item_id)
                 continue
 
             if source_code not in {"DISCOGS", "MANIADB"}:
                 skipped_count += 1
-                if payload.include_item_results:
-                    item_results.append(
-                        MetadataSyncItemResult(
-                            owned_item_id=owned_item_id,
-                            source_code=source_code,
-                            source_external_id=source_external_id,
-                            status="SKIPPED",
-                            reason="source not supported for snapshot sync",
-                        )
-                    )
+                _record(MetadataSyncItemResult(
+                    owned_item_id=owned_item_id,
+                    source_code=source_code,
+                    source_external_id=source_external_id,
+                    status="SKIPPED",
+                    reason="source not supported for snapshot sync",
+                    **_item_meta(row),
+                ))
+                non_updated_ids.append(owned_item_id)
                 continue
+
+            delay = float(payload.inter_item_delay_sec or 0.0)
+            if delay > 0:
+                time.sleep(delay)
 
             snapshot = get_source_release_snapshot(source=source_code, external_id=source_external_id)
             if not snapshot:
                 failed_count += 1
-                if payload.include_item_results:
-                    item_results.append(
-                        MetadataSyncItemResult(
-                            owned_item_id=owned_item_id,
-                            source_code=source_code,
-                            source_external_id=source_external_id,
-                            status="FAILED",
-                            reason="source snapshot not found",
-                        )
-                    )
+                _record(MetadataSyncItemResult(
+                    owned_item_id=owned_item_id,
+                    source_code=source_code,
+                    source_external_id=source_external_id,
+                    status="FAILED",
+                    reason="source snapshot not found",
+                    **_item_meta(row),
+                ))
+                non_updated_ids.append(owned_item_id)
                 continue
+
+            # Discogs 부가정보 보강: MANIADB 소스 아이템의 경우
+            # format_items, runout_matrix, identifier_items, pressing_country 등
+            # ManiaDB가 제공하지 않는 Discogs 전용 필드를 AlbumMaster의
+            # Discogs external ref를 통해 보강한다.
+            if payload.supplement_discogs:
+                linked_master_id = int(row.get("linked_album_master_id") or 0)
+                if linked_master_id > 0:
+                    discogs_refs = db.list_album_master_external_refs(
+                        album_master_id=linked_master_id, source_code="DISCOGS"
+                    )
+                    if discogs_refs:
+                        discogs_master_id = str(discogs_refs[0].get("source_master_id") or "").strip()
+                        if discogs_master_id:
+                            if delay > 0:
+                                time.sleep(delay)
+                            discogs_supplement = get_discogs_snapshot_from_master_id(discogs_master_id)
+                            if discogs_supplement:
+                                # Discogs 전용 필드만 snapshot에 병합 (기본 필드는 유지)
+                                _DISCOGS_ONLY_FIELDS = {
+                                    "disc_count", "speed_rpm", "has_obi",
+                                    "runout_matrix", "pressing_country", "source_notes",
+                                    "credits", "identifier_items", "image_items",
+                                    "company_items", "series", "format_items",
+                                    "track_items", "label_items",
+                                }
+                                for field in _DISCOGS_ONLY_FIELDS:
+                                    val = discogs_supplement.get(field)
+                                    has_val = bool(val) if isinstance(val, (list, dict)) else val is not None
+                                    if has_val:
+                                        snapshot[field] = val
 
             music_detail, updated_fields = _build_music_detail_for_sync(
                 candidate=row,
@@ -2752,29 +2827,37 @@ def _run_metadata_sync(
             )
             if not updated_fields:
                 skipped_count += 1
-                if payload.include_item_results:
-                    item_results.append(
-                        MetadataSyncItemResult(
-                            owned_item_id=owned_item_id,
-                            source_code=source_code,
-                            source_external_id=source_external_id,
-                            status="SKIPPED",
-                            reason="no missing fields to update",
-                        )
-                    )
+                _record(MetadataSyncItemResult(
+                    owned_item_id=owned_item_id,
+                    source_code=source_code,
+                    source_external_id=source_external_id,
+                    status="SKIPPED",
+                    reason="no missing fields to update",
+                    **_item_meta(row),
+                ))
+                non_updated_ids.append(owned_item_id)
                 continue
 
             db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail)
             updated_count += 1
-            if payload.include_item_results:
-                item_results.append(
-                    MetadataSyncItemResult(
-                        owned_item_id=owned_item_id,
-                        source_code=source_code,
-                        source_external_id=source_external_id,
-                        status="UPDATED",
-                        updated_fields=updated_fields,
-                    )
+            _record(MetadataSyncItemResult(
+                owned_item_id=owned_item_id,
+                source_code=source_code,
+                source_external_id=source_external_id,
+                status="UPDATED",
+                updated_fields=updated_fields,
+                **_item_meta(row),
+            ))
+
+        # Touch updated_at for SKIPPED/FAILED items so they advance in the
+        # sync queue and don't appear repeatedly on subsequent runs.
+        if non_updated_ids:
+            _touch_now = _now_iso()
+            with db.get_conn() as _conn:
+                _placeholders = ",".join("?" * len(non_updated_ids))
+                _conn.execute(
+                    f"UPDATE owned_item SET updated_at = ? WHERE id IN ({_placeholders})",
+                    [_touch_now, *non_updated_ids],
                 )
 
         result = MetadataSyncRunResponse(
@@ -3174,6 +3257,14 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/catalog-stats", include_in_schema=False)
+def catalog_stats() -> dict[str, int]:
+    """Public endpoint — returns total owned-item count for the login page."""
+    with db.get_conn() as conn:
+        row = conn.execute("SELECT COUNT(*) AS cnt FROM owned_item").fetchone()
+    return {"total_items": int(row["cnt"] or 0) if row else 0}
+
+
 def _external_base_url_for_request(request: Request) -> str:
     forwarded_host = str(request.headers.get("x-forwarded-host") or "").split(",", 1)[0].strip()
     host = forwarded_host or str(request.headers.get("host") or request.url.netloc or "").split(",", 1)[0].strip()
@@ -3296,6 +3387,8 @@ def save_metadata_provider_settings(
         updates["DEEPL_AUTH_KEY"] = payload.deepl_auth_key.strip()
     if payload.discogs_user_agent is not None and payload.discogs_user_agent.strip():
         updates["DISCOGS_USER_AGENT"] = payload.discogs_user_agent.strip()
+    if payload.musicbrainz_user_agent is not None and payload.musicbrainz_user_agent.strip():
+        updates["MUSICBRAINZ_USER_AGENT"] = payload.musicbrainz_user_agent.strip()
     if payload.aladin_base_url is not None and payload.aladin_base_url.strip():
         updates["ALADIN_BASE_URL"] = payload.aladin_base_url.strip()
     if payload.maniadb_base_url is not None and payload.maniadb_base_url.strip():
@@ -4076,6 +4169,14 @@ def _build_owned_item_from_purchase_queue_row(
     if release_type not in RELEASE_TYPES:
         release_type = None
     collector = _candidate_collector_base(candidate or {})
+    # Aladin 후보에 track_items가 없으면 ItemLookUp API로 수록곡 보강
+    if candidate_source == "ALADIN" and candidate_external_id and not collector.get("track_items"):
+        try:
+            fetched_tracks = fetch_aladin_track_items(candidate_external_id)
+            if fetched_tracks:
+                collector["track_items"] = fetched_tracks
+        except Exception:
+            pass
     return OwnedItemCreate(
         category=category,  # type: ignore[arg-type]
         size_group=size_group,  # type: ignore[arg-type]
@@ -4550,22 +4651,248 @@ def patch_customer_track_request(
 
 @app.get("/metadata-sync/status", response_model=MetadataSyncStatusResponse)
 def get_metadata_sync_status() -> MetadataSyncStatusResponse:
+    running = METADATA_SYNC_LOCK.locked()
     return MetadataSyncStatusResponse(
         auto_enabled=int(settings.metadata_sync_interval_minutes) > 0,
         interval_minutes=int(settings.metadata_sync_interval_minutes),
         batch_limit=int(settings.metadata_sync_batch_limit),
-        running=METADATA_SYNC_LOCK.locked(),
+        running=running,
+        in_progress_items=list(METADATA_SYNC_IN_PROGRESS_ITEMS) if running else [],
         last_result=METADATA_SYNC_LAST_RESULT,
         last_error=METADATA_SYNC_LAST_ERROR,
     )
 
 
-@app.post("/metadata-sync/run", response_model=MetadataSyncRunResponse)
-def run_metadata_sync(payload: MetadataSyncRunRequest) -> MetadataSyncRunResponse:
-    result = _run_metadata_sync(payload=payload, fail_when_running=True)
-    if result is None:
+@app.post("/metadata-sync/run", status_code=202)
+def run_metadata_sync(payload: MetadataSyncRunRequest) -> dict[str, Any]:
+    """Start a metadata sync run in the background and return immediately (202).
+
+    Cloudflare (and most proxies) enforce a ~100 s origin timeout, so we must
+    not hold the HTTP connection open for the full sync duration.  Callers
+    should poll ``GET /metadata-sync/status`` until ``running`` becomes
+    ``false``, then read ``last_result`` for the outcome.
+    """
+    if METADATA_SYNC_LOCK.locked():
         raise HTTPException(status_code=409, detail="metadata sync already running")
-    return result
+    t = threading.Thread(
+        target=_run_metadata_sync,
+        kwargs={"payload": payload, "fail_when_running": True},
+        daemon=True,
+        name="metadata-sync-manual",
+    )
+    t.start()
+    return {"started": True}
+
+
+# ---------------------------------------------------------------------------
+# ALADIN → Discogs 마스터 매칭 백필
+# ---------------------------------------------------------------------------
+
+def _run_aladin_discogs_backfill(*, dry_run: bool = False, sleep_sec: float = 2.0) -> dict[str, Any]:
+    """ALADIN owned_item 전체를 대상으로 Discogs 마스터 매칭 + 포맷 정보 업데이트."""
+    global ALADIN_DISCOGS_BACKFILL_LAST_RESULT, ALADIN_DISCOGS_BACKFILL_LAST_ERROR
+
+    acquired = ALADIN_DISCOGS_BACKFILL_LOCK.acquire(blocking=False)
+    if not acquired:
+        raise HTTPException(status_code=409, detail="aladin discogs backfill already running")
+
+    started_at = _now_iso()
+    stats: dict[str, Any] = {
+        "started_at": started_at,
+        "finished_at": None,
+        "dry_run": dry_run,
+        "scanned": 0,
+        "no_crossref": 0,
+        "master_created": 0,
+        "master_linked": 0,
+        "already_discogs": 0,
+        "detail_updated": 0,
+        "error": 0,
+        "matched_items": [],
+    }
+
+    try:
+        import time as _time
+
+        with db.get_conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT oi.id, oi.source_external_id, oi.linked_album_master_id,
+                       am.source_code AS master_source_code,
+                       am.source_master_id AS master_source_id
+                FROM owned_item oi
+                LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+                WHERE oi.source_code = 'ALADIN'
+                ORDER BY oi.id
+                """
+            ).fetchall()
+
+        items = [dict(r) for r in rows]
+        stats["scanned"] = 0  # will count per loop
+
+        for row in items:
+            owned_item_id = int(row["id"])
+            source_ext = str(row["source_external_id"] or "").strip()
+            current_master_id = row["linked_album_master_id"]
+            current_master_source = str(row.get("master_source_code") or "").strip().upper()
+            stats["scanned"] += 1
+
+            try:
+                snap = get_source_release_snapshot(source="ALADIN", external_id=source_ext)
+                crossref: dict[str, Any] | None = (snap or {}).get("discogs_crossref")
+                _time.sleep(sleep_sec)
+
+                if not crossref:
+                    stats["no_crossref"] += 1
+                    continue
+
+                d_ext = str(crossref.get("external_id") or "").strip()
+                d_master_id = str(crossref.get("master_id") or "").strip()
+                d_src_id = d_master_id or d_ext
+                d_title = str(crossref.get("title") or "").strip() or f"ALADIN#{source_ext}"
+                d_artist = str(crossref.get("artist_or_brand") or "").strip() or None
+                d_year = crossref.get("release_year")
+                d_raw = crossref.get("raw") or {}
+                d_domain = _infer_album_master_domain_code(
+                    source_code="DISCOGS", title=d_title, artist_or_brand=d_artist, raw=d_raw
+                )
+
+                matched_entry: dict[str, Any] = {
+                    "owned_item_id": owned_item_id,
+                    "aladin_id": source_ext,
+                    "discogs_release_id": d_ext,
+                    "discogs_master_id": d_src_id,
+                    "artist": d_artist,
+                    "title": d_title,
+                    "format": crossref.get("format_name"),
+                    "barcode": crossref.get("barcode"),
+                    "label": crossref.get("label_name"),
+                    "album_master_id": None,
+                    "action": None,
+                }
+
+                if current_master_source == "DISCOGS":
+                    stats["already_discogs"] += 1
+                    album_master_id = int(current_master_id)
+                    matched_entry["album_master_id"] = album_master_id
+                    matched_entry["action"] = "detail_only"
+                else:
+                    if not dry_run:
+                        album_master_id = db.upsert_album_master(
+                            source_code="DISCOGS",
+                            source_master_id=d_src_id,
+                            title=d_title,
+                            artist_or_brand=d_artist,
+                            domain_code=d_domain,
+                            release_year=d_year,
+                            raw=d_raw,
+                        )
+                        db.bind_album_master_members(
+                            album_master_id=album_master_id,
+                            owned_item_ids=[owned_item_id],
+                            replace_existing=False,
+                        )
+                        db.set_owned_item_linked_album_master(
+                            owned_item_id=owned_item_id, album_master_id=album_master_id
+                        )
+                    else:
+                        album_master_id = -1
+                    stats["master_created"] += 1
+                    matched_entry["album_master_id"] = album_master_id
+                    matched_entry["action"] = "dry_run" if dry_run else "created"
+
+                music_detail_raw = {
+                    "format_name": crossref.get("format_name"),
+                    "artist_or_brand": d_artist,
+                    "release_year": d_year,
+                    "released_date": crossref.get("released_date"),
+                    "barcode": crossref.get("barcode"),
+                    "label_name": crossref.get("label_name"),
+                    "catalog_no": crossref.get("catalog_no"),
+                    "cover_image_url": crossref.get("cover_image_url"),
+                    "track_list": crossref.get("track_list") or [],
+                    "media_type": crossref.get("media_type") or crossref.get("format_name"),
+                    "genres": crossref.get("genres") or [],
+                    "styles": crossref.get("styles") or [],
+                    "disc_count": crossref.get("disc_count"),
+                    "speed_rpm": crossref.get("speed_rpm"),
+                    "has_obi": crossref.get("has_obi"),
+                    "runout_matrix": crossref.get("runout_matrix") or [],
+                    "pressing_country": crossref.get("pressing_country"),
+                    "source_notes": crossref.get("source_notes"),
+                    "credits": crossref.get("credits") or [],
+                    "identifier_items": crossref.get("identifier_items") or [],
+                    "image_items": crossref.get("image_items") or [],
+                    "company_items": crossref.get("company_items") or [],
+                    "series": crossref.get("series") or [],
+                    "format_items": crossref.get("format_items") or [],
+                    "track_items": crossref.get("track_items") or [],
+                    "label_items": crossref.get("label_items") or [],
+                }
+                music_detail_clean = {k: v for k, v in music_detail_raw.items() if v is not None}
+
+                if not dry_run:
+                    with db.get_conn() as conn:
+                        db._upsert_music_item_detail_in_conn(conn, owned_item_id, music_detail_clean)
+                stats["detail_updated"] += 1
+                stats["matched_items"].append(matched_entry)
+
+            except Exception as exc:
+                stats["error"] += 1
+                logger.exception("aladin_discogs_backfill item %s error: %s", owned_item_id, exc)
+
+        stats["finished_at"] = _now_iso()
+        ALADIN_DISCOGS_BACKFILL_LAST_RESULT = stats
+        ALADIN_DISCOGS_BACKFILL_LAST_ERROR = None
+        return stats
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        ALADIN_DISCOGS_BACKFILL_LAST_ERROR = f"{_now_iso()} | {exc}"
+        logger.exception("aladin_discogs_backfill failed: %s", exc)
+        raise
+    finally:
+        ALADIN_DISCOGS_BACKFILL_LOCK.release()
+
+
+def _aladin_discogs_backfill_thread_worker(dry_run: bool, sleep_sec: float) -> None:
+    global ALADIN_DISCOGS_BACKFILL_LAST_ERROR
+    try:
+        _run_aladin_discogs_backfill(dry_run=dry_run, sleep_sec=sleep_sec)
+    except HTTPException:
+        pass
+    except Exception as exc:
+        ALADIN_DISCOGS_BACKFILL_LAST_ERROR = f"{_now_iso()} | {exc}"
+        logger.exception("aladin_discogs_backfill thread error: %s", exc)
+
+
+@app.get("/aladin-discogs-backfill/status")
+def get_aladin_discogs_backfill_status() -> dict[str, Any]:
+    return {
+        "running": ALADIN_DISCOGS_BACKFILL_LOCK.locked(),
+        "last_result": ALADIN_DISCOGS_BACKFILL_LAST_RESULT,
+        "last_error": ALADIN_DISCOGS_BACKFILL_LAST_ERROR,
+    }
+
+
+@app.post("/aladin-discogs-backfill/run")
+def run_aladin_discogs_backfill_async(
+    dry_run: bool = False,
+    sleep_sec: float = 2.0,
+) -> dict[str, Any]:
+    global ALADIN_DISCOGS_BACKFILL_THREAD
+    if ALADIN_DISCOGS_BACKFILL_LOCK.locked():
+        raise HTTPException(status_code=409, detail="aladin discogs backfill already running")
+    t = threading.Thread(
+        target=_aladin_discogs_backfill_thread_worker,
+        kwargs={"dry_run": dry_run, "sleep_sec": sleep_sec},
+        name="aladin-discogs-backfill",
+        daemon=True,
+    )
+    ALADIN_DISCOGS_BACKFILL_THREAD = t
+    t.start()
+    return {"status": "started", "dry_run": dry_run, "sleep_sec": sleep_sec}
 
 
 @app.get("/", include_in_schema=False)
