@@ -147,6 +147,8 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(CASE WHEN oi.signature_type = 'PURCHASE_INCLUDED' THEN 1 ELSE 0 END) AS purchase_signed_items,
               SUM(CASE WHEN oi.is_second_hand = 1 THEN 1 ELSE 0 END) AS second_hand_items,
               SUM(CASE WHEN oi.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS registered_last_30_days,
+              SUM(CASE WHEN oi.created_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) AS registered_last_7_days,
+              SUM(CASE WHEN oi.created_at >= datetime('now', '-1 days') THEN 1 ELSE 0 END) AS registered_today,
               SUM(CASE WHEN oi.status = 'IN_COLLECTION' AND oi.storage_slot_id IS NOT NULL THEN 1 ELSE 0 END) AS slotted_in_collection_items,
               SUM(CASE WHEN oi.status = 'IN_COLLECTION' AND oi.storage_slot_id IS NULL THEN 1 ELSE 0 END) AS unslotted_in_collection_items,
               SUM(
@@ -445,6 +447,309 @@ def get_collection_dashboard() -> dict[str, Any]:
             LIMIT 10
             """
         ).fetchall()
+        # Cross-dimensional queries
+        # ═══════════════════════════════════════════════════════════
+
+        by_domain_decade = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   (mid.release_year / 10) * 10 AS decade,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND mid.release_year IS NOT NULL AND mid.release_year > 0
+            GROUP BY domain, decade
+            ORDER BY domain, decade
+            """
+        ).fetchall()
+
+        by_genre_domain = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   j.value AS genre,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id,
+                 json_each(mid.genres_json) j
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND mid.genres_json IS NOT NULL AND mid.genres_json <> '[]'
+            GROUP BY domain, genre
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+
+        by_format_domain = conn.execute(
+            """
+            SELECT oi.category AS format,
+                   COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY oi.category, domain
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+
+        by_pressing_domain = conn.execute(
+            """
+            SELECT mid.pressing_country,
+                   COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND mid.pressing_country IS NOT NULL AND TRIM(mid.pressing_country) <> ''
+            GROUP BY mid.pressing_country, domain
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+
+        by_artist_decade = conn.execute(
+            """
+            SELECT artist, MIN(decade) AS min_decade, MAX(decade) AS max_decade, SUM(cnt) AS total
+            FROM (
+              SELECT COALESCE(mid.artist_or_brand, am.artist_or_brand) AS artist,
+                     (mid.release_year / 10) * 10 AS decade,
+                     COUNT(*) AS cnt
+              FROM owned_item oi
+              LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+              LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+              WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                AND mid.release_year IS NOT NULL AND mid.release_year > 0
+                AND COALESCE(mid.artist_or_brand, am.artist_or_brand) IS NOT NULL
+              GROUP BY artist, decade
+            )
+            GROUP BY artist
+            HAVING total >= 3
+            ORDER BY total DESC
+            LIMIT 15
+            """
+        ).fetchall()
+
+        by_label_country = conn.execute(
+            """
+            SELECT mid.label_name, mid.pressing_country, COUNT(*) AS cnt
+            FROM music_item_detail mid
+            JOIN owned_item oi ON oi.id = mid.owned_item_id
+            WHERE mid.label_name IS NOT NULL AND TRIM(mid.label_name) <> ''
+              AND mid.pressing_country IS NOT NULL AND TRIM(mid.pressing_country) <> ''
+            GROUP BY mid.label_name, mid.pressing_country
+            ORDER BY cnt DESC
+            LIMIT 20
+            """
+        ).fetchall()
+
+        by_source_completeness = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(oi.source_code, ''), 'MANUAL') AS source,
+                   COUNT(*) AS total,
+                   SUM(CASE WHEN oi.linked_album_master_id IS NOT NULL THEN 1 ELSE 0 END) AS master_linked,
+                   SUM(CASE WHEN mid.cover_image_url IS NOT NULL AND TRIM(mid.cover_image_url) <> '' THEN 1 ELSE 0 END) AS cover_present,
+                   SUM(CASE WHEN mid.genres_json IS NOT NULL AND mid.genres_json <> '[]' THEN 1 ELSE 0 END) AS genre_present,
+                   SUM(CASE WHEN mid.catalog_no IS NOT NULL AND TRIM(mid.catalog_no) <> '' THEN 1 ELSE 0 END) AS catalog_present,
+                   SUM(CASE WHEN mid.format_name IS NOT NULL AND TRIM(mid.format_name) <> '' THEN 1 ELSE 0 END) AS format_present
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY source
+            ORDER BY total DESC
+            """
+        ).fetchall()
+
+        by_sign_domain = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   oi.signature_type,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            WHERE oi.signature_type IS NOT NULL AND oi.signature_type <> 'NONE'
+              AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY domain, oi.signature_type
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+
+        # ═══════════════════════════════════════════════════════════
+        # Ops panel → merged as insight cards
+        # ═══════════════════════════════════════════════════════════
+
+        # Card: Move heatmap — slot × move count
+        by_slot_moves = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(to_slot_code, ''), 'UNASSIGNED') AS slot_code,
+                   movement_kind,
+                   COUNT(*) AS cnt
+            FROM owned_item_location_event
+            WHERE created_at >= datetime('now', '-30 days')
+            GROUP BY slot_code, movement_kind
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+
+        # Card: Recent registration profile — domain × decade (last 30 days)
+        by_recent_reg_domain_decade = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   (mid.release_year / 10) * 10 AS decade,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE oi.created_at >= datetime('now', '-30 days')
+              AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND mid.release_year IS NOT NULL AND mid.release_year > 0
+            GROUP BY domain, decade
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+
+        by_recent_reg_domain = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain, COUNT(*) AS cnt
+            FROM owned_item
+            WHERE created_at >= datetime('now', '-30 days')
+              AND category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY domain
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+
+        # Card: Purchase flow — source × currency × domain
+        by_purchase_flow = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(purchase_source, ''), 'UNKNOWN') AS source,
+                   COALESCE(NULLIF(currency_code, ''), 'UNKNOWN') AS currency,
+                   COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
+                   COUNT(*) AS items,
+                   ROUND(SUM(purchase_price), 0) AS total_spend
+            FROM owned_item
+            WHERE purchase_price IS NOT NULL
+              AND purchase_source IS NOT NULL AND TRIM(purchase_source) <> ''
+            GROUP BY source, currency, domain
+            ORDER BY items DESC
+            """
+        ).fetchall()
+
+        # ── New dashboard cards ──
+
+        # Card: Financial Overview
+        by_currency_spend = conn.execute(
+            """
+            SELECT currency_code, COUNT(*) AS items, ROUND(SUM(purchase_price), 0) AS total_spend
+            FROM owned_item
+            WHERE purchase_price IS NOT NULL AND currency_code IS NOT NULL
+            GROUP BY currency_code
+            ORDER BY total_spend DESC
+            """
+        ).fetchall()
+        by_domain_spend = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
+                   COUNT(*) AS items,
+                   ROUND(AVG(purchase_price), 0) AS avg_price,
+                   ROUND(SUM(purchase_price), 0) AS total_spend
+            FROM owned_item
+            WHERE purchase_price IS NOT NULL
+              AND category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED')
+            ORDER BY total_spend DESC
+            """
+        ).fetchall()
+        by_month_spend = conn.execute(
+            """
+            SELECT strftime('%Y-%m', acquisition_date) AS month,
+                   COUNT(*) AS items,
+                   ROUND(SUM(purchase_price), 0) AS total_spend
+            FROM owned_item
+            WHERE acquisition_date IS NOT NULL AND purchase_price IS NOT NULL
+            GROUP BY month
+            ORDER BY month DESC
+            LIMIT 12
+            """
+        ).fetchall()
+
+        # Card: Artist / Label / Genre
+        by_artist = conn.execute(
+            """
+            SELECT COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY artist
+            ORDER BY cnt DESC
+            LIMIT 15
+            """
+        ).fetchall()
+        by_label = conn.execute(
+            """
+            SELECT label_name, COUNT(*) AS cnt
+            FROM music_item_detail
+            WHERE label_name IS NOT NULL AND TRIM(label_name) <> ''
+            GROUP BY label_name
+            ORDER BY cnt DESC
+            LIMIT 15
+            """
+        ).fetchall()
+        by_genre = conn.execute(
+            """
+            SELECT value AS genre, COUNT(*) AS cnt
+            FROM music_item_detail, json_each(genres_json)
+            WHERE genres_json IS NOT NULL AND genres_json <> '[]'
+            GROUP BY value
+            ORDER BY cnt DESC
+            LIMIT 15
+            """
+        ).fetchall()
+
+        # Card: Timeline
+        by_release_decade = conn.execute(
+            """
+            SELECT (release_year / 10) * 10 AS decade, COUNT(*) AS cnt
+            FROM music_item_detail
+            WHERE release_year IS NOT NULL AND release_year > 0
+            GROUP BY decade
+            ORDER BY decade
+            """
+        ).fetchall()
+        by_registration_month = conn.execute(
+            """
+            SELECT strftime('%Y-%m', created_at) AS month, COUNT(*) AS cnt
+            FROM owned_item
+            GROUP BY month
+            ORDER BY month
+            """
+        ).fetchall()
+
+        # Card: Collector Value
+        multi_disc_items = conn.execute(
+            """
+            SELECT COUNT(*) AS cnt
+            FROM music_item_detail
+            WHERE disc_count >= 3
+            """
+        ).fetchone()
+        obi_items = conn.execute(
+            """
+            SELECT COUNT(*) AS cnt
+            FROM music_item_detail
+            WHERE has_obi = 1
+            """
+        ).fetchone()
+        by_media_condition = conn.execute(
+            """
+            SELECT media_condition, COUNT(*) AS cnt
+            FROM music_item_detail
+            WHERE media_condition IS NOT NULL AND TRIM(media_condition) <> ''
+            GROUP BY media_condition
+            ORDER BY cnt DESC
+            """
+        ).fetchall()
+        # Import queue
+        import_queue_size = conn.execute("SELECT COUNT(*) AS cnt FROM purchase_import_queue").fetchone()
+        # Sync coverage rates
+        sync_sources = conn.execute("SELECT source_code, COUNT(*) AS cnt FROM album_master GROUP BY source_code").fetchall()
 
     slot_count_map = {int(row["storage_slot_id"]): int(row["cnt"] or 0) for row in slot_count_rows if row["storage_slot_id"] is not None}
     slot_policy_map: dict[int, str] = {
@@ -487,11 +792,56 @@ def get_collection_dashboard() -> dict[str, Any]:
         "second_hand_items": int((summary["second_hand_items"] if summary else 0) or 0),
         "audio_mapped_items": int((audio_row["cnt"] if audio_row else 0) or 0),
         "registered_last_30_days": int((summary["registered_last_30_days"] if summary else 0) or 0),
+        "registered_last_7_days": int((summary["registered_last_7_days"] if summary else 0) or 0),
+        "registered_today": int((summary["registered_today"] if summary else 0) or 0),
         "slotted_in_collection_items": int((summary["slotted_in_collection_items"] if summary else 0) or 0),
         "unslotted_in_collection_items": int((summary["unslotted_in_collection_items"] if summary else 0) or 0),
         "source_unlinked_items": int((summary["source_unlinked_items"] if summary else 0) or 0),
         "master_unlinked_items": int((summary["master_unlinked_items"] if summary else 0) or 0),
         "cover_missing_items": int((summary["cover_missing_items"] if summary else 0) or 0),
+        "multi_disc_items": int((multi_disc_items["cnt"] if multi_disc_items else 0) or 0),
+        "obi_items": int((obi_items["cnt"] if obi_items else 0) or 0),
+        "import_queue_size": int((import_queue_size["cnt"] if import_queue_size else 0) or 0),
+        "by_artist": [
+            {"artist": str(row["artist"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_artist
+        ],
+        "by_label": [
+            {"label": str(row["label_name"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_label
+        ],
+        "by_genre": [
+            {"genre": str(row["genre"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_genre
+        ],
+        "by_release_decade": [
+            {"decade": int(row["decade"] or 0), "count": int(row["cnt"] or 0)}
+            for row in by_release_decade
+        ],
+        "by_registration_month": [
+            {"month": str(row["month"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_registration_month
+        ],
+        "by_currency_spend": [
+            {"currency_code": str(row["currency_code"] or ""), "items": int(row["items"] or 0), "total_spend": int(row["total_spend"] or 0)}
+            for row in by_currency_spend
+        ],
+        "by_domain_spend": [
+            {"domain": str(row["domain"] or ""), "items": int(row["items"] or 0), "avg_price": int(row["avg_price"] or 0), "total_spend": int(row["total_spend"] or 0)}
+            for row in by_domain_spend
+        ],
+        "by_month_spend": [
+            {"month": str(row["month"] or ""), "items": int(row["items"] or 0), "total_spend": int(row["total_spend"] or 0)}
+            for row in by_month_spend
+        ],
+        "by_media_condition": [
+            {"condition": str(row["media_condition"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_media_condition
+        ],
+        "sync_sources": [
+            {"source_code": str(row["source_code"] or ""), "count": int(row["cnt"] or 0)}
+            for row in sync_sources
+        ],
         "loaned_items": int((summary["loaned_items"] if summary else 0) or 0),
         "sold_items": int((summary["sold_items"] if summary else 0) or 0),
         "lost_items": int((summary["lost_items"] if summary else 0) or 0),
@@ -506,6 +856,56 @@ def get_collection_dashboard() -> dict[str, Any]:
             {"value": str(row["value"]), "count": int(row["cnt"] or 0)}
             for row in by_pressing_country_rows
         ],
+        # Cross-dimensional
+        "by_domain_decade": [
+            {"domain": str(row["domain"] or ""), "decade": int(row["decade"] or 0), "count": int(row["cnt"] or 0)}
+            for row in by_domain_decade
+        ],
+        "by_genre_domain": [
+            {"domain": str(row["domain"] or ""), "genre": str(row["genre"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_genre_domain
+        ],
+        "by_format_domain": [
+            {"format": str(row["format"] or ""), "domain": str(row["domain"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_format_domain
+        ],
+        "by_pressing_domain": [
+            {"pressing_country": str(row["pressing_country"] or ""), "domain": str(row["domain"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_pressing_domain
+        ],
+        "by_artist_decade": [
+            {"artist": str(row["artist"] or ""), "min_decade": int(row["min_decade"] or 0), "max_decade": int(row["max_decade"] or 0), "total": int(row["total"] or 0)}
+            for row in by_artist_decade
+        ],
+        "by_label_country": [
+            {"label": str(row["label_name"] or ""), "pressing_country": str(row["pressing_country"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_label_country
+        ],
+        "by_source_completeness": [
+            {"source": str(row["source"] or ""), "total": int(row["total"] or 0), "master_linked": int(row["master_linked"] or 0), "cover_present": int(row["cover_present"] or 0), "genre_present": int(row["genre_present"] or 0), "catalog_present": int(row["catalog_present"] or 0), "format_present": int(row["format_present"] or 0)}
+            for row in by_source_completeness
+        ],
+        "by_sign_domain": [
+            {"domain": str(row["domain"] or ""), "signature_type": str(row["signature_type"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_sign_domain
+        ],
+        "by_slot_moves": [
+            {"slot_code": str(row["slot_code"] or ""), "movement_kind": str(row["movement_kind"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_slot_moves
+        ],
+        "by_recent_reg_domain_decade": [
+            {"domain": str(row["domain"] or ""), "decade": int(row["decade"] or 0), "count": int(row["cnt"] or 0)}
+            for row in by_recent_reg_domain_decade
+        ],
+        "by_recent_reg_domain": [
+            {"value": str(row["domain"] or ""), "count": int(row["cnt"] or 0)}
+            for row in by_recent_reg_domain
+        ],
+        "by_purchase_flow": [
+            {"source": str(row["source"] or ""), "currency": str(row["currency"] or ""), "domain": str(row["domain"] or ""), "items": int(row["items"] or 0), "total_spend": int(row["total_spend"] or 0)}
+            for row in by_purchase_flow
+        ],
+
         "by_category": [
             {"category": str(row["category"]), "count": int(row["cnt"] or 0)}
             for row in by_category_rows

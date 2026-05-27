@@ -1163,6 +1163,124 @@ class CollectionSourceCategoryCount(BaseModel):
     category: str
     count: int
 
+class CollectionArtistCount(BaseModel):
+    artist: str
+    count: int
+
+
+class CollectionLabelCount(BaseModel):
+    label: str
+    count: int
+
+
+class CollectionGenreCount(BaseModel):
+    genre: str
+    count: int
+
+
+class CollectionDecadeCount(BaseModel):
+    decade: int
+    count: int
+
+
+class CollectionMonthCount(BaseModel):
+    month: str
+    count: int
+
+
+class CollectionCurrencySpend(BaseModel):
+    currency_code: str
+    items: int
+    total_spend: int
+
+
+class CollectionDomainSpend(BaseModel):
+    domain: str
+    items: int
+    avg_price: int
+    total_spend: int
+
+
+class CollectionMonthSpend(BaseModel):
+    month: str
+    items: int
+    total_spend: int
+
+
+class CollectionMediaConditionCount(BaseModel):
+    condition: str
+    count: int
+
+
+class CollectionSyncSourceCount(BaseModel):
+    source_code: str
+    count: int
+
+class CollectionDomainDecadeCount(BaseModel):
+    domain: str
+    decade: int
+    count: int
+
+
+class CollectionGenreDomainCount(BaseModel):
+    domain: str
+    genre: str
+    count: int
+
+
+class CollectionFormatDomainCount(BaseModel):
+    format: str
+    domain: str
+    count: int
+
+
+class CollectionPressingDomainCount(BaseModel):
+    pressing_country: str
+    domain: str
+    count: int
+
+
+class CollectionArtistDecadeSpan(BaseModel):
+    artist: str
+    min_decade: int
+    max_decade: int
+    total: int
+
+
+class CollectionLabelCountryCount(BaseModel):
+    label: str
+    pressing_country: str
+    count: int
+
+
+class CollectionSourceCompleteness(BaseModel):
+    source: str
+    total: int
+    master_linked: int
+    cover_present: int
+    genre_present: int
+    catalog_present: int
+    format_present: int
+
+
+class CollectionSignDomainCount(BaseModel):
+    domain: str
+    signature_type: str
+    count: int
+
+class CollectionSlotMoveCount(BaseModel):
+    slot_code: str
+    movement_kind: str
+    count: int
+
+
+class CollectionPurchaseFlowItem(BaseModel):
+    source: str
+    currency: str
+    domain: str
+    items: int
+    total_spend: int
+
 
 class CollectionDashboardResponse(BaseModel):
     total_items: int
@@ -1175,6 +1293,8 @@ class CollectionDashboardResponse(BaseModel):
     second_hand_items: int
     audio_mapped_items: int
     registered_last_30_days: int
+    registered_last_7_days: int = 0
+    registered_today: int = 0
     slotted_in_collection_items: int
     unslotted_in_collection_items: int
     source_unlinked_items: int
@@ -1190,6 +1310,31 @@ class CollectionDashboardResponse(BaseModel):
     new_items: int = 0
     promo_items: int = 0
     other_condition_items: int = 0
+    multi_disc_items: int = 0
+    obi_items: int = 0
+    import_queue_size: int = 0
+    by_artist: list[CollectionArtistCount] = Field(default_factory=list)
+    by_label: list[CollectionLabelCount] = Field(default_factory=list)
+    by_genre: list[CollectionGenreCount] = Field(default_factory=list)
+    by_release_decade: list[CollectionDecadeCount] = Field(default_factory=list)
+    by_registration_month: list[CollectionMonthCount] = Field(default_factory=list)
+    by_currency_spend: list[CollectionCurrencySpend] = Field(default_factory=list)
+    by_domain_spend: list[CollectionDomainSpend] = Field(default_factory=list)
+    by_month_spend: list[CollectionMonthSpend] = Field(default_factory=list)
+    by_media_condition: list[CollectionMediaConditionCount] = Field(default_factory=list)
+    sync_sources: list[CollectionSyncSourceCount] = Field(default_factory=list)
+    by_domain_decade: list[CollectionDomainDecadeCount] = Field(default_factory=list)
+    by_genre_domain: list[CollectionGenreDomainCount] = Field(default_factory=list)
+    by_format_domain: list[CollectionFormatDomainCount] = Field(default_factory=list)
+    by_pressing_domain: list[CollectionPressingDomainCount] = Field(default_factory=list)
+    by_artist_decade: list[CollectionArtistDecadeSpan] = Field(default_factory=list)
+    by_label_country: list[CollectionLabelCountryCount] = Field(default_factory=list)
+    by_source_completeness: list[CollectionSourceCompleteness] = Field(default_factory=list)
+    by_sign_domain: list[CollectionSignDomainCount] = Field(default_factory=list)
+    by_slot_moves: list[CollectionSlotMoveCount] = Field(default_factory=list)
+    by_recent_reg_domain_decade: list[CollectionDomainDecadeCount] = Field(default_factory=list)
+    by_recent_reg_domain: list[CollectionValueCount] = Field(default_factory=list)
+    by_purchase_flow: list[CollectionPurchaseFlowItem] = Field(default_factory=list)
     by_pressing_country: list[CollectionValueCount] = Field(default_factory=list)
     by_category: list[CollectionCategoryCount] = Field(default_factory=list)
     by_status: list[CollectionStatusCount] = Field(default_factory=list)
