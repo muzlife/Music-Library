@@ -5,15 +5,15 @@
 
 ## 현재 기준 문서
 
-- 운영 매뉴얼: [docs/management_tool_manual.md](/Volumes/Works/07.hahahoho/docs/management_tool_manual.md)
-- 운영자용 ERD 요약: [docs/library_erd_operator.md](/Volumes/Works/07.hahahoho/docs/library_erd_operator.md)
-- 개발자용 ERD 상세: [docs/library_erd.md](/Volumes/Works/07.hahahoho/docs/library_erd.md)
-- 구매 내역 수입 가이드: [docs/purchase_mail_import.md](/Volumes/Works/07.hahahoho/docs/purchase_mail_import.md)
-- 상용화 체크리스트: [docs/go_live_checklist.md](/Volumes/Works/07.hahahoho/docs/go_live_checklist.md)
-- macOS QA/운영 런북: [docs/macos_qa_prod_runbook.md](/Volumes/Works/07.hahahoho/docs/macos_qa_prod_runbook.md)
-- 자격증명 회전 런북: [docs/secret_rotation_runbook.md](/Volumes/Works/07.hahahoho/docs/secret_rotation_runbook.md)
-- CSV 샘플: [docs/csv_import_sample.csv](/Volumes/Works/07.hahahoho/docs/csv_import_sample.csv)
-- QA 마스터 시트: [docs/qa/qa_master_sheet.csv](/Volumes/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
+- 운영 매뉴얼: [docs/management_tool_manual.md](/Volumes/Data/Works/07.hahahoho/docs/management_tool_manual.md)
+- 운영자용 ERD 요약: [docs/library_erd_operator.md](/Volumes/Data/Works/07.hahahoho/docs/library_erd_operator.md)
+- 개발자용 ERD 상세: [docs/library_erd.md](/Volumes/Data/Works/07.hahahoho/docs/library_erd.md)
+- 구매 내역 수입 가이드: [docs/purchase_mail_import.md](/Volumes/Data/Works/07.hahahoho/docs/purchase_mail_import.md)
+- 상용화 체크리스트: [docs/go_live_checklist.md](/Volumes/Data/Works/07.hahahoho/docs/go_live_checklist.md)
+- macOS QA/운영 런북: [docs/macos_qa_prod_runbook.md](/Volumes/Data/Works/07.hahahoho/docs/macos_qa_prod_runbook.md)
+- 자격증명 회전 런북: [docs/secret_rotation_runbook.md](/Volumes/Data/Works/07.hahahoho/docs/secret_rotation_runbook.md)
+- CSV 샘플: [docs/csv_import_sample.csv](/Volumes/Data/Works/07.hahahoho/docs/csv_import_sample.csv)
+- QA 마스터 시트: [docs/qa/qa_master_sheet.csv](/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
   배포 게이트, 기능 도메인 QA, 수동 증적을 함께 추적하는 단일 기준 문서
 
 ## 화면별 역할

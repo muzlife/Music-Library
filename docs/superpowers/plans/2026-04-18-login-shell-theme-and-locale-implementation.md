@@ -4,7 +4,7 @@
 
 **Goal:** 로그인 화면에 운영/관리 콘솔과 어울리는 언어 선택기와 주/야간 토글을 추가하고, 로그인 전 설정이 로그인 후에도 그대로 유지되게 만든다.
 
-**Architecture:** 서버 인증 흐름은 건드리지 않고 [app/static/login.html](/Volumes/Works/07.hahahoho/app/static/login.html) 안에 로그인 전용 shell utility와 최소 i18n/theme 초기화만 넣는다. 상태 저장은 메인 콘솔과 같은 `localStorage` key literal을 직접 사용하고, 테스트는 기존 정적 HTML 검사용 [tests/test_ops_shell_bootstrap.py](/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py) 중심으로 고정한다.
+**Architecture:** 서버 인증 흐름은 건드리지 않고 [app/static/login.html](/Volumes/Data/Works/07.hahahoho/app/static/login.html) 안에 로그인 전용 shell utility와 최소 i18n/theme 초기화만 넣는다. 상태 저장은 메인 콘솔과 같은 `localStorage` key literal을 직접 사용하고, 테스트는 기존 정적 HTML 검사용 [tests/test_ops_shell_bootstrap.py](/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py) 중심으로 고정한다.
 
 **Tech Stack:** FastAPI static page delivery, vanilla HTML/CSS/JS, pytest
 
@@ -12,25 +12,25 @@
 
 ## File Map
 
-- Modify: `/Volumes/Works/07.hahahoho/app/static/login.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/login.html`
   - 로그인 전용 shell utility row
   - day/night theme token
   - login-scoped locale message table
   - theme/locale persistence and auth error mapping
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
   - 로그인 페이지 정적 HTML/스크립트 회귀 테스트 추가
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_route_access.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_route_access.py`
   - `/login` route smoke 추가
 
 ## Task 1: Lock The Login Page Contract With Failing Static Tests
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
-- Verify against: `/Volumes/Works/07.hahahoho/app/static/login.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Verify against: `/Volumes/Data/Works/07.hahahoho/app/static/login.html`
 
 - [ ] **Step 1: Add a small login inline-script harness helper**
 
-In `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`, add a Node harness helper that:
+In `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`, add a Node harness helper that:
 - reads `login.html`
 - extracts the inline `<script>`
 - stubs a tiny DOM (`document.body.dataset`, `document.documentElement.lang`, `getElementById`, `querySelector`)
@@ -184,15 +184,15 @@ Expected:
 - [ ] **Step 12: Commit the red-state test additions**
 
 ```bash
-git add /Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
+git add /Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
 git commit -m "test: define login shell theme and locale contract"
 ```
 
 ## Task 2: Implement Minimal Login-Specific Theme And Locale Support
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/login.html`
-- Test: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/login.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Add the login shell utility row markup**
 
@@ -279,17 +279,17 @@ Expected:
 - [ ] **Step 8: Commit the login implementation**
 
 ```bash
-git add /Volumes/Works/07.hahahoho/app/static/login.html /Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
+git add /Volumes/Data/Works/07.hahahoho/app/static/login.html /Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
 git commit -m "feat: add login shell theme and locale controls"
 ```
 
 ## Task 3: Verify Route Delivery And Regression Safety
 
 **Files:**
-- Verify: `/Volumes/Works/07.hahahoho/app/main.py`
-- Verify: `/Volumes/Works/07.hahahoho/app/static/login.html`
-- Test: `/Volumes/Works/07.hahahoho/tests/test_ops_route_access.py`
-- Test: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Verify: `/Volumes/Data/Works/07.hahahoho/app/main.py`
+- Verify: `/Volumes/Data/Works/07.hahahoho/app/static/login.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_route_access.py`
+- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Add a route-level smoke test for `/login` delivery**
 
@@ -347,7 +347,7 @@ Record the evidence in notes or QA sheet if this work is part of a release batch
 If Task 3 introduced any additional test edits:
 
 ```bash
-git add /Volumes/Works/07.hahahoho/tests/test_ops_route_access.py /Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
+git add /Volumes/Data/Works/07.hahahoho/tests/test_ops_route_access.py /Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
 git commit -m "test: cover login route theme and locale delivery"
 ```
 

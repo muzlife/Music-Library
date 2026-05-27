@@ -13,7 +13,7 @@
 ## File Map
 
 **Modify**
-- `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
   - Admin shell grid CSS (`body[data-shell-mode="admin"] .wrap`, `#adminSideNav`, `.primary-shell`, `#appHero`)
   - Header positioning (grid placement)
   - Nav icon-only rail CSS at `<=1080px`
@@ -22,16 +22,16 @@
   - Remove Ops left nav slot and collectibles panel
 
 **Modify Tests**
-- `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
-- `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
+- `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
+- `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
 
 ---
 
 ### Task 1: Add failing tests for admin grid + ops removals
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Add new failing assertions in `test_ops_shell_bootstrap.py`**
 
@@ -92,7 +92,7 @@ def test_admin_nav_icon_rail_at_1080():
 
 - [ ] **Step 4: Run the tests to confirm failure**
 
-Run: `pytest /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_index_admin_shell_grid_uses_header_and_body_rows /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_ops_home_hides_primary_side_nav_slot /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_admin_removes_linked_collectibles_panel /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_admin_nav_icon_rail_at_1080 -v`
+Run: `pytest /Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_index_admin_shell_grid_uses_header_and_body_rows /Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_ops_home_hides_primary_side_nav_slot /Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_admin_removes_linked_collectibles_panel /Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_admin_nav_icon_rail_at_1080 -v`
 
 Expected: FAIL (new selectors not yet present).
 
@@ -108,8 +108,8 @@ git commit -m "test: define admin shell grid + ops removal expectations"
 ### Task 2: Implement admin shell grid (header + nav + content)
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Move admin header/nav nodes to be direct grid items**
 
@@ -213,7 +213,7 @@ git commit -m "feat: move admin shell to header+nav+content grid"
 ### Task 3: Menu accordion persistence + icon-only rail (<=1080)
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
 
 - [ ] **Step 1: Confirm existing admin nav helpers and reuse**
 
@@ -387,8 +387,8 @@ git commit -m "feat: persist admin nav accordion + icon rail"
 ### Task 4: Section description toggles (collapsed by default)
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Mark description blocks and add toggle buttons**
 
@@ -469,7 +469,7 @@ def test_section_desc_toggle_present_on_media_search():
 
 - [ ] **Step 5: Run tests**
 
-Run: `pytest /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_section_desc_toggle_present_on_media_search -v`
+Run: `pytest /Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py::test_section_desc_toggle_present_on_media_search -v`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -484,7 +484,7 @@ git commit -m "feat: add section description toggles"
 ### Task 5: Remove ops left nav slot + linked collectibles sections
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
 
 - [ ] **Step 1: Hide ops left nav slot**
 
@@ -520,7 +520,7 @@ git commit -m "feat: remove ops left nav slot and collectibles panel"
 - [ ] Run full targeted suite:
 
 ```bash
-pytest /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py /Volumes/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py -v
+pytest /Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py /Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py -v
 ```
 
 Expected: PASS.

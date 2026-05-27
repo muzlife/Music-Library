@@ -26,7 +26,7 @@ Update the secondary-row grid columns to allocate more space to actions:
 
 **Implementation detail:** Update the desktop rule for
 ` .goods-search-compact-row--secondary `
-in `/Volumes/Works/07.hahahoho/app/static/index.html` (CSS section).
+in `/Volumes/Data/Works/07.hahahoho/app/static/index.html` (CSS section).
 
 ### Action buttons (search/clear)
 Inside `.goods-search-actions`:

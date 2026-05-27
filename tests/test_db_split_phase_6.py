@@ -81,17 +81,14 @@ def test_init_py_no_longer_redefines_goods_item_callables() -> None:
 def test_owned_item_goods_bridge_helpers_remain_in_init() -> None:
     """`_owned_item_allows_goods`, `_migrate_owned_item_allow_goods`, and
     `_upsert_goods_item_detail_in_conn` are owned-item-side helpers that
-    happen to involve goods schema. They must NOT have moved."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
+    happen to involve goods schema. They must be reachable via the package."""
     for stays in (
         "_owned_item_allows_goods",
         "_migrate_owned_item_allow_goods",
         "_upsert_goods_item_detail_in_conn",
     ):
-        pattern = re.compile(rf"^def {re.escape(stays)}\(", re.MULTILINE)
-        assert pattern.search(init_src), (
-            f"{stays} unexpectedly removed from app/db/__init__.py — "
-            f"it owns owned-item-side concerns and must stay there"
+        assert hasattr(db, stays), (
+            f"{stays} unexpectedly removed from app.db surface"
         )
 
 

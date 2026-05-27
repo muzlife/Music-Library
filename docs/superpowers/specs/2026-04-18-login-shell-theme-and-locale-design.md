@@ -7,9 +7,9 @@
 
 ## Current State
 
-- 로그인 화면은 [app/static/login.html](/Volumes/Works/07.hahahoho/app/static/login.html) 의 독립 정적 파일이다.
+- 로그인 화면은 [app/static/login.html](/Volumes/Data/Works/07.hahahoho/app/static/login.html) 의 독립 정적 파일이다.
 - 현재 로그인 화면은 고정 밝은 테마만 제공한다.
-- 운영/관리 화면은 [app/static/index.html](/Volumes/Works/07.hahahoho/app/static/index.html) 에서 `localStorage` 기반으로 `locale/theme`를 유지한다.
+- 운영/관리 화면은 [app/static/index.html](/Volumes/Data/Works/07.hahahoho/app/static/index.html) 에서 `localStorage` 기반으로 `locale/theme`를 유지한다.
 - 로그인 화면은 이 저장 상태를 읽거나 쓸 수 없다.
 - 결과적으로 로그인 화면과 본 콘솔의 헤더, 컬러 시스템, 상태 유지 방식이 분리돼 있다.
 
@@ -199,7 +199,7 @@
 
 ### Primary File
 
-- [app/static/login.html](/Volumes/Works/07.hahahoho/app/static/login.html)
+- [app/static/login.html](/Volumes/Data/Works/07.hahahoho/app/static/login.html)
 
 ### Optional Test Files
 

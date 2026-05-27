@@ -1,7 +1,7 @@
 # 상용화 체크리스트
 
 이 문서는 `QA 검증 완료 -> 운영 반영 -> 초기 안정화`까지의 실행 체크리스트입니다.  
-세부 서버 작업은 [macos_qa_prod_runbook.md](/Volumes/Works/07.hahahoho/docs/macos_qa_prod_runbook.md)를 함께 봅니다.
+세부 서버 작업은 [macos_qa_prod_runbook.md](/Volumes/Data/Works/07.hahahoho/docs/macos_qa_prod_runbook.md)를 함께 봅니다.
 
 ## 1. 배포 전 기준선
 
@@ -32,7 +32,7 @@
 - [ ] QA 마스터 시트의 해당 행들에 `release_ref`, `evidence_ref`, `result`, `verified_at`, `executor`, `approver`가 반영됐다.
 
 참고 문서
-- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
+- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
 
 ## 3. 운영 반영 직전
 

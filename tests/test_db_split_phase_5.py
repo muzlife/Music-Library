@@ -138,7 +138,7 @@ def test_storage_slot_register_and_list_round_trip_through_package_surface() -> 
 
     # Cleanup via delete_storage_cabinet (the canonical path).
     result = db.delete_storage_cabinet(cabinet)
-    assert int(result.get("removed_slot_count") or 0) == 1
+    assert int(result.get("deleted_slot_count") or 0) == 1
     assert (
         len([item for item in db.list_storage_slots() if item.get("cabinet_name") == cabinet])
         == 0

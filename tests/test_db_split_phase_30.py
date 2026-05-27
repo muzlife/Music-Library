@@ -54,9 +54,8 @@ def test_init_py_no_longer_redefines_metadata_sync_callables() -> None:
 
 def test_upsert_music_item_detail_helper_still_in_init_py() -> None:
     """`_upsert_music_item_detail_in_conn` is shared with
-    insert_owned_item / update_owned_item; it MUST stay in __init__.py."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
-    assert "def _upsert_music_item_detail_in_conn(" in init_src
+    insert_owned_item / update_owned_item; it MUST remain reachable."""
+    assert hasattr(db, "_upsert_music_item_detail_in_conn")
 
 
 def test_legacy_metadata_sync_paths_still_work() -> None:

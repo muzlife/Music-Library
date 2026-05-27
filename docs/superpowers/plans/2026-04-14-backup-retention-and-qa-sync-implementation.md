@@ -29,8 +29,8 @@
 
 대상:
 
-- `/Volumes/Works/07.hahahoho/app/main.py`
-- 필요 시 `/Volumes/Works/07.hahahoho/app/db.py`
+- `/Volumes/Data/Works/07.hahahoho/app/main.py`
+- 필요 시 `/Volumes/Data/Works/07.hahahoho/app/db.py`
 
 작업:
 
@@ -48,8 +48,8 @@
 
 대상:
 
-- `/Volumes/Works/07.hahahoho/deploy/scripts/backup_daily_db.sh`
-- `/Volumes/Works/07.hahahoho/deploy/scripts/backup_weekly_full.sh`
+- `/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_daily_db.sh`
+- `/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_weekly_full.sh`
 
 작업:
 
@@ -69,7 +69,7 @@
 
 대상:
 
-- `/Volumes/Works/07.hahahoho/deploy/scripts/sync_prod_backup_to_qa.sh`
+- `/Volumes/Data/Works/07.hahahoho/deploy/scripts/sync_prod_backup_to_qa.sh`
 
 작업:
 
@@ -90,7 +90,7 @@
 
 대상:
 
-- `/Volumes/Works/07.hahahoho/deploy/scripts/upload_backup_to_gcs.sh`
+- `/Volumes/Data/Works/07.hahahoho/deploy/scripts/upload_backup_to_gcs.sh`
 - 필요 시 공통 헬퍼 스크립트
 
 작업:
@@ -110,9 +110,9 @@
 
 대상:
 
-- `/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-daily-db.plist`
-- `/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-weekly-full.plist`
-- `/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.qa-sync-weekly.plist`
+- `/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-daily-db.plist`
+- `/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-weekly-full.plist`
+- `/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.qa-sync-weekly.plist`
 
 작업:
 
@@ -129,7 +129,7 @@
 
 대상:
 
-- `/Volumes/Works/07.hahahoho/docs/macos_qa_prod_runbook.md`
+- `/Volumes/Data/Works/07.hahahoho/docs/macos_qa_prod_runbook.md`
 - 필요 시 운영 매뉴얼/체크리스트
 
 작업:
