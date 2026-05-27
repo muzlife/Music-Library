@@ -102,17 +102,14 @@ def test_main_py_imports_owned_items_router() -> None:
     assert "app.include_router(owned_items_router)" in main_src
 
 
-def test_storage_slot_owned_items_endpoints_remain_in_main_py() -> None:
-    """/storage-slots/{id}/owned-items is a storage-slot route, not an
-    owned-items CRUD route — it must NOT have moved."""
+def test_storage_slot_owned_items_endpoints_moved_to_storage_router() -> None:
+    """/storage-slots/{id}/owned-items and order route moved to app.api.storage."""
     main_src = (REPO_ROOT / "app" / "main.py").read_text("utf-8")
-    assert (
-        '@app.get("/storage-slots/{storage_slot_id}/owned-items"' in main_src
-    ), "storage-slot listing route was moved by accident"
-    assert (
-        '@app.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order"'
-        in main_src
-    ), "storage-slot order route was moved by accident"
+    storage_src = (REPO_ROOT / "app" / "api" / "storage.py").read_text("utf-8")
+    assert '@app.get("/storage-slots/{storage_slot_id}/owned-items"' not in main_src
+    assert '@app.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order"' not in main_src
+    assert '@router.get("/storage-slots/{storage_slot_id}/owned-items"' in storage_src
+    assert '@router.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order"' in storage_src
 
 
 def test_ops_owned_items_endpoints_moved_to_ops_system() -> None:
