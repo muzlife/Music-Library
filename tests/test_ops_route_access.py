@@ -316,7 +316,7 @@ def test_operator_can_get_ops_owned_item_collector_info_for_discogs_item(operato
         }
 
     monkeypatch.setattr(main_module.db, "get_owned_item_detail", fake_get_owned_item_detail)
-    monkeypatch.setattr(main_module, "get_discogs_release_collector_info", fake_collector_info)
+    monkeypatch.setattr(main_module, "get_discogs_release_collector_info", fake_collector_info, raising=False)
 
     res = operator_client.get("/ops/owned-items/101/collector-info")
 

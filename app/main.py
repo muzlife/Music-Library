@@ -4593,32 +4593,8 @@ def _aladin_discogs_backfill_thread_worker(dry_run: bool, sleep_sec: float) -> N
         logger.exception("aladin_discogs_backfill thread error: %s", exc)
 
 
-@app.get("/aladin-discogs-backfill/status")
-def get_aladin_discogs_backfill_status() -> dict[str, Any]:
-    return {
-        "running": ALADIN_DISCOGS_BACKFILL_LOCK.locked(),
-        "last_result": ALADIN_DISCOGS_BACKFILL_LAST_RESULT,
-        "last_error": ALADIN_DISCOGS_BACKFILL_LAST_ERROR,
-    }
 
 
-@app.post("/aladin-discogs-backfill/run")
-def run_aladin_discogs_backfill_async(
-    dry_run: bool = False,
-    sleep_sec: float = 2.0,
-) -> dict[str, Any]:
-    global ALADIN_DISCOGS_BACKFILL_THREAD
-    if ALADIN_DISCOGS_BACKFILL_LOCK.locked():
-        raise HTTPException(status_code=409, detail="aladin discogs backfill already running")
-    t = threading.Thread(
-        target=_aladin_discogs_backfill_thread_worker,
-        kwargs={"dry_run": dry_run, "sleep_sec": sleep_sec},
-        name="aladin-discogs-backfill",
-        daemon=True,
-    )
-    ALADIN_DISCOGS_BACKFILL_THREAD = t
-    t.start()
-    return {"status": "started", "dry_run": dry_run, "sleep_sec": sleep_sec}
 
 
 
@@ -4637,31 +4613,7 @@ def _discogs_korean_backfill_worker(limit: int | None) -> None:
         DISCOGS_KOREAN_BACKFILL_RESULT = {"status": "error", "detail": str(exc)}
         logger.exception("discogs_korean_backfill error: %s", exc)
 
-@app.get("/discogs-korean-backfill/status")
-def get_discogs_korean_backfill_status() -> dict[str, Any]:
-    running = (
-        DISCOGS_KOREAN_BACKFILL_THREAD is not None
-        and DISCOGS_KOREAN_BACKFILL_THREAD.is_alive()
-    )
-    return {
-        "running": running,
-        "result":  DISCOGS_KOREAN_BACKFILL_RESULT,
-    }
 
-@app.post("/discogs-korean-backfill/run")
-def run_discogs_korean_backfill(limit: int | None = None) -> dict[str, Any]:
-    global DISCOGS_KOREAN_BACKFILL_THREAD
-    if DISCOGS_KOREAN_BACKFILL_LOCK.locked():
-        raise HTTPException(status_code=409, detail="discogs korean backfill already running")
-    t = threading.Thread(
-        target=_discogs_korean_backfill_worker,
-        kwargs={"limit": limit},
-        name="discogs-korean-backfill",
-        daemon=True,
-    )
-    DISCOGS_KOREAN_BACKFILL_THREAD = t
-    t.start()
-    return {"status": "started", "limit": limit}
 
 @app.get("/", include_in_schema=False)
 def root_entry(request: Request):
@@ -6095,12 +6047,6 @@ def _pick_duplicate_merge_target_id(duplicates: list[dict[str, Any]]) -> int | N
     return target_id if target_id > 0 else None
 
 
-@app.get("/discogs/identity", response_model=DiscogsIdentityResponse)
-def get_discogs_identity() -> DiscogsIdentityResponse:
-    ident = discogs_identity()
-    if ident is None:
-        raise HTTPException(status_code=400, detail="discogs identity unavailable. check DISCOGS_TOKEN.")
-    return DiscogsIdentityResponse(**ident)
 
 
 def _discogs_text(value: Any) -> str | None:
@@ -6509,159 +6455,10 @@ def _discogs_compare_variants(
     return compare_rows[:compare_limit]
 
 
-@app.get("/discogs/release/{release_id}/cover-preview")
-def get_discogs_release_cover_preview(
-    release_id: str,
-    request: Request,
-) -> FileResponse:
-    _require_admin_request(request)
-    cover_path, media_type = _ensure_discogs_cover_preview(release_id)
-    return FileResponse(
-        cover_path,
-        media_type=media_type,
-        headers={"Cache-Control": "private, max-age=86400"},
-    )
 
 
-@app.get("/discogs/release/{release_id}/collector-info")
-def get_discogs_release_collector_info(
-    release_id: str,
-    compare_limit: int = 12,
-) -> dict[str, Any]:
-    snapshot = get_source_release_snapshot(source="DISCOGS", external_id=release_id)
-    if snapshot is None:
-        raise HTTPException(status_code=404, detail="discogs release snapshot not found")
-
-    raw = snapshot.get("raw")
-    raw_detail = raw if isinstance(raw, dict) else {}
-
-    runout_matrix, other_identifiers, barcode_from_ident, identifier_items = _discogs_identifiers(raw_detail)
-    image_items = _discogs_image_items(raw_detail)
-    images = [str(item.get("uri") or "") for item in image_items if str(item.get("uri") or "").strip()]
-    label_items = _discogs_label_items(raw_detail)
-    labels = _discogs_labels(raw_detail)
-    credit_items = _discogs_credit_items(raw_detail)
-    credits = _discogs_credits(raw_detail)
-    company_items = _discogs_company_items(raw_detail)
-    companies = _discogs_companies(raw_detail)
-    formats = _discogs_format_values(raw_detail)
-    format_items = _discogs_format_items(raw_detail)
-    track_items = _discogs_track_items(raw_detail)
-    track_list_snapshot = snapshot.get("track_list")
-    track_list = track_list_snapshot if isinstance(track_list_snapshot, list) else []
-    if not track_list and track_items:
-        track_list = [str(item.get("display") or "").strip() for item in track_items]
-        track_list = [v for v in track_list if v]
-    genres = _discogs_string_list(raw_detail.get("genres"))
-    styles = _discogs_string_list(raw_detail.get("styles"))
-    series: list[str] = []
-    series_rows = raw_detail.get("series")
-    if isinstance(series_rows, list):
-        for row in series_rows:
-            if not isinstance(row, dict):
-                continue
-            name = _discogs_text(row.get("name"))
-            catno = _discogs_catalog_no(row.get("catno"))
-            if name and catno:
-                series.append(f"{name} / {catno}")
-            elif name:
-                series.append(name)
-    master_id = _discogs_text(raw_detail.get("master_id"))
-    disc_count_raw = snapshot.get("disc_count")
-    speed_rpm_raw = snapshot.get("speed_rpm")
-    has_obi_raw = snapshot.get("has_obi")
-    try:
-        disc_count = int(disc_count_raw) if disc_count_raw is not None else None
-    except (TypeError, ValueError):
-        disc_count = None
-    try:
-        speed_rpm = int(speed_rpm_raw) if speed_rpm_raw is not None else None
-    except (TypeError, ValueError):
-        speed_rpm = None
-    has_obi = bool(has_obi_raw) if has_obi_raw is not None else None
-    released_date = _discogs_text(snapshot.get("released_date")) or _discogs_text(raw_detail.get("released")) or _discogs_text(raw_detail.get("released_formatted"))
-    pressing_country = _discogs_text(snapshot.get("pressing_country")) or _discogs_text(raw_detail.get("country"))
-
-    runout_sample = " | ".join(runout_matrix[:2]) if runout_matrix else None
-    selected = {
-        "format_name": _discogs_primary_format(raw_detail),
-        "label_name": _discogs_text(snapshot.get("label_name")) or (labels[0] if labels else None),
-        "catalog_no": _discogs_catalog_no(snapshot.get("catalog_no")),
-        "barcode": _discogs_text(snapshot.get("barcode")) or barcode_from_ident,
-        "country": _discogs_text(raw_detail.get("country")),
-        "release_year": _discogs_release_year(raw_detail),
-        "track_count": len(track_list),
-        "runout_sample": runout_sample,
-    }
-    other_versions = _discogs_compare_variants(
-        release_id=release_id,
-        master_id=master_id,
-        selected=selected,
-        compare_limit=compare_limit,
-    )
-
-    return {
-        "release_id": str(release_id).strip(),
-        "master_id": master_id,
-        "title": _discogs_text(raw_detail.get("title")),
-        "artist_or_brand": _discogs_artist_value(raw_detail),
-        "release_year": _discogs_release_year(raw_detail),
-        "released_date": released_date,
-        "country": _discogs_text(raw_detail.get("country")),
-        "pressing_country": pressing_country,
-        "formats": formats,
-        "format_items": format_items,
-        "labels": labels,
-        "label_items": label_items,
-        "catalog_no": _discogs_catalog_no(snapshot.get("catalog_no")),
-        "barcode": _discogs_text(snapshot.get("barcode")) or barcode_from_ident,
-        "disc_count": disc_count,
-        "speed_rpm": speed_rpm,
-        "has_obi": has_obi,
-        "track_list": track_list,
-        "track_items": track_items,
-        "credits": credits,
-        "credit_items": credit_items,
-        "runout_matrix": runout_matrix,
-        "other_identifiers": other_identifiers,
-        "identifier_items": identifier_items,
-        "images": images,
-        "image_items": image_items,
-        "notes": _discogs_text(raw_detail.get("notes")),
-        "companies": companies,
-        "company_items": company_items,
-        "genres": genres,
-        "styles": styles,
-        "released": _discogs_text(raw_detail.get("released")) or _discogs_text(raw_detail.get("released_formatted")),
-        "series": series,
-        "other_versions": other_versions,
-    }
 
 
-@app.post("/discogs/owned-sync/{owned_item_id}", response_model=DiscogsOwnedSyncResponse)
-def sync_discogs_owned(owned_item_id: int) -> DiscogsOwnedSyncResponse:
-    existing = db.get_owned_item(owned_item_id)
-    if existing is None:
-        raise HTTPException(status_code=404, detail="owned_item not found")
-
-    source_code = str(existing.get("source_code") or "").upper()
-    source_external_id = str(existing.get("source_external_id") or "").strip()
-    if source_code != "DISCOGS" or not source_external_id:
-        raise HTTPException(status_code=400, detail="owned_item is not linked to a discogs release")
-
-    if str(existing.get("status") or "") in {"SOLD", "LOST"}:
-        raise HTTPException(status_code=400, detail="cannot sync SOLD/LOST item as owned")
-
-    result = discogs_add_release_to_collection(release_id=source_external_id, folder_id=1)
-    if result is None:
-        raise HTTPException(status_code=400, detail="discogs collection sync failed")
-
-    return DiscogsOwnedSyncResponse(
-        owned_item_id=owned_item_id,
-        source_external_id=source_external_id,
-        username=str(result.get("username") or ""),
-        synced=True,
-    )
 
 
 def _validate_signature(payload: OwnedItemCreate) -> None:
@@ -8496,3 +8293,8 @@ from app.api.storage import router as storage_router
 app.include_router(storage_router)
 from app.api.misc_catalog import router as misc_catalog_router
 app.include_router(misc_catalog_router)
+from app.api.discogs_integration import router as discogs_router
+app.include_router(discogs_router)
+
+# ── Backward-compatible re-exports for tests ──
+from app.api.discogs_integration import get_discogs_release_collector_info, get_discogs_release_cover_preview
