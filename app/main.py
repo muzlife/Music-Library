@@ -233,6 +233,7 @@ from .security import (
     AUTH_COOKIE_NAME,
     AUTH_ROLE_ADMIN,
     AUTH_ROLE_OPERATOR,
+    AUTH_ROLE_VIEWER,
     _auth_accounts,
     _auth_cookie_signature,
     _auth_cookie_value,
@@ -250,6 +251,7 @@ from .security import (
     _read_auth_session_data,
     _read_auth_username,
     _require_admin_request,
+    _require_operator_request,
     _require_authenticated_request,
     _seed_system_accounts,
     _verify_auth_password,
@@ -429,9 +431,6 @@ async def auth_guard(request: Request, call_next):
         return await call_next(request)
 
     path = request.url.path.rstrip("/") or "/"
-    if request.method == "POST":
-        print(f"[DEBUG POST {path}] Headers:", request.headers)
-        print(f"[DEBUG POST {path}] Cookies:", request.cookies)
     allowed_paths = {
         "/health",
         "/catalog-stats",
@@ -448,16 +447,9 @@ async def auth_guard(request: Request, call_next):
     request.state.auth_session = session or {}
     if session is not None:
         role = str(session.get("role") or "").strip().upper()
-        if _is_operator_role(role) and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
-            operator_allowed_write = (
-                path.startswith("/operator/customer-requests")
-                or path.startswith("/operator/roon")
-                or path == "/ops/artist-context"
-                or path.startswith("/ops/placement-hints")
-                or (path.startswith("/owned-items/") and path.endswith("/sync-metadata"))
-            )
-            if not operator_allowed_write:
-                return JSONResponse(status_code=403, content={"detail": "operator write access denied"})
+        # VIEWER role: read-only (GET/HEAD/OPTIONS only)
+        if role == AUTH_ROLE_VIEWER and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
+            return JSONResponse(status_code=403, content={"detail": "viewer write access denied"})
         return await call_next(request)
 
     if request.method == "GET" and _is_html_request(request):

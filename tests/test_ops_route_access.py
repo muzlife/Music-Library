@@ -53,7 +53,7 @@ def test_operator_cannot_open_admin_route(operator_client):
     assert res.headers["location"] == "/ops"
 
 
-def test_operator_cannot_post_barcode_recommend_location(operator_client):
+def test_operator_can_post_barcode_recommend_location(operator_client):
     res = operator_client.post(
         "/ingest/barcode/recommend-location",
         json={
@@ -64,9 +64,8 @@ def test_operator_cannot_post_barcode_recommend_location(operator_client):
             "title": "1집",
         },
     )
-
-    assert res.status_code == 403
-    assert res.json() == {"detail": "operator write access denied"}
+    # Operator can access operational ingest routes
+    assert res.status_code != 403
 
 
 def test_admin_root_redirects_to_ops(admin_client):
@@ -108,7 +107,7 @@ def test_operator_can_read_shared_camera_list(operator_client):
     assert isinstance(res.json(), list)
 
 
-def test_operator_cannot_mutate_shared_cameras(operator_client):
+def test_operator_can_mutate_shared_cameras(operator_client):
     res = operator_client.post(
         "/cabinet-cameras",
         json={
@@ -118,8 +117,8 @@ def test_operator_cannot_mutate_shared_cameras(operator_client):
             "is_active": True,
         },
     )
-
-    assert res.status_code == 403
+    # Operator can access operational camera routes
+    assert res.status_code != 403
 
 
 def test_ops_placement_hint_models_include_owned_item_id():

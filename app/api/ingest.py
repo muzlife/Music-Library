@@ -25,7 +25,7 @@ def _main():
     return main_module
 
 def _require_admin(request: Request) -> None:
-    security._require_admin(request)
+    security._require_operator_request(request)
 
 
 
@@ -46,7 +46,7 @@ def recommend_barcode_location(
     payload: BarcodePlacementRecommendationRequest,
     request: Request,
 ) -> BarcodePlacementRecommendationResponse:
-    _main()._require_admin(request)
+    _require_admin(request)
     recommendations = db.recommend_barcode_candidate_locations(
         category=payload.category,
         size_group=payload.size_group,

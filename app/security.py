@@ -41,6 +41,7 @@ AUTH_COOKIE_NAME = "hahahoho_session"
 AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 14  # 14 days
 AUTH_ROLE_ADMIN = "ADMIN"
 AUTH_ROLE_OPERATOR = "OPERATOR"
+AUTH_ROLE_VIEWER = "VIEWER"
 
 
 # --- Password hashing ---------------------------------------------------- #
@@ -102,7 +103,7 @@ def _db_auth_accounts() -> list[dict[str, str]]:
         username = str(row.get("username") or "").strip()
         password_hash = str(row.get("password_hash") or "").strip()
         role = str(row.get("role") or "").strip().upper()
-        if username and password_hash and role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
+        if username and password_hash and role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER}:
             out.append({"username": username, "password_hash": password_hash, "role": role})
     return out
 
@@ -244,10 +245,10 @@ def _read_auth_session_data(request: Request) -> dict[str, str] | None:
         return None
     if int(time.time()) - issued_at > AUTH_COOKIE_MAX_AGE:
         return None
-    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
+    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER}:
         matched = _auth_accounts().get(username)
         role = str((matched or {}).get("role") or "").strip().upper()
-    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR}:
+    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER}:
         return None
     return {"username": username, "role": role}
 
@@ -264,7 +265,7 @@ def _read_auth_role(request: Request) -> str | None:
     if session is None:
         return None
     role = str(session.get("role") or "").strip().upper()
-    return role if role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR} else None
+    return role if role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER} else None
 
 
 def _is_authenticated(request: Request) -> bool:
@@ -279,10 +280,20 @@ def _is_operator_role(role: str | None) -> bool:
     return str(role or "").strip().upper() == AUTH_ROLE_OPERATOR
 
 
+def _is_operator_or_admin_role(role: str | None) -> bool:
+    return _is_admin_role(role) or _is_operator_role(role)
+
+
 def _require_admin_request(request: Request) -> None:
     role = _read_auth_role(request)
     if not _is_admin_role(role):
         raise HTTPException(status_code=403, detail="admin access required")
+
+
+def _require_operator_request(request: Request) -> None:
+    role = _read_auth_role(request)
+    if not _is_operator_or_admin_role(role):
+        raise HTTPException(status_code=403, detail="operator access required")
 
 
 def _require_authenticated_request(request: Request) -> None:
@@ -301,6 +312,7 @@ __all__ = [
     "AUTH_COOKIE_MAX_AGE",
     "AUTH_ROLE_ADMIN",
     "AUTH_ROLE_OPERATOR",
+    "AUTH_ROLE_VIEWER",
     "_auth_accounts",
     "_auth_cookie_signature",
     "_auth_cookie_value",
@@ -313,11 +325,13 @@ __all__ = [
     "_is_authenticated",
     "_is_html_request",
     "_is_operator_role",
+    "_is_operator_or_admin_role",
     "_match_auth_account",
     "_read_auth_role",
     "_read_auth_session_data",
     "_read_auth_username",
     "_require_admin_request",
+    "_require_operator_request",
     "_require_authenticated_request",
     "_seed_system_accounts",
     "_verify_auth_password",

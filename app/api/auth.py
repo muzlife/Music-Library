@@ -27,6 +27,7 @@ from ..security import (
     AUTH_COOKIE_NAME,
     AUTH_ROLE_ADMIN,
     AUTH_ROLE_OPERATOR,
+    AUTH_ROLE_VIEWER,
     _auth_accounts,
     _auth_cookie_value,
     _auth_enabled,
@@ -121,6 +122,10 @@ def auth_session(request: Request) -> dict[str, Any]:
         str(account.get("role") or "").strip().upper() == AUTH_ROLE_OPERATOR
         for account in accounts.values()
     )
+    viewer_available = any(
+        str(account.get("role") or "").strip().upper() == AUTH_ROLE_VIEWER
+        for account in accounts.values()
+    )
     return {
         "enabled": _auth_enabled(),
         "authenticated": (not _auth_enabled()) or bool(username),
@@ -128,4 +133,5 @@ def auth_session(request: Request) -> dict[str, Any]:
         "role": role if _auth_enabled() else AUTH_ROLE_ADMIN,
         "admin_available": admin_available,
         "operator_available": operator_available,
+        "viewer_available": viewer_available,
     }

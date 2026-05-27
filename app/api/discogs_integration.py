@@ -13,7 +13,7 @@ def _main():
     from app import main as main_module
     return main_module
 def _require_admin(request: Request) -> None:
-    security._require_admin_request(request)
+    security._require_operator_request(request)
 
 
 

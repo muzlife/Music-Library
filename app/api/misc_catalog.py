@@ -35,6 +35,8 @@ def _main():
     return main_module
 def _require_admin_request(request: Request) -> None:
     security._require_admin_request(request)
+def _require_operator_request(request: Request) -> None:
+    security._require_operator_request(request)
 def _require_authenticated_request(request: Request) -> None:
     security._require_authenticated_request(request)
 
@@ -79,7 +81,7 @@ def get_goods_items(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> GoodsItemSearchResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     items = db.search_goods_items(
         query_text=q,
         category=category,
@@ -118,7 +120,7 @@ def get_goods_items(
 
 @router.post("/goods-items", response_model=GoodsItemResponse)
 def create_goods_item(payload: GoodsItemCreateRequest, request: Request) -> GoodsItemResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     try:
         row = db.create_goods_item(payload.model_dump())
     except ValueError as err:
@@ -128,7 +130,7 @@ def create_goods_item(payload: GoodsItemCreateRequest, request: Request) -> Good
 
 @router.get("/goods-items/{goods_item_id}", response_model=GoodsItemResponse)
 def get_goods_item_detail(goods_item_id: int, request: Request) -> GoodsItemResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     row = db.get_goods_item(goods_item_id)
     if row is None:
         raise HTTPException(status_code=404, detail="goods item not found")
@@ -141,7 +143,7 @@ def update_goods_item_detail(
     payload: GoodsItemUpdateRequest,
     request: Request,
 ) -> GoodsItemResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     try:
         row = db.update_goods_item(goods_item_id, payload.model_dump(exclude_unset=True))
     except ValueError as err:
@@ -153,7 +155,7 @@ def update_goods_item_detail(
 
 @router.delete("/goods-items/{goods_item_id}")
 def delete_goods_item_detail(goods_item_id: int, request: Request) -> dict[str, Any]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     deleted = db.delete_goods_item(goods_item_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="goods item not found")
@@ -166,7 +168,7 @@ def replace_goods_item_mappings(
     payload: GoodsItemMappingUpdateRequest,
     request: Request,
 ) -> GoodsItemResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     try:
         row = db.replace_goods_item_mappings(goods_item_id, payload.model_dump())
     except ValueError as err:
@@ -182,7 +184,7 @@ def replace_goods_item_collectible_relations(
     payload: GoodsItemRelationUpdateRequest,
     request: Request,
 ) -> GoodsItemResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     try:
         row = db.replace_goods_item_collectible_relations(goods_item_id, payload.model_dump())
     except ValueError as err:
@@ -200,7 +202,7 @@ def search_goods_mapping_targets(
     goods_item_id: int | None = Query(default=None, ge=1),
     limit: int = Query(default=10, ge=1, le=50),
 ) -> dict[str, list[dict[str, Any]]]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     query = str(q or "").strip()
     if kind == "artist":
         return {
@@ -277,7 +279,7 @@ def create_or_update_cabinet_camera(
     payload: CabinetCameraUpsertRequest,
     request: Request,
 ) -> CabinetCameraItem:
-    _require_admin_request(request)
+    _require_operator_request(request)
     try:
         row = db.upsert_cabinet_camera(
             camera_id=payload.camera_id,
@@ -304,7 +306,7 @@ def discover_cabinet_cameras(
     request: Request,
     timeout_ms: int = Query(default=2500, ge=500, le=10000),
 ) -> list[CabinetCameraDiscoveryItem]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     rows = _main()._discover_onvif_devices(timeout_seconds=float(timeout_ms) / 1000.0)
     return [CabinetCameraDiscoveryItem(**row) for row in rows]
 
@@ -314,7 +316,7 @@ def test_cabinet_camera_connection(
     payload: CabinetCameraConnectionTestRequest,
     request: Request,
 ) -> CabinetCameraConnectionTestResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     username = str(payload.username or "").strip() or None
     password = payload.password
     if payload.camera_id and (not username or password is None):
@@ -341,7 +343,7 @@ def test_cabinet_camera_connection(
 
 @router.delete("/cabinet-cameras/{camera_id}", response_model=CabinetCameraDeleteResponse)
 def remove_cabinet_camera(camera_id: int, request: Request) -> CabinetCameraDeleteResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     existing = db.get_cabinet_camera(camera_id)
     if existing is None:
         raise HTTPException(status_code=404, detail="cabinet camera not found")
@@ -550,7 +552,7 @@ def list_product_groups(
     q: str | None = Query(default=None),
     limit: int = Query(default=12, ge=1, le=100),
 ) -> list[dict[str, Any]]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     query_text = str(q or "").strip().lower()
     with db.get_conn() as conn:
         if query_text:
@@ -582,7 +584,7 @@ def list_product_groups(
 
 @router.post("/product-groups")
 def create_product_group(payload: ProductGroupCreateRequest, request: Request) -> dict[str, Any]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     group_type = str(payload.group_type or "SERIES").strip().upper()
     group_name = str(payload.group_name or "").strip()
     if not group_name:

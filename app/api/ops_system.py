@@ -40,7 +40,11 @@ def _main():
 
 
 def _require_admin_request(request: Request) -> None:
-    security._require_admin_request(request)
+    security._require_operator_request(request)
+
+
+def _require_operator_request(request: Request) -> None:
+    security._require_operator_request(request)
 
 
 def _require_authenticated_request(request: Request) -> None:
@@ -74,7 +78,7 @@ def _external_base_url_for_request(request: Request) -> str:
 
 @router.get("/system/status")
 def system_status(request: Request) -> dict[str, Any]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     m = _main()
     sync_running = bool(m.METADATA_SYNC_LOCK.locked())
     sync_last_error = str(m.METADATA_SYNC_LAST_ERROR or "").strip()
@@ -95,7 +99,7 @@ def system_status(request: Request) -> dict[str, Any]:
 
 @router.get("/ops/export/db-backup")
 def export_db_backup(request: Request, background_tasks: BackgroundTasks) -> FileResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-library-", suffix=".db", delete=False)
     tmp_path = tmp.name
@@ -120,7 +124,7 @@ def export_full_backup(
     background_tasks: BackgroundTasks,
     include_env_file: bool = Query(default=False),
 ) -> FileResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     mf = _main()
     backup_settings = db.get_auto_backup_settings()
     bundle_path = mf._create_local_full_backup_bundle(
@@ -138,7 +142,7 @@ def export_full_backup(
 
 @router.get("/ops/export/backup-settings", response_model=AutoBackupSettingsResponse)
 def get_auto_backup_settings(request: Request) -> AutoBackupSettingsResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     payload = db.get_auto_backup_settings()
     payload.update(_main()._read_backup_launchd_schedules())
     return AutoBackupSettingsResponse(**payload)
@@ -149,7 +153,7 @@ def save_auto_backup_settings(
     payload: AutoBackupSettingsUpdateRequest,
     request: Request,
 ) -> AutoBackupSettingsResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     backup_dir = _main()._normalize_backup_dir_path(payload.backup_dir)
     Path(backup_dir).mkdir(parents=True, exist_ok=True)
     saved = db.save_auto_backup_settings(
@@ -165,7 +169,7 @@ def save_auto_backup_settings(
 
 @router.get("/ops/provider-settings", response_model=MetadataProviderSettingsResponse)
 def get_metadata_provider_settings(request: Request) -> MetadataProviderSettingsResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     return MetadataProviderSettingsResponse(**_main()._metadata_provider_settings_payload())
 
 
@@ -174,7 +178,7 @@ def save_metadata_provider_settings(
     payload: MetadataProviderSettingsUpdateRequest,
     request: Request,
 ) -> MetadataProviderSettingsResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     updates: dict[str, str] = {}
     if payload.discogs_token is not None and payload.discogs_token.strip():
         updates["DISCOGS_TOKEN"] = payload.discogs_token.strip()
@@ -205,7 +209,7 @@ def save_metadata_provider_settings(
 
 @router.post("/ops/provider-settings/deepl-test", response_model=MetadataProviderConnectionTestResponse)
 def test_deepl_provider_settings(request: Request) -> MetadataProviderConnectionTestResponse:
-    _require_admin_request(request)
+    _require_operator_request(request)
     settings = get_settings()
     auth_key = str(settings.deepl_auth_key or "").strip()
     base_url = str(settings.deepl_base_url or "").strip()
@@ -258,7 +262,7 @@ def _csv_response(filename: str, header: list[str], rows: list[list[Any]]) -> Re
 
 @router.get("/ops/export/owned-items.csv")
 def export_owned_items_csv(request: Request) -> Response:
-    _require_admin_request(request)
+    _require_operator_request(request)
     with db.get_conn() as conn:
         rows = conn.execute(
             """
@@ -311,7 +315,7 @@ def export_owned_items_csv(request: Request) -> Response:
 
 @router.get("/ops/export/album-masters.csv")
 def export_album_masters_csv(request: Request) -> Response:
-    _require_admin_request(request)
+    _require_operator_request(request)
     with db.get_conn() as conn:
         rows = conn.execute(
             """
