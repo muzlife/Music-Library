@@ -522,6 +522,11 @@ def get_collection_dashboard() -> dict[str, Any]:
             )
             GROUP BY artist
             HAVING total >= 3
+               AND LOWER(artist) NOT LIKE '%various%'
+               AND LOWER(artist) NOT LIKE '%여러%'
+               AND LOWER(artist) NOT LIKE '%옴니버스%'
+               AND LOWER(artist) NOT LIKE '%omnibus%'
+               AND LOWER(artist) NOT LIKE '%compilation%'
             ORDER BY total DESC
             LIMIT 15
             """

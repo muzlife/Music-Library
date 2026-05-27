@@ -42594,14 +42594,14 @@
         '<div class="dash-snapshot-stat"><span class="stat-value">'+fc(kr?kr.count:0)+'</span><span class="stat-label">KOREA</span><span class="stat-sub">WESTERN '+fc(we?we.count:0)+'</span></div>'+
        '</div>'+
        '<div class="dash-snapshot-chip-row">'+
-        '<span class="dash-snapshot-chip">소장 '+fc(d.in_collection_items||0)+'</span>'+
-        '<span class="dash-snapshot-chip">대출 '+fc(d.loaned_items||0)+'</span>'+
-        '<span class="dash-snapshot-chip">판매 '+fc(d.sold_items||0)+'</span>'+
-        '<span class="dash-snapshot-chip">분실 '+fc(d.lost_items||0)+'</span>'+
-        '<span class="dash-snapshot-chip is-new">새상품 '+fc(d.new_items||0)+'</span>'+
-        '<span class="dash-snapshot-chip">중고 '+fc(d.second_hand_items||0)+'</span>'+
-        '<span class="dash-snapshot-chip">한정반 '+fc(d.limited_items||0)+'</span>'+
-        '<span class="dash-snapshot-chip">홍보반 '+fc(d.promo_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip" data-dash-drilldown="ownership_in_collection" style="cursor:pointer;">소장 '+fc(d.in_collection_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip" data-dash-drilldown="ownership_loaned" style="cursor:pointer;">대출 '+fc(d.loaned_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip" data-dash-drilldown="ownership_sold" style="cursor:pointer;">판매 '+fc(d.sold_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip" data-dash-drilldown="ownership_lost" style="cursor:pointer;">분실 '+fc(d.lost_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip is-new" data-dash-drilldown="new_items" style="cursor:pointer;">새상품 '+fc(d.new_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip" data-dash-drilldown="other_items" style="cursor:pointer;">중고 '+fc(d.second_hand_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip" data-dash-drilldown="limited_edition" style="cursor:pointer;">한정반 '+fc(d.limited_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip" data-dash-drilldown="promo_items" style="cursor:pointer;">홍보반 '+fc(d.promo_items||0)+'</span>'+
        '</div>';
     }
 
@@ -42729,12 +42729,12 @@
       var b=document.getElementById('homeDashCollectorBody'); if(!b)return;
       var fc=formatCount;
       b.innerHTML='<div class="dash-collector-grid">'+
-        '<div class="dash-collector-item"><span class="dash-collector-icon">✍️</span><span class="dash-collector-value">'+fc(d.signed_items||0)+'</span><span class="dash-collector-label">싸인본</span></div>'+
-        '<div class="dash-collector-item"><span class="dash-collector-icon">💎</span><span class="dash-collector-value">'+fc(d.limited_items||0)+'</span><span class="dash-collector-label">한정반</span></div>'+
+        '<div class="dash-collector-item" data-dash-drilldown="sig_direct" style="cursor:pointer;"><span class="dash-collector-icon">✍️</span><span class="dash-collector-value">'+fc(d.signed_items||0)+'</span><span class="dash-collector-label">싸인본</span></div>'+
+        '<div class="dash-collector-item" data-dash-drilldown="limited_edition" style="cursor:pointer;"><span class="dash-collector-icon">💎</span><span class="dash-collector-value">'+fc(d.limited_items||0)+'</span><span class="dash-collector-label">한정반</span></div>'+
         '<div class="dash-collector-item"><span class="dash-collector-icon">📀</span><span class="dash-collector-value">'+fc(d.multi_disc_items||0)+'</span><span class="dash-collector-label">멀티디스크</span></div>'+
         '<div class="dash-collector-item"><span class="dash-collector-icon">🎗️</span><span class="dash-collector-value">'+fc(d.obi_items||0)+'</span><span class="dash-collector-label">OBI</span></div>'+
-        '<div class="dash-collector-item"><span class="dash-collector-icon">📢</span><span class="dash-collector-value">'+fc(d.promo_items||0)+'</span><span class="dash-collector-label">홍보반</span></div>'+
-        '<div class="dash-collector-item"><span class="dash-collector-icon">🔄</span><span class="dash-collector-value">'+fc(d.second_hand_items||0)+'</span><span class="dash-collector-label">중고</span></div>'+
+        '<div class="dash-collector-item" data-dash-drilldown="promo_items" style="cursor:pointer;"><span class="dash-collector-icon">📢</span><span class="dash-collector-value">'+fc(d.promo_items||0)+'</span><span class="dash-collector-label">홍보반</span></div>'+
+        '<div class="dash-collector-item" data-dash-drilldown="other_items" style="cursor:pointer;"><span class="dash-collector-icon">🔄</span><span class="dash-collector-value">'+fc(d.second_hand_items||0)+'</span><span class="dash-collector-label">중고</span></div>'+
       '</div>';
     }
 
@@ -42752,7 +42752,7 @@
         {l:'도메인 미지정',c:unassigned,cls:'alert-info'},
       ];
       var h='<div class="dash-alert-grid">';
-      for(var j=0;j<alerts.length;j++){h+='<div class="dash-alert-item '+alerts[j].cls+'"><span>'+alerts[j].l+'</span><span class="alert-count">'+fc(alerts[j].c)+'</span></div>';}
+      for(var j=0;j<alerts.length;j++){var dk=(alerts[j].l==='소스 미연결'?'source_unlinked':alerts[j].l==='마스터 미연결'?'master_unlinked':alerts[j].l==='커버 없음'?'cover_missing':alerts[j].l==='장르 없음'?'genre_missing':alerts[j].l==='미배치'?'unslotted':'genre_missing');h+='<div class="dash-alert-item '+alerts[j].cls+'" data-dash-drilldown="'+dk+'" style="cursor:pointer;"><span>'+alerts[j].l+'</span><span class="alert-count">'+fc(alerts[j].c)+'</span></div>';}
       h+='</div>';
       b.innerHTML=h;
     }
