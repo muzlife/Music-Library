@@ -107,6 +107,15 @@ class CafeTrackRequest(BaseModel):
     owned_item_id: int | None = None
 
 
+# ── public tags (for tablet browse tab) ────────────────────────────
+
+@router.get("/cafe/tags")
+def cafe_tags() -> dict[str, Any]:
+    """Public: list all tags for tablet browse tab."""
+    rows = db.list_track_tags()
+    return {"total_count": len(rows), "items": rows}
+
+
 # ── search ──────────────────────────────────────────────────────
 
 @router.get("/cafe/search")
@@ -287,6 +296,24 @@ async def cafe_websocket(ws: WebSocket):
 
     else:
         await ws.close(code=4000)
+
+
+# ── Spotify OAuth callback ────────────────────────────────────────
+
+@router.get("/spotify/callback")
+def spotify_callback(request: Request):
+    """Handle Spotify OAuth redirect after user authorization."""
+    code = request.query_params.get("code")
+    if not code:
+        return {"error": "no authorization code received"}
+    try:
+        sp = _spotify._ensure_client()
+        if sp is None:
+            return {"error": "spotify not configured"}
+        token_info = sp.auth_manager.get_access_token(code, check_cache=False)
+        return {"ok": True, "message": "Spotify OAuth complete! You can close this page."}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # ── reactions ─────────────────────────────────────────────────────
