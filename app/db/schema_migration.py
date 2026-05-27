@@ -496,7 +496,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -522,6 +522,8 @@ Version log:
   7 — `music_item_detail.format_name` CHECK 제약 제거 (테이블 재생성).
       Pydantic 스키마를 str | None 으로 완화했으나 SQLite 레벨 CHECK 가
       남아 있어 Vinyl 등 자유 형식 값 저장 시 500 에러 발생.
+  8 — `customer_track_request` weather columns (weather_temp_c, weather_description,
+      weather_code, season) and playback columns (playback_deck, played_at, returned_at).
 """
 
 
@@ -767,6 +769,28 @@ def _migration_v6_add_package_contents_limited_edition(conn: sqlite3.Connection)
         conn.execute("ALTER TABLE music_item_detail ADD COLUMN edition_number TEXT")
 
 
+def _migration_v8_add_customer_track_weather_and_decks(conn: sqlite3.Connection) -> None:
+    """`customer_track_request` weather columns (weather_temp_c, weather_description,
+    weather_code, season) and playback columns (playback_deck, played_at, returned_at).
+    """
+    if not _table_exists(conn, "customer_track_request"):
+        return
+    if not _column_exists(conn, "customer_track_request", "weather_temp_c"):
+        conn.execute("ALTER TABLE customer_track_request ADD COLUMN weather_temp_c REAL")
+    if not _column_exists(conn, "customer_track_request", "weather_description"):
+        conn.execute("ALTER TABLE customer_track_request ADD COLUMN weather_description TEXT")
+    if not _column_exists(conn, "customer_track_request", "weather_code"):
+        conn.execute("ALTER TABLE customer_track_request ADD COLUMN weather_code INTEGER")
+    if not _column_exists(conn, "customer_track_request", "season"):
+        conn.execute("ALTER TABLE customer_track_request ADD COLUMN season TEXT")
+    if not _column_exists(conn, "customer_track_request", "playback_deck"):
+        conn.execute("ALTER TABLE customer_track_request ADD COLUMN playback_deck TEXT")
+    if not _column_exists(conn, "customer_track_request", "played_at"):
+        conn.execute("ALTER TABLE customer_track_request ADD COLUMN played_at TEXT")
+    if not _column_exists(conn, "customer_track_request", "returned_at"):
+        conn.execute("ALTER TABLE customer_track_request ADD COLUMN returned_at TEXT")
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -775,6 +799,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     5: _migration_v5_add_album_master_override_title_artist,
     6: _migration_v6_add_package_contents_limited_edition,
     7: _migration_v7_drop_format_name_check,
+    8: _migration_v8_add_customer_track_weather_and_decks,
 }
 
 

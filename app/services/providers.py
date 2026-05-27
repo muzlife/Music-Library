@@ -377,6 +377,19 @@ def _normalize_compact_text(s: str | None) -> str:
     return re.sub(r"[\s\-\._/]+", "", _normalize_text(s))
 
 
+def _validate_barcode_checksum(barcode_digits: str) -> bool:
+    """EAN-13 또는 UPC-A 체크섬 검증. 형식이 유효하면 True."""
+    if not barcode_digits.isdigit():
+        return False
+    if len(barcode_digits) == 13:  # EAN-13 (한국 880 포함)
+        total = sum(int(d) * (1 if i % 2 == 0 else 3) for i, d in enumerate(barcode_digits[:12]))
+        return (10 - total % 10) % 10 == int(barcode_digits[12])
+    if len(barcode_digits) == 12:  # UPC-A
+        total = sum(int(d) * (3 if i % 2 == 0 else 1) for i, d in enumerate(barcode_digits[:11]))
+        return (10 - total % 10) % 10 == int(barcode_digits[11])
+    return False
+
+
 def _token_similarity(a: str, b: str) -> float:
     ta = set(_normalize_text(a).split())
     tb = set(_normalize_text(b).split())
@@ -628,11 +641,16 @@ def infer_domain_code(
     combined = " ".join(v for v in [genre_text, style_text, artist_text, title_text, label_text] if v).strip()
     combined_lower = combined.lower()
 
-    if any(token in combined_lower for token in ["k-pop", "k pop", "k-rock", "k rock", "k-indie", "k indie", "trot"]):
+    # NOTE: substring 검사(token in combined_lower)는 "k rock"이 "rock rock"에서
+    #       false positive로 걸리는 버그가 있어 regex word boundary로 교체했다.
+    _re_korea = re.compile(r"\b(k-pop|k\s+pop|k-rock|k\s+rock|k-indie|k\s+indie|trot)\b", re.I)
+    _re_japan = re.compile(r"\b(j-pop|j\s+pop|j-rock|j\s+rock|kayokyoku|kayōkyoku|enka|shibuya-kei|shibuya\s+kei)\b", re.I)
+    _re_china = re.compile(r"\b(c-pop|c\s+pop|mandopop|cantopop)\b", re.I)
+    if _re_korea.search(combined):
         return "KOREA"
-    if any(token in combined_lower for token in ["j-pop", "j pop", "j-rock", "j rock", "kayokyoku", "kayōkyoku", "enka", "shibuya-kei", "shibuya kei"]):
+    if _re_japan.search(combined):
         return "JAPAN"
-    if any(token in combined_lower for token in ["c-pop", "c pop", "mandopop", "cantopop"]):
+    if _re_china.search(combined):
         return "GREATER_CHINA"
 
     # 한글·가나 문자 판별은 콘텐츠 필드(장르·스타일·아티스트·타이틀)만 사용.
@@ -3938,6 +3956,12 @@ def search_music_metadata(
         if query:
             return search_maniadb_by_query(query, limit=limit)[: max(1, limit)]
         return []
+    if source_u == "MUSICBRAINZ":
+        if barcode:
+            return search_musicbrainz_by_barcode(barcode, limit=limit)[: max(1, limit)]
+        if query:
+            return search_musicbrainz_by_query(query, limit=limit)[: max(1, limit)]
+        return []
     if barcode:
         discogs = search_discogs_by_barcode(barcode, limit=limit)
         if discogs:
@@ -3971,6 +3995,266 @@ def search_music_metadata(
 
     merged = sorted(dedup.values(), key=lambda x: float(x.get("confidence", 0)), reverse=True)
     return merged[: max(1, limit)]
+
+
+def _try_discogs_for_catalog_no(
+    catalog_no: str,
+    artist: str | None,
+    title: str | None,
+    format_name: str | None = None,
+    pressing_country: str | None = None,
+) -> dict[str, Any] | None:
+    """카탈로그넘버 + 아티스트 + 앨범명으로 Discogs 검색 (바코드 없을 때 fallback).
+
+    매칭 기준:
+    - 카탈로그넘버 정규화(하이픈·공백 제거) 일치
+    - 아티스트+앨범명 토큰 유사도 >= 0.85
+    - 미디어 타입/발매국가: 같은 카탈로그넘버가 여러 포맷에 걸쳐 존재할 수 있으므로
+      hard filter 대신 preference로 활용 (일치하면 우선 선택)
+    """
+    if not catalog_no:
+        return None
+    cat_norm = catalog_no.replace("-", "").replace(" ", "").upper()
+    if not cat_norm:
+        return None
+
+    headers = _discogs_headers()
+    if not headers:
+        return None
+
+    orig_text = f"{artist or ''} {title or ''}".strip()
+    if not orig_text:
+        return None
+
+    try:
+        candidates = _discogs_search({"catno": catalog_no, "type": "release", "per_page": 5})
+        if not candidates:
+            return None
+
+        best_match = None
+        best_score = -1.0
+
+        for candidate in candidates:
+            cand_cat = (candidate.catno or "").replace("-", "").replace(" ", "").upper()
+            if cand_cat != cat_norm:
+                continue
+
+            disc_text = f"{candidate.artist_or_brand or ''} {candidate.title or ''}".strip()
+            sim = _token_similarity(orig_text, disc_text) if disc_text else 0.0
+            if sim < 0.85:
+                continue
+
+            ext = str(candidate.external_id or "").strip()
+            if not ext:
+                continue
+
+            with _make_http_client() as client:
+                detail = _fetch_discogs_release_detail(ext, headers=headers, client=client)
+            if not detail:
+                continue
+
+            # preference 점수: 미디어·국가 일치 시 가산
+            score = sim
+            if format_name:
+                disc_fmt = (detail.get("format_name") or "").upper()
+                if disc_fmt and disc_fmt == format_name.upper():
+                    score += 0.1
+            if pressing_country:
+                disc_country = (detail.get("pressing_country") or "").upper()
+                if disc_country and disc_country == pressing_country.upper():
+                    score += 0.05
+
+            if score > best_score:
+                best_score = score
+                raw_detail = detail.get("raw_detail") if isinstance(detail.get("raw_detail"), dict) else {}
+                artist_or_brand: str | None = None
+                artists = raw_detail.get("artists")
+                if isinstance(artists, list) and artists:
+                    first = artists[0]
+                    if isinstance(first, dict):
+                        artist_or_brand = (
+                            _pick_first_text(first.get("anv")) or _pick_first_text(first.get("name"))
+                        )
+                best_match = {
+                    "external_id": ext,
+                    "master_id": _discogs_master_id_from_release(raw_detail),
+                    "title": candidate.title or raw_detail.get("title"),
+                    "artist_or_brand": artist_or_brand or candidate.artist_or_brand,
+                    "release_year": _safe_year(raw_detail.get("year")),
+                    "released_date": detail.get("released_date"),
+                    "cover_image_url": detail.get("cover_image_url"),
+                    "label_name": detail.get("label_name"),
+                    "catalog_no": detail.get("catalog_no"),
+                    "barcode": detail.get("barcode"),
+                    "format_name": detail.get("format_name"),
+                    "domain_code": detail.get("domain_code"),
+                    "genres": detail.get("genres") or [],
+                    "styles": detail.get("styles") or [],
+                    "disc_count": detail.get("disc_count"),
+                    "speed_rpm": detail.get("speed_rpm"),
+                    "has_obi": detail.get("has_obi"),
+                    "runout_matrix": detail.get("runout_matrix") or [],
+                    "pressing_country": detail.get("pressing_country"),
+                    "source_notes": None,
+                    "credits": detail.get("credits") or [],
+                    "identifier_items": detail.get("identifier_items") or [],
+                    "image_items": detail.get("image_items") or [],
+                    "company_items": detail.get("company_items") or [],
+                    "series": detail.get("series") or [],
+                    "format_items": detail.get("format_items") or [],
+                    "track_items": detail.get("track_items") or [],
+                    "track_list": detail.get("track_list") or [],
+                    "label_items": detail.get("label_items") or [],
+                    "raw": raw_detail,
+                }
+
+        return best_match
+    except Exception as e:
+        logger.warning("_try_discogs_for_catalog_no error: %s", e)
+        return None
+
+
+def _try_discogs_for_barcode(barcode: str) -> dict[str, Any] | None:
+    """바코드로 Discogs 릴리즈를 조회. 매칭 시 external_id·master_id 포함 핵심 필드 반환.
+
+    EAN-13(13자리), UPC-A(12자리), EAN-8(8자리) 이상인 경우에만 검색.
+    한국 음반(880 prefix) 등 Discogs에 없는 경우 None 반환.
+    """
+    if not barcode:
+        return None
+    # EAN-13(13자리) 또는 UPC-A(12자리) 체크섬 검증
+    barcode_digits = barcode.replace(" ", "").replace("-", "")
+    if not _validate_barcode_checksum(barcode_digits):
+        return None
+    headers = _discogs_headers()
+    if not headers:
+        return None
+    try:
+        candidates = _discogs_search({"barcode": barcode, "type": "release", "per_page": 3})
+        if not candidates:
+            return None
+        best = candidates[0]
+        ext = str(best.external_id or "").strip()
+        if not ext:
+            return None
+        with _make_http_client() as client:
+            detail = _fetch_discogs_release_detail(ext, headers=headers, client=client)
+        if not detail:
+            return None
+        raw_detail = detail.get("raw_detail") if isinstance(detail.get("raw_detail"), dict) else {}
+        artist_or_brand: str | None = None
+        artists = raw_detail.get("artists")
+        if isinstance(artists, list) and artists:
+            first = artists[0]
+            if isinstance(first, dict):
+                artist_or_brand = (
+                    _pick_first_text(first.get("anv")) or _pick_first_text(first.get("name"))
+                )
+        return {
+            "external_id": ext,
+            "master_id": _discogs_master_id_from_release(raw_detail),
+            "title": best.title or raw_detail.get("title"),
+            "artist_or_brand": artist_or_brand or best.artist_or_brand,
+            "release_year": _safe_year(raw_detail.get("year")),
+            "released_date": detail.get("released_date"),
+            "cover_image_url": detail.get("cover_image_url"),
+            "label_name": detail.get("label_name"),
+            "catalog_no": detail.get("catalog_no"),
+            "barcode": detail.get("barcode"),
+            "format_name": detail.get("format_name"),
+            "domain_code": detail.get("domain_code"),
+            "genres": detail.get("genres") or [],
+            "styles": detail.get("styles") or [],
+            "disc_count": detail.get("disc_count"),
+            "speed_rpm": detail.get("speed_rpm"),
+            "has_obi": detail.get("has_obi"),
+            "runout_matrix": detail.get("runout_matrix") or [],
+            "pressing_country": detail.get("pressing_country"),
+            "credits": detail.get("credits") or [],
+            "identifier_items": detail.get("identifier_items") or [],
+            "image_items": detail.get("image_items") or [],
+            "company_items": detail.get("company_items") or [],
+            "series": detail.get("series") or [],
+            "format_items": detail.get("format_items") or [],
+            "track_items": detail.get("track_items") or [],
+            "track_list": detail.get("track_list") or [],
+            "label_items": detail.get("label_items") or [],
+            "raw": raw_detail,
+        }
+    except Exception as exc:
+        logger.warning("Discogs barcode lookup failed (barcode=%s): %s", barcode, exc)
+        return None
+
+
+def get_discogs_snapshot_from_master_id(master_id: str) -> dict[str, Any] | None:
+    """Discogs master ID → main_release snapshot (Discogs-exclusive fields only).
+
+    ManiaDB 소스 아이템처럼 Discogs release ID를 직접 갖지 않는 경우,
+    AlbumMaster의 Discogs master ID로 main_release를 조회해
+    format_items, runout_matrix, identifier_items, pressing_country 등
+    Discogs만 제공하는 부가 정보를 보강할 때 사용한다.
+    """
+    master_id_s = str(master_id or "").strip()
+    if not master_id_s:
+        return None
+    headers = _discogs_headers()
+    if headers is None:
+        return None
+    try:
+        with _make_http_client() as client:
+            # master 직접 조회해 main_release_id 추출
+            master_resp = _get_with_retry(
+                client, f"https://api.discogs.com/masters/{master_id_s}", headers=headers
+            )
+            master_resp.raise_for_status()
+            master_data = master_resp.json()
+            if not isinstance(master_data, dict):
+                return None
+            main_release_id = str(master_data.get("main_release") or "").strip()
+            if not main_release_id:
+                return None
+            detail = _fetch_discogs_release_detail(
+                main_release_id,
+                headers=headers,
+                client=client,
+                master_cache={},
+            )
+    except httpx.HTTPError:
+        return None
+    if not detail:
+        return None
+    # Discogs 전용 필드만 반환 — 아티스트·발매일·레이블 등 ManiaDB가 이미
+    # 채운 기본 필드는 덮어쓰지 않도록 None으로 채운다.
+    return {
+        "cover_image_url": None,
+        "track_list": [],
+        "label_name": None,
+        "catalog_no": None,
+        "barcode": None,
+        "format_name": None,
+        "media_type": None,
+        "release_type": None,
+        "domain_code": None,
+        "genres": [],
+        "styles": [],
+        "artist_or_brand": None,
+        "release_year": None,
+        "released_date": None,
+        "disc_count": detail.get("disc_count"),
+        "speed_rpm": detail.get("speed_rpm"),
+        "has_obi": detail.get("has_obi"),
+        "runout_matrix": detail.get("runout_matrix") or [],
+        "pressing_country": detail.get("pressing_country"),
+        "source_notes": detail.get("source_notes"),
+        "credits": detail.get("credits") or [],
+        "identifier_items": detail.get("identifier_items") or [],
+        "image_items": detail.get("image_items") or [],
+        "company_items": detail.get("company_items") or [],
+        "series": detail.get("series") or [],
+        "format_items": detail.get("format_items") or [],
+        "track_items": detail.get("track_items") or [],
+        "label_items": detail.get("label_items") or [],
+    }
 
 
 def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any] | None:
@@ -4096,6 +4380,7 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
                         title = stripped
                     break
         barcode = str(detail.get("isbn13") or detail.get("isbn") or "") or None
+        discogs_crossref = _try_discogs_for_barcode(barcode) if barcode else None
         pub_date = str(detail.get("pubDate") or "")
         year_token = pub_date.split("-")[0] if pub_date else None
         raw_cover = str(detail.get("cover") or "") or None
@@ -4150,6 +4435,7 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
             "format_items": [],
             "label_items": [],
             "title": title,
+            "discogs_crossref": discogs_crossref,
             "raw": detail,
         }
 
