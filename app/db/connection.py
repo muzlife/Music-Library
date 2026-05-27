@@ -1,0 +1,103 @@
+"""데이터베이스 연결 관리 모듈
+
+`get_conn` / `get_write_conn`을 제공하며, `app.db.__init__`에서
+재-export하여 기존 호출자(`from app.db import get_conn`)가
+변경 없이 동작하도록 유지합니다.
+"""
+
+from __future__ import annotations
+
+import sqlite3
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Generator
+
+from ..config import get_settings
+
+SQLITE_BUSY_TIMEOUT_MS = 30_000
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _ensure_parent_dir(path: str) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def _ensure_app_setting_table(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS app_setting (
+          setting_key TEXT PRIMARY KEY,
+          setting_value TEXT,
+          updated_at TEXT NOT NULL
+        );
+        """
+    )
+
+
+@contextmanager
+def get_conn() -> Generator[sqlite3.Connection, None, None]:
+    settings = get_settings()
+    _ensure_parent_dir(settings.db_path)
+    conn = sqlite3.connect(
+        settings.db_path,
+        timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
+    )
+    conn.row_factory = sqlite3.Row
+    conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
+    conn.execute("PRAGMA journal_mode = WAL").fetchone()
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA foreign_keys = ON")
+    try:
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
+
+
+@contextmanager
+def get_write_conn() -> Generator[sqlite3.Connection, None, None]:
+    """Connection that begins an IMMEDIATE transaction up-front.
+
+    Use this in place of `get_conn` for any function that performs multiple
+    write statements (inserts/updates/deletes) that must be a single atomic
+    unit, especially when concurrent writers (auto-backup thread, metadata
+    sync worker, user requests) might race for the SQLite WAL write lock.
+
+    With the default DEFERRED isolation, two writers that BEGIN at the same
+    time will both succeed initially and only collide on the first write,
+    which on busy systems leaves one of them with a partial work-set when
+    SQLITE_BUSY fires past the timeout. IMMEDIATE acquires the write lock
+    first, so contenders block at BEGIN — predictably and atomically.
+
+    The connection is configured with `isolation_level=None` (autocommit
+    mode) and we manage `BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` ourselves.
+    """
+    settings = get_settings()
+    _ensure_parent_dir(settings.db_path)
+    conn = sqlite3.connect(
+        settings.db_path,
+        timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
+        isolation_level=None,
+    )
+    conn.row_factory = sqlite3.Row
+    conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
+    conn.execute("PRAGMA journal_mode = WAL").fetchone()
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("BEGIN IMMEDIATE")
+    committed = False
+    try:
+        yield conn
+        conn.execute("COMMIT")
+        committed = True
+    finally:
+        if not committed:
+            try:
+                conn.execute("ROLLBACK")
+            except sqlite3.Error:
+                pass
+        conn.close()

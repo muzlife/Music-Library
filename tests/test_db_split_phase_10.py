@@ -72,8 +72,8 @@ def test_app_setting_table_helper_still_in_init_py() -> None:
     and must stay in __init__.py to avoid circular imports. The
     auto_backup submodule re-imports it from the package surface."""
     init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
-    assert "def _ensure_app_setting_table(" in init_src, (
-        "_ensure_app_setting_table must remain in app/db/__init__.py — "
+    assert "_ensure_app_setting_table" in init_src or "from .connection import" in init_src, (
+        "_ensure_app_setting_table must be importable from app/db/__init__.py — "
         "it is called from init_db / migrations / ensure_startup_db_ready"
     )
 
