@@ -7307,6 +7307,8 @@ from app.api.static_pages import router as static_pages_router
 app.include_router(static_pages_router)
 from app.api.audit_log import router as audit_log_router
 app.include_router(audit_log_router)
+from app.api.cafe_admin import router as cafe_admin_router
+app.include_router(cafe_admin_router)
 
 # ── Backward-compatible re-exports for tests ──
 from app.api.discogs_integration import get_discogs_release_collector_info, get_discogs_release_cover_preview
