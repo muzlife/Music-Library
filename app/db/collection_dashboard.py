@@ -143,6 +143,8 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(CASE WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL') THEN 1 ELSE 0 END) AS music_items,
               SUM(CASE WHEN oi.category NOT IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL') THEN 1 ELSE 0 END) AS goods_items,
               SUM(CASE WHEN oi.signature_type IS NOT NULL AND oi.signature_type <> 'NONE' THEN 1 ELSE 0 END) AS signed_items,
+              SUM(CASE WHEN oi.signature_type = 'IN_PERSON' THEN 1 ELSE 0 END) AS direct_signed_items,
+              SUM(CASE WHEN oi.signature_type = 'PURCHASE_INCLUDED' THEN 1 ELSE 0 END) AS purchase_signed_items,
               SUM(CASE WHEN oi.is_second_hand = 1 THEN 1 ELSE 0 END) AS second_hand_items,
               SUM(CASE WHEN oi.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS registered_last_30_days,
               SUM(CASE WHEN oi.status = 'IN_COLLECTION' AND oi.storage_slot_id IS NOT NULL THEN 1 ELSE 0 END) AS slotted_in_collection_items,
@@ -176,7 +178,62 @@ def get_collection_dashboard() -> dict[str, Any]:
                   THEN 1
                   ELSE 0
                 END
-              ) AS cover_missing_items
+              ) AS cover_missing_items,
+              SUM(CASE WHEN oi.status = 'LOANED' THEN 1 ELSE 0 END) AS loaned_items,
+              SUM(CASE WHEN oi.status = 'SOLD' THEN 1 ELSE 0 END) AS sold_items,
+              SUM(CASE WHEN oi.status = 'LOST' THEN 1 ELSE 0 END) AS lost_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND (mid.genres_json IS NULL OR TRIM(mid.genres_json) = '' OR mid.genres_json = '[]')
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS genre_missing_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '')
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS media_missing_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND (mid.catalog_no IS NULL OR TRIM(mid.catalog_no) = '')
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS catalog_missing_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND mid.format_items_json LIKE '%Limited%'
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS limited_items,
+              SUM(
+                CASE
+                  WHEN (mid.format_items_json IS NULL OR mid.format_items_json NOT LIKE '%Promo%')
+                   AND COALESCE(oi.is_second_hand, 0) = 0
+                  THEN 1 ELSE 0
+                END
+              ) AS new_items,
+              SUM(
+                CASE
+                  WHEN mid.format_items_json LIKE '%Promo%'
+                  THEN 1 ELSE 0
+                END
+              ) AS promo_items,
+              SUM(
+                CASE
+                  WHEN (mid.format_items_json IS NULL OR mid.format_items_json NOT LIKE '%Promo%')
+                   AND COALESCE(oi.is_second_hand, 0) != 0
+                  THEN 1 ELSE 0
+                END
+              ) AS other_condition_items
             FROM owned_item oi
             LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
             """
@@ -226,6 +283,19 @@ def get_collection_dashboard() -> dict[str, Any]:
             """
         ).fetchall()
 
+        by_domain_category_rows = conn.execute(
+            """
+            SELECT 
+              COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
+              category,
+              COUNT(*) AS cnt
+            FROM owned_item
+            WHERE category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED'), category
+            ORDER BY domain ASC, cnt DESC
+            """
+        ).fetchall()
+
         by_release_type_rows = conn.execute(
             """
             SELECT COALESCE(NULLIF(release_type, ''), 'UNASSIGNED') AS value, COUNT(*) AS cnt
@@ -251,6 +321,32 @@ def get_collection_dashboard() -> dict[str, Any]:
             FROM owned_item
             GROUP BY COALESCE(NULLIF(source_code, ''), 'MANUAL')
             ORDER BY cnt DESC, value ASC
+            """
+        ).fetchall()
+
+        by_source_domain_rows = conn.execute(
+            """
+            SELECT
+              COALESCE(NULLIF(source_code, ''), 'MANUAL') AS source,
+              COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
+              COUNT(*) AS cnt
+            FROM owned_item
+            WHERE category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY COALESCE(NULLIF(source_code, ''), 'MANUAL'), COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED')
+            ORDER BY source ASC, cnt DESC
+            """
+        ).fetchall()
+
+        by_source_category_rows = conn.execute(
+            """
+            SELECT
+              COALESCE(NULLIF(source_code, ''), 'MANUAL') AS source,
+              category,
+              COUNT(*) AS cnt
+            FROM owned_item
+            WHERE category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+            GROUP BY COALESCE(NULLIF(source_code, ''), 'MANUAL'), category
+            ORDER BY source ASC, cnt DESC
             """
         ).fetchall()
 
@@ -334,6 +430,22 @@ def get_collection_dashboard() -> dict[str, Any]:
             """
         ).fetchone()
 
+        by_pressing_country_rows = conn.execute(
+            """
+            SELECT
+              COALESCE(NULLIF(TRIM(mid.pressing_country), ''), 'UNKNOWN') AS value,
+              COUNT(*) AS cnt
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND mid.pressing_country IS NOT NULL
+              AND TRIM(mid.pressing_country) <> ''
+            GROUP BY value
+            ORDER BY cnt DESC, value ASC
+            LIMIT 10
+            """
+        ).fetchall()
+
     slot_count_map = {int(row["storage_slot_id"]): int(row["cnt"] or 0) for row in slot_count_rows if row["storage_slot_id"] is not None}
     slot_policy_map: dict[int, str] = {
         int(row["id"]): _normalize_cabinet_sort_policy_value(row["cabinet_sort_policy"])
@@ -370,6 +482,8 @@ def get_collection_dashboard() -> dict[str, Any]:
         "music_items": int((summary["music_items"] if summary else 0) or 0),
         "goods_items": legacy_goods_items + standalone_goods_items,
         "signed_items": int((summary["signed_items"] if summary else 0) or 0),
+        "direct_signed_items": int((summary["direct_signed_items"] if summary else 0) or 0),
+        "purchase_signed_items": int((summary["purchase_signed_items"] if summary else 0) or 0),
         "second_hand_items": int((summary["second_hand_items"] if summary else 0) or 0),
         "audio_mapped_items": int((audio_row["cnt"] if audio_row else 0) or 0),
         "registered_last_30_days": int((summary["registered_last_30_days"] if summary else 0) or 0),
@@ -378,6 +492,20 @@ def get_collection_dashboard() -> dict[str, Any]:
         "source_unlinked_items": int((summary["source_unlinked_items"] if summary else 0) or 0),
         "master_unlinked_items": int((summary["master_unlinked_items"] if summary else 0) or 0),
         "cover_missing_items": int((summary["cover_missing_items"] if summary else 0) or 0),
+        "loaned_items": int((summary["loaned_items"] if summary else 0) or 0),
+        "sold_items": int((summary["sold_items"] if summary else 0) or 0),
+        "lost_items": int((summary["lost_items"] if summary else 0) or 0),
+        "genre_missing_items": int((summary["genre_missing_items"] if summary else 0) or 0),
+        "media_missing_items": int((summary["media_missing_items"] if summary else 0) or 0),
+        "catalog_missing_items": int((summary["catalog_missing_items"] if summary else 0) or 0),
+        "limited_items": int((summary["limited_items"] if summary else 0) or 0),
+        "new_items": int((summary["new_items"] if summary else 0) or 0),
+        "promo_items": int((summary["promo_items"] if summary else 0) or 0),
+        "other_condition_items": int((summary["other_condition_items"] if summary else 0) or 0),
+        "by_pressing_country": [
+            {"value": str(row["value"]), "count": int(row["cnt"] or 0)}
+            for row in by_pressing_country_rows
+        ],
         "by_category": [
             {"category": str(row["category"]), "count": int(row["cnt"] or 0)}
             for row in by_category_rows
@@ -390,6 +518,10 @@ def get_collection_dashboard() -> dict[str, Any]:
             {"value": str(row["value"]), "count": int(row["cnt"] or 0)}
             for row in by_domain_rows
         ],
+        "by_domain_category": [
+            {"domain": str(row["domain"]), "category": str(row["category"]), "count": int(row["cnt"] or 0)}
+            for row in by_domain_category_rows
+        ],
         "by_release_type": [
             {"value": str(row["value"]), "count": int(row["cnt"] or 0)}
             for row in by_release_type_rows
@@ -401,6 +533,14 @@ def get_collection_dashboard() -> dict[str, Any]:
         "by_source": [
             {"value": str(row["value"]), "count": int(row["cnt"] or 0)}
             for row in by_source_rows
+        ],
+        "by_source_domain": [
+            {"source": str(row["source"]), "domain": str(row["domain"]), "count": int(row["cnt"] or 0)}
+            for row in by_source_domain_rows
+        ],
+        "by_source_category": [
+            {"source": str(row["source"]), "category": str(row["category"]), "count": int(row["cnt"] or 0)}
+            for row in by_source_category_rows
         ],
         "movement_window_days": DASHBOARD_MOVE_WINDOW_DAYS,
         "recent_move_total": int(recent_move_total),

@@ -932,6 +932,52 @@ def create_owned_item_auto_master(owned_item_id: int) -> OwnedItemAutoMasterResp
     notices: list[str] = []
     source_code = str(row.get("source_code") or "").strip().upper()
     source_external_id = str(row.get("source_external_id") or "").strip()
+
+    # ALADIN 등록 시: 바코드로 Discogs 마스터 조회 → 있으면 DISCOGS 마스터로 연결
+    if source_code == "ALADIN" and source_external_id:
+        main_module = _main()
+        snap = main_module.get_source_release_snapshot(source="ALADIN", external_id=source_external_id)
+        discogs_crossref: dict[str, Any] | None = (snap or {}).get("discogs_crossref")
+        if discogs_crossref:
+            d_ext = str(discogs_crossref.get("external_id") or "").strip()
+            d_master_id = str(discogs_crossref.get("master_id") or "").strip()
+            d_src_id = d_master_id or d_ext
+            d_title = str(discogs_crossref.get("title") or "").strip() or str(row.get("item_name_override") or "").strip()
+            d_artist = str(discogs_crossref.get("artist_or_brand") or "").strip() or str(row.get("linked_artist_name") or "").strip() or None
+            d_year = discogs_crossref.get("release_year")
+            album_master_id = db.upsert_album_master(
+                source_code="DISCOGS",
+                source_master_id=d_src_id,
+                title=d_title,
+                artist_or_brand=d_artist,
+                domain_code=_infer_album_master_domain_code(
+                    source_code="DISCOGS",
+                    title=d_title,
+                    artist_or_brand=d_artist,
+                    raw=discogs_crossref.get("raw"),
+                ),
+                release_year=d_year,
+                raw=discogs_crossref.get("raw"),
+            )
+            db.bind_album_master_members(
+                album_master_id=album_master_id,
+                owned_item_ids=[owned_item_id],
+                replace_existing=False,
+            )
+            db.set_owned_item_linked_album_master(owned_item_id=owned_item_id, album_master_id=album_master_id)
+            notice_msg = f"Discogs 마스터 등록 (바코드 매칭): album_master_id={album_master_id}, discogs_id={d_src_id}"
+            notices.append(notice_msg)
+            linked_count = len(db.list_owned_items_by_album_master(album_master_id))
+            return OwnedItemAutoMasterResponse(
+                owned_item_id=owned_item_id,
+                album_master_id=album_master_id,
+                source_code="DISCOGS",
+                source_master_id=d_src_id,
+                title=d_title,
+                linked_count=linked_count,
+                notices=notices,
+            )
+
     if _source_supports_master_auto_link(source_code) and source_external_id:
         notices.extend(
             _link_source_master_for_created_item(

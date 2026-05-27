@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 
 from ..config import get_settings
@@ -44,6 +45,9 @@ _HTML_NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
     "Expires": "0",
+    "Cloudflare-CDN-Cache-Control": "no-store",
+    "CDN-Cache-Control": "no-store",
+    "Surrogate-Control": "no-store",
 }
 
 
@@ -56,7 +60,8 @@ def login_page(request: Request):
         return RedirectResponse(url="/", status_code=303)
     if _is_authenticated(request):
         return RedirectResponse(url="/", status_code=303)
-    return FileResponse(_LOGIN_PAGE_PATH, headers=_HTML_NO_CACHE_HEADERS)
+    content = _LOGIN_PAGE_PATH.read_text(encoding="utf-8")
+    return HTMLResponse(content=content, headers=_HTML_NO_CACHE_HEADERS)
 
 
 @router.post("/auth/login", include_in_schema=False)

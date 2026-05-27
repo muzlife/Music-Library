@@ -323,6 +323,10 @@ def import_album_master_variants(
         notices.append(
             f"Discogs 마스터 ID 보정: {payload.master_external_id} -> {effective_master_external_id}"
         )
+
+    # ALADIN 등록 시 스냅샷 캐시 (루프에서 재사용)
+    _aladin_snap_cache: dict[str, dict[str, Any] | None] = {}
+
     if target_master_id > 0:
         if not db.album_master_exists(target_master_id):
             raise HTTPException(
@@ -337,23 +341,59 @@ def import_album_master_variants(
                 selected_external_ids=selected_external_ids,
             )
         )
-        target_master_id = db.upsert_album_master(
-            source_code=source,
-            source_master_id=effective_master_external_id,
-            title=master_title,
-            artist_or_brand=master_artist,
-            domain_code=main_module._infer_album_master_domain_code(
-                explicit_domain_code=payload.domain_code,
+
+        # ALADIN: 바코드로 Discogs 마스터 조회 시도
+        discogs_crossref: dict[str, Any] | None = None
+        if source == "ALADIN" and selected_external_ids:
+            _pre_snap = main_module.get_source_release_snapshot(
+                source="ALADIN", external_id=selected_external_ids[0]
+            )
+            _aladin_snap_cache[selected_external_ids[0]] = _pre_snap
+            discogs_crossref = (_pre_snap or {}).get("discogs_crossref")
+
+        if discogs_crossref:
+            d_ext = str(discogs_crossref.get("external_id") or "").strip()
+            d_master_id = str(discogs_crossref.get("master_id") or "").strip()
+            d_src_id = d_master_id or d_ext
+            d_title = str(discogs_crossref.get("title") or "").strip() or master_title
+            d_artist = str(discogs_crossref.get("artist_or_brand") or "").strip() or master_artist or None
+            d_year = discogs_crossref.get("release_year") or master_year
+            target_master_id = db.upsert_album_master(
+                source_code="DISCOGS",
+                source_master_id=d_src_id,
+                title=d_title,
+                artist_or_brand=d_artist,
+                domain_code=main_module._infer_album_master_domain_code(
+                    source_code="DISCOGS",
+                    title=d_title,
+                    artist_or_brand=d_artist,
+                    raw=discogs_crossref.get("raw"),
+                ),
+                release_year=d_year,
+                raw=discogs_crossref.get("raw"),
+            )
+            notices.append(
+                f"Discogs 마스터 등록 (바코드 매칭): album_master_id={target_master_id}"
+                f", discogs_id={d_src_id}"
+            )
+        else:
+            target_master_id = db.upsert_album_master(
                 source_code=source,
+                source_master_id=effective_master_external_id,
                 title=master_title,
                 artist_or_brand=master_artist,
+                domain_code=main_module._infer_album_master_domain_code(
+                    explicit_domain_code=payload.domain_code,
+                    source_code=source,
+                    title=master_title,
+                    artist_or_brand=master_artist,
+                    raw=master_raw,
+                    linked_album_master_id=payload.linked_album_master_id,
+                ),
+                release_year=master_year,
                 raw=master_raw,
-                linked_album_master_id=payload.linked_album_master_id,
-            ),
-            release_year=master_year,
-            raw=master_raw,
-        )
-        notices.append(f"마스터 생성/갱신: album_master_id={target_master_id}")
+            )
+            notices.append(f"마스터 생성/갱신: album_master_id={target_master_id}")
 
     source_owned_counts = db.get_owned_counts_by_source(source, selected_external_ids)
     existing_rows = db.list_owned_items_by_source_external_ids(source, selected_external_ids)
@@ -380,7 +420,11 @@ def import_album_master_variants(
                 )
             )
             continue
-        snapshot = main_module.get_source_release_snapshot(source=source, external_id=ext)
+        # ALADIN: 이미 pre-fetch한 스냅샷 재사용
+        if source == "ALADIN" and ext in _aladin_snap_cache:
+            snapshot = _aladin_snap_cache[ext]
+        else:
+            snapshot = main_module.get_source_release_snapshot(source=source, external_id=ext)
         variant = main_module._merge_variant_with_release_snapshot(variant_base, snapshot)
 
         owned_count = int(source_owned_counts.get(ext, 0))
@@ -544,6 +588,14 @@ def list_album_masters(
     include_total: bool = Query(default=False),
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    sort_mode: str | None = Query(default=None),
+    owned_item_id: int | None = Query(default=None),
+    signature_types: list[str] | None = Query(default=None),
+    packaging: list[str] | None = Query(default=None),
+    package_contents: list[str] | None = Query(default=None),
+    is_limited: bool | None = Query(default=None),
+    is_new: bool | None = Query(default=None),
+    is_promo: bool | None = Query(default=None),
 ) -> list[AlbumMasterListItem]:
     main_module = _main()
     match_query = str(item_name or q or "").strip()
@@ -566,6 +618,14 @@ def list_album_masters(
         release_type=release_type,
         limit=fetch_limit,
         offset=fetch_offset,
+        sort_mode=sort_mode,
+        owned_item_id=owned_item_id,
+        signature_types=signature_types,
+        packaging=packaging,
+        package_contents=package_contents,
+        is_limited=is_limited,
+        is_new=is_new,
+        is_promo=is_promo,
     )
     if include_total:
         total = db.count_album_masters(
@@ -580,6 +640,13 @@ def list_album_masters(
             media_only=media_only,
             domain_code=domain_code,
             release_type=release_type,
+            owned_item_id=owned_item_id,
+            signature_types=signature_types,
+            packaging=packaging,
+            package_contents=package_contents,
+            is_limited=is_limited,
+            is_new=is_new,
+            is_promo=is_promo,
         )
         response.headers["X-Total-Count"] = str(total)
     result: list[AlbumMasterListItem] = []
@@ -690,6 +757,41 @@ def update_album_master_correction(
         override_artist_or_brand=str(updated.get("override_artist_or_brand") or "").strip() or None,
         has_manual_correction=bool(updated.get("has_manual_correction")),
     )
+
+
+@router.get(
+    "/album-masters/merge-history", response_model=list[AlbumMasterMergeHistoryItem]
+)
+def get_album_master_merge_history(
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[AlbumMasterMergeHistoryItem]:
+    rows = db.list_album_master_merge_history(limit=limit)
+    return [AlbumMasterMergeHistoryItem(**row) for row in rows]
+
+
+@router.post(
+    "/album-masters/merge-history/latest/rollback",
+    response_model=AlbumMasterMergeRollbackResponse,
+)
+def rollback_latest_album_master_merge(request: Request) -> AlbumMasterMergeRollbackResponse:
+    try:
+        result = db.rollback_latest_album_master_merge(
+            rolled_back_by=_read_auth_username(request)
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return AlbumMasterMergeRollbackResponse(**result)
+
+
+@router.get("/album-masters/{album_master_id}")
+def get_album_master(album_master_id: int) -> dict:
+    """Return basic info for a single album master (title, artist, year, cover)."""
+    row = db.get_album_master_basic(album_master_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="album_master not found")
+    return row
 
 
 @router.get(
@@ -814,27 +916,4 @@ def merge_album_master(
     )
 
 
-@router.get(
-    "/album-masters/merge-history", response_model=list[AlbumMasterMergeHistoryItem]
-)
-def get_album_master_merge_history(
-    limit: int = Query(default=10, ge=1, le=50),
-) -> list[AlbumMasterMergeHistoryItem]:
-    rows = db.list_album_master_merge_history(limit=limit)
-    return [AlbumMasterMergeHistoryItem(**row) for row in rows]
 
-
-@router.post(
-    "/album-masters/merge-history/latest/rollback",
-    response_model=AlbumMasterMergeRollbackResponse,
-)
-def rollback_latest_album_master_merge(request: Request) -> AlbumMasterMergeRollbackResponse:
-    try:
-        result = db.rollback_latest_album_master_merge(
-            rolled_back_by=_read_auth_username(request)
-        )
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return AlbumMasterMergeRollbackResponse(**result)

@@ -64,6 +64,37 @@ from app.db import (  # noqa: E402  — package surface
 )
 
 
+def get_album_master_basic(album_master_id: int) -> dict[str, Any] | None:
+    """Return a minimal dict with id, title, artist_or_brand, release_year,
+    cover_image_url for a single album_master row, or None if not found."""
+    mid = int(album_master_id or 0)
+    if mid <= 0:
+        return None
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT id,
+                   COALESCE(override_title, title) AS title,
+                   COALESCE(override_artist_or_brand, artist_or_brand) AS artist_or_brand,
+                   COALESCE(override_release_year, release_year) AS release_year,
+                   COALESCE(
+                       json_extract(raw_json, '$.cover_image'),
+                       json_extract(raw_json, '$.thumb')
+                   ) AS cover_image_url,
+                   source_code,
+                   source_master_id,
+                   CAST(json_extract(raw_json, '$.id') AS TEXT) AS source_release_id
+            FROM album_master
+            WHERE id = ?
+            LIMIT 1
+            """,
+            (mid,),
+        ).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+
 def _sync_album_master_domain_code_in_conn(
     conn: sqlite3.Connection,
     album_master_id: int,

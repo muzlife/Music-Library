@@ -128,6 +128,8 @@ def _normalize_goods_item_row(row: dict[str, Any]) -> dict[str, Any]:
         )
     item["slot_display_name"] = slot_display_name
     item["quantity"] = int(item.get("quantity") or 0)
+    raw_linked = item.get("linked_owned_item_id")
+    item["linked_owned_item_id"] = int(raw_linked) if raw_linked is not None else None
     return item
 
 
@@ -386,6 +388,8 @@ def create_goods_item(payload: dict[str, Any]) -> dict[str, Any]:
     hat_size = _normalize_goods_mapping_text(payload.get("hat_size")) or None
     storage_slot_id = payload.get("storage_slot_id")
     slot_id_value = int(storage_slot_id) if storage_slot_id not in (None, "") else None
+    raw_linked_owned = payload.get("linked_owned_item_id")
+    linked_owned_item_id = int(raw_linked_owned) if raw_linked_owned not in (None, "") else None
     now = utc_now_iso()
 
     with get_conn() as conn:
@@ -394,8 +398,8 @@ def create_goods_item(payload: dict[str, Any]) -> dict[str, Any]:
             INSERT INTO goods_item (
               category, goods_name, description, quantity, size_group, storage_slot_id, status, domain_code,
               memory_note, image_urls_json, primary_image_url, poster_storage_spec, tshirt_size, cup_material,
-              hat_size, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              hat_size, linked_owned_item_id, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 category,
@@ -413,6 +417,7 @@ def create_goods_item(payload: dict[str, Any]) -> dict[str, Any]:
                 tshirt_size,
                 cup_material,
                 hat_size,
+                linked_owned_item_id,
                 now,
                 now,
             ),
@@ -491,6 +496,10 @@ def update_goods_item(goods_item_id: int, payload: dict[str, Any]) -> dict[str, 
     if "hat_size" in payload:
         assignments.append("hat_size = ?")
         params.append(_normalize_goods_mapping_text(payload.get("hat_size")) or None)
+    if "linked_owned_item_id" in payload:
+        raw_linked = payload.get("linked_owned_item_id")
+        assignments.append("linked_owned_item_id = ?")
+        params.append(int(raw_linked) if raw_linked not in (None, "") else None)
     if not assignments:
         return get_goods_item(item_id)
     params.extend([utc_now_iso(), item_id])
@@ -588,6 +597,7 @@ def _build_goods_search_where(
     domain_code: str | None = None,
     artist_name: str | None = None,
     album_master_id: int | None = None,
+    owned_item_id: int | None = None,
     label_name: str | None = None,
     storage_slot_id: int | None = None,
     linked_state: str = "ANY",
@@ -627,6 +637,9 @@ def _build_goods_search_where(
             "EXISTS (SELECT 1 FROM goods_item_album_master_map gam WHERE gam.goods_item_id = gi.id AND gam.album_master_id = ?)"
         )
         params.append(int(album_master_id))
+    if owned_item_id is not None:
+        clauses.append("gi.linked_owned_item_id = ?")
+        params.append(int(owned_item_id))
     normalized_artist = _normalize_artist_sort_text(artist_name)
     if normalized_artist:
         clauses.append(
@@ -682,6 +695,7 @@ def count_goods_items(
     domain_code: str | None = None,
     artist_name: str | None = None,
     album_master_id: int | None = None,
+    owned_item_id: int | None = None,
     label_name: str | None = None,
     storage_slot_id: int | None = None,
     linked_state: str = "ANY",
@@ -695,6 +709,7 @@ def count_goods_items(
         domain_code=domain_code,
         artist_name=artist_name,
         album_master_id=album_master_id,
+        owned_item_id=owned_item_id,
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,
@@ -712,11 +727,13 @@ def count_goods_items(
 def search_goods_items(
     *,
     query_text: str | None = None,
+    query: str | None = None,
     category: str | None = None,
     status: str | None = None,
     domain_code: str | None = None,
     artist_name: str | None = None,
     album_master_id: int | None = None,
+    owned_item_id: int | None = None,
     label_name: str | None = None,
     storage_slot_id: int | None = None,
     linked_state: str = "ANY",
@@ -725,6 +742,8 @@ def search_goods_items(
     limit: int = 50,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
+    if query is not None:
+        query_text = query
     where_sql, params = _build_goods_search_where(
         query_text=query_text,
         category=category,
@@ -732,6 +751,7 @@ def search_goods_items(
         domain_code=domain_code,
         artist_name=artist_name,
         album_master_id=album_master_id,
+        owned_item_id=owned_item_id,
         label_name=label_name,
         storage_slot_id=storage_slot_id,
         linked_state=linked_state,

@@ -109,6 +109,7 @@ def _build_ops_home_recent_item(row: dict[str, Any]) -> dict[str, Any]:
         "previous_slot_code": str(row.get("previous_slot_code") or "").strip() or None,
         "previous_slot_display_name": str(row.get("previous_slot_display_name") or "").strip() or None,
         "created_at": str(row.get("created_at") or ""),
+        "acquisition_date": str(row.get("acquisition_date") or "").strip() or None,
     }
 
 
@@ -175,7 +176,12 @@ def list_ops_home_recent_moved_items(limit: int = 6, offset: int = 0) -> list[di
               oi.id AS owned_item_id,
               oi.category,
               mid.format_name,
-              COALESCE(oi.item_name_override, am.title) AS item_title,
+              CASE
+                WHEN oi.item_name_override IS NOT NULL
+                  AND COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) IS NOT NULL
+                THEN COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) || ' - ' || oi.item_name_override
+                ELSE COALESCE(oi.item_name_override, am.title)
+              END AS item_title,
               COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
               mid.released_date,
               mid.pressing_country,
@@ -251,7 +257,12 @@ def list_ops_home_recent_registered_items(limit: int = 6, offset: int = 0) -> li
               oi.id AS owned_item_id,
               oi.category,
               mid.format_name,
-              COALESCE(oi.item_name_override, am.title) AS item_title,
+              CASE
+                WHEN oi.item_name_override IS NOT NULL
+                  AND COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) IS NOT NULL
+                THEN COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) || ' - ' || oi.item_name_override
+                ELSE COALESCE(oi.item_name_override, am.title)
+              END AS item_title,
               COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
               mid.released_date,
               mid.pressing_country,
@@ -280,6 +291,156 @@ def list_ops_home_recent_registered_items(limit: int = 6, offset: int = 0) -> li
     return [_build_ops_home_recent_item(dict(row)) for row in rows]
 
 
+def count_ops_home_recent_purchased_items() -> int:
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT COUNT(*) AS total_count
+            FROM owned_item oi
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND oi.acquisition_date IS NOT NULL
+              AND oi.acquisition_date <> ''
+            """
+        ).fetchone()
+    return int(row["total_count"] or 0) if row else 0
+
+
+def list_ops_home_recent_purchased_items(limit: int = 6, offset: int = 0) -> list[dict[str, Any]]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            WITH recent_purchased AS (
+              SELECT
+                oi.id,
+                oi.category,
+                oi.item_name_override,
+                oi.linked_album_master_id,
+                oi.linked_artist_name,
+                oi.storage_slot_id,
+                oi.created_at,
+                oi.acquisition_date
+              FROM owned_item oi
+              WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                AND oi.acquisition_date IS NOT NULL
+                AND oi.acquisition_date <> ''
+              ORDER BY oi.acquisition_date DESC, oi.id DESC
+              LIMIT ?
+              OFFSET ?
+            )
+            SELECT
+              oi.id AS owned_item_id,
+              oi.category,
+              mid.format_name,
+              CASE
+                WHEN oi.item_name_override IS NOT NULL
+                  AND COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) IS NOT NULL
+                THEN COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) || ' - ' || oi.item_name_override
+                ELSE COALESCE(oi.item_name_override, am.title)
+              END AS item_title,
+              COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
+              mid.released_date,
+              mid.pressing_country,
+              mid.label_name,
+              mid.catalog_no,
+              mid.barcode,
+              mid.runout_matrix_json,
+              mid.format_items_json,
+              COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
+              ss.slot_code AS current_slot_code,
+              ss.cabinet_name AS current_cabinet_name,
+              ss.column_code AS current_column_code,
+              ss.cell_code AS current_cell_code,
+              ss.allowed_size_group,
+              ss.is_overflow_zone,
+              oi.created_at,
+              oi.acquisition_date
+            FROM recent_purchased oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+            ORDER BY oi.acquisition_date DESC, oi.id DESC
+            """,
+            (int(limit), max(0, int(offset))),
+        ).fetchall()
+    return [_build_ops_home_recent_item(dict(row)) for row in rows]
+
+
+def count_ops_home_recent_unslotted_items() -> int:
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT COUNT(*) AS total_count
+            FROM owned_item oi
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND oi.status = 'IN_COLLECTION'
+              AND oi.storage_slot_id IS NULL
+            """
+        ).fetchone()
+    return int(row["total_count"] or 0) if row else 0
+
+
+def list_ops_home_recent_unslotted_items(limit: int = 6, offset: int = 0) -> list[dict[str, Any]]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            WITH recent_unslotted AS (
+              SELECT
+                oi.id,
+                oi.category,
+                oi.item_name_override,
+                oi.linked_album_master_id,
+                oi.linked_artist_name,
+                oi.storage_slot_id,
+                oi.created_at,
+                oi.acquisition_date
+              FROM owned_item oi
+              WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                AND oi.status = 'IN_COLLECTION'
+                AND oi.storage_slot_id IS NULL
+              ORDER BY oi.created_at DESC, oi.id DESC
+              LIMIT ?
+              OFFSET ?
+            )
+            SELECT
+              oi.id AS owned_item_id,
+              oi.category,
+              mid.format_name,
+              CASE
+                WHEN oi.item_name_override IS NOT NULL
+                  AND COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) IS NOT NULL
+                THEN COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) || ' - ' || oi.item_name_override
+                ELSE COALESCE(oi.item_name_override, am.title)
+              END AS item_title,
+              COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) AS artist_or_brand,
+              mid.released_date,
+              mid.pressing_country,
+              mid.label_name,
+              mid.catalog_no,
+              mid.barcode,
+              mid.runout_matrix_json,
+              mid.format_items_json,
+              COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
+              NULL AS current_slot_code,
+              NULL AS current_slot_display_name,
+              NULL AS current_cabinet_name,
+              NULL AS current_column_code,
+              NULL AS current_cell_code,
+              NULL AS allowed_size_group,
+              0 AS is_overflow_zone,
+              oi.created_at,
+              oi.acquisition_date
+            FROM recent_unslotted oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            ORDER BY oi.created_at DESC, oi.id DESC
+            """,
+            (int(limit), max(0, int(offset))),
+        ).fetchall()
+    return [_build_ops_home_recent_item(dict(row)) for row in rows]
+
+
 def get_ops_home_recent_sections(limit: int = 6) -> dict[str, Any]:
     return {
         "recent_moved_items": list_ops_home_recent_moved_items(limit=limit),
@@ -290,13 +451,21 @@ def get_ops_home_recent_sections(limit: int = 6) -> dict[str, Any]:
 
 
 def get_ops_home_feed(kind: str = "registered", page: int = 1, limit: int = 30) -> dict[str, Any]:
-    normalized_kind = "moved" if str(kind or "").strip().lower() == "moved" else "registered"
+    normalized_kind = str(kind or "").strip().lower()
+    if normalized_kind not in {"registered", "moved", "purchased", "unslotted"}:
+        normalized_kind = "registered"
     safe_page = max(1, int(page))
     safe_limit = max(1, int(limit))
     offset = (safe_page - 1) * safe_limit
     if normalized_kind == "moved":
         total_count = count_ops_home_recent_moved_items()
         items = list_ops_home_recent_moved_items(limit=safe_limit, offset=offset)
+    elif normalized_kind == "purchased":
+        total_count = count_ops_home_recent_purchased_items()
+        items = list_ops_home_recent_purchased_items(limit=safe_limit, offset=offset)
+    elif normalized_kind == "unslotted":
+        total_count = count_ops_home_recent_unslotted_items()
+        items = list_ops_home_recent_unslotted_items(limit=safe_limit, offset=offset)
     else:
         total_count = count_ops_home_recent_registered_items()
         items = list_ops_home_recent_registered_items(limit=safe_limit, offset=offset)
@@ -324,6 +493,10 @@ __all__ = [
     "list_ops_home_recent_moved_items",
     "count_ops_home_recent_registered_items",
     "list_ops_home_recent_registered_items",
+    "count_ops_home_recent_purchased_items",
+    "list_ops_home_recent_purchased_items",
+    "count_ops_home_recent_unslotted_items",
+    "list_ops_home_recent_unslotted_items",
     "get_ops_home_recent_sections",
     "get_ops_home_feed",
 ]
