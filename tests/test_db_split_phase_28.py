@@ -79,10 +79,9 @@ def test_reexport_ordering_owned_item_query_after_dependencies() -> None:
 def test_owned_item_query_helpers_still_in_init_py() -> None:
     """`_owned_item_select_query` and `_normalize_owned_item_row`
     are cross-cutting helpers used by 5+ submodules; they MUST
-    stay in __init__.py."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
-    assert "def _owned_item_select_query(" in init_src
-    assert "def _normalize_owned_item_row(" in init_src
+    remain reachable."""
+    assert hasattr(db, "_owned_item_select_query")
+    assert hasattr(db, "_normalize_owned_item_row")
 
 
 def test_legacy_owned_item_query_paths_still_work() -> None:

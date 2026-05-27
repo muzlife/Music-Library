@@ -1,7 +1,7 @@
 # 라이브러리 ERD 상세
 
 이 문서는 현재 코드 기준 스키마 설명서입니다.  
-기준 소스는 [app/db.py](/Volumes/Works/07.hahahoho/app/db.py)의 `ensure/migration` 로직이며, 문서는 최종 운영 스키마 관점으로 정리했습니다.
+기준 소스는 [app/db.py](/Volumes/Data/Works/07.hahahoho/app/db.py)의 `ensure/migration` 로직이며, 문서는 최종 운영 스키마 관점으로 정리했습니다.
 
 ## 1. 스키마 범위
 

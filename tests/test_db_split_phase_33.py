@@ -52,9 +52,7 @@ def test_init_py_no_longer_redefines_operator_search_callable() -> None:
 
 def test_search_helpers_still_in_init_py() -> None:
     """Search infrastructure helpers used by the operator-search
-    body MUST stay in __init__.py — they're shared with several
-    other lookups across the package."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
+    body MUST remain reachable."""
     for name in (
         "_search_token_groups",
         "_matches_search_text",
@@ -64,9 +62,8 @@ def test_search_helpers_still_in_init_py() -> None:
         "_storage_slot_display_name",
         "_parse_label_id_query",
     ):
-        assert f"def {name}(" in init_src, (
-            f"{name} must remain in app/db/__init__.py — "
-            f"operator_search pulls it via the package surface"
+        assert hasattr(db, name), (
+            f"{name} must remain reachable via app.db package surface"
         )
 
 

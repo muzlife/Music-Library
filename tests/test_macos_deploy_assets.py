@@ -168,6 +168,7 @@ def test_run_api_script_loads_unquoted_env_values_with_spaces(tmp_path: Path):
     os.chmod(fake_python, 0o755)
 
     (app_root / ".env.local").write_text(
+        f"APP_PORT=8000\n"
         f"LIBRARY_DB_PATH={app_root / 'runtime' / 'data' / 'library.db'}\n"
         f"GOOGLE_DRIVE_BACKUP_DIR={drive_dir}\n",
         "utf-8",

@@ -13,13 +13,13 @@
 ## File Map & Ownership
 
 **Modify**
-- `/Volumes/Works/07.hahahoho/app/static/index.html`
+- `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
   - Extend shared admin console tokens and shell helpers.
   - Apply common panel grammar to `#tabSimple`, `#tabCamera`, `#tabMedia`, `#tabCollectibles`, and `#tabOps`.
   - Keep prior-phase dashboard/master-merge behavior unchanged except for shared shell normalization.
-- `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
   - Add static assertions for the new admin-wide console shell, tab anchors, responsive thresholds, and hard-edge panel rules.
-- `/Volumes/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
+- `/Volumes/Data/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
   - Only update if the shared shell extension changes existing root selectors or scoped workspace rules used by the current master-merge console assertions.
 
 **Do Not Modify Unless A Test Forces It**
@@ -32,8 +32,8 @@
 ### Task 1: Add Failing Tests For Admin-Wide Console Shell Expansion
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
-- Optional: `/Volumes/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Optional: `/Volumes/Data/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
 
 - [ ] **Step 1: Add a failing test for shared admin console roots and anchors**
 
@@ -99,7 +99,7 @@ Keep the tree red until Task 2 turns these targeted tests green. Commit the test
 ### Task 2: Implement Shared Admin Console Shell Helpers
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
 
 - [ ] **Step 1: Add the shared admin console shell class to in-scope tab roots**
 
@@ -206,8 +206,8 @@ git commit -m "style: extend shared admin console shell"
 ### Task 3: Reframe `#tabSimple` And `#tabCamera` Into Console Surfaces
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Add failing tests for `#tabSimple` and `#tabCamera` shell regions**
 
@@ -275,9 +275,9 @@ git commit -m "style: bring operator home and camera into console shell"
 ### Task 4: Reframe `#tabMedia`, `#tabSearch`, `#tabManage`, `#tabRegister`, and `#tabSource` Without Changing Submode Behavior
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
-- Optional: `/Volumes/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Optional: `/Volumes/Data/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
 
 - [ ] **Step 1: Add failing tests for media shell coverage**
 
@@ -378,8 +378,8 @@ git commit -m "style: extend console shell across media admin surfaces"
 ### Task 5: Reframe `#tabCollectibles` And Every In-Scope `#tabOps` Subpanel Using The Same Panel Grammar
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Add failing tests for collectibles and ops console regions**
 
@@ -545,7 +545,7 @@ Verify with keyboard tabbing:
 
 If implementation is complete, sync to QA and verify:
 ```bash
-rsync -a --delete --exclude '.git/' --exclude '.venv/' --exclude '.mypy_cache/' --exclude '.pytest_cache/' --exclude '__pycache__/' --exclude 'data/' --exclude 'logs/' --exclude 'test-results/' --exclude 'app/static/uploads/' --exclude 'Purchases/' --exclude '.superpowers/' --exclude '.env.local' /Volumes/Works/07.hahahoho/ /Users/jingunpark/apps/hahahoho-qa/
+rsync -a --delete --exclude '.git/' --exclude '.venv/' --exclude '.mypy_cache/' --exclude '.pytest_cache/' --exclude '__pycache__/' --exclude 'data/' --exclude 'logs/' --exclude 'test-results/' --exclude 'app/static/uploads/' --exclude 'Purchases/' --exclude '.superpowers/' --exclude '.env.local' /Volumes/Data/Works/07.hahahoho/ /Users/jingunpark/apps/hahahoho-qa/
 launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 curl -s http://127.0.0.1:8100/health
 curl -s https://qa-library.muzlife.com/health

@@ -56,10 +56,9 @@ def test_init_py_no_longer_redefines_copy_group_callables() -> None:
 def test_owned_item_helpers_still_in_init_py() -> None:
     """`_normalize_owned_item_row` and `_owned_item_select_query` are
     cross-cutting helpers used by every owned_item read. They MUST
-    stay in __init__.py."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
-    assert "def _normalize_owned_item_row(" in init_src
-    assert "def _owned_item_select_query(" in init_src
+    remain reachable."""
+    assert hasattr(db, "_normalize_owned_item_row")
+    assert hasattr(db, "_owned_item_select_query")
 
 
 def test_legacy_copy_group_paths_still_work() -> None:

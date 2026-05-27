@@ -16,11 +16,11 @@
 ---
 
 ## File Map
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
   - CSS: shell header + utility sizing tokens
   - HTML: shell utility bar (remove doc links) and body density flag
   - JS: shell density sync to apply compact class/flag
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
   - Update header/utility expectations for compact mode
   - Add/adjust assertions for compact density flag
 
@@ -29,8 +29,8 @@
 ### Task 1: Introduce compact density flag + tokens
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
-- Test: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Write failing test for compact density flag**
 
@@ -106,8 +106,8 @@ git commit -m "ui: add compact shell density flag"
 ### Task 2: Compact header + tabs to 30–40% reduction
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
-- Test: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Update failing tests for new compact sizes**
 
@@ -159,8 +159,8 @@ git commit -m "ui: compact header and tab sizing"
 ### Task 3: Remove header doc links + extra actions (keep only language/admin/logout)
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
-- Test: `/Volumes/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/app/static/index.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/.worktrees/compact-shell-plan/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Update tests to reflect doc-link removal**
 

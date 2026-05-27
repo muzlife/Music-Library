@@ -5,15 +5,15 @@
 이 문서는 `Mac mini M4`를 `QA`, `Mac mini 2018`을 `운영`으로 완전히 분리해서 `qa-library.muzlife.com` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
 
 관련 문서
-- 운영 매뉴얼: [management_tool_manual.md](/Volumes/Works/07.hahahoho/docs/management_tool_manual.md)
-- 상용화 체크리스트: [go_live_checklist.md](/Volumes/Works/07.hahahoho/docs/go_live_checklist.md)
-- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
+- 운영 매뉴얼: [management_tool_manual.md](/Volumes/Data/Works/07.hahahoho/docs/management_tool_manual.md)
+- 상용화 체크리스트: [go_live_checklist.md](/Volumes/Data/Works/07.hahahoho/docs/go_live_checklist.md)
+- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
 
 - QA: `https://qa-library.muzlife.com/`
 - 운영: `https://library.muzlife.com/`
 - 외부 진입: `Cloudflare DNS + Cloudflare Tunnel`
 - 서비스 관리: macOS `launchd`
-- 앱 실행: 저장소의 [`scripts/run_api.sh`](/Volumes/Works/07.hahahoho/scripts/run_api.sh)
+- 앱 실행: 저장소의 [`scripts/run_api.sh`](/Volumes/Data/Works/07.hahahoho/scripts/run_api.sh)
 
 이 런북은 `Synology`를 웹 진입점, 프록시, 인증서, 스토리지 의존성에서 제외하는 것을 전제로 합니다.
 
@@ -93,8 +93,8 @@ QA도 같은 방식으로 진행합니다.
 
 템플릿 파일:
 
-- [운영 env 예시](/Volumes/Works/07.hahahoho/deploy/templates/env/.env.production.example)
-- [QA env 예시](/Volumes/Works/07.hahahoho/deploy/templates/env/.env.qa.example)
+- [운영 env 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.production.example)
+- [QA env 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.qa.example)
 
 핵심 규칙:
 
@@ -108,8 +108,8 @@ QA도 같은 방식으로 진행합니다.
 
 템플릿 파일:
 
-- [운영 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-prod.plist)
-- [QA launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-qa.plist)
+- [운영 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-prod.plist)
+- [QA launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-qa.plist)
 
 절차:
 
@@ -148,8 +148,8 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 
 템플릿 파일:
 
-- [운영 tunnel 설정 예시](/Volumes/Works/07.hahahoho/deploy/templates/cloudflare/library-prod-config.yml)
-- [QA tunnel 설정 예시](/Volumes/Works/07.hahahoho/deploy/templates/cloudflare/library-qa-config.yml)
+- [운영 tunnel 설정 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-prod-config.yml)
+- [QA tunnel 설정 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-qa-config.yml)
 
 권장 매핑:
 
@@ -388,8 +388,8 @@ PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 
 관련 자산:
 
-- [GitHub Actions workflow](/Volumes/Works/07.hahahoho/.github/workflows/deploy-production.yml)
-- [운영 배포 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/deploy_to_prod.sh)
+- [GitHub Actions workflow](/Volumes/Data/Works/07.hahahoho/.github/workflows/deploy-production.yml)
+- [운영 배포 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/deploy_to_prod.sh)
 
 권장 점검 항목:
 
@@ -434,25 +434,25 @@ PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 
 ## 13. 관련 자산
 
-- [배포 설계 스펙](/Volumes/Works/07.hahahoho/docs/superpowers/specs/2026-04-13-macos-qa-production-independent-deployment-design.md)
-- [배포 구현 계획](/Volumes/Works/07.hahahoho/docs/superpowers/plans/2026-04-13-macos-qa-production-independent-deployment-implementation.md)
-- [운영 env 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/env/.env.production.example)
-- [QA env 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/env/.env.qa.example)
-- [운영 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-prod.plist)
-- [QA launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-qa.plist)
-- [운영 Cloudflare Tunnel 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/cloudflare/library-prod-config.yml)
-- [QA Cloudflare Tunnel 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/cloudflare/library-qa-config.yml)
-- [런타임 준비 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/bootstrap_macos_runtime.sh)
-- [launchd 설치 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/install_launchd_service.sh)
-- [Cloudflare 설정 렌더 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/render_cloudflare_tunnel_config.sh)
-- [백업 launchd 설치 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/install_backup_launchd_jobs.sh)
-- [백업 launchd bootstrap 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/bootstrap_backup_launchd_jobs.sh)
-- [GCS 백업 preflight 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/gcs_backup_preflight.sh)
-- [백업 상태 요약 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/backup_status.sh)
-- [일일 DB 백업 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/backup_daily_db.sh)
-- [주간 FULL 백업 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/backup_weekly_full.sh)
-- [GCS 업로드 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/upload_backup_to_gcs.sh)
-- [QA 주간 반영 스크립트](/Volumes/Works/07.hahahoho/deploy/scripts/sync_prod_backup_to_qa.sh)
-- [일일 DB 백업 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-daily-db.plist)
-- [주간 FULL 백업 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-weekly-full.plist)
-- [QA 주간 반영 launchd 템플릿](/Volumes/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.qa-sync-weekly.plist)
+- [배포 설계 스펙](/Volumes/Data/Works/07.hahahoho/docs/superpowers/specs/2026-04-13-macos-qa-production-independent-deployment-design.md)
+- [배포 구현 계획](/Volumes/Data/Works/07.hahahoho/docs/superpowers/plans/2026-04-13-macos-qa-production-independent-deployment-implementation.md)
+- [운영 env 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.production.example)
+- [QA env 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.qa.example)
+- [운영 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-prod.plist)
+- [QA launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-qa.plist)
+- [운영 Cloudflare Tunnel 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-prod-config.yml)
+- [QA Cloudflare Tunnel 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-qa-config.yml)
+- [런타임 준비 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/bootstrap_macos_runtime.sh)
+- [launchd 설치 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/install_launchd_service.sh)
+- [Cloudflare 설정 렌더 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/render_cloudflare_tunnel_config.sh)
+- [백업 launchd 설치 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/install_backup_launchd_jobs.sh)
+- [백업 launchd bootstrap 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/bootstrap_backup_launchd_jobs.sh)
+- [GCS 백업 preflight 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/gcs_backup_preflight.sh)
+- [백업 상태 요약 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_status.sh)
+- [일일 DB 백업 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_daily_db.sh)
+- [주간 FULL 백업 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_weekly_full.sh)
+- [GCS 업로드 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/upload_backup_to_gcs.sh)
+- [QA 주간 반영 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/sync_prod_backup_to_qa.sh)
+- [일일 DB 백업 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-daily-db.plist)
+- [주간 FULL 백업 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-weekly-full.plist)
+- [QA 주간 반영 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.qa-sync-weekly.plist)

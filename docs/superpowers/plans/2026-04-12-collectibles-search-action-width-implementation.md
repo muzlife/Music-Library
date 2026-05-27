@@ -13,15 +13,15 @@
 ## File Map
 
 **Modify:**
-- `/Volumes/Works/07.hahahoho/app/static/index.html`
-- `/Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
 
 ---
 
 ### Task 1: Add Regression Test for Collectibles Search Action Width
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Add a failing test**
 
@@ -50,7 +50,7 @@ Expected: FAIL (rule not present yet).
 ### Task 2: Update Collectibles Search Grid and Action Button Sizing
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
 
 - [ ] **Step 1: Update secondary-row grid template**
 
@@ -94,8 +94,8 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add /Volumes/Works/07.hahahoho/app/static/index.html \
-        /Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py
+git add /Volumes/Data/Works/07.hahahoho/app/static/index.html \
+        /Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py
 git commit -m "style: widen collectibles search actions"
 ```
 

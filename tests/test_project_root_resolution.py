@@ -1,6 +1,6 @@
 """Pin the LIBRARY_PROJECT_ROOT abstraction.
 
-The repo used to embed `/Volumes/Works/07.hahahoho` in nine PROJECT_* path
+The repo used to embed `/Volumes/Data/Works/07.hahahoho` in nine PROJECT_* path
 constants in app/main.py and four ROOT constants in scripts/ + tests/. Those
 have all been replaced with `LIBRARY_PROJECT_ROOT` env override + a
 `Path(__file__).resolve().parents[1]` fallback.

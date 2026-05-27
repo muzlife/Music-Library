@@ -13,16 +13,16 @@
 ## File Map
 
 **Modify:**
-- `/Volumes/Works/07.hahahoho/app/static/index.html`
-- `/Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
 
 ---
 
 ### Task 1: Add Compact Stack CSS Helpers + Tests
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Write failing test for compact stack helper rules**
 
@@ -66,8 +66,8 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add /Volumes/Works/07.hahahoho/app/static/index.html \
-        /Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py
+git add /Volumes/Data/Works/07.hahahoho/app/static/index.html \
+        /Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py
 git commit -m "style: add compact stack helpers"
 ```
 
@@ -76,8 +76,8 @@ git commit -m "style: add compact stack helpers"
 ### Task 2: Apply Compact Stack to Collector Relation Blocks
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Add failing test for collector relation layout**
 
@@ -120,8 +120,8 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add /Volumes/Works/07.hahahoho/app/static/index.html \
-        /Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py
+git add /Volumes/Data/Works/07.hahahoho/app/static/index.html \
+        /Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py
 git commit -m "ui: compact collector relation blocks"
 ```
 
@@ -130,8 +130,8 @@ git commit -m "ui: compact collector relation blocks"
 ### Task 3: Apply Compact Stack to Product Relationship Blocks
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Add failing test for product relation layout**
 
@@ -180,8 +180,8 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add /Volumes/Works/07.hahahoho/app/static/index.html \
-        /Volumes/Works/07.hahahoho/tests/test_admin_density_compaction.py
+git add /Volumes/Data/Works/07.hahahoho/app/static/index.html \
+        /Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py
 git commit -m "ui: compact product relation blocks"
 ```
 

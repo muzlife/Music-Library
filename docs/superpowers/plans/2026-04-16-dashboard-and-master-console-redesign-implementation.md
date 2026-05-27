@@ -19,15 +19,15 @@
 - Because the repository can contain unrelated failing tests, use targeted tests only for this work.
 
 ## File Map
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
   - Add shared console tokens scoped to dashboard/master surfaces
   - Reframe dashboard shell into status/telemetry/main/action rails
   - Reframe registered master merge shell into command/results/workspace/log regions
   - Keep existing ids and runtime event anchors intact
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
   - Add/adjust assertions for dashboard console shell classes and scoped CSS tokens
   - Add/adjust assertions for dashboard responsive console rules
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
   - Add/adjust assertions for registered master merge command/workspace/log shell structure
   - Keep existing state/function/event binding assertions intact
 
@@ -36,9 +36,9 @@
 ### Task 1: Introduce shared console tokens and root shell hooks
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Test: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
-- Test: `/Volumes/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
 
 - [ ] **Step 1: Write failing tests for the new root shell hooks**
 
@@ -69,7 +69,7 @@ Expected: FAIL because the shell classes and console tokens do not exist yet.
 
 - [ ] **Step 3: Add minimal console tokens and root classes**
 
-In `/Volumes/Works/07.hahahoho/app/static/index.html`:
+In `/Volumes/Data/Works/07.hahahoho/app/static/index.html`:
 - add `dashboard-console-shell` to `#homeDashboardCard`
 - add `registered-master-merge-console` to `#registeredMasterMergeCard`
 - introduce tightly scoped CSS tokens, for example:
@@ -121,8 +121,8 @@ git commit -m "ui: add console shell tokens for dashboard and master merge"
 ### Task 2: Reframe dashboard into console status, telemetry, and dual-rail layout
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Test: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Write failing tests for the dashboard console layout**
 
@@ -146,7 +146,7 @@ Expected: FAIL because the new layout classes are not present.
 
 - [ ] **Step 3: Add dashboard shell classes and panel roles**
 
-In `/Volumes/Works/07.hahahoho/app/static/index.html`:
+In `/Volumes/Data/Works/07.hahahoho/app/static/index.html`:
 - add `dashboard-console-statusbar` to `.dashboard-topbar`
 - add `dashboard-console-telemetry` to `.dashboard-hero-grid`
 - add `dashboard-console-main` to `.dashboard-main-grid`
@@ -207,8 +207,8 @@ git commit -m "ui: reshape dashboard into console layout"
 ### Task 3: Reframe registered master merge into command/results/workspace/log console
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Test: `/Volumes/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
 
 - [ ] **Step 1: Write failing tests for the master console regions**
 
@@ -232,7 +232,7 @@ Expected: FAIL because the shell region classes do not exist yet.
 
 - [ ] **Step 3: Wrap the existing registered master merge DOM in console regions**
 
-In `/Volumes/Works/07.hahahoho/app/static/index.html`, keep all ids intact but add wrappers:
+In `/Volumes/Data/Works/07.hahahoho/app/static/index.html`, keep all ids intact but add wrappers:
 
 ```html
 <div class="registered-master-merge-commandbar">
@@ -291,9 +291,9 @@ git commit -m "ui: reshape master merge into console workspace"
 ### Task 4: Final responsive polish and verification
 
 **Files:**
-- Modify: `/Volumes/Works/07.hahahoho/app/static/index.html`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
-- Modify: `/Volumes/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_master_merge_workbench_ui.py`
 
 - [ ] **Step 1: Add final failing tests for console-specific responsive hooks**
 

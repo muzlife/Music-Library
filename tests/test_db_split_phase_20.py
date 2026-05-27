@@ -65,8 +65,7 @@ def test_init_py_no_longer_redefines_album_master_read_callables() -> None:
 
 def test_cross_cutting_helpers_still_in_init_py() -> None:
     """The album_master_read submodule pulls a half-dozen helpers
-    via the package surface. They MUST remain in __init__.py."""
-    init_src = (REPO_ROOT / "app" / "db" / "__init__.py").read_text("utf-8")
+    via the package surface. They MUST remain in the db surface."""
     for name in (
         "_normalize_domain_code_value",
         "_normalize_owned_item_row",
@@ -75,9 +74,8 @@ def test_cross_cutting_helpers_still_in_init_py() -> None:
         "_build_compact_token_match_sql",
         "_column_exists",
     ):
-        assert f"def {name}(" in init_src, (
-            f"{name} must remain in app/db/__init__.py — "
-            f"album_master_read pulls it via the package surface"
+        assert hasattr(db, name), (
+            f"{name} must remain reachable via app.db package surface"
         )
 
 
