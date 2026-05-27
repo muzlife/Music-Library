@@ -1,0 +1,206 @@
+"""Cafe tablet + staff API — search, request, queue, playback control.
+
+Tablet clients identify via device_id header (set from localStorage UUID).
+Staff endpoints require OPERATOR+ authentication.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel, Field
+
+from .. import db
+from .. import security
+from ..services.spotify import SpotifyService
+
+router = APIRouter(tags=["cafe"])
+
+_spotify = SpotifyService()
+
+
+# ── helpers ─────────────────────────────────────────────────────
+
+def _resolve_table(device_id: str | None) -> str | None:
+    """Resolve device_id → table_number. Returns None if unknown."""
+    if not device_id:
+        return None
+    dev = db.get_table_by_device(device_id.strip())
+    return str(dev["table_number"]).strip() if dev else None
+
+
+def _device_id_from_request(request: Request) -> str | None:
+    return str(request.headers.get("x-device-id") or "").strip() or None
+
+
+# ── request models ──────────────────────────────────────────────
+
+class CafeTrackRequest(BaseModel):
+    track_title: str = Field(min_length=1, max_length=300)
+    artist: str = ""
+    album_art_url: str | None = None
+    source: str = "spotify"  # spotify | local | cd-lp
+    spotify_track_id: str | None = None
+    owned_item_id: int | None = None
+
+
+# ── search ──────────────────────────────────────────────────────
+
+@router.get("/cafe/search")
+def cafe_search(
+    q: str = Query(min_length=1, max_length=200),
+    limit: int = Query(default=10, ge=1, le=30),
+) -> dict[str, Any]:
+    """Search Spotify + local tags. Public (no auth — tablet access)."""
+    results: list[dict[str, Any]] = []
+
+    # Spotify search
+    spotify_results = _spotify.search_tracks_sync(q, limit=limit)
+    for item in spotify_results:
+        item["source"] = "spotify"
+    results.extend(spotify_results)
+
+    # Local tag search (simple text match on tag_value)
+    local_tags = db.find_tracks_by_tag(q, limit=limit)
+    for tag in local_tags:
+        if tag.get("owned_item_id"):
+            item_row = db.get_owned_item(tag["owned_item_id"])
+            if item_row:
+                results.append({
+                    "source": "local",
+                    "owned_item_id": tag["owned_item_id"],
+                    "title": item_row.get("item_title") or item_row.get("item_name_override") or "",
+                    "artist": item_row.get("artist_or_brand") or "",
+                    "album_art_url": item_row.get("cover_image_url"),
+                    "tag_type": tag.get("tag_type"),
+                    "tag_value": tag.get("tag_value"),
+                })
+
+    return {"query": q, "total_count": len(results), "items": results}
+
+
+# ── request track ───────────────────────────────────────────────
+
+@router.post("/cafe/request")
+def cafe_request_track(payload: CafeTrackRequest, request: Request) -> dict[str, Any]:
+    """Submit a track request from a tablet."""
+    device_id = _device_id_from_request(request)
+    table_number = _resolve_table(device_id)
+    if not table_number:
+        raise HTTPException(status_code=400, detail="등록되지 않은 기기입니다")
+
+    row = db.create_customer_track_request(
+        requested_track=f"{payload.artist} - {payload.track_title}" if payload.artist else payload.track_title,
+        owned_item_id=payload.owned_item_id,
+        matched_track_title=payload.track_title,
+        matched_track_no=None,
+        customer_note=f"테이블 {table_number} / {payload.source}",
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="요청 접수 실패")
+
+    return {
+        "ok": True,
+        "request_id": row.get("id"),
+        "table_number": table_number,
+        "track_title": payload.track_title,
+    }
+
+
+# ── queue / now-playing ─────────────────────────────────────────
+
+@router.get("/cafe/queue")
+def cafe_queue(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+    """Public: list pending/playing requests."""
+    rows = db.list_customer_track_requests(status=None, limit=limit)
+    return {"total_count": len(rows), "items": rows}
+
+
+@router.get("/cafe/now-playing")
+def cafe_now_playing() -> dict[str, Any]:
+    """Public: current playback info (Spotify only for now)."""
+    pb = _spotify.current_playback_sync()
+    if pb:
+        return {"available": True, "source": "spotify", **pb}
+    return {"available": False}
+
+
+# ── staff: queue management ─────────────────────────────────────
+
+@router.get("/ops/cafe/queue")
+def staff_queue(request: Request) -> dict[str, Any]:
+    """Staff: full request queue (all statuses). OPERATOR+"""
+    security._require_operator_request(request)
+    rows = db.list_customer_track_requests(status=None, limit=100)
+    return {"total_count": len(rows), "items": rows}
+
+
+@router.post("/ops/cafe/play/{request_id}")
+def staff_play(request_id: int, request: Request) -> dict[str, Any]:
+    """Staff: mark request as PLAYING, trigger playback if possible. OPERATOR+"""
+    security._require_operator_request(request)
+    row = db.update_customer_track_request(request_id, status="PLAYING")
+    if not row:
+        raise HTTPException(status_code=404, detail="요청을 찾을 수 없습니다")
+    # Try Spotify playback if a track was matched
+    # (for now, just mark status — actual playback handled by staff manually)
+    return {"ok": True, "request_id": request_id, "status": "PLAYING"}
+
+
+@router.post("/ops/cafe/complete/{request_id}")
+def staff_complete(request_id: int, request: Request) -> dict[str, Any]:
+    """Staff: mark request as RETURNED. OPERATOR+"""
+    security._require_operator_request(request)
+    row = db.update_customer_track_request(request_id, status="RETURNED")
+    if not row:
+        raise HTTPException(status_code=404, detail="요청을 찾을 수 없습니다")
+    return {"ok": True, "request_id": request_id, "status": "RETURNED"}
+
+
+@router.post("/ops/cafe/pause")
+def staff_pause(request: Request) -> dict[str, Any]:
+    """Staff: pause Spotify playback. OPERATOR+"""
+    security._require_operator_request(request)
+    ok = _spotify.pause_sync()
+    return {"ok": ok}
+
+
+@router.post("/ops/cafe/skip")
+def staff_skip(request: Request) -> dict[str, Any]:
+    """Staff: skip — just pause for now (Spotify free-tier limitation)."""
+    security._require_operator_request(request)
+    _spotify.pause_sync()
+    return {"ok": True, "note": "paused — select next track manually"}
+
+
+# ── tablet shell page ───────────────────────────────────────────
+
+@router.get("/cafe/tablet", include_in_schema=False)
+def cafe_tablet_shell(request: Request):
+    import hashlib
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+
+    def _main():
+        from app import main as main_module
+        return main_module
+
+    STATIC_DIR = _main().STATIC_DIR
+    page_path = STATIC_DIR / "cafe_tablet.html"
+    try:
+        file_hash = hashlib.md5(page_path.read_bytes()).hexdigest()[:8]
+    except Exception:
+        file_hash = "0"
+    v = request.query_params.get("v")
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/cafe/tablet?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        if _main()._is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
+    return FileResponse(page_path, headers=serve_headers)

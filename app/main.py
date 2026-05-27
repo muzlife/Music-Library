@@ -439,6 +439,11 @@ async def auth_guard(request: Request, call_next):
         "/auth/logout",
         "/auth/session",
         "/purchase-imports/webhook/gmail",
+        "/cafe/search",
+        "/cafe/request",
+        "/cafe/queue",
+        "/cafe/now-playing",
+        "/cafe/tablet",
     }
     if path in allowed_paths:
         return await call_next(request)
@@ -7309,6 +7314,8 @@ from app.api.audit_log import router as audit_log_router
 app.include_router(audit_log_router)
 from app.api.cafe_admin import router as cafe_admin_router
 app.include_router(cafe_admin_router)
+from app.api.cafe import router as cafe_router
+app.include_router(cafe_router)
 
 # ── Backward-compatible re-exports for tests ──
 from app.api.discogs_integration import get_discogs_release_collector_info, get_discogs_release_cover_preview
