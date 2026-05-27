@@ -1845,3 +1845,32 @@ class StorageCabinetDeleteResponse(BaseModel):
     cabinet_name: str
     deleted_slot_count: int
     unassigned_item_count: int
+
+# ── Placement Hints ──────────────────────────────────────────────
+
+class OpsPlacementHintRequest(BaseModel):
+    owned_item_id: int = Field(ge=1)
+
+
+class OpsPlacementHintRecommendation(BaseModel):
+    rank: int = Field(ge=1)
+    storage_slot_id: int = Field(ge=1)
+    slot_code: str
+    slot_display_name: str
+    reason_code: str
+    reason_message: str
+
+
+class OpsPlacementHintResponse(BaseModel):
+    available: bool = False
+    recommendations: list[OpsPlacementHintRecommendation] = Field(default_factory=list)
+    fallback_reason: str | None = None
+    fallback_message: str | None = None
+
+
+# ── Product Groups ───────────────────────────────────────────────
+
+class ProductGroupCreateRequest(BaseModel):
+    group_type: Literal["SERIES", "CAMPAIGN"] = "SERIES"
+    group_name: str = Field(min_length=1, max_length=120)
+    description: str | None = None
