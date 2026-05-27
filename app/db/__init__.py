@@ -1318,6 +1318,39 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_owned_item_category_created_id ON owned_item (category, created_at DESC, id DESC);
             CREATE INDEX IF NOT EXISTS idx_owned_item_location_event_move_created_owned ON owned_item_location_event (movement_kind, created_at DESC, owned_item_id, id DESC);
 
+            CREATE TABLE IF NOT EXISTS track_tag (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              tag_type TEXT NOT NULL,
+              tag_value TEXT NOT NULL,
+              owned_item_id INTEGER,
+              spotify_track_id TEXT,
+              created_by TEXT,
+              created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_track_tag_type_value ON track_tag (tag_type, tag_value);
+            CREATE INDEX IF NOT EXISTS idx_track_tag_owned ON track_tag (owned_item_id);
+            CREATE INDEX IF NOT EXISTS idx_track_tag_spotify ON track_tag (spotify_track_id);
+
+            CREATE TABLE IF NOT EXISTS table_device (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              table_number TEXT NOT NULL UNIQUE,
+              device_label TEXT,
+              device_id TEXT UNIQUE,
+              is_active INTEGER NOT NULL DEFAULT 1,
+              notes TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS track_reaction (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              track_request_id INTEGER NOT NULL,
+              table_number TEXT NOT NULL,
+              reaction_type TEXT NOT NULL,
+              free_text TEXT,
+              created_at TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS external_response_cache (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               cache_key TEXT NOT NULL UNIQUE,
@@ -1684,6 +1717,25 @@ from .customer_track_request import (  # noqa: E402
     get_customer_track_request,
     list_customer_track_requests,
     update_customer_track_request,
+)
+from .track_tag import (  # noqa: E402
+    _ensure_track_tag_table,
+    delete_track_tag,
+    find_tracks_by_tag,
+    insert_track_tag,
+    list_track_tags,
+)
+from .table_device import (  # noqa: E402
+    _ensure_table_device_table,
+    deactivate_table_device,
+    get_table_by_device,
+    list_table_devices,
+    register_table_device,
+)
+from .track_reaction import (  # noqa: E402
+    _ensure_track_reaction_table,
+    insert_track_reaction,
+    list_reactions_by_request,
 )
 # owned_item_slot MUST be re-exported BEFORE storage_slot, because
 # storage_slot.py imports `_log_owned_item_location_event_in_conn`
