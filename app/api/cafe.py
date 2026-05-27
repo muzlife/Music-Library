@@ -135,11 +135,14 @@ def cafe_search(
     """Search Spotify + local tags. Public (no auth — tablet access)."""
     results: list[dict[str, Any]] = []
 
-    # Spotify search
-    import logging
+    # Spotify search with retry
+    import logging, time
     _log = logging.getLogger(__name__)
     spotify_results = _spotify.search_tracks_sync(q, limit=limit)
-    _log.info(f"cafe search q={q!r} spotify={len(spotify_results)} local=0 total={len(spotify_results)}")
+    if not spotify_results:
+        time.sleep(0.5)
+        spotify_results = _spotify.search_tracks_sync(q, limit=limit)
+    _log.info(f"cafe search q={q!r} spotify={len(spotify_results)}")
     for item in spotify_results:
         item["source"] = "spotify"
     results.extend(spotify_results)
