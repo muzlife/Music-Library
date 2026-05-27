@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.muzlife.library-prod</string>
+
+  <key>WorkingDirectory</key>
+  <string>__PROD_USER__/apps/hahahoho-prod</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__PROD_USER__/apps/hahahoho-prod/scripts/run_api.sh</string>
+  </array>
+
+  <!--
+    ── Secrets — set via deploy/ansible or manual ssh ──
+    Before prod reboot, cp this plist to ~/Library/LaunchAgents/ and
+    fill in actual token values.  Never commit the filled plist to git.
+  -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DISCOGS_TOKEN</key>
+    <string>__FILL_ME__</string>
+    <key>ALADIN_TTB_KEY</key>
+    <string>__FILL_ME__</string>
+    <key>DEEPL_AUTH_KEY</key>
+    <string>__FILL_ME__</string>
+    <key>HOME_ASSISTANT_TOKEN</key>
+    <string>__FILL_ME__</string>
+    <key>LIBRARY_AUTH_SESSION_SECRET</key>
+    <string>__FILL_ME__</string>
+    <key>LIBRARY_PURCHASE_IMPORT_TOKEN</key>
+    <string>__FILL_ME__</string>
+    <key>LIBRARY_AUTH_COOKIE_SECURE</key>
+    <string>1</string>
+    <key>ALADIN_BASE_URL</key>
+    <string>https://www.aladin.co.kr/ttb/api/ItemSearch.aspx</string>
+    <key>DEEPL_BASE_URL</key>
+    <string>https://api-free.deepl.com/v2/translate</string>
+    <key>HOME_ASSISTANT_BASE_URL</key>
+    <string>https://ha.muzlife.com</string>
+    <key>MANIADB_BASE_URL</key>
+    <string>http://www.maniadb.com</string>
+    <key>DISCOGS_USER_AGENT</key>
+    <string>hahahoho-library/0.1 (contact: muzlife@gmail.com)</string>
+    <key>MUSICBRAINZ_USER_AGENT</key>
+    <string>hahahoho-library/0.1 (contact: muzlife@gmail.com)</string>
+    <key>MATCH_CONFIDENCE_AUTO_APPROVE</key>
+    <string>0.90</string>
+    <key>MATCH_CONFIDENCE_REVIEW</key>
+    <string>0.60</string>
+    <key>METADATA_SYNC_INTERVAL_MINUTES</key>
+    <string>0</string>
+    <key>METADATA_SYNC_BATCH_LIMIT</key>
+    <string>300</string>
+    <key>OFFICE_CLIMATE_TEMPERATURE_ENTITY_ID</key>
+    <string>sensor.on_seubdogye_temperature</string>
+    <key>OFFICE_CLIMATE_HUMIDITY_ENTITY_ID</key>
+    <string>sensor.on_seubdogye_humidity</string>
+    <key>APP_HOST</key>
+    <string>0.0.0.0</string>
+    <key>APP_PORT</key>
+    <string>8000</string>
+    <key>APP_ENV</key>
+    <string>prod</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>__PROD_USER__/apps/hahahoho-prod/runtime/logs/launchd.prod.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>__PROD_USER__/apps/hahahoho-prod/runtime/logs/launchd.prod.stderr.log</string>
+</dict>
+</plist>

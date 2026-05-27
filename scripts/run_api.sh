@@ -21,6 +21,10 @@ load_env_file() {
     if [[ ! "${key}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
       continue
     fi
+    # ── Skip if already set (e.g., from launchd EnvironmentVariables) ──
+    if [[ -n "${!key:-}" ]]; then
+      continue
+    fi
 
     if [[ "${value}" =~ ^\".*\"$ || "${value}" =~ ^\'.*\'$ ]]; then
       value="${value:1:${#value}-2}"
