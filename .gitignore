@@ -14,3 +14,11 @@ data/library.db
 AGENTS.md
 CLAUDE.md
 .superpowers/
+
+# Data / Log / Temp
+Purchases/
+data/
+logs/
+scratch/
+test-results/
+app/static/uploads/
