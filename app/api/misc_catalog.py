@@ -47,10 +47,10 @@ def ops_cabinets_shell(request: Request):
             "Location": f"/ops/cabinets?v={file_hash}",
             "Cache-Control": "no-store, no-cache, must-revalidate",
         }
-        if _is_qa_env():
+        if _main()._is_qa_env():
             redirect_headers["Clear-Site-Data"] = '"cache"'
         return _Resp(status_code=302, headers=redirect_headers)
-    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else HTML_PROD_CACHE_HEADERS
     return FileResponse(STATIC_DIR / "index.html", headers=serve_headers)
 
 
