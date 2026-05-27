@@ -9,3 +9,8 @@ __pycache__/
 .venv_api/
 data/library.db
 .worktrees/
+
+# AI assistant personal config
+AGENTS.md
+CLAUDE.md
+.superpowers/
