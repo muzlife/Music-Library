@@ -30,13 +30,17 @@ class SpotifyService:
     def _ensure_client(self) -> Any:
         if not self.configured:
             return None
+        import time
+        now = time.time()
+        if self._sp is not None and hasattr(self, '_sp_created_at') and (now - self._sp_created_at) < 60:
+            return self._sp
         try:
             import spotipy  # type: ignore[import-untyped]
             from spotipy.oauth2 import SpotifyOAuth  # type: ignore[import-untyped]
 
             import os
             cache_path = "/Users/jingunpark/.spotify_cache"
-            return spotipy.Spotify(
+            self._sp = spotipy.Spotify(
                 auth_manager=SpotifyOAuth(
                     client_id=self.client_id,
                     client_secret=self.client_secret,
@@ -46,9 +50,11 @@ class SpotifyService:
                     open_browser=False,
                 )
             )
+            self._sp_created_at = now
         except Exception:
             logger.exception("failed to initialize spotipy client")
             return None
+        return self._sp
 
     # ── search ──────────────────────────────────────────────────
 
