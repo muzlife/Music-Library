@@ -8,211 +8,92 @@
 :root{--bg:#0a0f14;--surface:rgba(20,28,36,0.96);--border:rgba(132,148,170,0.18);--text:#eef3f8;--muted:#8899aa;--accent:#f07b3f;--accent-soft:rgba(240,123,63,0.12)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-.tab{flex:1;text-align:center;padding:14px 8px;font-size:.85rem;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.content{flex:1;overflow-y:auto;padding:16px}
-.search-box{margin-bottom:16px}
-.search-box input{width:100%;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.95rem;outline:none}
-.search-box input:focus{border-color:var(--accent)}
-.track-card{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
-.track-card .art{width:48px;height:48px;border-radius:6px;background:rgba(132,148,170,0.1);flex-shrink:0;overflow:hidden}
-.track-card .art img{width:100%;height:100%;object-fit:cover}
-.track-card .info{flex:1;min-width:0}
-.track-card .title{font-size:.88rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.track-card .meta{font-size:.75rem;color:var(--muted);margin-top:2px}
-.track-card button{flex-shrink:0;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.78rem;cursor:pointer}
-.tag-cloud{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
-.tag-chip{padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:.82rem;color:var(--text);cursor:pointer}
-.tag-chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-.queue-item{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(132,148,170,0.06)}
-.queue-item .qinfo{flex:1;min-width:0}
-.queue-item .qtitle{font-size:.82rem}
-.queue-item .qmeta{font-size:.7rem;color:var(--muted)}
-.qstatus{font-size:.68rem;padding:2px 8px;border-radius:4px;flex-shrink:0}
-.qstatus.waiting{background:rgba(245,158,11,.15);color:#f59e0b}
-.qstatus.playing{background:rgba(34,197,94,.15);color:#22c55e}
-.qstatus.done{background:rgba(132,148,170,.08);color:var(--muted)}
-.bottom-bar{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border-top:1px solid var(--border)}
-.bottom-bar .bart{width:44px;height:44px;border-radius:6px;overflow:hidden;flex-shrink:0}
-.bottom-bar .bart img{width:100%;height:100%;object-fit:cover}
-.bottom-bar .binfo{flex:1;min-width:0}
-.bottom-bar .btitle{font-size:.82rem;font-weight:500}
-.bottom-bar .bartist{font-size:.7rem;color:var(--muted)}
-.progress{width:60px;height:3px;background:rgba(132,148,170,.15);border-radius:2px;flex-shrink:0;overflow:hidden}
-.progress .fill{height:100%;background:var(--accent);border-radius:2px}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:20px}
-.overlay .big-art{width:160px;height:160px;border-radius:12px;overflow:hidden}
-.overlay .big-art img{width:100%;height:100%;object-fit:cover}
-.overlay .msg{font-size:1.1rem;text-align:center;color:var(--text)}
-.overlay .msg .sub{font-size:.82rem;color:var(--muted);margin-top:4px}
-.overlay .reactions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:300px}
-.overlay .reaction-btn{padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;cursor:pointer}
-.overlay .close-btn{margin-top:8px;background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer}
-.empty{padding:48px 16px;text-align:center;color:var(--muted);font-size:.85rem}
-.loading{text-align:center;padding:24px;color:var(--muted)}
+.top{padding:12px 16px;flex-shrink:0}
+.top input{width:100%;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.95rem;outline:none}
+.top input:focus{border-color:var(--accent)}
+.results{flex:1;overflow-y:auto;padding:0 16px 16px}
+.card{display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.card img{width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;background:rgba(132,148,170,0.1)}
+.card .info{flex:1;min-width:0}
+.card .title{font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .meta{font-size:.72rem;color:var(--muted)}
+.card button{flex-shrink:0;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.75rem;cursor:pointer}
+.bottom{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border)}
+.bottom img{width:40px;height:40px;border-radius:6px;object-fit:cover}
+.bottom .binfo{flex:1;min-width:0}
+.bottom .btitle{font-size:.78rem;font-weight:500}
+.bottom .bartist{font-size:.68rem;color:var(--muted)}
+.empty{text-align:center;padding:32px;color:var(--muted);font-size:.8rem}
+.loading{text-align:center;padding:20px;color:var(--muted)}
 </style>
 </head>
 <body>
-<div class="tabs">
-  <div class="tab active" data-tab="search" onclick="switchTab('search')">검색</div>
-  <div class="tab" data-tab="browse" onclick="switchTab('browse')">둘러보기</div>
-  <div class="tab" data-tab="now" onclick="switchTab('now')">지금</div>
-</div>
-<div class="content" id="content"></div>
-<div class="bottom-bar" id="bottomBar">
-  <div class="bart"><img id="barArt" src="" alt="" onerror="this.style.display='none'"></div>
+<div class="top"><input type="text" id="q" placeholder="곡명 또는 아티스트 검색..." autocomplete="off" oninput="search()"></div>
+<div class="results" id="results"><div class="empty">검색어를 입력하세요</div></div>
+<div class="bottom">
+  <img id="bartImg" src="" onerror="this.style.display='none'" style="display:none">
   <div class="binfo">
-    <div class="btitle" id="barTitle">재생 중인 곡이 없습니다</div>
-    <div class="bartist" id="barArtist"></div>
+    <div class="btitle" id="bartTitle">재생 중인 곡 없음</div>
+    <div class="bartist" id="bartArtist"></div>
   </div>
-  <div class="progress"><div class="fill" id="barProgress" style="width:0%"></div></div>
-</div>
-<div class="overlay" id="overlay" style="display:none">
-  <div class="big-art"><img id="overlayArt" src="" alt=""></div>
-  <div class="msg"><div id="overlayTitle"></div><div class="sub" id="overlaySub"></div></div>
-  <div class="reactions" id="overlayReactions"></div>
-  <button class="close-btn" onclick="hideOverlay()">닫기</button>
 </div>
 <script>
 var DEVICE_ID = localStorage.getItem('cafe_device_id') || (function(){var id=crypto.randomUUID();localStorage.setItem('cafe_device_id',id);return id})();
-var currentTab = 'search';
+var timer = null;
 
-function api(path, opts) {
-  opts = opts || {};
-  opts.headers = opts.headers || {};
-  opts.headers['x-device-id'] = DEVICE_ID;
-  return fetch(path, opts).then(function(r){return r.ok?r.json():Promise.reject(r)});
+function search(){
+  clearTimeout(timer);
+  var q = document.getElementById('q').value.trim();
+  if(q.length < 1){
+    document.getElementById('results').innerHTML = '<div class="empty">검색어를 입력하세요</div>';
+    return;
+  }
+  document.getElementById('results').innerHTML = '<div class="loading">검색중...</div>';
+  timer = setTimeout(function(){
+    fetch('/cafe/search?q='+encodeURIComponent(q)+'&limit=15')
+      .then(function(r){return r.json()})
+      .then(function(d){
+        if(!d.items || !d.items.length){
+          document.getElementById('results').innerHTML = '<div class="empty">검색 결과 없음</div>';
+          return;
+        }
+        var h = '';
+        for(var i=0;i<d.items.length;i++){
+          var it = d.items[i];
+          h += '<div class="card">';
+          if(it.album_art_url) h += '<img src="'+it.album_art_url+'" alt="">';
+          else h += '<div style="width:48px;height:48px;border-radius:6px;background:rgba(132,148,170,0.1);flex-shrink:0"></div>';
+          h += '<div class="info"><div class="title">'+it.title+'</div><div class="meta">'+it.artist+'</div></div>';
+          h += '<button onclick="req('+i+')">신청</button>';
+          h += '</div>';
+        }
+        window._lastResults = d.items;
+        document.getElementById('results').innerHTML = h;
+      })
+      .catch(function(e){
+        document.getElementById('results').innerHTML = '<div class="empty">오류: '+e+'</div>';
+      });
+  }, 300);
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab)});
-  if(tab==='search') renderSearch();
-  else if(tab==='browse') renderBrowse();
-  else if(tab==='now') renderNow();
-}
-
-var searchTimer=null;
-function renderSearch() {
-  document.getElementById('content').innerHTML = '<div class="search-box"><input type="text" id="searchInput" placeholder="곡명 또는 아티스트 검색..." autocomplete="off" oninput="onSearchInput(this.value)"></div><div id="searchResults"></div>';
-}
-
-function onSearchInput(q) {
-  clearTimeout(searchTimer);
-  if(q.length<2){document.getElementById('searchResults').innerHTML='';return}
-  searchTimer=setTimeout(function(){doSearch(q)},300);
-}
-
-function doSearch(q) {
-  document.getElementById('searchResults').innerHTML='<div class="loading">검색중...</div>';
-  fetch('/cafe/search?q='+encodeURIComponent(q)+'&limit=15')
-    .then(function(r){return r.json()})
-    .then(function(data){
-      console.log('search results:', data);
-      if(!data.items || !data.items.length){
-        document.getElementById('searchResults').innerHTML='<div class="empty">결과 없음 ('+data.total_count+')</div>';
-        return;
-      }
-      var html = '';
-      for(var i=0;i<data.items.length;i++){
-        var item = data.items[i];
-        html += '<div class="track-card">'+
-          '<div class="art">'+(item.album_art_url?'<img src="'+item.album_art_url.replace(/"/g,'')+'" alt="">':'')+'</div>'+
-          '<div class="info"><div class="title">'+item.title+'</div><div class="meta">'+(item.artist||'')+' &middot; '+item.source+'</div></div>'+
-          '<button onclick="req(this)" data-t="'+item.title.replace(/'/g,"")+'" data-a="'+(item.artist||'').replace(/'/g,"")+'" data-art="'+(item.album_art_url||'')+'" data-src="'+item.source+'" data-sid="'+(item.spotify_track_id||'')+'" data-oid="'+(item.owned_item_id||0)+'">신청</button>'+
-          '</div>';
-      }
-      document.getElementById('searchResults').innerHTML = html;
-    }).catch(function(e){
-      console.error('search error:', e);
-      document.getElementById('searchResults').innerHTML='<div class="empty">검색 오류</div>';
-    });
-}
-
-function req(btn){
-  var d=btn.dataset;
+function req(idx){
+  var it = window._lastResults[idx];
   fetch('/cafe/request',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-device-id':DEVICE_ID},
-    body:JSON.stringify({track_title:d.t,artist:d.a,album_art_url:d.art||null,source:d.src,spotify_track_id:d.sid||null,owned_item_id:parseInt(d.oid)||null})
-  }).then(function(r){return r.json()}).then(function(d){alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
+    body:JSON.stringify({track_title:it.title,artist:it.artist,album_art_url:it.album_art_url||null,source:it.source,spotify_track_id:it.spotify_track_id||null,owned_item_id:it.owned_item_id||null})
+  }).then(function(r){return r.json()}).then(function(){alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
 }
 
-function renderBrowse() {
-  document.getElementById('content').innerHTML='<div class="loading">불러오는 중...</div>';
-  api('/cafe/tags').then(function(data){
-    var seen={},tags=[];
-    (data.items||[]).forEach(function(t){if(!seen[t.tag_value]){seen[t.tag_value]=true;tags.push(t.tag_value)}});
-    document.getElementById('content').innerHTML = '<div class="tag-cloud">'+
-      tags.map(function(t){return '<div class="tag-chip" onclick="browseTag(this)">'+esc(t)+'</div>'}).join('')+
-      '</div><div id="browseResults"></div>';
-  }).catch(function(){document.getElementById('content').innerHTML='<div class="empty">태그 로드 실패</div>'});
-}
-
-function browseTag(el) {
-  document.querySelectorAll('.tag-chip').forEach(function(c){c.classList.toggle('active',c===el)});
-  var tag = el.textContent;
-  document.getElementById('browseResults').innerHTML='<div class="loading">검색중...</div>';
-  fetch('/cafe/search?q='+encodeURIComponent(tag)+'&limit=20').then(function(r){return r.json()}).then(function(data){
-    if(!data.items || !data.items.length){document.getElementById('browseResults').innerHTML='<div class="empty">해당 태그 없음</div>';return}
-    var html = '';
-    for(var i=0;i<data.items.length;i++){
-      var item = data.items[i];
-      html += '<div class="track-card">'+
-        '<div class="art">'+(item.album_art_url?'<img src="'+item.album_art_url.replace(/"/g,'')+'" alt="">':'')+'</div>'+
-        '<div class="info"><div class="title">'+item.title+'</div><div class="meta">'+(item.artist||'')+'</div></div>'+
-        '<button onclick="req(this)" data-t="'+item.title.replace(/'/g,"")+'" data-a="'+(item.artist||'').replace(/'/g,"")+'" data-art="'+(item.album_art_url||'')+'" data-src="'+item.source+'" data-sid="'+(item.spotify_track_id||'')+'" data-oid="'+(item.owned_item_id||0)+'">신청</button>'+
-        '</div>';
-    }
-    document.getElementById('browseResults').innerHTML = html;
-  });
-}
-
-function renderNow() {
-  document.getElementById('content').innerHTML='<div class="loading">불러오는 중...</div>';
-  api('/cafe/queue?limit=30').then(function(data){
-    if(!data.items || !data.items.length){document.getElementById('content').innerHTML='<div class="empty">대기중 없음</div>';return}
-    var html = '';
-    for(var i=0;i<data.items.length;i++){
-      var item = data.items[i];
-      var sl=item.status==='REQUESTED'?'대기':item.status==='PLAYING'?'재생중':item.status==='RETURNED'?'완료':'취소';
-      var sc=item.status==='REQUESTED'?'waiting':item.status==='PLAYING'?'playing':'done';
-      return '<div class="queue-item">'+
-        '<div class="qinfo"><div class="qtitle">'+esc(item.requested_track||'')+'</div><div class="qmeta">'+esc(item.customer_note||'')+'</div></div>'+
-        '<div class="qstatus '+sc+'">'+sl+'</div></div>';
-    }
-    document.getElementById('content').innerHTML = html;
-  });
-}
-
-function requestTrack(btn) {
-  var d=btn.dataset;
-  api('/cafe/request',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({track_title:d.title,artist:d.artist,album_art_url:d.art||null,source:d.source,spotify_track_id:d.sid||null,owned_item_id:parseInt(d.oid)||null})
-  }).then(function(){alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
-}
-
-function hideOverlay() { document.getElementById('overlay').style.display='none'; }
-
-// poll now-playing every 5s
 setInterval(function(){
-  api('/cafe/now-playing').then(function(data){
-    if(data.available){
-      document.getElementById('barTitle').textContent = data.title;
-      document.getElementById('barArtist').textContent = data.artist;
-      if(data.album_art_url) document.getElementById('barArt').src = data.album_art_url;
-      if(data.duration_ms) document.getElementById('barProgress').style.width = ((data.position_ms||0)/data.duration_ms*100)+'%';
+  fetch('/cafe/now-playing').then(function(r){return r.json()}).then(function(d){
+    if(d.available){
+      document.getElementById('bartTitle').textContent = d.title;
+      document.getElementById('bartArtist').textContent = d.artist;
+      if(d.album_art_url){document.getElementById('bartImg').src=d.album_art_url;document.getElementById('bartImg').style.display='';}
     }
   }).catch(function(){});
-},5000);
-
-// init
-renderSearch();
+}, 5000);
 </script>
 </body>
 </html>
