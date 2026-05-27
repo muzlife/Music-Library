@@ -14425,6 +14425,143 @@
     .dashboard-climate-badge.ideal { background: rgba(76,175,80,0.18); color: #4caf50; }
     .dashboard-climate-badge.warn { background: rgba(249,115,22,0.18); color: #f97316; }
     .dashboard-climate-badge.alert { background: rgba(239,68,68,0.18); color: #ef4444; }
+
+    /* ═══════════════════════════════════════════════════
+       Dashboard Widget Grid System v2
+       ═══════════════════════════════════════════════════ */
+
+    .dashboard-widget-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .dashboard-widget-grid .dashboard-widget-card { grid-column: span 1; }
+    .dashboard-widget-grid .dashboard-widget-card[data-widget-size="medium"] { grid-column: span 2; }
+    .dashboard-widget-grid .dashboard-widget-card[data-widget-size="large"] { grid-column: span 3; }
+    .dashboard-widget-grid .dashboard-widget-card[data-widget-size="wide"] { grid-column: span 4; }
+
+    .dashboard-widget-settings { flex-wrap: wrap; gap: 3px; }
+    .dashboard-widget-settings-group {
+      display: flex; align-items: center; gap: 2px;
+      border: 1px solid var(--theme-dashboard-border); border-radius: 6px;
+      padding: 2px 4px; background: rgba(128,128,128,0.05);
+    }
+    .dashboard-widget-reorder-btn {
+      font-size: 0.55rem; padding: 0px 3px; border: none;
+      background: transparent; cursor: pointer; opacity: 0.4; line-height: 1; border-radius: 2px;
+    }
+    .dashboard-widget-reorder-btn:hover { opacity: 1; background: rgba(128,128,128,0.15); }
+
+    /* ── Accent borders ── */
+    .dash-kpi-card.accent-heatmap { border-top: 3px solid #e05a1a; }
+    .dash-kpi-card.accent-genre { border-top: 3px solid #8b5cf6; }
+    .dash-kpi-card.accent-format { border-top: 3px solid #4a9e98; }
+    .dash-kpi-card.accent-pressing { border-top: 3px solid #c47b30; }
+    .dash-kpi-card.accent-artist { border-top: 3px solid #3a8fd6; }
+
+    /* ── Heatmap Table ── */
+    .dash-heatmap { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+    .dash-heatmap th { font-size: 0.62rem; opacity: 0.45; font-weight: 600; padding: 3px 6px; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dash-heatmap th:first-child { text-align: left; width: 90px; }
+    .dash-heatmap td { padding: 3px 4px; text-align: center; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; }
+    .dash-heatmap td:first-child { text-align: left; font-family: inherit; font-size: 0.72rem; opacity: 0.7; }
+    .dash-heatmap-cell { border-radius: 4px; padding: 4px 6px; display: inline-block; min-width: 36px; transition: all 0.2s; }
+    .dash-heatmap-cell:hover { transform: scale(1.1); }
+
+    /* ── Comparison Side-by-Side ── */
+    .dash-compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .dash-compare-col { }
+    .dash-compare-col-title { font-size: 0.7rem; font-weight: 700; opacity: 0.7; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 2px solid; letter-spacing: 0.03em; }
+    .dash-compare-row { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; padding: 2px 0; }
+    .dash-compare-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash-compare-row .count { font-family: var(--font-mono); font-size: 0.68rem; opacity: 0.65; width: 30px; text-align: right; }
+    .dash-compare-bar { width: 50px; height: 3px; border-radius: 2px; background: rgba(128,128,128,0.12); overflow: hidden; flex-shrink: 0; }
+    .dash-compare-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+    /* ── Artist Timeline Card ── */
+    .dash-artist-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(128,128,128,0.06); }
+    .dash-artist-row:last-child { border-bottom: none; }
+    .dash-artist-name { width: 110px; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+    .dash-artist-count { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.6; width: 30px; text-align: right; flex-shrink: 0; }
+    .dash-artist-timeline { flex: 1; height: 8px; border-radius: 4px; background: rgba(128,128,128,0.1); position: relative; }
+    .dash-artist-span { position: absolute; height: 100%; border-radius: 4px; opacity: 0.8; top: 0; }
+    .dash-artist-decades { font-size: 0.6rem; opacity: 0.4; width: 70px; text-align: center; flex-shrink: 0; }
+
+    /* ── Completeness Comparison ── */
+    .dash-completeness-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+    .dash-completeness-table th { text-align: left; font-size: 0.6rem; opacity: 0.4; font-weight: 600; padding: 3px 6px; border-bottom: 1px solid var(--theme-dashboard-border); }
+    .dash-completeness-table td { padding: 4px 6px; border-bottom: 1px solid rgba(128,128,128,0.06); }
+    .dash-completeness-table .pct { font-family: var(--font-mono); font-size: 0.68rem; text-align: right; }
+    .dash-completeness-bar { width: 60px; height: 4px; border-radius: 2px; background: rgba(128,128,128,0.12); overflow: hidden; display: inline-block; vertical-align: middle; margin: 0 4px; }
+    .dash-completeness-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+    .dash-completeness-bar-fill.high { background: #4caf50; }
+    .dash-completeness-bar-fill.mid { background: #f97316; }
+    .dash-completeness-bar-fill.low { background: #ef4444; }
+
+    /* ── Registration Pace ── */
+    .dash-reg-pace { display: flex; flex-direction: column; gap: 6px; }
+    .dash-reg-month { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; }
+    .dash-reg-month-label { width: 55px; opacity: 0.5; font-family: var(--font-mono); font-size: 0.65rem; }
+    .dash-reg-month-bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(128,128,128,0.1); overflow: hidden; }
+    .dash-reg-month-fill { height: 100%; border-radius: 3px; background: var(--selected-accent, #0f766e); transition: width 0.4s; }
+    .dash-reg-month-count { font-family: var(--font-mono); font-size: 0.65rem; opacity: 0.5; width: 24px; text-align: right; }
+
+    /* ── Import Queue ── */
+    .dash-import-status { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+    .dash-import-count { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+    .dash-import-badge { font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+    .dash-import-badge.pending { background: rgba(249,115,22,0.18); color: #f97316; }
+    .dash-import-badge.clear { background: rgba(76,175,80,0.18); color: #4caf50; }
+
+    /* ── Exception Alert Grid ── */
+    .dash-alert-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .dash-alert-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--theme-dashboard-border); font-size: 0.72rem; cursor: pointer; transition: all 0.15s; }
+    .dash-alert-item:hover { background: var(--theme-dashboard-panel-soft); }
+    .dash-alert-item .alert-count { font-family: var(--font-mono); font-weight: 700; font-size: 0.9rem; }
+    .dash-alert-item.alert-critical { border-left: 3px solid #ef4444; }
+    .dash-alert-item.alert-warning { border-left: 3px solid #f97316; }
+    .dash-alert-item.alert-info { border-left: 3px solid #3a8fd6; }
+
+    /* ── Collector Grid ── */
+    .dash-collector-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .dash-collector-item { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); text-align: center; }
+    .dash-collector-icon { font-size: 1.1rem; margin-bottom: 2px; opacity: 0.7; }
+    .dash-collector-value { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; letter-spacing: -0.04em; }
+    .dash-collector-label { font-size: 0.6rem; opacity: 0.45; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* ── Financial Stats ── */
+    .dash-finance-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .dash-finance-item { padding: 8px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); }
+    .dash-finance-label { font-size: 0.62rem; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dash-finance-value { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1400px) {
+      .dashboard-widget-grid { grid-template-columns: repeat(2, 1fr); }
+      .dashboard-widget-grid .dashboard-widget-card[data-widget-size="large"],
+      .dashboard-widget-grid .dashboard-widget-card[data-widget-size="wide"] { grid-column: span 2; }
+      .dashboard-widget-grid .dashboard-widget-card[data-widget-size="medium"] { grid-column: span 1; }
+      .dash-alert-grid, .dash-collector-grid { grid-template-columns: repeat(2, 1fr); }
+      .dash-compare-grid, .dash-finance-grid { grid-template-columns: 1fr; }
+      .dash-heatmap { font-size: 0.62rem; }
+      .dash-heatmap th, .dash-heatmap td { padding: 2px 3px; }
+    }
+    @media (max-width: 768px) {
+      .dashboard-widget-grid { grid-template-columns: 1fr; }
+      .dashboard-widget-grid .dashboard-widget-card { grid-column: span 1 !important; }
+      .dash-alert-grid, .dash-collector-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── KPI snapshot row ── */
+    .dash-snapshot-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
+    .dash-snapshot-stat { flex: 1; min-width: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 8px; border-radius: 10px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); text-align: center; }
+    .dash-snapshot-stat .stat-value { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; letter-spacing: -0.04em; }
+    .dash-snapshot-stat .stat-label { font-size: 0.62rem; opacity: 0.45; margin-top: 1px; }
+    .dash-snapshot-stat .stat-sub { font-size: 0.6rem; opacity: 0.35; }
+    .dash-snapshot-chip-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .dash-snapshot-chip { font-size: 0.66rem; padding: 2px 8px; border-radius: 4px; background: rgba(128,128,128,0.08); }
+
     /* Responsive grid layouts for intermediate viewports */
     @media (max-width: 1400px) {
       .dash-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -18266,187 +18403,143 @@
         </div>
         <!-- 탭 버튼 -->
         <div id="homeDashViewTabs" class="subtabs u-mt-sm" style="display:flex;align-items:center;">
-          <button id="homeDashViewStatusBtn" class="subtab-btn active" type="button">현황판</button>
-          <button id="homeDashViewOpsBtn" class="subtab-btn" type="button">운영판</button>
           <button id="homeDashWidgetSettingsBtn" class="btn" type="button" style="margin-left:auto;font-size:0.7rem;padding:2px 10px;height:auto;opacity:0.6;">카드 편집</button>
         </div>
         <!-- 위젯 설정 패널 -->
         <div id="homeDashWidgetSettings" class="dashboard-widget-settings" style="display:none;"></div>
         <!-- ===== 현황판 패널 ===== -->
-        <div id="homeDashViewStatus" class="subtab-panel active">
-          <div class="dashboard-status-grid">
-            <!-- 카드 A: 라이브러리 구성 -->
-            <div class="dash-kpi-card accent-product dashboard-widget-card" data-widget-id="card-library" data-widget-label="라이브러리 구성">
-              <div class="dash-kpi-label">라이브러리 구성</div>
-              <div class="dash-product-row">
-                <span class="dash-product-subtitle">소장 현황</span>
-                <span class="dash-kpi-chip" data-dash-drilldown="ownership_in_collection" title="검색탭으로 이동">소장 <em id="homeDashInCollection">0</em></span>
-                <span class="dash-kpi-chip" data-dash-drilldown="ownership_loaned" title="검색탭으로 이동">대출 <em id="homeDashLoaned">0</em></span>
-                <span class="dash-kpi-chip" data-dash-drilldown="ownership_sold" title="검색탭으로 이동">판매 <em id="homeDashSold">0</em></span>
-                <span class="dash-kpi-chip" data-dash-drilldown="ownership_lost" title="검색탭으로 이동">분실 <em id="homeDashLost">0</em></span>
-              </div>
-              <div class="dash-product-row">
-                <span class="dash-product-subtitle">상품 구분</span>
-                <span class="dash-kpi-chip is-new" data-dash-drilldown="new_items" title="검색탭으로 이동">새상품 <em id="homeDashNewItems">0</em></span>
-                <span class="dash-kpi-chip" data-dash-drilldown="promo_items" title="검색탭으로 이동">홍보반 <em id="homeDashPromoItems">0</em></span>
-                <span class="dash-kpi-chip" data-dash-drilldown="other_items" title="검색탭으로 이동">그 외 <em id="homeDashOtherItems">0</em></span>
-              </div>
-              <div class="dash-product-row">
-                <span class="dash-product-subtitle">콜렉터</span>
-                <span class="dash-kpi-chip" data-dash-drilldown="sig_direct" title="검색탭으로 이동">직접 싸인 <em id="homeDashDirectSigned">0</em></span>
-                <span class="dash-kpi-chip" data-dash-drilldown="sig_purchase" title="검색탭으로 이동">구매 싸인 <em id="homeDashPurchaseSigned">0</em></span>
-                <span class="dash-kpi-chip" data-dash-drilldown="limited_edition" title="검색탭으로 이동">한정반 <em id="homeDashLimited">0</em></span>
-              </div>
-              <div class="dash-product-row">
-                <span class="dash-product-subtitle">최근 등록</span>
-                <span class="dash-kpi-chip">오늘 <em id="homeDashRegToday">0</em></span>
-                <span class="dash-kpi-chip">7일 <em id="homeDashReg7d">0</em></span>
-              </div>
-              <hr class="dash-kpi-divider">
-              <div class="dashboard-mini-charts-row">
-                <div class="dashboard-mini-chart">
-                  <div class="dash-kpi-sub-label">카테고리</div>
-                  <div style="position:relative;height:120px;">
-                    <canvas id="dashCategoryChart" role="img" aria-label="카테고리 분포"></canvas>
-                  </div>
-                </div>
-                <div class="dashboard-mini-chart">
-                  <div class="dash-kpi-sub-label">릴리즈 타입</div>
-                  <div style="position:relative;height:120px;">
-                    <canvas id="dashReleaseTypeChart" role="img" aria-label="릴리즈 타입 분포"></canvas>
-                  </div>
-                </div>
-              </div>
-              <div id="homeDashByCategory" style="display:none;"></div>
-              <div id="homeDashByReleaseType" style="display:none;"></div>
-            </div>
-            <!-- 카드 B: 도메인 / 음반 구성 -->
-            <div class="dash-chart-card accent-combined-distribution dashboard-widget-card" data-widget-id="card-domain" data-widget-label="도메인·음반 구성">
-              <div class="dash-chart-title">도메인 · 음반 구성</div>
-              <div id="homeDashByDomain" style="display:none;"></div>
-              <div style="position:relative;height:200px;">
-                <canvas id="dashDomainChart" role="img" aria-label="도메인별 앨범 수 가로 막대 차트">도메인 및 음반 구성</canvas>
-              </div>
-              <div id="homeDashDomainWarn" class="mini" style="color:#f97316;margin-top:4px;display:none;"></div>
-            </div>
-            <!-- 카드 C: 소스 · 도메인 구성 -->
-            <div class="dash-kpi-card accent-source dashboard-widget-card" data-widget-id="card-source" data-widget-label="소스 · 도메인 구성">
-              <div class="dash-kpi-label">소스 · 도메인 구성</div>
-              <div id="homeDashSourceSummary" style="display:none;"></div>
-              <div id="homeDashBySource" style="display:none;"></div>
-              <div style="position:relative;height:150px;margin-top:4px;">
-                <canvas id="dashSourceDomainChart" role="img" aria-label="소스별 도메인 분포 스택 바 차트">소스×도메인</canvas>
-              </div>
-              <div id="homeDashSourceDomainWarn" class="mini" style="color:#f97316;margin-top:4px;display:none;"></div>
-            </div>
-            <!-- 카드 C-2: 소스 · 음반 구성 (기본 숨김) -->
-            <div class="dash-kpi-card accent-source dashboard-widget-card" data-widget-id="card-source-media" data-widget-label="소스 · 음반 구성" data-widget-default-hidden="true">
-              <div class="dash-kpi-label">소스 · 음반 구성</div>
-              <div style="position:relative;height:150px;margin-top:4px;">
-                <canvas id="dashSourceMediaChart" role="img" aria-label="소스별 미디어 분포 스택 바 차트">소스×미디어</canvas>
-              </div>
-              <div id="homeDashSourceMediaWarn" class="mini" style="color:#f97316;margin-top:4px;display:none;"></div>
-            </div>
-            <!-- 카드 D: 메타 완성도 -->
-            <div class="dash-kpi-card accent-quality dashboard-widget-card" data-widget-id="card-meta" data-widget-label="메타 완성도">
-              <div class="dash-kpi-label">메타 완성도 · 연결 품질</div>
-              <div class="dash-meta-bars">
-                <div class="dash-meta-row">
-                  <span class="dash-meta-name" data-dash-drilldown="genre_missing" style="cursor:pointer;" title="검색탭으로 이동">장르 없음</span>
-                  <div class="dash-meta-bar-bg"><div class="dash-meta-bar" id="dashMetaGenreBar" style="width:0%;background:#3a8fd6;"></div></div>
-                  <span class="dash-meta-pct" id="homeDashGenreMissing">0</span>
-                </div>
-                <div class="dash-meta-row">
-                  <span class="dash-meta-name" data-dash-drilldown="catalog_missing" style="cursor:pointer;" title="검색탭으로 이동">카탈로그 없음</span>
-                  <div class="dash-meta-bar-bg"><div class="dash-meta-bar" id="dashMetaCatalogBar" style="width:0%;background:#9c6fd6;"></div></div>
-                  <span class="dash-meta-pct" id="homeDashCatalogMissing">0</span>
-                </div>
-                <div class="dash-meta-row">
-                  <span class="dash-meta-name" data-dash-drilldown="media_missing" style="cursor:pointer;" title="검색탭으로 이동">미디어 없음</span>
-                  <div class="dash-meta-bar-bg"><div class="dash-meta-bar" id="dashMetaMediaBar" style="width:0%;background:#4caf80;"></div></div>
-                  <span class="dash-meta-pct" id="homeDashFormatMissing">0</span>
-                </div>
-                <div class="dash-meta-row">
-                  <span class="dash-meta-name" data-dash-drilldown="cover_missing" style="cursor:pointer;" title="예외큐로 이동">커버 없음</span>
-                  <div class="dash-meta-bar-bg"><div class="dash-meta-bar" id="dashMetaCoverBar" style="width:0%;background:#e05a1a;"></div></div>
-                  <span class="dash-meta-pct" id="homeDashCoverMissing">0</span>
-                </div>
-                <div class="dash-meta-row">
-                  <span class="dash-meta-name" data-dash-drilldown="source_unlinked" style="cursor:pointer;" title="소스보강으로 이동">소스 미연결</span>
-                  <div class="dash-meta-bar-bg"><div class="dash-meta-bar" id="dashMetaSourceBar" style="width:0%;background:#888;"></div></div>
-                  <span class="dash-meta-pct" id="homeDashSourceUnlinked">0</span>
-                </div>
-                <div class="dash-meta-row">
-                  <span class="dash-meta-name" data-dash-drilldown="master_unlinked" style="cursor:pointer;" title="예외큐로 이동">마스터 미연결</span>
-                  <div class="dash-meta-bar-bg"><div class="dash-meta-bar" id="dashMetaMasterBar" style="width:0%;background:#888;"></div></div>
-                  <span class="dash-meta-pct" id="homeDashMasterUnlinked">0</span>
-                </div>
+        <div id="homeDashViewStatus">
+          <div class="dashboard-widget-grid">
+
+            <!-- Card 1: 컬렉션 스냅샷 (wide) -->
+            <div class="dash-kpi-card accent-main dashboard-widget-card" data-widget-id="card-snapshot" data-widget-label="컬렉션 스냅샷" data-widget-size="wide">
+              <div class="dash-kpi-label">컬렉션 스냅샷</div>
+              <div id="homeDashSnapshotBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
               </div>
             </div>
-          </div>
-        </div>
-        <!-- ===== 운영판 패널 ===== -->
-        <div id="homeDashViewOps" class="subtab-panel">
-          <div class="dashboard-ops-summary-row">
-            <!-- 배치 현황 카드 -->
-            <div class="dash-kpi-card accent-placement dashboard-widget-card" data-widget-id="ops-placement" data-widget-label="배치 현황">
-              <div class="dash-kpi-label">배치 현황</div>
-              <div style="position:relative;height:88px;">
-                <canvas id="dashGaugeChart" role="img" aria-label="배치율 게이지 차트">배치율</canvas>
+
+            <!-- Card 2: 도메인 × 연대 히트맵 (wide) -->
+            <div class="dash-kpi-card accent-heatmap dashboard-widget-card" data-widget-id="card-heatmap" data-widget-label="도메인 × 연대" data-widget-size="wide">
+              <div class="dash-kpi-label">도메인 × 연대 히트맵</div>
+              <div id="homeDashHeatmapBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
               </div>
-              <div style="text-align:center;font-size:1.5rem;font-weight:700;margin-top:-18px;" id="homeDashPlacementRate">0%</div>
-              <hr class="dash-kpi-divider">
-              <div class="dash-kpi-sub-row">
-                <span>1일 이동 <em id="homeDashRecentMove1d">0</em></span>
-              </div>
-              <div id="homeDashCabinetOccupancy" style="margin-top:6px;font-size:0.75rem;"></div>
             </div>
-            <!-- 기후 카드 -->
-            <div class="dash-kpi-card dashboard-widget-card" data-widget-id="ops-climate" data-widget-label="실내 환경" style="border-top:3px solid #22c55e;">
+
+            <!-- Card 3: 재정 인사이트 (medium) -->
+            <div class="dash-kpi-card accent-source dashboard-widget-card" data-widget-id="card-finance" data-widget-label="재정 인사이트" data-widget-size="medium">
+              <div class="dash-kpi-label">재정 인사이트</div>
+              <div id="homeDashFinanceBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 4: 장르 × 도메인 (medium) -->
+            <div class="dash-kpi-card accent-genre dashboard-widget-card" data-widget-id="card-genre-domain" data-widget-label="장르 × 도메인" data-widget-size="medium">
+              <div class="dash-kpi-label">장르 × 도메인</div>
+              <div id="homeDashGenreDomainBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 5: 포맷 × 도메인 + 프레싱 (medium) -->
+            <div class="dash-kpi-card accent-pressing dashboard-widget-card" data-widget-id="card-format-pressing" data-widget-label="포맷·프레싱 × 도메인" data-widget-size="medium">
+              <div class="dash-kpi-label">포맷 · 프레싱 국가 × 도메인</div>
+              <div id="homeDashFormatPressingBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 6: 아티스트 연대기 (medium) -->
+            <div class="dash-kpi-card accent-artist dashboard-widget-card" data-widget-id="card-artist-timeline" data-widget-label="아티스트 연대기" data-widget-size="medium">
+              <div class="dash-kpi-label">아티스트 연대기</div>
+              <div id="homeDashArtistTimelineBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 7: 메타 완성도 비교 (medium) -->
+            <div class="dash-kpi-card accent-quality dashboard-widget-card" data-widget-id="card-meta-source" data-widget-label="메타 완성도 × 소스" data-widget-size="medium">
+              <div class="dash-kpi-label">메타 완성도 × 소스</div>
+              <div id="homeDashMetaSourceBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 8: 콜렉터 가치 (medium) -->
+            <div class="dash-kpi-card accent-product dashboard-widget-card" data-widget-id="card-collector" data-widget-label="콜렉터 가치" data-widget-size="medium">
+              <div class="dash-kpi-label">콜렉터 가치</div>
+              <div id="homeDashCollectorBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 9: 예외 알림 (medium) -->
+            <div class="dash-kpi-card dashboard-widget-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-widget-size="medium">
+              <div class="dash-kpi-label">예외 · 주의 필요</div>
+              <div id="homeDashAlertsBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 10: 등록 페이스 + 구매 수입 (medium) -->
+            <div class="dash-kpi-card accent-placement dashboard-widget-card" data-widget-id="card-reg-import" data-widget-label="등록 페이스·구매수입" data-widget-size="medium">
+              <div class="dash-kpi-label">등록 페이스 · 구매 수입</div>
+              <div id="homeDashRegImportBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+
+            <!-- Card 11: 이동 히트맵 (medium) -->
+            <div class="dash-kpi-card accent-heatmap dashboard-widget-card" data-widget-id="card-move-heatmap" data-widget-label="이동 히트맵" data-widget-size="medium">
+              <div class="dash-kpi-label">이동 히트맵 (30일)</div>
+              <div id="homeDashMoveHeatmapBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 12: 최근 등록 프로필 (medium) -->
+            <div class="dash-kpi-card accent-product dashboard-widget-card" data-widget-id="card-recent-reg" data-widget-label="최근 등록 프로필" data-widget-size="medium">
+              <div class="dash-kpi-label">최근 등록 프로필 (30일)</div>
+              <div id="homeDashRecentRegBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 13: 구매 흐름 (medium) -->
+            <div class="dash-kpi-card accent-source dashboard-widget-card" data-widget-id="card-purchase-flow" data-widget-label="구매 흐름" data-widget-size="medium">
+              <div class="dash-kpi-label">구매 흐름 (소스 × 통화 × 도메인)</div>
+              <div id="homeDashPurchaseFlowBody">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+            </div>
+
+            <!-- Card 14: 실내 환경 (small) -->
+            <div class="dash-kpi-card dashboard-widget-card" data-widget-id="card-climate" data-widget-label="실내 환경" data-widget-size="medium">
               <div class="dash-kpi-label">실내 환경</div>
               <div id="homeDashClimateBody" class="dashboard-climate-card">
                 <div class="mini muted">불러오는 중&hellip;</div>
               </div>
               <div id="homeDashClimateUpdated" class="mini" style="opacity:.4;margin-top:6px;font-size:0.62rem;"></div>
             </div>
-          </div>
-          <!-- 최근 이동 피드 -->
-          <div class="dash-activity-card dashboard-widget-card" data-widget-id="ops-moves" data-widget-label="최근 이동" style="margin-bottom:10px;">
-            <div class="dash-activity-card-header">
-              <span class="dash-activity-card-title">최근 이동 <span id="homeDashMoveWindow" class="mini" style="opacity:.5;font-weight:400;"></span></span>
-            </div>
-            <div id="homeDashRecentMoves"></div>
-          </div>
-          <!-- 활동 피드 -->
-          <div class="dash-activity-grid">
-            <div class="dash-activity-card dashboard-widget-card" data-widget-id="ops-recent-reg" data-widget-label="최근 등록">
-              <div class="dash-activity-card-header">
-                <span class="dash-activity-card-title">최근 등록</span>
-              </div>
-              <div id="dashRecentRegistered"><div class="mini" style="opacity:.4">불러오는 중\&hellip;</div></div>
-            </div>
-            <div class="dash-activity-card dashboard-widget-card" data-widget-id="ops-recent-purchase" data-widget-label="최근 구매">
-              <div class="dash-activity-card-header">
-                <span class="dash-activity-card-title">최근 구매 <span style="color:#4caf50;font-size:0.7rem;font-weight:400;">새상품</span></span>
-              </div>
-              <div id="dashRecentPurchased"><div class="mini" style="opacity:.4">불러오는 중\&hellip;</div></div>
-            </div>
-            <div class="dash-activity-card dashboard-widget-card" data-widget-id="ops-recent-update" data-widget-label="최근 업데이트">
-              <div class="dash-activity-card-header">
-                <span class="dash-activity-card-title">최근 업데이트</span>
-              </div>
-              <div id="dashRecentUpdated"><div class="mini" style="opacity:.4">불러오는 중\&hellip;</div></div>
+
+                        <!-- Hidden data containers -->
+            <div style="display:none">
+              <div id="homeDashByCategory"></div>
+              <div id="homeDashByReleaseType"></div>
+              <div id="homeDashByDomain"></div>
+              <div id="homeDashSourceSummary"></div>
+              <div id="homeDashBySource"></div>
+              <div id="homeDashByStatus"></div>
+              <div id="homeDashBySizeGroup"></div>
+              <div id="homeDashPressingCountry"></div>
+              <span id="homeDashSecondHand"></span>
             </div>
           </div>
         </div>
-        <!-- hidden containers (JS 참조용) -->
-        <div style="display:none">
-          <div id="homeDashByStatus"></div>
-          <div id="homeDashBySizeGroup"></div>
-          <div id="homeDashPressingCountry"></div>
-          <span id="homeDashSecondHand"></span>
-        </div>
-        <div id="homeDashboardStatus" class="status"></div>
+<div id="homeDashboardStatus" class="status"></div>
       </section>
     </div>
 
@@ -42465,37 +42558,307 @@
       });
     }
 
-    function initHomeDashViewTabs() {
-      const statusBtn = $("homeDashViewStatusBtn");
-      const opsBtn = $("homeDashViewOpsBtn");
-      const statusPanel = $("homeDashViewStatus");
-      const opsPanel = $("homeDashViewOps");
-      if (!statusBtn || !opsBtn) return;
-      function switchTo(tab) {
-        const isStatus = tab === "status";
-        statusBtn.classList.toggle("active", isStatus);
-        opsBtn.classList.toggle("active", !isStatus);
-        if (statusPanel) statusPanel.classList.toggle("active", isStatus);
-        if (opsPanel) opsPanel.classList.toggle("active", !isStatus);
-        try { localStorage.setItem("homeDashViewTab", tab); } catch (_) {}
+
+
+    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════
+    // Dashboard Card Renderers v2 — Cross-dimensional insights
+    // ══════════════════════════════════════════════════════
+
+    // ══════════════════════════════════════════════════════
+    // Dashboard Card Renderers v2
+    // ══════════════════════════════════════════════════════
+
+    // ══════════════════════════════════════════════════════
+    // Dashboard Card Renderers v2 — Cross-dimensional insights
+    // ══════════════════════════════════════════════════════
+
+    function hexToRgb(hex) {
+      var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return m ? parseInt(m[1],16)+','+parseInt(m[2],16)+','+parseInt(m[3],16) : '128,128,128';
+    }
+
+    function renderDashboardSnapshot(d) {
+      var b=document.getElementById('homeDashSnapshotBody'); if(!b)return;
+      var m=d.music_items||0, g=d.goods_items||0, t=m+g;
+      var sl=d.slotted_in_collection_items||0, us=d.unslotted_in_collection_items||0;
+      var sp=(sl+us)>0?Math.round(sl/(sl+us)*100):0, kr=null, we=null;
+      for(var i=0;i<(d.by_domain||[]).length;i++){if(d.by_domain[i].value==='KOREA')kr=d.by_domain[i];if(d.by_domain[i].value==='WESTERN')we=d.by_domain[i];}
+      var fc=formatCount;
+      b.innerHTML=
+       '<div class="dash-snapshot-row">'+
+        '<div class="dash-snapshot-stat"><span class="stat-value">'+fc(t)+'</span><span class="stat-label">전체</span><span class="stat-sub">음반 '+fc(m)+' · 수집품 '+fc(g)+'</span></div>'+
+        '<div class="dash-snapshot-stat"><span class="stat-value">'+sp+'%</span><span class="stat-label">배치율</span><span class="stat-sub">'+fc(sl)+' / '+fc(sl+us)+'</span></div>'+
+        '<div class="dash-snapshot-stat"><span class="stat-value">'+fc(d.signed_items||0)+'</span><span class="stat-label">싸인본</span><span class="stat-sub">직접 '+fc(d.direct_signed_items||0)+' · 구매 '+fc(d.purchase_signed_items||0)+'</span></div>'+
+        '<div class="dash-snapshot-stat"><span class="stat-value">'+fc(d.registered_last_30_days||0)+'</span><span class="stat-label">30일 신규</span><span class="stat-sub">오늘 '+fc(d.registered_today||0)+' · 7일 '+fc(d.registered_last_7_days||0)+'</span></div>'+
+        '<div class="dash-snapshot-stat"><span class="stat-value">'+fc(kr?kr.count:0)+'</span><span class="stat-label">KOREA</span><span class="stat-sub">WESTERN '+fc(we?we.count:0)+'</span></div>'+
+       '</div>'+
+       '<div class="dash-snapshot-chip-row">'+
+        '<span class="dash-snapshot-chip">소장 '+fc(d.in_collection_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip">대출 '+fc(d.loaned_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip">판매 '+fc(d.sold_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip">분실 '+fc(d.lost_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip is-new">새상품 '+fc(d.new_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip">중고 '+fc(d.second_hand_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip">한정반 '+fc(d.limited_items||0)+'</span>'+
+        '<span class="dash-snapshot-chip">홍보반 '+fc(d.promo_items||0)+'</span>'+
+       '</div>';
+    }
+
+    function renderDashboardHeatmap(d) {
+      var b=document.getElementById('homeDashHeatmapBody'); if(!b)return;
+      var r=d.by_domain_decade||[], decs=[1960,1970,1980,1990,2000,2010,2020];
+      var cd=['KOREA','WESTERN','WORLD_OTHER','JAPAN','GREATER_CHINA','UNASSIGNED'];
+      var lu={}, mv=1;
+      for(var i=0;i<r.length;i++){var k=r[i].domain+'|'+r[i].decade;lu[k]=r[i].count||0;if(lu[k]>mv)mv=lu[k];}
+      var ad=[];
+      for(var d2=0;d2<cd.length;d2++){for(var dc=0;dc<decs.length;dc++){if((lu[cd[d2]+'|'+decs[dc]]||0)>0){ad.push(cd[d2]);break;}}}
+      var dc2={KOREA:'#4caf50',WESTERN:'#3a8fd6',WORLD_OTHER:'#9c6fd6',JAPAN:'#e05a1a',GREATER_CHINA:'#f97316',UNASSIGNED:'#888'};
+      var h='<table class="dash-heatmap"><thead><tr><th></th>';
+      for(var j=0;j<decs.length;j++)h+='<th>'+decs[j]+'s</th>';
+      h+='<th>합계</th></tr></thead><tbody>';
+      for(var a=0;a<ad.length;a++){
+        var dm=ad[a]; h+='<tr><td>'+dm+'</td>'; var rt=0;
+        for(var k2=0;k2<decs.length;k2++){
+          var v=lu[dm+'|'+decs[k2]]||0; rt+=v;
+          var inten=v/mv, al=Math.round(15+inten*85);
+          var cl=dc2[dm]||'#888';
+          h+='<td><span class="dash-heatmap-cell" style="background:rgba('+hexToRgb(cl)+','+(al/100)+');" title="'+dm+' '+decs[k2]+'s: '+v+'">'+(v>0?v:'')+'</span></td>';}
+        h+='<td style="font-weight:700;">'+rt+'</td></tr>';}
+      h+='<tr style="border-top:2px solid var(--theme-dashboard-border);"><td style="opacity:0.5;">합계</td>';
+      for(var m2=0;m2<decs.length;m2++){var ct=0;for(var n=0;n<ad.length;n++)ct+=lu[ad[n]+'|'+decs[m2]]||0;h+='<td style="opacity:0.5;">'+ct+'</td>';}
+      h+='<td></td></tr></tbody></table>'; b.innerHTML=h;
+    }
+
+    function renderDashboardFinance(d) {
+      var b=document.getElementById('homeDashFinanceBody'); if(!b)return;
+      var bc=d.by_currency_spend||[], bd=d.by_domain_spend||[];
+      var rt={KRW:1,USD:1380,GBP:1750,JPY:9}, tKRW=0, pi=0;
+      for(var i=0;i<bc.length;i++){tKRW+=(bc[i].total_spend||0)*(rt[bc[i].currency_code]||1);pi+=bc[i].items||0;}
+      var ap=pi>0?Math.round(tKRW/pi):0, ms=1;
+      for(var j=0;j<bd.length;j++){if((bd[j].total_spend||0)>ms)ms=bd[j].total_spend;}
+      var cl={KOREA:'#4caf50',WESTERN:'#3a8fd6',JAPAN:'#e05a1a',GREATER_CHINA:'#f97316',WORLD_OTHER:'#9c6fd6',UNASSIGNED:'#888'};
+      var fc=formatCount, h='<div class="dash-finance-grid">'+
+       '<div class="dash-finance-item"><span class="dash-finance-label">총 구매액 (≈원)</span><span class="dash-finance-value">₩'+fc(tKRW)+'</span></div>'+
+       '<div class="dash-finance-item"><span class="dash-finance-label">평균 단가</span><span class="dash-finance-value">₩'+fc(ap)+'</span></div>'+
+       '<div class="dash-finance-item"><span class="dash-finance-label">가격 정보</span><span class="dash-finance-value">'+fc(pi)+'/'+fc(d.total_items)+'건</span></div>'+
+       '<div class="dash-finance-item"><span class="dash-finance-label">통화</span><div style="font-size:0.7rem;">';
+      for(var k=0;k<bc.length;k++){var apx=(bc[k].total_spend||0)*(rt[bc[k].currency_code]||1);var p=tKRW>0?Math.round(apx/tKRW*100):0;h+='<div>'+bc[k].currency_code+' '+fc(bc[k].total_spend)+' ('+p+'%)</div>';}
+      h+='</div></div></div><hr class="dash-kpi-divider"><div style="font-size:0.7rem;">';
+      for(var q=0;q<bd.length;q++){var dd=bd[q];var pct=ms>0?Math.round((dd.total_spend||0)/ms*100):0;h+='<div style="display:flex;align-items:center;gap:6px;padding:2px 0;"><span style="width:90px;opacity:0.6;">'+dd.domain+'</span><div class="dash-compare-bar" style="flex:1;"><div class="dash-compare-bar-fill" style="width:'+pct+'%;background:'+(cl[dd.domain]||'#888')+'"></div></div><span style="font-family:var(--font-mono);font-size:0.65rem;">₩'+fc(dd.total_spend)+' (avg ₩'+fc(dd.avg_price)+')</span></div>';}
+      h+='</div>'; b.innerHTML=h;
+    }
+
+    function renderDashboardGenreDomain(d) {
+      var b=document.getElementById('homeDashGenreDomainBody'); if(!b)return;
+      var r=d.by_genre_domain||[], kg=[], wg=[];
+      for(var i=0;i<r.length;i++){if(r[i].domain==='KOREA'&&kg.length<6)kg.push(r[i]);if(r[i].domain==='WESTERN'&&wg.length<6)wg.push(r[i]);}
+      var mk=1,mw=1;
+      for(var j=0;j<kg.length;j++){if((kg[j].count||0)>mk)mk=kg[j].count;}
+      for(var k=0;k<wg.length;k++){if((wg[k].count||0)>mw)mw=wg[k].count;}
+      var fc=formatCount;
+      function bc(items,mx,domain,color){
+        var h='<div class="dash-compare-col"><div class="dash-compare-col-title" style="border-color:'+color+';">'+domain+'</div>';
+        for(var i=0;i<items.length;i++){var p=Math.round((items[i].count||0)/mx*100);h+='<div class="dash-compare-row"><span class="name" title="'+escapeHtml(items[i].genre||'')+'">'+escapeHtml(items[i].genre||'')+'</span><div class="dash-compare-bar"><div class="dash-compare-bar-fill" style="width:'+p+'%;background:'+color+'"></div></div><span class="count">'+fc(items[i].count)+'</span></div>';}
+        return h+'</div>';}
+      b.innerHTML='<div class="dash-compare-grid">'+bc(kg,mk,'KOREA','#4caf50')+bc(wg,mw,'WESTERN','#3a8fd6')+'</div>';
+    }
+
+    function renderDashboardFormatPressing(d) {
+      var b=document.getElementById('homeDashFormatPressingBody'); if(!b)return;
+      var fr=d.by_format_domain||[], pr=(d.by_pressing_domain||[]).slice(0,10);
+      var fms=['LP','CD','CASSETTE'], dms=['KOREA','WESTERN','WORLD_OTHER'];
+      var fl={}; for(var i=0;i<fr.length;i++){fl[fr[i].format+'|'+fr[i].domain]=fr[i].count||0;}
+      var fc=formatCount, h='<div class="dash-kpi-sub-label">포맷 × 도메인</div>';
+      h+='<table style="width:100%;font-size:0.7rem;border-collapse:collapse;margin-bottom:8px;"><tr style="opacity:0.4;font-size:0.62rem;"><th style="padding:3px 6px;"></th>';
+      for(var d2=0;d2<dms.length;d2++)h+='<th style="padding:3px 6px;text-align:right;">'+dms[d2]+'</th>';
+      h+='</tr>';
+      for(var f=0;f<fms.length;f++){h+='<tr><td style="padding:3px 6px;font-weight:600;opacity:0.6;">'+fms[f]+'</td>';
+        for(var dd=0;dd<dms.length;dd++){var v=fl[fms[f]+'|'+dms[dd]]||0;h+='<td style="padding:3px 6px;text-align:right;font-family:var(--font-mono);">'+(v>0?fc(v):'—')+'</td>';}h+='</tr>';}
+      h+='</table><div class="dash-kpi-sub-label">프레싱 국가 Top 10</div>';
+      var mp=1; for(var p=0;p<pr.length;p++){if((pr[p].count||0)>mp)mp=pr[p].count;}
+      var pc2={KOREA:'#4caf50',WESTERN:'#3a8fd6',WORLD_OTHER:'#9c6fd6',JAPAN:'#e05a1a',GREATER_CHINA:'#f97316'};
+      for(var q=0;q<pr.length;q++){var r=pr[q];var pct=Math.round((r.count||0)/mp*100);
+        h+='<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.68rem;"><span style="width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0.7;" title="'+escapeHtml(r.pressing_country||'')+'">'+escapeHtml(r.pressing_country||'')+'</span><span style="width:60px;font-size:0.62rem;opacity:0.5;text-align:right;">'+escapeHtml(r.domain||'')+'</span><div class="dash-compare-bar" style="flex:1;"><div class="dash-compare-bar-fill" style="width:'+pct+'%;background:'+(pc2[r.domain]||'#888')+'"></div></div><span style="font-family:var(--font-mono);font-size:0.65rem;">'+fc(r.count)+'</span></div>';}
+      b.innerHTML=h;
+    }
+
+    function renderDashboardArtistTimeline(d) {
+      var b=document.getElementById('homeDashArtistTimelineBody'); if(!b)return;
+      var artists=(d.by_artist_decade||[]).slice(0,12);
+      if(!artists.length){b.innerHTML='<div class="mini muted">데이터 없음</div>';return;}
+      var minD=3000,maxD=0;
+      for(var i=0;i<artists.length;i++){if(artists[i].min_decade<minD)minD=artists[i].min_decade;if(artists[i].max_decade>maxD)maxD=artists[i].max_decade;}
+      if(minD>=maxD)maxD=minD+20;
+      var range=maxD-minD, fc=formatCount, h='';
+      for(var j=0;j<artists.length;j++){
+        var a=artists[j];
+        var left=range>0?((a.min_decade-minD)/range*100):0;
+        var w=range>0?((a.max_decade-a.min_decade)/range*100):5;
+        w=Math.max(5,w);
+        var colors=['#3a8fd6','#4caf50','#e05a1a','#9c6fd6','#b45309','#0f766e','#f97316','#8b5cf6','#ec4899','#c47b30','#5d89b4','#7a7aa8'];
+        h+='<div class="dash-artist-row"><span class="dash-artist-name" title="'+escapeHtml(a.artist||'')+'">'+escapeHtml(a.artist||'')+'</span><div class="dash-artist-timeline"><div class="dash-artist-span" style="left:'+left+'%;width:'+w+'%;background:'+colors[j%12]+';"></div></div><span class="dash-artist-decades">'+a.min_decade+'s~'+a.max_decade+'s</span><span class="dash-artist-count">'+fc(a.total)+'</span></div>';
       }
-      statusBtn.addEventListener("click", () => switchTo("status"));
-      opsBtn.addEventListener("click", () => switchTo("ops"));
-      const saved = (() => { try { return localStorage.getItem("homeDashViewTab"); } catch (_) { return null; } })();
-      if (saved === "ops") switchTo("ops");
+      h+='<div style="font-size:0.58rem;opacity:0.35;margin-top:4px;display:flex;justify-content:space-between;"><span>'+minD+'s</span><span>'+maxD+'s</span></div>';
+      b.innerHTML=h;
+    }
+
+    function renderDashboardMetaSource(d) {
+      var b=document.getElementById('homeDashMetaSourceBody'); if(!b)return;
+      var rows=d.by_source_completeness||[];
+      if(!rows.length){b.innerHTML='<div class="mini muted">데이터 없음</div>';return;}
+      var fc=formatCount, h='<table class="dash-completeness-table"><thead><tr><th>소스</th><th>총계</th><th>마스터</th><th>커버</th><th>장르</th><th>카탈로그</th></tr></thead><tbody>';
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i];
+        var mp=r.total>0?Math.round(r.master_linked/r.total*100):0;
+        var cp=r.total>0?Math.round(r.cover_present/r.total*100):0;
+        var gp=r.total>0?Math.round(r.genre_present/r.total*100):0;
+        var clp=r.total>0?Math.round(r.catalog_present/r.total*100):0;
+        var bc2=function(p){return p>=95?'high':p>=70?'mid':'low';};
+        h+='<tr><td>'+escapeHtml(r.source||'')+'</td><td>'+fc(r.total)+'</td>'+
+          '<td><span class="pct">'+mp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(mp)+'" style="width:'+mp+'%"></span></span></td>'+
+          '<td><span class="pct">'+cp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(cp)+'" style="width:'+cp+'%"></span></span></td>'+
+          '<td><span class="pct">'+gp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(gp)+'" style="width:'+gp+'%"></span></span></td>'+
+          '<td><span class="pct">'+clp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(clp)+'" style="width:'+clp+'%"></span></span></td></tr>';
+      }
+      h+='</tbody></table>';
+      b.innerHTML=h;
+    }
+
+    function renderDashboardCollector(d) {
+      var b=document.getElementById('homeDashCollectorBody'); if(!b)return;
+      var fc=formatCount;
+      b.innerHTML='<div class="dash-collector-grid">'+
+        '<div class="dash-collector-item"><span class="dash-collector-icon">✍️</span><span class="dash-collector-value">'+fc(d.signed_items||0)+'</span><span class="dash-collector-label">싸인본</span></div>'+
+        '<div class="dash-collector-item"><span class="dash-collector-icon">💎</span><span class="dash-collector-value">'+fc(d.limited_items||0)+'</span><span class="dash-collector-label">한정반</span></div>'+
+        '<div class="dash-collector-item"><span class="dash-collector-icon">📀</span><span class="dash-collector-value">'+fc(d.multi_disc_items||0)+'</span><span class="dash-collector-label">멀티디스크</span></div>'+
+        '<div class="dash-collector-item"><span class="dash-collector-icon">🎗️</span><span class="dash-collector-value">'+fc(d.obi_items||0)+'</span><span class="dash-collector-label">OBI</span></div>'+
+        '<div class="dash-collector-item"><span class="dash-collector-icon">📢</span><span class="dash-collector-value">'+fc(d.promo_items||0)+'</span><span class="dash-collector-label">홍보반</span></div>'+
+        '<div class="dash-collector-item"><span class="dash-collector-icon">🔄</span><span class="dash-collector-value">'+fc(d.second_hand_items||0)+'</span><span class="dash-collector-label">중고</span></div>'+
+      '</div>';
+    }
+
+    function renderDashboardAlerts(d) {
+      var b=document.getElementById('homeDashAlertsBody'); if(!b)return;
+      var fc=formatCount;
+      var unassigned=0;
+      for(var i=0;i<(d.by_domain||[]).length;i++){if(d.by_domain[i].value==='UNASSIGNED')unassigned=d.by_domain[i].count;}
+      var alerts=[
+        {l:'소스 미연결',c:d.source_unlinked_items||0,cls:(d.source_unlinked_items>0?'alert-critical':'alert-info')},
+        {l:'마스터 미연결',c:d.master_unlinked_items||0,cls:(d.master_unlinked_items>0?'alert-critical':'alert-info')},
+        {l:'커버 없음',c:d.cover_missing_items||0,cls:(d.cover_missing_items>0?'alert-warning':'alert-info')},
+        {l:'장르 없음',c:d.genre_missing_items||0,cls:(d.genre_missing_items>0?'alert-warning':'alert-info')},
+        {l:'미배치',c:d.unslotted_in_collection_items||0,cls:(d.unslotted_in_collection_items>0?'alert-warning':'alert-info')},
+        {l:'도메인 미지정',c:unassigned,cls:'alert-info'},
+      ];
+      var h='<div class="dash-alert-grid">';
+      for(var j=0;j<alerts.length;j++){h+='<div class="dash-alert-item '+alerts[j].cls+'"><span>'+alerts[j].l+'</span><span class="alert-count">'+fc(alerts[j].c)+'</span></div>';}
+      h+='</div>';
+      b.innerHTML=h;
+    }
+
+    function renderDashboardRegImport(d) {
+      var b=document.getElementById('homeDashRegImportBody'); if(!b)return;
+      var months=(d.by_registration_month||[]).slice(-10);
+      var maxReg=1;
+      for(var i=0;i<months.length;i++){if((months[i].count||0)>maxReg)maxReg=months[i].count;}
+      var fc=formatCount, h='<div class="dash-kpi-sub-label">월별 등록 추이</div><div class="dash-reg-pace">';
+      for(var j=0;j<months.length;j++){
+        var m=months[j], pct=Math.round((m.count||0)/maxReg*100);
+        h+='<div class="dash-reg-month"><span class="dash-reg-month-label">'+m.month+'</span><div class="dash-reg-month-bar"><div class="dash-reg-month-fill" style="width:'+pct+'%"></div></div><span class="dash-reg-month-count">'+fc(m.count)+'</span></div>';
+      }
+      h+='</div><hr class="dash-kpi-divider"><div class="dash-import-status"><div class="dash-import-count">'+fc(d.import_queue_size||0)+'</div><div><div class="dash-import-label" style="font-size:0.7rem;opacity:0.5;">구매 수입 대기</div><div class="dash-import-badge '+(d.import_queue_size>0?'pending':'clear')+'">'+(d.import_queue_size>0?'처리 필요':'완료')+'</div></div></div>';
+      b.innerHTML=h;
+    }
+
+
+    function renderDashboardMoveHeatmap(d) {
+      var b=document.getElementById('homeDashMoveHeatmapBody'); if(!b)return;
+      var rows=d.by_slot_moves||[];
+      if(!rows.length){b.innerHTML='<div class="mini muted">30일 내 이동 없음</div>';return;}
+      // Group by slot, sum all movement kinds
+      var slotMap={}, maxCnt=1;
+      for(var i=0;i<rows.length;i++){var s=rows[i].slot_code||'UNASSIGNED';slotMap[s]=(slotMap[s]||0)+rows[i].count;if(slotMap[s]>maxCnt)maxCnt=slotMap[s];}
+      var slots=Object.keys(slotMap).sort(function(a,b){return slotMap[b]-slotMap[a];}).slice(0,12);
+      var h='<div style="display:flex;flex-direction:column;gap:4px;">';
+      for(var j=0;j<slots.length;j++){
+        var s=slots[j], cnt=slotMap[s], pct=Math.round(cnt/maxCnt*100);
+        var intensity=pct>70?'#e05a1a':pct>30?'#f97316':'#3a8fd6';
+        h+='<div style="display:flex;align-items:center;gap:6px;font-size:0.7rem;"><span style="width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0.7;" title="'+escapeHtml(s)+'">'+escapeHtml(s)+'</span><div class="dash-compare-bar" style="flex:1;"><div class="dash-compare-bar-fill" style="width:'+pct+'%;background:'+intensity+'"></div></div><span style="font-family:var(--font-mono);font-size:0.68rem;">'+formatCount(cnt)+'</span></div>';
+      }
+      h+='</div>';
+      b.innerHTML=h;
+    }
+
+    function renderDashboardRecentReg(d) {
+      var b=document.getElementById('homeDashRecentRegBody'); if(!b)return;
+      var regTotal=d.registered_last_30_days||0;
+      var byDomain=d.by_recent_reg_domain||[];
+      var byDD=d.by_recent_reg_domain_decade||[];
+      var fc=formatCount;
+      var h='<div style="margin-bottom:6px;"><span style="font-family:var(--font-mono);font-size:1.3rem;font-weight:700;">'+fc(regTotal)+'</span><span style="font-size:0.7rem;opacity:0.5;">건 등록 (30일)</span></div>';
+      if(byDomain.length){
+        var maxD=Math.max(1,byDomain.reduce(function(m,r){return Math.max(m,r.count||0);},0));
+        h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">';
+        var dc2={KOREA:'#4caf50',WESTERN:'#3a8fd6',WORLD_OTHER:'#9c6fd6',JAPAN:'#e05a1a',GREATER_CHINA:'#f97316'};
+        for(var i=0;i<byDomain.length;i++){var dm=byDomain[i];var pct=Math.round((dm.count||0)/maxD*100);h+='<span style="font-size:0.66rem;padding:2px 8px;border-radius:4px;background:'+(dc2[dm.value]||'#888')+';color:#fff;opacity:0.9;">'+dm.value+' '+fc(dm.count)+'</span>';}
+        h+='</div>';
+      }
+      if(byDD.length){
+        h+='<div class="dash-kpi-sub-label">연대 분포</div>';
+        var decs=[1960,1970,1980,1990,2000,2010,2020];
+        var lu={}, mv2=1;
+        for(var j=0;j<byDD.length;j++){var k=byDD[j].domain+'|'+byDD[j].decade;lu[k]=byDD[j].count||0;if(lu[k]>mv2)mv2=lu[k];}
+        var ad=['KOREA','WESTERN'].filter(function(d){return decs.some(function(dc){return(lu[d+'|'+dc]||0)>0;});});
+        if(ad.length){
+          h+='<table class="dash-heatmap" style="font-size:0.65rem;"><thead><tr><th></th>';
+          for(var d2=0;d2<decs.length;d2++)h+='<th>'+decs[d2]+'s</th>';
+          h+='</tr></thead><tbody>';
+          for(var a=0;a<ad.length;a++){
+            h+='<tr><td>'+ad[a]+'</td>';
+            for(var k2=0;k2<decs.length;k2++){var v=lu[ad[a]+'|'+decs[k2]]||0;var inten=v/mv2, al=Math.round(15+inten*85);h+='<td><span class="dash-heatmap-cell" style="background:rgba('+hexToRgb(dc2[ad[a]]||'#888')+','+(al/100)+');">'+(v>0?v:'')+'</span></td>';}
+            h+='</tr>';
+          }
+          h+='</tbody></table>';
+        }
+      }
+      b.innerHTML=h;
+    }
+
+    function renderDashboardPurchaseFlow(d) {
+      var b=document.getElementById('homeDashPurchaseFlowBody'); if(!b)return;
+      var rows=(d.by_purchase_flow||[]).slice(0,12);
+      if(!rows.length){b.innerHTML='<div class="mini muted">구매 데이터 없음</div>';return;}
+      var fc=formatCount;
+      var maxItems=Math.max(1,rows.reduce(function(m,r){return Math.max(m,r.items||0);},0));
+      var h='<table style="width:100%;font-size:0.7rem;border-collapse:collapse;"><thead><tr style="opacity:0.4;font-size:0.62rem;"><th style="text-align:left;padding:3px 6px;">구매처</th><th style="padding:3px 6px;">통화</th><th style="padding:3px 6px;">도메인</th><th style="text-align:right;padding:3px 6px;">수량</th><th style="text-align:right;padding:3px 6px;">금액</th></tr></thead><tbody>';
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i];
+        var pct=Math.round((r.items||0)/maxItems*100);
+        var shortSource=r.source.length>25?r.source.substring(0,23)+'…':r.source;
+        h+='<tr style="border-bottom:1px solid rgba(128,128,128,0.06);"><td style="padding:3px 6px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escapeHtml(r.source||'')+'">'+escapeHtml(shortSource)+'</td><td style="padding:3px 6px;text-align:center;">'+escapeHtml(r.currency||'')+'</td><td style="padding:3px 6px;text-align:center;">'+escapeHtml(r.domain||'')+'</td><td style="padding:3px 6px;text-align:right;font-family:var(--font-mono);">'+fc(r.items)+'</td><td style="padding:3px 6px;text-align:right;font-family:var(--font-mono);font-size:0.65rem;">'+fc(r.total_spend)+'</td></tr>';
+      }
+      h+='</tbody></table>';
+      b.innerHTML=h;
     }
 
     function initDashboardWidgets() {
       const settingsEl = $("homeDashWidgetSettings");
       const toggleBtn = $("homeDashWidgetSettingsBtn");
       if (!settingsEl || !toggleBtn) return;
-      const cards = Array.from(document.querySelectorAll("[data-widget-id]"));
+      const gridEl = document.querySelector(".dashboard-widget-grid");
       const STORAGE_KEY = "homeDashWidgetVisibility";
+      const ORDER_KEY = "homeDashWidgetOrder";
+
+      function getCards() { return Array.from((gridEl || document).querySelectorAll("[data-widget-id]")); }
       function getMap() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (_) { return {}; } }
       function saveMap(map) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (_) {} }
+      function getOrder() { try { return JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); } catch (_) { return []; } }
+      function saveOrder(order) { try { localStorage.setItem(ORDER_KEY, JSON.stringify(order)); } catch (_) {} }
+
       function applyVisibility() {
         const map = getMap();
-        cards.forEach(card => {
+        getCards().forEach(card => {
           const id = card.dataset.widgetId;
           const defaultHidden = card.dataset.widgetDefaultHidden === "true";
           const stored = map[id];
@@ -42503,34 +42866,96 @@
           card.dataset.widgetHidden = isHidden ? "true" : "false";
         });
       }
+
+      function applyOrder() {
+        if (!gridEl) return;
+        const order = getOrder();
+        if (!order.length) return;
+        const cards = getCards();
+        const cardMap = {};
+        cards.forEach(c => { cardMap[c.dataset.widgetId] = c; });
+        // Reorder: move cards matching the stored order to the front
+        order.slice().reverse().forEach(id => {
+          const card = cardMap[id];
+          if (card && card.parentNode === gridEl) {
+            gridEl.insertBefore(card, gridEl.firstChild);
+          }
+        });
+      }
+
+      function moveCard(id, direction) {
+        if (!gridEl) return;
+        const cards = getCards();
+        const idx = cards.findIndex(c => c.dataset.widgetId === id);
+        if (idx < 0) return;
+        const targetIdx = idx + direction;
+        if (targetIdx < 0 || targetIdx >= cards.length) return;
+        if (direction < 0) {
+          gridEl.insertBefore(cards[idx], cards[targetIdx]);
+        } else {
+          gridEl.insertBefore(cards[targetIdx], cards[idx]);
+        }
+        // Save new order
+        const newOrder = getCards().map(c => c.dataset.widgetId);
+        saveOrder(newOrder);
+      }
+
       function buildPanel() {
         const map = getMap();
-        settingsEl.innerHTML = `<span class="dashboard-widget-settings-label">카드 표시</span>`;
-        cards.forEach(card => {
+        const cards = getCards();
+        settingsEl.innerHTML = '<span class="dashboard-widget-settings-label">카드 표시</span>';
+        cards.forEach((card, idx) => {
           const id = card.dataset.widgetId;
           const label = card.dataset.widgetLabel || id;
           const defaultHidden = card.dataset.widgetDefaultHidden === "true";
           const stored = map[id];
           const isVisible = stored !== undefined ? stored !== false : !defaultHidden;
+
+          const group = document.createElement("span");
+          group.className = "dashboard-widget-settings-group";
+
+          // Up button
+          const upBtn = document.createElement("button");
+          upBtn.type = "button"; upBtn.className = "dashboard-widget-reorder-btn";
+          upBtn.textContent = "▲"; upBtn.title = "왼쪽으로 이동";
+          upBtn.disabled = idx === 0;
+          upBtn.addEventListener("click", (e) => { e.stopPropagation(); moveCard(id, -1); buildPanel(); });
+
+          // Down button
+          const downBtn = document.createElement("button");
+          downBtn.type = "button"; downBtn.className = "dashboard-widget-reorder-btn";
+          downBtn.textContent = "▼"; downBtn.title = "오른쪽으로 이동";
+          downBtn.disabled = idx === cards.length - 1;
+          downBtn.addEventListener("click", (e) => { e.stopPropagation(); moveCard(id, 1); buildPanel(); });
+
+          // Toggle button
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = `dashboard-widget-toggle-btn${isVisible ? " active" : ""}`;
+          btn.className = "dashboard-widget-toggle-btn" + (isVisible ? " active" : "");
           btn.textContent = label;
-          btn.addEventListener("click", () => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
             const m = getMap();
             m[id] = !isVisible;
             saveMap(m);
             applyVisibility();
             buildPanel();
           });
-          settingsEl.appendChild(btn);
+
+          group.appendChild(upBtn);
+          group.appendChild(downBtn);
+          group.appendChild(btn);
+          settingsEl.appendChild(group);
         });
       }
+
       toggleBtn.addEventListener("click", () => {
-        const visible = settingsEl.style.display !== "none" && settingsEl.style.display !== "";
+        const visible = settingsEl.style.display !== "none";
         if (visible) { settingsEl.style.display = "none"; } else { buildPanel(); settingsEl.style.display = ""; }
       });
+
       applyVisibility();
+      applyOrder();
     }
 
     async function loadDashboardClimate() {
@@ -46235,7 +46660,21 @@
         renderDashboardChipGroup("homeDashByReleaseType", data.by_release_type, dashboardReleaseTypeLabel);
         renderDashboardChipGroup("homeDashBySizeGroup", data.by_size_group, dashboardSizeGroupLabel);
         phase = "sources";
-        renderDashboardSourceRows(data.by_source, data.total_items);
+        // ── Dashboard renderers v2 ──
+        renderDashboardSnapshot(data);
+        renderDashboardHeatmap(data);
+        renderDashboardFinance(data);
+        renderDashboardGenreDomain(data);
+        renderDashboardFormatPressing(data);
+        renderDashboardArtistTimeline(data);
+        renderDashboardMetaSource(data);
+        renderDashboardCollector(data);
+        renderDashboardAlerts(data);
+        renderDashboardRegImport(data);
+        renderDashboardMoveHeatmap(data);
+        renderDashboardRecentReg(data);
+        renderDashboardPurchaseFlow(data);
+        loadDashboardClimate();
         phase = "slots";
         if (!String(homeDashboardSelectedCabinetKey || "").trim()) {
           restoreDashboardCabinetSelectionMemory();
@@ -57406,7 +57845,6 @@
     syncDashboardSelectionControls();
     loadStorageSlots();
     loadAuthSession(initialShellMode);
-    initHomeDashViewTabs();
     initDashboardWidgets();
     loadHomeDashboard();
     homeSearchOwnedItems({ resetPage: true });
