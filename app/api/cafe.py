@@ -2,18 +2,80 @@
 
 Tablet clients identify via device_id header (set from localStorage UUID).
 Staff endpoints require OPERATOR+ authentication.
+WebSocket provides real-time now-playing and request notifications.
 """
 
 from __future__ import annotations
 
+import asyncio
+import json
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
 from .. import db
 from .. import security
 from ..services.spotify import SpotifyService
+
+
+# ── WebSocket connection registry ─────────────────────────────────
+
+class ConnectionRegistry:
+    """In-memory registry of WebSocket connections."""
+
+    def __init__(self) -> None:
+        self._tablet: dict[str, WebSocket] = {}   # table_number → ws
+        self._staff: set[WebSocket] = set()
+
+    async def connect_tablet(self, table_number: str, ws: WebSocket) -> None:
+        await ws.accept()
+        self._tablet[table_number] = ws
+
+    async def connect_staff(self, ws: WebSocket) -> None:
+        await ws.accept()
+        self._staff.add(ws)
+
+    def disconnect(self, ws: WebSocket) -> None:
+        self._tablet = {k: v for k, v in self._tablet.items() if v is not ws}
+        self._staff.discard(ws)
+
+    async def broadcast(self, event: str, payload: dict[str, Any]) -> None:
+        msg = json.dumps({"event": event, **payload}, ensure_ascii=False)
+        dead: set[WebSocket] = set()
+        for ws in self._staff:
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                dead.add(ws)
+        for k, ws in list(self._tablet.items()):
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                dead.add(ws)
+        for ws in dead:
+            self.disconnect(ws)
+
+    async def send_to_table(self, table_number: str, event: str, payload: dict[str, Any]) -> None:
+        ws = self._tablet.get(table_number)
+        if ws is None:
+            return
+        try:
+            await ws.send_text(json.dumps({"event": event, **payload}, ensure_ascii=False))
+        except Exception:
+            self.disconnect(ws)
+
+    @property
+    def tablet_count(self) -> int:
+        return len(self._tablet)
+
+    @property
+    def staff_count(self) -> int:
+        return len(self._staff)
+
+
+_registry = ConnectionRegistry()
+
 
 router = APIRouter(tags=["cafe"])
 
@@ -172,6 +234,79 @@ def staff_skip(request: Request) -> dict[str, Any]:
     security._require_operator_request(request)
     _spotify.pause_sync()
     return {"ok": True, "note": "paused — select next track manually"}
+
+
+# ── WebSocket ─────────────────────────────────────────────────────
+
+@router.websocket("/ws/cafe")
+async def cafe_websocket(ws: WebSocket):
+    """WebSocket for real-time cafe events."""
+    role = ws.query_params.get("role", "")
+    device_id = ws.query_params.get("device_id", "")
+
+    if role == "staff":
+        await _registry.connect_staff(ws)
+        try:
+            while True:
+                data = await ws.receive_json()
+                event = data.get("event", "")
+                if event == "now_playing":
+                    await _registry.broadcast("now_playing", data.get("payload", {}))
+                elif event == "track_played":
+                    tbl = data.get("table_number", "")
+                    await _registry.send_to_table(tbl, "track_played", data.get("payload", {}))
+        except (WebSocketDisconnect, Exception):
+            pass
+        finally:
+            _registry.disconnect(ws)
+
+    elif role == "tablet":
+        table_number = _resolve_table(device_id)
+        if not table_number:
+            await ws.close(code=4000)
+            return
+        await _registry.connect_tablet(table_number, ws)
+        try:
+            while True:
+                data = await ws.receive_json()
+                event = data.get("event", "")
+                if event == "track_request":
+                    await _registry.broadcast("track_request", {
+                        "table_number": table_number,
+                        **data.get("payload", {}),
+                    })
+                elif event == "reaction":
+                    await _registry.broadcast("reaction", {
+                        "table_number": table_number,
+                        **data.get("payload", {}),
+                    })
+        except (WebSocketDisconnect, Exception):
+            pass
+        finally:
+            _registry.disconnect(ws)
+
+    else:
+        await ws.close(code=4000)
+
+
+# ── reactions ─────────────────────────────────────────────────────
+
+@router.post("/cafe/reaction")
+def cafe_reaction(request: Request) -> dict[str, Any]:
+    """Submit a reaction from tablet."""
+    import json as _json
+    body = _json.loads(request.body())
+    device_id = _device_id_from_request(request)
+    table_number = _resolve_table(device_id)
+    if not table_number:
+        raise HTTPException(status_code=400, detail="등록되지 않은 기기입니다")
+    track_request_id = int(body.get("track_request_id") or 0)
+    reaction_type = str(body.get("reaction_type") or "").strip().upper()
+    free_text = str(body.get("free_text") or "").strip() or None
+    if not track_request_id or not reaction_type:
+        raise HTTPException(status_code=400, detail="track_request_id and reaction_type required")
+    db.insert_track_reaction(track_request_id, table_number, reaction_type, free_text)
+    return {"ok": True}
 
 
 # ── tablet shell page ───────────────────────────────────────────
