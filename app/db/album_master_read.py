@@ -727,7 +727,7 @@ def list_album_masters(
     query += filter_sql
     query += "\n      GROUP BY am.id\n"
     if sort_mode == "CREATED_DESC":
-        query += "      ORDER BY am.id DESC\n"
+        query += "      ORDER BY max_owned_item_id DESC\n"
     elif sort_mode == "RELEASE_DESC":
         query += "      ORDER BY am.release_year DESC, am.id DESC\n"
     else:
