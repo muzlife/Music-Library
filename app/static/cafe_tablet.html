@@ -108,21 +108,42 @@ function onSearchInput(q) {
 
 function doSearch(q) {
   document.getElementById('searchResults').innerHTML='<div class="loading">검색중...</div>';
-  api('/cafe/search?q='+encodeURIComponent(q)+'&limit=15').then(function(data){
-    if(!data.items.length){document.getElementById('searchResults').innerHTML='<div class="empty">결과 없음</div>';return}
-    document.getElementById('searchResults').innerHTML = data.items.map(function(item){
-      return '<div class="track-card">'+
-        '<div class="art">'+(item.album_art_url?'<img src="'+esc(item.album_art_url)+'" alt="">':'')+'</div>'+
-        '<div class="info"><div class="title">'+esc(item.title)+'</div><div class="meta">'+esc(item.artist||'')+' &middot; '+item.source+'</div></div>'+
-        '<button onclick="requestTrack(this)" data-title="'+esc(item.title)+'" data-artist="'+esc(item.artist||'')+'" data-art="'+esc(item.album_art_url||'')+'" data-source="'+item.source+'" data-sid="'+(item.spotify_track_id||'')+'" data-oid="'+(item.owned_item_id||0)+'">신청</button>'+
-        '</div>';
-    }).join('');
-  }).catch(function(){document.getElementById('searchResults').innerHTML='<div class="empty">검색 오류</div>'});
+  fetch('/cafe/search?q='+encodeURIComponent(q)+'&limit=15')
+    .then(function(r){return r.json()})
+    .then(function(data){
+      console.log('search results:', data);
+      if(!data.items || !data.items.length){
+        document.getElementById('searchResults').innerHTML='<div class="empty">결과 없음 ('+data.total_count+')</div>';
+        return;
+      }
+      var html = '';
+      for(var i=0;i<data.items.length;i++){
+        var item = data.items[i];
+        html += '<div class="track-card">'+
+          '<div class="art">'+(item.album_art_url?'<img src="'+item.album_art_url.replace(/"/g,'')+'" alt="">':'')+'</div>'+
+          '<div class="info"><div class="title">'+item.title+'</div><div class="meta">'+(item.artist||'')+' &middot; '+item.source+'</div></div>'+
+          '<button onclick="req(this)" data-t="'+item.title.replace(/'/g,"")+'" data-a="'+(item.artist||'').replace(/'/g,"")+'" data-art="'+(item.album_art_url||'')+'" data-src="'+item.source+'" data-sid="'+(item.spotify_track_id||'')+'" data-oid="'+(item.owned_item_id||0)+'">신청</button>'+
+          '</div>';
+      }
+      document.getElementById('searchResults').innerHTML = html;
+    }).catch(function(e){
+      console.error('search error:', e);
+      document.getElementById('searchResults').innerHTML='<div class="empty">검색 오류</div>';
+    });
+}
+
+function req(btn){
+  var d=btn.dataset;
+  fetch('/cafe/request',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-device-id':DEVICE_ID},
+    body:JSON.stringify({track_title:d.t,artist:d.a,album_art_url:d.art||null,source:d.src,spotify_track_id:d.sid||null,owned_item_id:parseInt(d.oid)||null})
+  }).then(function(r){return r.json()}).then(function(d){alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
 }
 
 function renderBrowse() {
   document.getElementById('content').innerHTML='<div class="loading">불러오는 중...</div>';
-  api('/admin/cafe/tags').then(function(data){
+  api('/cafe/tags').then(function(data){
     var seen={},tags=[];
     (data.items||[]).forEach(function(t){if(!seen[t.tag_value]){seen[t.tag_value]=true;tags.push(t.tag_value)}});
     document.getElementById('content').innerHTML = '<div class="tag-cloud">'+
@@ -135,29 +156,35 @@ function browseTag(el) {
   document.querySelectorAll('.tag-chip').forEach(function(c){c.classList.toggle('active',c===el)});
   var tag = el.textContent;
   document.getElementById('browseResults').innerHTML='<div class="loading">검색중...</div>';
-  api('/cafe/search?q='+encodeURIComponent(tag)+'&limit=20').then(function(data){
-    if(!data.items.length){document.getElementById('browseResults').innerHTML='<div class="empty">해당 태그 없음</div>';return}
-    document.getElementById('browseResults').innerHTML = data.items.map(function(item){
-      return '<div class="track-card">'+
-        '<div class="art">'+(item.album_art_url?'<img src="'+esc(item.album_art_url)+'" alt="">':'')+'</div>'+
-        '<div class="info"><div class="title">'+esc(item.title)+'</div><div class="meta">'+esc(item.artist||'')+'</div></div>'+
-        '<button onclick="requestTrack(this)" data-title="'+esc(item.title)+'" data-artist="'+esc(item.artist||'')+'" data-art="'+esc(item.album_art_url||'')+'" data-source="'+item.source+'" data-sid="'+(item.spotify_track_id||'')+'" data-oid="'+(item.owned_item_id||0)+'">신청</button>'+
+  fetch('/cafe/search?q='+encodeURIComponent(tag)+'&limit=20').then(function(r){return r.json()}).then(function(data){
+    if(!data.items || !data.items.length){document.getElementById('browseResults').innerHTML='<div class="empty">해당 태그 없음</div>';return}
+    var html = '';
+    for(var i=0;i<data.items.length;i++){
+      var item = data.items[i];
+      html += '<div class="track-card">'+
+        '<div class="art">'+(item.album_art_url?'<img src="'+item.album_art_url.replace(/"/g,'')+'" alt="">':'')+'</div>'+
+        '<div class="info"><div class="title">'+item.title+'</div><div class="meta">'+(item.artist||'')+'</div></div>'+
+        '<button onclick="req(this)" data-t="'+item.title.replace(/'/g,"")+'" data-a="'+(item.artist||'').replace(/'/g,"")+'" data-art="'+(item.album_art_url||'')+'" data-src="'+item.source+'" data-sid="'+(item.spotify_track_id||'')+'" data-oid="'+(item.owned_item_id||0)+'">신청</button>'+
         '</div>';
-    }).join('');
+    }
+    document.getElementById('browseResults').innerHTML = html;
   });
 }
 
 function renderNow() {
   document.getElementById('content').innerHTML='<div class="loading">불러오는 중...</div>';
   api('/cafe/queue?limit=30').then(function(data){
-    if(!data.items.length){document.getElementById('content').innerHTML='<div class="empty">대기중 없음</div>';return}
-    document.getElementById('content').innerHTML = data.items.map(function(item){
+    if(!data.items || !data.items.length){document.getElementById('content').innerHTML='<div class="empty">대기중 없음</div>';return}
+    var html = '';
+    for(var i=0;i<data.items.length;i++){
+      var item = data.items[i];
       var sl=item.status==='REQUESTED'?'대기':item.status==='PLAYING'?'재생중':item.status==='RETURNED'?'완료':'취소';
       var sc=item.status==='REQUESTED'?'waiting':item.status==='PLAYING'?'playing':'done';
       return '<div class="queue-item">'+
         '<div class="qinfo"><div class="qtitle">'+esc(item.requested_track||'')+'</div><div class="qmeta">'+esc(item.customer_note||'')+'</div></div>'+
         '<div class="qstatus '+sc+'">'+sl+'</div></div>';
-    }).join('');
+    }
+    document.getElementById('content').innerHTML = html;
   });
 }
 
