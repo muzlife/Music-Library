@@ -568,6 +568,7 @@ def list_album_masters(
         am.release_year,
         am.updated_at,
         COUNT(amm.id) AS member_count,
+        MAX(amm.owned_item_id) AS max_owned_item_id,
         (
           SELECT mid.cover_image_url
           FROM album_master_member amm_cov
