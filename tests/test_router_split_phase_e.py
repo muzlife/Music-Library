@@ -115,12 +115,11 @@ def test_storage_slot_owned_items_endpoints_remain_in_main_py() -> None:
     ), "storage-slot order route was moved by accident"
 
 
-def test_ops_owned_items_endpoints_remain_in_main_py() -> None:
+def test_ops_owned_items_endpoints_moved_to_ops_system() -> None:
     main_src = (REPO_ROOT / "app" / "main.py").read_text("utf-8")
-    assert '@app.get("/ops/export/owned-items.csv")' in main_src
-    assert (
-        '@app.get("/ops/owned-items/{owned_item_id}/collector-info"' in main_src
-    )
+    ops_sys_src = (REPO_ROOT / "app" / "api" / "ops_system.py").read_text("utf-8")
+    assert '@app.get("/ops/export/owned-items.csv")' not in main_src
+    assert '@router.get("/ops/export/owned-items.csv")' in ops_sys_src
 
 
 def test_owned_items_list_works_through_new_router(admin_client: TestClient) -> None:

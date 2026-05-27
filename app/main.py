@@ -36,7 +36,7 @@ from uuid import uuid4
 from xml.etree import ElementTree as ET
 
 import httpx
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Path as FastAPIPath, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from bs4 import BeautifulSoup
@@ -69,6 +69,7 @@ from .schemas import (
     CustomerTrackRequestCreate,
     CustomerTrackRequestItem,
     CustomerTrackRequestListResponse,
+    RoonStatusResponse,
     CustomerTrackRequestUpdate,
     CsvIngestResponse,
     DiscogsIdentityResponse,
@@ -339,7 +340,7 @@ def _resolve_project_root() -> Path:
       1. Explicit `LIBRARY_PROJECT_ROOT` env var (preferred for QA/Prod).
       2. The directory two levels above this file (works for in-repo runs).
 
-    The repo used to embed `/Volumes/Works/07.hahahoho` as a literal in nine
+    The repo used to embed `/Volumes/Data/Works/07.hahahoho` as a literal in nine
     places. That made the same code break on a teammate's laptop, on a
     runtime that mounted the repo elsewhere, or inside CI. Anchoring on a
     single env var keeps QA/Prod overridable while keeping the local dev
@@ -386,6 +387,13 @@ PURCHASE_ITEM_FETCH_HEADERS = {
 settings = get_settings()
 _OFFICE_CLIMATE_CACHE: dict[str, Any] | None = None
 _SEOUL_WEATHER_CACHE: dict[str, Any] | None = None
+
+_ROON_CONNECTED: bool = True
+_ROON_CORE_NAME: str = "Cafe Roon Core"
+_ROON_ACTIVE_ZONE: str = "Main Hall (McIntosh + JBL)"
+_ROON_VOLUME: int = 65
+_ROON_NOW_PLAYING_REQUEST_ID: int | None = None
+
 app.mount("/ui-static", StaticFiles(directory=STATIC_DIR), name="ui-static")
 
 
@@ -482,8 +490,10 @@ async def auth_guard(request: Request, call_next):
         if _is_operator_role(role) and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
             operator_allowed_write = (
                 path.startswith("/operator/customer-requests")
+                or path.startswith("/operator/roon")
                 or path == "/ops/artist-context"
                 or path.startswith("/ops/placement-hints")
+                or (path.startswith("/owned-items/") and path.endswith("/sync-metadata"))
             )
             if not operator_allowed_write:
                 return JSONResponse(status_code=403, content={"detail": "operator write access denied"})
@@ -2741,6 +2751,7 @@ def _run_metadata_sync(
                 item_results.append(item)
 
         for row in candidates:
+            discogs_supplement = None
             owned_item_id = int(row.get("id") or 0)
             source_code = str(row.get("source_code") or "").strip().upper()
             source_external_id = str(row.get("source_external_id") or "").strip()
@@ -2758,7 +2769,7 @@ def _run_metadata_sync(
                     non_updated_ids.append(owned_item_id)
                 continue
 
-            if source_code not in {"DISCOGS", "MANIADB"}:
+            if source_code not in {"DISCOGS", "MANIADB", "ALADIN"}:
                 skipped_count += 1
                 _record(MetadataSyncItemResult(
                     owned_item_id=owned_item_id,
@@ -2789,37 +2800,57 @@ def _run_metadata_sync(
                 non_updated_ids.append(owned_item_id)
                 continue
 
-            # Discogs 부가정보 보강: MANIADB 소스 아이템의 경우
-            # format_items, runout_matrix, identifier_items, pressing_country 등
-            # ManiaDB가 제공하지 않는 Discogs 전용 필드를 AlbumMaster의
-            # Discogs external ref를 통해 보강한다.
-            if payload.supplement_discogs:
-                linked_master_id = int(row.get("linked_album_master_id") or 0)
-                if linked_master_id > 0:
-                    discogs_refs = db.list_album_master_external_refs(
-                        album_master_id=linked_master_id, source_code="DISCOGS"
-                    )
-                    if discogs_refs:
-                        discogs_master_id = str(discogs_refs[0].get("source_master_id") or "").strip()
-                        if discogs_master_id:
-                            if delay > 0:
-                                time.sleep(delay)
-                            discogs_supplement = get_discogs_snapshot_from_master_id(discogs_master_id)
-                            if discogs_supplement:
-                                # Discogs 전용 필드만 snapshot에 병합 (기본 필드는 유지)
-                                _DISCOGS_ONLY_FIELDS = {
-                                    "disc_count", "speed_rpm", "has_obi",
-                                    "runout_matrix", "pressing_country", "source_notes",
-                                    "credits", "identifier_items", "image_items",
-                                    "company_items", "series", "format_items",
-                                    "track_items", "label_items",
-                                }
-                                for field in _DISCOGS_ONLY_FIELDS:
-                                    val = discogs_supplement.get(field)
-                                    has_val = bool(val) if isinstance(val, (list, dict)) else val is not None
-                                    if has_val:
-                                        snapshot[field] = val
-
+            # Discogs 부가정보 보강: MANIADB, ALADIN 등 타 소스 아이템의 경우
+            # 바코드가 정확히 일치하는 Discogs 릴리즈를 검색하고,
+            # 오기(Barcode Collision)를 방지하기 위해 제목/아티스트 유사도를 검증한 뒤,
+            # 포맷(CD/LP)을 포함한 모든 상세 부가 정보를 Discogs 기준으로 덮어씌웁니다.
+            if payload.supplement_discogs and source_code != "DISCOGS":
+                from app.services.providers import (
+                    _try_discogs_for_barcode, _try_discogs_for_catalog_no,
+                    _token_similarity, _validate_barcode_checksum,
+                )
+                if delay > 0:
+                    time.sleep(delay)
+                discogs_supplement = None
+                barcode = str(row.get("barcode") or "").strip()
+                barcode_digits = barcode.replace(" ", "").replace("-", "")
+                # 1차: 바코드 (EAN-13/UPC-A 체크섬, 880 포함)
+                if _validate_barcode_checksum(barcode_digits):
+                    discogs_supplement = _try_discogs_for_barcode(barcode_digits)
+                    if discogs_supplement:
+                        orig_text = f"{row.get('artist_or_brand') or ''} {row.get('master_title') or row.get('display_name') or ''}".strip()
+                        disc_text = f"{discogs_supplement.get('artist_or_brand') or ''} {discogs_supplement.get('title') or ''}".strip()
+                        sim = _token_similarity(orig_text, disc_text) if orig_text and disc_text else 0.0
+                        # 유사도 + 미디어 타입 검증 (바코드 경로는 포맷 일치 필수)
+                        orig_fmt = str(row.get("format_name") or "").upper()
+                        disc_fmt = str(discogs_supplement.get("format_name") or "").upper()
+                        fmt_ok = (not orig_fmt or not disc_fmt or orig_fmt == disc_fmt)
+                        if sim < 0.85 or not fmt_ok:
+                            discogs_supplement = None
+                # 2차: 카탈로그넘버 fallback (바코드 없거나 검증 실패 시)
+                if discogs_supplement is None:
+                    catalog_no = str(row.get("catalog_no") or "").strip()
+                    if catalog_no:
+                        discogs_supplement = _try_discogs_for_catalog_no(
+                            catalog_no=catalog_no,
+                            artist=str(row.get("artist_or_brand") or ""),
+                            title=str(row.get("master_title") or row.get("display_name") or ""),
+                            format_name=str(row.get("format_name") or "") or None,
+                            pressing_country=str(row.get("pressing_country") or "") or None,
+                        )
+                if discogs_supplement:
+                    _DISCOGS_FIELDS = {
+                        "disc_count", "speed_rpm", "has_obi",
+                        "runout_matrix", "pressing_country", "source_notes",
+                        "credits", "identifier_items", "image_items",
+                        "company_items", "series", "format_items",
+                        "track_items", "label_items", "genres", "styles",
+                    }
+                    for field in _DISCOGS_FIELDS:
+                        val = discogs_supplement.get(field)
+                        has_val = bool(val) if isinstance(val, (list, dict)) else val is not None
+                        if has_val:
+                            snapshot[field] = val
             music_detail, updated_fields = _build_music_detail_for_sync(
                 candidate=row,
                 snapshot=snapshot,
@@ -2838,7 +2869,19 @@ def _run_metadata_sync(
                 non_updated_ids.append(owned_item_id)
                 continue
 
-            db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail)
+            note_append = None
+            if updated_fields:
+                release_info = ""
+                if source_code == "DISCOGS":
+                    release_info = f"[Discogs: {source_external_id}] "
+                elif discogs_supplement:
+                    discogs_ext = discogs_supplement.get("external_id")
+                    if discogs_ext:
+                        release_info = f"[Discogs Barcode Match: {discogs_ext}] "
+                
+                note_append = f"[메타동기화] {release_info}업데이트: {', '.join(updated_fields)}"
+
+            db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
             updated_count += 1
             _record(MetadataSyncItemResult(
                 owned_item_id=owned_item_id,
@@ -3252,198 +3295,26 @@ def _start_auto_backup_worker() -> None:
 # pattern is deprecated since FastAPI 0.93.
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
 
 
-@app.get("/catalog-stats", include_in_schema=False)
-def catalog_stats() -> dict[str, int]:
-    """Public endpoint — returns total owned-item count for the login page."""
-    with db.get_conn() as conn:
-        row = conn.execute("SELECT COUNT(*) AS cnt FROM owned_item").fetchone()
-    return {"total_items": int(row["cnt"] or 0) if row else 0}
 
 
-def _external_base_url_for_request(request: Request) -> str:
-    forwarded_host = str(request.headers.get("x-forwarded-host") or "").split(",", 1)[0].strip()
-    host = forwarded_host or str(request.headers.get("host") or request.url.netloc or "").split(",", 1)[0].strip()
-    forwarded_proto = str(request.headers.get("x-forwarded-proto") or "").split(",", 1)[0].strip().lower()
-    scheme = forwarded_proto or str(request.url.scheme or "").strip().lower() or "https"
-    if not host or host in {"127.0.0.1", "localhost", "testserver"}:
-        return "https://library.muzlife.com"
-    if scheme not in {"http", "https"}:
-        scheme = "https"
-    return f"{scheme}://{host}"
 
 
-@app.get("/system/status")
-def system_status(request: Request) -> dict[str, Any]:
-    _require_admin_request(request)
-    sync_running = bool(METADATA_SYNC_LOCK.locked())
-    sync_last_error = str(METADATA_SYNC_LAST_ERROR or "").strip()
-    recent_launchd_lines = _tail_text_lines(LAUNCHD_ERR_LOG_PATH, limit=2)
-    qa_summary = _read_qa_summary()
-    external_base_url = _external_base_url_for_request(request)
-    return {
-        "health": "ok",
-        "metadata_sync_running": sync_running,
-        "metadata_sync_last_error": sync_last_error or None,
-        "external_login_url": f"{external_base_url}/login",
-        "external_health_url": f"{external_base_url}/health",
-        "launchd_err_log": str(PROJECT_LAUNCHD_ERR_LOG_PATH),
-        "recent_launchd_lines": recent_launchd_lines,
-        "qa_summary": qa_summary,
-    }
 
 
-@app.get("/ops/export/db-backup")
-def export_db_backup(request: Request, background_tasks: BackgroundTasks) -> FileResponse:
-    _require_admin_request(request)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-library-", suffix=".db", delete=False)
-    tmp_path = tmp.name
-    tmp.close()
-    with db.get_conn() as source_conn:
-        dest_conn = sqlite3.connect(tmp_path)
-        try:
-            source_conn.backup(dest_conn)
-        finally:
-            dest_conn.close()
-    background_tasks.add_task(_cleanup_temp_file, tmp_path)
-    return FileResponse(
-        tmp_path,
-        media_type="application/octet-stream",
-        filename=f"hahahoho-library-backup-{timestamp}.db",
-    )
 
 
-@app.get("/ops/export/full-backup")
-def export_full_backup(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    include_env_file: bool = Query(default=False),
-) -> FileResponse:
-    _require_admin_request(request)
-    backup_settings = db.get_auto_backup_settings()
-    bundle_path = _create_local_full_backup_bundle(
-        str(backup_settings.get("backup_dir") or ""),
-        reason="manual-full",
-        include_env_file=include_env_file,
-    )
-    background_tasks.add_task(_cleanup_temp_file, bundle_path)
-    return FileResponse(
-        bundle_path,
-        media_type="application/zip",
-        filename=Path(bundle_path).name,
-    )
 
 
-@app.get("/ops/export/backup-settings", response_model=AutoBackupSettingsResponse)
-def get_auto_backup_settings(request: Request) -> AutoBackupSettingsResponse:
-    _require_admin_request(request)
-    payload = db.get_auto_backup_settings()
-    payload.update(_read_backup_launchd_schedules())
-    return AutoBackupSettingsResponse(**payload)
 
 
-@app.post("/ops/export/backup-settings", response_model=AutoBackupSettingsResponse)
-def save_auto_backup_settings(
-    payload: AutoBackupSettingsUpdateRequest,
-    request: Request,
-) -> AutoBackupSettingsResponse:
-    _require_admin_request(request)
-    backup_dir = _normalize_backup_dir_path(payload.backup_dir)
-    Path(backup_dir).mkdir(parents=True, exist_ok=True)
-    saved = db.save_auto_backup_settings(
-        enabled=bool(payload.enabled),
-        interval_minutes=int(payload.interval_minutes),
-        backup_dir=backup_dir,
-        backup_scope=str(payload.backup_scope or "DB"),
-        include_env_file=bool(payload.include_env_file),
-    )
-    saved.update(_read_backup_launchd_schedules())
-    return AutoBackupSettingsResponse(**saved)
 
 
-@app.get("/ops/provider-settings", response_model=MetadataProviderSettingsResponse)
-def get_metadata_provider_settings(request: Request) -> MetadataProviderSettingsResponse:
-    _require_admin_request(request)
-    return MetadataProviderSettingsResponse(**_metadata_provider_settings_payload())
 
 
-@app.post("/ops/provider-settings", response_model=MetadataProviderSettingsResponse)
-def save_metadata_provider_settings(
-    payload: MetadataProviderSettingsUpdateRequest,
-    request: Request,
-) -> MetadataProviderSettingsResponse:
-    _require_admin_request(request)
-    updates: dict[str, str] = {}
-    if payload.discogs_token is not None and payload.discogs_token.strip():
-        updates["DISCOGS_TOKEN"] = payload.discogs_token.strip()
-    if payload.aladin_ttb_key is not None and payload.aladin_ttb_key.strip():
-        updates["ALADIN_TTB_KEY"] = payload.aladin_ttb_key.strip()
-    if payload.deepl_auth_key is not None and payload.deepl_auth_key.strip():
-        updates["DEEPL_AUTH_KEY"] = payload.deepl_auth_key.strip()
-    if payload.discogs_user_agent is not None and payload.discogs_user_agent.strip():
-        updates["DISCOGS_USER_AGENT"] = payload.discogs_user_agent.strip()
-    if payload.musicbrainz_user_agent is not None and payload.musicbrainz_user_agent.strip():
-        updates["MUSICBRAINZ_USER_AGENT"] = payload.musicbrainz_user_agent.strip()
-    if payload.aladin_base_url is not None and payload.aladin_base_url.strip():
-        updates["ALADIN_BASE_URL"] = payload.aladin_base_url.strip()
-    if payload.maniadb_base_url is not None and payload.maniadb_base_url.strip():
-        updates["MANIADB_BASE_URL"] = payload.maniadb_base_url.strip()
-    if payload.deepl_base_url is not None and payload.deepl_base_url.strip():
-        updates["DEEPL_BASE_URL"] = payload.deepl_base_url.strip()
-    if updates:
-        env_path = config_module._default_env_path()
-        _write_env_updates(env_path, updates)
-        for env_key in _METADATA_PROVIDER_ENV_KEYS:
-            if env_key in updates:
-                os.environ[env_key] = updates[env_key]
-        get_settings.cache_clear()
-    return MetadataProviderSettingsResponse(**_metadata_provider_settings_payload())
 
 
-@app.post("/ops/provider-settings/deepl-test", response_model=MetadataProviderConnectionTestResponse)
-def test_deepl_provider_settings(request: Request) -> MetadataProviderConnectionTestResponse:
-    _require_admin_request(request)
-    settings = get_settings()
-    auth_key = str(settings.deepl_auth_key or "").strip()
-    base_url = str(settings.deepl_base_url or "").strip()
-    configured = bool(auth_key and base_url)
-    if not configured:
-        return MetadataProviderConnectionTestResponse(
-            ok=False,
-            configured=False,
-            detail="DeepL 키 또는 Base URL이 설정되지 않았습니다.",
-        )
-    try:
-        usage = artist_context_service.fetch_deepl_usage(auth_key, base_url)
-        character_count = int(usage.get("character_count") or 0)
-        character_limit = int(usage.get("character_limit") or 0)
-        return MetadataProviderConnectionTestResponse(
-            ok=True,
-            configured=True,
-            translated_text=f"사용량 {character_count} / {character_limit}" if character_limit else "사용량 확인",
-        )
-    except httpx.HTTPStatusError as err:
-        status_code = err.response.status_code if err.response is not None else None
-        if status_code == 403:
-            detail = "DeepL 인증이 거부되었습니다. API 키 또는 Free/Pro 엔드포인트 조합을 확인하세요."
-        else:
-            detail = f"DeepL 호출 실패 ({status_code or 'unknown'})"
-        return MetadataProviderConnectionTestResponse(
-            ok=False,
-            configured=True,
-            detail=detail,
-        )
-    except Exception as err:
-        return MetadataProviderConnectionTestResponse(
-            ok=False,
-            configured=True,
-            detail=f"DeepL 연결 테스트 실패: {err}",
-        )
 
 
 @app.post("/ops/export/db-restore", response_model=DatabaseRestoreResponse)
@@ -3496,125 +3367,16 @@ async def restore_full_backup(request: Request, file: UploadFile = File(...)) ->
         Path(tmp_path).unlink(missing_ok=True)
 
 
-def _csv_response(filename: str, header: list[str], rows: list[list[Any]]) -> Response:
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(header)
-    writer.writerows(rows)
-    return Response(
-        content=output.getvalue(),
-        media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
-@app.get("/ops/export/owned-items.csv")
-def export_owned_items_csv(request: Request) -> Response:
-    _require_admin_request(request)
-    with db.get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-              oi.id,
-              oi.category,
-              oi.item_name_override,
-              oi.status,
-              oi.signature_type,
-              oi.size_group,
-              oi.preferred_storage_size_group,
-              oi.linked_album_master_id,
-              oi.purchase_source,
-              oi.memory_note,
-              ss.cabinet_name,
-              ss.column_code,
-              ss.cell_code,
-              mid.artist_or_brand,
-              mid.format_name,
-              mid.released_date,
-              mid.label_name,
-              mid.catalog_no,
-              mid.barcode
-            FROM owned_item oi
-            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
-            ORDER BY oi.id ASC
-            """
-        ).fetchall()
-    csv_rows = [
-        [
-            row["id"], _build_label_id(str(row["category"] or ""), int(row["id"] or 0)), row["category"], row["item_name_override"], row["status"], row["signature_type"],
-            row["size_group"], row["preferred_storage_size_group"], row["linked_album_master_id"], row["purchase_source"], row["memory_note"],
-            row["cabinet_name"], row["column_code"], row["cell_code"], row["artist_or_brand"], row["format_name"], row["released_date"],
-            row["label_name"], row["catalog_no"], row["barcode"],
-        ]
-        for row in rows
-    ]
-    return _csv_response(
-        "owned-items-export.csv",
-        [
-            "owned_item_id", "label_id", "category", "item_name", "status", "signature_type",
-            "size_group", "preferred_storage_size_group", "album_master_id", "purchase_source", "memory_note",
-            "cabinet_name", "column_code", "cell_code", "artist", "format_name", "released_date",
-            "label_name", "catalog_no", "barcode",
-        ],
-        csv_rows,
-    )
 
 
-@app.get("/ops/export/album-masters.csv")
-def export_album_masters_csv(request: Request) -> Response:
-    _require_admin_request(request)
-    with db.get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-              am.id,
-              am.source_code,
-              am.source_master_id,
-              am.title,
-              am.artist_or_brand,
-              am.release_year,
-              COUNT(amm.id) AS member_count,
-              am.updated_at
-            FROM album_master am
-            LEFT JOIN album_master_member amm ON amm.album_master_id = am.id
-            GROUP BY am.id, am.source_code, am.source_master_id, am.title, am.artist_or_brand, am.release_year, am.updated_at
-            ORDER BY am.id ASC
-            """
-        ).fetchall()
-    csv_rows = [
-        [row["id"], row["source_code"], row["source_master_id"], row["title"], row["artist_or_brand"], row["release_year"], row["member_count"], row["updated_at"]]
-        for row in rows
-    ]
-    return _csv_response(
-        "album-masters-export.csv",
-        ["album_master_id", "source_code", "source_master_id", "title", "artist", "release_year", "member_count", "updated_at"],
-        csv_rows,
-    )
 
 
 # Auth routes (/login, /auth/login, /auth/logout, /auth/session) live in
 # app/api/auth.py. They are wired below via app.include_router.
 
 
-@app.get("/tool-docs/{doc_key}", include_in_schema=False)
-def tool_docs(doc_key: str) -> FileResponse:
-    key = str(doc_key or "").strip().lower()
-    path_map = {
-        "erd-summary": PROJECT_ERD_SUMMARY_PATH,
-        "erd-detail": PROJECT_ERD_DETAIL_PATH,
-        "manual": PROJECT_TOOL_MANUAL_PATH,
-        "go-live-checklist": PROJECT_GO_LIVE_CHECKLIST_PATH,
-        "purchase-import": PROJECT_PURCHASE_IMPORT_GUIDE_PATH,
-        "csv-import-sample": PROJECT_CSV_IMPORT_SAMPLE_PATH,
-    }
-    doc_path = path_map.get(key)
-    if doc_path is None or not doc_path.exists():
-        raise HTTPException(status_code=404, detail="document not found")
-    media_type = "text/markdown; charset=utf-8"
-    if doc_path.suffix.lower() == ".csv":
-        media_type = "text/csv; charset=utf-8"
-    return FileResponse(doc_path, media_type=media_type, filename=doc_path.name)
 
 
 def _cabinet_camera_item_from_row(row: dict[str, Any]) -> CabinetCameraItem:
@@ -4341,7 +4103,7 @@ def operator_home_recent_sections() -> OpsHomeRecentSectionsResponse:
 
 @app.get("/operator/home/feed", response_model=OpsHomeFeedResponse)
 def operator_home_feed(
-    kind: Literal["registered", "moved"] = Query("registered"),
+    kind: Literal["registered", "moved", "purchased", "unslotted"] = Query("registered"),
     page: int = Query(1, ge=1),
     limit: int = Query(30, ge=1, le=100),
 ) -> OpsHomeFeedResponse:
@@ -4520,62 +4282,27 @@ def operator_artist_context(
     return ArtistContextResponse(**result)
 
 
-@app.get("/operator/customer-requests", response_model=CustomerTrackRequestListResponse)
-def get_customer_track_requests(
-    status: str | None = Query(default=None, pattern="^(REQUESTED|PLAYING|RETURNED|CANCELLED)$"),
-    limit: int = Query(default=50, ge=1, le=300),
-) -> CustomerTrackRequestListResponse:
-    rows = db.list_customer_track_requests(status=status, limit=limit)
-    items: list[CustomerTrackRequestItem] = []
-    for row in rows:
-        category_raw = str(row.get("category") or "").strip()
-        items.append(
-            CustomerTrackRequestItem(
-                id=int(row["id"]),
-                requested_track=str(row.get("requested_track") or ""),
-                matched_track_title=row.get("matched_track_title"),
-                matched_track_no=row.get("matched_track_no"),
-                owned_item_id=row.get("owned_item_id"),
-                label_id=row.get("label_id"),
-                category=category_raw if category_raw else None,
-                item_title=row.get("item_title"),
-                artist_or_brand=row.get("artist_or_brand"),
-                cover_image_url=row.get("cover_image_url"),
-                status=str(row.get("status") or "REQUESTED"),
-                customer_note=row.get("customer_note"),
-                response_note=row.get("response_note"),
-                requested_by=row.get("requested_by"),
-                handled_by=row.get("handled_by"),
-                created_at=str(row.get("created_at") or ""),
-                updated_at=str(row.get("updated_at") or ""),
-                handled_at=row.get("handled_at"),
-                current_slot_code_snapshot=row.get("current_slot_code_snapshot"),
-                current_slot_display_snapshot=row.get("current_slot_display_snapshot"),
-                previous_slot_code_snapshot=row.get("previous_slot_code_snapshot"),
-                previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
-                current_live_slot_code=row.get("current_live_slot_code"),
-                current_live_slot_display_name=row.get("current_live_slot_display_name"),
-            )
-        )
-    return CustomerTrackRequestListResponse(total_count=db.count_customer_track_requests(status=status), items=items)
+def _wmo_weather_code_to_desc(code: int | None) -> str | None:
+    if code is None:
+        return None
+    if code == 0:
+        return "맑음"
+    elif code in {1, 2, 3}:
+        return "구름 조금/흐림"
+    elif code in {45, 48}:
+        return "안개"
+    elif code in {51, 53, 55, 56, 57}:
+        return "이슬비"
+    elif code in {61, 63, 65, 66, 67, 80, 81, 82}:
+        return "비"
+    elif code in {71, 73, 75, 77, 85, 86}:
+        return "눈"
+    elif code in {95, 96, 99}:
+        return "뇌우"
+    return "기타"
 
 
-@app.post("/operator/customer-requests", response_model=CustomerTrackRequestItem)
-def create_customer_track_request(
-    payload: CustomerTrackRequestCreate,
-    request: Request,
-) -> CustomerTrackRequestItem:
-    session = _read_auth_session_data(request) or {}
-    row = db.create_customer_track_request(
-        requested_track=payload.requested_track,
-        requested_by=str(session.get("username") or "").strip() or None,
-        owned_item_id=payload.owned_item_id,
-        matched_track_title=payload.matched_track_title,
-        matched_track_no=payload.matched_track_no,
-        customer_note=payload.customer_note,
-    )
-    if not row:
-        raise HTTPException(status_code=500, detail="customer request create failed")
+def _map_to_customer_track_request_item(row: dict[str, Any]) -> CustomerTrackRequestItem:
     category_raw = str(row.get("category") or "").strip()
     return CustomerTrackRequestItem(
         id=int(row["id"]),
@@ -4602,7 +4329,125 @@ def create_customer_track_request(
         previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
         current_live_slot_code=row.get("current_live_slot_code"),
         current_live_slot_display_name=row.get("current_live_slot_display_name"),
+        weather_temp_c=row.get("weather_temp_c"),
+        weather_description=row.get("weather_description"),
+        weather_code=row.get("weather_code"),
+        season=row.get("season"),
+        playback_deck=row.get("playback_deck"),
+        played_at=row.get("played_at"),
+        returned_at=row.get("returned_at"),
     )
+
+
+@app.get("/operator/customer-requests", response_model=CustomerTrackRequestListResponse)
+def get_customer_track_requests(
+    status: str | None = Query(default=None, pattern="^(REQUESTED|PLAYING|RETURNED|CANCELLED)$"),
+    limit: int = Query(default=50, ge=1, le=300),
+) -> CustomerTrackRequestListResponse:
+    rows = db.list_customer_track_requests(status=status, limit=limit)
+    items = [_map_to_customer_track_request_item(row) for row in rows]
+    return CustomerTrackRequestListResponse(total_count=db.count_customer_track_requests(status=status), items=items)
+
+
+@app.get("/operator/roon/status", response_model=RoonStatusResponse)
+def get_roon_status() -> RoonStatusResponse:
+    global _ROON_CONNECTED, _ROON_CORE_NAME, _ROON_ACTIVE_ZONE, _ROON_VOLUME, _ROON_NOW_PLAYING_REQUEST_ID
+    return RoonStatusResponse(
+        connected=_ROON_CONNECTED,
+        core_name=_ROON_CORE_NAME,
+        active_zone=_ROON_ACTIVE_ZONE,
+        volume=_ROON_VOLUME,
+        now_playing_request_id=_ROON_NOW_PLAYING_REQUEST_ID,
+    )
+
+
+class RoonStatusUpdateRequest(BaseModel):
+    connected: bool | None = None
+    active_zone: str | None = None
+    volume: int | None = None
+    now_playing_request_id: int | None = None
+
+
+@app.post("/operator/roon/status/update", response_model=RoonStatusResponse)
+def update_roon_status(payload: RoonStatusUpdateRequest) -> RoonStatusResponse:
+    global _ROON_CONNECTED, _ROON_ACTIVE_ZONE, _ROON_VOLUME, _ROON_NOW_PLAYING_REQUEST_ID
+    if payload.connected is not None:
+        _ROON_CONNECTED = payload.connected
+    if payload.active_zone is not None:
+        _ROON_ACTIVE_ZONE = payload.active_zone
+    if payload.volume is not None:
+        _ROON_VOLUME = payload.volume
+    if payload.now_playing_request_id is not None:
+        _ROON_NOW_PLAYING_REQUEST_ID = payload.now_playing_request_id
+    return get_roon_status()
+
+
+@app.post("/operator/roon/play/{request_id}", response_model=CustomerTrackRequestItem)
+def play_track_via_roon(request_id: int) -> CustomerTrackRequestItem:
+    global _ROON_NOW_PLAYING_REQUEST_ID
+    row = db.get_customer_track_request(request_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Track request not found")
+    
+    updated = db.update_customer_track_request(
+        request_id,
+        status="PLAYING",
+        playback_deck="Roon (Stream)"
+    )
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to update track request")
+    
+    _ROON_NOW_PLAYING_REQUEST_ID = request_id
+    return _map_to_customer_track_request_item(updated)
+
+
+@app.get("/operator/customer-requests/now-playing", response_model=list[CustomerTrackRequestItem])
+def get_now_playing_requests() -> list[CustomerTrackRequestItem]:
+    rows = db.list_customer_track_requests(status="PLAYING", limit=10)
+    return [_map_to_customer_track_request_item(row) for row in rows]
+
+
+@app.post("/operator/customer-requests", response_model=CustomerTrackRequestItem)
+def create_customer_track_request(
+    payload: CustomerTrackRequestCreate,
+    request: Request,
+) -> CustomerTrackRequestItem:
+    session = _read_auth_session_data(request) or {}
+
+    weather_temp_c = None
+    weather_desc = None
+    w_code = None
+
+    w_data = None
+    if _SEOUL_WEATHER_CACHE and _SEOUL_WEATHER_CACHE.get("available"):
+        w_data = _SEOUL_WEATHER_CACHE
+    elif _OFFICE_CLIMATE_CACHE and _OFFICE_CLIMATE_CACHE.get("available"):
+        w_data = _OFFICE_CLIMATE_CACHE
+    else:
+        try:
+            w_data = _load_operator_seoul_weather()
+        except Exception:
+            w_data = None
+
+    if w_data and w_data.get("available"):
+        weather_temp_c = w_data.get("temperature_c")
+        w_code = w_data.get("weather_code")
+        weather_desc = _wmo_weather_code_to_desc(w_code)
+
+    row = db.create_customer_track_request(
+        requested_track=payload.requested_track,
+        requested_by=str(session.get("username") or "").strip() or None,
+        owned_item_id=payload.owned_item_id,
+        matched_track_title=payload.matched_track_title,
+        matched_track_no=payload.matched_track_no,
+        customer_note=payload.customer_note,
+        weather_temp_c=weather_temp_c,
+        weather_description=weather_desc,
+        weather_code=w_code,
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="customer request create failed")
+    return _map_to_customer_track_request_item(row)
 
 
 @app.patch("/operator/customer-requests/{request_id}", response_model=CustomerTrackRequestItem)
@@ -4617,36 +4462,11 @@ def patch_customer_track_request(
         status=payload.status,
         response_note=payload.response_note,
         handled_by=str(session.get("username") or "").strip() or None,
+        playback_deck=payload.playback_deck,
     )
     if row is None:
         raise HTTPException(status_code=404, detail="customer request not found")
-    category_raw = str(row.get("category") or "").strip()
-    return CustomerTrackRequestItem(
-        id=int(row["id"]),
-        requested_track=str(row.get("requested_track") or ""),
-        matched_track_title=row.get("matched_track_title"),
-        matched_track_no=row.get("matched_track_no"),
-        owned_item_id=row.get("owned_item_id"),
-        label_id=row.get("label_id"),
-        category=category_raw if category_raw else None,
-        item_title=row.get("item_title"),
-        artist_or_brand=row.get("artist_or_brand"),
-        cover_image_url=row.get("cover_image_url"),
-        status=str(row.get("status") or "REQUESTED"),
-        customer_note=row.get("customer_note"),
-        response_note=row.get("response_note"),
-        requested_by=row.get("requested_by"),
-        handled_by=row.get("handled_by"),
-        created_at=str(row.get("created_at") or ""),
-        updated_at=str(row.get("updated_at") or ""),
-        handled_at=row.get("handled_at"),
-        current_slot_code_snapshot=row.get("current_slot_code_snapshot"),
-        current_slot_display_snapshot=row.get("current_slot_display_snapshot"),
-        previous_slot_code_snapshot=row.get("previous_slot_code_snapshot"),
-        previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
-        current_live_slot_code=row.get("current_live_slot_code"),
-        current_live_slot_display_name=row.get("current_live_slot_display_name"),
-    )
+    return _map_to_customer_track_request_item(row)
 
 
 @app.get("/metadata-sync/status", response_model=MetadataSyncStatusResponse)
@@ -4682,6 +4502,164 @@ def run_metadata_sync(payload: MetadataSyncRunRequest) -> dict[str, Any]:
     )
     t.start()
     return {"started": True}
+
+
+def _item_meta_fields(row: dict[str, Any]) -> dict[str, Any]:
+    """로그/응답 표시용 식별 메타 (display_name, artist_or_brand, catalog_no)."""
+    return {
+        "display_name": _clean_text(row.get("display_name")),
+        "artist_or_brand": _clean_text(row.get("artist_or_brand")),
+        "catalog_no": _clean_text(row.get("catalog_no")),
+    }
+
+
+def _sync_one_item(owned_item_id: int) -> MetadataSyncItemResult:
+    """단건 메타 동기화 – 동기 실행, 결과를 즉시 반환.
+
+    기존 _run_metadata_sync 루프의 로직을 재사용하되 배치 관련 상태는 건드리지 않음.
+    """
+    from app.services.providers import get_source_release_snapshot, _try_discogs_for_barcode, _token_similarity
+
+    candidates = db.list_metadata_sync_candidates(
+        source_code=None,
+        only_missing=False,   # 단건이므로 only_missing 무관하게 전체 필드 비교
+        limit=1,
+        offset=0,
+        owned_item_ids=[owned_item_id],
+    )
+    if not candidates:
+        return MetadataSyncItemResult(
+            owned_item_id=owned_item_id,
+            source_code="-",
+            source_external_id="-",
+            status="FAILED",
+            reason="item not found or not eligible for sync",
+        )
+
+    row = candidates[0]
+    source_code = str(row.get("source_code") or "").strip().upper()
+    source_external_id = str(row.get("source_external_id") or "").strip()
+
+    if not source_code or not source_external_id:
+        return MetadataSyncItemResult(
+            owned_item_id=owned_item_id,
+            source_code=source_code or "-",
+            source_external_id=source_external_id or "-",
+            status="FAILED",
+            reason="missing source info",
+            **_item_meta_fields(row),
+        )
+
+    if source_code not in {"DISCOGS", "MANIADB", "ALADIN"}:
+        return MetadataSyncItemResult(
+            owned_item_id=owned_item_id,
+            source_code=source_code,
+            source_external_id=source_external_id,
+            status="FAILED",
+            reason=f"source '{source_code}' not supported for snapshot sync",
+            **_item_meta_fields(row),
+        )
+
+    snapshot = get_source_release_snapshot(source=source_code, external_id=source_external_id)
+    if not snapshot:
+        return MetadataSyncItemResult(
+            owned_item_id=owned_item_id,
+            source_code=source_code,
+            source_external_id=source_external_id,
+            status="FAILED",
+            reason="source snapshot not found",
+            **_item_meta_fields(row),
+        )
+
+    # Discogs 보강 – 1차: 바코드(EAN/UPC 체크섬), 2차: 카탈로그넘버 fallback
+    discogs_supplement = None
+    if source_code != "DISCOGS":
+        from app.services.providers import (
+            _try_discogs_for_barcode, _try_discogs_for_catalog_no,
+            _token_similarity, _validate_barcode_checksum,
+        )
+        barcode = str(row.get("barcode") or "").strip()
+        barcode_digits = barcode.replace(" ", "").replace("-", "")
+        # 1차: 바코드 (EAN-13/UPC-A 체크섬, 880 포함)
+        if _validate_barcode_checksum(barcode_digits):
+            discogs_supplement = _try_discogs_for_barcode(barcode_digits)
+            if discogs_supplement:
+                orig_text = f"{row.get('artist_or_brand') or ''} {row.get('master_title') or row.get('display_name') or ''}".strip()
+                disc_text = f"{discogs_supplement.get('artist_or_brand') or ''} {discogs_supplement.get('title') or ''}".strip()
+                sim = _token_similarity(orig_text, disc_text) if orig_text and disc_text else 0.0
+                # 유사도 + 미디어 타입 검증 (바코드 경로는 포맷 일치 필수)
+                orig_fmt = str(row.get("format_name") or "").upper()
+                disc_fmt = str(discogs_supplement.get("format_name") or "").upper()
+                fmt_ok = (not orig_fmt or not disc_fmt or orig_fmt == disc_fmt)
+                if sim < 0.85 or not fmt_ok:
+                    discogs_supplement = None
+        # 2차: 카탈로그넘버 fallback (바코드 없거나 검증 실패 시)
+        if discogs_supplement is None:
+            catalog_no = str(row.get("catalog_no") or "").strip()
+            if catalog_no:
+                discogs_supplement = _try_discogs_for_catalog_no(
+                    catalog_no=catalog_no,
+                    artist=str(row.get("artist_or_brand") or ""),
+                    title=str(row.get("master_title") or row.get("display_name") or ""),
+                    format_name=str(row.get("format_name") or "") or None,
+                    pressing_country=str(row.get("pressing_country") or "") or None,
+                )
+        if discogs_supplement:
+            _DISCOGS_FIELDS = {
+                "disc_count", "speed_rpm", "has_obi",
+                "runout_matrix", "pressing_country", "source_notes",
+                "credits", "identifier_items", "image_items",
+                "company_items", "series", "format_items",
+                "track_items", "label_items", "genres", "styles",
+            }
+            for field in _DISCOGS_FIELDS:
+                val = discogs_supplement.get(field)
+                has_val = bool(val) if isinstance(val, (list, dict)) else val is not None
+                if has_val:
+                    snapshot[field] = val
+
+    music_detail, updated_fields = _build_music_detail_for_sync(
+        candidate=row,
+        snapshot=snapshot,
+        only_missing=False,
+    )
+
+    if not updated_fields:
+        return MetadataSyncItemResult(
+            owned_item_id=owned_item_id,
+            source_code=source_code,
+            source_external_id=source_external_id,
+            status="SKIPPED",
+            reason="no fields to update",
+            **_item_meta_fields(row),
+        )
+
+    # 메모 기록
+    release_info = ""
+    if source_code == "DISCOGS":
+        release_info = f"[Discogs: {source_external_id}] "
+    elif discogs_supplement:
+        discogs_ext = discogs_supplement.get("external_id")
+        if discogs_ext:
+            release_info = f"[Discogs Barcode Match: {discogs_ext}] "
+    note_append = f"[메타동기화] {release_info}업데이트: {', '.join(updated_fields)}"
+
+    db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
+
+    return MetadataSyncItemResult(
+        owned_item_id=owned_item_id,
+        source_code=source_code,
+        source_external_id=source_external_id,
+        status="UPDATED",
+        updated_fields=updated_fields,
+        **_item_meta_fields(row),
+    )
+
+
+@app.post("/owned-items/{owned_item_id}/sync-metadata")
+def sync_single_item_metadata(owned_item_id: int = FastAPIPath(ge=1)) -> MetadataSyncItemResult:
+    """단건 상품 메타 동기화 – 즉시(동기) 실행 후 결과 반환."""
+    return _sync_one_item(owned_item_id)
 
 
 # ---------------------------------------------------------------------------
@@ -4895,6 +4873,48 @@ def run_aladin_discogs_backfill_async(
     return {"status": "started", "dry_run": dry_run, "sleep_sec": sleep_sec}
 
 
+
+# ── Discogs 한국 아티스트 한글명 백필 ──
+DISCOGS_KOREAN_BACKFILL_LOCK   = threading.Lock()
+DISCOGS_KOREAN_BACKFILL_THREAD: threading.Thread | None = None
+DISCOGS_KOREAN_BACKFILL_RESULT: dict[str, Any] | None   = None
+
+def _discogs_korean_backfill_worker(limit: int | None) -> None:
+    global DISCOGS_KOREAN_BACKFILL_RESULT
+    try:
+        with DISCOGS_KOREAN_BACKFILL_LOCK:
+            result = backfill_discogs_korean_artist_names(limit=limit)
+            DISCOGS_KOREAN_BACKFILL_RESULT = {"status": "done", **result}
+    except Exception as exc:
+        DISCOGS_KOREAN_BACKFILL_RESULT = {"status": "error", "detail": str(exc)}
+        logger.exception("discogs_korean_backfill error: %s", exc)
+
+@app.get("/discogs-korean-backfill/status")
+def get_discogs_korean_backfill_status() -> dict[str, Any]:
+    running = (
+        DISCOGS_KOREAN_BACKFILL_THREAD is not None
+        and DISCOGS_KOREAN_BACKFILL_THREAD.is_alive()
+    )
+    return {
+        "running": running,
+        "result":  DISCOGS_KOREAN_BACKFILL_RESULT,
+    }
+
+@app.post("/discogs-korean-backfill/run")
+def run_discogs_korean_backfill(limit: int | None = None) -> dict[str, Any]:
+    global DISCOGS_KOREAN_BACKFILL_THREAD
+    if DISCOGS_KOREAN_BACKFILL_LOCK.locked():
+        raise HTTPException(status_code=409, detail="discogs korean backfill already running")
+    t = threading.Thread(
+        target=_discogs_korean_backfill_worker,
+        kwargs={"limit": limit},
+        name="discogs-korean-backfill",
+        daemon=True,
+    )
+    DISCOGS_KOREAN_BACKFILL_THREAD = t
+    t.start()
+    return {"status": "started", "limit": limit}
+
 @app.get("/", include_in_schema=False)
 def root_entry(request: Request):
     if _auth_enabled() and not _is_authenticated(request):
@@ -4904,12 +4924,65 @@ def root_entry(request: Request):
 
 @app.get("/ops", include_in_schema=False)
 def ops_shell(request: Request):
-    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+    import hashlib
+    v = request.query_params.get("v")
+    try:
+        file_hash = hashlib.md5((STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+    except Exception:
+        file_hash = "0"
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/ops?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        if _is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @app.get("/ops/cabinets", include_in_schema=False)
 def ops_cabinets_shell(request: Request):
-    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+    import hashlib
+    v = request.query_params.get("v")
+    try:
+        file_hash = hashlib.md5((STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+    except Exception:
+        file_hash = "0"
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/ops/cabinets?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        if _is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "index.html", headers=serve_headers)
+
+
+@app.get("/ops/cafe", include_in_schema=False)
+def ops_cafe_shell(request: Request):
+    import hashlib
+    v = request.query_params.get("v")
+    try:
+        file_hash = hashlib.md5((STATIC_DIR / "ops_cafe.html").read_bytes()).hexdigest()[:8]
+    except Exception:
+        file_hash = "0"
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/ops/cafe?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        if _is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "ops_cafe.html", headers=serve_headers)
 
 
 def _normalize_ops_placement_hint_reason_code(reason: Any, used_fallback_slot: bool) -> str:
@@ -5271,8 +5344,24 @@ def admin_shell(request: Request):
 
 
 @app.get("/ui", include_in_schema=False)
-def ui_alias() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html", headers=HTML_NO_CACHE_HEADERS)
+def ui_alias(request: Request) -> FileResponse:
+    import hashlib
+    v = request.query_params.get("v")
+    try:
+        file_hash = hashlib.md5((STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+    except Exception:
+        file_hash = "0"
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/ui?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        if _is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @app.post("/ui/pick-directory", response_model=DirectoryPickerResponse)
@@ -7528,12 +7617,20 @@ def _infer_owned_item_domain_code(
     snapshot = source_snapshot if isinstance(source_snapshot, dict) else {}
     genres = music.get("genres") or snapshot.get("genres") or []
     styles = music.get("styles") or snapshot.get("styles") or []
-    country = (
-        music.get("pressing_country")
-        or snapshot.get("pressing_country")
-        or snapshot.get("country")
-        or music.get("country")
-    )
+    # DISCOGS 소스는 pressing_country를 country 신호로 쓰지 않는다.
+    # 제조국(pressing country)은 아티스트 국적과 무관하며, 이미
+    # _fetch_discogs_release_detail에서 master_country 우선으로 처리된 후
+    # source_snapshot["domain_code"]로 넘어오기 때문이다.
+    _src = str(normalized_payload.get("source_code") or "").strip().upper()
+    if _src == "DISCOGS":
+        country = None  # genres/styles/artist_name 으로만 판단
+    else:
+        country = (
+            music.get("pressing_country")
+            or snapshot.get("pressing_country")
+            or snapshot.get("country")
+            or music.get("country")
+        )
     artist_or_brand = (
         music.get("artist_or_brand")
         or snapshot.get("artist_or_brand")
@@ -8037,7 +8134,16 @@ def _normalize_music_detail_payload(normalized_payload: dict[str, object]) -> No
     music_detail["track_items"] = track_items
     music_detail["label_items"] = label_items
     music_detail["track_list"] = track_list
-    normalized_payload["domain_code"] = domain_code or _infer_owned_item_domain_code(normalized_payload, music_detail, source_snapshot)
+    # 도메인 결정 우선순위:
+    # 1. 사용자가 명시한 domain_code (payload)
+    # 2. 소스 스냅샷의 domain_code (Discogs: master_country 기반, MANIADB: 항상 KOREA)
+    # 3. genres/styles/country/artist 재추론 + master_domain_hint 폴백
+    snapshot_domain = _normalize_domain_code((source_snapshot or {}).get("domain_code"))
+    normalized_payload["domain_code"] = (
+        domain_code
+        or snapshot_domain
+        or _infer_owned_item_domain_code(normalized_payload, music_detail, source_snapshot)
+    )
     normalized_payload["release_type"] = release_type
 
 
@@ -9308,3 +9414,5 @@ from .api.purchase_imports import router as purchase_imports_router  # noqa: E40
 app.include_router(album_masters_router)
 app.include_router(owned_items_router)
 app.include_router(purchase_imports_router)
+from app.api.ops_system import router as ops_system_router
+app.include_router(ops_system_router)

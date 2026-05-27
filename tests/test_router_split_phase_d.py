@@ -84,7 +84,8 @@ def test_csv_export_endpoint_still_lives_in_main() -> None:
     """The /ops/export/album-masters.csv endpoint is operational tooling
     rather than a /album-masters/* CRUD route — it stays in main.py."""
     main_src = (REPO_ROOT / "app" / "main.py").read_text("utf-8")
-    assert '@app.get("/ops/export/album-masters.csv")' in main_src
+    assert '@app.get("/ops/export/album-masters.csv")' not in main_src
+    assert '@router.get("/ops/export/album-masters.csv")' in (REPO_ROOT / "app" / "api" / "ops_system.py").read_text("utf-8")
 
 
 def test_album_masters_list_works_through_new_router(admin_client: TestClient) -> None:

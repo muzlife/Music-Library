@@ -4338,11 +4338,34 @@ def test_startup_db_ready_migrates_purchase_import_queue_vendor_check_for_yes24(
 
 
 def test_tool_docs_supports_purchase_import_guide(monkeypatch, tmp_path):
+    from app.api.ops_system import tool_docs
+
     guide_path = tmp_path / "purchase_mail_import.md"
     guide_path.write_text("# purchase import guide\n", encoding="utf-8")
     monkeypatch.setattr(main_module, "PROJECT_PURCHASE_IMPORT_GUIDE_PATH", guide_path)
 
-    response = main_module.tool_docs("purchase-import")
+    response = tool_docs("purchase-import")
 
     assert str(response.path) == str(guide_path)
     assert response.media_type == "text/markdown; charset=utf-8"
+
+
+def test_operator_can_post_owned_items_sync_metadata(operator_client, monkeypatch):
+    seen = {}
+    def fake_sync_one_item(owned_item_id: int):
+        seen["owned_item_id"] = owned_item_id
+        return {
+            "owned_item_id": owned_item_id,
+            "source_code": "DISCOGS",
+            "source_external_id": "12345",
+            "status": "UPDATED",
+            "updated_fields": ["barcode"],
+        }
+    monkeypatch.setattr(main_module, "_sync_one_item", fake_sync_one_item)
+
+    res = operator_client.post("/owned-items/42/sync-metadata")
+    assert res.status_code == 200
+    assert seen["owned_item_id"] == 42
+    assert res.json()["status"] == "UPDATED"
+
+
