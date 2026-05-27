@@ -178,7 +178,8 @@ def test_operator_can_post_ops_placement_hints_with_ready_payload(operator_clien
         seen["owned_item_id"] = owned_item_id
         return payload
 
-    monkeypatch.setattr(main_module, "_build_ops_placement_hint_payload", fake_build_ops_placement_hint_payload, raising=False)
+    import app.api.ops_system as ops_system_module
+    monkeypatch.setattr(ops_system_module, "_build_ops_placement_hint_payload", fake_build_ops_placement_hint_payload)
 
     res = operator_client.post("/ops/placement-hints", json={"owned_item_id": 123})
 
@@ -262,7 +263,8 @@ def test_operator_can_post_ops_placement_hints_with_unavailable_payload(operator
         seen["owned_item_id"] = owned_item_id
         return payload
 
-    monkeypatch.setattr(main_module, "_build_ops_placement_hint_payload", fake_build_ops_placement_hint_payload, raising=False)
+    import app.api.ops_system as ops_system_module
+    monkeypatch.setattr(ops_system_module, "_build_ops_placement_hint_payload", fake_build_ops_placement_hint_payload)
 
     res = operator_client.post("/ops/placement-hints", json={"owned_item_id": 123})
 
@@ -315,8 +317,9 @@ def test_operator_can_get_ops_owned_item_collector_info_for_discogs_item(operato
             "other_versions": [{"external_id": "1"}, {"external_id": "2"}],
         }
 
+    import app.api.misc_catalog as misc_catalog_module
     monkeypatch.setattr(main_module.db, "get_owned_item_detail", fake_get_owned_item_detail)
-    monkeypatch.setattr(main_module, "get_discogs_release_collector_info", fake_collector_info, raising=False)
+    monkeypatch.setattr(misc_catalog_module, "get_discogs_release_collector_info", fake_collector_info)
 
     res = operator_client.get("/ops/owned-items/101/collector-info")
 
