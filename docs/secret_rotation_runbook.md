@@ -2,6 +2,11 @@
 
 `.env.local`(QA) 와 운영기 `.env`(prod)에 들어가 있는 평문 시크릿을 안전하게 교체하는 절차입니다. 모든 회전은 **서비스 무중단 보장 X — 짧은 재시작 창이 필요**합니다.
 
+> **2026-05-27 업데이트:** QA 서버는 이제 launchd plist의 `EnvironmentVariables`에서 시크릿을 직접 읽습니다.
+> `.env.local`은 개발/fallback 용이며, launchd가 제공하는 환경변수가 우선합니다.
+> 시크릿 회전 시 **plist와 `.env.local`을 모두 갱신**해야 합니다.
+> 자세한 설정은 `runtime/plist/com.muzlife.library-qa.plist`와 `scripts/install_qa_plist.sh` 참조.
+
 회전 대상은 7종입니다.
 
 | ENV 변수 | 종류 | 회전 빈도 권장 | 영향 범위 |
@@ -22,11 +27,11 @@
 
 ```bash
 # 1. 현재 .env.local을 안전 백업
-cp /Volumes/Works/07.hahahoho/.env.local /Volumes/Works/07.hahahoho/.env.local.bak.$(date +%Y%m%d_%H%M)
+cp /Volumes/Data/Works/07.hahahoho/.env.local /Volumes/Data/Works/07.hahahoho/.env.local.bak.$(date +%Y%m%d_%H%M)
 
 # 2. 권한이 600인지 확인 (혹시 644면 즉시 600)
-stat -f "%Sp %N" /Volumes/Works/07.hahahoho/.env.local
-chmod 600 /Volumes/Works/07.hahahoho/.env.local
+stat -f "%Sp %N" /Volumes/Data/Works/07.hahahoho/.env.local
+chmod 600 /Volumes/Data/Works/07.hahahoho/.env.local
 
 # 3. 운영기에서도 동일하게
 ssh matia@macmini2018.local 'cp /Users/matia/apps/hahahoho-prod/.env /Users/matia/apps/hahahoho-prod/.env.bak.$(date +%Y%m%d_%H%M) && chmod 600 /Users/matia/apps/hahahoho-prod/.env'
@@ -152,8 +157,11 @@ NEW_SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(48))")
 echo "$NEW_SECRET"
 
 # .env.local 갱신
+# plist도 동일한 값으로 갱신
+vim runtime/plist/com.muzlife.library-qa.plist
+# install_qa_plist.sh로 반영
 sed -i.bak "s|^LIBRARY_AUTH_SESSION_SECRET=.*|LIBRARY_AUTH_SESSION_SECRET=\"$NEW_SECRET\"|" \
-    /Volumes/Works/07.hahahoho/.env.local
+    /Volumes/Data/Works/07.hahahoho/.env.local
 
 # 운영기에도 동일하게
 ssh matia@macmini2018.local \
@@ -242,12 +250,12 @@ curl -s https://library.muzlife.com/health
 ```bash
 # 1Password CLI 가 설치돼 있다면
 op item create --category=secure-note --title="hahahoho .env.local backup $(date +%Y-%m-%d)" \
-  --vault=Private notesPlain="$(cat /Volumes/Works/07.hahahoho/.env.local.bak.<날짜>)"
+  --vault=Private notesPlain="$(cat /Volumes/Data/Works/07.hahahoho/.env.local.bak.<날짜>)"
 
 # 그 후 디스크 백업 삭제
-shred -uvz /Volumes/Works/07.hahahoho/.env.local.bak.*  # GNU
+shred -uvz /Volumes/Data/Works/07.hahahoho/.env.local.bak.*  # GNU
 # macOS 기본은 shred 없음 → rm -P 사용
-rm -P /Volumes/Works/07.hahahoho/.env.local.bak.*
+rm -P /Volumes/Data/Works/07.hahahoho/.env.local.bak.*
 ```
 
 ---
