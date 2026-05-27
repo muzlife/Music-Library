@@ -31,13 +31,38 @@ def _ensure_auth_account_table(conn: sqlite3.Connection) -> None:
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           username TEXT NOT NULL UNIQUE,
           password_hash TEXT NOT NULL,
-          role TEXT NOT NULL CHECK (role IN ('ADMIN', 'OPERATOR')),
+          role TEXT NOT NULL CHECK (role IN ('ADMIN', 'OPERATOR', 'VIEWER')),
           is_active INTEGER NOT NULL DEFAULT 1,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
         """
     )
+    # Migration: if old CHECK constraint doesn't include VIEWER, recreate table
+    table_info = conn.execute("PRAGMA table_info(auth_account)").fetchall()
+    if table_info:
+        # Check if VIEWER would be rejected by current CHECK
+        try:
+            conn.execute("INSERT INTO auth_account (username, password_hash, role, is_active, created_at, updated_at) VALUES ('__migration_probe__', 'x', 'VIEWER', 1, '2020-01-01T00:00:00Z', '2020-01-01T00:00:00Z')")
+            conn.execute("DELETE FROM auth_account WHERE username = '__migration_probe__'")
+        except Exception:
+            # Old CHECK constraint — migrate
+            conn.execute("ALTER TABLE auth_account RENAME TO auth_account_old")
+            conn.execute(
+                """
+                CREATE TABLE auth_account (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  username TEXT NOT NULL UNIQUE,
+                  password_hash TEXT NOT NULL,
+                  role TEXT NOT NULL CHECK (role IN ('ADMIN', 'OPERATOR', 'VIEWER')),
+                  is_active INTEGER NOT NULL DEFAULT 1,
+                  created_at TEXT NOT NULL,
+                  updated_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute("INSERT INTO auth_account SELECT * FROM auth_account_old")
+            conn.execute("DROP TABLE auth_account_old")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_auth_account_role ON auth_account (role, is_active, username)"
     )
@@ -83,7 +108,7 @@ def upsert_auth_account(
     key = str(username or "").strip()
     hashed = str(password_hash or "").strip()
     role_code = str(role or "").strip().upper()
-    if not key or not hashed or role_code not in {"ADMIN", "OPERATOR"}:
+    if not key or not hashed or role_code not in {"ADMIN", "OPERATOR", "VIEWER"}:
         return None
     now = utc_now_iso()
     with get_conn() as conn:

@@ -59,7 +59,7 @@ from ..schemas import (
     TrackMappingItem,
     TrackMappingListResponse,
 )
-from ..security import _require_admin_request
+from ..security import _require_admin_request, _require_operator_request
 
 
 router = APIRouter(tags=["owned-items"])
@@ -387,7 +387,7 @@ def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsR
 
 @router.get("/owned-items/{owned_item_id}/relations")
 def get_owned_item_relations(owned_item_id: int, request: Request) -> dict[str, Any]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     owned_row = db.get_owned_item(owned_item_id)
     if owned_row is None:
         raise HTTPException(status_code=404, detail="owned_item not found")
@@ -615,7 +615,7 @@ def save_owned_item_relations(
     payload: OwnedItemRelationSaveRequest,
     request: Request,
 ) -> dict[str, Any]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     owned_row = db.get_owned_item(owned_item_id)
     if owned_row is None:
         raise HTTPException(status_code=404, detail="owned_item not found")
@@ -682,7 +682,7 @@ def search_owned_item_relation_targets(
     owned_item_id: int | None = Query(default=None, ge=1),
     limit: int = Query(default=12, ge=1, le=50),
 ) -> dict[str, Any]:
-    _require_admin_request(request)
+    _require_operator_request(request)
     query_text = str(q or "").strip().lower()
     if not query_text:
         return {"items": []}

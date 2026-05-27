@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from .. import db
 from .. import security
+from ..security import _require_operator_request
 from ..schemas import (
     ArtistContextRequest,
     ArtistContextResponse,
@@ -42,15 +43,17 @@ def _main():
 
 
 def _require_auth(request: Request) -> None:
-    security._require_authenticated_request(request)
+    security._require_operator_request(request)
 
 
 
 @router.get("/operator/catalog-search", response_model=OperatorCatalogSearchResponse)
 def operator_catalog_search(
+    request: Request,
     q: str = Query(min_length=1, max_length=200),
     limit: int = Query(default=20, ge=1, le=100),
 ) -> OperatorCatalogSearchResponse:
+    security._require_authenticated_request(request)
     rows = db.search_operator_catalog(query_text=q, limit=limit)
     items: list[OperatorCatalogSearchItem] = []
     for row in rows:
@@ -104,7 +107,8 @@ def operator_catalog_search(
 
 
 @router.get("/operator/home/recent", response_model=OpsHomeRecentSectionsResponse)
-def operator_home_recent_sections() -> OpsHomeRecentSectionsResponse:
+def operator_home_recent_sections(request: Request) -> OpsHomeRecentSectionsResponse:
+    security._require_authenticated_request(request)
     data = db.get_ops_home_recent_sections()
     return OpsHomeRecentSectionsResponse(
         recent_moved_items=[OpsHomeRecentItem(**row) for row in data.get("recent_moved_items") or []],
@@ -116,10 +120,12 @@ def operator_home_recent_sections() -> OpsHomeRecentSectionsResponse:
 
 @router.get("/operator/home/feed", response_model=OpsHomeFeedResponse)
 def operator_home_feed(
+    request: Request,
     kind: Literal["registered", "moved", "purchased", "unslotted"] = Query("registered"),
     page: int = Query(1, ge=1),
     limit: int = Query(30, ge=1, le=100),
 ) -> OpsHomeFeedResponse:
+    security._require_authenticated_request(request)
     data = db.get_ops_home_feed(kind=kind, page=page, limit=limit)
     return OpsHomeFeedResponse(
         kind=str(data.get("kind") or "registered"),
@@ -131,8 +137,8 @@ def operator_home_feed(
 
 
 @router.get("/operator/office-climate", response_model=OfficeClimateResponse)
-def operator_office_climate() -> OfficeClimateResponse:
-
+def operator_office_climate(request: Request) -> OfficeClimateResponse:
+    security._require_authenticated_request(request)
     try:
         payload = _main()._load_operator_office_climate()
         if bool(payload.get("available")):
@@ -159,17 +165,19 @@ def operator_office_climate() -> OfficeClimateResponse:
 
 @router.get("/operator/customer-requests", response_model=CustomerTrackRequestListResponse)
 def get_customer_track_requests(
+    request: Request,
     status: str | None = Query(default=None, pattern="^(REQUESTED|PLAYING|RETURNED|CANCELLED)$"),
     limit: int = Query(default=50, ge=1, le=300),
 ) -> CustomerTrackRequestListResponse:
+    security._require_authenticated_request(request)
     rows = db.list_customer_track_requests(status=status, limit=limit)
     items = [_main()._map_to_customer_track_request_item(row) for row in rows]
     return CustomerTrackRequestListResponse(total_count=db.count_customer_track_requests(status=status), items=items)
 
 
 @router.get("/operator/roon/status", response_model=RoonStatusResponse)
-def get_roon_status() -> RoonStatusResponse:
-
+def get_roon_status(request: Request) -> RoonStatusResponse:
+    security._require_authenticated_request(request)
     return RoonStatusResponse(
         connected=_main()._ROON_CONNECTED,
         core_name=_main()._ROON_CORE_NAME,
@@ -180,8 +188,8 @@ def get_roon_status() -> RoonStatusResponse:
 
 
 @router.post("/operator/roon/status/update", response_model=RoonStatusResponse)
-def update_roon_status(payload: RoonStatusUpdateRequest) -> RoonStatusResponse:
-
+def update_roon_status(payload: RoonStatusUpdateRequest, request: Request) -> RoonStatusResponse:
+    _require_operator_request(request)
     if payload.connected is not None:
         _main()._ROON_CONNECTED = payload.connected
     if payload.active_zone is not None:
@@ -194,8 +202,8 @@ def update_roon_status(payload: RoonStatusUpdateRequest) -> RoonStatusResponse:
 
 
 @router.post("/operator/roon/play/{request_id}", response_model=CustomerTrackRequestItem)
-def play_track_via_roon(request_id: int) -> CustomerTrackRequestItem:
-
+def play_track_via_roon(request_id: int, request: Request) -> CustomerTrackRequestItem:
+    _require_operator_request(request)
     row = db.get_customer_track_request(request_id)
     if not row:
         raise HTTPException(status_code=404, detail="Track request not found")
@@ -213,7 +221,8 @@ def play_track_via_roon(request_id: int) -> CustomerTrackRequestItem:
 
 
 @router.get("/operator/customer-requests/now-playing", response_model=list[CustomerTrackRequestItem])
-def get_now_playing_requests() -> list[CustomerTrackRequestItem]:
+def get_now_playing_requests(request: Request) -> list[CustomerTrackRequestItem]:
+    security._require_authenticated_request(request)
     rows = db.list_customer_track_requests(status="PLAYING", limit=10)
     return [_main()._map_to_customer_track_request_item(row) for row in rows]
 
@@ -288,7 +297,7 @@ def operator_artist_context(
     payload: ArtistContextRequest,
     request: Request,
 ) -> ArtistContextResponse:
-    _require_auth(request)
+    _require_operator_request(request)
     result = _main().artist_context_service.build_artist_context(
         payload.artist_name,
         category=payload.category,
@@ -299,6 +308,7 @@ def operator_artist_context(
 
 @router.get("/ops/cafe", include_in_schema=False)
 def ops_cafe_shell(request: Request):
+    security._require_authenticated_request(request)
     import hashlib
     v = request.query_params.get("v")
     STATIC_DIR = _main().STATIC_DIR
