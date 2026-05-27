@@ -79,6 +79,10 @@ _UNSET = object()
 # `AUTO_BACKUP_SETTING_KEYS` lives in app/db/auto_backup.py and is
 # re-exported from this package's __init__ at the bottom of the file.
 
+# ── Connection management (extracted to app.db.connection) ──
+from .connection import get_conn, get_write_conn, utc_now_iso  # noqa: F401
+from .connection import _ensure_parent_dir, _ensure_app_setting_table  # noqa: F401
+
 
 def _domain_code_check_sql() -> str:
     return "', '".join(DOMAIN_CODES)
@@ -825,20 +829,11 @@ def owned_item_storage_sort_changed(
 # re-exported from this package's __init__ at the bottom of the file.
 
 
-def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-# External-response cache surface (get/upsert/touch/purge) lives in
-# app.db.cache now and is re-exported at the bottom of this module.
-
-
-# `_format_order_value` lives in app/db/order_keys.py and is
-# re-exported from this package's __init__ at the bottom of the file.
-
-
-# `_parse_order_value` lives in app/db/order_keys.py and is
-# re-exported from this package's __init__ at the bottom of the file.
+# ── Connection management (extracted to app.db.connection) ──
+# Public symbols: get_conn, get_write_conn, utc_now_iso.
+# Internal helpers: _ensure_parent_dir, _ensure_app_setting_table.
+# _build_label_id / _parse_label_id_query stay in __init__.py (use __init__ constants).
+# Re-exported so ``from app.db import get_conn`` keeps working.
 
 
 def _build_label_id(category: str | None, owned_item_id: int) -> str:
@@ -861,105 +856,6 @@ def _parse_label_id_query(raw_query: str | None) -> tuple[tuple[str, ...], int] 
             continue
         return category_codes, owned_item_id
     return None
-
-
-# `_location_slot_snapshot_in_conn` lives in app/db/owned_item_slot.py and is
-# re-exported from this package's __init__ at the bottom of the file.
-
-
-# `_derive_location_movement_kind` lives in app/db/owned_item_slot.py and is
-# re-exported from this package's __init__ at the bottom of the file.
-
-
-# `_log_owned_item_location_event_in_conn` lives in app/db/owned_item_slot.py and is
-# re-exported from this package's __init__ at the bottom of the file.
-
-
-def _ensure_parent_dir(path: str) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-
-
-def _ensure_app_setting_table(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        f"""
-        CREATE TABLE IF NOT EXISTS app_setting (
-          setting_key TEXT PRIMARY KEY,
-          setting_value TEXT,
-          updated_at TEXT NOT NULL
-        );
-        """
-    )
-
-
-# `_default_auto_backup_dir`, `_upsert_app_setting`,
-# `_auto_backup_settings_from_conn`, plus the public auto-backup
-# read/write surface live in app/db/auto_backup.py and are re-exported
-# from this package's __init__ at the bottom of the file.
-
-
-@contextmanager
-def get_conn() -> Generator[sqlite3.Connection, None, None]:
-    settings = get_settings()
-    _ensure_parent_dir(settings.db_path)
-    conn = sqlite3.connect(
-        settings.db_path,
-        timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
-    )
-    conn.row_factory = sqlite3.Row
-    conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
-    conn.execute("PRAGMA journal_mode = WAL").fetchone()
-    conn.execute("PRAGMA synchronous = NORMAL")
-    conn.execute("PRAGMA foreign_keys = ON")
-    try:
-        yield conn
-        conn.commit()
-    finally:
-        conn.close()
-
-
-@contextmanager
-def get_write_conn() -> Generator[sqlite3.Connection, None, None]:
-    """Connection that begins an IMMEDIATE transaction up-front.
-
-    Use this in place of `get_conn` for any function that performs multiple
-    write statements (inserts/updates/deletes) that must be a single atomic
-    unit, especially when concurrent writers (auto-backup thread, metadata
-    sync worker, user requests) might race for the SQLite WAL write lock.
-
-    With the default DEFERRED isolation, two writers that BEGIN at the same
-    time will both succeed initially and only collide on the first write,
-    which on busy systems leaves one of them with a partial work-set when
-    SQLITE_BUSY fires past the timeout. IMMEDIATE acquires the write lock
-    first, so contenders block at BEGIN — predictably and atomically.
-
-    The connection is configured with `isolation_level=None` (autocommit
-    mode) and we manage `BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` ourselves.
-    """
-    settings = get_settings()
-    _ensure_parent_dir(settings.db_path)
-    conn = sqlite3.connect(
-        settings.db_path,
-        timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
-        isolation_level=None,
-    )
-    conn.row_factory = sqlite3.Row
-    conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
-    conn.execute("PRAGMA journal_mode = WAL").fetchone()
-    conn.execute("PRAGMA synchronous = NORMAL")
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("BEGIN IMMEDIATE")
-    committed = False
-    try:
-        yield conn
-        conn.execute("COMMIT")
-        committed = True
-    finally:
-        if not committed:
-            try:
-                conn.execute("ROLLBACK")
-            except sqlite3.Error:
-                pass
-        conn.close()
 
 
 def init_db() -> None:
@@ -1058,7 +954,7 @@ def init_db() -> None:
               release_type TEXT CHECK (release_type IN ('ALBUM', 'EP', 'SINGLE')),
               item_name_override TEXT,
               quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
-              is_second_hand INTEGER NOT NULL DEFAULT 0,
+              is_second_hand INTEGER NOT NULL DEFAULT 1,
               size_group TEXT NOT NULL CHECK (size_group IN ('{_size_group_check_sql()}')),
               preferred_storage_size_group TEXT CHECK (preferred_storage_size_group IN ('{_size_group_check_sql()}')),
               status TEXT NOT NULL DEFAULT 'IN_COLLECTION' CHECK (status IN ('IN_COLLECTION', 'LOANED', 'SOLD', 'LOST', 'ARCHIVED')),
@@ -1346,6 +1242,13 @@ def init_db() -> None:
               handled_at TEXT,
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
+              weather_temp_c REAL,
+              weather_description TEXT,
+              weather_code INTEGER,
+              season TEXT,
+              playback_deck TEXT,
+              played_at TEXT,
+              returned_at TEXT,
               FOREIGN KEY (owned_item_id) REFERENCES owned_item(id) ON DELETE SET NULL
             );
 
@@ -1626,187 +1529,7 @@ def _seed_metadata_sources(conn: sqlite3.Connection) -> None:
 # re-exported from this package's __init__ at the bottom of the file.
 
 
-def _upsert_music_item_detail_in_conn(
-    conn: sqlite3.Connection,
-    owned_item_id: int,
-    music_detail: dict[str, Any],
-    now: str | None = None,
-) -> None:
-    timestamp = now or utc_now_iso()
-    disc_condition = music_detail.get("disc_condition") or music_detail.get("media_condition")
-    cover_condition = music_detail.get("cover_condition") or music_detail.get("sleeve_condition")
-    has_obi_raw = music_detail.get("has_obi")
-    has_obi_db: int | None = None
-    if isinstance(has_obi_raw, bool):
-        has_obi_db = 1 if has_obi_raw else None
-    elif has_obi_raw in {0, 1}:
-        has_obi_db = 1 if int(has_obi_raw) == 1 else None
-    elif isinstance(has_obi_raw, str):
-        lowered = has_obi_raw.strip().lower()
-        if lowered in {"1", "true", "yes", "y"}:
-            has_obi_db = 1
-    runout_matrix_values_raw = music_detail.get("runout_matrix")
-    if isinstance(runout_matrix_values_raw, list):
-        runout_matrix_values = [str(v).strip() for v in runout_matrix_values_raw if str(v).strip()]
-    elif runout_matrix_values_raw is None:
-        runout_matrix_values = []
-    else:
-        text = str(runout_matrix_values_raw).strip()
-        runout_matrix_values = [p.strip() for p in text.split("|") if p.strip()] if text else []
-    runout_matrix_legacy = " | ".join(runout_matrix_values) if runout_matrix_values else None
-    conn.execute(
-        """
-        INSERT INTO music_item_detail (
-          owned_item_id, format_name, is_promotional_not_for_sale,
-          artist_or_brand, release_year, released_date, barcode,
-          label_name, catalog_no, cover_image_url, track_list_json,
-          media_type, genres_json, styles_json,
-          media_condition, sleeve_condition, disc_count, speed_rpm,
-          has_obi, runout_matrix, runout_matrix_json, pressing_country,
-          disc_type,
-          package_contents, is_limited_edition, edition_number,
-          source_notes, credits_json, identifier_items_json, image_items_json,
-          company_items_json, series_json, format_items_json, track_items_json,
-          label_items_json, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(owned_item_id) DO UPDATE SET
-          format_name = excluded.format_name,
-          is_promotional_not_for_sale = excluded.is_promotional_not_for_sale,
-          artist_or_brand = excluded.artist_or_brand,
-          release_year = excluded.release_year,
-          released_date = excluded.released_date,
-          barcode = excluded.barcode,
-          label_name = excluded.label_name,
-          catalog_no = excluded.catalog_no,
-          cover_image_url = excluded.cover_image_url,
-          track_list_json = excluded.track_list_json,
-          media_type = excluded.media_type,
-          genres_json = excluded.genres_json,
-          styles_json = excluded.styles_json,
-          media_condition = excluded.media_condition,
-          sleeve_condition = excluded.sleeve_condition,
-          disc_count = excluded.disc_count,
-          speed_rpm = excluded.speed_rpm,
-          has_obi = excluded.has_obi,
-          runout_matrix = excluded.runout_matrix,
-          runout_matrix_json = excluded.runout_matrix_json,
-          pressing_country = excluded.pressing_country,
-          disc_type = excluded.disc_type,
-          package_contents = excluded.package_contents,
-          is_limited_edition = excluded.is_limited_edition,
-          edition_number = excluded.edition_number,
-          source_notes = excluded.source_notes,
-          credits_json = excluded.credits_json,
-          identifier_items_json = excluded.identifier_items_json,
-          image_items_json = excluded.image_items_json,
-          company_items_json = excluded.company_items_json,
-          series_json = excluded.series_json,
-          format_items_json = excluded.format_items_json,
-          track_items_json = excluded.track_items_json,
-          label_items_json = excluded.label_items_json,
-          updated_at = excluded.updated_at
-        """,
-        (
-            owned_item_id,
-            music_detail.get("format_name"),
-            1 if music_detail.get("is_promotional_not_for_sale") else 0,
-            music_detail.get("artist_or_brand"),
-            music_detail.get("release_year"),
-            music_detail.get("released_date"),
-            music_detail.get("barcode"),
-            music_detail.get("label_name"),
-            music_detail.get("catalog_no"),
-            music_detail.get("cover_image_url"),
-            json.dumps(music_detail.get("track_list", []), ensure_ascii=True),
-            music_detail.get("media_type"),
-            json.dumps(music_detail.get("genres", []), ensure_ascii=True),
-            json.dumps(music_detail.get("styles", []), ensure_ascii=True),
-            disc_condition,
-            cover_condition,
-            music_detail.get("disc_count"),
-            music_detail.get("speed_rpm"),
-            has_obi_db,
-            runout_matrix_legacy,
-            json.dumps(runout_matrix_values, ensure_ascii=True),
-            music_detail.get("pressing_country"),
-            music_detail.get("disc_type"),
-            music_detail.get("package_contents") or None,
-            (1 if music_detail.get("is_limited_edition") else 0) if music_detail.get("is_limited_edition") is not None else None,
-            music_detail.get("edition_number") or None,
-            music_detail.get("source_notes"),
-            json.dumps(music_detail.get("credits", []), ensure_ascii=True),
-            json.dumps(music_detail.get("identifier_items", []), ensure_ascii=True),
-            json.dumps(music_detail.get("image_items", []), ensure_ascii=True),
-            json.dumps(music_detail.get("company_items", []), ensure_ascii=True),
-            json.dumps(music_detail.get("series", []), ensure_ascii=True),
-            json.dumps(music_detail.get("format_items", []), ensure_ascii=True),
-            json.dumps(music_detail.get("track_items", []), ensure_ascii=True),
-            json.dumps(music_detail.get("label_items", []), ensure_ascii=True),
-            timestamp,
-            timestamp,
-        ),
-    )
-
-
-def _upsert_goods_item_detail_in_conn(
-    conn: sqlite3.Connection,
-    owned_item_id: int,
-    goods_detail: dict[str, Any],
-    now: str | None = None,
-) -> None:
-    timestamp = now or utc_now_iso()
-    image_urls_raw = goods_detail.get("image_urls")
-    if isinstance(image_urls_raw, list):
-        image_urls = [str(v).strip() for v in image_urls_raw if str(v).strip()]
-    elif image_urls_raw is None:
-        image_urls = []
-    else:
-        text = str(image_urls_raw).strip()
-        image_urls = [part.strip() for part in text.splitlines() if part.strip()] if text else []
-
-    primary_image_url = str(goods_detail.get("primary_image_url") or "").strip() or None
-    if primary_image_url is None and image_urls:
-        primary_image_url = image_urls[0]
-
-    poster_storage_spec = str(goods_detail.get("poster_storage_spec") or "").strip() or None
-    tshirt_size = str(goods_detail.get("tshirt_size") or "").strip() or None
-    cup_material = str(goods_detail.get("cup_material") or "").strip() or None
-    hat_size = str(goods_detail.get("hat_size") or "").strip() or None
-
-    conn.execute(
-        """
-        INSERT INTO goods_item_detail (
-          owned_item_id,
-          image_urls_json,
-          primary_image_url,
-          poster_storage_spec,
-          tshirt_size,
-          cup_material,
-          hat_size,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(owned_item_id) DO UPDATE SET
-          image_urls_json = excluded.image_urls_json,
-          primary_image_url = excluded.primary_image_url,
-          poster_storage_spec = excluded.poster_storage_spec,
-          tshirt_size = excluded.tshirt_size,
-          cup_material = excluded.cup_material,
-          hat_size = excluded.hat_size,
-          updated_at = excluded.updated_at
-        """,
-        (
-            owned_item_id,
-            json.dumps(image_urls, ensure_ascii=True),
-            primary_image_url,
-            poster_storage_spec,
-            tshirt_size,
-            cup_material,
-            hat_size,
-            timestamp,
-            timestamp,
-        ),
-    )
+# owned_item 상세 upsert → app/db/owned_item_detail.py (re-exported below)
 
 
 # `_sync_owned_item_classifications_in_conn` lives in app/db/owned_item_write.py and is
@@ -1829,268 +1552,7 @@ def _upsert_goods_item_detail_in_conn(
 # re-exported from this package's __init__ at the bottom of the file.
 
 
-def _owned_item_select_query() -> str:
-    return """
-      SELECT
-        oi.id,
-        oi.master_item_id,
-        oi.linked_album_master_id,
-        oi.linked_artist_name,
-        oi.copy_group_key,
-        oi.category,
-        oi.domain_code,
-        oi.release_type,
-        oi.item_name_override,
-        oi.quantity,
-        oi.size_group,
-        COALESCE(oi.preferred_storage_size_group, oi.size_group) AS preferred_storage_size_group,
-        oi.status,
-        oi.condition_grade,
-        oi.display_rank,
-        oi.order_key,
-        oi.storage_slot_id,
-        ss.slot_code,
-        oi.is_second_hand,
-        oi.signature_type,
-        oi.source_code,
-        oi.source_external_id,
-        oi.purchase_price,
-        oi.currency_code,
-        oi.purchase_source,
-        oi.memory_note,
-        oi.thickness_mm,
-        oi.notes,
-        oi.created_at,
-        oi.updated_at,
-        mid.format_name,
-        mid.artist_or_brand,
-        mid.release_year,
-        mid.released_date,
-        am.title AS master_title,
-        am.artist_or_brand AS master_artist_or_brand,
-        am.sort_artist_name AS master_sort_artist_name,
-        am.release_year AS master_release_year,
-        mid.barcode,
-        mid.label_name,
-        mid.catalog_no,
-        COALESCE(mid.cover_image_url, gid.primary_image_url) AS cover_image_url,
-        mid.track_list_json,
-        mid.media_type,
-        mid.genres_json,
-        mid.styles_json,
-        mid.disc_count,
-        mid.speed_rpm,
-        mid.has_obi,
-        mid.runout_matrix,
-        mid.runout_matrix_json,
-        mid.pressing_country,
-        mid.disc_type,
-        mid.package_contents,
-        mid.is_limited_edition,
-        mid.edition_number,
-        mid.source_notes,
-        mid.credits_json,
-        mid.identifier_items_json,
-        mid.image_items_json,
-        mid.company_items_json,
-        mid.series_json,
-        mid.format_items_json,
-        mid.track_items_json,
-        mid.label_items_json,
-        mid.sleeve_condition AS cover_condition,
-        mid.media_condition AS disc_condition,
-        mid.is_promotional_not_for_sale,
-        gid.image_urls_json,
-        gid.primary_image_url AS goods_primary_image_url,
-        gid.poster_storage_spec,
-        gid.tshirt_size,
-        gid.cup_material,
-        gid.hat_size,
-        COALESCE((
-          SELECT GROUP_CONCAT(co.id)
-          FROM owned_item_subtype ois
-          JOIN classification_option co ON co.id = ois.option_id
-          WHERE ois.owned_item_id = oi.id
-          ORDER BY co.sort_order ASC, co.id ASC
-        ), '') AS subtype_option_ids_csv,
-        COALESCE((
-          SELECT GROUP_CONCAT(co.label, '|')
-          FROM owned_item_subtype ois
-          JOIN classification_option co ON co.id = ois.option_id
-          WHERE ois.owned_item_id = oi.id
-          ORDER BY co.sort_order ASC, co.id ASC
-        ), '') AS subtype_labels_csv,
-        COALESCE((
-          SELECT GROUP_CONCAT(co.id)
-          FROM owned_item_soundtrack ois
-          JOIN classification_option co ON co.id = ois.option_id
-          WHERE ois.owned_item_id = oi.id
-          ORDER BY co.sort_order ASC, co.id ASC
-        ), '') AS soundtrack_option_ids_csv,
-        COALESCE((
-          SELECT GROUP_CONCAT(co.label, '|')
-          FROM owned_item_soundtrack ois
-          JOIN classification_option co ON co.id = ois.option_id
-          WHERE ois.owned_item_id = oi.id
-          ORDER BY co.sort_order ASC, co.id ASC
-        ), '') AS soundtrack_labels_csv,
-        COALESCE((
-          SELECT COUNT(*)
-          FROM owned_item_digital_link l
-          JOIN digital_asset da ON da.id = l.digital_asset_id
-          WHERE l.owned_item_id = oi.id
-            AND da.asset_type = 'AUDIO'
-        ), 0) AS audio_asset_count
-      FROM owned_item oi
-      LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
-      LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-      LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
-      LEFT JOIN goods_item_detail gid ON gid.owned_item_id = oi.id
-    """
-
-
-def _normalize_owned_item_row(obj: dict[str, Any]) -> dict[str, Any]:
-    track_list_raw = obj.pop("track_list_json", None)
-    if track_list_raw:
-        try:
-            track_list = json.loads(track_list_raw)
-            obj["track_list"] = track_list if isinstance(track_list, list) else []
-        except json.JSONDecodeError:
-            obj["track_list"] = []
-    else:
-        obj["track_list"] = []
-
-    genres_raw = obj.pop("genres_json", None)
-    if genres_raw:
-        try:
-            parsed_genres = json.loads(genres_raw)
-            obj["genres"] = [str(v).strip() for v in parsed_genres if str(v).strip()] if isinstance(parsed_genres, list) else []
-        except json.JSONDecodeError:
-            obj["genres"] = []
-    else:
-        obj["genres"] = []
-
-    styles_raw = obj.pop("styles_json", None)
-    if styles_raw:
-        try:
-            parsed_styles = json.loads(styles_raw)
-            obj["styles"] = [str(v).strip() for v in parsed_styles if str(v).strip()] if isinstance(parsed_styles, list) else []
-        except json.JSONDecodeError:
-            obj["styles"] = []
-    else:
-        obj["styles"] = []
-
-    goods_images_raw = obj.pop("image_urls_json", None)
-    goods_image_urls: list[str] = []
-    if goods_images_raw:
-        try:
-            parsed_goods_images = json.loads(str(goods_images_raw))
-            if isinstance(parsed_goods_images, list):
-                goods_image_urls = [str(v).strip() for v in parsed_goods_images if str(v).strip()]
-        except json.JSONDecodeError:
-            goods_image_urls = []
-    obj["goods_image_urls"] = goods_image_urls
-    goods_primary_image_url = str(obj.pop("goods_primary_image_url", "") or "").strip() or None
-    if goods_primary_image_url is None and goods_image_urls:
-        goods_primary_image_url = goods_image_urls[0]
-    obj["goods_primary_image_url"] = goods_primary_image_url
-    obj["poster_storage_spec"] = str(obj.get("poster_storage_spec") or "").strip() or None
-    obj["tshirt_size"] = str(obj.get("tshirt_size") or "").strip() or None
-    obj["cup_material"] = str(obj.get("cup_material") or "").strip() or None
-    obj["hat_size"] = str(obj.get("hat_size") or "").strip() or None
-
-    obj["is_second_hand"] = bool(obj.get("is_second_hand"))
-    if obj.get("recently_moved_to_current_slot") is not None:
-        obj["recently_moved_to_current_slot"] = bool(obj.get("recently_moved_to_current_slot"))
-    if obj.get("is_promotional_not_for_sale") is not None:
-        obj["is_promotional_not_for_sale"] = bool(obj.get("is_promotional_not_for_sale"))
-    if obj.get("is_limited_edition") is not None:
-        obj["is_limited_edition"] = bool(int(obj.get("is_limited_edition") or 0))
-    if obj.get("has_obi") is not None:
-        obj["has_obi"] = True if int(obj.get("has_obi")) == 1 else None
-
-    runout_json_raw = obj.pop("runout_matrix_json", None)
-    runout_values: list[str] = []
-    if runout_json_raw:
-        try:
-            parsed_runout = json.loads(runout_json_raw)
-            if isinstance(parsed_runout, list):
-                runout_values = [str(v).strip() for v in parsed_runout if str(v).strip()]
-        except json.JSONDecodeError:
-            runout_values = []
-    if not runout_values:
-        legacy_runout = str(obj.get("runout_matrix") or "").strip()
-        if legacy_runout:
-            runout_values = [p.strip() for p in legacy_runout.split("|") if p.strip()]
-    obj["runout_matrix"] = runout_values
-
-    def _json_to_string_list(raw: Any) -> list[str]:
-        if not raw:
-            return []
-        try:
-            parsed = json.loads(str(raw))
-        except json.JSONDecodeError:
-            return []
-        if not isinstance(parsed, list):
-            return []
-        return [str(v).strip() for v in parsed if str(v).strip()]
-
-    def _json_to_dict_list(raw: Any) -> list[dict[str, Any]]:
-        if not raw:
-            return []
-        try:
-            parsed = json.loads(str(raw))
-        except json.JSONDecodeError:
-            return []
-        if not isinstance(parsed, list):
-            return []
-        out: list[dict[str, Any]] = []
-        for row in parsed:
-            if isinstance(row, dict):
-                out.append(row)
-        return out
-
-    obj["credits"] = _json_to_string_list(obj.pop("credits_json", None))
-    obj["identifier_items"] = _json_to_dict_list(obj.pop("identifier_items_json", None))
-    obj["image_items"] = _json_to_dict_list(obj.pop("image_items_json", None))
-    obj["company_items"] = _json_to_dict_list(obj.pop("company_items_json", None))
-    obj["series"] = _json_to_string_list(obj.pop("series_json", None))
-    obj["format_items"] = _json_to_dict_list(obj.pop("format_items_json", None))
-    obj["track_items"] = _json_to_dict_list(obj.pop("track_items_json", None))
-    obj["label_items"] = _json_to_dict_list(obj.pop("label_items_json", None))
-
-    def _csv_to_int_list(raw: Any) -> list[int]:
-        text = str(raw or "").strip()
-        if not text:
-            return []
-        out: list[int] = []
-        for part in text.split(","):
-            p = str(part).strip()
-            if not p:
-                continue
-            try:
-                value = int(p)
-            except ValueError:
-                continue
-            if value > 0:
-                out.append(value)
-        return out
-
-    def _csv_to_label_list(raw: Any) -> list[str]:
-        text = str(raw or "").strip()
-        if not text:
-            return []
-        return [p.strip() for p in text.split("|") if p.strip()]
-
-    obj["subtype_option_ids"] = _csv_to_int_list(obj.pop("subtype_option_ids_csv", None))
-    obj["subtype_labels"] = _csv_to_label_list(obj.pop("subtype_labels_csv", None))
-    obj["soundtrack_option_ids"] = _csv_to_int_list(obj.pop("soundtrack_option_ids_csv", None))
-    obj["soundtrack_labels"] = _csv_to_label_list(obj.pop("soundtrack_labels_csv", None))
-
-    audio_count = int(obj.get("audio_asset_count") or 0)
-    obj["audio_asset_count"] = audio_count
-    obj["has_audio"] = audio_count > 0
-    return obj
+# owned_item SELECT 쿼리/정규화 → app/db/owned_item_select.py (re-exported below)
 
 
 # `list_owned_items` lives in app/db/owned_item_query.py and is
@@ -2206,6 +1668,18 @@ from .owned_item_track import (  # noqa: E402
     get_owned_item_location_snapshot,
     get_owned_item_track_list,
 )
+# owned_item_select / owned_item_detail MUST be re-exported BEFORE owned_item_read
+# (owned_item_read imports _normalize_owned_item_row at module load time).
+from .owned_item_select import (  # noqa: E402
+    _owned_item_select_query,
+    _normalize_owned_item_row,
+)
+# owned_item_detail MUST be re-exported BEFORE owned_item_write / metadata_sync.
+from .owned_item_detail import (  # noqa: E402
+    _upsert_music_item_detail_in_conn,
+    _upsert_goods_item_detail_in_conn,
+)
+
 # owned_item_read MUST be re-exported BEFORE customer_track_request
 # (which imports `get_owned_item_detail` at module-load time) AND
 # BEFORE owned_item_order (which imports `get_owned_item` at
@@ -2296,6 +1770,11 @@ from .schema_migration import (  # noqa: E402
     SCHEMA_VERSION,
     _apply_migrations,
     _read_user_version,
+    _run_pending_migrations,
+    _apply_migrations_legacy,
+    _MIGRATIONS_BY_VERSION,
+    _owned_item_allows_goods,
+    _migrate_owned_item_allow_goods,
 )
 from .cabinet_camera import (  # noqa: E402
     delete_cabinet_camera,
@@ -2443,3 +1922,4 @@ from .owned_item_write import (  # noqa: E402
     insert_owned_item,
     update_owned_item,
 )
+
