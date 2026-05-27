@@ -6,9 +6,16 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from .. import db
 from .. import security
+from .discogs_integration import get_discogs_release_collector_info
 from ..schemas import (
+    DomainCode,
     GoodsCategory,
+    GoodsCollectibleRelationState,
     GoodsLinkedState,
+    GoodsStatus,
+    OpsCollectorInfoResponse,
+    ProductGroupCreateRequest,
+    CabinetCameraConnectionTestRequest,
     CabinetCameraConnectionTestResponse,
     CabinetCameraDeleteResponse,
     CabinetCameraDiscoveryItem,
@@ -262,7 +269,7 @@ def get_cabinet_cameras(
 ) -> list[CabinetCameraItem]:
     _require_authenticated_request(request)
     rows = db.list_cabinet_cameras(cabinet_name=cabinet_name)
-    return [_cabinet_camera_item_from_row(row) for row in rows]
+    return [_main()._cabinet_camera_item_from_row(row) for row in rows]
 
 
 @router.post("/cabinet-cameras", response_model=CabinetCameraItem)
@@ -289,7 +296,7 @@ def create_or_update_cabinet_camera(
         raise HTTPException(status_code=400, detail=str(err)) from err
     if row is None:
         raise HTTPException(status_code=500, detail="cabinet camera save failed")
-    return _cabinet_camera_item_from_row(row)
+    return _main()._cabinet_camera_item_from_row(row)
 
 
 @router.get("/cabinet-cameras/discover", response_model=list[CabinetCameraDiscoveryItem])
@@ -298,7 +305,7 @@ def discover_cabinet_cameras(
     timeout_ms: int = Query(default=2500, ge=500, le=10000),
 ) -> list[CabinetCameraDiscoveryItem]:
     _require_admin_request(request)
-    rows = _discover_onvif_devices(timeout_seconds=float(timeout_ms) / 1000.0)
+    rows = _main()._discover_onvif_devices(timeout_seconds=float(timeout_ms) / 1000.0)
     return [CabinetCameraDiscoveryItem(**row) for row in rows]
 
 
@@ -318,7 +325,7 @@ def test_cabinet_camera_connection(
             if password is None:
                 password = str(existing.get("password") or "") or None
     try:
-        result = _test_onvif_camera_connection(
+        result = _main()._test_onvif_camera_connection(
             payload.onvif_device_url,
             username=username,
             password=password,
@@ -389,3 +396,211 @@ def get_cabinet_camera_snapshot(camera_id: int, request: Request) -> Response:
     if snapshot_url is None:
         raise HTTPException(status_code=400, detail="snapshot_url or rtsp stream not configured")
     raise HTTPException(status_code=502, detail=last_error or "camera snapshot unavailable")
+
+# ═══════════════════════════════════════════════════════════════════
+# Phase N-3: Collector info + product groups
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/ops/owned-items/{owned_item_id}/collector-info", response_model=OpsCollectorInfoResponse)
+def get_ops_owned_item_collector_info(owned_item_id: int, request: Request) -> OpsCollectorInfoResponse:
+    _require_authenticated_request(request)
+    payload = _build_ops_owned_item_collector_info_payload(owned_item_id=owned_item_id)
+    return OpsCollectorInfoResponse(**payload)
+
+
+def _build_ops_owned_item_collector_info_payload(owned_item_id: int) -> dict[str, Any]:
+    item_id = int(owned_item_id or 0)
+    if item_id <= 0:
+        return {
+            "available": False,
+            "owned_item_id": item_id,
+            "source_code": None,
+            "source_external_id": None,
+            "fallback_reason": "INVALID_OWNED_ITEM",
+            "fallback_message": "invalid owned_item_id",
+            "release_title": None,
+            "artist_or_brand": None,
+            "country": None,
+            "pressing_country": None,
+            "label_name": None,
+            "catalog_no": None,
+            "barcode": None,
+            "formats": [],
+            "format_items": [],
+            "disc_count": None,
+            "speed_rpm": None,
+            "runout_sample": None,
+            "other_versions_count": 0,
+            "external_links": [],
+        }
+
+    row = db.get_owned_item_detail(item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned item not found")
+
+    source_code = str(row.get("source_code") or "").strip().upper() or None
+    source_external_id = str(row.get("source_external_id") or "").strip() or None
+    if source_code != "DISCOGS" or not source_external_id:
+        reason = "MISSING_LINK" if not source_external_id else "UNSUPPORTED_SOURCE"
+        message = (
+            "collector info is available only for Discogs-linked items."
+            if reason == "UNSUPPORTED_SOURCE"
+            else "collector info requires a linked Discogs release id."
+        )
+        return {
+            "available": False,
+            "owned_item_id": item_id,
+            "source_code": source_code,
+            "source_external_id": source_external_id,
+            "fallback_reason": reason,
+            "fallback_message": message,
+            "release_title": None,
+            "artist_or_brand": None,
+            "country": None,
+            "pressing_country": None,
+            "label_name": None,
+            "catalog_no": None,
+            "barcode": None,
+            "formats": [],
+            "format_items": [],
+            "disc_count": None,
+            "speed_rpm": None,
+            "runout_sample": None,
+            "other_versions_count": 0,
+            "external_links": [],
+        }
+
+    try:
+        collector_data = get_discogs_release_collector_info(release_id=source_external_id)
+    except HTTPException:
+        return {
+            "available": False,
+            "owned_item_id": item_id,
+            "source_code": source_code,
+            "source_external_id": source_external_id,
+            "fallback_reason": "SNAPSHOT_UNAVAILABLE",
+            "fallback_message": "Discogs collector data is not available yet.",
+            "release_title": None,
+            "artist_or_brand": None,
+            "country": None,
+            "pressing_country": None,
+            "label_name": None,
+            "catalog_no": None,
+            "barcode": None,
+            "formats": [],
+            "format_items": [],
+            "disc_count": None,
+            "speed_rpm": None,
+            "runout_sample": None,
+            "other_versions_count": 0,
+            "external_links": [f"https://www.discogs.com/release/{source_external_id}"],
+        }
+
+    m = _main()
+    raw_formats = collector_data.get("formats") or []
+    formats = m._clean_string_list(raw_formats)
+    format_items = collector_data.get("format_items")
+    if not isinstance(format_items, list):
+        format_items = []
+    label_items = collector_data.get("label_items")
+    if not isinstance(label_items, list):
+        label_items = []
+    label_name = None
+    catalog_no = m._discogs_catalog_no(collector_data.get("catalog_no"))
+    for label_row in label_items:
+        if not isinstance(label_row, dict):
+            continue
+        if label_name is None:
+            label_name = m._clean_text(label_row.get("name"))
+        if catalog_no is None:
+            catalog_no = m._discogs_catalog_no(label_row.get("catno"))
+        if label_name and catalog_no:
+            break
+    runout_matrix = [str(v or "").strip() for v in collector_data.get("runout_matrix") or []]
+    runout_sample_values = [v for v in runout_matrix if v]
+    other_versions = collector_data.get("other_versions")
+    other_versions_count = len(other_versions) if isinstance(other_versions, list) else 0
+    return {
+        "available": True,
+        "owned_item_id": item_id,
+        "source_code": source_code,
+        "source_external_id": source_external_id,
+        "release_title": m._clean_text(collector_data.get("title")),
+        "artist_or_brand": m._clean_text(collector_data.get("artist_or_brand")),
+        "country": m._clean_text(collector_data.get("country")),
+        "pressing_country": m._clean_text(collector_data.get("pressing_country")),
+        "label_name": label_name,
+        "catalog_no": catalog_no,
+        "barcode": m._clean_text(collector_data.get("barcode")),
+        "formats": formats,
+        "format_items": format_items,
+        "disc_count": collector_data.get("disc_count"),
+        "speed_rpm": collector_data.get("speed_rpm"),
+        "runout_sample": " | ".join(runout_sample_values[:2]) if runout_sample_values else None,
+        "other_versions_count": other_versions_count,
+        "external_links": [f"https://www.discogs.com/release/{source_external_id}"],
+        "fallback_reason": None,
+        "fallback_message": None,
+    }
+
+
+@router.get("/product-groups")
+def list_product_groups(
+    request: Request,
+    q: str | None = Query(default=None),
+    limit: int = Query(default=12, ge=1, le=100),
+) -> list[dict[str, Any]]:
+    _require_admin_request(request)
+    query_text = str(q or "").strip().lower()
+    with db.get_conn() as conn:
+        if query_text:
+            like = f"%{query_text}%"
+            rows = conn.execute(
+                """
+                SELECT id, group_type, group_name, status
+                FROM product_group
+                WHERE LOWER(group_name) LIKE ?
+                  AND status = 'ACTIVE'
+                ORDER BY group_name ASC, id ASC
+                LIMIT ?
+                """,
+                (like, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """
+                SELECT id, group_type, group_name, status
+                FROM product_group
+                WHERE status = 'ACTIVE'
+                ORDER BY group_name ASC, id ASC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+    return [dict(row) for row in rows]
+
+
+@router.post("/product-groups")
+def create_product_group(payload: ProductGroupCreateRequest, request: Request) -> dict[str, Any]:
+    _require_admin_request(request)
+    group_type = str(payload.group_type or "SERIES").strip().upper()
+    group_name = str(payload.group_name or "").strip()
+    if not group_name:
+        raise HTTPException(status_code=400, detail="group_name is required")
+    now = db.utc_now_iso()
+    with db.get_conn() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO product_group (
+              group_type,
+              group_name,
+              description,
+              status,
+              created_at,
+              updated_at
+            ) VALUES (?, ?, ?, 'ACTIVE', ?, ?)
+            """,
+            (group_type, group_name, payload.description, now, now),
+        )
+        group_id = cur.lastrowid
+    return {"id": group_id, "group_type": group_type, "group_name": group_name}

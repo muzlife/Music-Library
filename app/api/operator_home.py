@@ -5,11 +5,14 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from .. import db
 from .. import security
 from ..schemas import (
+    ArtistContextRequest,
+    ArtistContextResponse,
     CustomerTrackRequestCreate,
     CustomerTrackRequestItem,
     CustomerTrackRequestListResponse,
@@ -17,6 +20,7 @@ from ..schemas import (
     OfficeClimateResponse,
     OperatorCatalogSearchResponse,
     OpsHomeFeedResponse,
+    OpsHomeRecentItem,
     OpsHomeRecentSectionsResponse,
     OperatorCatalogSearchItem,
     RoonStatusResponse,
@@ -274,3 +278,42 @@ def patch_customer_track_request(
     if row is None:
         raise HTTPException(status_code=404, detail="customer request not found")
     return _main()._map_to_customer_track_request_item(row)
+
+# ═══════════════════════════════════════════════════════════════════
+# Phase N-1: operator_artist_context + ops_cafe_shell
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post("/ops/artist-context", response_model=ArtistContextResponse)
+def operator_artist_context(
+    payload: ArtistContextRequest,
+    request: Request,
+) -> ArtistContextResponse:
+    _require_auth(request)
+    result = _main().artist_context_service.build_artist_context(
+        payload.artist_name,
+        category=payload.category,
+        locale=payload.locale,
+    )
+    return ArtistContextResponse(**result)
+
+
+@router.get("/ops/cafe", include_in_schema=False)
+def ops_cafe_shell(request: Request):
+    import hashlib
+    v = request.query_params.get("v")
+    STATIC_DIR = _main().STATIC_DIR
+    try:
+        file_hash = hashlib.md5((STATIC_DIR / "ops_cafe.html").read_bytes()).hexdigest()[:8]
+    except Exception:
+        file_hash = "0"
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/ops/cafe?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        if _main()._is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "ops_cafe.html", headers=serve_headers)

@@ -25,6 +25,9 @@ from ..schemas import (
     MetadataProviderSettingsResponse,
     MetadataProviderSettingsUpdateRequest,
     OpsCollectorInfoResponse,
+    OpsPlacementHintRecommendation,
+    OpsPlacementHintRequest,
+    OpsPlacementHintResponse,
 )
 from ..services import artist_context as artist_context_service
 
@@ -38,6 +41,10 @@ def _main():
 
 def _require_admin_request(request: Request) -> None:
     security._require_admin_request(request)
+
+
+def _require_authenticated_request(request: Request) -> None:
+    security._require_authenticated_request(request)
 
 
 @router.get("/health")
@@ -353,3 +360,196 @@ def tool_docs(doc_key: str) -> FileResponse:
     if doc_path.suffix.lower() == ".csv":
         media_type = "text/csv; charset=utf-8"
     return FileResponse(doc_path, media_type=media_type, filename=doc_path.name)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Phase N-2: Ops placement hints
+# ═══════════════════════════════════════════════════════════════════
+
+def _normalize_ops_placement_hint_reason_code(reason: Any, used_fallback_slot: bool) -> str:
+    parts = [part.strip().upper() for part in str(reason or "").split("/") if part.strip()]
+    if not parts:
+        return "NO_HINTS"
+    if any(part in {"INVALID_SIZE_GROUP", "NO_ANCHOR", "NO_SLOT"} for part in parts):
+        return "NO_HINTS"
+    if any(part.startswith("SAME_ARTIST") for part in parts):
+        return "SAME_ARTIST"
+    if any("DOMAIN" in part for part in parts):
+        return "DOMAIN_MATCH"
+    if any(part.startswith("ANCHOR") or part.startswith("SAME_GROUP") for part in parts):
+        return "ANCHOR_PATTERN"
+    if used_fallback_slot or any(part in {"ARTIST_SLOT", "LEAST_OCCUPIED_SLOT", "FALLBACK_COLLECTION_TAIL"} for part in parts):
+        return "ROOMY_FALLBACK"
+    return "ROOMY_FALLBACK" if any("FALLBACK" in part for part in parts) else "ANCHOR_PATTERN"
+
+
+def _ops_placement_hint_reason_message(reason_code: str, slot_code: str | None, slot_display_name: str | None) -> str:
+    messages = {
+        "SAME_ARTIST": "같은 아티스트의 인접 배치 힌트입니다.",
+        "DOMAIN_MATCH": "도메인이 맞는 위치를 우선했습니다.",
+        "ANCHOR_PATTERN": "기존 배치 순서를 잇는 앵커 패턴입니다.",
+        "ROOMY_FALLBACK": "여유 공간이 있는 대안 위치입니다.",
+        "NO_HINTS": "추천 근거를 찾지 못했습니다.",
+    }
+    base_message = messages.get(str(reason_code or "").strip().upper(), "추천 근거를 계산했습니다.")
+    location_label = str(slot_display_name or "").strip() or str(slot_code or "").strip()
+    if location_label and reason_code != "NO_HINTS":
+        return f"{base_message} ({location_label})"
+    return base_message
+
+
+def _build_ops_placement_hint_recommendation(
+    *,
+    rank: int,
+    storage_slot_id: int,
+    slot_code: str | None,
+    slot_display_name: str | None,
+    reason_code: str,
+    reason_message: str,
+) -> dict[str, Any]:
+    clean_slot_code = str(slot_code or "").strip() or f"SLOT-{storage_slot_id}"
+    clean_slot_display_name = str(slot_display_name or "").strip() or clean_slot_code
+    return {
+        "rank": rank,
+        "storage_slot_id": storage_slot_id,
+        "slot_code": clean_slot_code,
+        "slot_display_name": clean_slot_display_name,
+        "reason_code": reason_code,
+        "reason_message": reason_message,
+    }
+
+
+def _build_ops_placement_hint_payload(owned_item_id: int) -> dict[str, Any]:
+    item_id = int(owned_item_id or 0)
+    detail_row = db.get_owned_item_detail(item_id) if item_id > 0 else None
+    if not detail_row:
+        return {
+            "available": False,
+            "recommendations": [],
+            "fallback_reason": "NO_HINTS",
+            "fallback_message": "추천 가능한 위치를 찾지 못했습니다.",
+        }
+
+    m = _main()
+    preferred_size_group = m._preferred_storage_size_group(
+        str(detail_row.get("preferred_storage_size_group") or ""),
+        str(detail_row.get("size_group") or ""),
+    )
+    artist_or_brand = (
+        m._clean_text(detail_row.get("linked_artist_name"))
+        or m._clean_text(detail_row.get("artist_or_brand"))
+        or m._clean_text(detail_row.get("master_artist_or_brand"))
+    )
+    _raw_item_name = m._clean_text(detail_row.get("item_name_override")) or m._clean_text(detail_row.get("master_title"))
+    item_title = (
+        f"{artist_or_brand} - {_raw_item_name}"
+        if artist_or_brand and m._clean_text(detail_row.get("item_name_override"))
+        else _raw_item_name
+    )
+    raw_year = detail_row.get("master_release_year") if detail_row.get("master_release_year") is not None else detail_row.get("release_year")
+    try:
+        release_year = int(raw_year) if raw_year is not None else None
+    except (TypeError, ValueError):
+        release_year = None
+
+    suggestion = db.recommend_owned_item_location(
+        size_group=preferred_size_group,
+        artist_or_brand=artist_or_brand,
+        release_year=release_year,
+        released_date=m._clean_text(detail_row.get("released_date")),
+        domain_code=m._normalize_domain_code(detail_row.get("domain_code") or detail_row.get("master_domain_code")),
+        item_title=item_title,
+        exclude_owned_item_id=item_id,
+        incoming_thickness_mm=int(detail_row["thickness_mm"]) if detail_row.get("thickness_mm") not in (None, "") else None,
+        incoming_format_name=m._clean_text(detail_row.get("format_name")),
+        incoming_package_hint=m._clean_text(detail_row.get("notes")),
+    )
+    if not suggestion:
+        return {
+            "available": False,
+            "recommendations": [],
+            "fallback_reason": "NO_HINTS",
+            "fallback_message": "추천 가능한 위치를 찾지 못했습니다.",
+        }
+
+    used_fallback_slot = bool(suggestion.get("used_fallback_slot"))
+    reason_code = _normalize_ops_placement_hint_reason_code(suggestion.get("reason"), used_fallback_slot)
+    primary_reason_code = reason_code if reason_code != "NO_HINTS" else "ROOMY_FALLBACK"
+    recommendations: list[dict[str, Any]] = []
+    seen_slot_ids: set[int] = set()
+
+    primary_slot_id = int(suggestion.get("recommended_storage_slot_id") or 0)
+    if primary_slot_id > 0:
+        primary_slot = db.get_storage_slot(primary_slot_id)
+        primary_slot_code = str((primary_slot or {}).get("slot_code") or suggestion.get("slot_code") or "").strip()
+        primary_slot_display_name = (
+            str((primary_slot or {}).get("display_name") or "").strip()
+            or primary_slot_code
+            or f"SLOT-{primary_slot_id}"
+        )
+        recommendations.append(
+            _build_ops_placement_hint_recommendation(
+                rank=1,
+                storage_slot_id=primary_slot_id,
+                slot_code=primary_slot_code,
+                slot_display_name=primary_slot_display_name,
+                reason_code=primary_reason_code,
+                reason_message=_ops_placement_hint_reason_message(
+                    primary_reason_code,
+                    primary_slot_code,
+                    primary_slot_display_name,
+                ),
+            )
+        )
+        seen_slot_ids.add(primary_slot_id)
+
+    candidate_reason_code = "ROOMY_FALLBACK" if primary_reason_code == "ROOMY_FALLBACK" else primary_reason_code
+    for candidate in suggestion.get("candidate_slots") or []:
+        if len(recommendations) >= 3 or not isinstance(candidate, dict):
+            break
+        storage_slot_id = int(candidate.get("storage_slot_id") or 0)
+        if storage_slot_id <= 0 or storage_slot_id in seen_slot_ids:
+            continue
+        candidate_slot = db.get_storage_slot(storage_slot_id)
+        slot_code = str(candidate.get("slot_code") or (candidate_slot or {}).get("slot_code") or "").strip()
+        slot_display_name = (
+            str(candidate.get("display_name") or (candidate_slot or {}).get("display_name") or "").strip()
+            or slot_code
+            or f"SLOT-{storage_slot_id}"
+        )
+        recommendations.append(
+            _build_ops_placement_hint_recommendation(
+                rank=len(recommendations) + 1,
+                storage_slot_id=storage_slot_id,
+                slot_code=slot_code,
+                slot_display_name=slot_display_name,
+                reason_code=candidate_reason_code,
+                reason_message=_ops_placement_hint_reason_message(
+                    candidate_reason_code,
+                    slot_code,
+                    slot_display_name,
+                ),
+            )
+        )
+        seen_slot_ids.add(storage_slot_id)
+
+    if not recommendations:
+        return {
+            "available": False,
+            "recommendations": [],
+            "fallback_reason": reason_code,
+            "fallback_message": _ops_placement_hint_reason_message(reason_code, None, None),
+        }
+
+    return {
+        "available": True,
+        "recommendations": recommendations,
+        "fallback_reason": None,
+        "fallback_message": None,
+    }
+
+
+@router.post("/ops/placement-hints", response_model=OpsPlacementHintResponse)
+def post_ops_placement_hints(payload: OpsPlacementHintRequest, request: Request) -> OpsPlacementHintResponse:
+    _require_authenticated_request(request)
+    return OpsPlacementHintResponse(**_build_ops_placement_hint_payload(payload.owned_item_id))
