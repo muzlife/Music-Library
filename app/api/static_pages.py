@@ -29,7 +29,7 @@ def ops_shell(request: Request):
     import hashlib
     v = request.query_params.get("v")
     try:
-        file_hash = hashlib.md5((_main()._main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+        file_hash = hashlib.md5((_main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
     except Exception:
         file_hash = "0"
     if v != file_hash:
@@ -42,7 +42,7 @@ def ops_shell(request: Request):
             redirect_headers["Clear-Site-Data"] = '"cache"'
         return _Resp(status_code=302, headers=redirect_headers)
     serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
-    return FileResponse(_main()._main().STATIC_DIR / "index.html", headers=serve_headers)
+    return FileResponse(_main().STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @router.get("/admin", include_in_schema=False)
@@ -54,7 +54,7 @@ def admin_shell(request: Request):
     import hashlib
     v = request.query_params.get("v")
     try:
-        file_hash = hashlib.md5((_main()._main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+        file_hash = hashlib.md5((_main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
     except Exception:
         file_hash = "0"
     if v != file_hash:
@@ -70,7 +70,7 @@ def admin_shell(request: Request):
     # QA: no-store + Clear-Site-Data (항상 최신 파일 강제)
     # 상용: no-cache (ETag 조건부 요청 허용 → 304로 빠른 응답)
     serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
-    return FileResponse(_main()._main().STATIC_DIR / "index.html", headers=serve_headers)
+    return FileResponse(_main().STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @router.get("/ui", include_in_schema=False)
@@ -78,7 +78,7 @@ def ui_alias(request: Request) -> FileResponse:
     import hashlib
     v = request.query_params.get("v")
     try:
-        file_hash = hashlib.md5((_main()._main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+        file_hash = hashlib.md5((_main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
     except Exception:
         file_hash = "0"
     if v != file_hash:
@@ -91,7 +91,7 @@ def ui_alias(request: Request) -> FileResponse:
             redirect_headers["Clear-Site-Data"] = '"cache"'
         return _Resp(status_code=302, headers=redirect_headers)
     serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
-    return FileResponse(_main()._main().STATIC_DIR / "index.html", headers=serve_headers)
+    return FileResponse(_main().STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @router.post("/ui/pick-directory", response_model=DirectoryPickerResponse)
@@ -129,7 +129,7 @@ async def ui_upload_image(file: UploadFile = File(...)) -> UiImageUploadResponse
     target_path = target_dir / file_name
     target_path.write_bytes(raw)
 
-    rel_path = target_path.relative_to(_main()._main().STATIC_DIR).as_posix()
+    rel_path = target_path.relative_to(_main().STATIC_DIR).as_posix()
     return UiImageUploadResponse(
         url=f"/ui-static/{rel_path}",
         file_name=file_name,
