@@ -38,7 +38,7 @@ def ops_cabinets_shell(request: Request):
     import hashlib
     v = request.query_params.get("v")
     try:
-        file_hash = hashlib.md5((STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+        file_hash = hashlib.md5((_main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
     except Exception:
         file_hash = "0"
     if v != file_hash:
@@ -49,9 +49,9 @@ def ops_cabinets_shell(request: Request):
         }
         if _main()._is_qa_env():
             redirect_headers["Clear-Site-Data"] = '"cache"'
-        return _Resp(status_code=302, headers=redirect_headers)
+        return Response(status_code=302, headers=redirect_headers)
     serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
-    return FileResponse(STATIC_DIR / "index.html", headers=serve_headers)
+    return FileResponse(_main().STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @router.get("/goods-items", response_model=GoodsItemSearchResponse)
