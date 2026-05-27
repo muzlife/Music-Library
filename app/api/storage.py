@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 from .. import db
 from .. import security
+from ..security import _read_auth_username
 from ..schemas import (
     ClassificationOptionCreate,
     ClassificationOptionItem,
@@ -18,6 +19,14 @@ from ..schemas import (
     StorageSlotUpsertRequest,
     OrderMoveRequest,
 )
+
+def _audit(request: Request, entity_type: str, entity_id: int, action: str, changed_fields: list[str] | None = None, snapshot: dict | None = None) -> None:
+    try:
+        username = _read_auth_username(request)
+        db.log_audit_event(entity_type=entity_type, entity_id=entity_id, action=action, changed_by=username, changed_fields=changed_fields, snapshot=snapshot)
+    except Exception:
+        pass
+
 
 router = APIRouter()
 
@@ -67,7 +76,7 @@ def get_storage_slot_owned_items(
 
 
 @router.post("/storage-slots", response_model=StorageSlotItem)
-def create_or_update_storage_slot(payload: StorageSlotUpsertRequest) -> StorageSlotItem:
+def create_or_update_storage_slot(payload: StorageSlotUpsertRequest, request: Request) -> StorageSlotItem:
     try:
         row = db.upsert_storage_slot(
             slot_id=payload.slot_id,
@@ -101,7 +110,7 @@ def create_or_update_storage_slot(payload: StorageSlotUpsertRequest) -> StorageS
 
 
 @router.post("/storage-cabinets/register", response_model=StorageCabinetRegisterResponse)
-def register_storage_cabinet(payload: StorageCabinetRegisterRequest) -> StorageCabinetRegisterResponse:
+def register_storage_cabinet(payload: StorageCabinetRegisterRequest, request: Request) -> StorageCabinetRegisterResponse:
     try:
         result = db.register_storage_cabinet_slots(
             cabinet_name=payload.cabinet_name,
@@ -119,11 +128,12 @@ def register_storage_cabinet(payload: StorageCabinetRegisterRequest) -> StorageC
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err)) from err
 
+    _audit(request, "storage_cabinet", result.get("id", 0), "CREATE", snapshot=payload.model_dump() if hasattr(payload, "model_dump") else None)
     return StorageCabinetRegisterResponse(**result)
 
 
 @router.delete("/storage-cabinets", response_model=StorageCabinetDeleteResponse)
-def delete_storage_cabinet(cabinet_name: str = Query(min_length=1, max_length=80)) -> StorageCabinetDeleteResponse:
+def delete_storage_cabinet(cabinet_name: str = Query(min_length=1, max_length=80), request: Request = None) -> StorageCabinetDeleteResponse:
     try:
         result = db.delete_storage_cabinet(cabinet_name=cabinet_name)
     except ValueError as err:

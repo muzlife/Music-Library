@@ -1796,6 +1796,10 @@ from .album_master_merge_history import (  # noqa: E402
     list_album_master_merge_history,
     rollback_latest_album_master_merge,
 )
+from .audit_log import (  # noqa: E402
+    log_audit_event,
+    list_audit_log,
+)
 from .album_master_external_ref import (  # noqa: E402
     ensure_album_master_external_ref,
     get_album_master_id_by_external_ref,

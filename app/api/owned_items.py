@@ -59,7 +59,16 @@ from ..schemas import (
     TrackMappingItem,
     TrackMappingListResponse,
 )
-from ..security import _require_admin_request, _require_operator_request
+from ..security import _require_admin_request, _require_operator_request, _read_auth_username
+
+
+def _audit(request: Request, entity_type: str, entity_id: int, action: str, changed_fields: list[str] | None = None, snapshot: dict | None = None) -> None:
+    """Fire-and-forget audit log entry."""
+    try:
+        username = _read_auth_username(request)
+        db.log_audit_event(entity_type=entity_type, entity_id=entity_id, action=action, changed_by=username, changed_fields=changed_fields, snapshot=snapshot)
+    except Exception:
+        pass
 
 
 router = APIRouter(tags=["owned-items"])
@@ -800,6 +809,7 @@ def duplicate_owned_item(
 
     for _ in range(duplicate_count):
         owned_new_id = db.insert_owned_item(dict(normalized))
+        _audit(request, "owned_item", owned_new_id, "CREATE", snapshot=dict(normalized))
         created_ids.append(owned_new_id)
         resolved_master_id, link_notices = _apply_post_create_links(
             payload=create_model,
@@ -824,7 +834,7 @@ def duplicate_owned_item(
 
 
 @router.post("/owned-items", response_model=OwnedItemCreateResponse)
-def create_owned_item(payload: OwnedItemCreate) -> OwnedItemCreateResponse:
+def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCreateResponse:
     _validate_signature(payload)
     _validate_collection_rank(payload)
     _validate_slot(payload.size_group, payload.storage_slot_id)
@@ -865,6 +875,7 @@ def create_owned_item(payload: OwnedItemCreate) -> OwnedItemCreateResponse:
             one_payload["copy_group_key"] = copy_group_key
 
         owned_item_id = db.insert_owned_item(one_payload)
+        _audit(request, "owned_item", owned_item_id, "CREATE", snapshot=one_payload)
         created_ids.append(owned_item_id)
         resolved_master_id, item_notices = _apply_post_create_links(
             payload=payload,
@@ -1232,6 +1243,7 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBul
     ):
         raise HTTPException(status_code=400, detail="at least one field is required")
 
+    _audit(request, "owned_item", 0, "UPDATE", changed_fields=list(payload.updates.keys()) if hasattr(payload, "updates") else None)
     updated_item_ids = db.bulk_update_owned_items(
         owned_item_ids,
         status=status,
