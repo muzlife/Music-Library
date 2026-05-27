@@ -14,7 +14,7 @@
 | \`app.api.ops_system\` | 13 (health, export, provider-settings) | Phase F-H ✅ |
 | **Total** | **62** | **465 tests pass** |
 
-## ⏳ Remaining (~19 routes in main.py)
+## ⏳ Remaining (~13 routes in main.py)
 
 ```
 ops_system.py: 9 route groups
