@@ -28,8 +28,6 @@ class SpotifyService:
         return bool(self.client_id and self.client_secret)
 
     def _ensure_client(self) -> Any:
-        if self._sp is not None:
-            return self._sp
         if not self.configured:
             return None
         try:
@@ -38,7 +36,7 @@ class SpotifyService:
 
             import os
             cache_path = "/Users/jingunpark/.spotify_cache"
-            self._sp = spotipy.Spotify(
+            return spotipy.Spotify(
                 auth_manager=SpotifyOAuth(
                     client_id=self.client_id,
                     client_secret=self.client_secret,
@@ -51,7 +49,6 @@ class SpotifyService:
         except Exception:
             logger.exception("failed to initialize spotipy client")
             return None
-        return self._sp
 
     # ── search ──────────────────────────────────────────────────
 

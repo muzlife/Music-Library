@@ -116,6 +116,15 @@ def cafe_tags() -> dict[str, Any]:
     return {"total_count": len(rows), "items": rows}
 
 
+# ── public tags (for tablet browse tab) ────────────────────────────
+
+@router.get("/cafe/tags")
+def cafe_tags() -> dict[str, Any]:
+    """Public: list all tags for tablet browse tab."""
+    rows = db.list_track_tags()
+    return {"total_count": len(rows), "items": rows}
+
+
 # ── search ──────────────────────────────────────────────────────
 
 @router.get("/cafe/search")
@@ -127,7 +136,10 @@ def cafe_search(
     results: list[dict[str, Any]] = []
 
     # Spotify search
+    import logging
+    _log = logging.getLogger(__name__)
     spotify_results = _spotify.search_tracks_sync(q, limit=limit)
+    _log.info(f"cafe search q={q!r} spotify={len(spotify_results)} local=0 total={len(spotify_results)}")
     for item in spotify_results:
         item["source"] = "spotify"
     results.extend(spotify_results)
@@ -148,6 +160,11 @@ def cafe_search(
                     "tag_value": tag.get("tag_value"),
                 })
 
+    # Always ensure at least a helpful message
+    if not results:
+        results = [
+            {"source":"info","spotify_track_id":"","title":"검색 결과가 없습니다: "+q,"artist":"다른 검색어나 영문으로 시도해보세요","album_art_url":"","duration_ms":0,"track_uri":""},
+        ]
     return {"query": q, "total_count": len(results), "items": results}
 
 
@@ -296,6 +313,24 @@ async def cafe_websocket(ws: WebSocket):
 
     else:
         await ws.close(code=4000)
+
+
+# ── Spotify OAuth callback ────────────────────────────────────────
+
+@router.get("/spotify/callback")
+def spotify_callback(request: Request):
+    """Handle Spotify OAuth redirect after user authorization."""
+    code = request.query_params.get("code")
+    if not code:
+        return {"error": "no authorization code received"}
+    try:
+        sp = _spotify._ensure_client()
+        if sp is None:
+            return {"error": "spotify not configured"}
+        token_info = sp.auth_manager.get_access_token(code, check_cache=False)
+        return {"ok": True, "message": "Spotify OAuth complete! You can close this page."}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # ── Spotify OAuth callback ────────────────────────────────────────
