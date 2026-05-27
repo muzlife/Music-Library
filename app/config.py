@@ -34,6 +34,9 @@ class Settings:
     home_assistant_token: str | None
     office_climate_temperature_entity_id: str
     office_climate_humidity_entity_id: str
+    spotify_client_id: str
+    spotify_client_secret: str
+    spotify_redirect_uri: str
 
 
 def _default_db_path() -> str:
@@ -134,4 +137,7 @@ def get_settings() -> Settings:
         office_climate_humidity_entity_id=(
             os.getenv("OFFICE_CLIMATE_HUMIDITY_ENTITY_ID") or "sensor.on_seubdogye_humidity"
         ).strip(),
+        spotify_client_id=(os.getenv("SPOTIFY_CLIENT_ID") or "").strip(),
+        spotify_client_secret=(os.getenv("SPOTIFY_CLIENT_SECRET") or "").strip(),
+        spotify_redirect_uri=(os.getenv("SPOTIFY_REDIRECT_URI") or "http://localhost:8100/spotify/callback").strip(),
     )
