@@ -38,12 +38,12 @@ from datetime import datetime, timedelta, timezone
 import sqlite3
 from typing import Any
 
+from app.db._schema_helpers import _column_exists
 from app.db import (  # noqa: E402  — package surface
     DASHBOARD_MOVE_WINDOW_DAYS,
     SIZE_GROUP_CODES,
     _build_label_id,
     _cabinet_sort_policy_check_sql,
-    _column_exists,
     _compose_storage_slot_code,
     _log_owned_item_location_event_in_conn,
     _natural_sort_key,
