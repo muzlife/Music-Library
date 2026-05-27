@@ -30,10 +30,6 @@ class SpotifyService:
     def _ensure_client(self) -> Any:
         if not self.configured:
             return None
-        import time
-        now = time.time()
-        if self._sp is not None and hasattr(self, '_sp_created_at') and (now - self._sp_created_at) < 60:
-            return self._sp
         try:
             import spotipy  # type: ignore[import-untyped]
             from spotipy.oauth2 import SpotifyOAuth  # type: ignore[import-untyped]
@@ -50,7 +46,6 @@ class SpotifyService:
                     open_browser=False,
                 )
             )
-            self._sp_created_at = now
         except Exception:
             logger.exception("failed to initialize spotipy client")
             return None
@@ -65,8 +60,15 @@ class SpotifyService:
         try:
             results = sp.search(q=query, type="track", limit=limit)
         except Exception:
-            logger.exception("spotify search failed")
-            return []
+            # Token may be stale — force refresh and retry once
+            logger.warning("spotify search failed, refreshing token and retrying")
+            try:
+                if hasattr(sp, 'auth_manager'):
+                    sp.auth_manager.get_access_token(check_cache=False)
+                results = sp.search(q=query, type="track", limit=limit)
+            except Exception:
+                logger.exception("spotify search failed after retry")
+                return []
         items: list[dict[str, Any]] = []
         for item in (results.get("tracks", {}).get("items") or []):
             album = item.get("album", {})
