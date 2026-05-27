@@ -444,6 +444,7 @@ async def auth_guard(request: Request, call_next):
         "/cafe/queue",
         "/cafe/now-playing",
         "/cafe/tablet",
+        "/spotify/callback",
     }
     if path in allowed_paths:
         return await call_next(request)
