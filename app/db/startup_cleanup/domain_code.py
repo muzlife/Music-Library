@@ -23,11 +23,8 @@ import logging
 import re
 import sqlite3
 
-from app.db import (  # noqa: E402 — package surface
-    _column_exists,
-    _table_exists,
-    utc_now_iso,
-)
+from app.db._schema_helpers import _column_exists, _table_exists
+from app.db.connection import utc_now_iso
 
 _HANGUL_RE = re.compile(r"[가-힣ㄱ-ㆎ]")
 _KANA_RE = re.compile(r"[぀-ヿㇰ-ㇿ]")

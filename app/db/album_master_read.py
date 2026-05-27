@@ -42,9 +42,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.db._schema_helpers import _column_exists
 from app.db import (  # noqa: E402  — package surface
     _build_compact_token_match_sql,
-    _column_exists,
     _normalize_domain_code_value,
     _normalize_owned_item_row,
     _owned_item_select_query,

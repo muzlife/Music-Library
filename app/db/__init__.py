@@ -1416,20 +1416,10 @@ def ensure_startup_db_ready() -> None:
 # re-exported from this package's __init__ at the bottom of the file.
 
 
-def _column_exists(conn: sqlite3.Connection, table_name: str, column_name: str) -> bool:
-    rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
-    return any(str(row["name"]) == column_name for row in rows)
+from ._schema_helpers import _column_exists, _table_exists
 
-
-def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
-    row = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
-        (str(table_name or ""),),
-    ).fetchone()
-    return row is not None
-
-
-# Startup cleanup 도메인 분리 — _column_exists / _table_exists 정의 후 import
+# Startup cleanup 도메인 분리 — _column_exists / _table_exists 는
+# _schema_helpers 에서 제공하므로 import 시 순환참조가 발생하지 않는다.
 from .startup_cleanup.domain_code import (  # noqa: E402
     _fix_hangul_artist_domain_corrections,
     _fix_known_domain_corrections,

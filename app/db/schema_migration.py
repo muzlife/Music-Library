@@ -38,16 +38,15 @@ from __future__ import annotations
 import sqlite3
 from typing import Callable
 
+from app.db._schema_helpers import _column_exists, _table_exists
+from app.db.connection import utc_now_iso
 from app.db import (  # noqa: E402 — package surface (always bound)
     _cabinet_sort_policy_check_sql,
-    _column_exists,
     _domain_code_check_sql,
     _ensure_app_setting_table,
     _ensure_recent_feed_indexes,
     _normalize_domain_code_sql,
     _size_group_check_sql,
-    _table_exists,
-    utc_now_iso,
 )
 from app.db import (  # noqa: E402 — sub-module surface (bound after re-exports)
     _backfill_order_keys,
