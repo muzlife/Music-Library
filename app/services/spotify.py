@@ -36,12 +36,15 @@ class SpotifyService:
             import spotipy  # type: ignore[import-untyped]
             from spotipy.oauth2 import SpotifyOAuth  # type: ignore[import-untyped]
 
+            import os
+            cache_path = "/Users/jingunpark/.spotify_cache"
             self._sp = spotipy.Spotify(
                 auth_manager=SpotifyOAuth(
                     client_id=self.client_id,
                     client_secret=self.client_secret,
                     redirect_uri=self.redirect_uri,
                     scope="user-modify-playback-state user-read-playback-state",
+                    cache_path=cache_path,
                     open_browser=False,
                 )
             )
