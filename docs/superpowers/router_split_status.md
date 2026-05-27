@@ -11,9 +11,10 @@
 | `app.api.purchase_imports` | 9 | Phase C ✅ |
 | `app.api.album_masters` | 14 | Phase D ✅ |
 | `app.api.owned_items` | 22 | Phase E ✅ |
-| **Total** | **49** | **38 tests pass** |
+| \`app.api.ops_system\` | 13 (health, export, provider-settings) | Phase F ✅ |
+| **Total** | **62** | **465 tests pass** |
 
-## ⏳ Remaining (~83 routes in main.py)
+## ⏳ Remaining (~70 routes in main.py)
 
 ```
 ops_system.py: 9 route groups
