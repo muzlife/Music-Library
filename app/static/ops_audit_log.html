@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>변경 이력 — Audit Log</title>
+  <style>
+    :root {
+      --bg: #0a1016;
+      --surface: rgba(22, 29, 38, 0.98);
+      --border: rgba(132, 148, 170, 0.26);
+      --text: #eef3f8;
+      --muted: #b3bfcc;
+      --accent: #e8620a;
+      --accent-dim: rgba(232, 98, 10, 0.12);
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Mono", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .app-shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+    h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+    .toolbar {
+      display: flex; gap: 12px; align-items: center; margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    select, button {
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
+    }
+    button:hover { background: var(--accent-dim); border-color: var(--accent); }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .log-table th {
+      text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border);
+      color: var(--muted); font-weight: 500; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .log-table td {
+      padding: 10px 12px; border-bottom: 1px solid rgba(132, 148, 170, 0.08);
+      vertical-align: top;
+    }
+    .log-table tr:hover td { background: rgba(232, 98, 10, 0.04); }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em;
+    }
+    .badge-create { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+    .badge-update { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .badge-delete { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .timestamp { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+    .entity-link { color: var(--accent); text-decoration: none; }
+    .entity-link:hover { text-decoration: underline; }
+    .fields-tag {
+      display: inline-block; background: rgba(132, 148, 170, 0.08);
+      padding: 1px 6px; border-radius: 3px; margin: 1px 2px;
+      font-size: 0.7rem; color: var(--muted);
+    }
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    .error { background: rgba(239, 68, 68, 0.1); padding: 12px 16px; border-radius: 6px; color: var(--danger); margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <h1>📋 변경 이력</h1>
+  <p class="subtitle" id="count-label">로딩 중…</p>
+
+  <div class="toolbar">
+    <select id="entity-filter" onchange="loadLog()">
+      <option value="">전체 엔티티</option>
+      <option value="owned_item">소유 물품 (Owned Item)</option>
+      <option value="storage_slot">장식장 칸 (Storage Slot)</option>
+      <option value="storage_cabinet">장식장 (Cabinet)</option>
+      <option value="auth_account">계정 (Auth Account)</option>
+    </select>
+    <select id="limit-select" onchange="loadLog()">
+      <option value="50">최근 50건</option>
+      <option value="100" selected>최근 100건</option>
+      <option value="200">최근 200건</option>
+      <option value="500">최근 500건</option>
+    </select>
+    <button class="primary" onclick="loadLog()">새로고침</button>
+  </div>
+
+  <div id="error" class="error" style="display:none"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+const ENTITY_LABELS = {
+  owned_item: '소유 물품',
+  storage_slot: '장식장 칸',
+  storage_cabinet: '장식장',
+  auth_account: '계정',
+};
+
+function formatTime(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso + 'Z');
+    return d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+  } catch { return iso; }
+}
+
+function badge(action) {
+  const cls = action === 'CREATE' ? 'badge-create' : action === 'DELETE' ? 'badge-delete' : 'badge-update';
+  const label = action === 'CREATE' ? '생성' : action === 'DELETE' ? '삭제' : '수정';
+  return '<span class="badge ' + cls + '">' + label + '</span>';
+}
+
+function fieldsTag(fieldsJson) {
+  if (!fieldsJson) return '';
+  try {
+    const fields = JSON.parse(fieldsJson);
+    if (!Array.isArray(fields) || !fields.length) return '';
+    return fields.map(function(f) { return '<span class="fields-tag">' + f + '</span>'; }).join('');
+  } catch { return ''; }
+}
+
+function entityLink(type, id) {
+  if (!id) return ENTITY_LABELS[type] || type;
+  if (type === 'owned_item') return '<a class="entity-link" href="/owned-items/' + id + '" target="_blank">#' + id + '</a>';
+  return '#' + id;
+}
+
+async function loadLog() {
+  var content = document.getElementById('content');
+  var errorEl = document.getElementById('error');
+  var countLabel = document.getElementById('count-label');
+  content.innerHTML = '<div class="loading">불러오는 중…</div>';
+  errorEl.style.display = 'none';
+
+  var entityType = document.getElementById('entity-filter').value;
+  var limit = document.getElementById('limit-select').value;
+  var params = new URLSearchParams({ limit: limit });
+  if (entityType) params.set('entity_type', entityType);
+
+  try {
+    var resp = await fetch('/ops/audit-log?' + params, { credentials: 'include' });
+    if (!resp.ok) {
+      if (resp.status === 401 || resp.status === 403) {
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error('HTTP ' + resp.status);
+    }
+    var data = await resp.json();
+    countLabel.textContent = '총 ' + data.total_count + '건';
+    if (!data.items || !data.items.length) {
+      content.innerHTML = '<div class="empty">📭 기록된 변경 이력이 없습니다.</div>';
+      return;
+    }
+    var html = '<table class="log-table"><thead><tr>';
+    html += '<th>시간</th><th>작업자</th><th>엔티티</th><th>ID</th><th>액션</th><th>변경 필드</th>';
+    html += '</tr></thead><tbody>';
+    for (var i = 0; i < data.items.length; i++) {
+      var row = data.items[i];
+      html += '<tr>';
+      html += '<td class="timestamp">' + formatTime(row.created_at) + '</td>';
+      html += '<td>' + (row.changed_by || '-') + '</td>';
+      html += '<td>' + (ENTITY_LABELS[row.entity_type] || row.entity_type) + '</td>';
+      html += '<td>' + entityLink(row.entity_type, row.entity_id) + '</td>';
+      html += '<td>' + badge(row.action) + '</td>';
+      html += '<td>' + fieldsTag(row.changed_fields) + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    content.innerHTML = html;
+  } catch (err) {
+    errorEl.textContent = '불러오기 실패: ' + err.message;
+    errorEl.style.display = 'block';
+    content.innerHTML = '';
+  }
+}
+
+loadLog();
+</script>
+</body>
+</html>

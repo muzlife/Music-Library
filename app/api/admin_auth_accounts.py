@@ -29,7 +29,15 @@ from ..schemas import (
     AuthAccountListResponse,
     AuthAccountUpdateRequest,
 )
-from ..security import _hash_auth_password, _require_admin_request
+from ..security import _hash_auth_password, _require_admin_request, _read_auth_username
+
+
+def _audit(request: Request, entity_type: str, entity_id: int, action: str, changed_fields: list[str] | None = None, snapshot: dict | None = None) -> None:
+    try:
+        username = _read_auth_username(request)
+        db.log_audit_event(entity_type=entity_type, entity_id=entity_id, action=action, changed_by=username, changed_fields=changed_fields, snapshot=snapshot)
+    except Exception:
+        pass
 
 
 router = APIRouter(tags=["admin", "auth"])
@@ -99,6 +107,7 @@ def create_auth_account(payload: AuthAccountCreateRequest, request: Request) -> 
     )
     if row is None:
         raise HTTPException(status_code=500, detail="계정 저장에 실패했습니다.")
+    _audit(request, "auth_account", 0, "CREATE", snapshot={"username": username, "role": str(payload.role or "OPERATOR")})
     return AuthAccountItem(
         username=str(row.get("username") or "").strip(),
         role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
@@ -140,6 +149,7 @@ def update_auth_account(
     )
     if row is None:
         raise HTTPException(status_code=500, detail="계정 수정에 실패했습니다.")
+    _audit(request, "auth_account", 0, "UPDATE", changed_fields=list(payload.model_dump(exclude_unset=True).keys()) if hasattr(payload, "model_dump") else None)
     return AuthAccountItem(
         username=str(row.get("username") or "").strip(),
         role=str(row.get("role") or "OPERATOR").strip().upper(),  # type: ignore[arg-type]
@@ -159,6 +169,7 @@ def delete_auth_account(username: str, request: Request) -> dict[str, Any]:
     ok = db.delete_auth_account(username)
     if not ok:
         raise HTTPException(status_code=500, detail="계정 삭제에 실패했습니다.")
+    _audit(request, "auth_account", 0, "DELETE", snapshot={"username": username})
     return {"ok": True, "username": username}
 
 
