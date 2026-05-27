@@ -4252,39 +4252,8 @@ def _map_to_customer_track_request_item(row: dict[str, Any]) -> CustomerTrackReq
 
 
 
-@app.get("/metadata-sync/status", response_model=MetadataSyncStatusResponse)
-def get_metadata_sync_status() -> MetadataSyncStatusResponse:
-    running = METADATA_SYNC_LOCK.locked()
-    return MetadataSyncStatusResponse(
-        auto_enabled=int(settings.metadata_sync_interval_minutes) > 0,
-        interval_minutes=int(settings.metadata_sync_interval_minutes),
-        batch_limit=int(settings.metadata_sync_batch_limit),
-        running=running,
-        in_progress_items=list(METADATA_SYNC_IN_PROGRESS_ITEMS) if running else [],
-        last_result=METADATA_SYNC_LAST_RESULT,
-        last_error=METADATA_SYNC_LAST_ERROR,
-    )
 
 
-@app.post("/metadata-sync/run", status_code=202)
-def run_metadata_sync(payload: MetadataSyncRunRequest) -> dict[str, Any]:
-    """Start a metadata sync run in the background and return immediately (202).
-
-    Cloudflare (and most proxies) enforce a ~100 s origin timeout, so we must
-    not hold the HTTP connection open for the full sync duration.  Callers
-    should poll ``GET /metadata-sync/status`` until ``running`` becomes
-    ``false``, then read ``last_result`` for the outcome.
-    """
-    if METADATA_SYNC_LOCK.locked():
-        raise HTTPException(status_code=409, detail="metadata sync already running")
-    t = threading.Thread(
-        target=_run_metadata_sync,
-        kwargs={"payload": payload, "fail_when_running": True},
-        daemon=True,
-        name="metadata-sync-manual",
-    )
-    t.start()
-    return {"started": True}
 
 
 def _item_meta_fields(row: dict[str, Any]) -> dict[str, Any]:
@@ -4439,10 +4408,6 @@ def _sync_one_item(owned_item_id: int) -> MetadataSyncItemResult:
     )
 
 
-@app.post("/owned-items/{owned_item_id}/sync-metadata")
-def sync_single_item_metadata(owned_item_id: int = FastAPIPath(ge=1)) -> MetadataSyncItemResult:
-    """단건 상품 메타 동기화 – 즉시(동기) 실행 후 결과 반환."""
-    return _sync_one_item(owned_item_id)
 
 
 # ---------------------------------------------------------------------------
@@ -9005,3 +8970,5 @@ from app.api.operator_home import router as operator_home_router
 app.include_router(operator_home_router)
 from app.api.ingest import router as ingest_router
 app.include_router(ingest_router)
+from app.api.metadata_routes import router as metadata_routes_router
+app.include_router(metadata_routes_router)
