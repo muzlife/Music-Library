@@ -66,6 +66,13 @@ def _build_album_master_filter_sql(
     media_only: bool,
     domain_code: str | None,
     release_type: str | None,
+    owned_item_id: int | None = None,
+    signature_types: list[str] | None = None,
+    packaging: list[str] | None = None,
+    package_contents: list[str] | None = None,
+    is_limited: bool | None = None,
+    is_new: bool | None = None,
+    is_promo: bool | None = None,
 ) -> tuple[str, list[Any]]:
     where_sql = ""
     params: list[Any] = []
@@ -302,6 +309,97 @@ def _build_album_master_filter_sql(
         """
         params.append(release_type)
 
+    if owned_item_id is not None:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm
+            WHERE amm.album_master_id = am.id
+              AND amm.owned_item_id = ?
+          )
+        """
+        params.append(owned_item_id)
+
+    if signature_types:
+        placeholders = ", ".join("?" for _ in signature_types)
+        where_sql += f"""
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm
+            JOIN owned_item oi ON oi.id = amm.owned_item_id
+            WHERE amm.album_master_id = am.id
+              AND oi.signature_type IN ({placeholders})
+          )
+        """
+        params.extend(signature_types)
+
+    if packaging:
+        pkg_list = [packaging] if isinstance(packaging, str) else list(packaging)
+        pkg_list = [p.strip().lower() for p in pkg_list if p and p.strip()]
+        if pkg_list:
+            pkg_clauses = " OR ".join("LOWER(COALESCE(mid.format_name, '')) LIKE ?" for _ in pkg_list)
+            where_sql += f"""
+              AND EXISTS (
+                SELECT 1
+                FROM album_master_member amm
+                JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+                WHERE amm.album_master_id = am.id
+                  AND ({pkg_clauses})
+              )
+            """
+            for pkg in pkg_list:
+                params.append(f"%{pkg}%")
+
+    if package_contents:
+        pc_list = [package_contents] if isinstance(package_contents, str) else list(package_contents)
+        pc_list = [pc.strip().lower() for pc in pc_list if pc and pc.strip()]
+        if pc_list:
+            pc_clauses = " OR ".join("LOWER(COALESCE(mid.package_contents, '')) LIKE ?" for _ in pc_list)
+            where_sql += f"""
+              AND EXISTS (
+                SELECT 1
+                FROM album_master_member amm
+                JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+                WHERE amm.album_master_id = am.id
+                  AND ({pc_clauses})
+              )
+            """
+            for pc in pc_list:
+                params.append(f"%{pc}%")
+
+    if is_limited:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm
+            JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+            WHERE amm.album_master_id = am.id
+              AND mid.is_limited_edition = 1
+          )
+        """
+
+    if is_new:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm
+            JOIN owned_item oi ON oi.id = amm.owned_item_id
+            WHERE amm.album_master_id = am.id
+              AND oi.is_second_hand = 0
+          )
+        """
+
+    if is_promo:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm
+            JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+            WHERE amm.album_master_id = am.id
+              AND mid.is_promotional_not_for_sale = 1
+          )
+        """
+
     return where_sql, params
 
 
@@ -428,6 +526,14 @@ def list_album_masters(
     release_type: str | None,
     limit: int,
     offset: int,
+    sort_mode: str | None = None,
+    owned_item_id: int | None = None,
+    signature_types: list[str] | None = None,
+    packaging: list[str] | None = None,
+    package_contents: list[str] | None = None,
+    is_limited: bool | None = None,
+    is_new: bool | None = None,
+    is_promo: bool | None = None,
 ) -> list[dict[str, Any]]:
     filter_sql, params = _build_album_master_filter_sql(
         source_code=source_code,
@@ -441,6 +547,13 @@ def list_album_masters(
         media_only=media_only,
         domain_code=domain_code,
         release_type=release_type,
+        owned_item_id=owned_item_id,
+        signature_types=signature_types,
+        packaging=packaging,
+        package_contents=package_contents,
+        is_limited=is_limited,
+        is_new=is_new,
+        is_promo=is_promo,
     )
 
     query = """
@@ -611,11 +724,14 @@ def list_album_masters(
       WHERE 1 = 1
     """
     query += filter_sql
-    query += """
-      GROUP BY am.id
-      ORDER BY am.updated_at DESC, am.id DESC
-      LIMIT ? OFFSET ?
-    """
+    query += "\n      GROUP BY am.id\n"
+    if sort_mode == "CREATED_DESC":
+        query += "      ORDER BY am.created_at DESC, am.id DESC\n"
+    elif sort_mode == "RELEASE_DESC":
+        query += "      ORDER BY am.release_year DESC, am.id DESC\n"
+    else:
+        query += "      ORDER BY am.updated_at DESC, am.id DESC\n"
+    query += "      LIMIT ? OFFSET ?\n"
     params.extend([limit, offset])
 
     with get_conn() as conn:
@@ -640,6 +756,13 @@ def count_album_masters(
     media_only: bool,
     domain_code: str | None,
     release_type: str | None,
+    owned_item_id: int | None = None,
+    signature_types: list[str] | None = None,
+    packaging: list[str] | None = None,
+    package_contents: list[str] | None = None,
+    is_limited: bool | None = None,
+    is_new: bool | None = None,
+    is_promo: bool | None = None,
 ) -> int:
     filter_sql, params = _build_album_master_filter_sql(
         source_code=source_code,
@@ -653,6 +776,13 @@ def count_album_masters(
         media_only=media_only,
         domain_code=domain_code,
         release_type=release_type,
+        owned_item_id=owned_item_id,
+        signature_types=signature_types,
+        packaging=packaging,
+        package_contents=package_contents,
+        is_limited=is_limited,
+        is_new=is_new,
+        is_promo=is_promo,
     )
     query = """
       SELECT COUNT(*) AS cnt

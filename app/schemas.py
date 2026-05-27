@@ -30,7 +30,7 @@ LinkType = Literal["FULL_ALBUM", "TRACK", "SCAN", "REFERENCE", "PROOF"]
 ExternalSourceCode = Literal["DISCOGS", "MANIADB", "ALADIN"]
 AlbumMasterSource = Literal["AUTO", "DISCOGS", "MANIADB"]
 AlbumMasterBoundSource = Literal["DISCOGS", "MANIADB", "MANUAL"]
-MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB"]
+MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB", "MUSICBRAINZ"]
 MetadataSyncSource = Literal["ALL", "DISCOGS", "MANIADB", "ALADIN"]
 DomainCode = Literal["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]
 ReleaseType = Literal["ALBUM", "EP", "SINGLE"]
@@ -400,6 +400,7 @@ class OpsHomeRecentItem(BaseModel):
     previous_slot_code: str | None = None
     previous_slot_display_name: str | None = None
     created_at: str
+    acquisition_date: str | None = None
 
 
 class OpsHomeRecentSectionsResponse(BaseModel):
@@ -443,6 +444,7 @@ class CustomerTrackRequestCreate(BaseModel):
 class CustomerTrackRequestUpdate(BaseModel):
     status: CustomerTrackRequestStatus | None = None
     response_note: str | None = None
+    playback_deck: str | None = None
 
 
 class CustomerTrackRequestItem(BaseModel):
@@ -470,11 +472,26 @@ class CustomerTrackRequestItem(BaseModel):
     previous_slot_display_snapshot: str | None = None
     current_live_slot_code: str | None = None
     current_live_slot_display_name: str | None = None
+    weather_temp_c: float | None = None
+    weather_description: str | None = None
+    weather_code: int | None = None
+    season: str | None = None
+    playback_deck: str | None = None
+    played_at: str | None = None
+    returned_at: str | None = None
 
 
 class CustomerTrackRequestListResponse(BaseModel):
     total_count: int
     items: list[CustomerTrackRequestItem] = Field(default_factory=list)
+
+
+class RoonStatusResponse(BaseModel):
+    connected: bool
+    core_name: str
+    active_zone: str
+    volume: int
+    now_playing_request_id: int | None = None
 
 
 class AuthAccountItem(BaseModel):
@@ -794,7 +811,7 @@ class AlbumMasterImportVariantsRequest(BaseModel):
     linked_album_master_id: int | None = None
     selected_variant_external_ids: list[str] = Field(default_factory=list)
     quantity: int = Field(default=1, ge=1)
-    is_second_hand: bool = False
+    is_second_hand: bool = True
     domain_code: DomainCode | None = None
     release_type: ReleaseType | None = None
     purchase_source: str | None = None
@@ -911,7 +928,7 @@ class CsvIngestResponse(BaseModel):
 
 
 class MusicDetailCreate(BaseModel):
-    format_name: MusicCategory
+    format_name: str | None = None
     is_promotional_not_for_sale: bool = False
     artist_or_brand: str | None = None
     release_year: int | None = Field(default=None, ge=1900, le=2100)
@@ -931,6 +948,9 @@ class MusicDetailCreate(BaseModel):
     disc_count: int | None = Field(default=None, ge=1)
     speed_rpm: int | None = None
     disc_type: str | None = None
+    package_contents: str | None = None
+    is_limited_edition: bool | None = None
+    edition_number: str | None = None
     has_obi: bool | None = None
     runout_matrix: list[str] = Field(default_factory=list)
     pressing_country: str | None = None
@@ -974,7 +994,7 @@ class OwnedItemCreate(BaseModel):
     preferred_storage_size_group: SizeGroup | None = None
     auto_location_recommendation: bool = True
     quantity: int = Field(default=1, ge=1)
-    is_second_hand: bool = False
+    is_second_hand: bool = True
     status: ItemStatus = "IN_COLLECTION"
     signature_type: SignatureType = "NONE"
     source_code: ExternalSourceCode | None = None
@@ -1126,12 +1146,32 @@ class CollectionMovementItem(BaseModel):
     created_at: str
 
 
+class CollectionDomainCategoryCount(BaseModel):
+    domain: str
+    category: str
+    count: int
+
+
+class CollectionSourceDomainCount(BaseModel):
+    source: str
+    domain: str
+    count: int
+
+
+class CollectionSourceCategoryCount(BaseModel):
+    source: str
+    category: str
+    count: int
+
+
 class CollectionDashboardResponse(BaseModel):
     total_items: int
     in_collection_items: int
     music_items: int
     goods_items: int
     signed_items: int
+    direct_signed_items: int = 0
+    purchase_signed_items: int = 0
     second_hand_items: int
     audio_mapped_items: int
     registered_last_30_days: int
@@ -1140,12 +1180,26 @@ class CollectionDashboardResponse(BaseModel):
     source_unlinked_items: int
     master_unlinked_items: int
     cover_missing_items: int
+    loaned_items: int = 0
+    sold_items: int = 0
+    lost_items: int = 0
+    genre_missing_items: int = 0
+    media_missing_items: int = 0
+    catalog_missing_items: int = 0
+    limited_items: int = 0
+    new_items: int = 0
+    promo_items: int = 0
+    other_condition_items: int = 0
+    by_pressing_country: list[CollectionValueCount] = Field(default_factory=list)
     by_category: list[CollectionCategoryCount] = Field(default_factory=list)
     by_status: list[CollectionStatusCount] = Field(default_factory=list)
     by_domain: list[CollectionValueCount] = Field(default_factory=list)
+    by_domain_category: list[CollectionDomainCategoryCount] = Field(default_factory=list)
     by_release_type: list[CollectionValueCount] = Field(default_factory=list)
     by_size_group: list[CollectionValueCount] = Field(default_factory=list)
     by_source: list[CollectionValueCount] = Field(default_factory=list)
+    by_source_domain: list[CollectionSourceDomainCount] = Field(default_factory=list)
+    by_source_category: list[CollectionSourceCategoryCount] = Field(default_factory=list)
     movement_window_days: int = 1
     recent_move_total: int = 0
     recent_moves: list[CollectionMovementItem] = Field(default_factory=list)
@@ -1520,6 +1574,8 @@ class MetadataSyncRunRequest(BaseModel):
     source: MetadataSyncSource = "ALL"
     only_missing: bool = True
     limit: int = Field(default=300, ge=1, le=5000)
+    inter_item_delay_sec: float = Field(default=1.5, ge=0.0, le=60.0)
+    supplement_discogs: bool = True
     include_item_results: bool = False
 
 
@@ -1530,6 +1586,9 @@ class MetadataSyncItemResult(BaseModel):
     status: Literal["UPDATED", "SKIPPED", "FAILED"]
     updated_fields: list[str] = Field(default_factory=list)
     reason: str | None = None
+    display_name: str | None = None
+    artist_or_brand: str | None = None
+    catalog_no: str | None = None
 
 
 class MetadataSyncRunResponse(BaseModel):
@@ -1550,6 +1609,7 @@ class MetadataSyncStatusResponse(BaseModel):
     interval_minutes: int
     batch_limit: int
     running: bool
+    in_progress_items: list[MetadataSyncItemResult] = []  # live feed while running
     last_result: MetadataSyncRunResponse | None = None
     last_error: str | None = None
 
@@ -1580,6 +1640,7 @@ class MetadataProviderSettingsResponse(BaseModel):
     aladin_ttb_key_configured: bool = False
     deepl_auth_key_configured: bool = False
     discogs_user_agent: str
+    musicbrainz_user_agent: str
     aladin_base_url: str
     maniadb_base_url: str
     deepl_base_url: str
@@ -1590,6 +1651,7 @@ class MetadataProviderSettingsUpdateRequest(BaseModel):
     aladin_ttb_key: str | None = Field(default=None, max_length=4000)
     deepl_auth_key: str | None = Field(default=None, max_length=4000)
     discogs_user_agent: str | None = Field(default=None, max_length=4000)
+    musicbrainz_user_agent: str | None = Field(default=None, max_length=4000)
     aladin_base_url: str | None = Field(default=None, max_length=4000)
     maniadb_base_url: str | None = Field(default=None, max_length=4000)
     deepl_base_url: str | None = Field(default=None, max_length=4000)

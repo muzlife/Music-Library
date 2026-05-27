@@ -243,7 +243,12 @@ def recommend_owned_item_location(
                   COALESCE(am.release_year, mid.release_year) AS release_year,
                   TRIM(COALESCE(json_extract(am.raw_json, '$.release_date'), json_extract(am.raw_json, '$.master_release_date'), '')) AS master_release_date,
                   mid.released_date AS released_date,
-                  COALESCE(oi.item_name_override, am.title, '') AS item_title
+                  CASE
+                    WHEN oi.item_name_override IS NOT NULL
+                      AND COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) IS NOT NULL
+                    THEN COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) || ' - ' || oi.item_name_override
+                    ELSE COALESCE(oi.item_name_override, am.title, '')
+                  END AS item_title
                 FROM owned_item oi
                 JOIN music_item_detail mid ON mid.owned_item_id = oi.id
                 LEFT JOIN album_master am ON am.id = oi.linked_album_master_id

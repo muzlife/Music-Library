@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass
 from functools import lru_cache
@@ -11,6 +13,7 @@ class Settings:
     aladin_ttb_key: str | None
     deepl_auth_key: str | None
     aladin_base_url: str
+    aladin_lookup_url: str
     maniadb_base_url: str
     deepl_base_url: str
     discogs_user_agent: str
@@ -80,6 +83,10 @@ def get_settings() -> Settings:
         aladin_base_url=os.getenv(
             "ALADIN_BASE_URL",
             "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
+        ),
+        aladin_lookup_url=os.getenv(
+            "ALADIN_LOOKUP_URL",
+            "https://www.aladin.co.kr/ttb/api/ItemLookUp.aspx",
         ),
         maniadb_base_url=os.getenv(
             "MANIADB_BASE_URL",

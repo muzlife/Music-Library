@@ -77,7 +77,12 @@ def search_operator_catalog(query_text: str, limit: int = 30) -> list[dict[str, 
         mid.cover_image_url,
         mid.track_list_json,
         mid.track_items_json,
-        COALESCE(oi.item_name_override, am.title) AS item_title,
+        CASE
+          WHEN oi.item_name_override IS NOT NULL
+            AND COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) IS NOT NULL
+          THEN COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name) || ' - ' || oi.item_name_override
+          ELSE COALESCE(oi.item_name_override, am.title)
+        END AS item_title,
         am.domain_code            AS master_domain_code,
         am.source_domain_code,
         am.override_domain_code,

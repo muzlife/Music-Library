@@ -61,6 +61,17 @@ def _main():
     return main_module
 
 
+def _owned_items_module():
+    """Lazy accessor for the owned_items router module.
+
+    `create_owned_item` was moved from app.main → app.api.owned_items.
+    We import it lazily to avoid circular-import issues.
+    """
+    from app.api import owned_items as owned_items_module
+
+    return owned_items_module
+
+
 @router.post("/purchase-imports/preview", response_model=PurchaseImportPreviewResponse)
 def preview_purchase_import(
     payload: PurchaseImportPreviewRequest, request: Request
@@ -301,7 +312,7 @@ def create_owned_item_from_purchase_import(
                 existing_owned_item_id=existing_owned_item_id,
             )
     payload = main_module._build_owned_item_from_purchase_queue_row(row)
-    created = main_module.create_owned_item(payload)
+    created = _owned_items_module().create_owned_item(payload)
     updated = db.update_purchase_import_row(
         queue_id,
         queue_status="CREATED",
@@ -312,7 +323,7 @@ def create_owned_item_from_purchase_import(
     return PurchaseImportCreateResponse(
         queue_item=main_module._purchase_queue_item_from_row(updated),
         owned_item_id=int(created.owned_item_id),
-        label_id=str(created.label_id),
+        label_id=str(created.label_id) if created.label_id is not None else "",
         linked_album_master_id=created.linked_album_master_id,
         notices=list(created.notices or []),
     )
@@ -329,6 +340,11 @@ def create_owned_item_from_purchase_import_candidate(
 ) -> PurchaseImportCreateResponse:
     _require_admin_request(request)
     main_module = _main()
+
+    # Validate queue_id
+    if not isinstance(queue_id, int) or queue_id <= 0:
+        raise HTTPException(status_code=400, detail="invalid queue_id")
+
     row = db.get_purchase_import_row(queue_id)
     if row is None:
         raise HTTPException(status_code=404, detail="purchase import row not found")
@@ -346,9 +362,34 @@ def create_owned_item_from_purchase_import_candidate(
                 existing_owned_item_id=existing_owned_item_id,
             )
 
+    # Validate candidate payload
+    if payload is None or payload.candidate is None:
+        raise HTTPException(status_code=400, detail="candidate payload is required")
+    if not payload.candidate.source or not payload.candidate.external_id or not payload.candidate.title:
+        raise HTTPException(status_code=400, detail="candidate must have source, external_id, and title")
+
     candidate = payload.candidate.model_dump(mode="python")
-    owned_payload = main_module._build_owned_item_from_purchase_queue_row(row, candidate)
-    created = main_module.create_owned_item(owned_payload)
+    try:
+        owned_payload = main_module._build_owned_item_from_purchase_queue_row(row, candidate)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"failed to build owned item: {str(e)}")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"error building owned item: {str(e)}")
+
+    try:
+        created = _owned_items_module().create_owned_item(owned_payload)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"failed to create owned item: {str(e)}")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"error creating owned item: {str(e)}")
+
+    if not created or created.owned_item_id is None:
+        raise HTTPException(status_code=500, detail="created owned item has no id")
+
     updated = db.update_purchase_import_row(
         queue_id,
         queue_status="CREATED",
@@ -356,10 +397,13 @@ def create_owned_item_from_purchase_import_candidate(
     )
     if updated is None:
         raise HTTPException(status_code=500, detail="purchase import row update failed")
+
+    # Safely handle label_id which may be None
+    label_id = str(created.label_id) if created.label_id is not None else ""
     return PurchaseImportCreateResponse(
         queue_item=main_module._purchase_queue_item_from_row(updated),
         owned_item_id=int(created.owned_item_id),
-        label_id=str(created.label_id),
+        label_id=label_id,
         linked_album_master_id=created.linked_album_master_id,
         notices=list(created.notices or []),
     )

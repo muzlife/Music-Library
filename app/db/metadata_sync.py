@@ -23,6 +23,7 @@ job, the test suite) keep working unchanged.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from app.db import (  # noqa: E402  — package surface
@@ -37,6 +38,7 @@ def list_metadata_sync_candidates(
     only_missing: bool,
     limit: int,
     offset: int = 0,
+    owned_item_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     query = """
       SELECT
@@ -44,6 +46,7 @@ def list_metadata_sync_candidates(
         oi.category,
         oi.source_code,
         oi.source_external_id,
+        oi.linked_album_master_id,
         mid.format_name,
         mid.artist_or_brand,
         mid.release_year,
@@ -73,14 +76,22 @@ def list_metadata_sync_candidates(
         mid.label_items_json,
         mid.is_promotional_not_for_sale,
         mid.sleeve_condition AS cover_condition,
-        mid.media_condition AS disc_condition
+        mid.media_condition AS disc_condition,
+        oi.item_name_override,
+        am.title AS master_title,
+        COALESCE(oi.item_name_override, am.title) AS display_name
       FROM owned_item oi
       LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+      LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
       WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
         AND oi.source_code IS NOT NULL
         AND TRIM(COALESCE(oi.source_external_id, '')) <> ''
     """
     params: list[Any] = []
+    if owned_item_ids:
+        placeholders = ",".join("?" * len(owned_item_ids))
+        query += f" AND oi.id IN ({placeholders})"
+        params.extend(owned_item_ids)
     if source_code:
         query += " AND oi.source_code = ?"
         params.append(source_code)
@@ -200,7 +211,7 @@ def list_metadata_sync_candidates(
     return out
 
 
-def upsert_music_detail(owned_item_id: int, music_detail: dict[str, Any]) -> None:
+def upsert_music_detail(owned_item_id: int, music_detail: dict[str, Any], note_append: str | None = None) -> None:
     now = utc_now_iso()
     with get_conn() as conn:
         _upsert_music_item_detail_in_conn(
@@ -209,14 +220,28 @@ def upsert_music_detail(owned_item_id: int, music_detail: dict[str, Any]) -> Non
             music_detail=music_detail,
             now=now,
         )
-        conn.execute(
-            """
-            UPDATE owned_item
-            SET updated_at = ?
-            WHERE id = ?
-            """,
-            (now, owned_item_id),
-        )
+        if note_append:
+            conn.execute(
+                """
+                UPDATE owned_item
+                SET updated_at = ?,
+                    memory_note = CASE 
+                        WHEN IFNULL(TRIM(memory_note), '') = '' THEN ?
+                        ELSE memory_note || char(10) || ?
+                    END
+                WHERE id = ?
+                """,
+                (now, note_append, note_append, owned_item_id),
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE owned_item
+                SET updated_at = ?
+                WHERE id = ?
+                """,
+                (now, owned_item_id),
+            )
 
 
 __all__ = [

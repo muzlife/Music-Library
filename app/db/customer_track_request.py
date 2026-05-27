@@ -36,6 +36,10 @@ def create_customer_track_request(
     matched_track_title: str | None = None,
     matched_track_no: int | None = None,
     customer_note: str | None = None,
+    weather_temp_c: float | None = None,
+    weather_description: str | None = None,
+    weather_code: int | None = None,
+    season: str | None = None,
 ) -> dict[str, Any]:
     now = utc_now_iso()
     owned_id = int(owned_item_id) if owned_item_id else None
@@ -52,6 +56,21 @@ def create_customer_track_request(
         artist_or_brand = str(detail.get("artist_or_brand") or "").strip() or None
         item_title = item_title or str(detail.get("catalog_no") or "").strip() or None
         cover_image_url = str(detail.get("cover_image_url") or detail.get("goods_primary_image_url") or "").strip() or None
+
+    resolved_season = season
+    if not resolved_season:
+        try:
+            month = int(now.split("-")[1])
+            if month in {3, 4, 5}:
+                resolved_season = "SPRING"
+            elif month in {6, 7, 8}:
+                resolved_season = "SUMMER"
+            elif month in {9, 10, 11}:
+                resolved_season = "AUTUMN"
+            else:
+                resolved_season = "WINTER"
+        except Exception:
+            resolved_season = "SPRING"
 
     with get_conn() as conn:
         cur = conn.execute(
@@ -72,9 +91,13 @@ def create_customer_track_request(
               customer_note,
               status,
               requested_by,
+              weather_temp_c,
+              weather_description,
+              weather_code,
+              season,
               created_at,
               updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'REQUESTED', ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'REQUESTED', ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 str(requested_track or "").strip(),
@@ -91,6 +114,10 @@ def create_customer_track_request(
                 location.get("previous_slot_display_name") if location else None,
                 str(customer_note or "").strip() or None,
                 str(requested_by or "").strip() or None,
+                weather_temp_c,
+                weather_description,
+                weather_code,
+                resolved_season,
                 now,
                 now,
             ),
@@ -192,6 +219,7 @@ def update_customer_track_request(
     status: str | None = None,
     response_note: str | None = None,
     handled_by: str | None = None,
+    playback_deck: str | None = None,
 ) -> dict[str, Any] | None:
     request_row = get_customer_track_request(int(request_id))
     if request_row is None:
@@ -202,6 +230,16 @@ def update_customer_track_request(
     handled_at = request_row.get("handled_at")
     if next_status in {"PLAYING", "RETURNED", "CANCELLED"}:
         handled_at = now
+
+    played_at = request_row.get("played_at")
+    returned_at = request_row.get("returned_at")
+    next_deck = playback_deck if playback_deck is not None else request_row.get("playback_deck")
+
+    if next_status == "PLAYING" and status == "PLAYING":
+        played_at = now
+    if next_status == "RETURNED" and status == "RETURNED":
+        returned_at = now
+
     with get_conn() as conn:
         conn.execute(
             """
@@ -210,6 +248,9 @@ def update_customer_track_request(
                 response_note = ?,
                 handled_by = ?,
                 handled_at = ?,
+                playback_deck = ?,
+                played_at = ?,
+                returned_at = ?,
                 updated_at = ?
             WHERE id = ?
             """,
@@ -218,6 +259,9 @@ def update_customer_track_request(
                 next_note,
                 str(handled_by or "").strip() or request_row.get("handled_by"),
                 handled_at,
+                next_deck,
+                played_at,
+                returned_at,
                 now,
                 int(request_id),
             ),

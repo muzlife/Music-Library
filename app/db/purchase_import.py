@@ -233,7 +233,7 @@ def _purchase_import_row_matches_duplicate(
     existing_raw_line = _purchase_import_cmp_text(existing.get("raw_line"))
     incoming_raw_line = _purchase_import_cmp_text(incoming.get("raw_line"))
 
-    by_source_ref = bool(existing_source_ref and incoming_source_ref and existing_source_ref == incoming_source_ref and existing_raw_line and incoming_raw_line and existing_raw_line == incoming_raw_line)
+    by_source_ref = bool(existing_source_ref and incoming_source_ref and existing_source_ref == incoming_source_ref and (not existing_raw_line or not incoming_raw_line or existing_raw_line == incoming_raw_line))
     by_item_url = bool(existing_item_url and incoming_item_url and existing_item_url == incoming_item_url and existing_purchase_date and incoming_purchase_date and existing_purchase_date == incoming_purchase_date)
     by_email_subject = bool(existing_email_subject and incoming_email_subject and existing_email_subject == incoming_email_subject and existing_raw_line and incoming_raw_line and existing_raw_line == incoming_raw_line)
     by_raw_line = bool(existing_raw_line and incoming_raw_line and existing_raw_line == incoming_raw_line and existing_purchase_date and incoming_purchase_date and existing_purchase_date == incoming_purchase_date)
