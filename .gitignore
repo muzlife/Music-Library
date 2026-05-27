@@ -22,3 +22,20 @@ logs/
 scratch/
 test-results/
 app/static/uploads/
+
+# One-off maintenance scripts (kept for reference, not tracked)
+/patch_master_edit_backend.py
+/patch_master_edit_ui.py
+/patch_master_section.py
+/patch_unified_edit.py
+/fix_media.sql
+/fix_media_all.sql
+/get_remaining_cds.sql
+/query.sql
+/query2.sql
+/query_all_blank.sql
+/query_check.sql
+/restore_2944.py
+/scripts/backfill_aladin_discogs_master.py
+/scripts/diagnose_aladin_api.py
+/scripts/normalize_item_name.py
