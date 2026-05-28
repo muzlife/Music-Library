@@ -118,6 +118,19 @@ function customReact(){
   document.getElementById('customInput').focus();
 }
 
+function showLyrics(fp){
+  document.getElementById('lyricsTitle').textContent = '';
+  document.getElementById('lyricsText').textContent = '불러오는 중...';
+  document.getElementById('lyricsModal').style.display = 'flex';
+  fetch('/cafe/lyrics?file_path='+encodeURIComponent(fp)).then(function(r){return r.json()}).then(function(d){
+    if(d.available){
+      document.getElementById('lyricsText').textContent = d.lyrics;
+    } else {
+      document.getElementById('lyricsText').textContent = '가사 정보가 없습니다';
+    }
+  }).catch(function(){document.getElementById('lyricsText').textContent = '오류'});
+}
+
 function react(type){
   var freeText = type === 'CUSTOM' ? document.getElementById('customInput').value.trim() : null;
   fetch('/cafe/reaction',{
@@ -151,7 +164,8 @@ setInterval(function(){
   fetch('/cafe/now-playing').then(function(r){return r.json()}).then(function(d){
     var np = document.getElementById('np');
     if(d.available){
-      np.innerHTML = '<img src="'+(d.album_art_url||'')+'" alt=""><div class="song">'+d.title+'</div><div class="artist">'+d.artist+'</div><div class="album">'+d.album_name+'</div>';
+      var lyrBtn = d.source==='local'&&d.file_path?'<button onclick="showLyrics(\''+d.file_path+'\')" style="margin-top:10px;background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:6px 16px;border-radius:20px;font-size:.78rem;cursor:pointer">📝 가사 보기</button>':'';
+np.innerHTML = '<img src="'+(d.album_art_url||'')+'" alt=""><div class="song">'+d.title+'</div><div class="artist">'+d.artist+'</div><div class="album">'+d.album_name+'</div>'+lyrBtn;
     } else {
       np.innerHTML = '<div class="idle">♪ 재생 중인 곡이 없습니다</div>';
     }
@@ -171,6 +185,13 @@ setInterval(function(){
   <input type="text" id="customInput" placeholder="50자 이내로 입력..." maxlength="50" style="display:none;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;width:260px;outline:none">
   <button id="customSend" onclick="react('CUSTOM')" style="display:none;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.8rem;cursor:pointer">전송</button>
   <button onclick="closeOverlay()" style="margin-top:12px;background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer">닫기</button>
+</div>
+
+
+<div id="lyricsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;flex-direction:column;align-items:center;padding:40px 20px;overflow-y:auto">
+  <div id="lyricsTitle" style="font-size:1.1rem;font-weight:600;color:var(--text);margin-bottom:20px;text-align:center"></div>
+  <pre id="lyricsText" style="font-size:.9rem;color:var(--muted);line-height:1.8;white-space:pre-wrap;text-align:center;max-width:500px"></pre>
+  <button onclick="document.getElementById('lyricsModal').style.display='none'" style="margin-top:24px;background:var(--accent);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:.85rem;cursor:pointer">닫기</button>
 </div>
 
 </body>
