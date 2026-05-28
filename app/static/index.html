@@ -41913,6 +41913,89 @@
       await openDashboardForResolvedSlot(slotRow);
     }
 
+
+    // ── Spotify player panel ──
+    async function toggleSpotifyPlayer(masterId, albumId) {
+      var existing = document.querySelector('.spotify-player-panel[data-sp-master="' + masterId + '"]');
+      if (existing) {
+        existing.classList.toggle('open');
+        return;
+      }
+      // Close any other open panels
+      document.querySelectorAll('.spotify-player-panel.open').forEach(function(p) { p.classList.remove('open'); });
+      
+      // Create panel
+      var resultRow = document.querySelector('[data-master-id="' + masterId + '"]');
+      if (!resultRow) return;
+      
+      var panel = document.createElement('div');
+      panel.className = 'spotify-player-panel open';
+      panel.setAttribute('data-sp-master', masterId);
+      panel.innerHTML = '<div class="mini muted" style="padding:8px;">트랙 불러오는 중…</div>';
+      resultRow.appendChild(panel);
+      
+      try {
+        var res = await fetch('/spotify/albums/' + encodeURIComponent(albumId) + '/tracks');
+        if (!res.ok) { panel.innerHTML = '<div class="mini" style="color:#ef4444;">트랙 로드 실패</div>'; return; }
+        var data = await res.json();
+        var tracks = data.tracks || [];
+        
+        var html = '<button class="spotify-play-all" onclick="spotifyPlayAlbum('' + escapeHtml(albumId) + '')">▶ 전체 재생</button>';
+        html += '<div class="spotify-tracks">';
+        for (var i = 0; i < tracks.length; i++) {
+          var t = tracks[i];
+          var dur = t.duration_ms ? Math.floor(t.duration_ms / 60000) + ':' + String(Math.floor((t.duration_ms % 60000) / 1000)).padStart(2, '0') : '';
+          html += '<div class="spotify-track-row">' +
+            '<span class="spotify-track-num">' + (t.track_number || i+1) + '</span>' +
+            '<span class="spotify-track-name" title="' + escapeHtml(t.name) + '">' + escapeHtml(t.name) + '</span>' +
+            '<span class="spotify-track-dur">' + dur + '</span>' +
+            '<button class="spotify-track-play" onclick="spotifyPlayTrack('' + escapeHtml(t.uri || '') + '')" title="재생">▶</button>' +
+            '</div>';
+        }
+        html += '</div>';
+        panel.innerHTML = html;
+      } catch(e) {
+        panel.innerHTML = '<div class="mini" style="color:#ef4444;">오류: ' + escapeHtml(String(e.message || e)) + '</div>';
+      }
+    }
+    
+    function spotifyPlayAlbum(albumId) {
+      var uri = 'spotify:album:' + albumId;
+      fetch('/spotify/play', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({uri: uri})
+      }).catch(function(){});
+    }
+    
+    function spotifyPlayTrack(uri) {
+      if (!uri) return;
+      fetch('/spotify/play', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({uri: uri})
+      }).catch(function(){});
+    }
+    
+    // Delegate click handler for Spotify badges
+    document.addEventListener('click', function(e) {
+      var badge = e.target.closest('.spotify-badge');
+      if (!badge) {
+        // Close panels when clicking outside
+        var clickedPanel = e.target.closest('.spotify-player-panel');
+        if (!clickedPanel) {
+          document.querySelectorAll('.spotify-player-panel.open').forEach(function(p) {
+            p.classList.remove('open');
+          });
+        }
+        return;
+      }
+      e.stopPropagation();
+      var masterId = badge.getAttribute('data-sp-master');
+      var albumId = badge.getAttribute('data-sp-album');
+      if (masterId && albumId) toggleSpotifyPlayer(masterId, albumId);
+    });
+
     function initDashboardDrilldown() {
       // 소스보강 탭으로 이동하고 미연결 대상 로드
       function _goSource() {

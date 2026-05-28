@@ -1068,3 +1068,57 @@ def spotify_search_albums(
         if len(albums) >= limit:
             break
     return {"query": q, "total_count": len(albums), "items": albums}
+
+
+# ── Spotify tracks ──────────────────────────────────────────────────
+
+@router.get("/spotify/albums/{spotify_album_id}/tracks")
+def spotify_album_tracks(
+    spotify_album_id: str,
+    request: Request,
+) -> dict[str, Any]:
+    """Get tracks for a Spotify album. OPERATOR+."""
+    from ..security import _require_operator_request
+    _require_operator_request(request)
+    from ..services.spotify import SpotifyService
+
+    sp = SpotifyService()
+    if not sp.configured:
+        raise HTTPException(status_code=503, detail="Spotify not configured")
+
+    items = sp.album_tracks_sync(spotify_album_id)
+    tracks = [
+        {
+            "track_id": t.get("id"),
+            "name": t.get("name"),
+            "track_number": t.get("track_number", 0),
+            "duration_ms": t.get("duration_ms", 0),
+            "uri": t.get("uri"),
+            "artists": [a.get("name", "") for a in t.get("artists", [])],
+        }
+        for t in items
+    ]
+    return {"spotify_album_id": spotify_album_id, "total_tracks": len(tracks), "tracks": tracks}
+
+
+# ── Generic Spotify play ────────────────────────────────────────────
+
+@router.post("/spotify/play")
+def spotify_play_uri(request: Request) -> dict[str, Any]:
+    """Play a Spotify URI (track or album). OPERATOR+."""
+    from ..security import _require_operator_request
+    _require_operator_request(request)
+    import json as _json
+    from ..services.spotify import SpotifyService
+
+    body = _json.loads(request.body())
+    uri = str(body.get("uri") or "").strip()
+    if not uri:
+        raise HTTPException(status_code=400, detail="uri required")
+
+    sp = SpotifyService()
+    if not sp.configured:
+        raise HTTPException(status_code=503, detail="Spotify not configured")
+
+    ok = sp.play_sync(uri)
+    return {"ok": ok, "uri": uri}
