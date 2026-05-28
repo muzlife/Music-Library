@@ -57,18 +57,20 @@ class SpotifyService:
         sp = self._ensure_client()
         if sp is None:
             return []
-        try:
-            results = sp.search(q=query, type="track", limit=limit)
-        except Exception:
-            # Token may be stale — force refresh and retry once
-            logger.warning("spotify search failed, refreshing token and retrying")
+        for attempt in range(2):
             try:
-                if hasattr(sp, 'auth_manager'):
-                    sp.auth_manager.get_access_token(check_cache=False)
                 results = sp.search(q=query, type="track", limit=limit)
+                break
             except Exception:
-                logger.exception("spotify search failed after retry")
-                return []
+                if attempt == 0:
+                    logger.warning("spotify search failed, retrying with fresh token")
+                    try:
+                        sp.auth_manager.get_access_token(check_cache=False)
+                    except Exception:
+                        pass
+                else:
+                    logger.exception("spotify search failed")
+                    return []
         items: list[dict[str, Any]] = []
         for item in (results.get("tracks", {}).get("items") or []):
             album = item.get("album", {})

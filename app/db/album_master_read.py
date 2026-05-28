@@ -512,6 +512,15 @@ def set_owned_item_linked_album_master(owned_item_id: int, album_master_id: int 
         return int(cur.rowcount or 0) > 0
 
 
+def get_album_master(album_master_id: int) -> dict[str, Any] | None:
+    """Get a single album_master by ID."""
+    from app.db.connection import get_conn
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT * FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+
+
 def list_album_masters(
     source_code: str | None,
     q: str | None,
