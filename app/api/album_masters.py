@@ -917,3 +917,49 @@ def merge_album_master(
 
 
 
+
+
+# ── Spotify integration ────────────────────────────────────────────
+
+@router.post("/album-masters/spotify/match")
+def spotify_batch_match(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+) -> dict[str, Any]:
+    """Batch match album_masters to Spotify. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.spotify import SpotifyService
+    from ..db.album_master_spotify import batch_match_spotify
+
+    sp = SpotifyService()
+    if not sp.configured:
+        raise HTTPException(status_code=503, detail="Spotify not configured")
+    result = batch_match_spotify(sp, limit=limit)
+    return result
+
+
+@router.post("/album-masters/{album_master_id}/spotify/play")
+def spotify_play_master(
+    album_master_id: int,
+    request: Request,
+) -> dict[str, Any]:
+    """Play a Spotify album by album_master_id. OPERATOR+."""
+    from ..security import _require_operator_request
+    _require_operator_request(request)
+    from ..services.spotify import SpotifyService
+
+    sp = SpotifyService()
+    if not sp.configured:
+        raise HTTPException(status_code=503, detail="Spotify not configured")
+
+    row = db.get_album_master(album_master_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Album master not found")
+
+    uri = (row.get("spotify_album_uri") or "").strip()
+    if not uri:
+        raise HTTPException(status_code=404, detail="No Spotify match for this album")
+
+    ok = sp.play_sync(uri)
+    return {"ok": ok, "album_master_id": album_master_id, "spotify_uri": uri}

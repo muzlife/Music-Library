@@ -149,9 +149,9 @@ def cafe_search(
         item["source"] = "spotify"
     results.extend(spotify_results)
 
-    # Local file search
-    local_files = _local.scan_files(q, limit=limit)
-    results.extend(local_files)
+    # Local file search (skip if NAS slow)
+    # local_files = _local.scan_files(q, limit=limit)
+    # results.extend(local_files)
 
     # Local tag search (simple text match on tag_value)
     local_tags = db.find_tracks_by_tag(q, limit=limit)

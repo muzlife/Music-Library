@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -871,6 +871,12 @@ def _apply_migrations_legacy(conn: sqlite3.Connection) -> None:
             conn.execute("ALTER TABLE album_master ADD COLUMN override_release_year INTEGER")
         if not _column_exists(conn, "album_master", "override_note"):
             conn.execute("ALTER TABLE album_master ADD COLUMN override_note TEXT")
+        if not _column_exists(conn, "album_master", "spotify_album_id"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN spotify_album_id TEXT")
+        if not _column_exists(conn, "album_master", "spotify_album_uri"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN spotify_album_uri TEXT")
+        if not _column_exists(conn, "album_master", "spotify_matched_at"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN spotify_matched_at TEXT")
     if _column_exists(conn, "album_master", "sort_artist_name"):
         conn.execute(
             """
