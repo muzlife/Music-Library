@@ -3,137 +3,135 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>카페 운영 — Ops Cafe</title>
+<title>카페 운영</title>
 <style>
-:root{--bg:#0a1016;--surface:rgba(22,29,38,0.98);--border:rgba(132,148,170,0.26);--text:#eef3f8;--muted:#b3bfcc;--accent:#e8620a;--accent-soft:rgba(232,98,10,0.12)}
+:root{--bg:#0a1016;--surface:rgba(22,29,38,0.98);--border:rgba(132,148,170,0.22);--text:#eef3f8;--muted:#b3bfcc;--accent:#e8620a;--green:#22c55e;--yellow:#f59e0b}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.app{max-width:1100px;margin:0 auto;padding:16px}
-h1{font-size:1.2rem;margin-bottom:12px}
-.board{display:flex;gap:12px;min-height:60vh}
-.column{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column}
-.column h2{font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.column .count{font-size:.7rem;color:var(--muted);float:right}
-.card{background:rgba(132,148,170,0.04);border:1px solid rgba(132,148,170,0.1);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:.15s}
-.card:hover{border-color:var(--accent)}
-.card .ctitle{font-size:.82rem;font-weight:500;margin-bottom:4px}
-.card .cmeta{font-size:.7rem;color:var(--muted);display:flex;gap:8px;align-items:center}
-.card .ctable{background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:3px;font-size:.65rem}
-.card .cactions{margin-top:6px;display:flex;gap:4px}
-.card .cactions button{padding:4px 10px;font-size:.7rem;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer}
-.card .cactions button.play{background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.3);color:#22c55e}
-.card .cactions button.hold{background:rgba(245,158,11,0.1);color:#f59e0b}
-.card .cactions button.done{background:rgba(132,148,170,0.1)}
-.playback-bar{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-top:12px}
-.playback-bar .now-title{font-size:.85rem;font-weight:500;flex:1}
-.playback-bar button{padding:6px 14px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:.78rem}
-.playback-bar button:hover{background:var(--accent-soft)}
-.feed{max-height:150px;overflow-y:auto;margin-top:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:.75rem;color:var(--muted)}
-.feed .feed-item{margin-bottom:4px}
-.feed .feed-table{color:var(--accent);font-weight:500}
-.empty{text-align:center;padding:24px;color:var(--muted);font-size:.8rem}
-@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-.card.new{animation:slideIn .3s}
+.app{max-width:1200px;margin:0 auto;padding:16px}
+h1{font-size:1.2rem;margin-bottom:4px}
+.sub{color:var(--muted);font-size:.8rem;margin-bottom:12px}
+.board{display:flex;gap:10px;min-height:50vh}
+.col{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column}
+.col h2{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+.col h2 span{color:var(--text)}
+.card{background:rgba(132,148,170,0.04);border:1px solid rgba(132,148,170,0.1);border-radius:8px;padding:8px;margin-bottom:6px}
+.card .ct{font-size:.8rem;font-weight:500;margin-bottom:2px}
+.card .cm{font-size:.68rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+.card .table{background:rgba(232,98,10,0.15);color:var(--accent);padding:1px 6px;border-radius:3px;font-size:.62rem}
+.card .src{font-size:.62rem;color:var(--muted)}
+.card .btns{margin-top:4px;display:flex;gap:4px}
+.card .btns button{padding:3px 10px;font-size:.68rem;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer}
+.card .btns .play{background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.25);color:var(--green)}
+.card .btns .local{background:rgba(245,158,11,0.1);color:var(--yellow)}
+.card .btns .done{background:rgba(132,148,170,0.08)}
+.card .btns .hold{color:var(--yellow)}
+.bar{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-top:10px}
+.bar .now{flex:1;font-size:.82rem;font-weight:500}
+.bar .src{font-size:.68rem;color:var(--muted)}
+.bar button{padding:6px 12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:.75rem}
+.bar button:hover{background:rgba(232,98,10,0.1)}
+.feed{max-height:120px;overflow-y:auto;margin-top:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:.7rem;color:var(--muted)}
+.feed .item{margin-bottom:2px}
+.feed .tn{color:var(--accent);font-weight:500}
+@keyframes slide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.card.new{animation:slide .3s}
+.empty{text-align:center;padding:20px;color:var(--muted);font-size:.75rem}
 </style>
 </head>
 <body>
 <div class="app">
-  <h1>☕ 카페 운영 보드</h1>
-  <div class="board">
-    <div class="column" id="col-waiting">
-      <h2>대기 <span class="count" id="count-waiting">0</span></h2>
-      <div id="waiting-list"></div>
-    </div>
-    <div class="column" id="col-playing">
-      <h2>처리중 <span class="count" id="count-playing">0</span></h2>
-      <div id="playing-list"></div>
-    </div>
-    <div class="column" id="col-done">
-      <h2>완료 <span class="count" id="count-done">0</span></h2>
-      <div id="done-list"></div>
-    </div>
-  </div>
-  <div class="playback-bar">
-    <div class="now-title" id="nowTitle">재생 중인 곡 없음</div>
-    <button onclick="staffAction('pause')">⏸️</button>
-    <button onclick="staffAction('skip')">⏭️</button>
-  </div>
-  <div class="feed" id="reactionFeed">
-    <div class="empty">반응 피드</div>
-  </div>
+<h1>☕ 카페 운영</h1>
+<div class="sub" id="status">연결 중...</div>
+<div class="board">
+  <div class="col"><h2>대기 <span id="nw">0</span></h2><div id="waiting"></div></div>
+  <div class="col"><h2>처리중 <span id="np">0</span></h2><div id="playing"></div></div>
+  <div class="col"><h2>완료 <span id="nd">0</span></h2><div id="done"></div></div>
+</div>
+<div class="bar">
+  <div class="now" id="nowTitle">재생 중인 곡 없음</div>
+  <div class="src" id="nowSrc"></div>
+  <button onclick="ctrl('pause')" title="일시정지">⏸</button>
+  <button onclick="ctrl('stop')" title="정지">⏹</button>
+</div>
+<div class="feed" id="feed"><div class="empty">반응 피드</div></div>
 </div>
 <script>
-function api(path, opts) {
-  opts = opts || {};
-  opts.credentials = 'include';
-  return fetch(path, opts).then(function(r){return r.ok?r.json():Promise.reject(r)});
+var _all = [];
+var _ws = null;
+var _emoji = {LOVE:'💕',VIBE:'☕',SIMILAR:'🎵',WEATHER:'🌧️',CUSTOM:'✍️'};
+
+function api(p,o){
+  o=o||{};o.credentials='include';
+  return fetch(p,o).then(function(r){return r.ok?r.json():Promise.reject(r)});
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-var allRequests = [];
-var ws = null;
-
-function loadQueue() {
-  api('/ops/cafe/queue').then(function(data){
-    allRequests = data.items || [];
-    renderBoard();
+function load(){
+  api('/ops/cafe/queue').then(function(d){
+    _all = d.items||[];
+    render();
+    document.getElementById('status').textContent = '총 '+_all.length+'건';
   });
 }
 
-function renderBoard() {
-  var waiting=[], playing=[], done=[];
-  allRequests.forEach(function(r){
-    if(r.status==='REQUESTED') waiting.push(r);
-    else if(r.status==='PLAYING') playing.push(r);
-    else done.push(r);
+function render(){
+  var w=[],p=[],d=[];
+  _all.forEach(function(r){
+    if(r.status==='REQUESTED') w.push(r);
+    else if(r.status==='PLAYING') p.push(r);
+    else d.push(r);
   });
-  document.getElementById('waiting-list').innerHTML = waiting.map(cardHtml).join('')||'<div class="empty">없음</div>';
-  document.getElementById('playing-list').innerHTML = playing.map(cardHtml).join('')||'<div class="empty">없음</div>';
-  document.getElementById('done-list').innerHTML = done.slice(0,20).map(cardHtml).join('')||'<div class="empty">없음</div>';
-  document.getElementById('count-waiting').textContent = waiting.length;
-  document.getElementById('count-playing').textContent = playing.length;
-  document.getElementById('count-done').textContent = done.length;
-
-  if(playing.length) document.getElementById('nowTitle').textContent = playing[0].requested_track||'';
-  else document.getElementById('nowTitle').textContent = '재생 중인 곡 없음';
+  document.getElementById('waiting').innerHTML = w.map(card).join('')||'<div class=empty>없음</div>';
+  document.getElementById('playing').innerHTML = p.map(card).join('')||'<div class=empty>없음</div>';
+  document.getElementById('done').innerHTML = d.slice(0,15).map(card).join('')||'<div class=empty>없음</div>';
+  document.getElementById('nw').textContent = w.length;
+  document.getElementById('np').textContent = p.length;
+  document.getElementById('nd').textContent = d.length;
+  if(p.length){ document.getElementById('nowTitle').textContent = p[0].requested_track||''; }
 }
 
-function cardHtml(r) {
-  var actions = '';
-  if(r.status==='REQUESTED') actions = '<button class="play" onclick="staffAction(\\'play\\','+r.id+')">재생</button><button class="hold" onclick="staffAction(\\'hold\\','+r.id+')">보류</button>';
-  else if(r.status==='PLAYING') actions = '<button class="done" onclick="staffAction(\\'complete\\','+r.id+')">완료</button>';
-  return '<div class="card">'+
-    '<div class="ctitle">'+esc(r.requested_track||'')+'</div>'+
-    '<div class="cmeta"><span class="ctable">'+esc(r.customer_note||'')+'</span><span>'+esc(r.created_at||'').substring(11,16)+'</span></div>'+
-    '<div class="cactions">'+actions+'</div></div>';
+function card(r){
+  var isSpotify = (r.customer_note||'').indexOf('spotify')>=0;
+  var isLocal = (r.customer_note||'').indexOf('local')>=0;
+  var src = isSpotify?'🎵':isLocal?'💿':'';
+  var table = (r.customer_note||'').replace(' / spotify','').replace(' / local','');
+  var a = '';
+  if(r.status==='REQUESTED') a = '<button class=play onclick="act('+r.id+',\'play\',\''+(isLocal?'local':'spotify')+'\')">재생</button><button class=hold onclick="act('+r.id+',\'hold\')">보류</button>';
+  else if(r.status==='PLAYING') a = '<button class=done onclick="act('+r.id+',\'complete\')">완료</button>';
+  return '<div class=card><div class=ct>'+src+' '+(r.requested_track||'').replace(/</g,'').substring(0,60)+'</div><div class=cm><span class=table>'+table+'</span></div><div class=btns>'+a+'</div></div>';
 }
 
-function staffAction(action, id) {
-  if(action==='play' && id) api('/ops/cafe/play/'+id,{method:'POST'}).then(loadQueue);
-  else if(action==='complete' && id) api('/ops/cafe/complete/'+id,{method:'POST'}).then(loadQueue);
-  else if(action==='pause') api('/ops/cafe/pause',{method:'POST'});
-  else if(action==='skip') api('/ops/cafe/skip',{method:'POST'});
+function act(id, action, source){
+  if(action==='play' && source==='spotify') api('/ops/cafe/play/'+id,{method:'POST'}).then(load);
+  else if(action==='play' && source==='local') api('/ops/cafe/play-local',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:id})}).then(load);
+  else if(action==='complete') api('/ops/cafe/complete/'+id,{method:'POST'}).then(load);
+  else if(action==='hold') {} // just leave in waiting
 }
 
-function connectWS() {
-  var protocol = location.protocol==='https:'?'wss':'ws';
-  ws = new WebSocket(protocol+'://'+location.host+'/ws/cafe?role=staff');
-  ws.onmessage = function(e) {
-    var data = JSON.parse(e.data);
-    if(data.event==='track_request'||data.event==='queue_update') loadQueue();
-    if(data.event==='reaction') {
-      var feed = document.getElementById('reactionFeed');
-      var emoji = data.reaction_type==='LOVE'?'\\u{1F495}':data.reaction_type==='VIBE'?'\\u{2615}':data.reaction_type==='SIMILAR'?'\\u{1F3B5}':data.reaction_type==='WEATHER'?'\\u{1F327}':'\\u{270D}';
-      feed.innerHTML = '<div class="feed-item"><span class="feed-table">'+esc(data.table_number||'')+'</span> '+emoji+' '+(data.free_text||'')+'</div>' + feed.innerHTML;
+function ctrl(cmd){
+  if(cmd==='pause') api('/ops/cafe/pause',{method:'POST'});
+  else if(cmd==='stop'){ api('/ops/cafe/pause',{method:'POST'}); api('/ops/cafe/stop-local',{method:'POST'}); }
+}
+
+function wsConnect(){
+  var p = location.protocol==='https:'?'wss':'ws';
+  _ws = new WebSocket(p+'://'+location.host+'/ws/cafe?role=staff');
+  _ws.onopen = function(){ document.getElementById('status').textContent = '연결됨'; };
+  _ws.onmessage = function(e){
+    var d = JSON.parse(e.data);
+    if(d.event==='track_request') load();
+    if(d.event==='reaction'){
+      var f = document.getElementById('feed');
+      var em = _emoji[d.reaction_type]||'';
+      var txt = d.free_text||'';
+      f.innerHTML = '<div class=item><span class=tn>'+d.table_number+'</span> '+em+' '+txt+'</div>' + f.innerHTML;
     }
   };
-  ws.onclose = function(){setTimeout(connectWS,3000)};
+  _ws.onclose = function(){ document.getElementById('status').textContent = '재연결 중...'; setTimeout(wsConnect,3000); };
 }
 
-loadQueue();
-connectWS();
-setInterval(loadQueue, 10000);
+load(); wsConnect();
+setInterval(load, 10000);
 </script>
 </body>
 </html>
