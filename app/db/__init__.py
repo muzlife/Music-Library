@@ -1736,6 +1736,17 @@ from .table_device import (  # noqa: E402
     list_table_devices,
     register_table_device,
 )
+from .cafe_playlist import (  # noqa: E402
+    _ensure_playlist_tables,
+    add_playlist_item,
+    create_playlist,
+    delete_playlist,
+    get_next_playlist_item,
+    get_playlist,
+    get_playlist_items,
+    list_playlists,
+    remove_playlist_item,
+)
 from .local_music_index import (  # noqa: E402
     _ensure_index_table,
     rebuild_index,
