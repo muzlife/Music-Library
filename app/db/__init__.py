@@ -1736,6 +1736,12 @@ from .table_device import (  # noqa: E402
     list_table_devices,
     register_table_device,
 )
+from .local_music_index import (  # noqa: E402
+    _ensure_index_table,
+    rebuild_index,
+    search_local_index,
+    get_index_stats,
+)
 from .track_reaction import (  # noqa: E402
     _ensure_track_reaction_table,
     insert_track_reaction,
