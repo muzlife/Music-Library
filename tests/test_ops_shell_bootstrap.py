@@ -437,7 +437,7 @@ process.stdout.write(homeResultItemHtml(row) || "");
 
 def test_login_page_redirect_target_is_ops():
     html = read_static_html("login.html")
-    assert 'window.location.replace("/ops")' in html
+    assert 'window.location.replace(data.role === "ADMIN" ? "/admin" : "/ops");' in html
 
 
 def test_login_page_exposes_shell_locale_and_theme_controls():
@@ -456,7 +456,7 @@ def test_login_page_defaults_invalid_saved_locale_and_theme():
     )
     assert payload["lang"] == "ko"
     assert payload["theme"] == "night"
-    assert payload["heading"] == "라이브러리 관리/운영 콘솔"
+    assert payload["heading"] == "로그인"
 
 
 def test_login_page_maps_only_exact_auth_failure_literal():

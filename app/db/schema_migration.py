@@ -790,6 +790,20 @@ def _migration_v8_add_customer_track_weather_and_decks(conn: sqlite3.Connection)
         conn.execute("ALTER TABLE customer_track_request ADD COLUMN returned_at TEXT")
 
 
+def _migration_v9_add_spotify_album_fields(conn: sqlite3.Connection) -> None:
+    """Add spotify_album_id, spotify_album_uri, spotify_matched_at, and spotify_image_url to album_master."""
+    if not _table_exists(conn, "album_master"):
+        return
+    if not _column_exists(conn, "album_master", "spotify_album_id"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN spotify_album_id TEXT")
+    if not _column_exists(conn, "album_master", "spotify_album_uri"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN spotify_album_uri TEXT")
+    if not _column_exists(conn, "album_master", "spotify_matched_at"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN spotify_matched_at TEXT")
+    if not _column_exists(conn, "album_master", "spotify_image_url"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN spotify_image_url TEXT")
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -799,6 +813,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     6: _migration_v6_add_package_contents_limited_edition,
     7: _migration_v7_drop_format_name_check,
     8: _migration_v8_add_customer_track_weather_and_decks,
+    9: _migration_v9_add_spotify_album_fields,
 }
 
 

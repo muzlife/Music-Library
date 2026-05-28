@@ -174,12 +174,14 @@ def test_run_api_script_loads_unquoted_env_values_with_spaces(tmp_path: Path):
         "utf-8",
     )
 
+    clean_env = {k: v for k, v in os.environ.items() if k not in {"APP_PORT", "LIBRARY_DB_PATH", "APP_HOST"}}
+    clean_env["RUN_API_CAPTURE"] = str(capture_path)
     subprocess.run(
         [str(run_api_copy)],
         check=True,
         capture_output=True,
         text=True,
-        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path)),
+        env=clean_env,
     )
 
     assert capture_path.read_text("utf-8").strip() == str(drive_dir)
@@ -216,12 +218,14 @@ def test_run_api_script_rejects_prod_root_without_matching_library_db_path(tmp_p
         "utf-8",
     )
 
+    clean_env = {k: v for k, v in os.environ.items() if k not in {"APP_PORT", "LIBRARY_DB_PATH", "APP_HOST"}}
+    clean_env["RUN_API_CAPTURE"] = str(capture_path)
     result = subprocess.run(
         [str(run_api_copy)],
         check=False,
         capture_output=True,
         text=True,
-        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path)),
+        env=clean_env,
     )
 
     assert result.returncode != 0
@@ -261,12 +265,14 @@ def test_run_api_script_rejects_qa_root_with_prod_port_and_db_path(tmp_path: Pat
         "utf-8",
     )
 
+    clean_env = {k: v for k, v in os.environ.items() if k not in {"APP_PORT", "LIBRARY_DB_PATH", "APP_HOST"}}
+    clean_env["RUN_API_CAPTURE"] = str(capture_path)
     result = subprocess.run(
         [str(run_api_copy)],
         check=False,
         capture_output=True,
         text=True,
-        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path)),
+        env=clean_env,
     )
 
     assert result.returncode != 0
@@ -306,12 +312,15 @@ def test_run_api_script_validate_only_exits_before_python_start(tmp_path: Path):
         "utf-8",
     )
 
+    clean_env = {k: v for k, v in os.environ.items() if k not in {"APP_PORT", "LIBRARY_DB_PATH", "APP_HOST"}}
+    clean_env["RUN_API_CAPTURE"] = str(capture_path)
+    clean_env["RUN_API_VALIDATE_ONLY"] = "1"
     result = subprocess.run(
         [str(run_api_copy)],
         check=True,
         capture_output=True,
         text=True,
-        env=dict(os.environ, RUN_API_CAPTURE=str(capture_path), RUN_API_VALIDATE_ONLY="1"),
+        env=clean_env,
     )
 
     assert result.stdout.strip() == "runtime validation ok"
