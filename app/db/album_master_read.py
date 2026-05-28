@@ -576,6 +576,9 @@ def list_album_masters(
         am.domain_code,
         am.release_year,
         am.updated_at,
+        am.spotify_album_id,
+        am.spotify_album_uri,
+        am.spotify_matched_at,
         COUNT(amm.id) AS member_count,
         MAX(amm.owned_item_id) AS max_owned_item_id,
         (

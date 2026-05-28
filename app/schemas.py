@@ -907,6 +907,9 @@ class AlbumMasterListItem(BaseModel):
     first_member_column_code: str | None = None
     first_member_cell_code: str | None = None
     matched_track_preview: list[str] = Field(default_factory=list)
+    spotify_album_id: str | None = None
+    spotify_album_uri: str | None = None
+    spotify_matched_at: str | None = None
     updated_at: str
 
 
