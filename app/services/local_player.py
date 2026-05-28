@@ -147,6 +147,35 @@ class LocalPlayer:
             return self._afplay_proc.poll() is None
         return False
 
+
+    def get_lyrics(self, file_path: str) -> str | None:
+        """Extract embedded lyrics (USLT frame) from audio file."""
+        if not os.path.isfile(file_path):
+            return None
+        try:
+            from mutagen import File as MutagenFile
+            audio = MutagenFile(file_path)
+            if audio is None:
+                return None
+            # Try ID3 USLT frame
+            if hasattr(audio, 'tags'):
+                for key in audio.tags.keys():
+                    if key.startswith('USLT'):
+                        return str(audio.tags[key]).strip() or None
+            # Try MP4 lyrics
+            if hasattr(audio, 'get'):
+                lyr = audio.get('\xa9lyr')
+                if lyr:
+                    return str(lyr[0]).strip() if isinstance(lyr, list) else str(lyr).strip()
+            # Try VorbisComment LYRICS tag
+            if hasattr(audio, 'tags'):
+                lyrics = audio.tags.get('LYRICS')
+                if lyrics:
+                    return str(lyrics[0]).strip() if isinstance(lyrics, list) else str(lyrics).strip()
+        except Exception:
+            pass
+        return None
+
     def current_track(self) -> dict[str, Any] | None:
         if not self._current_file:
             return None

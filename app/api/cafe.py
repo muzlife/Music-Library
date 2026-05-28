@@ -413,6 +413,17 @@ def spotify_callback(request: Request):
         return {"error": str(e)}
 
 
+# ── lyrics ────────────────────────────────────────────────────────
+
+@router.get("/cafe/lyrics")
+def cafe_lyrics(file_path: str = Query(min_length=1)) -> dict[str, Any]:
+    """Public: get embedded lyrics for a local file."""
+    lyrics = _local.get_lyrics(file_path)
+    if lyrics:
+        return {"available": True, "lyrics": lyrics}
+    return {"available": False}
+
+
 # ── reactions ─────────────────────────────────────────────────────
 
 @router.post("/cafe/reaction")
