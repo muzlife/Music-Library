@@ -469,6 +469,89 @@ def cafe_reaction(request: Request) -> dict[str, Any]:
     return {"ok": True}
 
 
+# ── playlists ─────────────────────────────────────────────────────
+
+@router.get("/ops/cafe/playlists")
+def staff_playlists(request: Request) -> dict[str, Any]:
+    """Staff: list all saved playlists. OPERATOR+"""
+    security._require_operator_request(request)
+    rows = db.list_playlists()
+    for r in rows:
+        r["item_count"] = len(db.get_playlist_items(r["id"]))
+    return {"items": rows}
+
+@router.post("/ops/cafe/playlists")
+def staff_create_playlist(request: Request) -> dict[str, Any]:
+    """Staff: create a new playlist. OPERATOR+"""
+    security._require_operator_request(request)
+    import json as _json
+    body = _json.loads(request.body())
+    name = str(body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name required")
+    pl = db.create_playlist(name)
+    if not pl:
+        raise HTTPException(status_code=500, detail="create failed")
+    return pl
+
+@router.get("/ops/cafe/playlists/{playlist_id}")
+def staff_playlist_detail(playlist_id: int, request: Request) -> dict[str, Any]:
+    """Staff: get playlist with items. OPERATOR+"""
+    security._require_operator_request(request)
+    pl = db.get_playlist(playlist_id)
+    if not pl:
+        raise HTTPException(status_code=404, detail="not found")
+    pl["items"] = db.get_playlist_items(playlist_id)
+    return pl
+
+@router.post("/ops/cafe/playlists/{playlist_id}/items")
+def staff_add_playlist_item(playlist_id: int, request: Request) -> dict[str, Any]:
+    """Staff: add track to playlist. OPERATOR+"""
+    security._require_operator_request(request)
+    import json as _json
+    body = _json.loads(request.body())
+    item_id = db.add_playlist_item(
+        playlist_id=playlist_id,
+        title=str(body.get("title") or ""),
+        artist=str(body.get("artist") or ""),
+        spotify_track_id=body.get("spotify_track_id"),
+        spotify_track_uri=body.get("spotify_track_uri"),
+        local_file_path=body.get("local_file_path"),
+        album_art_url=body.get("album_art_url"),
+    )
+    return {"ok": True, "id": item_id}
+
+@router.delete("/ops/cafe/playlists/{playlist_id}/items/{item_id}")
+def staff_remove_playlist_item(playlist_id: int, item_id: int, request: Request) -> dict[str, Any]:
+    """Staff: remove track from playlist. OPERATOR+"""
+    security._require_operator_request(request)
+    db.remove_playlist_item(item_id)
+    return {"ok": True}
+
+@router.delete("/ops/cafe/playlists/{playlist_id}")
+def staff_delete_playlist(playlist_id: int, request: Request) -> dict[str, Any]:
+    """Staff: delete playlist. OPERATOR+"""
+    security._require_operator_request(request)
+    db.delete_playlist(playlist_id)
+    return {"ok": True}
+
+@router.post("/ops/cafe/playlists/{playlist_id}/play-next")
+def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[str, Any]:
+    """Staff: play next track from playlist. OPERATOR+"""
+    security._require_operator_request(request)
+    import json as _json
+    body = _json.loads(request.body())
+    current_idx = int(body.get("current_index", -1))
+    item = db.get_next_playlist_item(playlist_id, current_idx)
+    if not item:
+        return {"ok": False, "reason": "no more tracks"}
+    if item.get("spotify_track_uri"):
+        _spotify.play_sync(item["spotify_track_uri"])
+    elif item.get("local_file_path"):
+        _local.play(item["local_file_path"])
+    return {"ok": True, "item": item}
+
+
 # ── tablet shell page ───────────────────────────────────────────
 
 @router.get("/cafe/tablet", include_in_schema=False)

@@ -56,6 +56,78 @@ h1{font-size:1.2rem;margin-bottom:4px}
 </div>
 <div class="feed" id="feed"><div class="empty">반응 피드</div></div>
 </div>
+
+<div style="margin-top:12px;display:flex;gap:10px">
+  <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="font-size:.8rem;color:var(--muted);margin:0;text-transform:uppercase;letter-spacing:.04em">📋 재생목록</h2>
+      <button onclick="newPlaylist()" style="background:var(--accent);color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:.7rem;cursor:pointer">+ 새 목록</button>
+    </div>
+    <select id="plSelect" onchange="loadPlaylist()" style="width:100%;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:.75rem;margin-bottom:6px"><option value="">선택...</option></select>
+    <div id="plItems" style="max-height:200px;overflow-y:auto"></div>
+    <div id="plControls" style="display:none;margin-top:6px;display:flex;gap:4px">
+      <button onclick="plPlay(0)" style="flex:1;padding:6px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);color:var(--green);border-radius:4px;font-size:.7rem;cursor:pointer">▶️ 재생</button>
+      <button onclick="plNext()" style="flex:1;padding:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:.7rem;cursor:pointer">⏭ 다음</button>
+      <button onclick="delPlaylist()" style="padding:6px 10px;background:rgba(239,68,68,0.1);border:1px solid var(--border);color:#ef4444;border-radius:4px;font-size:.7rem;cursor:pointer">삭제</button>
+    </div>
+  </div>
+</div>
+<script>
+var _plIdx = 0;
+function loadPlaylists(){
+  api('/ops/cafe/playlists').then(function(d){
+    var s = document.getElementById('plSelect');
+    s.innerHTML = '<option value="">선택...</option>';
+    (d.items||[]).forEach(function(p){ s.innerHTML += '<option value="'+p.id+'">'+p.name+' ('+p.item_count+')</option>'; });
+  });
+}
+
+function newPlaylist(){
+  var n = prompt('재생목록 이름:');
+  if(!n) return;
+  api('/ops/cafe/playlists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n})}).then(function(){loadPlaylists();});
+}
+
+function loadPlaylist(){
+  var id = document.getElementById('plSelect').value;
+  if(!id){ document.getElementById('plItems').innerHTML=''; return; }
+  document.getElementById('plControls').style.display = 'flex';
+  api('/ops/cafe/playlists/'+id).then(function(d){
+    document.getElementById('plItems').innerHTML = (d.items||[]).map(function(it,i){
+      return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(132,148,170,0.06);font-size:.72rem">'+
+        '<span style="flex:1">'+(it.spotify_track_uri?'🎵':'💿')+' '+it.title+' - '+it.artist+'</span>'+
+        '<button onclick="plRemove('+it.id+')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.65rem">✕</button></div>';
+    }).join('');
+  });
+}
+
+function plRemove(itemId){
+  var plId = document.getElementById('plSelect').value;
+  api('/ops/cafe/playlists/'+plId+'/items/'+itemId,{method:'DELETE'}).then(loadPlaylist);
+}
+
+function plPlay(idx){ _plIdx = idx;
+  var plId = document.getElementById('plSelect').value;
+  api('/ops/cafe/playlists/'+plId+'/play-next',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_index:idx-1})});
+}
+
+function plNext(){ _plIdx++; plPlay(_plIdx); }
+
+function delPlaylist(){
+  var plId = document.getElementById('plSelect').value;
+  if(!confirm('삭제하시겠습니까?')) return;
+  api('/ops/cafe/playlists/'+plId,{method:'DELETE'}).then(function(){loadPlaylists();document.getElementById('plItems').innerHTML='';});
+}
+
+function addToPlaylist(title,artist,spotifyId,spotifyUri,localPath,artUrl){
+  var plId = document.getElementById('plSelect').value;
+  if(!plId){ alert('재생목록을 먼저 선택하세요'); return; }
+  api('/ops/cafe/playlists/'+plId+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title,artist:artist,spotify_track_id:spotifyId,spotify_track_uri:spotifyUri,local_file_path:localPath,album_art_url:artUrl})}).then(loadPlaylist);
+}
+
+loadPlaylists();
+</script>
+
 <script>
 var _all = [];
 var _ws = null;
