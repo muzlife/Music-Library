@@ -596,6 +596,7 @@ def list_album_masters(
     is_limited: bool | None = Query(default=None),
     is_new: bool | None = Query(default=None),
     is_promo: bool | None = Query(default=None),
+    album_master_id: int | None = Query(default=None, ge=1),
 ) -> list[AlbumMasterListItem]:
     main_module = _main()
     match_query = str(item_name or q or "").strip()
@@ -626,6 +627,7 @@ def list_album_masters(
         is_limited=is_limited,
         is_new=is_new,
         is_promo=is_promo,
+        album_master_id=album_master_id,
     )
     if include_total:
         total = db.count_album_masters(
