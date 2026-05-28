@@ -72,6 +72,7 @@ CREATE TABLE table_device (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   table_number TEXT NOT NULL UNIQUE,   -- '1', '2', '테라스'
   device_label TEXT,                   -- '삼성 태블릿 A8'
+  device_id TEXT UNIQUE,               -- client-generated UUID, mapped by admin
   is_active INTEGER NOT NULL DEFAULT 1,
   notes TEXT,
   created_at TEXT NOT NULL,
@@ -161,9 +162,9 @@ When a track requested by THIS table starts playing:
 
 ### 4.6 Device Identification
 
-- Each tablet has a fixed table_number set by admin in config
-- `/cafe/tablet?device_id=<uuid>` — device UUID stored in localStorage
-- Admin maps device_id → table_number via management UI
+- Each tablet generates a UUID on first visit, stored in localStorage
+- Tablet page accessed at `/cafe/tablet` (device self-identifies via localStorage UUID)
+- Admin maps device_id → table_number via management UI (table_device table)
 
 ## 5. Staff Operations UI (/ops/cafe)
 
@@ -196,8 +197,8 @@ Each request card shows:
 ### 6.1 Connection
 
 ```
-ws://host/ws/cafe?role=tablet&table=3
-ws://host/ws/cafe?role=staff
+ws://host/ws/cafe?role=tablet&device_id=<uuid>
+ws://host/ws/cafe?role=staff&token=<session_token>
 ```
 
 ### 6.2 Events
@@ -213,7 +214,7 @@ ws://host/ws/cafe?role=staff
 
 ### 6.3 Implementation
 
-- In-memory connection registry (`dict[table_number → WebSocket]` + `set[staff_WebSocket]`)
+- In-memory connection registry (`dict[table_number → WebSocket]` + `set[staff_WebSocket]`); device_id→table_number resolved via DB on connect
 - No Redis needed (single process)
 - Reconnection with exponential backoff on client side
 

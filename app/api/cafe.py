@@ -168,7 +168,11 @@ def cafe_search(
         results = [
             {"source":"info","spotify_track_id":"","title":"검색 결과가 없습니다: "+q,"artist":"다른 검색어나 영문으로 시도해보세요","album_art_url":"","duration_ms":0,"track_uri":""},
         ]
-    return {"query": q, "total_count": len(results), "items": results}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        content={"query": q, "total_count": len(results), "items": results},
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache"}
+    )
 
 
 # ── request track ───────────────────────────────────────────────
@@ -378,29 +382,18 @@ def cafe_reaction(request: Request) -> dict[str, Any]:
 
 @router.get("/cafe/tablet", include_in_schema=False)
 def cafe_tablet_shell(request: Request):
-    import hashlib
     from pathlib import Path
     from fastapi.responses import FileResponse
-
     def _main():
         from app import main as main_module
         return main_module
-
     STATIC_DIR = _main().STATIC_DIR
     page_path = STATIC_DIR / "cafe_tablet.html"
-    try:
-        file_hash = hashlib.md5(page_path.read_bytes()).hexdigest()[:8]
-    except Exception:
-        file_hash = "0"
-    v = request.query_params.get("v")
-    if v != file_hash:
-        from starlette.responses import Response as _Resp
-        redirect_headers: dict[str, str] = {
-            "Location": f"/cafe/tablet?v={file_hash}",
-            "Cache-Control": "no-store, no-cache, must-revalidate",
+    return FileResponse(
+        page_path,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
         }
-        if _main()._is_qa_env():
-            redirect_headers["Clear-Site-Data"] = '"cache"'
-        return _Resp(status_code=302, headers=redirect_headers)
-    serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
-    return FileResponse(page_path, headers=serve_headers)
+    )

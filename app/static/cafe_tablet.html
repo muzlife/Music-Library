@@ -5,92 +5,103 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
 <title>카페 태블릿</title>
 <style>
-:root{--bg:#0a0f14;--surface:rgba(20,28,36,0.96);--border:rgba(132,148,170,0.18);--text:#eef3f8;--muted:#8899aa;--accent:#f07b3f;--accent-soft:rgba(240,123,63,0.12)}
+:root{--bg:#0a0f14;--surface:rgba(20,28,36,0.96);--border:rgba(132,148,170,0.18);--text:#eef3f8;--muted:#8899aa;--accent:#f07b3f}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.top{padding:12px 16px;flex-shrink:0}
-.top input{width:100%;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.95rem;outline:none}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
+.top{display:flex;gap:8px;padding:12px 16px;flex-shrink:0}
+.top input{flex:1;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:1rem;outline:none}
 .top input:focus{border-color:var(--accent)}
-.results{flex:1;overflow-y:auto;padding:0 16px 16px}
+.top button{padding:12px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:.9rem;cursor:pointer;flex-shrink:0}
+.list{flex:1;overflow-y:auto;padding:0 16px 80px}
 .card{display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
-.card img{width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;background:rgba(132,148,170,0.1)}
+.card img{width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0}
 .card .info{flex:1;min-width:0}
-.card .title{font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card .meta{font-size:.72rem;color:var(--muted)}
-.card button{flex-shrink:0;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.75rem;cursor:pointer}
-.bottom{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border)}
+.card .title{font-size:.85rem;font-weight:500}
+.card .meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+.card button{flex-shrink:0;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.75rem;cursor:pointer}
+.bottom{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border)}
 .bottom img{width:40px;height:40px;border-radius:6px;object-fit:cover}
 .bottom .binfo{flex:1;min-width:0}
 .bottom .btitle{font-size:.78rem;font-weight:500}
 .bottom .bartist{font-size:.68rem;color:var(--muted)}
-.empty{text-align:center;padding:32px;color:var(--muted);font-size:.8rem}
-.loading{text-align:center;padding:20px;color:var(--muted)}
+.empty{text-align:center;padding:40px 16px;color:var(--muted);font-size:.85rem}
 </style>
 </head>
 <body>
-<div class="top"><input type="text" id="q" placeholder="곡명 또는 아티스트 검색..." autocomplete="off" oninput="search()"></div>
-<div class="results" id="results"><div class="empty">검색어를 입력하세요</div></div>
+<div class="top">
+  <input type="text" id="q" value="BTS" placeholder="곡명 또는 아티스트...">
+  <button id="searchBtn">검색</button>
+</div>
+<div class="list" id="list"><div class="empty">검색 버튼을 눌러주세요</div></div>
 <div class="bottom">
   <img id="bartImg" src="" onerror="this.style.display='none'" style="display:none">
-  <div class="binfo">
-    <div class="btitle" id="bartTitle">재생 중인 곡 없음</div>
-    <div class="bartist" id="bartArtist"></div>
-  </div>
+  <div class="binfo"><div class="btitle" id="bartTitle">재생 중인 곡 없음</div><div class="bartist" id="bartArtist"></div></div>
 </div>
 <script>
 var DEVICE_ID = localStorage.getItem('cafe_device_id') || (function(){var id=crypto.randomUUID();localStorage.setItem('cafe_device_id',id);return id})();
-var timer = null;
+var _data = [];
 
-function search(){
-  clearTimeout(timer);
+document.getElementById('searchBtn').onclick = function(){
   var q = document.getElementById('q').value.trim();
-  if(q.length < 1){
-    document.getElementById('results').innerHTML = '<div class="empty">검색어를 입력하세요</div>';
-    return;
-  }
-  document.getElementById('results').innerHTML = '<div class="loading">검색중...</div>';
-  timer = setTimeout(function(){
-    fetch('/cafe/search?q='+encodeURIComponent(q)+'&limit=15')
-      .then(function(r){return r.json()})
-      .then(function(d){
-        if(!d.items || !d.items.length){
-          document.getElementById('results').innerHTML = '<div class="empty">검색 결과 없음</div>';
-          return;
+  if(!q) return;
+  var list = document.getElementById('list');
+  list.innerHTML = '<div class="empty">검색중...</div>';
+  fetch('/cafe/search?q='+encodeURIComponent(q)+'&limit=15&_='+Date.now())
+    .then(function(r){return r.json()})
+    .then(function(d){
+      _data = d.items || [];
+      list.innerHTML = '';
+      if(!_data.length){ list.innerHTML = '<div class="empty">결과 없음</div>'; return; }
+      for(var i=0;i<_data.length;i++){
+        var it = _data[i];
+        var card = document.createElement('div');
+        card.className = 'card';
+        if(it.album_art_url){
+          var img = document.createElement('img');
+          img.src = it.album_art_url;
+          img.alt = '';
+          card.appendChild(img);
+        } else {
+          var ph = document.createElement('div');
+          ph.style.cssText = 'width:48px;height:48px;border-radius:6px;background:rgba(132,148,170,0.1);flex-shrink:0';
+          card.appendChild(ph);
         }
-        var h = '';
-        for(var i=0;i<d.items.length;i++){
-          var it = d.items[i];
-          h += '<div class="card">';
-          if(it.album_art_url) h += '<img src="'+it.album_art_url+'" alt="">';
-          else h += '<div style="width:48px;height:48px;border-radius:6px;background:rgba(132,148,170,0.1);flex-shrink:0"></div>';
-          h += '<div class="info"><div class="title">'+it.title+'</div><div class="meta">'+it.artist+'</div></div>';
-          h += '<button onclick="req('+i+')">신청</button>';
-          h += '</div>';
-        }
-        window._lastResults = d.items;
-        document.getElementById('results').innerHTML = h;
-      })
-      .catch(function(e){
-        document.getElementById('results').innerHTML = '<div class="empty">오류: '+e+'</div>';
-      });
-  }, 300);
-}
-
-function req(idx){
-  var it = window._lastResults[idx];
-  fetch('/cafe/request',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-device-id':DEVICE_ID},
-    body:JSON.stringify({track_title:it.title,artist:it.artist,album_art_url:it.album_art_url||null,source:it.source,spotify_track_id:it.spotify_track_id||null,owned_item_id:it.owned_item_id||null})
-  }).then(function(r){return r.json()}).then(function(){alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
-}
+        var info = document.createElement('div');
+        info.className = 'info';
+        var titleEl = document.createElement('div');
+        titleEl.className = 'title';
+        titleEl.textContent = it.title;
+        var metaEl = document.createElement('div');
+        metaEl.className = 'meta';
+        metaEl.textContent = (it.artist||'') + ' - ' + it.source;
+        info.appendChild(titleEl);
+        info.appendChild(metaEl);
+        card.appendChild(info);
+        var btn = document.createElement('button');
+        btn.textContent = '신청';
+        btn.setAttribute('data-idx', i);
+        btn.onclick = function(){
+          var idx = parseInt(this.getAttribute('data-idx'));
+          var item = _data[idx];
+          fetch('/cafe/request',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','x-device-id':DEVICE_ID},
+            body:JSON.stringify({track_title:item.title,artist:item.artist,album_art_url:item.album_art_url||null,source:item.source,spotify_track_id:item.spotify_track_id||null,owned_item_id:item.owned_item_id||null})
+          }).then(function(r){return r.json()}).then(function(){alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
+        };
+        card.appendChild(btn);
+        list.appendChild(card);
+      }
+    })
+    .catch(function(e){ list.innerHTML = '<div class="empty">오류: '+e+'</div>'; });
+};
 
 setInterval(function(){
   fetch('/cafe/now-playing').then(function(r){return r.json()}).then(function(d){
     if(d.available){
       document.getElementById('bartTitle').textContent = d.title;
       document.getElementById('bartArtist').textContent = d.artist;
-      if(d.album_art_url){document.getElementById('bartImg').src=d.album_art_url;document.getElementById('bartImg').style.display='';}
+      if(d.album_art_url){ document.getElementById('bartImg').src = d.album_art_url; document.getElementById('bartImg').style.display = ''; }
     }
   }).catch(function(){});
 }, 5000);
