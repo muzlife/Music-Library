@@ -363,7 +363,7 @@ def get_cabinet_camera_snapshot(camera_id: int, request: Request) -> Response:
         raise HTTPException(status_code=404, detail="cabinet camera not found")
     if not bool(row.get("is_active")):
         raise HTTPException(status_code=400, detail="cabinet camera inactive")
-    snapshot_url = _camera_http_url_or_none(row.get("snapshot_url"))
+    snapshot_url = _main()._camera_http_url_or_none(row.get("snapshot_url"))
     stream_url = _camera_rtsp_url_or_none(row.get("stream_url"))
     username = str(row.get("username") or "").strip()
     password = str(row.get("password") or "")
