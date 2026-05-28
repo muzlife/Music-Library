@@ -416,11 +416,36 @@ def spotify_callback(request: Request):
 # ── lyrics ────────────────────────────────────────────────────────
 
 @router.get("/cafe/lyrics")
-def cafe_lyrics(file_path: str = Query(min_length=1)) -> dict[str, Any]:
-    """Public: get embedded lyrics for a local file."""
-    lyrics = _local.get_lyrics(file_path)
-    if lyrics:
-        return {"available": True, "lyrics": lyrics}
+def cafe_lyrics(
+    artist: str = Query(default=""),
+    title: str = Query(default=""),
+    file_path: str = Query(default=""),
+) -> dict[str, Any]:
+    """Public: get lyrics for current track (Spotify via lyrics.ovh, local via ID3)."""
+    artist = artist.strip()
+    title = title.strip()
+    fp = file_path.strip()
+
+    # Try Spotify track via lyrics.ovh
+    if artist and title:
+        try:
+            import urllib.request, json
+            url = f"https://api.lyrics.ovh/v1/{urllib.parse.quote(artist)}/{urllib.parse.quote(title)}"
+            req = urllib.request.Request(url, headers={"User-Agent": "muzlife-cafe/1.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+                lyr = str(data.get("lyrics") or "").strip()
+                if lyr:
+                    return {"available": True, "lyrics": lyr, "source": "lyrics.ovh"}
+        except Exception:
+            pass
+
+    # Try local file ID3 lyrics
+    if fp:
+        lyr = _local.get_lyrics(fp)
+        if lyr:
+            return {"available": True, "lyrics": lyr, "source": "local"}
+
     return {"available": False}
 
 
