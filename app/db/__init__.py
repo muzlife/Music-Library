@@ -1174,6 +1174,7 @@ def init_db() -> None:
               spotify_album_id TEXT,
               spotify_album_uri TEXT,
               spotify_matched_at TEXT,
+              spotify_image_url TEXT,
               raw_json TEXT NOT NULL DEFAULT '{{}}',
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,

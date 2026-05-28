@@ -579,6 +579,7 @@ def list_album_masters(
         am.spotify_album_id,
         am.spotify_album_uri,
         am.spotify_matched_at,
+        am.spotify_image_url,
         COUNT(amm.id) AS member_count,
         MAX(amm.owned_item_id) AS max_owned_item_id,
         (

@@ -152,12 +152,14 @@ def _resolve_album(sp: Any, track_id: str) -> dict[str, Any]:
         if not track:
             return {}
         album = track.get("album", {})
+        images = album.get("images") or []
         return {
             "album_id": album.get("id"),
             "album_uri": album.get("uri"),
             "album_name": album.get("name", ""),
             "album_artist": ", ".join(a.get("name", "") for a in album.get("artists", [])),
             "release_date": album.get("release_date", ""),
+            "image_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
         }
     except Exception:
         return {}
@@ -198,6 +200,17 @@ def _match_by_album(sp: Any, artist: str, title: str, db_tracks: list[str]) -> d
         # Title match bonus
         if _norm(title) in _norm(album_name) or _norm(album_name) in _norm(title):
             score += 1
+        # Release year bonus: if Spotify release year matches DB range, +1
+        sp_date = album.get("release_date", "")
+        if sp_date and len(sp_date) >= 4:
+            try:
+                sp_year = int(sp_date[:4])
+                # We don't have DB release_year here, but the caller can check
+                # This is a soft bonus for having a plausible date
+                if 1900 <= sp_year <= 2030:
+                    score += 0.5  # soft bonus for valid date
+            except ValueError:
+                pass
 
         if score > best_score:
             best_score = score
@@ -361,9 +374,10 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
     now = utc_now_iso()
     conn.execute(
         """UPDATE album_master
-           SET spotify_album_id = ?, spotify_album_uri = ?, spotify_matched_at = ?, updated_at = ?
+           SET spotify_album_id = ?, spotify_album_uri = ?, spotify_image_url = ?, spotify_matched_at = ?, updated_at = ?
            WHERE id = ?""",
-        (result["album_id"], result["album_uri"], now, now, master_id),
+        (result["album_id"], result["album_uri"],
+         result.get("image_url"), now, now, master_id),
     )
     conn.commit()
 
