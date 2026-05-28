@@ -348,7 +348,7 @@ def _get_barcode_for_master(conn: Any, master_id: int) -> str | None:
     # Clean non-digit chars, keep only digits
     import re
     bc = re.sub(r'[^0-9]', '', bc)
-    return bc if len(bc) >= 8 else None
+    return bc if len(bc) in (12, 13) else None
 
 
 def _verify_by_barcode(sp: Any, album_id: str, db_barcode: str) -> bool:
