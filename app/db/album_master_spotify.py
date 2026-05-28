@@ -1,12 +1,11 @@
-"""Spotify matching for album_master — multi-strategy auto-matching.
+"""Spotify matching for album_master — multi-strategy with track-sequence verification.
 
-Strategy pipeline (each tries in order until success):
-  1. Album search: artist + title → match Spotify album
-  2. Track search: pick representative tracks → search by "artist track"
-     → collect album IDs, majority vote
-  3. Title-only fallback
-
-Validation: cross-check album name similarity, skip compilations.
+Strategy pipeline:
+  1. Album search: artist + title → verify track sequence → match
+     Skips compilations unless soundtracks with track verification.
+  2. Track search: sequential track matching → album vote
+     Tracks must match in order (1st, 2nd, 3rd...).
+  3. Title-only: soundtracks/compilations only → must verify with tracks.
 """
 
 from __future__ import annotations
@@ -22,18 +21,23 @@ from app.db.connection import get_conn, utc_now_iso
 logger = logging.getLogger(__name__)
 
 
-# ── helpers ─────────────────────────────────────────────────────────
+# ── text normalization ──────────────────────────────────────────────
 
 def _norm(s: str) -> str:
-    """Normalize text for comparison: lowercase, strip punctuation, collapse whitespace."""
     s = str(s or "").lower().strip()
     s = re.sub(r"[^\w\s]", " ", s)
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
 
-def _extract_track_names(track_list_json: str | None) -> list[str]:
-    """Parse track_list_json like ['A1 Track Name', ...] → clean track names."""
+def _tokens(s: str) -> set[str]:
+    return set(_norm(s).split())
+
+
+# ── track parsing ───────────────────────────────────────────────────
+
+def _parse_track_names(track_list_json: str | None) -> list[str]:
+    """Parse [\"A1 Track Name\", ...] → clean track names."""
     if not track_list_json:
         return []
     try:
@@ -46,7 +50,6 @@ def _extract_track_names(track_list_json: str | None) -> list[str]:
     for item in raw:
         if not isinstance(item, str):
             continue
-        # Strip side prefix like "A1 ", "B2 ", "1. ", "01 - ", etc.
         cleaned = re.sub(r"^[A-H]\d{1,2}\s+", "", item)
         cleaned = re.sub(r"^\d{1,2}[\.\)\-]\s*", "", cleaned)
         cleaned = cleaned.strip()
@@ -55,168 +58,274 @@ def _extract_track_names(track_list_json: str | None) -> list[str]:
     return names
 
 
-def _pick_representative_tracks(track_names: list[str], count: int = 3) -> list[str]:
-    """Pick diverse tracks: first, middle, and last non-instrumental."""
-    if not track_names:
-        return []
-    candidates = [t for t in track_names if len(t) > 3]
-    if len(candidates) <= count:
-        return candidates
-    # Pick first, middle, last for diversity
-    result = [candidates[0]]
-    if count >= 3 and len(candidates) >= 3:
-        result.append(candidates[len(candidates) // 2])
-        result.append(candidates[-1])
-    elif count >= 2:
-        result.append(candidates[-1])
-    return result
+def _get_tracks_for_master(conn: Any, master_id: int) -> list[str]:
+    row = conn.execute(
+        """SELECT mid.track_list_json FROM album_master_member amm
+           JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+           WHERE amm.album_master_id = ? AND mid.track_list_json IS NOT NULL AND mid.track_list_json <> '[]'
+           LIMIT 1""",
+        (master_id,),
+    ).fetchone()
+    return _parse_track_names(row["track_list_json"] if row else None)
 
 
-def _titles_match(db_title: str, spotify_album_name: str) -> bool:
-    """Check if Spotify album name reasonably matches DB title."""
-    d = _norm(db_title)
-    s = _norm(spotify_album_name)
-    if not d or not s:
-        return False
-    # Direct containment
-    if d in s or s in d:
-        return True
-    # Word overlap
-    dw = set(d.split())
-    sw = set(s.split())
-    if not dw:
-        return False
-    overlap = dw & sw
-    # At least 60% of DB title words must be in Spotify result
-    return len(overlap) >= max(1, len(dw) * 0.5)
-
+# ── compilation detection ───────────────────────────────────────────
 
 def _is_compilation(spotify_album_name: str) -> bool:
-    """Check if a Spotify album name looks like a compilation."""
     s = str(spotify_album_name or "").lower()
-    compilation_keywords = [
-        "greatest hits", "best of", "collection", "anthology",
-        "compilation", "various artists", "soundtrack", "ost",
-        "original motion picture", "tribute to", "gold", "platinum",
-        "ultimate", "definitive", "essential", "very best",
+    keywords = [
+        "greatest hits", "best of", "the best", "collection",
+        "anthology", "compilation", "various artists",
+        "tribute to", "gold", "platinum", "ultimate",
+        "definitive", "essential", "very best", "the essential",
         "complete", "box set", "deluxe edition", "remastered",
     ]
-    for kw in compilation_keywords:
+    for kw in keywords:
         if kw in s:
             return True
     return False
 
 
-def _resolve_album_from_track(sp: Any, spotify_track_id: str) -> dict[str, str | None]:
-    """Given a Spotify track ID, return {album_id, album_uri, album_name}."""
+def _is_soundtrack(title: str) -> bool:
+    s = str(title or "").lower()
+    keywords = [
+        "soundtrack", "ost", "original motion picture",
+        "original score", "music from", "motion picture",
+        "o.s.t", "o.s.t.", "영화", "드라마",
+    ]
+    for kw in keywords:
+        if kw in s:
+            return True
+    return False
+
+
+# ── track sequence verification ─────────────────────────────────────
+
+def _get_spotify_album_tracks(sp: Any, album_id: str) -> list[str]:
+    """Get track names from a Spotify album."""
+    client = sp._ensure_client()
+    if client is None:
+        return []
+    try:
+        result = client.album_tracks(album_id)
+        items = result.get("items", []) if result else []
+        return [t.get("name", "") for t in items]
+    except Exception:
+        logger.debug("Failed to get tracks for album %s", album_id)
+        return []
+
+
+def _track_sequence_match(db_tracks: list[str], sp_tracks: list[str], min_match: int = 3) -> int:
+    """Count how many DB tracks appear in Spotify tracks IN SEQUENCE.
+    
+    Returns number of consecutive matches starting from position 0.
+    e.g. db_tracks=[A,B,C,D], sp_tracks=[A,B,X,D] → returns 2 (A,B match, C doesn't)
+    """
+    if not db_tracks or not sp_tracks:
+        return 0
+    
+    matches = 0
+    for i in range(min(len(db_tracks), len(sp_tracks))):
+        db_t = _norm(db_tracks[i])
+        sp_t = _norm(sp_tracks[i])
+        # Match if one contains the other or significant word overlap
+        if not db_t or not sp_t:
+            continue
+        if db_t in sp_t or sp_t in db_t:
+            matches += 1
+        else:
+            db_w = set(db_t.split())
+            sp_w = set(sp_t.split())
+            if db_w and sp_w:
+                overlap = db_w & sp_w
+                if len(overlap) >= min(len(db_w), len(sp_w)) * 0.6:
+                    matches += 1
+                else:
+                    break  # sequence broken
+            else:
+                break
+    return matches
+
+
+# ── album resolution ────────────────────────────────────────────────
+
+def _resolve_album(sp: Any, track_id: str) -> dict[str, Any]:
+    """Get album info from a Spotify track ID."""
     client = sp._ensure_client()
     if client is None:
         return {}
     try:
-        track = client.track(spotify_track_id)
+        track = client.track(track_id)
         album = track.get("album", {})
         return {
             "album_id": album.get("id"),
             "album_uri": album.get("uri"),
             "album_name": album.get("name", ""),
+            "album_artist": ", ".join(a.get("name", "") for a in album.get("artists", [])),
+            "release_date": album.get("release_date", ""),
         }
     except Exception:
-        logger.debug("Failed to resolve album from track %s", spotify_track_id)
         return {}
 
 
-# ── matching strategies ─────────────────────────────────────────────
+# ── strategy 1: album search ────────────────────────────────────────
 
-def _match_by_album_search(sp: Any, artist: str, title: str) -> dict[str, str | None] | None:
-    """Strategy 1: Search Spotify by artist + title, return best album match."""
+def _match_by_album(sp: Any, artist: str, title: str, db_tracks: list[str]) -> dict[str, Any] | None:
+    """Search Spotify for artist+title, verify with track sequence."""
     query = f"{artist} {title}" if artist else title
     results = sp.search_tracks_sync(query, limit=5)
     if not results:
         return None
 
+    is_comp = _is_compilation(title) or _is_soundtrack(title)
+    min_tracks = 2 if is_comp else 3  # compilations need fewer due to variant tracklists
+
+    best = None
+    best_score = 0
+
     for r in results:
         album_name = r.get("album_name", "")
-        if _is_compilation(album_name):
+        # Skip compilations unless we have tracks to verify
+        if _is_compilation(album_name) and not db_tracks:
             continue
-        if _titles_match(title, album_name):
-            album = _resolve_album_from_track(sp, r.get("spotify_track_id", ""))
-            if album.get("album_id"):
-                album["match_method"] = "album_search"
-                return album
+        
+        album = _resolve_album(sp, r.get("spotify_track_id", ""))
+        aid = album.get("album_id")
+        if not aid:
+            continue
+
+        # Verify with track sequence
+        score = 0
+        if db_tracks:
+            sp_tracks = _get_spotify_album_tracks(sp, aid)
+            score = _track_sequence_match(db_tracks, sp_tracks, min_match=min_tracks)
+        
+        # Title match bonus
+        if _norm(title) in _norm(album_name) or _norm(album_name) in _norm(title):
+            score += 1
+
+        if score > best_score:
+            best_score = score
+            best = dict(album)
+            best["match_method"] = "album_search"
+            best["track_score"] = score
+
+    if best and best_score >= (3 if not is_comp else 2):
+        return best
     return None
 
 
-def _match_by_track_search(
-    sp: Any, artist: str, track_names: list[str]
-) -> dict[str, str | None] | None:
-    """Strategy 2: Search by "artist + track_name", vote on album ID."""
-    candidates = _pick_representative_tracks(track_names, count=3)
-    if not candidates:
+# ── strategy 2: sequential track search ─────────────────────────────
+
+def _match_by_tracks(sp: Any, artist: str, db_tracks: list[str]) -> dict[str, Any] | None:
+    """Search first 3 tracks sequentially, verify order, vote for best album."""
+    if len(db_tracks) < 3:
         return None
 
+    candidates = db_tracks[:3]  # first 3 tracks
     album_votes: dict[str, int] = {}
-    album_details: dict[str, dict[str, str | None]] = {}
+    album_info: dict[str, dict[str, Any]] = {}
 
-    for track in candidates:
-        query = f"{artist} {track}" if artist else track
+    for idx, track_name in enumerate(candidates):
+        query = f"{artist} {track_name}" if artist else track_name
         results = sp.search_tracks_sync(query, limit=3)
         if not results:
             continue
+
         for r in results:
-            album = _resolve_album_from_track(sp, r.get("spotify_track_id", ""))
+            album = _resolve_album(sp, r.get("spotify_track_id", ""))
             aid = album.get("album_id")
             if not aid:
                 continue
-            album_votes[aid] = album_votes.get(aid, 0) + 1
-            if aid not in album_details:
-                # Also verify track name closeness
-                track_name = r.get("title", "")
-                if _norm(track)[:5] in _norm(track_name) or _norm(track_name)[:5] in _norm(track):
-                    album_votes[aid] = album_votes.get(aid, 0) + 1  # bonus for track match
-                album_details[aid] = album
+
+            # Verify this track appears at the expected position in the Spotify album
+            sp_tracks = _get_spotify_album_tracks(sp, aid)
+            if not sp_tracks:
+                continue
+
+            # Check if our track matches the Spotify track at position idx
+            position_match = False
+            if idx < len(sp_tracks):
+                sp_t = _norm(sp_tracks[idx])
+                db_t = _norm(track_name)
+                if db_t in sp_t or sp_t in db_t:
+                    position_match = True
+                else:
+                    db_w = set(db_t.split())
+                    sp_w = set(sp_t.split())
+                    if db_w and sp_w:
+                        overlap = db_w & sp_w
+                        if len(overlap) >= min(len(db_w), len(sp_w)) * 0.6:
+                            position_match = True
+
+            if position_match:
+                album_votes[aid] = album_votes.get(aid, 0) + 2  # position match = 2 points
+            else:
+                # Check if track exists anywhere in the album
+                for sp_t in sp_tracks:
+                    if _norm(track_name) in _norm(sp_t) or _norm(sp_t) in _norm(track_name):
+                        album_votes[aid] = album_votes.get(aid, 0) + 1  # loose match = 1 point
+                        break
+
+            if aid not in album_info:
+                album_info[aid] = dict(album)
 
     if not album_votes:
         return None
 
-    # Pick the album with most votes
+    # Best album by votes (need at least 3 points = 2 position matches or 1 position + 1 loose)
     best_id = max(album_votes, key=album_votes.get)
-    if album_votes[best_id] < 2:
-        return None  # need at least 2 votes for confidence
+    best_score = album_votes[best_id]
 
-    result = dict(album_details[best_id])
+    if best_score < 3:
+        return None
+
+    result = dict(album_info[best_id])
     result["match_method"] = "track_search"
+    result["track_score"] = best_score
     return result
 
 
-def _match_by_title_only(sp: Any, title: str) -> dict[str, str | None] | None:
-    """Strategy 3: Title-only search as last resort."""
+# ── strategy 3: title-only (soundtrack/compilation) ─────────────────
+
+def _match_by_title(sp: Any, title: str, db_tracks: list[str]) -> dict[str, Any] | None:
+    """Title-only search for soundtracks/compilations. Requires track verification."""
+    if not _is_soundtrack(title) and not _is_compilation(title):
+        return None
+
     results = sp.search_tracks_sync(title, limit=3)
     if not results:
         return None
+
     for r in results:
-        album_name = r.get("album_name", "")
-        if _is_compilation(album_name):
+        album = _resolve_album(sp, r.get("spotify_track_id", ""))
+        aid = album.get("album_id")
+        if not aid:
             continue
-        if _titles_match(title, album_name):
-            album = _resolve_album_from_track(sp, r.get("spotify_track_id", ""))
-            if album.get("album_id"):
-                album["match_method"] = "title_only"
-                return album
+
+        album_name = album.get("album_name", "")
+        if not _norm(title) in _norm(album_name) and not _norm(album_name) in _norm(title):
+            continue
+
+        # Must verify with tracks
+        if db_tracks:
+            sp_tracks = _get_spotify_album_tracks(sp, aid)
+            score = _track_sequence_match(db_tracks, sp_tracks, min_match=2)
+            if score >= 2:
+                result = dict(album)
+                result["match_method"] = "title_only"
+                result["track_score"] = score
+                return result
+
     return None
 
 
 # ── main matcher ────────────────────────────────────────────────────
 
 def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, Any]:
-    """Multi-strategy match for one album_master. Returns result dict."""
+    """Multi-strategy match with track sequence verification."""
     row = conn.execute(
-        """SELECT am.id, am.title, am.artist_or_brand,
-                  (SELECT mid.track_list_json FROM album_master_member amm
-                   JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
-                   WHERE amm.album_master_id = am.id
-                     AND mid.track_list_json IS NOT NULL AND mid.track_list_json <> '[]'
-                   LIMIT 1) AS track_list_json
-           FROM album_master am WHERE am.id = ?""",
+        "SELECT id, title, artist_or_brand FROM album_master WHERE id = ?",
         (master_id,),
     ).fetchone()
 
@@ -225,38 +334,32 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
 
     title = str(row["title"] or "").strip()
     artist = str(row["artist_or_brand"] or "").strip()
-    track_names = _extract_track_names(row["track_list_json"])
 
     if not title:
         return {"master_id": master_id, "matched": False, "reason": "no_title"}
 
+    db_tracks = _get_tracks_for_master(conn, master_id)
+
     # Strategy pipeline
     result = None
-    strategy = None
 
-    # 1. Album search (artist + title)
-    result = _match_by_album_search(sp, artist, title)
-    if result:
-        strategy = "album_search"
+    # 1. Album search (with track sequence verification)
+    result = _match_by_album(sp, artist, title, db_tracks)
 
-    # 2. Track search (artist + representative tracks)
-    if not result and track_names and artist:
-        result = _match_by_track_search(sp, artist, track_names)
-        if result:
-            strategy = "track_search"
+    # 2. Sequential track search
+    if not result and db_tracks:
+        result = _match_by_tracks(sp, artist, db_tracks)
 
-    # 3. Title-only fallback
+    # 3. Title-only (soundtracks/compilations)
     if not result:
-        result = _match_by_title_only(sp, title)
-        if result:
-            strategy = "title_only"
+        result = _match_by_title(sp, title, db_tracks)
 
     if not result or not result.get("album_id"):
         return {
             "master_id": master_id,
             "matched": False,
             "reason": "no_spotify_match",
-            "tracks_available": len(track_names),
+            "tracks_available": len(db_tracks),
         }
 
     # Store
@@ -272,10 +375,11 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
     return {
         "master_id": master_id,
         "matched": True,
-        "strategy": strategy,
+        "strategy": result.get("match_method", "unknown"),
         "spotify_album_id": result["album_id"],
         "spotify_album_name": result.get("album_name", ""),
-        "tracks_available": len(track_names),
+        "track_score": result.get("track_score", 0),
+        "tracks_available": len(db_tracks),
     }
 
 
@@ -286,7 +390,7 @@ def batch_match_spotify(
     limit: int = 50,
     only_unmatched: bool = True,
 ) -> dict[str, int]:
-    """Batch match album_masters to Spotify. Returns {matched, skipped, errors}."""
+    """Batch match album_masters to Spotify."""
     matched = 0
     skipped = 0
     errors = 0
@@ -316,7 +420,7 @@ def batch_match_spotify(
                     matched += 1
                 else:
                     skipped += 1
-                time.sleep(0.25)  # rate limit (~4 req/s)
+                time.sleep(0.3)
             except Exception:
                 logger.exception("Spotify match failed for master %s", row["id"])
                 errors += 1
