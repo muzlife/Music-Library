@@ -969,3 +969,103 @@ def spotify_play_master(
 
     ok = sp.play_sync(uri)
     return {"ok": ok, "album_master_id": album_master_id, "spotify_uri": uri}
+
+
+# ── Spotify manual management ──────────────────────────────────────
+
+@router.delete("/album-masters/{album_master_id}/spotify/match")
+def spotify_clear_match(
+    album_master_id: int,
+    request: Request,
+) -> dict[str, Any]:
+    """Clear Spotify match for an album master. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from app.db.connection import get_conn, utc_now_iso
+
+    with get_conn() as conn:
+        conn.execute(
+            """UPDATE album_master
+               SET spotify_album_id = NULL, spotify_album_uri = NULL,
+                   spotify_matched_at = NULL, updated_at = ?
+               WHERE id = ?""",
+            (utc_now_iso(), album_master_id),
+        )
+        conn.commit()
+    return {"ok": True, "album_master_id": album_master_id}
+
+
+@router.put("/album-masters/{album_master_id}/spotify/match")
+def spotify_set_match(
+    album_master_id: int,
+    request: Request,
+) -> dict[str, Any]:
+    """Manually set Spotify album ID for a master. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    import json as _json
+
+    body = _json.loads(request.body())
+    spotify_album_id = str(body.get("spotify_album_id") or "").strip()
+    spotify_album_uri = str(body.get("spotify_album_uri") or f"spotify:album:{spotify_album_id}").strip()
+
+    if not spotify_album_id:
+        raise HTTPException(status_code=400, detail="spotify_album_id required")
+
+    from app.db.connection import get_conn, utc_now_iso
+    with get_conn() as conn:
+        conn.execute(
+            """UPDATE album_master
+               SET spotify_album_id = ?, spotify_album_uri = ?, spotify_matched_at = ?, updated_at = ?
+               WHERE id = ?""",
+            (spotify_album_id, spotify_album_uri, utc_now_iso(), utc_now_iso(), album_master_id),
+        )
+        conn.commit()
+    return {"ok": True, "album_master_id": album_master_id, "spotify_album_id": spotify_album_id}
+
+
+@router.get("/spotify/search")
+def spotify_search_albums(
+    request: Request,
+    q: str = Query(min_length=1, max_length=200),
+    limit: int = Query(default=10, ge=1, le=30),
+) -> dict[str, Any]:
+    """Search Spotify for albums. OPERATOR+."""
+    from ..security import _require_operator_request
+    _require_operator_request(request)
+    from ..services.spotify import SpotifyService
+
+    sp = SpotifyService()
+    if not sp.configured:
+        raise HTTPException(status_code=503, detail="Spotify not configured")
+
+    tracks = sp.search_tracks_sync(q, limit=limit * 2)
+    # Collect unique albums from track results
+    seen: set[str] = set()
+    albums: list[dict[str, Any]] = []
+    for t in tracks:
+        # Resolve album from track
+        sp_client = sp._ensure_client()
+        if sp_client is None:
+            continue
+        try:
+            track = sp_client.track(t.get("spotify_track_id", ""))
+            album = track.get("album", {})
+            aid = album.get("id", "")
+            if aid and aid not in seen:
+                seen.add(aid)
+                images = album.get("images") or []
+                albums.append({
+                    "spotify_album_id": aid,
+                    "spotify_album_uri": album.get("uri", ""),
+                    "name": album.get("name", ""),
+                    "artist": ", ".join(a.get("name", "") for a in album.get("artists", [])),
+                    "release_date": album.get("release_date", ""),
+                    "total_tracks": album.get("total_tracks", 0),
+                    "image_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
+                })
+        except Exception:
+            continue
+        if len(albums) >= limit:
+            break
+    return {"query": q, "total_count": len(albums), "items": albums}
