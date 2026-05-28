@@ -1045,11 +1045,10 @@ def spotify_search_albums(
     albums: list[dict[str, Any]] = []
     for t in tracks:
         # Resolve album from track
-        sp_client = sp._ensure_client()
-        if sp_client is None:
-            continue
         try:
-            track = sp_client.track(t.get("spotify_track_id", ""))
+            track = sp.track_sync(t.get("spotify_track_id", ""))
+            if not track:
+                continue
             album = track.get("album", {})
             aid = album.get("id", "")
             if aid and aid not in seen:
