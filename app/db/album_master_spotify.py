@@ -330,6 +330,49 @@ def _match_by_title(sp: Any, title: str, db_tracks: list[str]) -> dict[str, Any]
 
 # ── main matcher ────────────────────────────────────────────────────
 
+
+def _get_barcode_for_master(conn: Any, master_id: int) -> str | None:
+    """Get the first valid barcode from master's owned items."""
+    row = conn.execute(
+        """SELECT mid.barcode FROM album_master_member amm
+           JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+           WHERE amm.album_master_id = ? AND mid.barcode IS NOT NULL
+             AND TRIM(mid.barcode) <> '' AND length(TRIM(mid.barcode)) >= 8
+             AND TRIM(mid.barcode) GLOB '[0-9]*'
+           LIMIT 1""",
+        (master_id,),
+    ).fetchone()
+    if not row:
+        return None
+    bc = str(row["barcode"] or "").strip()
+    # Clean non-digit chars, keep only digits
+    import re
+    bc = re.sub(r'[^0-9]', '', bc)
+    return bc if len(bc) >= 8 else None
+
+
+def _verify_by_barcode(sp: Any, album_id: str, db_barcode: str) -> bool:
+    """Check if Spotify album UPC/EAN matches DB barcode."""
+    if not db_barcode:
+        return False
+    sp_client = sp._ensure_client_cc()
+    if sp_client is None:
+        return False
+    try:
+        album = sp_client.album(album_id)
+        ext_ids = album.get("external_ids", {}) or {}
+        upc = str(ext_ids.get("upc", "") or "").strip()
+        ean = str(ext_ids.get("ean", "") or "").strip()
+        # Normalize: strip leading zeros and compare
+        def norm(s):
+            s = ''.join(c for c in s if c.isdigit())
+            return s.lstrip('0')
+        db_norm = norm(db_barcode)
+        return bool(db_norm) and (norm(upc) == db_norm or norm(ean) == db_norm)
+    except Exception:
+        return False
+
+
 def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, Any]:
     """Multi-strategy match with track sequence verification."""
     row = conn.execute(
@@ -370,6 +413,12 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
             "tracks_available": len(db_tracks),
         }
 
+    # Barcode cross-validation
+    db_barcode = _get_barcode_for_master(conn, master_id)
+    barcode_match = False
+    if db_barcode:
+        barcode_match = _verify_by_barcode(sp, result["album_id"], db_barcode)
+
     # Store
     now = utc_now_iso()
     conn.execute(
@@ -389,6 +438,8 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
         "spotify_album_name": result.get("album_name", ""),
         "track_score": result.get("track_score", 0),
         "tracks_available": len(db_tracks),
+        "barcode_verified": barcode_match,
+        "barcode": db_barcode,
     }
 
 
