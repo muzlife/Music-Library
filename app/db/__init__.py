@@ -1962,6 +1962,10 @@ from .ops_home_recent import (  # noqa: E402
 from .operator_search import (  # noqa: E402
     search_operator_catalog,
 )
+from .cafe_playlist import (  # noqa: E402
+    rollback_customer_track_request,
+    get_shelf_location_by_owned_item,
+)
 from .metadata_sync import (  # noqa: E402
     list_metadata_sync_candidates,
     upsert_music_detail,
