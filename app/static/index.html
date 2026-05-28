@@ -41971,8 +41971,21 @@
       meta.parentNode.insertBefore(panel, meta.nextSibling);
       
       try {
-        var res = await fetch('/spotify/albums/' + encodeURIComponent(albumId) + '/tracks');
-        if (!res.ok) throw new Error('load failed');
+        var controller = new AbortController();
+        var timeout = setTimeout(function(){ controller.abort(); }, 10000);
+        var res;
+        try {
+          res = await fetch('/spotify/albums/' + encodeURIComponent(albumId) + '/tracks', {signal: controller.signal});
+        } catch(e) {
+          panel.innerHTML = '<div class="mini" style="color:#f97316;">Spotify API 응답 없음 (rate-limit 또는 네트워크 오류). 잠시 후 다시 시도하세요.</div>';
+          return;
+        }
+        clearTimeout(timeout);
+        if (!res.ok) {
+          var errText = res.status === 503 ? 'Spotify API rate-limit. 잠시 후 다시 시도.' : '트랙 로드 실패 (HTTP '+res.status+')';
+          panel.innerHTML = '<div class="mini" style="color:#ef4444;">'+errText+'</div>';
+          return;
+        }
         var data = await res.json();
         var tracks = data.tracks || [];
         var html = '<button class="spotify-play-all" onclick="spotifyPlayAlbum(\'' + albumId + '\')">▶ 전체 재생</button>';
