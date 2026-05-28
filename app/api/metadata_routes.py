@@ -35,17 +35,22 @@ def _require_admin(request: Request) -> None:
 
 
 
+import threading
+
+
 @router.get("/metadata-sync/status", response_model=MetadataSyncStatusResponse)
 def get_metadata_sync_status() -> MetadataSyncStatusResponse:
-    running = METADATA_SYNC_LOCK.locked()
+    main_mod = _main()
+    running = main_mod.METADATA_SYNC_LOCK.locked()
+    settings = main_mod.get_settings()
     return MetadataSyncStatusResponse(
         auto_enabled=int(settings.metadata_sync_interval_minutes) > 0,
         interval_minutes=int(settings.metadata_sync_interval_minutes),
         batch_limit=int(settings.metadata_sync_batch_limit),
         running=running,
-        in_progress_items=list(METADATA_SYNC_IN_PROGRESS_ITEMS) if running else [],
-        last_result=METADATA_SYNC_LAST_RESULT,
-        last_error=METADATA_SYNC_LAST_ERROR,
+        in_progress_items=list(main_mod.METADATA_SYNC_IN_PROGRESS_ITEMS) if running else [],
+        last_result=main_mod.METADATA_SYNC_LAST_RESULT,
+        last_error=main_mod.METADATA_SYNC_LAST_ERROR,
     )
 
 
@@ -58,10 +63,11 @@ def run_metadata_sync(payload: MetadataSyncRunRequest) -> dict[str, Any]:
     should poll ``GET /metadata-sync/status`` until ``running`` becomes
     ``false``, then read ``last_result`` for the outcome.
     """
-    if METADATA_SYNC_LOCK.locked():
+    main_mod = _main()
+    if main_mod.METADATA_SYNC_LOCK.locked():
         raise HTTPException(status_code=409, detail="metadata sync already running")
     t = threading.Thread(
-        target=_run_metadata_sync,
+        target=main_mod._run_metadata_sync,
         kwargs={"payload": payload, "fail_when_running": True},
         daemon=True,
         name="metadata-sync-manual",

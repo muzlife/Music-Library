@@ -364,7 +364,7 @@ def get_cabinet_camera_snapshot(camera_id: int, request: Request) -> Response:
     if not bool(row.get("is_active")):
         raise HTTPException(status_code=400, detail="cabinet camera inactive")
     snapshot_url = _main()._camera_http_url_or_none(row.get("snapshot_url"))
-    stream_url = _camera_rtsp_url_or_none(row.get("stream_url"))
+    stream_url = _main()._camera_rtsp_url_or_none(row.get("stream_url"))
     username = str(row.get("username") or "").strip()
     password = str(row.get("password") or "")
     snapshot_bytes: bytes | None = None
@@ -386,7 +386,7 @@ def get_cabinet_camera_snapshot(camera_id: int, request: Request) -> Response:
             last_error = f"camera snapshot fetch failed: {err}"
     if stream_url is not None:
         try:
-            snapshot_bytes = _camera_snapshot_bytes_from_stream(stream_url, username=username or None, password=password or None)
+            snapshot_bytes = _main()._camera_snapshot_bytes_from_stream(stream_url, username=username or None, password=password or None)
         except Exception as err:
             last_error = f"camera stream snapshot failed: {err}"
         else:
