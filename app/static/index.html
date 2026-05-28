@@ -14553,6 +14553,41 @@
       .dash-alert-grid, .dash-collector-grid { grid-template-columns: 1fr; }
     }
 
+
+    
+    .spotify-player-panel {
+      margin: 8px 0; padding: 10px 12px; border-radius: 10px;
+      background: rgba(0,0,0,0.15); border: 1px solid rgba(30,215,96,0.15);
+      max-height: 300px; overflow-y: auto;
+    }
+    .spotify-play-all {
+      font-size: 0.72rem; padding: 4px 14px; border-radius: 16px;
+      background: #1ed760; color: #000; border: none; cursor: pointer;
+      font-weight: 600; margin-bottom: 6px;
+    }
+    .spotify-play-all:hover { background: #1fdf64; }
+    .spotify-track-row {
+      display: flex; align-items: center; gap: 6px; padding: 2px 0;
+      border-bottom: 1px solid rgba(128,128,128,0.06); font-size: 0.7rem;
+    }
+    .spotify-track-num { width: 18px; opacity: 0.4; text-align: right; font-family: var(--font-mono); }
+    .spotify-track-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .spotify-track-dur { width: 32px; opacity: 0.4; text-align: right; font-family: var(--font-mono); font-size: 0.62rem; }
+    .spotify-track-play {
+      width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(30,215,96,0.3);
+      background: transparent; color: #1ed760; cursor: pointer; font-size: 0.55rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .spotify-track-play:hover { background: #1ed760; color: #000; }
+
+.spotify-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 0.68rem; padding: 2px 8px; border-radius: 12px;
+      background: rgba(30,215,96,0.15); color: #1ed760;
+      font-weight: 600; margin-left: 6px;
+      border: 1px solid rgba(30,215,96,0.25);
+    }
+
     /* ── KPI snapshot row ── */
     .dash-snapshot-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
     .dash-snapshot-stat { flex: 1; min-width: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 8px; border-radius: 10px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); text-align: center; }
@@ -19039,6 +19074,10 @@
         </div>
         <div class="home-search-grid-top">
           <div>
+            <label for="homeMasterId" data-i18n="media.search.field.master_id.label">마스터 ID</label>
+            <input id="homeMasterId" type="number" data-i18n-placeholder="media.search.field.master_id.placeholder" placeholder="예: 78" />
+          </div>
+          <div>
             <label for="homeItemId" data-i18n="media.search.field.item_id.label">상품 ID</label>
             <input id="homeItemId" type="number" data-i18n-placeholder="media.search.field.item_id.placeholder" placeholder="예: 12345" />
           </div>
@@ -19259,7 +19298,7 @@
           <div id="homeMasterMetaCard" class="u-hidden-initial">
             <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
             <div class="home-master-meta-info">
-              <div id="homeMasterMetaTitle" class="home-master-meta-title"></div>
+              <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
               <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
               <div id="homeMasterMetaYear" class="mini muted"></div>
               <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
@@ -19705,7 +19744,7 @@
                         <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
                       </div>
                       <div id="homeMasterStatus" class="status"></div>
-                      <div id="homeMasterMeta" class="compact-line u-mt-6"></div>
+                      <div id="homeMasterMeta" class="compact-line u-mt-6"><span id="homeMasterSpotifyBadge"></span></div>
                     </div>
           <div id="homeMasterActionMount"></div>
           <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
@@ -33841,6 +33880,7 @@
       $("homeSigPurchase").checked = false;
       $("homeSortMode").value = "CREATED_DESC";
       $("homeBarcode").value = normalizedBarcode;
+      $("homeMasterId").value = "";
       $("homeItemId").value = "";
       $("homePackagingList").querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
       $("homePackageContentsList").querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
@@ -41914,92 +41954,47 @@
     }
 
 
-    // ── Spotify player panel ──
-    async function toggleSpotifyPlayer(masterId, albumId) {
-      var existing = document.querySelector('.spotify-player-panel[data-sp-master="' + masterId + '"]');
-      if (existing) {
-        existing.classList.toggle('open');
-        return;
-      }
-      // Close any other open panels
-      document.querySelectorAll('.spotify-player-panel.open').forEach(function(p) { p.classList.remove('open'); });
+    
+    // ── Spotify player ──
+    async function spotifyTogglePanel(masterId, albumId) {
+      var panel = document.getElementById('spotifyPanel-' + masterId);
+      if (panel) { panel.remove(); return; }
+      // Close others
+      document.querySelectorAll('[id^="spotifyPanel-"]').forEach(function(p){ p.remove(); });
       
-      // Create panel
-      var resultRow = document.querySelector('[data-master-id="' + masterId + '"]');
-      if (!resultRow) return;
-      
-      var panel = document.createElement('div');
+      var meta = document.getElementById('homeMasterMetaCard');
+      if (!meta) return;
+      panel = document.createElement('div');
+      panel.id = 'spotifyPanel-' + masterId;
       panel.className = 'spotify-player-panel open';
-      panel.setAttribute('data-sp-master', masterId);
-      panel.innerHTML = '<div class="mini muted" style="padding:8px;">트랙 불러오는 중…</div>';
-      resultRow.appendChild(panel);
+      panel.innerHTML = '<div class="mini muted">트랙 불러오는 중...</div>';
+      meta.parentNode.insertBefore(panel, meta.nextSibling);
       
       try {
         var res = await fetch('/spotify/albums/' + encodeURIComponent(albumId) + '/tracks');
-        if (!res.ok) { panel.innerHTML = '<div class="mini" style="color:#ef4444;">트랙 로드 실패</div>'; return; }
+        if (!res.ok) throw new Error('load failed');
         var data = await res.json();
         var tracks = data.tracks || [];
-        
-        var coverHtml = data.image_url ? '<img class="spotify-player-cover" src="' + escapeHtml(data.image_url) + '" alt="">' : '';
-        var infoHtml = '<div class="spotify-player-info"><div class="sp-title">' + escapeHtml(data.name || '') + '</div><div class="sp-artist">' + escapeHtml(data.artist || '') + ' · ' + tracks.length + ' tracks</div></div>';
-        var html = '<div class="spotify-player-header">' + coverHtml + infoHtml + '</div>';
-        html += '<button class="spotify-play-all" onclick="spotifyPlayAlbum('' + escapeHtml(albumId) + '')">▶ 전체 재생</button>';
-        html += '<div class="spotify-tracks">';
+        var html = '<button class="spotify-play-all" onclick="spotifyPlayAlbum(\'' + albumId + '\')">▶ 전체 재생</button>';
         for (var i = 0; i < tracks.length; i++) {
-          var t = tracks[i];
-          var dur = t.duration_ms ? Math.floor(t.duration_ms / 60000) + ':' + String(Math.floor((t.duration_ms % 60000) / 1000)).padStart(2, '0') : '';
-          html += '<div class="spotify-track-row">' +
-            '<span class="spotify-track-num">' + (t.track_number || i+1) + '</span>' +
-            '<span class="spotify-track-name" title="' + escapeHtml(t.name) + '">' + escapeHtml(t.name) + '</span>' +
-            '<span class="spotify-track-dur">' + dur + '</span>' +
-            '<button class="spotify-track-play" onclick="spotifyPlayTrack('' + escapeHtml(t.uri || '') + '')" title="재생">▶</button>' +
-            '</div>';
+          var t = tracks[i]; var dur = t.duration_ms ? Math.floor(t.duration_ms/60000)+':'+String(Math.floor((t.duration_ms%60000)/1000)).padStart(2,'0') : '';
+          html += '<div class="spotify-track-row"><span class="spotify-track-num">'+(t.track_number||i+1)+'</span><span class="spotify-track-name">'+escapeHtml(t.name)+'</span><span class="spotify-track-dur">'+dur+'</span><button class="spotify-track-play" onclick="spotifyPlayTrack(\''+escapeHtml(t.uri||'')+'\')">▶</button></div>';
         }
-        html += '</div>';
         panel.innerHTML = html;
-      } catch(e) {
-        panel.innerHTML = '<div class="mini" style="color:#ef4444;">오류: ' + escapeHtml(String(e.message || e)) + '</div>';
-      }
+      } catch(e) { panel.innerHTML = '<div class="mini" style="color:#ef4444;">오류</div>'; }
     }
-    
-    function spotifyPlayAlbum(albumId) {
-      var uri = 'spotify:album:' + albumId;
-      fetch('/spotify/play', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({uri: uri})
-      }).catch(function(){});
-    }
-    
-    function spotifyPlayTrack(uri) {
-      if (!uri) return;
-      fetch('/spotify/play', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({uri: uri})
-      }).catch(function(){});
-    }
-    
-    // Delegate click handler for Spotify badges
-    document.addEventListener('click', function(e) {
-      var badge = e.target.closest('.spotify-badge');
-      if (!badge) {
-        // Close panels when clicking outside
-        var clickedPanel = e.target.closest('.spotify-player-panel');
-        if (!clickedPanel) {
-          document.querySelectorAll('.spotify-player-panel.open').forEach(function(p) {
-            p.classList.remove('open');
-          });
-        }
-        return;
-      }
+    function spotifyPlayAlbum(id) { fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:'spotify:album:'+id})}).catch(function(){}); }
+    function spotifyPlayTrack(uri) { if(uri) fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:uri})}).catch(function(){}); }
+    document.addEventListener('click',function(e){
+      var b = e.target.closest('.spotify-badge');
+      if (!b) return;
       e.stopPropagation();
-      var masterId = badge.getAttribute('data-sp-master');
-      var albumId = badge.getAttribute('data-sp-album');
-      if (masterId && albumId) toggleSpotifyPlayer(masterId, albumId);
+      var mid = b.getAttribute('data-sp-master');
+      var aid = b.getAttribute('data-sp-album');
+      if (mid && aid) spotifyTogglePanel(mid, aid);
     });
 
-    function initDashboardDrilldown() {
+function initDashboardDrilldown() {
       // 소스보강 탭으로 이동하고 미연결 대상 로드
       function _goSource() {
         openAdminConsole("source");
@@ -46893,6 +46888,7 @@
       $("homeSigPurchase").checked = false;
       $("homeSortMode").value = "CREATED_DESC";
       $("homePageSize").value = "30";
+      $("homeMasterId").value = "";
       $("homeItemId").value = "";
       $("homePackagingList").querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
       $("homePackageContentsList").querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
@@ -47881,7 +47877,7 @@
         <div class="result-item album-result ${Number(row.id) === Number(homeSelectedMasterId) ? "pick" : ""}" data-master-id="${row.id}">
           <div class="album-result-cover">${cover}</div>
           <div class="album-result-main">
-            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge" data-sp-master="${row.id}" data-sp-album="${escapeHtml(row.spotify_album_id)}">♪ Spotify</span>` : ""}</div>
+            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge">Spotify</span>` : ""}</div>
             ${trackPreview.length ? `<div class="mini">${escapeHtml(t("media.manage.search.matched_tracks", { tracks: trackPreview.join(" | ") }))}</div>` : ""}
             ${memberItemsPreview.length ? `<div class="home-master-member-preview-list">
               ${memberItemsPreview.map((item) => homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode })).join("")}
@@ -47953,6 +47949,9 @@
           master_release_id: masterData?.source_release_id || null,
           items,
           collectibles,
+          spotify_album_id: masterData?.spotify_album_id || null,
+          spotify_album_uri: masterData?.spotify_album_uri || null,
+          spotify_image_url: masterData?.spotify_image_url || null,
         };
         renderHomeRelatedVersions();
         setStatus("homeMasterStatus", "ok", t("media.manage.master.members.status.loaded", {
@@ -48560,6 +48559,7 @@
       const barcode = $("homeBarcode").value.trim();
       const releaseYear = $("homeReleaseYear").value.trim();
       const sortMode = String($("homeSortMode").value || "CREATED_DESC").trim().toUpperCase() || "CREATED_DESC";
+      const masterId = $("homeMasterId").value.trim();
       const ownedItemId = $("homeItemId").value.trim();
       const isLimited = $("homeLimitEd").checked;
       const isNew = $("homeNewProduct").checked;
@@ -48578,6 +48578,7 @@
       if (barcode) params.set("barcode", barcode);
       if (releaseYear) params.set("release_year", releaseYear);
       if (sortMode !== "CREATED_DESC") params.set("sort_mode", sortMode);
+      if (masterId) params.set("album_master_id", masterId);
       if (ownedItemId) params.set("owned_item_id", ownedItemId);
       packagingVals.forEach(v => params.append("packaging", v));
       packageContentsVals.forEach(v => params.append("package_contents", v));
@@ -49460,7 +49461,11 @@
           ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : `<span class="home-master-meta-cover-placeholder">♪</span>`
       );
-      setTextIfPresent("homeMasterMetaTitle",  title);
+      setTextIfPresent("homeMasterMetaTitleText",  title);
+      const spBadge = homeMasterInfo?.spotify_album_id
+        ? `<span class="spotify-badge" data-sp-master="${homeMasterInfo.album_master_id}" data-sp-album="${escapeHtml(homeMasterInfo.spotify_album_id)}" style="cursor:pointer;">Spotify</span>`
+        : "";
+      setHtmlIfPresent("homeMasterMetaTitleBadge", spBadge);
       setTextIfPresent("homeMasterMetaArtist", artist);
       setTextIfPresent("homeMasterMetaYear",   year ? String(year) : "");
       setHtmlIfPresent("homeMasterMetaLink",   masterLink);
@@ -49501,6 +49506,10 @@
         ? t("media.manage.related_versions.summary.sort_artist", { name: sortArtist })
         : "";
 
+      const masterSpotifyId = homeMasterInfo?.spotify_album_id || null;
+      setHtmlIfPresent("homeMasterSpotifyBadge", masterSpotifyId
+        ? `<span class="spotify-badge" style="margin-left:0;margin-right:8px;">Spotify</span>`
+        : "");
       setTextIfPresent(
         "homeMasterMeta",
         t("media.manage.related_versions.summary", {

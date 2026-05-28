@@ -73,6 +73,7 @@ def _build_album_master_filter_sql(
     is_limited: bool | None = None,
     is_new: bool | None = None,
     is_promo: bool | None = None,
+    album_master_id: int | None = None,
 ) -> tuple[str, list[Any]]:
     where_sql = ""
     params: list[Any] = []
@@ -86,6 +87,10 @@ def _build_album_master_filter_sql(
         COALESCE(mid.track_list_json, '') || ' ' ||
         COALESCE(mid.track_items_json, '')
     """
+
+    if album_master_id:
+        where_sql += " AND am.id = ?"
+        params.append(album_master_id)
 
     if source_code:
         where_sql += " AND am.source_code = ?"
@@ -543,6 +548,7 @@ def list_album_masters(
     is_limited: bool | None = None,
     is_new: bool | None = None,
     is_promo: bool | None = None,
+    album_master_id: int | None = None,
 ) -> list[dict[str, Any]]:
     filter_sql, params = _build_album_master_filter_sql(
         source_code=source_code,
@@ -563,6 +569,7 @@ def list_album_masters(
         is_limited=is_limited,
         is_new=is_new,
         is_promo=is_promo,
+        album_master_id=album_master_id,
     )
 
     query = """
