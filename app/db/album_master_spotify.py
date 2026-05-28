@@ -170,7 +170,7 @@ def _resolve_album(sp: Any, track_id: str) -> dict[str, Any]:
 def _match_by_album(sp: Any, artist: str, title: str, db_tracks: list[str]) -> dict[str, Any] | None:
     """Search Spotify for artist+title, verify with track sequence."""
     query = f"{artist} {title}" if artist else title
-    results = sp.search_tracks_sync(query, limit=5)
+    results = sp.search_tracks_sync(query, limit=2)
     if not results:
         return None
 
@@ -301,7 +301,7 @@ def _match_by_title(sp: Any, title: str, db_tracks: list[str]) -> dict[str, Any]
     if not _is_soundtrack(title) and not _is_compilation(title):
         return None
 
-    results = sp.search_tracks_sync(title, limit=3)
+    results = sp.search_tracks_sync(title, limit=2)
     if not results:
         return None
 
@@ -480,7 +480,7 @@ def batch_match_spotify(
                     matched += 1
                 else:
                     skipped += 1
-                time.sleep(0.3)
+                time.sleep(2.0)
             except Exception:
                 logger.exception("Spotify match failed for master %s", row["id"])
                 errors += 1
