@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from .. import db
 from .. import security
 from ..services.spotify import SpotifyService
+from ..services.local_player import LocalPlayer
 
 
 # ── WebSocket connection registry ─────────────────────────────────
@@ -80,6 +81,7 @@ _registry = ConnectionRegistry()
 router = APIRouter(tags=["cafe"])
 
 _spotify = SpotifyService()
+_local = LocalPlayer()
 
 
 # ── helpers ─────────────────────────────────────────────────────
@@ -146,6 +148,10 @@ def cafe_search(
     for item in spotify_results:
         item["source"] = "spotify"
     results.extend(spotify_results)
+
+    # Local file search
+    local_files = _local.scan_files(q, limit=limit)
+    results.extend(local_files)
 
     # Local tag search (simple text match on tag_value)
     local_tags = db.find_tracks_by_tag(q, limit=limit)
@@ -218,7 +224,32 @@ def cafe_now_playing() -> dict[str, Any]:
     pb = _spotify.current_playback_sync()
     if pb:
         return {"available": True, "source": "spotify", **pb}
+    local = _local.current_track()
+    if local and local.get("is_playing"):
+        return {"available": True, **local}
     return {"available": False}
+
+
+# ── local playback ────────────────────────────────────────────────
+
+@router.post("/ops/cafe/play-local")
+def staff_play_local(request: Request) -> dict[str, Any]:
+    """Staff: play a local file. OPERATOR+"""
+    import json as _json
+    security._require_operator_request(request)
+    body = _json.loads(request.body())
+    file_path = str(body.get("file_path") or "").strip()
+    if not file_path:
+        raise HTTPException(status_code=400, detail="file_path required")
+    ok = _local.play(file_path)
+    return {"ok": ok}
+
+@router.post("/ops/cafe/stop-local")
+def staff_stop_local(request: Request) -> dict[str, Any]:
+    """Staff: stop local playback. OPERATOR+"""
+    security._require_operator_request(request)
+    _local.stop()
+    return {"ok": True}
 
 
 # ── staff: queue management ─────────────────────────────────────
