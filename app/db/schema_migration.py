@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -523,6 +523,8 @@ Version log:
       남아 있어 Vinyl 등 자유 형식 값 저장 시 500 에러 발생.
   8 — `customer_track_request` weather columns (weather_temp_c, weather_description,
       weather_code, season) and playback columns (playback_deck, played_at, returned_at).
+  9 — spotify album fields (spotify_album_id, spotify_album_uri, spotify_matched_at, spotify_image_url) in album_master.
+  10 — table_device and track_reaction tables for cafe operations.
 """
 
 
@@ -804,6 +806,40 @@ def _migration_v9_add_spotify_album_fields(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE album_master ADD COLUMN spotify_image_url TEXT")
 
 
+def _migration_v10_add_cafe_tablet_and_reaction_tables(conn: sqlite3.Connection) -> None:
+    """Create table_device and track_reaction tables for cafe operations."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS table_device (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          table_number TEXT NOT NULL UNIQUE,
+          device_label TEXT,
+          device_id TEXT UNIQUE,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS track_reaction (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          track_request_id INTEGER NOT NULL,
+          table_number TEXT NOT NULL,
+          reaction_type TEXT NOT NULL,
+          free_text TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (track_request_id) REFERENCES customer_track_request(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_track_reaction_request ON track_reaction (track_request_id)"
+    )
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -814,6 +850,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     7: _migration_v7_drop_format_name_check,
     8: _migration_v8_add_customer_track_weather_and_decks,
     9: _migration_v9_add_spotify_album_fields,
+    10: _migration_v10_add_cafe_tablet_and_reaction_tables,
 }
 
 

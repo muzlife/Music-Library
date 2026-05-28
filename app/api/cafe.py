@@ -183,8 +183,14 @@ def cafe_search(
 
 # ── request track ───────────────────────────────────────────────
 
+async def broadcast_queue_update():
+    from app import db
+    rows = db.list_customer_track_requests(status=None, limit=100)
+    await _registry.broadcast("queue_update", {"queue": rows})
+
+
 @router.post("/cafe/request")
-def cafe_request_track(payload: CafeTrackRequest, request: Request) -> dict[str, Any]:
+async def cafe_request_track(payload: CafeTrackRequest, request: Request) -> dict[str, Any]:
     """Submit a track request from a tablet."""
     device_id = _device_id_from_request(request)
     table_number = _resolve_table(device_id)
@@ -200,6 +206,8 @@ def cafe_request_track(payload: CafeTrackRequest, request: Request) -> dict[str,
     )
     if not row:
         raise HTTPException(status_code=500, detail="요청 접수 실패")
+
+    await broadcast_queue_update()
 
     return {
         "ok": True,
@@ -287,25 +295,74 @@ def staff_queue(request: Request) -> dict[str, Any]:
 
 
 @router.post("/ops/cafe/play/{request_id}")
-def staff_play(request_id: int, request: Request) -> dict[str, Any]:
+async def staff_play(request_id: int, request: Request) -> dict[str, Any]:
     """Staff: mark request as PLAYING, trigger playback if possible. OPERATOR+"""
     security._require_operator_request(request)
     row = db.update_customer_track_request(request_id, status="PLAYING")
     if not row:
         raise HTTPException(status_code=404, detail="요청을 찾을 수 없습니다")
-    # Try Spotify playback if a track was matched
-    # (for now, just mark status — actual playback handled by staff manually)
+    await broadcast_queue_update()
+
+    # Broadcast now_playing info to tablets
+    title = row.get("live_item_title") or row.get("item_title_snapshot") or row.get("requested_track") or ""
+    artist = row.get("live_artist_or_brand") or row.get("artist_or_brand_snapshot") or ""
+    art_url = row.get("live_cover_image_url") or row.get("cover_image_url_snapshot") or ""
+    
+    # Extract table number from customer_note (e.g. "테이블 3 / spotify")
+    table_number = ""
+    note = row.get("customer_note") or ""
+    if "테이블 " in note:
+        try:
+            table_number = note.split("테이블 ")[-1].split(" /")[0].strip()
+        except Exception:
+            pass
+
+    await _registry.broadcast("now_playing", {
+        "track_title": title,
+        "artist": artist,
+        "album_art_url": art_url,
+        "request_id": request_id,
+        "table_number": table_number,
+        "source": note.split("/ ")[-1].strip() if "/" in note else "spotify"
+    })
+
     return {"ok": True, "request_id": request_id, "status": "PLAYING"}
 
 
 @router.post("/ops/cafe/complete/{request_id}")
-def staff_complete(request_id: int, request: Request) -> dict[str, Any]:
+async def staff_complete(request_id: int, request: Request) -> dict[str, Any]:
     """Staff: mark request as RETURNED. OPERATOR+"""
     security._require_operator_request(request)
     row = db.update_customer_track_request(request_id, status="RETURNED")
     if not row:
         raise HTTPException(status_code=404, detail="요청을 찾을 수 없습니다")
+    await broadcast_queue_update()
     return {"ok": True, "request_id": request_id, "status": "RETURNED"}
+
+
+@router.post("/ops/cafe/cancel/{request_id}")
+async def staff_cancel(request_id: int, request: Request) -> dict[str, Any]:
+    """Staff: mark request as CANCELLED. OPERATOR+"""
+    security._require_operator_request(request)
+    row = db.update_customer_track_request(request_id, status="CANCELLED")
+    if not row:
+        raise HTTPException(status_code=404, detail="요청을 찾을 수 없습니다")
+    await broadcast_queue_update()
+    return {"ok": True, "request_id": request_id, "status": "CANCELLED"}
+
+
+@router.post("/ops/cafe/restore/{request_id}")
+@router.patch("/ops/cafe/restore/{request_id}")
+@router.post("/operator/customer-requests/{request_id}/restore")
+@router.patch("/operator/customer-requests/{request_id}/restore")
+async def staff_restore(request_id: int, request: Request) -> dict[str, Any]:
+    """Staff: restore/rollback a completed/cancelled request. OPERATOR+"""
+    security._require_operator_request(request)
+    row = db.rollback_customer_track_request(request_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="요청을 찾을 수 없습니다")
+    await broadcast_queue_update()
+    return {"ok": True, "request_id": request_id, "status": "REQUESTED"}
 
 
 @router.post("/ops/cafe/pause")
@@ -452,10 +509,10 @@ def cafe_lyrics(
 # ── reactions ─────────────────────────────────────────────────────
 
 @router.post("/cafe/reaction")
-def cafe_reaction(request: Request) -> dict[str, Any]:
+async def cafe_reaction(request: Request) -> dict[str, Any]:
     """Submit a reaction from tablet."""
     import json as _json
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     device_id = _device_id_from_request(request)
     table_number = _resolve_table(device_id)
     if not table_number:
@@ -466,6 +523,13 @@ def cafe_reaction(request: Request) -> dict[str, Any]:
     if not track_request_id or not reaction_type:
         raise HTTPException(status_code=400, detail="track_request_id and reaction_type required")
     db.insert_track_reaction(track_request_id, table_number, reaction_type, free_text)
+
+    await _registry.broadcast("reaction", {
+        "track_request_id": track_request_id,
+        "table_number": table_number,
+        "reaction_type": reaction_type,
+        "free_text": free_text,
+    })
     return {"ok": True}
 
 
