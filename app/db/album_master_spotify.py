@@ -103,12 +103,8 @@ def _is_soundtrack(title: str) -> bool:
 
 def _get_spotify_album_tracks(sp: Any, album_id: str) -> list[str]:
     """Get track names from a Spotify album."""
-    client = sp._ensure_client()
-    if client is None:
-        return []
     try:
-        result = client.album_tracks(album_id)
-        items = result.get("items", []) if result else []
+        items = sp.album_tracks_sync(album_id)
         return [t.get("name", "") for t in items]
     except Exception:
         logger.debug("Failed to get tracks for album %s", album_id)
@@ -151,11 +147,10 @@ def _track_sequence_match(db_tracks: list[str], sp_tracks: list[str], min_match:
 
 def _resolve_album(sp: Any, track_id: str) -> dict[str, Any]:
     """Get album info from a Spotify track ID."""
-    client = sp._ensure_client()
-    if client is None:
-        return {}
     try:
-        track = client.track(track_id)
+        track = sp.track_sync(track_id)
+        if not track:
+            return {}
         album = track.get("album", {})
         return {
             "album_id": album.get("id"),

@@ -1,13 +1,14 @@
 """Spotify API integration via spotipy SDK.
 
-Provides search, playback control, and current playback status.
-All methods are synchronous wrappers around spotipy — the cafe
-API layer calls them via asyncio.to_thread where needed.
+Provides search (Client Credentials), playback control (OAuth),
+and current playback status. Dual auth: client credentials for
+search, OAuth user token for playback.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 from ..config import get_settings
@@ -22,20 +23,42 @@ class SpotifyService:
         self.client_secret = str(settings.spotify_client_secret or "").strip()
         self.redirect_uri = str(settings.spotify_redirect_uri or "").strip()
         self._sp: Any = None
+        self._sp_cc: Any = None  # client credentials client for search
 
     @property
     def configured(self) -> bool:
         return bool(self.client_id and self.client_secret)
 
-    def _ensure_client(self) -> Any:
+    def _ensure_client_cc(self) -> Any:
+        """Client Credentials client — for search (no user auth needed)."""
         if not self.configured:
             return None
+        if self._sp_cc is not None:
+            return self._sp_cc
         try:
-            import spotipy  # type: ignore[import-untyped]
-            from spotipy.oauth2 import SpotifyOAuth  # type: ignore[import-untyped]
+            import spotipy
+            from spotipy.oauth2 import SpotifyClientCredentials
+            self._sp_cc = spotipy.Spotify(
+                client_credentials_manager=SpotifyClientCredentials(
+                    client_id=self.client_id,
+                    client_secret=self.client_secret,
+                )
+            )
+        except Exception:
+            logger.exception("failed to initialize spotipy CC client")
+            return None
+        return self._sp_cc
 
-            import os
-            cache_path = "/Users/jingunpark/.spotify_cache"
+    def _ensure_client(self) -> Any:
+        """OAuth client — for playback (user auth needed)."""
+        if not self.configured:
+            return None
+        if self._sp is not None:
+            return self._sp
+        try:
+            import spotipy
+            from spotipy.oauth2 import SpotifyOAuth
+            cache_path = os.path.join(os.path.expanduser("~"), ".spotify_cache")
             self._sp = spotipy.Spotify(
                 auth_manager=SpotifyOAuth(
                     client_id=self.client_id,
@@ -47,89 +70,83 @@ class SpotifyService:
                 )
             )
         except Exception:
-            logger.exception("failed to initialize spotipy client")
+            logger.exception("failed to initialize spotipy OAuth client")
             return None
         return self._sp
 
-    # ── search ──────────────────────────────────────────────────
+    # ── search (uses Client Credentials) ─────────────────────────
 
     def search_tracks_sync(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
-        sp = self._ensure_client()
+        sp = self._ensure_client_cc()
         if sp is None:
             return []
-        for attempt in range(2):
-            try:
-                results = sp.search(q=query, type="track", limit=limit)
-                break
-            except Exception as e:
-                logger.error(f"spotify search attempt {attempt+1} failed: {e}")
-                if attempt == 0:
-                    try:
-                        sp.auth_manager.get_access_token(check_cache=False)
-                    except Exception:
-                        pass
-                else:
-                    # Reset client - it might be in a bad state
-                    self._sp = None
-                    return []
+        try:
+            results = sp.search(q=query, type="track", limit=limit)
+        except Exception:
+            logger.exception("spotify search failed")
+            return []
         items: list[dict[str, Any]] = []
         for item in (results.get("tracks", {}).get("items") or []):
             album = item.get("album", {})
             images = album.get("images") or []
-            items.append(
-                {
-                    "spotify_track_id": item.get("id"),
-                    "title": item.get("name"),
-                    "artist": ", ".join(
-                        a.get("name", "") for a in item.get("artists", [])
-                    ),
-                    "album_name": album.get("name"),
-                    "album_art_url": images[1]["url"]
-                    if len(images) > 1
-                    else (images[0]["url"] if images else None),
-                    "duration_ms": item.get("duration_ms"),
-                    "track_uri": item.get("uri"),
-                }
-            )
+            items.append({
+                "spotify_track_id": item.get("id"),
+                "title": item.get("name"),
+                "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
+                "album_name": album.get("name"),
+                "album_art_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
+                "duration_ms": item.get("duration_ms"),
+                "track_uri": item.get("uri"),
+            })
         return items
 
-    # ── recommendations ──────────────────────────────────────────
+    def track_sync(self, track_id: str) -> dict[str, Any] | None:
+        """Get a single track by ID (CC client)."""
+        sp = self._ensure_client_cc()
+        if sp is None:
+            return None
+        try:
+            return sp.track(track_id)
+        except Exception:
+            return None
 
-    def get_recommendations_sync(
-        self, seed_track_id: str, limit: int = 10
-    ) -> list[dict[str, Any]]:
-        sp = self._ensure_client()
+    def album_tracks_sync(self, album_id: str) -> list[dict[str, Any]]:
+        """Get tracks for an album (CC client)."""
+        sp = self._ensure_client_cc()
         if sp is None:
             return []
         try:
-            results = sp.recommendations(
-                seed_tracks=[seed_track_id], limit=limit
-            )
+            result = sp.album_tracks(album_id)
+            return result.get("items", []) if result else []
         except Exception:
-            logger.exception("spotify recommendations failed")
+            return []
+
+    # ── recommendations ──────────────────────────────────────────
+
+    def get_recommendations_sync(self, seed_track_id: str, limit: int = 10) -> list[dict[str, Any]]:
+        sp = self._ensure_client_cc()
+        if sp is None:
+            return []
+        try:
+            results = sp.recommendations(seed_tracks=[seed_track_id], limit=limit)
+        except Exception:
             return []
         items: list[dict[str, Any]] = []
         for item in (results.get("tracks") or []):
             album = item.get("album", {})
             images = album.get("images") or []
-            items.append(
-                {
-                    "spotify_track_id": item.get("id"),
-                    "title": item.get("name"),
-                    "artist": ", ".join(
-                        a.get("name", "") for a in item.get("artists", [])
-                    ),
-                    "album_name": album.get("name"),
-                    "album_art_url": images[1]["url"]
-                    if len(images) > 1
-                    else (images[0]["url"] if images else None),
-                    "duration_ms": item.get("duration_ms"),
-                    "track_uri": item.get("uri"),
-                }
-            )
+            items.append({
+                "spotify_track_id": item.get("id"),
+                "title": item.get("name"),
+                "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
+                "album_name": album.get("name"),
+                "album_art_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
+                "duration_ms": item.get("duration_ms"),
+                "track_uri": item.get("uri"),
+            })
         return items
 
-    # ── playback ─────────────────────────────────────────────────
+    # ── playback (uses OAuth) ────────────────────────────────────
 
     def play_sync(self, track_uri: str) -> bool:
         sp = self._ensure_client()
@@ -139,7 +156,6 @@ class SpotifyService:
             sp.start_playback(uris=[track_uri])
             return True
         except Exception:
-            logger.exception("spotify play failed")
             return False
 
     def pause_sync(self) -> bool:
@@ -150,7 +166,6 @@ class SpotifyService:
             sp.pause_playback()
             return True
         except Exception:
-            logger.exception("spotify pause failed")
             return False
 
     def current_playback_sync(self) -> dict[str, Any] | None:
@@ -160,7 +175,6 @@ class SpotifyService:
         try:
             pb = sp.current_playback()
         except Exception:
-            logger.exception("spotify current_playback failed")
             return None
         if not pb or not pb.get("is_playing"):
             return None
@@ -170,13 +184,9 @@ class SpotifyService:
         return {
             "spotify_track_id": item.get("id"),
             "title": item.get("name"),
-            "artist": ", ".join(
-                a.get("name", "") for a in item.get("artists", [])
-            ),
+            "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
             "album_name": album.get("name"),
-            "album_art_url": images[1]["url"]
-            if len(images) > 1
-            else (images[0]["url"] if images else None),
+            "album_art_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
             "duration_ms": item.get("duration_ms"),
             "position_ms": pb.get("progress_ms"),
             "track_uri": item.get("uri"),
