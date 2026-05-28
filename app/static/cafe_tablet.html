@@ -118,11 +118,12 @@ function customReact(){
   document.getElementById('customInput').focus();
 }
 
-function showLyrics(fp){
-  document.getElementById('lyricsTitle').textContent = '';
+function showLyrics(artist,title,fp){
+  document.getElementById('lyricsTitle').textContent = title+' - '+artist;
   document.getElementById('lyricsText').textContent = '불러오는 중...';
   document.getElementById('lyricsModal').style.display = 'flex';
-  fetch('/cafe/lyrics?file_path='+encodeURIComponent(fp)).then(function(r){return r.json()}).then(function(d){
+  fetch('/cafe/lyrics?artist='+encodeURIComponent(artist||'')+'&title='+encodeURIComponent(title||'')+'&file_path='+encodeURIComponent(fp||''))
+  .then(function(r){return r.json()}).then(function(d){
     if(d.available){
       document.getElementById('lyricsText').textContent = d.lyrics;
     } else {
