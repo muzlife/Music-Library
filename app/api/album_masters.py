@@ -1098,7 +1098,18 @@ def spotify_album_tracks(
         }
         for t in items
     ]
-    return {"spotify_album_id": spotify_album_id, "total_tracks": len(tracks), "tracks": tracks}
+        # Get album cover
+    album_cover = None
+    try:
+        sp_client = sp._ensure_client_cc()
+        if sp_client:
+            album = sp_client.album(spotify_album_id)
+            images = album.get("images") or []
+            album_cover = images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None)
+    except Exception:
+        pass
+    return {"spotify_album_id": spotify_album_id, "total_tracks": len(tracks), "tracks": tracks, "image_url": album_cover,
+            "name": album.get("name", "") if album else "", "artist": ", ".join(a.get("name","") for a in album.get("artists",[])) if album else ""}
 
 
 # ── Generic Spotify play ────────────────────────────────────────────

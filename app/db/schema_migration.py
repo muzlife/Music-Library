@@ -877,6 +877,9 @@ def _apply_migrations_legacy(conn: sqlite3.Connection) -> None:
             conn.execute("ALTER TABLE album_master ADD COLUMN spotify_album_uri TEXT")
         if not _column_exists(conn, "album_master", "spotify_matched_at"):
             conn.execute("ALTER TABLE album_master ADD COLUMN spotify_matched_at TEXT")
+        if not _column_exists(conn, "album_master", "spotify_image_url"):
+            conn.execute("ALTER TABLE album_master ADD COLUMN spotify_image_url TEXT")
+        
     if _column_exists(conn, "album_master", "sort_artist_name"):
         conn.execute(
             """

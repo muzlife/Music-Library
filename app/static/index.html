@@ -41940,7 +41940,10 @@
         var data = await res.json();
         var tracks = data.tracks || [];
         
-        var html = '<button class="spotify-play-all" onclick="spotifyPlayAlbum('' + escapeHtml(albumId) + '')">▶ 전체 재생</button>';
+        var coverHtml = data.image_url ? '<img class="spotify-player-cover" src="' + escapeHtml(data.image_url) + '" alt="">' : '';
+        var infoHtml = '<div class="spotify-player-info"><div class="sp-title">' + escapeHtml(data.name || '') + '</div><div class="sp-artist">' + escapeHtml(data.artist || '') + ' · ' + tracks.length + ' tracks</div></div>';
+        var html = '<div class="spotify-player-header">' + coverHtml + infoHtml + '</div>';
+        html += '<button class="spotify-play-all" onclick="spotifyPlayAlbum('' + escapeHtml(albumId) + '')">▶ 전체 재생</button>';
         html += '<div class="spotify-tracks">';
         for (var i = 0; i < tracks.length; i++) {
           var t = tracks[i];

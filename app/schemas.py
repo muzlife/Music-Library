@@ -910,6 +910,7 @@ class AlbumMasterListItem(BaseModel):
     spotify_album_id: str | None = None
     spotify_album_uri: str | None = None
     spotify_matched_at: str | None = None
+    spotify_image_url: str | None = None
     updated_at: str
 
 
