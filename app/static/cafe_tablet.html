@@ -53,7 +53,7 @@ document.getElementById('searchBtn').onclick = function(){
   if(!q) return;
   var list = document.getElementById('list');
   list.innerHTML = '<div class="empty">검색중...</div>';
-  fetch('/cafe/search?q='+encodeURIComponent(q)+'&limit=15&_='+Date.now())
+  fetch('/cafe/search?q='+encodeURIComponent(q)+'&limit=10&_='+Date.now())
     .then(function(r){return r.json()})
     .then(function(d){
       _data = d.items || [];

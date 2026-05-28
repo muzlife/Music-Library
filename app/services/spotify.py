@@ -77,11 +77,14 @@ class SpotifyService:
     # ── search (uses Client Credentials) ─────────────────────────
 
     def search_tracks_sync(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
+        limit = min(limit, 10)  # Spotify rejects limit > 10
         sp = self._ensure_client_cc()
         if sp is None:
             return []
+        # Spotify search API currently rejects limits > 10 for this application/integration
+        api_limit = min(limit, 10)
         try:
-            results = sp.search(q=query, type="track", limit=limit)
+            results = sp.search(q=query, type="track", limit=api_limit)
         except Exception:
             logger.exception("spotify search failed")
             return []
