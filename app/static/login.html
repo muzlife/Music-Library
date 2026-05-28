@@ -27,7 +27,6 @@
       --theme-dashboard-border: rgba(132, 148, 170, 0.24);
       --brand: #0f766e;
       --danger: #dc2626;
-      --shadow: 0 16px 40px rgba(15, 23, 42, 0.1);
     }
 
     body[data-theme="night"] {
@@ -74,128 +73,308 @@
       --theme-dashboard-border: rgba(90, 108, 128, 0.3);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      margin: 0;
-      min-height: 100vh;
+      min-height: 100dvh;
       font-family: "Avenir Next", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       color: var(--theme-shell-text);
       background: var(--app-body-background);
-      display: grid;
-      place-items: center;
-      padding: 18px;
+      background-attachment: fixed;
     }
 
-    .login-shell {
-      width: min(460px, 100%);
+    /* ── Root grid ── */
+    .login-root {
+      min-height: 100dvh;
       display: grid;
+      grid-template-columns: 54% 1fr;
+      grid-template-rows: 1fr;
+    }
+
+    /* ── Left panel: library identity ── */
+    .login-side {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px 48px 36px;
+      border-right: 1px solid var(--theme-shell-border);
+      background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--theme-admin-panel-bg) 88%, transparent) 0%,
+        color-mix(in srgb, var(--theme-admin-panel-bg-2) 82%, transparent) 100%
+      );
+      overflow: hidden;
+    }
+
+    /* top wordmark */
+    .login-wordmark {
+      display: flex;
+      align-items: center;
       gap: 10px;
-      justify-items: stretch;
     }
 
+    .login-wordmark-glyph {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--theme-shell-accent);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 3px;
+      padding: 4px;
+    }
+
+    .login-wordmark-glyph span {
+      background: var(--theme-shell-accent);
+      display: block;
+    }
+
+    .login-wordmark-glyph span:last-child {
+      background: transparent;
+      border: 1px solid var(--theme-shell-accent);
+    }
+
+    .login-wordmark-name {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--theme-shell-text-muted);
+    }
+
+    /* center display text */
+    .login-display {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+      padding: 32px 0;
+    }
+
+    .login-display-headline {
+      line-height: 1;
+    }
+
+    .login-display-headline .line-1 {
+      display: block;
+      font-size: clamp(1.4rem, 3.2vw, 2.6rem);
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--theme-shell-text-muted);
+      font-variant: small-caps;
+    }
+
+    .login-display-headline .line-2 {
+      display: block;
+      font-size: clamp(3rem, 7vw, 5.8rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: var(--theme-admin-text);
+      line-height: 0.92;
+    }
+
+    .login-display-rule {
+      width: 56px;
+      height: 2px;
+      background: var(--theme-shell-accent);
+    }
+
+    .login-display-sub {
+      font-size: 0.82rem;
+      color: var(--theme-shell-text-subtle);
+      letter-spacing: 0.04em;
+      line-height: 1.5;
+    }
+
+    /* catalog grid */
+    .login-catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      opacity: 0.9;
+    }
+
+    .catalog-cell {
+      aspect-ratio: 1;
+      border-radius: 2px;
+    }
+
+    @keyframes cell-idle {
+      0%, 100% { opacity: var(--cell-lo); }
+      50% { opacity: var(--cell-hi); }
+    }
+
+    .catalog-cell {
+      --cell-lo: 0.1;
+      --cell-hi: 0.28;
+      background: var(--theme-shell-text-muted);
+      animation: cell-idle var(--cell-dur, 4s) ease-in-out infinite;
+      animation-delay: var(--cell-delay, 0s);
+    }
+
+    .catalog-cell.is-accent {
+      --cell-lo: 0.22;
+      --cell-hi: 0.62;
+      background: var(--theme-shell-accent);
+      animation-duration: var(--cell-dur, 3.2s);
+    }
+
+    .catalog-cell.is-sky {
+      --cell-lo: 0.12;
+      --cell-hi: 0.44;
+      background: rgb(56, 189, 248);
+      animation-duration: var(--cell-dur, 5s);
+    }
+
+    /* stats row */
+    .login-stats {
+      display: flex;
+      gap: 36px;
+    }
+
+    .login-stat-value {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--theme-admin-text);
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .login-stat-label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--theme-shell-text-subtle);
+      margin-top: 1px;
+    }
+
+    /* ── Right panel: login form ── */
+    .login-main {
+      display: flex;
+      flex-direction: column;
+      padding: 28px 40px 36px;
+    }
+
+    .login-main-inner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 360px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* utility bar */
     .login-shell-utility {
       display: flex;
       justify-content: flex-end;
       align-items: center;
       gap: 8px;
-      width: 100%;
-      padding: 8px 2px;
+      margin-bottom: auto;
+      padding-bottom: 40px;
     }
 
-    .login-card {
-      width: 100%;
-      border: 1px solid var(--theme-shell-border);
-      border-radius: 16px;
-      background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--theme-admin-panel-bg) 94%, white 6%),
-        color-mix(in srgb, var(--theme-admin-panel-bg-2) 94%, white 6%)
-      );
-      box-shadow: var(--shadow);
-      padding: 20px 18px;
-      display: grid;
-      gap: 12px;
-      color: var(--theme-admin-text);
+    /* form area */
+    .login-form-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 28px;
+      padding: 20px 0 40px;
     }
 
     .login-hero h1 {
-      margin: 0;
-      font-size: 1.18rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
       color: var(--theme-admin-text);
-      letter-spacing: -0.01em;
+      margin-bottom: 8px;
     }
 
     .login-hero p {
-      margin: 0;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--theme-shell-text-muted);
-      line-height: 1.35;
+      line-height: 1.55;
     }
 
-    label {
+    /* fields */
+    .login-fields {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field-group label {
       display: block;
-      margin-bottom: 4px;
-      font-size: 0.76rem;
+      margin-bottom: 6px;
+      font-size: 0.72rem;
       font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       color: var(--theme-admin-text-muted);
     }
 
-    input {
+    .field-group input {
       width: 100%;
-      border-radius: 10px;
+      border-radius: 6px;
       border: 1px solid var(--theme-shell-border);
-      padding: 8px 10px;
-      font-size: 0.92rem;
+      padding: 10px 12px;
+      font-size: 0.9rem;
       line-height: 1.2;
+      font-family: inherit;
       color: #0f172a;
       background: #fff;
+      transition: border-color 140ms, box-shadow 140ms;
     }
 
-    body[data-theme="day"] input {
-      color: #0f172a;
-      background: #fff;
-    }
-
-    body[data-theme="night"] input {
+    body[data-theme="night"] .field-group input {
       color: var(--theme-admin-text);
       background: color-mix(in srgb, var(--theme-admin-panel-bg-2) 92%, var(--theme-shell-text) 8%);
     }
 
-    input:focus {
+    .field-group input:focus {
       outline: none;
       border-color: var(--theme-shell-accent);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-shell-accent) 16%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-shell-accent) 18%, transparent);
     }
 
-    button {
+    /* submit */
+    #loginSubmitBtn {
+      width: 100%;
       border: none;
-      border-radius: 10px;
-      padding: 9px 12px;
-      font-size: 0.92rem;
+      border-radius: 6px;
+      padding: 11px 14px;
+      font-size: 0.88rem;
       font-weight: 800;
-      color: #f0fdfa;
+      font-family: inherit;
+      letter-spacing: 0.04em;
+      color: #fff;
       background: var(--theme-shell-accent);
       cursor: pointer;
+      transition: opacity 120ms, transform 80ms;
     }
 
-    button:disabled {
-      opacity: 0.7;
-      cursor: default;
-    }
+    #loginSubmitBtn:hover:not(:disabled) { opacity: 0.92; }
+    #loginSubmitBtn:active:not(:disabled) { transform: scale(0.99); }
+    #loginSubmitBtn:disabled { opacity: 0.6; cursor: default; }
 
+    /* status */
     .status {
       min-height: 18px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--theme-shell-text-muted);
     }
 
-    .status.err {
-      color: var(--danger);
-    }
+    .status.err { color: var(--danger); }
 
+    /* ── Utility controls (shared with old page) ── */
     .shell-locale-picker {
       display: inline-flex;
       align-items: center;
@@ -206,7 +385,6 @@
       border: 1px solid color-mix(in srgb, var(--theme-shell-border) 88%, transparent);
       border-radius: 6px;
       background: var(--theme-shell-surface-2);
-      box-shadow: none;
       color: var(--theme-shell-text);
       font-size: 0.72rem;
       font-weight: 700;
@@ -243,20 +421,14 @@
       font-family: inherit;
       font-size: 0.72rem;
       font-weight: 700;
-      line-height: 1.1;
-      margin: 0;
-      min-height: 0;
-      padding: 0;
       min-width: 68px;
       outline: none;
     }
 
     .shell-theme-toggle-sr {
       position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
       overflow: hidden;
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
@@ -269,7 +441,6 @@
       grid-auto-flow: column;
       grid-auto-columns: max-content;
       align-items: center;
-      justify-content: center;
       gap: 6px;
       padding: 0 8px;
       min-width: 118px;
@@ -277,49 +448,38 @@
       border: 1px solid color-mix(in srgb, var(--theme-shell-border) 88%, transparent);
       border-radius: 6px;
       background: color-mix(in srgb, var(--theme-shell-surface-2) 88%, var(--theme-shell-surface) 12%);
-      box-shadow: none;
       color: var(--theme-shell-text);
       font-size: 0.72rem;
       font-weight: 700;
-      line-height: 1.2;
       white-space: nowrap;
+      cursor: pointer;
     }
 
     .shell-theme-toggle:focus-visible {
       outline: none;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.06),
-        0 0 0 1px color-mix(in srgb, var(--theme-shell-accent) 30%, transparent),
-        0 0 0 4px color-mix(in srgb, var(--theme-shell-accent) 14%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-shell-accent) 18%, transparent);
     }
 
     .shell-theme-toggle-icon {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
+      width: 16px; height: 16px;
       color: var(--theme-shell-text-subtle);
       opacity: 0.72;
-      transition: color 180ms ease, opacity 180ms ease;
+      transition: color 180ms, opacity 180ms;
     }
 
     .shell-theme-toggle-icon svg {
-      width: 100%;
-      height: 100%;
-      stroke: currentColor;
-      fill: none;
+      width: 100%; height: 100%;
+      stroke: currentColor; fill: none;
       stroke-width: 1.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+      stroke-linecap: round; stroke-linejoin: round;
     }
 
     .shell-theme-toggle-track {
       position: relative;
       display: inline-flex;
-      width: 46px;
-      min-width: 46px;
-      height: 22px;
+      width: 46px; min-width: 46px; height: 22px;
       padding: 2px;
       border-radius: 999px;
       border: 1px solid color-mix(in srgb, var(--theme-shell-border) 92%, transparent);
@@ -328,146 +488,247 @@
         color-mix(in srgb, var(--theme-shell-surface) 82%, var(--theme-shell-surface-2) 18%),
         color-mix(in srgb, var(--theme-shell-surface) 68%, var(--theme-shell-surface-2) 32%)
       );
-      box-shadow:
-        inset 0 2px 6px rgba(0, 0, 0, 0.18),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,.18), inset 0 -1px 0 rgba(255,255,255,.04);
     }
 
     .shell-theme-toggle-thumb {
-      width: 18px;
-      height: 18px;
+      width: 18px; height: 18px;
       border-radius: 999px;
       background: linear-gradient(
         180deg,
         color-mix(in srgb, white 76%, var(--theme-shell-accent) 24%),
         color-mix(in srgb, white 58%, var(--theme-shell-accent) 42%)
       );
-      box-shadow:
-        0 6px 14px rgba(5, 8, 12, 0.26),
-        inset 0 1px 0 rgba(255, 255, 255, 0.68);
-      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+      box-shadow: 0 6px 14px rgba(5,8,12,.26), inset 0 1px 0 rgba(255,255,255,.68);
+      transition: transform 180ms ease, background 180ms ease;
       transform: translateX(22px);
     }
 
-    .shell-theme-toggle.is-day .shell-theme-toggle-thumb {
-      transform: translateX(0);
-    }
+    .shell-theme-toggle.is-day .shell-theme-toggle-thumb { transform: translateX(0); }
+    .shell-theme-toggle.is-day .shell-theme-toggle-icon--sun { color: color-mix(in srgb, var(--theme-shell-accent) 72%, var(--theme-shell-text) 28%); opacity: 1; }
+    .shell-theme-toggle.is-day .shell-theme-toggle-icon--moon { color: var(--theme-shell-text-subtle); opacity: 0.48; }
+    .shell-theme-toggle:not(.is-day) .shell-theme-toggle-icon--sun { color: var(--theme-shell-text-subtle); opacity: 0.48; }
+    .shell-theme-toggle:not(.is-day) .shell-theme-toggle-icon--moon { color: color-mix(in srgb, var(--theme-shell-text) 82%, var(--theme-shell-accent) 18%); opacity: 1; }
 
-    .shell-theme-toggle.is-day .shell-theme-toggle-icon--sun {
-      color: color-mix(in srgb, var(--theme-shell-accent) 72%, var(--theme-shell-text) 28%);
-      opacity: 1;
-    }
+    /* ── Mobile ── */
+    @media (max-width: 720px) {
+      .login-root {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
 
-    .shell-theme-toggle.is-day .shell-theme-toggle-icon--moon {
-      color: var(--theme-shell-text-subtle);
-      opacity: 0.48;
-    }
+      .login-side {
+        border-right: none;
+        border-bottom: 1px solid var(--theme-shell-border);
+        padding: 28px 24px 24px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 20px;
+        min-height: unset;
+      }
 
-    .shell-theme-toggle:not(.is-day) .shell-theme-toggle-icon--sun {
-      color: var(--theme-shell-text-subtle);
-      opacity: 0.48;
-    }
+      .login-display {
+        flex: 1 1 auto;
+        padding: 0;
+        gap: 12px;
+        min-width: 180px;
+      }
 
-    .shell-theme-toggle:not(.is-day) .shell-theme-toggle-icon--moon {
-      color: color-mix(in srgb, var(--theme-shell-text) 82%, var(--theme-shell-accent) 18%);
-      opacity: 1;
+      .login-display-headline .line-1 { font-size: 0.85rem; }
+      .login-display-headline .line-2 { font-size: 2.4rem; }
+
+      .login-catalog-grid {
+        display: none;
+      }
+
+      .login-stats {
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .login-wordmark { display: none; }
+
+      .login-main {
+        padding: 24px;
+      }
+
+      .login-main-inner {
+        max-width: 100%;
+      }
+
+      .login-shell-utility {
+        padding-bottom: 24px;
+      }
     }
 
     @media (max-width: 420px) {
-      body {
-        padding: 10px;
-      }
-
-      .login-card {
-        border-radius: 14px;
-      }
+      .login-side { padding: 20px 18px; }
+      .login-main { padding: 20px 18px 28px; }
     }
   </style>
 </head>
 <body data-theme="night">
-  <div class="login-shell">
-    <div class="login-shell-utility">
-      <label class="shell-locale-picker" for="loginLocaleSelect">
-        <span class="shell-locale-picker-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M4 7h6"></path>
-            <path d="M7 4.5L4 7l3 2.5"></path>
-            <path d="M20 17h-6"></path>
-            <path d="M17 14.5l3 2.5-3 2.5"></path>
-            <path d="M9 18l2.1-6h1.8L15 18"></path>
-            <path d="M9.8 15.5h4.4"></path>
-            <path d="M15.8 6.2h3.2"></path>
-            <path d="M17.4 6.2v6"></path>
-            <path d="M15.8 12.2h3.2"></path>
-          </svg>
-        </span>
-        <span id="loginLocaleLabel" class="shell-theme-toggle-sr"></span>
-        <select id="loginLocaleSelect" aria-label="language selector">
-          <option value="ko" data-login-i18n="locale.option.ko"></option>
-          <option value="en" data-login-i18n="locale.option.en"></option>
-          <option value="ja" data-login-i18n="locale.option.ja"></option>
-        </select>
-      </label>
-      <button id="loginThemeToggle" class="shell-theme-toggle" type="button">
-        <span class="shell-theme-toggle-icon shell-theme-toggle-icon--sun" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false">
-            <circle cx="12" cy="12" r="4.5"></circle>
-            <path d="M12 1.75v3"></path>
-            <path d="M12 19.25v3"></path>
-            <path d="M1.75 12h3"></path>
-            <path d="M19.25 12h3"></path>
-            <path d="M4.76 4.76l2.12 2.12"></path>
-            <path d="M17.12 17.12l2.12 2.12"></path>
-            <path d="M17.12 6.88l2.12-2.12"></path>
-            <path d="M4.76 19.24l2.12-2.12"></path>
-          </svg>
-        </span>
-        <span class="shell-theme-toggle-track" aria-hidden="true">
-          <span class="shell-theme-toggle-thumb"></span>
-        </span>
-        <span class="shell-theme-toggle-icon shell-theme-toggle-icon--moon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M18.7 13.3A7.8 7.8 0 1 1 10.7 5.3a6.1 6.1 0 0 0 8 8Z"></path>
-            <path d="M18.8 4.8v2"></path>
-            <path d="M17.8 5.8h2"></path>
-            <path d="M20.7 8.1v1.5"></path>
-            <path d="M19.95 8.85h1.5"></path>
-          </svg>
-        </span>
-        <span id="loginThemeToggleText" class="shell-theme-toggle-sr"></span>
-      </button>
-    </div>
+  <div class="login-root">
 
-    <form id="loginForm" class="login-card">
-      <div class="login-hero">
-        <h1 id="loginHeading">라이브러리 관리/운영 콘솔</h1>
-        <p id="loginSubcopy">외부 접근용 로그인 화면입니다. 관리자 계정은 전체 관리 화면으로, 현장 운영자 계정은 조회/요청곡 중심 화면으로 들어갑니다.</p>
+    <!-- ── Left: Library identity panel ── -->
+    <aside class="login-side">
+      <div class="login-wordmark">
+        <div class="login-wordmark-glyph" aria-hidden="true">
+          <span></span><span></span>
+          <span></span><span></span>
+        </div>
+        <span class="login-wordmark-name">Muzlife Library</span>
       </div>
-      <div>
-        <label for="loginUsername" id="loginUsernameLabel">아이디</label>
-        <input id="loginUsername" name="username" autocomplete="username" required />
+
+      <div class="login-display">
+        <div class="login-display-headline">
+          <span class="line-1">Digital</span>
+          <span class="line-2">Library</span>
+        </div>
+        <div class="login-display-rule"></div>
+        <p class="login-display-sub">운영 관리 콘솔 — 카탈로그, 장식장 배치, 메타데이터 관리</p>
       </div>
-      <div>
-        <label for="loginPassword" id="loginPasswordLabel">비밀번호</label>
-        <input id="loginPassword" name="password" type="password" autocomplete="current-password" required />
+
+      <div class="login-catalog-grid" id="catalogGrid" aria-hidden="true">
+        <!-- generated by JS below -->
       </div>
-      <button id="loginSubmitBtn" type="submit">로그인</button>
-      <div id="loginStatus" class="status"></div>
-    </form>
+
+      <div class="login-stats">
+        <div>
+          <span class="login-stat-value" id="loginCatalogCount">—</span>
+          <span class="login-stat-label">카탈로그</span>
+        </div>
+        <div>
+          <span class="login-stat-value">3</span>
+          <span class="login-stat-label">소스 통합</span>
+        </div>
+        <div>
+          <span class="login-stat-value">2026</span>
+          <span class="login-stat-label">운영 개시</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Right: Login form ── -->
+    <main class="login-main">
+      <div class="login-main-inner">
+
+        <div class="login-shell-utility">
+          <label class="shell-locale-picker" for="loginLocaleSelect">
+            <span class="shell-locale-picker-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 7h6"></path><path d="M7 4.5L4 7l3 2.5"></path>
+                <path d="M20 17h-6"></path><path d="M17 14.5l3 2.5-3 2.5"></path>
+                <path d="M9 18l2.1-6h1.8L15 18"></path><path d="M9.8 15.5h4.4"></path>
+                <path d="M15.8 6.2h3.2"></path><path d="M17.4 6.2v6"></path>
+                <path d="M15.8 12.2h3.2"></path>
+              </svg>
+            </span>
+            <span id="loginLocaleLabel" class="shell-theme-toggle-sr"></span>
+            <select id="loginLocaleSelect" aria-label="language selector">
+              <option value="ko" data-login-i18n="locale.option.ko"></option>
+              <option value="en" data-login-i18n="locale.option.en"></option>
+              <option value="ja" data-login-i18n="locale.option.ja"></option>
+            </select>
+          </label>
+          <button id="loginThemeToggle" class="shell-theme-toggle" type="button">
+            <span class="shell-theme-toggle-icon shell-theme-toggle-icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <circle cx="12" cy="12" r="4.5"></circle>
+                <path d="M12 1.75v3"></path><path d="M12 19.25v3"></path>
+                <path d="M1.75 12h3"></path><path d="M19.25 12h3"></path>
+                <path d="M4.76 4.76l2.12 2.12"></path><path d="M17.12 17.12l2.12 2.12"></path>
+                <path d="M17.12 6.88l2.12-2.12"></path><path d="M4.76 19.24l2.12-2.12"></path>
+              </svg>
+            </span>
+            <span class="shell-theme-toggle-track" aria-hidden="true">
+              <span class="shell-theme-toggle-thumb"></span>
+            </span>
+            <span class="shell-theme-toggle-icon shell-theme-toggle-icon--moon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M18.7 13.3A7.8 7.8 0 1 1 10.7 5.3a6.1 6.1 0 0 0 8 8Z"></path>
+                <path d="M18.8 4.8v2"></path><path d="M17.8 5.8h2"></path>
+                <path d="M20.7 8.1v1.5"></path><path d="M19.95 8.85h1.5"></path>
+              </svg>
+            </span>
+            <span id="loginThemeToggleText" class="shell-theme-toggle-sr"></span>
+          </button>
+        </div>
+
+        <div class="login-form-area">
+          <div class="login-hero">
+            <h1 id="loginHeading">로그인</h1>
+            <p id="loginSubcopy">외부 접근용 로그인 화면입니다. 관리자 계정은 전체 관리 화면으로, 현장 운영자 계정은 조회/요청곡 중심 화면으로 들어갑니다.</p>
+          </div>
+
+          <form id="loginForm" class="login-fields" novalidate>
+            <div class="field-group">
+              <label for="loginUsername" id="loginUsernameLabel">아이디</label>
+              <input id="loginUsername" name="username" autocomplete="username" required />
+            </div>
+            <div class="field-group">
+              <label for="loginPassword" id="loginPasswordLabel">비밀번호</label>
+              <input id="loginPassword" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <button id="loginSubmitBtn" type="submit">로그인</button>
+            <div id="loginStatus" class="status"></div>
+          </form>
+        </div>
+
+      </div>
+    </main>
   </div>
+
   <script>
+    /* ── Catalog grid generation ── */
+    (function buildCatalogGrid() {
+      const grid = document.getElementById("catalogGrid");
+      if (!grid) return;
+      const COLS = 10, ROWS = 6, TOTAL = COLS * ROWS;
+      const ACCENT_IDX = new Set([3, 12, 27, 38, 44, 51]);
+      const SKY_IDX    = new Set([8, 19, 31, 42, 55]);
+      const DURS = [3.2, 4.1, 5.0, 3.8, 4.6, 2.9, 5.4, 3.5];
+      const DELAYS = [-0.8, -1.6, -2.4, -3.2, -0.4, -2.0, -1.2, -3.6, -0.0, -2.8];
+      for (let i = 0; i < TOTAL; i++) {
+        const cell = document.createElement("span");
+        cell.className = "catalog-cell" +
+          (ACCENT_IDX.has(i) ? " is-accent" : "") +
+          (SKY_IDX.has(i) ? " is-sky" : "");
+        cell.style.setProperty("--cell-dur",   DURS[i % DURS.length] + "s");
+        cell.style.setProperty("--cell-delay", DELAYS[i % DELAYS.length] + "s");
+        grid.appendChild(cell);
+      }
+    })();
+
+    /* ── Catalog stats (dynamic count from server) ── */
+    (function loadCatalogStats() {
+      const el = document.getElementById("loginCatalogCount");
+      if (!el) return;
+      fetch("/catalog-stats")
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function(data) {
+          const n = Number(data.total_items);
+          if (!isNaN(n) && n > 0) {
+            el.textContent = n.toLocaleString("ko-KR") + "+";
+          }
+        })
+        .catch(function() { el.textContent = "—"; });
+    })();
+
+    /* ── i18n & theme logic (preserved) ── */
     const LOGIN_LOCALE_STORAGE_KEY = "hahahoho.appLocale.v1";
-    const LOGIN_THEME_STORAGE_KEY = "hahahoho.uiTheme.v1";
-    const LOGIN_SUPPORTED_LOCALES = new Set(["ko", "en", "ja"]);
+    const LOGIN_THEME_STORAGE_KEY  = "hahahoho.uiTheme.v1";
+    const LOGIN_SUPPORTED_LOCALES  = new Set(["ko", "en", "ja"]);
     let loginLocale = "ko";
-    let loginTheme = "night";
+    let loginTheme  = "night";
     let loginStatusCopyKind = "idle";
     let loginStatusCopyText = "";
 
     const LOGIN_MESSAGES = {
       ko: {
         "login.title": "라이브러리 로그인",
-        "login.heading": "라이브러리 관리/운영 콘솔",
+        "login.heading": "로그인",
         "login.description": "외부 접근용 로그인 화면입니다. 관리자 계정은 전체 관리 화면으로, 현장 운영자 계정은 조회/요청곡 중심 화면으로 들어갑니다.",
         "login.username": "아이디",
         "login.password": "비밀번호",
@@ -485,12 +746,12 @@
         "utility.theme.switch_to_night": "야간 모드로 전환",
       },
       en: {
-        "login.title": "Login",
-        "login.heading": "Library Management / Operations Console",
+        "login.title": "Library Login",
+        "login.heading": "Sign In",
         "login.description": "External login page. Admin accounts open the full management console, while operator accounts open a read-heavy operations interface.",
         "login.username": "Username",
         "login.password": "Password",
-        "login.submit": "Log in",
+        "login.submit": "Sign in",
         "login.loading": "Signing in...",
         "login.error_default": "Login failed",
         "login.error.invalid_credentials": "Incorrect username or password.",
@@ -504,8 +765,8 @@
         "utility.theme.switch_to_night": "Switch to night mode",
       },
       ja: {
-        "login.title": "ログイン",
-        "login.heading": "ライブラリ管理 / 運営コンソール",
+        "login.title": "ライブラリ ログイン",
+        "login.heading": "ログイン",
         "login.description": "外部アクセス用ログイン画面です。管理者アカウントは全体管理画面に、現場運用者アカウントは参照中心の画面に進みます。",
         "login.username": "ユーザー名",
         "login.password": "パスワード",
@@ -525,66 +786,49 @@
     };
 
     const $ = (id) => document.getElementById(id);
-    const form = $("loginForm");
-    const statusEl = $("loginStatus");
-    const submitBtn = $("loginSubmitBtn");
+    const form          = $("loginForm");
+    const statusEl      = $("loginStatus");
+    const submitBtn     = $("loginSubmitBtn");
     const usernameInput = $("loginUsername");
     const usernameLabel = $("loginUsernameLabel");
     const passwordInput = $("loginPassword");
     const passwordLabel = $("loginPasswordLabel");
-    const headingEl = $("loginHeading");
-    const descEl = $("loginSubcopy");
+    const headingEl     = $("loginHeading");
+    const descEl        = $("loginSubcopy");
     const localeLabelEl = $("loginLocaleLabel");
-    const localeSelect = $("loginLocaleSelect");
-    const themeToggle = $("loginThemeToggle");
+    const localeSelect  = $("loginLocaleSelect");
+    const themeToggle   = $("loginThemeToggle");
     const themeToggleText = $("loginThemeToggleText");
 
     function normalizeLoginLocale(locale) {
       const candidate = String(locale || "").trim();
       return LOGIN_SUPPORTED_LOCALES.has(candidate) ? candidate : "ko";
     }
-
     function loadLoginLocale() {
-      try {
-        return normalizeLoginLocale(window.localStorage.getItem(LOGIN_LOCALE_STORAGE_KEY));
-      } catch (_) {
-        return "ko";
-      }
+      try { return normalizeLoginLocale(window.localStorage.getItem(LOGIN_LOCALE_STORAGE_KEY)); }
+      catch (_) { return "ko"; }
     }
-
     function saveLoginLocale(locale) {
       const normalized = normalizeLoginLocale(locale);
-      try {
-        window.localStorage.setItem(LOGIN_LOCALE_STORAGE_KEY, normalized);
-      } catch (_) {}
+      try { window.localStorage.setItem(LOGIN_LOCALE_STORAGE_KEY, normalized); } catch (_) {}
       return normalized;
     }
-
     function normalizeLoginTheme(theme) {
       return String(theme || "").trim().toLowerCase() === "day" ? "day" : "night";
     }
-
     function loadLoginTheme() {
-      try {
-        return normalizeLoginTheme(window.localStorage.getItem(LOGIN_THEME_STORAGE_KEY));
-      } catch (_) {
-        return "night";
-      }
+      try { return normalizeLoginTheme(window.localStorage.getItem(LOGIN_THEME_STORAGE_KEY)); }
+      catch (_) { return "night"; }
     }
-
     function saveLoginTheme(theme) {
       const normalized = normalizeLoginTheme(theme);
-      try {
-        window.localStorage.setItem(LOGIN_THEME_STORAGE_KEY, normalized);
-      } catch (_) {}
+      try { window.localStorage.setItem(LOGIN_THEME_STORAGE_KEY, normalized); } catch (_) {}
       return normalized;
     }
-
     function messageByLoginLocale(key) {
       const table = LOGIN_MESSAGES[loginLocale] || LOGIN_MESSAGES.ko;
       return table?.[key] || LOGIN_MESSAGES.ko?.[key] || "";
     }
-
     function syncLoginLocaleSelect() {
       if (!localeSelect) return;
       localeSelect.value = loginLocale;
@@ -593,11 +837,8 @@
         const nextText = messageByLoginLocale(`locale.option.${value}`);
         if (nextText) option.textContent = nextText;
       });
-      if (localeLabelEl) {
-        localeLabelEl.textContent = messageByLoginLocale("utility.language");
-      }
+      if (localeLabelEl) localeLabelEl.textContent = messageByLoginLocale("utility.language");
     }
-
     function syncLoginThemeToggle() {
       if (!themeToggle) return;
       const isDay = loginTheme === "day";
@@ -611,13 +852,11 @@
         themeToggleText.textContent = messageByLoginLocale(isDay ? "utility.theme.day" : "utility.theme.night");
       }
     }
-
     function applyLoginTheme(theme = loginTheme) {
       loginTheme = saveLoginTheme(theme);
       document.body.dataset.theme = loginTheme;
       syncLoginThemeToggle();
     }
-
     function applyLoginLocale(locale = loginLocale) {
       loginLocale = saveLoginLocale(locale);
       document.documentElement.lang = loginLocale;
@@ -625,54 +864,19 @@
       syncLoginThemeToggle();
       rerenderLoginCopy();
     }
-
     function rerenderLoginCopy() {
-      if (headingEl) {
-        headingEl.textContent = messageByLoginLocale("login.heading");
-      }
-
-      if (document && document.title != null) {
-        document.title = messageByLoginLocale("login.title");
-      }
-
-      if (descEl) {
-        descEl.textContent = messageByLoginLocale("login.description");
-      }
-      if (usernameLabel) {
-        usernameLabel.textContent = messageByLoginLocale("login.username");
-      }
-      if (passwordLabel) {
-        passwordLabel.textContent = messageByLoginLocale("login.password");
-      }
-      if (submitBtn) {
-        submitBtn.textContent = messageByLoginLocale("login.submit");
-      }
-      if (!document || !statusEl) {
-        return;
-      }
-
-      if (loginStatusCopyKind === "loading") {
-        statusEl.textContent = messageByLoginLocale("login.loading");
-        return;
-      }
-
-      if (loginStatusCopyKind === "invalid_credentials") {
-        statusEl.textContent = messageByLoginLocale("login.error.invalid_credentials");
-        return;
-      }
-
-      if (loginStatusCopyKind === "default_error") {
-        statusEl.textContent = messageByLoginLocale("login.error_default");
-        return;
-      }
-
-      if (loginStatusCopyKind === "passthrough") {
-        if (loginStatusCopyText) {
-          statusEl.textContent = loginStatusCopyText;
-        }
-      }
+      if (headingEl) headingEl.textContent = messageByLoginLocale("login.heading");
+      if (document && document.title != null) document.title = messageByLoginLocale("login.title");
+      if (descEl) descEl.textContent = messageByLoginLocale("login.description");
+      if (usernameLabel) usernameLabel.textContent = messageByLoginLocale("login.username");
+      if (passwordLabel) passwordLabel.textContent = messageByLoginLocale("login.password");
+      if (submitBtn) submitBtn.textContent = messageByLoginLocale("login.submit");
+      if (!document || !statusEl) return;
+      if (loginStatusCopyKind === "loading") { statusEl.textContent = messageByLoginLocale("login.loading"); return; }
+      if (loginStatusCopyKind === "invalid_credentials") { statusEl.textContent = messageByLoginLocale("login.error.invalid_credentials"); return; }
+      if (loginStatusCopyKind === "default_error") { statusEl.textContent = messageByLoginLocale("login.error_default"); return; }
+      if (loginStatusCopyKind === "passthrough" && loginStatusCopyText) statusEl.textContent = loginStatusCopyText;
     }
-
     function localizeAuthFailureText(statusCode, rawDetail) {
       const detail = String(rawDetail || "").trim();
       if (Number(statusCode) === 401 && detail === "아이디 또는 비밀번호가 올바르지 않습니다.") {
@@ -680,26 +884,16 @@
       }
       return detail;
     }
-
     function parseLoginErrorDetail(statusCode, text) {
       const message = String(text || "").trim();
-      if (!message) {
-        return messageByLoginLocale("login.error_default");
-      }
+      if (!message) return messageByLoginLocale("login.error_default");
       return localizeAuthFailureText(statusCode, message);
     }
-
-    function toggleLoginTheme() {
-      applyLoginTheme(loginTheme === "day" ? "night" : "day");
-    }
-
+    function toggleLoginTheme() { applyLoginTheme(loginTheme === "day" ? "night" : "day"); }
     function wireLoginShellControls() {
-      localeSelect?.addEventListener("change", (event) => {
-        applyLoginLocale(event.target.value);
-      });
+      localeSelect?.addEventListener("change", (e) => applyLoginLocale(e.target.value));
       themeToggle?.addEventListener("click", toggleLoginTheme);
     }
-
     function bootstrapLoginLocaleAndTheme() {
       loginTheme = loadLoginTheme();
       applyLoginTheme(loginTheme);
@@ -716,32 +910,23 @@
       statusEl.className = "status";
       statusEl.textContent = messageByLoginLocale("login.loading");
       submitBtn.disabled = true;
-
       try {
         const payload = new URLSearchParams(new FormData(form));
         const res = await fetch("/auth/login", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: payload.toString(),
         });
         const text = await res.text();
         let data = {};
-        try {
-          data = text ? JSON.parse(text) : {};
-        } catch (_) {
-          data = { detail: text };
-        }
+        try { data = text ? JSON.parse(text) : {}; } catch (_) { data = { detail: text }; }
         if (!res.ok) {
           const detail = data && typeof data === "object" && "detail" in data ? data.detail : text;
           const rawDetail = String(detail || "").trim();
           if (!rawDetail) {
-            loginStatusCopyKind = "default_error";
-            loginStatusCopyText = "";
+            loginStatusCopyKind = "default_error"; loginStatusCopyText = "";
           } else if (res.status === 401 && rawDetail === "아이디 또는 비밀번호가 올바르지 않습니다.") {
-            loginStatusCopyKind = "invalid_credentials";
-            loginStatusCopyText = "";
+            loginStatusCopyKind = "invalid_credentials"; loginStatusCopyText = "";
           } else {
             loginStatusCopyKind = "passthrough";
             loginStatusCopyText = parseLoginErrorDetail(res.status, rawDetail);

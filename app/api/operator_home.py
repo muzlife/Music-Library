@@ -198,7 +198,7 @@ def update_roon_status(payload: RoonStatusUpdateRequest, request: Request) -> Ro
         _main()._ROON_VOLUME = payload.volume
     if payload.now_playing_request_id is not None:
         _main()._ROON_NOW_PLAYING_REQUEST_ID = payload.now_playing_request_id
-    return get_roon_status()
+    return get_roon_status(request)
 
 
 @router.post("/operator/roon/play/{request_id}", response_model=CustomerTrackRequestItem)
@@ -239,9 +239,9 @@ def create_customer_track_request(
     w_code = None
 
     w_data = None
-    if _main()._SEOUL_WEATHER_CACHE and _SEOUL_WEATHER_CACHE.get("available"):
+    if _main()._SEOUL_WEATHER_CACHE and _main()._SEOUL_WEATHER_CACHE.get("available"):
         w_data = _main()._SEOUL_WEATHER_CACHE
-    elif _main()._OFFICE_CLIMATE_CACHE and _OFFICE_CLIMATE_CACHE.get("available"):
+    elif _main()._OFFICE_CLIMATE_CACHE and _main()._OFFICE_CLIMATE_CACHE.get("available"):
         w_data = _main()._OFFICE_CLIMATE_CACHE
     else:
         try:
