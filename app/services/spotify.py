@@ -61,15 +61,16 @@ class SpotifyService:
             try:
                 results = sp.search(q=query, type="track", limit=limit)
                 break
-            except Exception:
+            except Exception as e:
+                logger.error(f"spotify search attempt {attempt+1} failed: {e}")
                 if attempt == 0:
-                    logger.warning("spotify search failed, retrying with fresh token")
                     try:
                         sp.auth_manager.get_access_token(check_cache=False)
                     except Exception:
                         pass
                 else:
-                    logger.exception("spotify search failed")
+                    # Reset client - it might be in a bad state
+                    self._sp = None
                     return []
         items: list[dict[str, Any]] = []
         for item in (results.get("tracks", {}).get("items") or []):

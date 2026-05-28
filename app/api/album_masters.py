@@ -936,7 +936,13 @@ def spotify_batch_match(
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
     result = batch_match_spotify(sp, limit=limit)
-    return result
+    return {
+        'ok': True,
+        'limit': limit,
+        'matched': result['matched'],
+        'skipped': result['skipped'],
+        'errors': result['errors'],
+    }
 
 
 @router.post("/album-masters/{album_master_id}/spotify/play")
