@@ -307,6 +307,7 @@ def operator_artist_context(
 
 
 @router.get("/ops/cafe", include_in_schema=False)
+@router.get("/ops/cafe/", include_in_schema=False)
 def ops_cafe_shell(request: Request):
     security._require_authenticated_request(request)
     import hashlib
