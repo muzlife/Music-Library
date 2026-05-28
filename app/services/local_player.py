@@ -171,28 +171,27 @@ class LocalPlayer:
     # ── search ─────────────────────────────────────────────────
 
     def scan_files(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
-        """Search local music files using mdfind (fallback: find)."""
+        """Search local music files using SQLite index."""
         results: list[dict[str, Any]] = []
         q = query.strip()
         if not q or not self.configured:
             return results
 
-        # Try mdfind first (Spotlight index)
-        try:
-            proc = subprocess.run(
-                ["mdfind", "-onlyin", MUSIC_ROOT, f"kMDItemFSName == '*{q}*'cd"],
-                capture_output=True, text=True, timeout=3,
-            )
-            for line in proc.stdout.strip().split("\n"):
-                if len(results) >= limit:
-                    break
-                fp = line.strip()
-                if fp and os.path.isfile(fp) and Path(fp).suffix.lower() in AUDIO_EXTS:
-                    results.append(self._file_to_item(fp))
-        except Exception:
-            pass
+        from app.db import search_local_index as db_search
+        rows = db_search(q, limit=limit)
+        for row in rows:
+            fp = row["file_path"]
+            if os.path.isfile(fp):
+                results.append({
+                    "source": "local",
+                    "file_path": fp,
+                    "title": row["title"],
+                    "artist": row["artist"],
+                    "album_art_url": None,
+                    "rel_path": os.path.relpath(fp, MUSIC_ROOT) if fp.startswith(MUSIC_ROOT) else fp,
+                })
 
-        # Fallback: find
+        # Fallback: find (if index is empty)
         if not results:
             try:
                 proc = subprocess.run(

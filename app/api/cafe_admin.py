@@ -67,6 +67,19 @@ def delete_tag(tag_id: int, request: Request) -> dict[str, Any]:
     return {"ok": True}
 
 
+@router.post("/admin/cafe/rebuild-index")
+def rebuild_music_index(request: Request) -> dict[str, Any]:
+    """Rebuild local music file index. ADMIN only."""
+    _require_admin_request(request)
+    result = db.rebuild_index()
+    return result
+
+@router.get("/admin/cafe/index-stats")
+def music_index_stats(request: Request) -> dict[str, Any]:
+    """Get music index statistics. OPERATOR+"""
+    _require_operator_request(request)
+    return db.get_index_stats()
+
 # ── Table device endpoints ─────────────────────────────────────
 
 @router.get("/admin/cafe/tables")
