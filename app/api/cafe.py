@@ -239,10 +239,26 @@ def staff_play_local(request: Request) -> dict[str, Any]:
     security._require_operator_request(request)
     body = _json.loads(request.body())
     file_path = str(body.get("file_path") or "").strip()
+    request_id = int(body.get("request_id") or 0)
+
+    # If request_id given, look up the track from the request
+    if request_id and not file_path:
+        req_row = db.get_customer_track_request(request_id)
+        if req_row:
+            # Search local files by track name
+            query = str(req_row.get("requested_track") or "").strip()
+            if " - " in query:
+                query = query.split(" - ", 1)[1]
+            local_files = _local.scan_files(query, limit=1)
+            if local_files:
+                file_path = local_files[0]["file_path"]
+            # Mark as playing
+            db.update_customer_track_request(request_id, status="PLAYING")
+
     if not file_path:
         raise HTTPException(status_code=400, detail="file_path required")
     ok = _local.play(file_path)
-    return {"ok": ok}
+    return {"ok": ok, "file_path": file_path}
 
 
 @router.post("/ops/cafe/pause-local")
