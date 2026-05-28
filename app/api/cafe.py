@@ -244,6 +244,14 @@ def staff_play_local(request: Request) -> dict[str, Any]:
     ok = _local.play(file_path)
     return {"ok": ok}
 
+
+@router.post("/ops/cafe/pause-local")
+def staff_pause_local(request: Request) -> dict[str, Any]:
+    """Staff: pause/resume local playback. OPERATOR+"""
+    security._require_operator_request(request)
+    ok = _local.pause()
+    return {"ok": ok}
+
 @router.post("/ops/cafe/stop-local")
 def staff_stop_local(request: Request) -> dict[str, Any]:
     """Staff: stop local playback. OPERATOR+"""
