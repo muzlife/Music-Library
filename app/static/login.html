@@ -748,7 +748,7 @@
           }
           throw new Error(parseLoginErrorDetail(res.status, detail));
         }
-        window.location.replace("/ops");
+        window.location.replace(data.role === "ADMIN" ? "/admin" : "/ops");
       } catch (error) {
         if (loginStatusCopyKind === "loading") {
           loginStatusCopyKind = "passthrough";
