@@ -85,13 +85,67 @@ document.getElementById('searchBtn').onclick = function(){
         btn.setAttribute('data-idx', i);
         btn.onclick = function(){
           var item = _data[parseInt(this.getAttribute('data-idx'))];
-          fetch('/cafe/request',{method:'POST',headers:{'Content-Type':'application/json','x-device-id':DEVICE_ID},body:JSON.stringify({track_title:item.title,artist:item.artist,album_art_url:item.album_art_url||null,source:item.source,spotify_track_id:item.spotify_track_id||null,owned_item_id:item.owned_item_id||null})}).then(function(r){return r.json()}).then(function(){alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
+          fetch('/cafe/request',{method:'POST',headers:{'Content-Type':'application/json','x-device-id':DEVICE_ID},body:JSON.stringify({track_title:item.title,artist:item.artist,album_art_url:item.album_art_url||null,source:item.source,spotify_track_id:item.spotify_track_id||null,owned_item_id:item.owned_item_id||null})}).then(function(r){return r.json()}).then(function(d){_polledRequests[d.request_id]={shown:false};alert('요청 접수 완료!')}).catch(function(){alert('요청 실패')});
         };
         card.appendChild(btn);
         list.appendChild(card);
       }
     }).catch(function(e){ list.innerHTML = '<div class="empty">오류</div>'; });
 };
+
+
+var _lastRequestId = null;
+var _overlayActive = false;
+
+function showOverlay(rid){
+  if(_overlayActive) return;
+  _overlayActive = true;
+  _lastRequestId = rid;
+  document.getElementById('overlay').style.display = 'flex';
+  document.getElementById('customInput').style.display = 'none';
+  document.getElementById('customSend').style.display = 'none';
+  setTimeout(function(){ if(_overlayActive) closeOverlay(); }, 30000);
+}
+
+function closeOverlay(){
+  _overlayActive = false;
+  document.getElementById('overlay').style.display = 'none';
+}
+
+function customReact(){
+  document.getElementById('customInput').style.display = 'block';
+  document.getElementById('customSend').style.display = 'block';
+  document.getElementById('customInput').focus();
+}
+
+function react(type){
+  var freeText = type === 'CUSTOM' ? document.getElementById('customInput').value.trim() : null;
+  fetch('/cafe/reaction',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-device-id':DEVICE_ID},
+    body:JSON.stringify({track_request_id:_lastRequestId, reaction_type:type, free_text:freeText||null})
+  }).then(function(r){return r.json()}).then(function(){
+    closeOverlay();
+    if(type === 'CUSTOM') document.getElementById('customInput').value = '';
+  }).catch(function(){});
+}
+
+// Poll for request status changes
+var _polledRequests = {};
+setInterval(function(){
+  fetch('/cafe/queue?limit=30').then(function(r){return r.json()}).then(function(d){
+    for(var i=0;i<d.items.length;i++){
+      var item = d.items[i];
+      if(item.status === 'PLAYING' && _polledRequests[item.id]){
+        // Our request just started playing - show overlay
+        if(!_polledRequests[item.id].shown){
+          _polledRequests[item.id].shown = true;
+          showOverlay(item.id);
+        }
+      }
+    }
+  }).catch(function(){});
+}, 5000);
 
 setInterval(function(){
   fetch('/cafe/now-playing').then(function(r){return r.json()}).then(function(d){
@@ -104,5 +158,20 @@ setInterval(function(){
   }).catch(function(){});
 }, 3000);
 </script>
+
+<div id="overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-size:1.1rem;text-align:center;color:var(--text);margin-bottom:8px">✨ 지금 재생 중이에요!</div>
+  <div id="ovBtns" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:320px">
+    <button onclick="react('LOVE')" style="padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.9rem;cursor:pointer">💕 완전 좋아요</button>
+    <button onclick="react('VIBE')" style="padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.9rem;cursor:pointer">☕ 분위기 딱이에요</button>
+    <button onclick="react('SIMILAR')" style="padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.9rem;cursor:pointer">🎵 비슷한 곡 더</button>
+    <button onclick="react('WEATHER')" style="padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.9rem;cursor:pointer">🌧️ 오늘 날씨랑 찰떡</button>
+    <button onclick="customReact()" style="padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.9rem;cursor:pointer">✍️ 직접 쓰기</button>
+  </div>
+  <input type="text" id="customInput" placeholder="50자 이내로 입력..." maxlength="50" style="display:none;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;width:260px;outline:none">
+  <button id="customSend" onclick="react('CUSTOM')" style="display:none;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.8rem;cursor:pointer">전송</button>
+  <button onclick="closeOverlay()" style="margin-top:12px;background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer">닫기</button>
+</div>
+
 </body>
 </html>
