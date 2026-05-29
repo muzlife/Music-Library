@@ -188,13 +188,16 @@ def random_album() -> dict[str, Any]:
     with get_conn() as conn:
         conn.row_factory = __import__("sqlite3").Row
         row = conn.execute(
-            "SELECT oi.item_title as title, oi.linked_artist_name as artist, oi.cover_image_url as cover_url "
+            "SELECT COALESCE(NULLIF(oi.item_name_override,''), am.title) as title, "
+            "oi.linked_artist_name as artist, oi.cover_image_url as cover_url "
             "FROM owned_item oi "
-            "WHERE oi.status = 'IN_COLLECTION' AND oi.item_title IS NOT NULL AND oi.item_title != '' "
+            "LEFT JOIN album_master am ON oi.linked_album_master_id = am.id "
+            "WHERE oi.status = 'IN_COLLECTION' "
+            "AND (oi.item_name_override IS NOT NULL OR am.title IS NOT NULL) "
             "ORDER BY RANDOM() LIMIT 1"
-        ).fetchone()
+        ).fetchone() if True else None
     if row:
-        return {"title": row["title"], "artist": row["artist"] or "", "cover_url": row["cover_url"] or ""}
+        return {"title": str(row["title"] or ""), "artist": str(row["artist"] or ""), "cover_url": str(row["cover_url"] or "")}
     return {"title": None, "artist": None, "cover_url": None}
 
 @router.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order", response_model=SlotOrderMoveResponse)
