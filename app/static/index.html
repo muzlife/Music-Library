@@ -41266,22 +41266,6 @@ function initDashboardDrilldown() {
         });
       }
 
-      function moveCard(id, direction) {
-        if (!gridEl) return;
-        const cards = getCards();
-        const idx = cards.findIndex(c => c.dataset.widgetId === id);
-        if (idx < 0) return;
-        const targetIdx = idx + direction;
-        if (targetIdx < 0 || targetIdx >= cards.length) return;
-        if (direction < 0) {
-          gridEl.insertBefore(cards[idx], cards[targetIdx]);
-        } else {
-          gridEl.insertBefore(cards[targetIdx], cards[idx]);
-        }
-        // Save new order
-        const newOrder = getCards().map(c => c.dataset.widgetId);
-        saveOrder(newOrder);
-      }
 
       function buildPanel() {
         const map = getMap();
@@ -41296,20 +41280,6 @@ function initDashboardDrilldown() {
 
           const group = document.createElement("span");
           group.className = "dash-card-settings-group";
-
-          // Up button
-          const upBtn = document.createElement("button");
-          upBtn.type = "button"; upBtn.className = "dash-card-reorder-btn";
-          upBtn.textContent = "▲"; upBtn.title = "왼쪽으로 이동";
-          upBtn.disabled = idx === 0;
-          upBtn.addEventListener("click", (e) => { e.stopPropagation(); moveCard(id, -1); buildPanel(); });
-
-          // Down button
-          const downBtn = document.createElement("button");
-          downBtn.type = "button"; downBtn.className = "dash-card-reorder-btn";
-          downBtn.textContent = "▼"; downBtn.title = "오른쪽으로 이동";
-          downBtn.disabled = idx === cards.length - 1;
-          downBtn.addEventListener("click", (e) => { e.stopPropagation(); moveCard(id, 1); buildPanel(); });
 
           // Toggle button
           const btn = document.createElement("button");
