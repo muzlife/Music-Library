@@ -41144,7 +41144,7 @@ function initDashboardDrilldown() {
         '<div class="dash-collector-item"><span class="dash-collector-icon">📀</span><span class="dash-collector-value">'+fc(d.multi_disc_items||0)+'</span><span class="dash-collector-label">멀티디스크</span></div>'+
         '<div class="dash-collector-item"><span class="dash-collector-icon">🎗️</span><span class="dash-collector-value">'+fc(d.obi_items||0)+'</span><span class="dash-collector-label">OBI</span></div>'+
         '<div class="dash-collector-item" data-dash-drilldown="promo_items" style="cursor:pointer;"><span class="dash-collector-icon">📢</span><span class="dash-collector-value">'+fc(d.promo_items||0)+'</span><span class="dash-collector-label">홍보반</span></div>'+
-        '<div class="dash-collector-item" data-dash-drilldown="other_items" style="cursor:pointer;"><span class="dash-collector-icon">📦</span><span class="dash-collector-value">'+fc(d.second_hand_items||0)+'</span><span class="dash-collector-label">박스세트</span></div>'+
+        '<div class="dash-collector-item" data-dash-drilldown="other_items" style="cursor:pointer;"><span class="dash-collector-icon">📦</span><span class="dash-collector-value">'+fc(d.box_set_items||0)+'</span><span class="dash-collector-label">박스세트</span></div>'+
       '</div>';
     }
 
@@ -45164,12 +45164,13 @@ async function loadDashboardClimate() {
         const directSigned = Number(data.direct_signed_items ?? 0);
         setTextIfPresent("homeDashSignedLabel", "직접 " + directSigned.toLocaleString() + "장");
 
-        /* spotify */
-        const _spotifyLinked = Number(data.spotify_linked_items ?? data.spotify_items ?? 0);
-        if (_spotifyLinked >= 0) {
-          const spotifyPct = _music > 0 ? Math.round(_spotifyLinked / _music * 100) : 0;
+        /* spotify (master-based) */
+        const _spotifyMasters = Number(data.spotify_master_count ?? 0);
+        const _totalMasters = Number(data.total_master_count ?? 0);
+        if (_totalMasters > 0) {
+          const spotifyPct = Math.round(_spotifyMasters / _totalMasters * 100);
           setTextIfPresent("homeDashSpotifyRate", spotifyPct + "%");
-          setTextIfPresent("homeDashSpotifyLabel", _spotifyLinked.toLocaleString() + " / " + _music.toLocaleString());
+          setTextIfPresent("homeDashSpotifyLabel", _spotifyMasters.toLocaleString() + " / " + _totalMasters.toLocaleString());
         } else {
           setTextIfPresent("homeDashSpotifyRate", "—");
           setTextIfPresent("homeDashSpotifyLabel", "데이터 없음");
