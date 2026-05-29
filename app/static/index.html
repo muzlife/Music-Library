@@ -32278,8 +32278,8 @@
       const username = String(appAuthSession?.username || "").trim();
       const role = String(appAuthSession?.role || "ADMIN").trim().toUpperCase();
       const roleLabel = role === "OPERATOR" ? t("auth.role.operator") : t("auth.role.admin");
-      document.body.dataset.authenticated = enabled && authenticated ? "true" : "false";
-      document.body.dataset.authRole = enabled && authenticated ? role : "";
+      document.body.dataset.authenticated = authenticated ? "true" : "false";
+      document.body.dataset.authRole = authenticated ? (role || "ADMIN") : "";
       if (sessionInfo) {
         if (enabled && authenticated && username) {
           if (sessionUser) sessionUser.textContent = username;
