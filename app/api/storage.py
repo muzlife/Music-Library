@@ -194,7 +194,7 @@ def random_album() -> dict[str, Any]:
             "FROM owned_item oi "
             "LEFT JOIN album_master am ON oi.linked_album_master_id = am.id "
             "WHERE oi.status = 'IN_COLLECTION' "
-            "AND oi.source_code = 'SPOTIFY' "
+            ""
             "AND (oi.item_name_override IS NOT NULL OR am.title IS NOT NULL) "
             "ORDER BY RANDOM() LIMIT 1"
         ).fetchone() if True else None
