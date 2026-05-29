@@ -12592,14 +12592,20 @@
     .dashboard-status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
     .dashboard-ops-summary-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
     /* 위젯 토글 */
-    .dash-card[data-widget-hidden="true"] { display: none !important; }
+    
+    .dash-card[data-widget-hidden="true"] {
+      display: none !important;
+      pointer-events: none;
+    }
 
     /* ── drag & drop visual feedback ── */
+
     .dash-card.drag-over {
       outline: 2px dashed var(--selected-accent);
       outline-offset: -2px;
-      transform: scale(1.02);
+      transform: scale(1.03);
       z-index: 5;
+      box-shadow: 0 0 0 4px var(--selected-ring);
     }
     .dash-card[draggable="true"] {
       cursor: grab;
@@ -41373,16 +41379,19 @@ function initDashboardDrilldown() {
             const fromIdx = cards.indexOf(dragCard);
             const toIdx = cards.indexOf(this);
 
+            // Swap DOM positions: move dragCard next to drop target
             if (fromIdx < toIdx) {
-              gridEl.insertBefore(dragCard, this.nextSibling);
+              this.parentNode.insertBefore(dragCard, this.nextSibling);
             } else {
-              gridEl.insertBefore(dragCard, this);
+              this.parentNode.insertBefore(dragCard, this);
             }
 
-            // Save new order
-            const newOrder = Array.from(gridEl.querySelectorAll("[data-widget-id]")).map(c => c.dataset.widgetId);
-            saveOrder(newOrder);
-            buildPanel();
+            // Save new order after DOM settled
+            requestAnimationFrame(() => {
+              const newOrder = Array.from(gridEl.querySelectorAll("[data-widget-id]")).map(c => c.dataset.widgetId);
+              saveOrder(newOrder);
+              buildPanel();
+            });
           });
         });
       }
