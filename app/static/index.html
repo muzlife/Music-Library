@@ -12592,7 +12592,21 @@
     .dashboard-status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
     .dashboard-ops-summary-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
     /* 위젯 토글 */
-    .dash-card[data-hidden="true"] { display: none !important; }
+    .dash-card[data-widget-hidden="true"] { display: none !important; }
+
+    /* ── drag & drop visual feedback ── */
+    .dash-card.drag-over {
+      outline: 2px dashed var(--selected-accent);
+      outline-offset: -2px;
+      transform: scale(1.02);
+      z-index: 5;
+    }
+    .dash-card[draggable="true"] {
+      cursor: grab;
+    }
+    .dash-card[draggable="true"]:active {
+      cursor: grabbing;
+    }
     .dash-card-settings { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); margin-bottom: 8px; }
     .dash-card-toggle-btn { font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--theme-dashboard-border); background: transparent; cursor: pointer; opacity: 0.6; transition: opacity 0.15s, background 0.15s; }
     .dash-card-toggle-btn.active { background: var(--selected-accent, #0f766e); color: #fff; opacity: 1; border-color: transparent; }
@@ -12622,7 +12636,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       grid-auto-rows: 90px;
-      grid-auto-flow: dense;
+      grid-auto-flow: row;
       gap: 10px;
       margin-bottom: 10px;
     }
@@ -41312,6 +41326,64 @@ function initDashboardDrilldown() {
         if (visible) { settingsEl.style.display = "none"; } else { buildPanel(); settingsEl.style.display = ""; }
       });
 
+      /* ── drag & drop reordering ── */
+      function initDragDrop() {
+        if (!gridEl) return;
+        let dragCard = null;
+
+        getCards().forEach(card => {
+          card.setAttribute("draggable", "true");
+
+          card.addEventListener("dragstart", function(e) {
+            dragCard = this;
+            this.style.opacity = "0.4";
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", this.dataset.widgetId);
+          });
+
+          card.addEventListener("dragend", function(e) {
+            this.style.opacity = "";
+            dragCard = null;
+            document.querySelectorAll(".dash-card").forEach(c => c.classList.remove("drag-over"));
+          });
+
+          card.addEventListener("dragover", function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (this !== dragCard) {
+              this.classList.add("drag-over");
+            }
+          });
+
+          card.addEventListener("dragleave", function(e) {
+            this.classList.remove("drag-over");
+          });
+
+          card.addEventListener("drop", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove("drag-over");
+            if (!dragCard || dragCard === this) return;
+
+            const cards = Array.from(gridEl.querySelectorAll("[data-widget-id]"));
+            const fromIdx = cards.indexOf(dragCard);
+            const toIdx = cards.indexOf(this);
+
+            if (fromIdx < toIdx) {
+              gridEl.insertBefore(dragCard, this.nextSibling);
+            } else {
+              gridEl.insertBefore(dragCard, this);
+            }
+
+            // Save new order
+            const newOrder = Array.from(gridEl.querySelectorAll("[data-widget-id]")).map(c => c.dataset.widgetId);
+            saveOrder(newOrder);
+            buildPanel();
+          });
+        });
+      }
+
+      initDragDrop();
       applyVisibility();
       applyOrder();
     }
