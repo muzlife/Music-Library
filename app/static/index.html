@@ -41224,7 +41224,99 @@ function initDashboardDrilldown() {
       b.innerHTML=h;
     }
 
-    function initDashboardWidgets() {
+    
+    /* ── API response cache with TTL ── */
+    const DASH_CACHE_PREFIX = "hahahoho.dashCache.";
+    const DASH_CACHE_TTL_MS = 5 * 60 * 1000; /* 5 minutes */
+
+    function dashCacheGet(key) {
+      try {
+        const raw = localStorage.getItem(DASH_CACHE_PREFIX + key);
+        if (!raw) return null;
+        const entry = JSON.parse(raw);
+        if (Date.now() - entry.ts > DASH_CACHE_TTL_MS) {
+          localStorage.removeItem(DASH_CACHE_PREFIX + key);
+          return null;
+        }
+        return entry.data;
+      } catch (_) { return null; }
+    }
+
+    function dashCacheSet(key, data) {
+      try {
+        localStorage.setItem(DASH_CACHE_PREFIX + key, JSON.stringify({ ts: Date.now(), data: data }));
+      } catch (_) {}
+    }
+
+    /* ── Batch dashboard loader ── */
+    async function loadDashboardSummary({ forceRefresh = false } = {}) {
+      const cacheKey = "summary";
+      if (!forceRefresh) {
+        const cached = dashCacheGet(cacheKey);
+        if (cached) {
+          applyDashboardSummary(cached);
+          return;
+        }
+      }
+      try {
+        const res = await fetch("/dashboard/summary");
+        if (!res.ok) throw new Error("summary fetch failed");
+        const data = await res.json();
+        dashCacheSet(cacheKey, data);
+        applyDashboardSummary(data);
+      } catch (e) {
+        console.warn("Dashboard summary failed, falling back to individual loads", e);
+      }
+    }
+
+    function applyDashboardSummary(data) {
+      if (data.collection) renderCollectionDashboard(data.collection);
+      if (data.catalog) renderCatalogStats(data.catalog);
+      if (data.climate) renderOfficeClimate(data.climate);
+    }
+
+    function renderCollectionDashboard(d) {
+      const el = document.getElementById("homeDashSnapshotBody");
+      if (!el || !d) return;
+      el.innerHTML = [
+        `<div class="dash-kpi-big">${(d.total_items||0).toLocaleString()}</div>`,
+        `<div class="dash-kpi-sub-row"><span>보관 ${(d.in_collection_items||0).toLocaleString()}</span><span>음악 ${(d.music_items||0).toLocaleString()}</span><span>굿즈 ${(d.goods_items||0).toLocaleString()}</span></div>`,
+        `<div class="dash-kpi-chips">`,
+        `  <span class="dash-kpi-chip${d.registered_today>0?' is-new':''}">오늘 +${d.registered_today||0}</span>`,
+        `  <span class="dash-kpi-chip">7일 +${d.registered_last_7_days||0}</span>`,
+        `  <span class="dash-kpi-chip">30일 +${d.registered_last_30_days||0}</span>`,
+        `</div>`,
+        `<hr class="dash-kpi-divider">`,
+        `<div class="dash-kpi-sub-row">`,
+        `  <span>장식장 ${(d.slotted_in_collection_items||0).toLocaleString()}</span>`,
+        `  <span>미배치 ${(d.unslotted_in_collection_items||0).toLocaleString()}</span>`,
+        `</div>`,
+        `<div class="dash-meta-bars">`,
+        `  <div class="dash-meta-row"><span class="dash-meta-name">보강률</span><span class="dash-meta-bar-bg"><span class="dash-meta-bar" style="width:${d.total_items?Math.round((1-(d.source_unlinked_items||0)/(d.music_items||1))*100):0}%;background:var(--ok)"></span></span><span class="dash-meta-pct">${d.total_items?Math.round((1-(d.source_unlinked_items||0)/(d.music_items||1))*100):0}%</span></div>`,
+        `  <div class="dash-meta-row"><span class="dash-meta-name">장식장률</span><span class="dash-meta-bar-bg"><span class="dash-meta-bar" style="width:${d.in_collection_items?Math.round((d.slotted_in_collection_items||0)/(d.in_collection_items||1)*100):0}%;background:var(--selected-accent)"></span></span><span class="dash-meta-pct">${d.in_collection_items?Math.round((d.slotted_in_collection_items||0)/(d.in_collection_items||1)*100):0}%</span></div>`,
+        `</div>`,
+      ].join("");
+    }
+
+    function renderCatalogStats(d) {
+      const el = document.getElementById("homeDashCatalogStatsBody");
+      if (!el || !d) return;
+      el.innerHTML = Object.entries(d).map(([k,v]) => 
+        `<span class="dash-kpi-chip">${k}: ${v}</span>`
+      ).join("");
+    }
+
+    function renderOfficeClimate(d) {
+      const el = document.getElementById("homeDashClimateBody");
+      if (!el || !d) return;
+      const temp = d.temperature_c != null ? d.temperature_c.toFixed(1) + "°C" : "--";
+      const hum = d.humidity_percent != null ? d.humidity_percent.toFixed(0) + "%" : "--";
+      el.innerHTML = `<span class="dashboard-climate-value">${temp}</span><span class="dashboard-climate-unit">/ ${hum}</span>`;
+      const label = document.getElementById("homeDashClimateUpdated");
+      if (label && d.label) label.textContent = d.label;
+    }
+
+function initDashboardWidgets() {
       const settingsEl = $("homeDashWidgetSettings");
       const toggleBtn = $("homeDashWidgetSettingsBtn");
       if (!settingsEl || !toggleBtn) return;
