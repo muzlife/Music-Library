@@ -180,6 +180,23 @@ def get_collection_dashboard() -> CollectionDashboardResponse:
     return CollectionDashboardResponse(**db.get_collection_dashboard())
 
 
+
+@router.get("/random-album")
+def random_album() -> dict[str, Any]:
+    """Return a random album from collection."""
+    from ..db import get_conn
+    with get_conn() as conn:
+        conn.row_factory = __import__("sqlite3").Row
+        row = conn.execute(
+            "SELECT oi.item_title as title, oi.linked_artist_name as artist, oi.cover_image_url as cover_url "
+            "FROM owned_item oi "
+            "WHERE oi.status = 'IN_COLLECTION' AND oi.item_title IS NOT NULL AND oi.item_title != '' "
+            "ORDER BY RANDOM() LIMIT 1"
+        ).fetchone()
+    if row:
+        return {"title": row["title"], "artist": row["artist"] or "", "cover_url": row["cover_url"] or ""}
+    return {"title": None, "artist": None, "cover_url": None}
+
 @router.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order", response_model=SlotOrderMoveResponse)
 def move_owned_item_slot_order(
     storage_slot_id: int,
