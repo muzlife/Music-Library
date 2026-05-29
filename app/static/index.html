@@ -16650,20 +16650,24 @@
 
             <!-- Card 14: 실내 환경 (small) -->
             <div class="dash-card" data-widget-id="card-climate" data-widget-label="실내 환경" data-size="1/4" data-rows="1/2" data-role="metric">
-              <div class="dash-kpi-label">실내 환경</div>
+              <div class="dash-card__head"><span class="dash-card__dot"></span>실내 환경</div>
+              <div id="homeDashClimateBody" class="dashboard-climate-card">
+                <div class="mini muted">불러오는 중&hellip;</div>
+              </div>
+              <div id="homeDashClimateUpdated" class="mini" style="opacity:.4;margin-top:6px;font-size:0.62rem;"></div>
+            </div>
+
+            <!-- Card 15: 오늘의 음반 -->
             <div class="dash-card" data-widget-id="card-album-of-day" data-widget-label="오늘의 음반" data-size="1/4" data-rows="1/2" data-role="spark">
               <div class="dash-card__head"><span class="dash-card__dot"></span>오늘의 음반</div>
               <div class="dash-card__value">—</div>
               <svg class="dash-card__spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline points="" fill="none"/></svg>
             </div>
+
+            <!-- Card 16: 빠른 검색 -->
             <div class="dash-card" data-widget-id="card-quick-search" data-widget-label="빠른 검색" data-size="1/4" data-rows="1/2" data-role="metric">
               <div class="dash-card__head"><span class="dash-card__dot"></span>빠른 검색</div>
               <input type="text" class="dash-card__search-input" placeholder="아티스트, 음반명..." style="width:100%;padding:4px 8px;border:1px solid var(--theme-dashboard-border);border-radius:6px;font-size:0.7rem;background:var(--paper);color:var(--ink);">
-            </div>
-              <div id="homeDashClimateBody" class="dashboard-climate-card">
-                <div class="mini muted">불러오는 중&hellip;</div>
-              </div>
-              <div id="homeDashClimateUpdated" class="mini" style="opacity:.4;margin-top:6px;font-size:0.62rem;"></div>
             </div>
 
                         <!-- Hidden data containers -->
