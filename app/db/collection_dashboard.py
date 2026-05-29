@@ -146,11 +146,8 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(CASE WHEN oi.signature_type = 'IN_PERSON' THEN 1 ELSE 0 END) AS direct_signed_items,
               SUM(CASE WHEN oi.signature_type = 'PURCHASE_INCLUDED' THEN 1 ELSE 0 END) AS purchase_signed_items,
               SUM(CASE WHEN oi.is_second_hand = 1 THEN 1 ELSE 0 END) AS second_hand_items,
-              SUM(CASE WHEN UPPER(COALESCE(oi.release_type,'')) = 'BOX_SET' THEN 1 ELSE 0 END) AS box_set_items,
               SUM(CASE WHEN oi.created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) AS registered_last_30_days,
               SUM(CASE WHEN oi.created_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) AS registered_last_7_days,
-              (SELECT COUNT(DISTINCT am.id) FROM album_master am) AS total_master_count,
-              (SELECT COUNT(DISTINCT aer.album_master_id) FROM album_master_external_ref aer WHERE UPPER(aer.source_code) = 'SPOTIFY') AS spotify_master_count,
               SUM(CASE WHEN oi.created_at >= datetime('now', '-1 days') THEN 1 ELSE 0 END) AS registered_today,
               SUM(CASE WHEN oi.status = 'IN_COLLECTION' AND oi.storage_slot_id IS NOT NULL THEN 1 ELSE 0 END) AS slotted_in_collection_items,
               SUM(CASE WHEN oi.status = 'IN_COLLECTION' AND oi.storage_slot_id IS NULL THEN 1 ELSE 0 END) AS unslotted_in_collection_items,
@@ -250,6 +247,14 @@ def get_collection_dashboard() -> dict[str, Any]:
             FROM goods_item
             """
         ).fetchone()
+
+        # Additional stats
+        box_row = conn.execute("SELECT COUNT(*) FROM owned_item WHERE UPPER(COALESCE(release_type,'')) = 'BOX_SET'").fetchone()
+        box_set_items = box_row[0] if box_row else 0
+        master_row = conn.execute("SELECT COUNT(*) FROM album_master").fetchone()
+        total_master_count = master_row[0] if master_row else 0
+        spotify_row = conn.execute("SELECT COUNT(DISTINCT album_master_id) FROM album_master_external_ref WHERE UPPER(source_code) = 'SPOTIFY'").fetchone()
+        spotify_master_count = spotify_row[0] if spotify_row else 0
 
         audio_row = conn.execute(
             """
@@ -789,7 +794,10 @@ def get_collection_dashboard() -> dict[str, Any]:
     legacy_goods_items = int((summary["goods_items"] if summary else 0) or 0)
     standalone_goods_items = int((standalone_goods_row["cnt"] if standalone_goods_row else 0) or 0)
 
+
+
     return {
+    
         "total_items": int((summary["total_items"] if summary else 0) or 0),
         "in_collection_items": int((summary["in_collection_items"] if summary else 0) or 0),
         "music_items": int((summary["music_items"] if summary else 0) or 0),
@@ -798,9 +806,9 @@ def get_collection_dashboard() -> dict[str, Any]:
         "direct_signed_items": int((summary["direct_signed_items"] if summary else 0) or 0),
         "purchase_signed_items": int((summary["purchase_signed_items"] if summary else 0) or 0),
         "second_hand_items": int((summary["second_hand_items"] if summary else 0) or 0),
-        "box_set_items": int((summary["box_set_items"] if summary else 0) or 0),
-        "total_master_count": int((summary["total_master_count"] if summary else 0) or 0),
-        "spotify_master_count": int((summary["spotify_master_count"] if summary else 0) or 0),
+        "box_set_items": box_set_items,
+        "total_master_count": total_master_count,
+        "spotify_master_count": spotify_master_count,
         "audio_mapped_items": int((audio_row["cnt"] if audio_row else 0) or 0),
         "registered_last_30_days": int((summary["registered_last_30_days"] if summary else 0) or 0),
         "registered_last_7_days": int((summary["registered_last_7_days"] if summary else 0) or 0),
