@@ -12511,11 +12511,11 @@
     .dashboard-status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
     .dashboard-ops-summary-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
     /* 위젯 토글 */
-    .dashboard-widget-card[data-widget-hidden="true"] { display: none !important; }
-    .dashboard-widget-settings { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); margin-bottom: 8px; }
-    .dashboard-widget-toggle-btn { font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--theme-dashboard-border); background: transparent; cursor: pointer; opacity: 0.6; transition: opacity 0.15s, background 0.15s; }
-    .dashboard-widget-toggle-btn.active { background: var(--selected-accent, #0f766e); color: #fff; opacity: 1; border-color: transparent; }
-    .dashboard-widget-settings-label { font-size: 0.68rem; font-weight: 600; opacity: 0.5; letter-spacing: 0.04em; margin-right: 4px; }
+    .dash-card[data-hidden="true"] { display: none !important; }
+    .dash-card-settings { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); margin-bottom: 8px; }
+    .dash-card-toggle-btn { font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--theme-dashboard-border); background: transparent; cursor: pointer; opacity: 0.6; transition: opacity 0.15s, background 0.15s; }
+    .dash-card-toggle-btn.active { background: var(--selected-accent, #0f766e); color: #fff; opacity: 1; border-color: transparent; }
+    .dash-card-settings-label { font-size: 0.68rem; font-weight: 600; opacity: 0.5; letter-spacing: 0.04em; margin-right: 4px; }
     /* 카드 내 미니 차트 나란히 배치 */
     .dashboard-mini-charts-row { display: flex; gap: 8px; margin-top: 4px; }
     .dashboard-mini-chart { flex: 1; min-width: 0; }
@@ -12543,22 +12543,22 @@
       gap: 10px;
       margin-bottom: 10px;
     }
-    .dashboard-widget-grid .dashboard-widget-card { grid-column: span 1; }
-    .dashboard-widget-grid .dashboard-widget-card[data-widget-size="medium"] { grid-column: span 2; }
-    .dashboard-widget-grid .dashboard-widget-card[data-widget-size="large"] { grid-column: span 3; }
-    .dashboard-widget-grid .dashboard-widget-card[data-widget-size="wide"] { grid-column: span 4; }
+    .dashboard-widget-grid .dash-card { grid-column: span 1; }
+    .dashboard-widget-grid .dash-card[data-size="1/2"] { grid-column: span 2; }
+    .dashboard-widget-grid .dash-card[data-size="3/4"] { grid-column: span 3; }
+    .dashboard-widget-grid .dash-card[data-size="1/1"] { grid-column: span 4; }
 
-    .dashboard-widget-settings { flex-wrap: wrap; gap: 3px; }
-    .dashboard-widget-settings-group {
+    .dash-card-settings { flex-wrap: wrap; gap: 3px; }
+    .dash-card-settings-group {
       display: flex; align-items: center; gap: 2px;
       border: 1px solid var(--theme-dashboard-border); border-radius: 6px;
       padding: 2px 4px; background: rgba(128,128,128,0.05);
     }
-    .dashboard-widget-reorder-btn {
+    .dash-card-reorder-btn {
       font-size: 0.55rem; padding: 0px 3px; border: none;
       background: transparent; cursor: pointer; opacity: 0.4; line-height: 1; border-radius: 2px;
     }
-    .dashboard-widget-reorder-btn:hover { opacity: 1; background: rgba(128,128,128,0.15); }
+    .dash-card-reorder-btn:hover { opacity: 1; background: rgba(128,128,128,0.15); }
 
     /* ── Accent borders ── */
     .dash-kpi-card.accent-heatmap { border-top: 3px solid #e05a1a; }
@@ -12646,9 +12646,9 @@
     /* ── Responsive ── */
     @media (max-width: 1400px) {
       .dashboard-widget-grid { grid-template-columns: repeat(2, 1fr); }
-      .dashboard-widget-grid .dashboard-widget-card[data-widget-size="large"],
-      .dashboard-widget-grid .dashboard-widget-card[data-widget-size="wide"] { grid-column: span 2; }
-      .dashboard-widget-grid .dashboard-widget-card[data-widget-size="medium"] { grid-column: span 1; }
+      .dashboard-widget-grid .dash-card[data-size="3/4"],
+      .dashboard-widget-grid .dash-card[data-size="1/1"] { grid-column: span 2; }
+      .dashboard-widget-grid .dash-card[data-size="1/2"] { grid-column: span 1; }
       .dash-alert-grid, .dash-collector-grid { grid-template-columns: repeat(2, 1fr); }
       .dash-compare-grid, .dash-finance-grid { grid-template-columns: 1fr; }
       .dash-heatmap { font-size: 0.62rem; }
@@ -12656,7 +12656,7 @@
     }
     @media (max-width: 768px) {
       .dashboard-widget-grid { grid-template-columns: 1fr; }
-      .dashboard-widget-grid .dashboard-widget-card { grid-column: span 1 !important; }
+      .dashboard-widget-grid .dash-card { grid-column: span 1 !important; }
       .dash-alert-grid, .dash-collector-grid { grid-template-columns: 1fr; }
     }
 
@@ -16436,13 +16436,13 @@
           <button id="homeDashWidgetSettingsBtn" class="btn" type="button" style="margin-left:auto;font-size:0.7rem;padding:2px 10px;height:auto;opacity:0.6;">카드 편집</button>
         </div>
         <!-- 위젯 설정 패널 -->
-        <div id="homeDashWidgetSettings" class="dashboard-widget-settings" style="display:none;"></div>
+        <div id="homeDashWidgetSettings" class="dash-card-settings" style="display:none;"></div>
         <!-- ===== 현황판 패널 ===== -->
         <div id="homeDashViewStatus">
           <div class="dashboard-widget-grid">
 
             <!-- Card 1: 컬렉션 스냅샷 (wide) -->
-            <div class="dash-kpi-card accent-main dashboard-widget-card" data-widget-id="card-snapshot" data-widget-label="컬렉션 스냅샷" data-widget-size="wide">
+            <div class="dash-kpi-card accent-main dash-card" data-widget-id="card-snapshot" data-widget-label="컬렉션 스냅샷" data-size="1/1">
               <div class="dash-kpi-label">컬렉션 스냅샷</div>
               <div id="homeDashSnapshotBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16450,7 +16450,7 @@
             </div>
 
             <!-- Card 2: 도메인 × 연대 히트맵 (wide) -->
-            <div class="dash-kpi-card accent-heatmap dashboard-widget-card" data-widget-id="card-heatmap" data-widget-label="도메인 × 연대" data-widget-size="wide">
+            <div class="dash-kpi-card accent-heatmap dash-card" data-widget-id="card-heatmap" data-widget-label="도메인 × 연대" data-size="1/1">
               <div class="dash-kpi-label">도메인 × 연대 히트맵</div>
               <div id="homeDashHeatmapBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16458,7 +16458,7 @@
             </div>
 
             <!-- Card 3: 재정 인사이트 (medium) -->
-            <div class="dash-kpi-card accent-source dashboard-widget-card" data-widget-id="card-finance" data-widget-label="재정 인사이트" data-widget-size="medium">
+            <div class="dash-kpi-card accent-source dash-card" data-widget-id="card-finance" data-widget-label="재정 인사이트" data-size="1/2">
               <div class="dash-kpi-label">재정 인사이트</div>
               <div id="homeDashFinanceBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16466,7 +16466,7 @@
             </div>
 
             <!-- Card 4: 장르 × 도메인 (medium) -->
-            <div class="dash-kpi-card accent-genre dashboard-widget-card" data-widget-id="card-genre-domain" data-widget-label="장르 × 도메인" data-widget-size="medium">
+            <div class="dash-kpi-card accent-genre dash-card" data-widget-id="card-genre-domain" data-widget-label="장르 × 도메인" data-size="1/2">
               <div class="dash-kpi-label">장르 × 도메인</div>
               <div id="homeDashGenreDomainBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16474,7 +16474,7 @@
             </div>
 
             <!-- Card 5: 포맷 × 도메인 + 프레싱 (medium) -->
-            <div class="dash-kpi-card accent-pressing dashboard-widget-card" data-widget-id="card-format-pressing" data-widget-label="포맷·프레싱 × 도메인" data-widget-size="medium">
+            <div class="dash-kpi-card accent-pressing dash-card" data-widget-id="card-format-pressing" data-widget-label="포맷·프레싱 × 도메인" data-size="1/2">
               <div class="dash-kpi-label">포맷 · 프레싱 국가 × 도메인</div>
               <div id="homeDashFormatPressingBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16482,7 +16482,7 @@
             </div>
 
             <!-- Card 6: 아티스트 연대기 (medium) -->
-            <div class="dash-kpi-card accent-artist dashboard-widget-card" data-widget-id="card-artist-timeline" data-widget-label="아티스트 연대기" data-widget-size="medium">
+            <div class="dash-kpi-card accent-artist dash-card" data-widget-id="card-artist-timeline" data-widget-label="아티스트 연대기" data-size="1/2">
               <div class="dash-kpi-label">아티스트 연대기</div>
               <div id="homeDashArtistTimelineBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16490,7 +16490,7 @@
             </div>
 
             <!-- Card 7: 메타 완성도 비교 (medium) -->
-            <div class="dash-kpi-card accent-quality dashboard-widget-card" data-widget-id="card-meta-source" data-widget-label="메타 완성도 × 소스" data-widget-size="medium">
+            <div class="dash-kpi-card accent-quality dash-card" data-widget-id="card-meta-source" data-widget-label="메타 완성도 × 소스" data-size="1/2">
               <div class="dash-kpi-label">메타 완성도 × 소스</div>
               <div id="homeDashMetaSourceBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16498,7 +16498,7 @@
             </div>
 
             <!-- Card 8: 콜렉터 가치 (medium) -->
-            <div class="dash-kpi-card accent-product dashboard-widget-card" data-widget-id="card-collector" data-widget-label="콜렉터 가치" data-widget-size="medium">
+            <div class="dash-kpi-card accent-product dash-card" data-widget-id="card-collector" data-widget-label="콜렉터 가치" data-size="1/2">
               <div class="dash-kpi-label">콜렉터 가치</div>
               <div id="homeDashCollectorBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16506,7 +16506,7 @@
             </div>
 
             <!-- Card 9: 예외 알림 (medium) -->
-            <div class="dash-kpi-card dashboard-widget-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-widget-size="medium">
+            <div class="dash-kpi-card dash-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-size="1/2">
               <div class="dash-kpi-label">예외 · 주의 필요</div>
               <div id="homeDashAlertsBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16514,7 +16514,7 @@
             </div>
 
             <!-- Card 10: 등록 페이스 + 구매 수입 (medium) -->
-            <div class="dash-kpi-card accent-placement dashboard-widget-card" data-widget-id="card-reg-import" data-widget-label="등록 페이스·구매수입" data-widget-size="medium">
+            <div class="dash-kpi-card accent-placement dash-card" data-widget-id="card-reg-import" data-widget-label="등록 페이스·구매수입" data-size="1/2">
               <div class="dash-kpi-label">등록 페이스 · 구매 수입</div>
               <div id="homeDashRegImportBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16523,7 +16523,7 @@
 
 
             <!-- Card 11: 이동 히트맵 (medium) -->
-            <div class="dash-kpi-card accent-heatmap dashboard-widget-card" data-widget-id="card-move-heatmap" data-widget-label="이동 히트맵" data-widget-size="medium">
+            <div class="dash-kpi-card accent-heatmap dash-card" data-widget-id="card-move-heatmap" data-widget-label="이동 히트맵" data-size="1/2">
               <div class="dash-kpi-label">이동 히트맵 (30일)</div>
               <div id="homeDashMoveHeatmapBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16531,7 +16531,7 @@
             </div>
 
             <!-- Card 12: 최근 등록 프로필 (medium) -->
-            <div class="dash-kpi-card accent-product dashboard-widget-card" data-widget-id="card-recent-reg" data-widget-label="최근 등록 프로필" data-widget-size="medium">
+            <div class="dash-kpi-card accent-product dash-card" data-widget-id="card-recent-reg" data-widget-label="최근 등록 프로필" data-size="1/2">
               <div class="dash-kpi-label">최근 등록 프로필 (30일)</div>
               <div id="homeDashRecentRegBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16539,7 +16539,7 @@
             </div>
 
             <!-- Card 13: 구매 흐름 (medium) -->
-            <div class="dash-kpi-card accent-source dashboard-widget-card" data-widget-id="card-purchase-flow" data-widget-label="구매 흐름" data-widget-size="medium">
+            <div class="dash-kpi-card accent-source dash-card" data-widget-id="card-purchase-flow" data-widget-label="구매 흐름" data-size="1/2">
               <div class="dash-kpi-label">구매 흐름 (소스 × 통화 × 도메인)</div>
               <div id="homeDashPurchaseFlowBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16547,7 +16547,7 @@
             </div>
 
             <!-- Card 14: 실내 환경 (small) -->
-            <div class="dash-kpi-card dashboard-widget-card" data-widget-id="card-climate" data-widget-label="실내 환경" data-widget-size="medium">
+            <div class="dash-kpi-card dash-card" data-widget-id="card-climate" data-widget-label="실내 환경" data-size="1/2">
               <div class="dash-kpi-label">실내 환경</div>
               <div id="homeDashClimateBody" class="dashboard-climate-card">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -41125,7 +41125,7 @@ function initDashboardDrilldown() {
       function buildPanel() {
         const map = getMap();
         const cards = getCards();
-        settingsEl.innerHTML = '<span class="dashboard-widget-settings-label">카드 표시</span>';
+        settingsEl.innerHTML = '<span class="dash-card-settings-label">카드 표시</span>';
         cards.forEach((card, idx) => {
           const id = card.dataset.widgetId;
           const label = card.dataset.widgetLabel || id;
@@ -41134,18 +41134,18 @@ function initDashboardDrilldown() {
           const isVisible = stored !== undefined ? stored !== false : !defaultHidden;
 
           const group = document.createElement("span");
-          group.className = "dashboard-widget-settings-group";
+          group.className = "dash-card-settings-group";
 
           // Up button
           const upBtn = document.createElement("button");
-          upBtn.type = "button"; upBtn.className = "dashboard-widget-reorder-btn";
+          upBtn.type = "button"; upBtn.className = "dash-card-reorder-btn";
           upBtn.textContent = "▲"; upBtn.title = "왼쪽으로 이동";
           upBtn.disabled = idx === 0;
           upBtn.addEventListener("click", (e) => { e.stopPropagation(); moveCard(id, -1); buildPanel(); });
 
           // Down button
           const downBtn = document.createElement("button");
-          downBtn.type = "button"; downBtn.className = "dashboard-widget-reorder-btn";
+          downBtn.type = "button"; downBtn.className = "dash-card-reorder-btn";
           downBtn.textContent = "▼"; downBtn.title = "오른쪽으로 이동";
           downBtn.disabled = idx === cards.length - 1;
           downBtn.addEventListener("click", (e) => { e.stopPropagation(); moveCard(id, 1); buildPanel(); });
@@ -41153,7 +41153,7 @@ function initDashboardDrilldown() {
           // Toggle button
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "dashboard-widget-toggle-btn" + (isVisible ? " active" : "");
+          btn.className = "dash-card-toggle-btn" + (isVisible ? " active" : "");
           btn.textContent = label;
           btn.addEventListener("click", (e) => {
             e.stopPropagation();
