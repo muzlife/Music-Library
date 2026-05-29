@@ -190,7 +190,7 @@ def random_album() -> dict[str, Any]:
         row = conn.execute(
             "SELECT COALESCE(NULLIF(oi.item_name_override,''), am.title) as title, "
             "oi.linked_artist_name as artist, "
-            "am.released_date as release_date, "
+            "am.release_year as release_year, "
             "am.cover_image_url as cover_url "
             "FROM owned_item oi "
             "LEFT JOIN album_master am ON oi.linked_album_master_id = am.id "
@@ -201,8 +201,8 @@ def random_album() -> dict[str, Any]:
         ).fetchone() if True else None
     if row:
         year = ""
-        if row["release_date"]:
-            y = str(row["release_date"])[:4]
+        if row["release_year"] is not None:
+            y = str(row["release_year"])
             if y.isdigit(): year = y
         return {
             "title": str(row["title"] or ""),
