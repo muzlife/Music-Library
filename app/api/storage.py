@@ -180,6 +180,19 @@ def get_collection_dashboard() -> CollectionDashboardResponse:
     return CollectionDashboardResponse(**db.get_collection_dashboard())
 
 
+@router.get("/dashboard/summary")
+def get_dashboard_summary() -> dict[str, Any]:
+    """Batch: all dashboard data in one call."""
+    from app.api.ops_system import catalog_stats
+    from app.main import _load_operator_office_climate
+    return {
+        "collection": db.get_collection_dashboard(),
+        "catalog": catalog_stats(),
+        "climate": _load_operator_office_climate(),
+    }
+
+
+
 @router.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order", response_model=SlotOrderMoveResponse)
 def move_owned_item_slot_order(
     storage_slot_id: int,
