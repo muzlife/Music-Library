@@ -31930,9 +31930,6 @@
       if (remember) {
         saveRoleScopedValue(APP_MAIN_TAB_MEMORY_KEY, nextTab);
       }
-      if (nextTab === "home" && appAuthSessionResolved && appAuthSession?.authenticated) {
-        loadDashboardSummary().catch(() => {});
-      }
       if (nextTab === "camera" && appAuthSessionResolved && appAuthSession?.authenticated) {
         loadOpsCameras({ silent: true });
       }
@@ -45325,7 +45322,6 @@ function initDashboardWidgets() {
         if (!silent) setStatus("homeDashboardStatus", "ok", "");
         loadDashboardRecentActivity().catch(() => {});
         loadDashboardClimate().catch(() => {});
-        loadDashboardSummary().catch(() => {});
         updateDashCharts(data);
         updateDashMetaBars(data, data.music_items);
       } catch (err) {
