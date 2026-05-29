@@ -12410,6 +12410,12 @@
       gap: 10px;
       overflow: hidden;
     }
+
+    .dash-card[data-size="1/4"] { padding: 10px 12px; gap: 6px; }
+    .dash-card[data-size="1/2"] { padding: 12px 14px; gap: 8px; }
+    .dash-card[data-size="3/4"],
+    .dash-card[data-size="1/1"] { padding: 14px 16px; gap: 10px; }
+
     .dash-card:hover {
       transform: translateY(-2px);
       background: var(--dash-card-bg-hover);
@@ -12641,8 +12647,7 @@
     .dashboard-widget-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      grid-auto-rows: 90px;
-      grid-auto-flow: row;
+      grid-auto-flow: dense;
       gap: 10px;
       margin-bottom: 10px;
     }
@@ -12651,10 +12656,10 @@
     .dashboard-widget-grid .dash-card[data-size="1/2"] { grid-column: span 2; }
     .dashboard-widget-grid .dash-card[data-size="3/4"] { grid-column: span 3; }
     .dashboard-widget-grid .dash-card[data-size="1/1"] { grid-column: span 4; }
-    /* ── row spans ── */
-    .dashboard-widget-grid .dash-card[data-rows="1/2"] { grid-row: span 1; }
-    .dashboard-widget-grid .dash-card[data-rows="1"]   { grid-row: span 2; }
-    .dashboard-widget-grid .dash-card[data-rows="2"]   { grid-row: span 4; }
+    /* ── min-heights by rows (content can grow) ── */
+    .dashboard-widget-grid .dash-card[data-rows="1/2"] { min-height: 80px; }
+    .dashboard-widget-grid .dash-card[data-rows="1"]   { min-height: 150px; }
+    .dashboard-widget-grid .dash-card[data-rows="2"]   { min-height: 300px; }
 
     .dash-card-settings { flex-wrap: wrap; gap: 3px; }
     .dash-card-settings-group {
