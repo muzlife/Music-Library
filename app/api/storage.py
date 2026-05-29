@@ -190,8 +190,7 @@ def random_album() -> dict[str, Any]:
         row = conn.execute(
             "SELECT COALESCE(NULLIF(oi.item_name_override,''), am.title) as title, "
             "oi.linked_artist_name as artist, "
-            "am.release_year as release_year, "
-            "am.cover_image_url as cover_url "
+            "am.release_year as release_year "
             "FROM owned_item oi "
             "LEFT JOIN album_master am ON oi.linked_album_master_id = am.id "
             "WHERE oi.status = 'IN_COLLECTION' "
@@ -208,9 +207,8 @@ def random_album() -> dict[str, Any]:
             "title": str(row["title"] or ""),
             "artist": str(row["artist"] or ""),
             "year": year,
-            "cover_url": str(row["cover_url"] or ""),
         }
-    return {"title": None, "artist": None, "year": "", "cover_url": ""}
+    return {"title": None, "artist": None, "year": ""}
 
 @router.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order", response_model=SlotOrderMoveResponse)
 def move_owned_item_slot_order(
