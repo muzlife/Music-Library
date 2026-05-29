@@ -16675,10 +16675,32 @@
               <svg class="dash-card__spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline points="" fill="none"/></svg>
             </div>
 
-            <!-- Card 16: 빠른 검색 -->
-            <div class="dash-card" data-widget-id="card-quick-search" data-widget-label="빠른 검색" data-size="1/4" data-rows="1/2" data-role="metric">
-              <div class="dash-card__head"><span class="dash-card__dot"></span>빠른 검색</div>
-              <input type="text" class="dash-card__search-input" placeholder="아티스트, 음반명..." style="width:100%;padding:4px 8px;border:1px solid var(--theme-dashboard-border);border-radius:6px;font-size:0.7rem;background:var(--paper);color:var(--ink);">
+            <!-- Card 16: 장식장 점유율 -->
+            <div class="dash-card" data-widget-id="card-slot-rate" data-widget-label="장식장 점유율" data-size="1/4" data-accent="placement" data-rows="1/2" data-role="metric">
+              <div class="dash-card__head"><span class="dash-card__dot"></span>장식장 점유율</div>
+              <div class="dash-card__value" id="homeDashSlotRate"></div>
+              <div class="dash-card__label" id="homeDashSlotRateLabel"></div>
+            </div>
+
+            <!-- Card 17: 메타 보강률 -->
+            <div class="dash-card" data-widget-id="card-meta-rate" data-widget-label="메타 보강률" data-size="1/4" data-accent="source" data-rows="1/2" data-role="metric">
+              <div class="dash-card__head"><span class="dash-card__dot"></span>메타 보강률</div>
+              <div class="dash-card__value" id="homeDashMetaRate"></div>
+              <div class="dash-card__label" id="homeDashMetaRateLabel"></div>
+            </div>
+
+            <!-- Card 18: 서명 음반 -->
+            <div class="dash-card" data-widget-id="card-signed" data-widget-label="서명 음반" data-size="1/4" data-accent="product" data-rows="1/2" data-role="metric">
+              <div class="dash-card__head"><span class="dash-card__dot"></span>서명 음반</div>
+              <div class="dash-card__value" id="homeDashSignedCount"></div>
+              <div class="dash-card__label" id="homeDashSignedLabel"></div>
+            </div>
+
+            <!-- Card 19: Spotify 연동률 -->
+            <div class="dash-card" data-widget-id="card-spotify-rate" data-widget-label="Spotify 연동률" data-size="1/4" data-accent="quality" data-rows="1/2" data-role="metric">
+              <div class="dash-card__head"><span class="dash-card__dot"></span>Spotify 연동</div>
+              <div class="dash-card__value" id="homeDashSpotifyRate"></div>
+              <div class="dash-card__label" id="homeDashSpotifyLabel"></div>
             </div>
 
                         <!-- Hidden data containers -->
@@ -45098,6 +45120,37 @@ function initDashboardDrilldown() {
         setTextIfPresent("homeDashSecondHand", formatCount(data.second_hand_items));
         setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
         setTextIfPresent("homeDashReg7d", formatCount(data.registered_last_7_days ?? 0));
+        /* 1/4 cards */
+        const _inCol = Number(data.in_collection_items ?? 0);
+        const _music = Number(data.music_items ?? 0);
+        const _slotted = Number(data.slotted_in_collection_items ?? 0);
+        const _srcUnlinked = Number(data.source_unlinked_items ?? 0);
+
+        /* slot rate */
+        const slotPct = _inCol > 0 ? Math.round(_slotted / _inCol * 100) : 0;
+        setTextIfPresent("homeDashSlotRate", slotPct + "%");
+        setTextIfPresent("homeDashSlotRateLabel", _slotted.toLocaleString() + " / " + _inCol.toLocaleString());
+
+        /* meta rate */
+        const metaPct = _music > 0 ? Math.round((1 - _srcUnlinked / _music) * 100) : 0;
+        setTextIfPresent("homeDashMetaRate", metaPct + "%");
+        setTextIfPresent("homeDashMetaRateLabel", (_music - _srcUnlinked).toLocaleString() + " / " + _music.toLocaleString());
+
+        /* signed */
+        setTextIfPresent("homeDashSignedCount", formatCount(data.signed_items));
+        const directSigned = Number(data.direct_signed_items ?? 0);
+        setTextIfPresent("homeDashSignedLabel", "직접 " + directSigned.toLocaleString() + "장");
+
+        /* spotify */
+        const _spotifyLinked = Number(data.spotify_linked_items ?? data.spotify_items ?? 0);
+        if (_spotifyLinked >= 0) {
+          const spotifyPct = _music > 0 ? Math.round(_spotifyLinked / _music * 100) : 0;
+          setTextIfPresent("homeDashSpotifyRate", spotifyPct + "%");
+          setTextIfPresent("homeDashSpotifyLabel", _spotifyLinked.toLocaleString() + " / " + _music.toLocaleString());
+        } else {
+          setTextIfPresent("homeDashSpotifyRate", "—");
+          setTextIfPresent("homeDashSpotifyLabel", "데이터 없음");
+        }
         setTextIfPresent("homeDashRegToday", formatCount(data.registered_today ?? 0));
         const placementRate = Number(data.in_collection_items || 0) > 0
           ? Math.round((Number(data.slotted_in_collection_items || 0) / Number(data.in_collection_items || 0)) * 100)
