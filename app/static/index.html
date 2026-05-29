@@ -16563,7 +16563,7 @@
             </div>
 
             <!-- Card 2: 도메인 × 연대 히트맵 (wide) -->
-            <div class="dash-card" data-accent="heatmap" data-widget-id="card-heatmap" data-widget-label="도메인 × 연대" data-size="3/4" data-rows="2" data-role="heatmap">
+            <div class="dash-card" data-accent="heatmap" data-widget-id="card-heatmap" data-widget-label="도메인 × 연대" data-size="1/2" data-rows="2" data-role="heatmap">
               <div class="dash-card__head"><span class="dash-card__dot"></span>도메인 × 연대</div>
               <div id="homeDashHeatmapBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16627,7 +16627,7 @@
             </div>
 
             <!-- Card 10: 등록 페이스 + 구매 수입 (medium) -->
-            <div class="dash-card" data-accent="placement" data-widget-id="card-reg-import" data-widget-label="등록 페이스·구매수입" data-size="1/2" data-rows="2" data-role="trend-spark">
+            <div class="dash-card" data-accent="placement" data-widget-id="card-reg-import" data-widget-label="등록 페이스" data-size="1/4" data-rows="1/2" data-role="trend-spark">
               <div class="dash-card__head"><span class="dash-card__dot"></span>등록 페이스</div>
               <div id="homeDashRegImportBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -41144,7 +41144,7 @@ function initDashboardDrilldown() {
         '<div class="dash-collector-item"><span class="dash-collector-icon">📀</span><span class="dash-collector-value">'+fc(d.multi_disc_items||0)+'</span><span class="dash-collector-label">멀티디스크</span></div>'+
         '<div class="dash-collector-item"><span class="dash-collector-icon">🎗️</span><span class="dash-collector-value">'+fc(d.obi_items||0)+'</span><span class="dash-collector-label">OBI</span></div>'+
         '<div class="dash-collector-item" data-dash-drilldown="promo_items" style="cursor:pointer;"><span class="dash-collector-icon">📢</span><span class="dash-collector-value">'+fc(d.promo_items||0)+'</span><span class="dash-collector-label">홍보반</span></div>'+
-        '<div class="dash-collector-item" data-dash-drilldown="other_items" style="cursor:pointer;"><span class="dash-collector-icon">🔄</span><span class="dash-collector-value">'+fc(d.second_hand_items||0)+'</span><span class="dash-collector-label">중고</span></div>'+
+        '<div class="dash-collector-item" data-dash-drilldown="other_items" style="cursor:pointer;"><span class="dash-collector-icon">📦</span><span class="dash-collector-value">'+fc(d.second_hand_items||0)+'</span><span class="dash-collector-label">박스세트</span></div>'+
       '</div>';
     }
 
@@ -45128,7 +45128,7 @@ async function loadDashboardClimate() {
             }
           }
         }
-        setTextIfPresent("homeDashSecondHand", formatCount(data.second_hand_items));
+        setTextIfPresent("homeDashBoxSet", formatCount(data.box_set_items ?? 0));
         setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
         setTextIfPresent("homeDashReg7d", formatCount(data.registered_last_7_days ?? 0));
         /* 1/4 cards */
