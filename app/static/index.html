@@ -16541,12 +16541,8 @@
             <span class="dashboard-kpi-sub" id="homeDashCollectorBar"></span>
           </div>
           <div class="dashboard-kpi-item">
-            <span class="dashboard-kicker">배치</span>
-            <strong id="homeDashPlacement">0</strong>
-          </div>
-          <div class="dashboard-kpi-item">
-            <span class="dashboard-kicker">메타 보강</span>
-            <strong id="homeDashMetaBar">0</strong>
+            <span class="dashboard-kicker">소스</span>
+            <span class="dashboard-kpi-sub" id="homeDashSourceBar"></span>
           </div>
           <div class="dashboard-kpi-item">
             <span class="dashboard-kicker">30일 신규</span>
@@ -45128,15 +45124,17 @@ async function loadDashboardClimate() {
           setTextIfPresent("homeDashCollectorBar", "싸인 " + signed + " 한정 " + limited + " 박스세트 " + boxSet);
         }
         {
-          const slotted = Number(data.slotted_in_collection_items ?? 0);
-          const inCol = Number(data.in_collection_items ?? 0);
-          const rate = inCol > 0 ? Math.round(slotted / inCol * 100) : 0;
-          setTextIfPresent("homeDashPlacement", formatCount(slotted) + "(" + rate + "%)");
-        }
-        {
-          const srcUnlinked = Number(data.source_unlinked_items ?? 0);
-          const metaRate = _musicTotal > 0 ? Math.round((1 - srcUnlinked / _musicTotal) * 100) : 0;
-          setTextIfPresent("homeDashMetaBar", (_musicTotal - srcUnlinked).toLocaleString() + "/" + _musicTotal.toLocaleString() + " (" + metaRate + "%)");
+          /* aggregate source counts */
+          const srcMap = {};
+          (data.by_source_domain || []).forEach(s => {
+            const k = s.source || "OTHER";
+            srcMap[k] = (srcMap[k] || 0) + (s.count || 0);
+          });
+          const srcParts = [];
+          ["DISCOGS","MANIADB","ALADIN","MANUAL"].forEach(k => {
+            if (srcMap[k]) srcParts.push(k + " " + formatCount(srcMap[k]));
+          });
+          setTextIfPresent("homeDashSourceBar", srcParts.join("  ") || "—");
         }
         setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
         setTextIfPresent("homeDashDirectSigned", formatCount(data.direct_signed_items ?? 0));
