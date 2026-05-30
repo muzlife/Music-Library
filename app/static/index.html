@@ -31181,22 +31181,46 @@
       if (!modal || !previewImg) return;
       modal.style.display = "flex";
       modal.setAttribute("aria-hidden", "false");
+      // Add prev/next buttons if not already there
+      if (!document.getElementById("_localGalleryPrev")) {
+        const prevBtn = document.createElement("button");
+        prevBtn.id = "_localGalleryPrev";
+        prevBtn.textContent = "‹";
+        prevBtn.style.cssText = "position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:3rem;color:#fff;background:rgba(0,0,0,0.4);border:none;border-radius:50%;width:48px;height:48px;cursor:pointer;z-index:10;line-height:48px;text-align:center;";
+        const nextBtn = document.createElement("button");
+        nextBtn.id = "_localGalleryNext";
+        nextBtn.textContent = "›";
+        nextBtn.style.cssText = "position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:3rem;color:#fff;background:rgba(0,0,0,0.4);border:none;border-radius:50%;width:48px;height:48px;cursor:pointer;z-index:10;line-height:48px;text-align:center;";
+        modal.appendChild(prevBtn);
+        modal.appendChild(nextBtn);
+        prevBtn.onclick = function(e) { e.stopPropagation(); if (idx > 0) { idx--; show(); } };
+        nextBtn.onclick = function(e) { e.stopPropagation(); if (idx < images.length - 1) { idx++; show(); } };
+      }
       function show() {
         const img = images[idx];
         const src = img.local_path || img.uri || "";
         previewImg.src = src;
         meta.textContent = (img.type || "이미지") + ` (${idx + 1}/${images.length})`;
+        const p = document.getElementById("_localGalleryPrev");
+        const n = document.getElementById("_localGalleryNext");
+        if (p) p.style.opacity = idx > 0 ? "1" : "0.3";
+        if (n) n.style.opacity = idx < images.length - 1 ? "1" : "0.3";
       }
       show();
       modal.onclick = function(e) { if (e.target === modal) { closeGallery(); } };
-      document.getElementById("imageGalleryCloseBtn").onclick = closeGallery;
+      const closeBtn = document.getElementById("imageGalleryCloseBtn");
+      if (closeBtn) closeBtn.onclick = closeGallery;
       function closeGallery() {
         modal.style.display = "none";
         modal.setAttribute("aria-hidden", "true");
         modal.onclick = null;
-        const cb = document.getElementById("imageGalleryCloseBtn");
-        if (cb) cb.onclick = null;
+        if (closeBtn) closeBtn.onclick = null;
         document.removeEventListener("keydown", modal._keyHandler);
+        // Remove prev/next buttons
+        const p = document.getElementById("_localGalleryPrev");
+        const n = document.getElementById("_localGalleryNext");
+        if (p) p.remove();
+        if (n) n.remove();
       }
       // Keyboard nav
       const handler = function(e) {
