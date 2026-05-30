@@ -906,6 +906,10 @@ def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCr
         notices.insert(0, f"동일 상품 복제본 {create_count}건을 개별 인스턴스로 생성했습니다. (owned_item_id: {shown_ids}{tail})")
 
     first_id = int(created_ids[0])
+
+    # Background image download for newly created items
+    _schedule_image_download(first_id, payload)
+
     return OwnedItemCreateResponse(
         owned_item_id=first_id,
         label_id=_build_label_id(payload.category, first_id),
