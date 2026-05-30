@@ -12850,15 +12850,16 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     /* ── 메타 완성도 ── */
-    .dash-meta-src-group { display: flex; flex-direction: column; gap: 8px; }
-    .dash-meta-src-row { display: flex; align-items: flex-start; gap: 8px; }
-    .dash-meta-src-name { width: 68px; font-size: 0.68rem; font-weight: 600; flex-shrink: 0; padding-top: 1px; }
-    .dash-meta-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-    .dash-meta-bar-line { display: flex; align-items: center; gap: 6px; }
-    .dash-meta-bar-tag { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.04em; width: 42px; text-align: right; flex-shrink: 0; opacity: 0.4; }
-    .dash-meta-bar-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(128,128,128,0.10); overflow: hidden; }
+    .dash-meta-src-group { display: flex; flex-direction: column; gap: 0; }
+    .dash-meta-src-row { display: flex; align-items: flex-start; gap: 6px; padding: 5px 0; }
+    .dash-meta-src-row + .dash-meta-src-row { border-top: 1px solid rgba(128,128,128,0.1); }
+    .dash-meta-src-name { width: 60px; font-size: 0.66rem; font-weight: 600; flex-shrink: 0; padding-top: 1px; }
+    .dash-meta-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .dash-meta-bar-line { display: flex; align-items: center; gap: 5px; }
+    .dash-meta-bar-tag { font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.03em; width: 38px; text-align: right; flex-shrink: 0; opacity: 0.4; }
+    .dash-meta-bar-track { flex: 1; height: 5px; border-radius: 3px; background: rgba(128,128,128,0.10); overflow: hidden; }
     .dash-meta-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-    .dash-meta-bar-pct { font-family: var(--font-mono); font-size: 0.62rem; width: 30px; text-align: right; flex-shrink: 0; opacity: 0.65; }
+    .dash-meta-bar-pct { font-family: var(--font-mono); font-size: 0.6rem; width: 28px; text-align: right; flex-shrink: 0; opacity: 0.65; }
     .dash-meta-bar-fill.high { background: #4caf50; }
     .dash-meta-bar-fill.mid  { background: #f97316; }
     .dash-meta-bar-fill.low  { background: #ef4444; }
@@ -41330,7 +41331,7 @@ function initDashboardDrilldown() {
         var mp  = r.total > 0 ? Math.round(r.master_linked  / r.total * 100) : 0;
         var cp  = r.total > 0 ? Math.round(r.cover_present  / r.total * 100) : 0;
         var gp  = r.total > 0 ? Math.round(r.genre_present  / r.total * 100) : 0;
-        if (i > 0) h += '<div style="height:1px;background:rgba(128,128,128,0.1);margin:4px 0;"></div>';
+        // 구분선은 CSS border-top으로 처리
         h += '<div class="dash-meta-src-row">' +
           '<span class="dash-meta-src-name">'+escapeHtml(r.source||'')+'</span>' +
           '<div class="dash-meta-bars">' +
