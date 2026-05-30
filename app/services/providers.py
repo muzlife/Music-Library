@@ -2507,7 +2507,7 @@ def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any
             else:
                 continue
         # Only collect product images, skip UI/banner elements
-        if "/product/" not in src and "/cover" not in src:
+        if not any(k in src for k in ("/product/", "/cover", "/img/img_content/")):
             continue
         if src in seen:
             continue
