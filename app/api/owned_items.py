@@ -834,6 +834,30 @@ def duplicate_owned_item(
 
 
 @router.post("/owned-items", response_model=OwnedItemCreateResponse)
+def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> None:
+    """Schedule background image download for a newly created item."""
+    import threading
+    from pathlib import Path
+    from app.services.image_store import download_images
+    source = (payload.source_code or "").strip().upper()
+    if not source or source == "MANUAL":
+        return
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    source_ext_id = payload.source_external_id
+    def _run():
+        try:
+            items = []
+            if payload.image_items:
+                items = [{"type": it.get("type", "추가"), "uri": it.get("uri", "")} for it in payload.image_items if it.get("uri")]
+            elif payload.cover_image_url:
+                items = [{"type": "앞면", "uri": payload.cover_image_url}]
+            if items:
+                download_images(owned_item_id=owned_item_id, image_items=items, source=source, static_dir=static_dir, source_external_id=source_ext_id)
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+
+
 def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCreateResponse:
     _validate_signature(payload)
     _validate_collection_rank(payload)
