@@ -249,7 +249,7 @@ def get_collection_dashboard() -> dict[str, Any]:
         ).fetchone()
 
         # Additional stats
-        box_row = conn.execute("SELECT COUNT(*) FROM owned_item WHERE UPPER(COALESCE(release_type,'')) = 'BOX_SET'").fetchone()
+        box_row = conn.execute("SELECT COUNT(*) FROM music_item_detail WHERE format_name = 'Box Set'").fetchone()
         box_set_items = box_row[0] if box_row else 0
         master_row = conn.execute("SELECT COUNT(*) FROM album_master").fetchone()
         total_master_count = master_row[0] if master_row else 0
