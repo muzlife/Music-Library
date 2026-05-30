@@ -866,6 +866,43 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
     threading.Thread(target=_run, daemon=True).start()
 
 
+@router.post("/refresh-images")
+def refresh_images(request: Request, owned_item_id: int | None = None, limit: int = 100) -> dict[str, Any]:
+    """Refresh downloaded images for items."""
+    from pathlib import Path
+    from app.services.image_store import download_images
+    from ..db import get_conn
+    import sqlite3
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    refreshed = skipped = 0
+    if owned_item_id:
+        row = db.get_owned_item_detail(owned_item_id)
+        if not row: raise HTTPException(status_code=404, detail="not found")
+        items = [row]
+    else:
+        with get_conn() as conn:
+            conn.row_factory = sqlite3.Row
+            items = conn.execute("SELECT id,source_code,cover_image_url,source_external_id FROM owned_item WHERE cover_image_url IS NOT NULL AND cover_image_url!='' ORDER BY id DESC LIMIT ?",(limit,)).fetchall()
+    for row in items:
+        oid = int(row["id"]); src = str(row.get("source_code") or "").strip().upper()
+        url = str(row.get("cover_image_url") or "").strip()
+        ext_id = str(row.get("source_external_id") or "").strip() or None
+        if not url.startswith("http"): skipped += 1; continue
+        img_items = [{"type":"앞면","uri":url}]
+        if src == "ALADIN" and ext_id:
+            try:
+                from app.services.providers import _fetch_aladin_images_from_web
+                extra = _fetch_aladin_images_from_web(ext_id, ext_id)
+                img_items.extend(extra)
+            except Exception: pass
+        try:
+            r = download_images(owned_item_id=oid, image_items=img_items, source=src, static_dir=static_dir, source_external_id=ext_id)
+            if r: refreshed += 1
+            else: skipped += 1
+        except Exception: skipped += 1
+    return {"refreshed": refreshed, "skipped": skipped}
+
+
 @router.post("/owned-items", response_model=OwnedItemCreateResponse)
 def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCreateResponse:
     _validate_signature(payload)
