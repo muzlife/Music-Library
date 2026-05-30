@@ -2673,6 +2673,10 @@ def _build_music_detail_for_sync(
     }
     return music_detail, sorted(set(updated_fields))
 
+def _get_db_conn():
+    from app.db import get_conn
+    return get_conn()
+
 _SYNC_IMAGE_QUEUE: list[tuple[int, str, str, dict[str, Any]]] = []
 _SYNC_IMAGE_THREAD: threading.Thread | None = None
 _SYNC_IMAGE_COUNT = 0
@@ -2728,7 +2732,7 @@ def _download_images_for_item(
         )
         if result:
             import json as _json
-            with db.get_conn() as conn:
+            with _get_db_conn() as conn:
                 conn.execute(
                     "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
                     (_json.dumps(result, ensure_ascii=False), owned_item_id),
@@ -4612,7 +4616,7 @@ def _run_aladin_discogs_backfill(*, dry_run: bool = False, sleep_sec: float = 2.
                 music_detail_clean = {k: v for k, v in music_detail_raw.items() if v is not None}
 
                 if not dry_run:
-                    with db.get_conn() as conn:
+                    with _get_db_conn() as conn:
                         db._upsert_music_item_detail_in_conn(conn, owned_item_id, music_detail_clean)
                 stats["detail_updated"] += 1
                 stats["matched_items"].append(matched_entry)
