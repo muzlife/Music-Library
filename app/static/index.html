@@ -12591,12 +12591,11 @@
 
     /* KPI 고정 바 */
     .dashboard-kpi-bar { display: flex; gap: 6px; padding: 8px 0 10px; border-bottom: 1px solid var(--theme-dashboard-border); margin-bottom: 8px; }
-    .dashboard-kpi-item { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); border: 1px solid transparent; transition: border-color 150ms; }
+    .dashboard-kpi-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 10px; border-radius: 10px; background: var(--theme-dashboard-panel-soft); border: 1px solid transparent; transition: border-color 150ms; }
     .dashboard-kpi-item:hover { border-color: var(--theme-dashboard-border); }
-    .dashboard-kpi-item .kpi-head { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--theme-dashboard-text-dim); }
-    .dashboard-kpi-item .kpi-dot { width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; background: var(--selected-accent); }
-    .dashboard-kpi-item strong { font-size: 1.3rem; line-height: 1.2; font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.03em; color: var(--theme-dashboard-text); }
-    .dashboard-kpi-sub { font-size: 0.7rem; color: var(--theme-dashboard-text-muted); line-height: 1.4; white-space: normal; word-break: keep-all; }
+    .dashboard-kpi-item .kpi-head { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--theme-dashboard-text-dim); }
+    .dashboard-kpi-item .kpi-value { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--theme-dashboard-text); }
+    .dashboard-kpi-sub { font-size: 0.62rem; color: var(--theme-dashboard-text-muted); line-height: 1.4; }
     /* 현황판/운영판 패널 그리드 */
     .dashboard-status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
     .dashboard-ops-summary-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
@@ -16525,29 +16524,41 @@
         <!-- KPI 고정 바 -->
         <div id="homeDashKpiBar" class="dashboard-kpi-bar">
           <div class="dashboard-kpi-item">
-            <div class="kpi-head"><span class="kpi-dot" style="background:#0f766e"></span>전체</div>
-            <strong id="homeDashTotal">0</strong>
+            <div class="kpi-head">30일 신규</div>
+            <div class="kpi-value" id="homeDashRecent30">0</div>
           </div>
           <div class="dashboard-kpi-item">
-            <div class="kpi-head"><span class="kpi-dot" style="background:#4a9e98"></span>음반</div>
-            <strong id="homeDashMusic">0</strong>
-            <span class="dashboard-kpi-sub" id="homeDashMusicDetail"></span>
+            <div class="kpi-head">전체</div>
+            <div class="kpi-value" id="homeDashTotal">0</div>
           </div>
           <div class="dashboard-kpi-item">
-            <div class="kpi-head"><span class="kpi-dot" style="background:#64748b"></span>수집품</div>
-            <strong id="homeDashGoods">0</strong>
+            <div class="kpi-head">음반</div>
+            <div class="kpi-value" id="homeDashMusic">0</div>
+            <div class="dashboard-kpi-sub" id="homeDashMusicDetail"></div>
           </div>
           <div class="dashboard-kpi-item">
-            <div class="kpi-head"><span class="kpi-dot" style="background:#b45309"></span>콜렉팅 요소</div>
-            <span class="dashboard-kpi-sub" id="homeDashCollectorBar"></span>
+            <div class="kpi-head">수집품</div>
+            <div class="kpi-value" id="homeDashGoods">0</div>
           </div>
           <div class="dashboard-kpi-item">
-            <div class="kpi-head"><span class="kpi-dot" style="background:#3a8fd6"></span>소스</div>
-            <span class="dashboard-kpi-sub" id="homeDashSourceBar"></span>
+            <div class="kpi-head">장식장 점유</div>
+            <div class="kpi-value" id="homeDashSlotRate"></div>
+            <div class="dashboard-kpi-sub" id="homeDashSlotRateLabel"></div>
           </div>
           <div class="dashboard-kpi-item">
-            <div class="kpi-head"><span class="kpi-dot" style="background:#0a7f43"></span>30일 신규</div>
-            <strong id="homeDashRecent30">0</strong>
+            <div class="kpi-head">메타 보강</div>
+            <div class="kpi-value" id="homeDashMetaRate"></div>
+            <div class="dashboard-kpi-sub" id="homeDashMetaRateLabel"></div>
+          </div>
+          <div class="dashboard-kpi-item">
+            <div class="kpi-head">콜렉팅</div>
+            <div class="kpi-value" id="homeDashCollectorTotal"></div>
+            <div class="dashboard-kpi-sub" id="homeDashCollectorBar"></div>
+          </div>
+          <div class="dashboard-kpi-item">
+            <div class="kpi-head">소스</div>
+            <div class="kpi-value" id="homeDashSourceTotal"></div>
+            <div class="dashboard-kpi-sub" id="homeDashSourceBar"></div>
           </div>
         </div>
         <!-- 탭 버튼 -->
@@ -45119,21 +45130,24 @@ async function loadDashboardClimate() {
         }
         setTextIfPresent("homeDashGoods", formatCount(_goodsTotal));
         {
-          const signed = formatCount(data.signed_items||0);
-          const limited = formatCount(data.limited_items||0);
-          const boxSet = formatCount(data.box_set_items||0);
-          setTextIfPresent("homeDashCollectorBar", "싸인 " + signed + " 한정 " + limited + " 박스세트 " + boxSet);
+          const signed = Number(data.signed_items||0);
+          const limited = Number(data.limited_items||0);
+          const boxSet = Number(data.box_set_items||0);
+          setTextIfPresent("homeDashCollectorTotal", formatCount(signed + limited + boxSet));
+          setTextIfPresent("homeDashCollectorBar", "싸인 " + formatCount(signed) + "  한정 " + formatCount(limited) + "  박스 " + formatCount(boxSet));
         }
         {
-          /* aggregate source counts */
           const srcMap = {};
           (data.by_source_domain || []).forEach(s => {
             const k = s.source || "OTHER";
             srcMap[k] = (srcMap[k] || 0) + (s.count || 0);
           });
+          let srcTotal = 0;
+          ["DISCOGS","MANIADB","ALADIN"].forEach(k => { srcTotal += (srcMap[k] || 0); });
+          setTextIfPresent("homeDashSourceTotal", formatCount(srcTotal));
           const srcParts = [];
-          ["DISCOGS","MANIADB","ALADIN","MANUAL"].forEach(k => {
-            if (srcMap[k]) srcParts.push(k + " " + formatCount(srcMap[k]));
+          ["DISCOGS","MANIADB","ALADIN"].forEach(k => {
+            if (srcMap[k]) srcParts.push(k.substring(0,4) + " " + formatCount(srcMap[k]));
           });
           setTextIfPresent("homeDashSourceBar", srcParts.join("  ") || "—");
         }
