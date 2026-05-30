@@ -9,6 +9,9 @@ from .. import security
 from ..schemas import DiscogsIdentityResponse, DiscogsOwnedSyncResponse
 
 router = APIRouter()
+import threading
+ALADIN_DISCOGS_BACKFILL_LOCK = threading.Lock()
+
 def _main():
     from app import main as main_module
     return main_module
