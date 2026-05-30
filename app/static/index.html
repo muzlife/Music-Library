@@ -12813,6 +12813,32 @@
       background: rgba(249,115,22,0.22); color: #fb923c;
       font-weight: 600; margin-top: 3px; display: inline-block;
     }
+    /* ── 오늘의 음반 ── */
+    .dash-album-card {
+      display: flex; flex-direction: column; gap: 8px;
+      cursor: pointer; border-radius: 8px; overflow: hidden;
+      transition: opacity 0.15s;
+    }
+    .dash-album-card:hover { opacity: 0.85; }
+    .dash-album-cover {
+      width: 100%; aspect-ratio: 1/1;
+      object-fit: cover; border-radius: 8px;
+      background: var(--theme-dashboard-panel-soft);
+      display: block;
+    }
+    .dash-album-placeholder {
+      width: 100%; aspect-ratio: 1/1; border-radius: 8px;
+      background: var(--theme-dashboard-panel-soft);
+    }
+    .dash-album-meta { padding: 0 2px; }
+    .dash-album-title {
+      font-size: 0.8rem; font-weight: 700; line-height: 1.3;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .dash-album-sub {
+      font-size: 0.68rem; opacity: 0.6; margin-top: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     /* ── 메타 완성도 ── */
     .dash-meta-src-group { display: flex; flex-direction: column; gap: 8px; }
     .dash-meta-src-row { display: flex; align-items: flex-start; gap: 8px; }
@@ -16752,11 +16778,12 @@
             <!-- Card 15: 오늘의 음반 -->
             <div class="dash-card" data-widget-id="card-album-of-day" data-widget-label="오늘의 음반" data-size="1/4" data-rows="1/2" data-role="metric">
               <div class="dash-card__head"><span class="dash-card__dot"></span>오늘의 음반</div>
-              <div style="display:flex;gap:8px;align-items:center;overflow:hidden;">
-                <img id="homeDashAlbumCover" src="" style="width:42px;height:42px;border-radius:4px;object-fit:cover;flex-shrink:0;display:none;background:var(--theme-dashboard-panel-soft);" onerror="this.style.display='none'" onload="this.style.display=''">
-                <div style="min-width:0;overflow:hidden;">
-                  <div id="homeDashAlbumOfDay" style="font-size:0.72rem;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
-                  <div id="homeDashAlbumOfDayArtist" style="font-size:0.62rem;opacity:0.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+              <div id="homeDashAlbumCard" class="dash-album-card">
+                <img id="homeDashAlbumCover" src="" class="dash-album-cover" onerror="this.style.display='none'" onload="this.style.display='block'" style="display:none;">
+                <div class="dash-album-placeholder" id="homeDashAlbumPlaceholder"></div>
+                <div class="dash-album-meta">
+                  <div id="homeDashAlbumOfDay" class="dash-album-title">—</div>
+                  <div id="homeDashAlbumOfDayMeta" class="dash-album-sub"></div>
                 </div>
               </div>
             </div>
@@ -41181,22 +41208,47 @@ function initDashboardDrilldown() {
     }
 
     function renderDashboardFormatPressing(d) {
-      var b=document.getElementById('homeDashFormatPressingBody'); if(!b)return;
-      var fr=d.by_format_domain||[], pr=(d.by_pressing_domain||[]).slice(0,10);
-      var fms=['LP','CD','CASSETTE'], dms=['KOREA','WESTERN','WORLD_OTHER'];
-      var fl={}; for(var i=0;i<fr.length;i++){fl[fr[i].format+'|'+fr[i].domain]=fr[i].count||0;}
-      var fc=formatCount, h='<div class="dash-kpi-sub-label">포맷 × 도메인</div>';
-      h+='<table style="width:100%;font-size:0.7rem;border-collapse:collapse;margin-bottom:8px;"><tr style="opacity:0.4;font-size:0.62rem;"><th style="padding:3px 6px;"></th>';
-      for(var d2=0;d2<dms.length;d2++)h+='<th style="padding:3px 6px;text-align:right;">'+dms[d2]+'</th>';
-      h+='</tr>';
-      for(var f=0;f<fms.length;f++){h+='<tr><td style="padding:3px 6px;font-weight:600;opacity:0.6;">'+fms[f]+'</td>';
-        for(var dd=0;dd<dms.length;dd++){var v=fl[fms[f]+'|'+dms[dd]]||0;h+='<td style="padding:3px 6px;text-align:right;font-family:var(--font-mono);">'+(v>0?fc(v):'—')+'</td>';}h+='</tr>';}
-      h+='</table><div class="dash-kpi-sub-label">프레싱 국가 Top 10</div>';
-      var mp=1; for(var p=0;p<pr.length;p++){if((pr[p].count||0)>mp)mp=pr[p].count;}
-      var pc2={KOREA:'#4caf50',WESTERN:'#3a8fd6',WORLD_OTHER:'#9c6fd6',JAPAN:'#e05a1a',GREATER_CHINA:'#f97316'};
-      for(var q=0;q<pr.length;q++){var r=pr[q];var pct=Math.round((r.count||0)/mp*100);
-        h+='<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.68rem;"><span style="width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0.7;" title="'+escapeHtml(r.pressing_country||'')+'">'+escapeHtml(r.pressing_country||'')+'</span><span style="width:60px;font-size:0.62rem;opacity:0.5;text-align:right;">'+escapeHtml(r.domain||'')+'</span><div class="dash-compare-bar" style="flex:1;"><div class="dash-compare-bar-fill" style="width:'+pct+'%;background:'+(pc2[r.domain]||'#888')+'"></div></div><span style="font-family:var(--font-mono);font-size:0.65rem;">'+fc(r.count)+'</span></div>';}
-      b.innerHTML=h;
+      var b = document.getElementById('homeDashFormatPressingBody'); if (!b) return;
+      var fr = d.by_format_domain||[], pr = (d.by_pressing_domain||[]).slice(0,10);
+      var fms = ['LP','CD','CASSETTE'], dms = ['KOREA','WESTERN','WORLD_OTHER'];
+      var dmColors = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa'};
+      var fl = {}; for (var i = 0; i < fr.length; i++) { fl[fr[i].format+'|'+fr[i].domain] = fr[i].count||0; }
+      var fc = formatCount;
+      // 포맷×도메인: 각 포맷을 bar row로 (도메인별 색상 파이)
+      var h = '<div class="dash-kpi-sub-label" style="margin-bottom:6px;">포맷 × 도메인</div>';
+      for (var f = 0; f < fms.length; f++) {
+        var total = 0; for (var dd = 0; dd < dms.length; dd++) total += fl[fms[f]+'|'+dms[dd]]||0;
+        if (!total) continue;
+        h += '<div class="dash-fin-bar-row" style="margin-bottom:4px;">' +
+          '<span class="dash-fin-bar-row__lbl" style="font-weight:700;">'+fms[f]+'</span>' +
+          '<div class="dash-fin-bar-row__track" style="display:flex;overflow:hidden;">';
+        for (var d2 = 0; d2 < dms.length; d2++) {
+          var v = fl[fms[f]+'|'+dms[d2]]||0; if (!v) continue;
+          var pct = Math.round(v/total*100);
+          h += '<div style="height:100%;width:'+pct+'%;background:'+(dmColors[dms[d2]]||'#888')+';transition:width 0.4s;" title="'+dms[d2]+': '+fc(v)+'"></div>';
+        }
+        h += '</div><span class="dash-fin-bar-row__val">'+fc(total)+'</span></div>';
+      }
+      // 도메인 범례
+      h += '<div style="display:flex;gap:8px;margin:4px 0 10px;flex-wrap:wrap;">';
+      for (var dm = 0; dm < dms.length; dm++) {
+        h += '<span style="font-size:0.6rem;display:flex;align-items:center;gap:3px;opacity:0.7;">' +
+          '<span style="width:8px;height:8px;border-radius:2px;background:'+(dmColors[dms[dm]]||'#888')+';flex-shrink:0;"></span>'+dms[dm]+'</span>';
+      }
+      h += '</div>';
+      // 프레싱 국가
+      h += '<div class="dash-kpi-sub-label" style="margin-bottom:6px;">프레싱 국가 Top 10</div>';
+      var mp = Math.max(1, pr.reduce(function(m,x){return Math.max(m,x.count||0);}, 0));
+      var pc2 = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316'};
+      for (var q = 0; q < pr.length; q++) {
+        var r = pr[q]; var pct2 = Math.round((r.count||0)/mp*100);
+        h += '<div class="dash-fin-bar-row" style="margin-bottom:2px;">' +
+          '<span class="dash-fin-bar-row__lbl" style="width:88px;font-size:0.65rem;" title="'+escapeHtml(r.pressing_country||'')+'">'+escapeHtml(r.pressing_country||'')+'</span>' +
+          '<div class="dash-fin-bar-row__track"><div class="dash-fin-bar-row__fill" style="width:'+pct2+'%;background:'+(pc2[r.domain]||'#888')+'"></div></div>' +
+          '<span class="dash-fin-bar-row__val" style="width:36px;">'+fc(r.count)+'</span>' +
+          '</div>';
+      }
+      b.innerHTML = h;
     }
 
     function renderDashboardArtistTimeline(d) {
@@ -41346,55 +41398,87 @@ function initDashboardDrilldown() {
     }
 
     function renderDashboardRecentReg(d) {
-      var b=document.getElementById('homeDashRecentRegBody'); if(!b)return;
-      var regTotal=d.registered_last_30_days||0;
-      var byDomain=d.by_recent_reg_domain||[];
-      var byDD=d.by_recent_reg_domain_decade||[];
-      var fc=formatCount;
-      var h='<div style="margin-bottom:6px;"><span style="font-family:var(--font-mono);font-size:1.3rem;font-weight:700;">'+fc(regTotal)+'</span><span style="font-size:0.7rem;opacity:0.5;">건 등록 (30일)</span></div>';
-      if(byDomain.length){
-        var maxD=Math.max(1,byDomain.reduce(function(m,r){return Math.max(m,r.count||0);},0));
-        h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">';
-        var dc2={KOREA:'#4caf50',WESTERN:'#3a8fd6',WORLD_OTHER:'#9c6fd6',JAPAN:'#e05a1a',GREATER_CHINA:'#f97316'};
-        for(var i=0;i<byDomain.length;i++){var dm=byDomain[i];var pct=Math.round((dm.count||0)/maxD*100);h+='<span style="font-size:0.66rem;padding:2px 8px;border-radius:4px;background:'+(dc2[dm.value]||'#888')+';color:#fff;opacity:0.9;">'+dm.value+' '+fc(dm.count)+'</span>';}
-        h+='</div>';
+      var b = document.getElementById('homeDashRecentRegBody'); if (!b) return;
+      var regTotal = d.registered_last_30_days||0;
+      var byDomain = d.by_recent_reg_domain||[];
+      var byDD = d.by_recent_reg_domain_decade||[];
+      var fc = formatCount;
+      var dc = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316', UNASSIGNED:'#6b7280'};
+      // Hero 수치
+      var h = '<div style="margin-bottom:8px;">' +
+        '<span style="font-family:var(--font-mono);font-size:1.8rem;font-weight:800;letter-spacing:-0.05em;line-height:1;">'+fc(regTotal)+'</span>' +
+        '<span style="font-size:0.68rem;opacity:0.5;margin-left:4px;">건 (30일)</span>' +
+        '</div>';
+      // 도메인 칩
+      if (byDomain.length) {
+        h += '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">';
+        for (var i = 0; i < byDomain.length; i++) {
+          var dm = byDomain[i];
+          h += '<span style="font-size:0.65rem;padding:2px 8px;border-radius:20px;' +
+               'background:rgba(128,128,128,0.1);border:1px solid rgba(128,128,128,0.15);' +
+               'color:'+(dc[dm.value]||'#888')+';">' +
+               dm.value+' <strong style="font-family:var(--font-mono);">'+fc(dm.count)+'</strong></span>';
+        }
+        h += '</div>';
       }
-      if(byDD.length){
-        h+='<div class="dash-kpi-sub-label">연대 분포</div>';
-        var decs=[1960,1970,1980,1990,2000,2010,2020];
-        var lu={}, mv2=1;
-        for(var j=0;j<byDD.length;j++){var k=byDD[j].domain+'|'+byDD[j].decade;lu[k]=byDD[j].count||0;if(lu[k]>mv2)mv2=lu[k];}
-        var ad=['KOREA','WESTERN'].filter(function(d){return decs.some(function(dc){return(lu[d+'|'+dc]||0)>0;});});
-        if(ad.length){
-          h+='<table class="dash-heatmap" style="font-size:0.65rem;"><thead><tr><th></th>';
-          for(var d2=0;d2<decs.length;d2++)h+='<th>'+decs[d2]+'s</th>';
-          h+='</tr></thead><tbody>';
-          for(var a=0;a<ad.length;a++){
-            h+='<tr><td>'+ad[a]+'</td>';
-            for(var k2=0;k2<decs.length;k2++){var v=lu[ad[a]+'|'+decs[k2]]||0;var inten=v/mv2, al=Math.round(15+inten*85);h+='<td><span class="dash-heatmap-cell" style="background:rgba('+hexToRgb(dc2[ad[a]]||'#888')+','+(al/100)+');">'+(v>0?v:'')+'</span></td>';}
-            h+='</tr>';
+      // 연대 분포: 히트맵 대신 bar 행
+      if (byDD.length) {
+        h += '<div class="dash-kpi-sub-label" style="margin-bottom:5px;">연대 분포</div>';
+        var decs = [1960,1970,1980,1990,2000,2010,2020];
+        var lu = {}, mv2 = 1;
+        for (var j = 0; j < byDD.length; j++) {
+          var k = byDD[j].domain+'|'+byDD[j].decade; lu[k]=byDD[j].count||0; if(lu[k]>mv2)mv2=lu[k];
+        }
+        var ad = ['KOREA','WESTERN'].filter(function(domain){
+          return decs.some(function(dec){return(lu[domain+'|'+dec]||0)>0;});
+        });
+        for (var a = 0; a < ad.length; a++) {
+          var color = dc[ad[a]]||'#888';
+          h += '<div style="margin-bottom:4px;">' +
+            '<div style="font-size:0.62rem;font-weight:700;color:'+color+';margin-bottom:3px;">'+ad[a]+'</div>' +
+            '<div style="display:flex;gap:2px;align-items:flex-end;height:20px;">';
+          for (var d2 = 0; d2 < decs.length; d2++) {
+            var v = lu[ad[a]+'|'+decs[d2]]||0;
+            var hPct = v > 0 ? Math.round(v/mv2*100) : 0;
+            h += '<div title="'+decs[d2]+'s: '+v+'" style="flex:1;background:'+(hPct?color:'rgba(128,128,128,0.1)')+';' +
+                 'height:'+hPct+'%;min-height:'+(hPct?'3px':'3px')+';border-radius:2px 2px 0 0;opacity:'+(hPct?0.85:0.3)+';transition:height 0.4s;"></div>';
           }
-          h+='</tbody></table>';
+          h += '</div>' +
+            '<div style="display:flex;gap:2px;margin-top:1px;">';
+          for (var d3 = 0; d3 < decs.length; d3++) {
+            h += '<div style="flex:1;font-size:0.5rem;text-align:center;opacity:0.3;">'+String(decs[d3]).slice(2)+'s</div>';
+          }
+          h += '</div></div>';
         }
       }
-      b.innerHTML=h;
+      b.innerHTML = h;
     }
 
     function renderDashboardPurchaseFlow(d) {
-      var b=document.getElementById('homeDashPurchaseFlowBody'); if(!b)return;
-      var rows=(d.by_purchase_flow||[]).slice(0,12);
-      if(!rows.length){b.innerHTML='<div class="mini muted">구매 데이터 없음</div>';return;}
-      var fc=formatCount;
-      var maxItems=Math.max(1,rows.reduce(function(m,r){return Math.max(m,r.items||0);},0));
-      var h='<table style="width:100%;font-size:0.7rem;border-collapse:collapse;"><thead><tr style="opacity:0.4;font-size:0.62rem;"><th style="text-align:left;padding:3px 6px;">구매처</th><th style="padding:3px 6px;">통화</th><th style="padding:3px 6px;">도메인</th><th style="text-align:right;padding:3px 6px;">수량</th><th style="text-align:right;padding:3px 6px;">금액</th></tr></thead><tbody>';
-      for(var i=0;i<rows.length;i++){
-        var r=rows[i];
-        var pct=Math.round((r.items||0)/maxItems*100);
-        var shortSource=r.source.length>25?r.source.substring(0,23)+'…':r.source;
-        h+='<tr style="border-bottom:1px solid rgba(128,128,128,0.06);"><td style="padding:3px 6px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escapeHtml(r.source||'')+'">'+escapeHtml(shortSource)+'</td><td style="padding:3px 6px;text-align:center;">'+escapeHtml(r.currency||'')+'</td><td style="padding:3px 6px;text-align:center;">'+escapeHtml(r.domain||'')+'</td><td style="padding:3px 6px;text-align:right;font-family:var(--font-mono);">'+fc(r.items)+'</td><td style="padding:3px 6px;text-align:right;font-family:var(--font-mono);font-size:0.65rem;">'+fc(r.total_spend)+'</td></tr>';
+      var b = document.getElementById('homeDashPurchaseFlowBody'); if (!b) return;
+      var rows = (d.by_purchase_flow||[]).slice(0, 12);
+      if (!rows.length) { b.innerHTML = '<div class="mini muted">구매 데이터 없음</div>'; return; }
+      var fc = formatCount;
+      var maxItems = Math.max(1, rows.reduce(function(m,r){return Math.max(m,r.items||0);}, 0));
+      var dc = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316'};
+      var h = '';
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        var pct = Math.round((r.items||0)/maxItems*100);
+        var shortSource = r.source && r.source.length > 28 ? r.source.substring(0,26)+'…' : (r.source||'');
+        var color = dc[r.domain]||'#6b7280';
+        h += '<div style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,0.07);">' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">' +
+          '<span style="flex:1;font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escapeHtml(r.source||'')+'">'+escapeHtml(shortSource)+'</span>' +
+          '<span style="font-size:0.6rem;color:'+color+';flex-shrink:0;">'+escapeHtml(r.domain||'')+'</span>' +
+          '<span style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:'+color+';flex-shrink:0;width:32px;text-align:right;">'+fc(r.items)+'</span>' +
+          '</div>' +
+          '<div class="dash-fin-bar-row__track" style="height:4px;">' +
+          '<div class="dash-fin-bar-row__fill" style="width:'+pct+'%;background:'+color+';"></div>' +
+          '</div>' +
+          '</div>';
       }
-      h+='</tbody></table>';
-      b.innerHTML=h;
+      b.innerHTML = h;
     }
 
     function initDashboardWidgets() {
@@ -41546,17 +41630,28 @@ function initDashboardDrilldown() {
       try {
         const res = await fetch("/random-album");
         const data = await safeJson(res);
-        if (data.title) {
-          const artist = data.artist || "";
-          const year = data.year ? " (" + data.year + ")" : "";
-          setTextIfPresent("homeDashAlbumOfDay", data.title);
-          setTextIfPresent("homeDashAlbumOfDayArtist", (artist ? artist + " - " : "") + year);
-          const cover = document.getElementById("homeDashAlbumCover");
-          if (cover && data.cover_url) {
-            cover.src = data.cover_url;
-            cover.style.display = "";
-          }
+        if (!data.title) return;
+        const artist = data.artist || "";
+        const year = data.year ? "(" + data.year + ")" : "";
+        const metaText = [artist, year].filter(Boolean).join(" ");
+        setTextIfPresent("homeDashAlbumOfDay", data.title);
+        setTextIfPresent("homeDashAlbumOfDayMeta", metaText);
+        const cover = document.getElementById("homeDashAlbumCover");
+        const placeholder = document.getElementById("homeDashAlbumPlaceholder");
+        if (cover && data.cover_url) {
+          cover.src = data.cover_url;
         }
+        // 장식장 이동 클릭 핸들러
+        const card = document.getElementById("homeDashAlbumCard");
+        if (card && (data.slot_code || data.owned_item_id)) {
+          card.addEventListener("click", function() {
+            if (typeof openCabinetLocationAction === "function") {
+              openCabinetLocationAction(0, data.slot_code || "", "", "", "");
+            }
+          });
+          card.title = data.slot_code ? data.slot_code + "에 배치됨" : "장식장으로 이동";
+        }
+        if (placeholder && data.cover_url) placeholder.style.display = "none";
       } catch (_) {}
     }
 
