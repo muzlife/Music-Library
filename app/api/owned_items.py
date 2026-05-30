@@ -956,6 +956,338 @@ def refresh_images(request: Request, owned_item_id: int | None = None, limit: in
     return {"refreshed": refreshed, "skipped": skipped}
 
 
+# ── Aladin 이미지 백필 워커 ────────────────────────────────────────────────
+import threading as _threading
+
+_ALADIN_BACKFILL_LOCK = _threading.Lock()
+_ALADIN_BACKFILL_STATE: dict = {
+    "running": False,
+    "total": 0,
+    "done": 0,
+    "skipped": 0,
+    "errors": 0,
+    "last_error": None,
+    "finished_at": None,
+}
+
+
+def _aladin_backfill_worker(dry_run: bool, sleep_sec: float) -> None:
+    """백그라운드 Aladin 이미지 백필 워커."""
+    import json as _json
+    import time as _time
+    from pathlib import Path
+    from app.services.image_store import download_images
+    from app.services.providers import _fetch_aladin_images_from_web, search_aladin_by_barcode
+    from ..db import get_conn
+    import sqlite3 as _sqlite3
+
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+
+    with get_conn() as conn:
+        conn.row_factory = _sqlite3.Row
+        # Case 1: ALADIN 소스 + 이미지 없는 항목
+        aladin_rows = conn.execute("""
+            SELECT oi.id, oi.source_external_id, mid.cover_image_url
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE oi.source_code = 'ALADIN'
+              AND oi.source_external_id IS NOT NULL
+              AND oi.source_external_id != ''
+              AND (mid.local_image_items_json IS NULL OR mid.local_image_items_json = '[]')
+            ORDER BY oi.id DESC
+        """).fetchall()
+        # Case 2: 880 바코드 + 2020 이후 + 비알라딘 + 이미지 없는 항목
+        cross_rows = conn.execute("""
+            SELECT oi.id, mid.barcode, mid.cover_image_url
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE (oi.source_code IS NULL OR oi.source_code != 'ALADIN')
+              AND mid.barcode LIKE '880%'
+              AND mid.release_year >= 2020
+              AND (mid.local_image_items_json IS NULL OR mid.local_image_items_json = '[]')
+            ORDER BY oi.id DESC
+        """).fetchall()
+
+    all_items = [("aladin", dict(r)) for r in aladin_rows] + [("cross", dict(r)) for r in cross_rows]
+    _ALADIN_BACKFILL_STATE.update({"total": len(all_items), "done": 0, "skipped": 0, "errors": 0, "last_error": None})
+
+    import logging as _logging
+    logger = _logging.getLogger(__name__)
+
+    for kind, row in all_items:
+        if not _ALADIN_BACKFILL_STATE.get("running"):
+            break  # 외부에서 중단 요청 (/stop 호출 시)
+
+        oid = int(row["id"])
+        try:
+            img_items: list[dict] = []
+
+            if kind == "aladin":
+                ext_id = str(row.get("source_external_id") or "").strip()
+                cover = str(row.get("cover_image_url") or "").strip()
+                if cover:
+                    img_items.append({"type": "앞면", "uri": cover})
+                if ext_id:
+                    try:
+                        extra = _fetch_aladin_images_from_web(ext_id, ext_id)
+                        img_items.extend(extra)
+                    except Exception as exc:
+                        logger.warning("aladin backfill fetch error oid=%d: %s", oid, exc)
+                source = "ALADIN"
+                ext_id_for_dl = ext_id
+
+            else:  # cross
+                barcode = str(row.get("barcode") or "").strip()
+                if not barcode:
+                    _ALADIN_BACKFILL_STATE["skipped"] += 1
+                    continue
+                try:
+                    candidates = search_aladin_by_barcode(barcode, limit=1)
+                except Exception:
+                    candidates = []
+                if not candidates:
+                    _ALADIN_BACKFILL_STATE["skipped"] += 1
+                    _time.sleep(sleep_sec)
+                    continue
+                best = candidates[0]
+                aladin_id = str(best.get("external_id") or "").strip()
+                cover = str(best.get("cover_image_url") or "").strip()
+                if cover:
+                    img_items.append({"type": "앞면", "uri": cover})
+                if aladin_id:
+                    try:
+                        extra = _fetch_aladin_images_from_web(aladin_id, aladin_id)
+                        img_items.extend(extra)
+                    except Exception as exc:
+                        logger.warning("aladin cross-fetch error oid=%d: %s", oid, exc)
+                source = "ALADIN"
+                ext_id_for_dl = aladin_id
+
+            if not img_items:
+                _ALADIN_BACKFILL_STATE["skipped"] += 1
+                _time.sleep(sleep_sec * 0.5)
+                continue
+
+            if not dry_run:
+                downloaded = download_images(
+                    owned_item_id=oid,
+                    image_items=img_items,
+                    source=source,
+                    static_dir=static_dir,
+                    source_external_id=ext_id_for_dl or None,
+                )
+                if downloaded:
+                    with get_conn() as wconn:
+                        wconn.execute(
+                            "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
+                            (_json.dumps(downloaded, ensure_ascii=False), oid),
+                        )
+                    _ALADIN_BACKFILL_STATE["done"] += 1
+                else:
+                    _ALADIN_BACKFILL_STATE["skipped"] += 1
+            else:
+                _ALADIN_BACKFILL_STATE["done"] += 1
+
+        except Exception as exc:
+            _ALADIN_BACKFILL_STATE["errors"] += 1
+            _ALADIN_BACKFILL_STATE["last_error"] = f"oid={oid}: {exc}"
+            logger.warning("aladin backfill error oid=%d: %s", oid, exc)
+
+        _time.sleep(sleep_sec)
+
+    from datetime import datetime, timezone
+    _ALADIN_BACKFILL_STATE["running"] = False
+    _ALADIN_BACKFILL_STATE["finished_at"] = datetime.now(timezone.utc).isoformat()
+
+
+@router.get("/aladin-image-backfill/status")
+def get_aladin_image_backfill_status(request: Request) -> dict:
+    _require_admin_request(request)
+    return dict(_ALADIN_BACKFILL_STATE)
+
+
+@router.post("/aladin-image-backfill/run")
+def run_aladin_image_backfill(
+    request: Request,
+    dry_run: bool = False,
+    sleep_sec: float = 1.5,
+) -> dict:
+    _require_admin_request(request)
+    if _ALADIN_BACKFILL_STATE.get("running"):
+        raise HTTPException(status_code=409, detail="aladin image backfill already running")
+    _ALADIN_BACKFILL_STATE["running"] = True
+    t = _threading.Thread(
+        target=_aladin_backfill_worker,
+        kwargs={"dry_run": dry_run, "sleep_sec": sleep_sec},
+        name="aladin-image-backfill",
+        daemon=True,
+    )
+    t.start()
+    return {"status": "started", "dry_run": dry_run, "sleep_sec": sleep_sec}
+
+
+@router.post("/aladin-image-backfill/stop")
+def stop_aladin_image_backfill(request: Request) -> dict:
+    _require_admin_request(request)
+    _ALADIN_BACKFILL_STATE["running"] = False
+    return {"status": "stop_requested"}
+
+
+def _load_local_image_items(owned_item_id: int) -> list[dict]:
+    """music_item_detail.local_image_items_json 읽기."""
+    import json as _json
+    from ..db import get_conn
+    import sqlite3
+    with get_conn() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT local_image_items_json FROM music_item_detail WHERE owned_item_id=?",
+            (owned_item_id,),
+        ).fetchone()
+    if not row or not row["local_image_items_json"]:
+        return []
+    try:
+        items = _json.loads(row["local_image_items_json"])
+        return items if isinstance(items, list) else []
+    except Exception:
+        return []
+
+
+def _save_local_image_items(owned_item_id: int, items: list[dict]) -> None:
+    """music_item_detail.local_image_items_json 저장 (upsert)."""
+    import json as _json
+    from ..db import get_conn
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO music_item_detail (owned_item_id, local_image_items_json)
+               VALUES (?, ?)
+               ON CONFLICT(owned_item_id) DO UPDATE SET local_image_items_json=excluded.local_image_items_json""",
+            (owned_item_id, _json.dumps(items, ensure_ascii=False)),
+        )
+
+
+@router.post("/owned-items/{owned_item_id}/images/upload")
+async def upload_owned_item_image(
+    owned_item_id: int,
+    request: Request,
+    image_type: str = Query(default="추가"),
+) -> dict:
+    """관리자가 직접 이미지 파일을 업로드합니다 (multipart/form-data)."""
+    from fastapi import UploadFile
+    from pathlib import Path
+    from app.services.image_store import _filename, _image_dir
+    import hashlib
+    _require_admin_request(request)
+    row = db.get_owned_item(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    form = await request.form()
+    file = form.get("file")
+    if file is None or not hasattr(file, "read"):
+        raise HTTPException(status_code=400, detail="file field required")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty file")
+    if len(raw) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="file too large (max 20MB)")
+
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    img_dir = _image_dir(static_dir, owned_item_id)
+    url_hash = hashlib.md5(raw).hexdigest()[:12]
+    content_type = str(getattr(file, "content_type", "") or "")
+    ext = ".jpg"
+    if "png" in content_type or (getattr(file, "filename", "") or "").lower().endswith(".png"):
+        ext = ".png"
+    elif "webp" in content_type or (getattr(file, "filename", "") or "").lower().endswith(".webp"):
+        ext = ".webp"
+    elif "gif" in content_type:
+        ext = ".gif"
+
+    existing = _load_local_image_items(owned_item_id)
+    idx = len(existing)
+    fname = f"{idx:03d}_{url_hash}_upload{ext}"
+    local_file = img_dir / fname
+    local_file.write_bytes(raw)
+    local_path = f"/ui-static/images/owned/{owned_item_id}/{fname}"
+
+    item = {
+        "type": str(image_type or "추가").strip() or "추가",
+        "local_path": local_path,
+        "source_url": None,
+        "source": "MANUAL",
+    }
+    existing.append(item)
+    _save_local_image_items(owned_item_id, existing)
+    _audit(request, "owned_item", owned_item_id, "IMAGE_UPLOAD")
+    return {"local_path": local_path, "index": idx, "items": existing}
+
+
+@router.post("/owned-items/{owned_item_id}/images/add-url")
+def add_owned_item_image_url(
+    owned_item_id: int,
+    request: Request,
+    url: str = Query(...),
+    image_type: str = Query(default="추가"),
+) -> dict:
+    """URL을 입력하면 서버가 다운로드해 저장합니다."""
+    from pathlib import Path
+    from app.services.image_store import download_images
+    _require_admin_request(request)
+    row = db.get_owned_item(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="url must start with http")
+
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    source = str(row.get("source_code") or "MANUAL").strip().upper() or "MANUAL"
+    ext_id = str(row.get("source_external_id") or "").strip() or None
+    image_type_clean = str(image_type or "추가").strip() or "추가"
+
+    existing = _load_local_image_items(owned_item_id)
+    downloaded = download_images(
+        owned_item_id=owned_item_id,
+        image_items=[{"type": image_type_clean, "uri": url}],
+        source=source,
+        static_dir=static_dir,
+        source_external_id=ext_id,
+    )
+    if not downloaded:
+        raise HTTPException(status_code=400, detail="image download failed — check the URL")
+
+    new_item = downloaded[0]
+    # 중복 local_path 방지
+    if not any(it.get("local_path") == new_item.get("local_path") for it in existing):
+        existing.append(new_item)
+        _save_local_image_items(owned_item_id, existing)
+    _audit(request, "owned_item", owned_item_id, "IMAGE_URL_ADD")
+    return {"local_path": new_item.get("local_path"), "index": len(existing) - 1, "items": existing}
+
+
+@router.delete("/owned-items/{owned_item_id}/images/{index}")
+def delete_owned_item_image(
+    owned_item_id: int,
+    index: int,
+    request: Request,
+) -> dict:
+    """로컬 이미지를 목록에서 제거합니다 (파일은 보존)."""
+    _require_admin_request(request)
+    row = db.get_owned_item(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    existing = _load_local_image_items(owned_item_id)
+    if index < 0 or index >= len(existing):
+        raise HTTPException(status_code=404, detail=f"image index {index} not found")
+
+    removed = existing.pop(index)
+    _save_local_image_items(owned_item_id, existing)
+    _audit(request, "owned_item", owned_item_id, "IMAGE_DELETE")
+    return {"removed": removed, "items": existing}
+
+
 @router.post("/owned-items", response_model=OwnedItemCreateResponse)
 def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCreateResponse:
     _validate_signature(payload)
@@ -1221,6 +1553,7 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
             "format_items": row.get("format_items") or [],
             "track_items": row.get("track_items") or [],
             "label_items": row.get("label_items") or [],
+            "local_image_items": row.get("local_image_items") or [],
             "cover_condition": row.get("cover_condition"),
             "disc_condition": row.get("disc_condition"),
         }
