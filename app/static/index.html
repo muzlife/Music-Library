@@ -16546,14 +16546,7 @@
             <div class="kpi-value" id="homeDashHeroMetaRate"></div>
             <div class="dashboard-kpi-sub" id="homeDashHeroMetaRateLabel"></div>
           </div>
-          <div class="dashboard-kpi-item">
-            <div class="kpi-head">콜렉팅</div>
-            <div class="dashboard-kpi-sub" id="homeDashHeroCollectorBar" style="font-size:0.7rem;"></div>
-          </div>
-          <div class="dashboard-kpi-item">
-            <div class="kpi-head">소스</div>
-            <div class="dashboard-kpi-sub" id="homeDashHeroSourceBar" style="font-size:0.7rem;"></div>
-          </div>
+
           <div class="dashboard-kpi-item">
             <div class="kpi-head">30일 신규</div>
             <div class="kpi-value" id="homeDashRecent30">0</div>
@@ -45127,24 +45120,7 @@ async function loadDashboardClimate() {
           setTextIfPresent("homeDashMusicDetail", "LP " + formatCount(lp) + "  CD " + formatCount(cd));
         }
         setTextIfPresent("homeDashGoods", formatCount(_goodsTotal));
-        {
-          const signed = Number(data.signed_items||0);
-          const limited = Number(data.limited_items||0);
-          const boxSet = Number(data.box_set_items||0);
-          setTextIfPresent("homeDashHeroCollectorBar", "싸인 " + formatCount(signed) + "  한정 " + formatCount(limited) + "  박스 " + formatCount(boxSet));
-        }
-        {
-          const srcMap = {};
-          (data.by_source_domain || []).forEach(s => {
-            const k = s.source || "OTHER";
-            srcMap[k] = (srcMap[k] || 0) + (s.count || 0);
-          });
-          const srcParts = [];
-          ["DISCOGS","MANIADB","ALADIN"].forEach(k => {
-            if (srcMap[k]) srcParts.push(k.substring(0,4) + " " + formatCount(srcMap[k]));
-          });
-          setTextIfPresent("homeDashHeroSourceBar", srcParts.join("  ") || "—");
-        }
+
                 /* hero bar: slot rate */
         {
           const _inCol2 = Number(data.in_collection_items ?? 0);
