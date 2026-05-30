@@ -12661,8 +12661,11 @@
     .dashboard-widget-grid .dash-card[data-size="1/1"] { grid-column: span 4; }
     /* ── min-heights by rows (content can grow) ── */
     .dashboard-widget-grid .dash-card[data-rows="1/2"] { min-height: 80px; }
-    .dashboard-widget-grid .dash-card[data-rows="1"]   { min-height: 150px; }
-    .dashboard-widget-grid .dash-card[data-rows="2"]   { min-height: 300px; }
+    .dashboard-widget-grid .dash-card[data-rows="1"]   { min-height: 150px; height: 150px; }
+    .dashboard-widget-grid .dash-card[data-rows="2"]   { min-height: 300px; height: 300px; }
+    /* 카드 내 body 요소가 남은 높이를 채움 */
+    .dashboard-widget-grid .dash-card { display: flex; flex-direction: column; }
+    .dashboard-widget-grid .dash-card > div:not(.dash-card__head):not(.dash-card__foot) { flex: 1; min-height: 0; overflow: hidden; }
 
     .dash-card-settings { flex-wrap: wrap; gap: 3px; }
     .dash-card-settings-group {
@@ -12684,13 +12687,14 @@
     
 
     /* ── Heatmap Table ── */
-    .dash-heatmap { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
-    .dash-heatmap th { font-size: 0.62rem; opacity: 0.45; font-weight: 600; padding: 3px 6px; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; }
-    .dash-heatmap th:first-child { text-align: left; width: 90px; }
-    .dash-heatmap td { padding: 3px 4px; text-align: center; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; }
-    .dash-heatmap td:first-child { text-align: left; font-family: inherit; font-size: 0.72rem; opacity: 0.7; }
-    .dash-heatmap-cell { border-radius: 4px; padding: 4px 6px; display: inline-block; min-width: 36px; transition: all 0.2s; }
-    .dash-heatmap-cell:hover { transform: scale(1.1); }
+    .dash-heatmap { width: 100%; border-collapse: collapse; font-size: 0.72rem; table-layout: fixed; }
+    .dash-heatmap th { font-size: 0.62rem; opacity: 0.45; font-weight: 600; padding: 3px 4px; text-align: center; text-transform: uppercase; letter-spacing: 0.03em; }
+    .dash-heatmap th:first-child { text-align: left; width: 56px; }
+    .dash-heatmap th:last-child { width: 38px; }
+    .dash-heatmap td { padding: 3px 2px; text-align: center; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; }
+    .dash-heatmap td:first-child { text-align: left; font-family: inherit; font-size: 0.7rem; opacity: 0.7; padding-left: 0; }
+    .dash-heatmap-cell { border-radius: 4px; padding: 3px 2px; display: block; width: 100%; transition: all 0.2s; }
+    .dash-heatmap-cell:hover { transform: scale(1.08); }
 
     /* ── Comparison Side-by-Side ── */
     .dash-compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -12749,13 +12753,15 @@
     /* ── tile grid (콜렉터·알림 공용) ── */
     .dash-tile-grid {
       display: grid; grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 1fr;
       gap: 1px; background: rgba(128,128,128,0.12);
       border-radius: 10px; overflow: hidden;
+      height: 100%;
     }
     .dash-tile {
       background: var(--dash-card-bg);
-      padding: 12px 10px 10px 12px;
-      display: flex; flex-direction: column; gap: 3px;
+      padding: 10px 10px 8px 12px;
+      display: flex; flex-direction: column; justify-content: center; gap: 2px;
       cursor: pointer; transition: background 0.12s;
     }
     .dash-tile:hover { background: var(--dash-card-bg-hover); }
@@ -12785,11 +12791,11 @@
     }
     .dash-fin-stat__lbl { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--theme-dashboard-text-muted); margin-bottom: 3px; }
     .dash-fin-stat__val { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; }
-    .dash-fin-bar-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
-    .dash-fin-bar-row__lbl { width: 72px; font-size: 0.68rem; opacity: 0.65; flex-shrink: 0; }
-    .dash-fin-bar-row__track { flex: 1; height: 8px; border-radius: 4px; background: rgba(128,128,128,0.10); overflow: hidden; }
+    .dash-fin-bar-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+    .dash-fin-bar-row__lbl { width: 60px; font-size: 0.67rem; opacity: 0.65; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash-fin-bar-row__track { flex: 1; height: 8px; border-radius: 4px; background: rgba(128,128,128,0.10); overflow: hidden; min-width: 0; }
     .dash-fin-bar-row__fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-    .dash-fin-bar-row__val { font-family: var(--font-mono); font-size: 0.65rem; width: 90px; text-align: right; opacity: 0.75; flex-shrink: 0; }
+    .dash-fin-bar-row__val { font-family: var(--font-mono); font-size: 0.63rem; max-width: 110px; text-align: right; opacity: 0.75; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* ── 등록 페이스 ── */
     .dash-reg-month-fill {
       height: 100%; border-radius: 5px;
@@ -16726,7 +16732,7 @@
             </div>
 
             <!-- Card 8: 콜렉터 가치 (medium) -->
-            <div class="dash-card" data-accent="product" data-widget-id="card-collector" data-widget-label="콜렉터 가치" data-size="1/2" data-rows="2" data-role="metric-grid">
+            <div class="dash-card" data-accent="product" data-widget-id="card-collector" data-widget-label="콜렉터 가치" data-size="1/2" data-rows="1" data-role="metric-grid">
               <div class="dash-card__head"><span class="dash-card__dot"></span>콜렉터 가치</div>
               <div id="homeDashCollectorBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -16734,7 +16740,7 @@
             </div>
 
             <!-- Card 9: 예외 알림 (medium) -->
-            <div class="dash-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-size="1/2" data-rows="1/2" data-role="alerts">
+            <div class="dash-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-size="1/2" data-rows="1" data-role="alerts">
               <div class="dash-card__head"><span class="dash-card__dot"></span>예외 알림</div>
               <div id="homeDashAlertsBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -41473,7 +41479,7 @@ function initDashboardDrilldown() {
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
         var pct = Math.round((r.items||0)/maxItems*100);
-        var shortSource = r.source && r.source.length > 28 ? r.source.substring(0,26)+'…' : (r.source||'');
+        var shortSource = r.source && r.source.length > 38 ? r.source.substring(0,36)+'…' : (r.source||'');
         var color = dc[r.domain]||'#6b7280';
         h += '<div style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,0.07);">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">' +
