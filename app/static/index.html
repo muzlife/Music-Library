@@ -41473,10 +41473,11 @@ function initDashboardDrilldown() {
       var fc = formatCount;
       var dc = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316', UNASSIGNED:'#6b7280'};
 
-      // source별로 domain 묶기
+      // source별로 domain 묶기 (Ebay (XXX) → Ebay 통합)
       var groups = {}, order = [];
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i], src = r.source || '(알 수 없음)';
+        if (/^Ebay\s*\(/.test(src)) src = 'Ebay';
         if (!groups[src]) { groups[src] = { total: 0, domains: {} }; order.push(src); }
         groups[src].domains[r.domain] = (groups[src].domains[r.domain] || 0) + (r.items || 0);
         groups[src].total += (r.items || 0);
