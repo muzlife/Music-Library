@@ -41115,37 +41115,69 @@ function initDashboardDrilldown() {
     }
 
     function renderDashboardFinance(d) {
-      var b=document.getElementById('homeDashFinanceBody'); if(!b)return;
-      var bc=d.by_currency_spend||[], bd=d.by_domain_spend||[];
-      var rt={KRW:1,USD:1380,GBP:1750,JPY:9}, tKRW=0, pi=0;
-      for(var i=0;i<bc.length;i++){tKRW+=(bc[i].total_spend||0)*(rt[bc[i].currency_code]||1);pi+=bc[i].items||0;}
-      var ap=pi>0?Math.round(tKRW/pi):0, ms=1;
-      for(var j=0;j<bd.length;j++){if((bd[j].total_spend||0)>ms)ms=bd[j].total_spend;}
-      var cl={KOREA:'#4caf50',WESTERN:'#3a8fd6',JAPAN:'#e05a1a',GREATER_CHINA:'#f97316',WORLD_OTHER:'#9c6fd6',UNASSIGNED:'#888'};
-      var fc=formatCount, h='<div class="dash-finance-grid">'+
-       '<div class="dash-finance-item"><span class="dash-finance-label">총 구매액 (≈원)</span><span class="dash-finance-value">₩'+fc(tKRW)+'</span></div>'+
-       '<div class="dash-finance-item"><span class="dash-finance-label">평균 단가</span><span class="dash-finance-value">₩'+fc(ap)+'</span></div>'+
-       '<div class="dash-finance-item"><span class="dash-finance-label">가격 정보</span><span class="dash-finance-value">'+fc(pi)+'/'+fc(d.total_items)+'건</span></div>'+
-       '<div class="dash-finance-item"><span class="dash-finance-label">통화</span><div style="font-size:0.7rem;">';
-      for(var k=0;k<bc.length;k++){var apx=(bc[k].total_spend||0)*(rt[bc[k].currency_code]||1);var p=tKRW>0?Math.round(apx/tKRW*100):0;h+='<div>'+bc[k].currency_code+' '+fc(bc[k].total_spend)+' ('+p+'%)</div>';}
-      h+='</div></div></div><hr class="dash-kpi-divider"><div style="font-size:0.7rem;">';
-      for(var q=0;q<bd.length;q++){var dd=bd[q];var pct=ms>0?Math.round((dd.total_spend||0)/ms*100):0;h+='<div style="display:flex;align-items:center;gap:6px;padding:2px 0;"><span style="width:90px;opacity:0.6;">'+dd.domain+'</span><div class="dash-compare-bar" style="flex:1;"><div class="dash-compare-bar-fill" style="width:'+pct+'%;background:'+(cl[dd.domain]||'#888')+'"></div></div><span style="font-family:var(--font-mono);font-size:0.65rem;">₩'+fc(dd.total_spend)+' (avg ₩'+fc(dd.avg_price)+')</span></div>';}
-      h+='</div>'; b.innerHTML=h;
+      var b = document.getElementById('homeDashFinanceBody'); if (!b) return;
+      var bc = d.by_currency_spend||[], bd = d.by_domain_spend||[];
+      var rt = {KRW:1, USD:1380, GBP:1750, JPY:9}, tKRW = 0, pi = 0;
+      for (var i = 0; i < bc.length; i++) {
+        tKRW += (bc[i].total_spend||0) * (rt[bc[i].currency_code]||1);
+        pi += bc[i].items || 0;
+      }
+      var ap = pi > 0 ? Math.round(tKRW / pi) : 0;
+      var ms = 1;
+      for (var j = 0; j < bd.length; j++) { if ((bd[j].total_spend||0) > ms) ms = bd[j].total_spend; }
+      var cl = {KOREA:'#4ade80', WESTERN:'#60a5fa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316', WORLD_OTHER:'#a78bfa', UNASSIGNED:'#6b7280'};
+      var fc = formatCount;
+      var krwEntry = bc.filter(function(x){return x.currency_code==='KRW';})[0];
+      var krwPct = tKRW > 0 && krwEntry ? Math.round((krwEntry.total_spend||0)/tKRW*100) : 0;
+      var h = '<div class="dash-fin-hero">' +
+        '<div class="dash-fin-hero__num">₩'+fc(tKRW)+'</div>' +
+        '<div class="dash-fin-hero__sub">총 구매액 (≈원화) &middot; '+fc(pi)+'/'+fc(d.total_items)+'건 가격 정보</div>' +
+        '</div>' +
+        '<div class="dash-fin-stats">' +
+        '<div class="dash-fin-stat"><div class="dash-fin-stat__lbl">평균 단가</div><div class="dash-fin-stat__val">₩'+fc(ap)+'</div></div>' +
+        '<div class="dash-fin-stat"><div class="dash-fin-stat__lbl">주요 통화</div><div class="dash-fin-stat__val" style="font-size:0.82rem;">KRW '+krwPct+'%</div></div>' +
+        '</div>' +
+        '<hr class="dash-kpi-divider">';
+      for (var q = 0; q < bd.length; q++) {
+        var dd = bd[q];
+        var pct = ms > 0 ? Math.round((dd.total_spend||0) / ms * 100) : 0;
+        h += '<div class="dash-fin-bar-row">' +
+          '<span class="dash-fin-bar-row__lbl">'+escapeHtml(dd.domain||'')+'</span>' +
+          '<div class="dash-fin-bar-row__track"><div class="dash-fin-bar-row__fill" style="width:'+pct+'%;background:'+(cl[dd.domain]||'#888')+'"></div></div>' +
+          '<span class="dash-fin-bar-row__val">₩'+fc(dd.total_spend)+' (avg ₩'+fc(dd.avg_price)+')</span>' +
+          '</div>';
+      }
+      b.innerHTML = h;
     }
 
     function renderDashboardGenreDomain(d) {
-      var b=document.getElementById('homeDashGenreDomainBody'); if(!b)return;
-      var r=d.by_genre_domain||[], kg=[], wg=[];
-      for(var i=0;i<r.length;i++){if(r[i].domain==='KOREA'&&kg.length<6)kg.push(r[i]);if(r[i].domain==='WESTERN'&&wg.length<6)wg.push(r[i]);}
-      var mk=1,mw=1;
-      for(var j=0;j<kg.length;j++){if((kg[j].count||0)>mk)mk=kg[j].count;}
-      for(var k=0;k<wg.length;k++){if((wg[k].count||0)>mw)mw=wg[k].count;}
-      var fc=formatCount;
-      function bc(items,mx,domain,color){
-        var h='<div class="dash-compare-col"><div class="dash-compare-col-title" style="border-color:'+color+';">'+domain+'</div>';
-        for(var i=0;i<items.length;i++){var p=Math.round((items[i].count||0)/mx*100);h+='<div class="dash-compare-row"><span class="name" title="'+escapeHtml(items[i].genre||'')+'">'+escapeHtml(items[i].genre||'')+'</span><div class="dash-compare-bar"><div class="dash-compare-bar-fill" style="width:'+p+'%;background:'+color+'"></div></div><span class="count">'+fc(items[i].count)+'</span></div>';}
-        return h+'</div>';}
-      b.innerHTML='<div class="dash-compare-grid">'+bc(kg,mk,'KOREA','#4caf50')+bc(wg,mw,'WESTERN','#3a8fd6')+'</div>';
+      var b = document.getElementById('homeDashGenreDomainBody'); if (!b) return;
+      var r = d.by_genre_domain || [], kg = [], wg = [];
+      for (var i = 0; i < r.length; i++) {
+        if (r[i].domain === 'KOREA'   && kg.length < 6) kg.push(r[i]);
+        if (r[i].domain === 'WESTERN' && wg.length < 6) wg.push(r[i]);
+      }
+      var mk = Math.max(1, kg.reduce(function(m,x){return Math.max(m,x.count||0);}, 0));
+      var mw = Math.max(1, wg.reduce(function(m,x){return Math.max(m,x.count||0);}, 0));
+      var fc = formatCount;
+      function col(items, max, color, domain) {
+        return '<div>' +
+          '<div style="font-size:0.72rem;font-weight:800;letter-spacing:0.03em;text-transform:uppercase;'+
+               'color:'+color+';margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid '+color+';">'+domain+'</div>' +
+          items.map(function(it) {
+            var pct = Math.round((it.count||0) / max * 100);
+            return '<div class="dash-compare-row">' +
+              '<span class="name" title="'+escapeHtml(it.genre||'')+'">'+escapeHtml(it.genre||'')+'</span>' +
+              '<div class="dash-compare-bar"><div class="dash-compare-bar-fill" style="width:'+pct+'%;background:'+color+';"></div></div>' +
+              '<span class="count" style="color:'+color+';">'+fc(it.count)+'</span>' +
+              '</div>';
+          }).join('') +
+          '</div>';
+      }
+      b.innerHTML = '<div class="dash-compare-grid">' +
+        col(kg, mk, '#4ade80', 'KOREA') +
+        col(wg, mw, '#60a5fa', 'WESTERN') +
+        '</div>';
     }
 
     function renderDashboardFormatPressing(d) {
