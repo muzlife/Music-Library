@@ -12696,9 +12696,10 @@
     .dash-heatmap th { font-size: 0.62rem; opacity: 0.45; font-weight: 600; padding: 2px 4px; text-align: center; text-transform: uppercase; letter-spacing: 0.03em; }
     .dash-heatmap th:first-child { text-align: left; width: 52px; }
     .dash-heatmap th:last-child { width: 34px; }
-    .dash-heatmap td { padding: 0; text-align: center; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; }
-    .dash-heatmap td:first-child { text-align: left; font-family: inherit; font-size: 0.68rem; opacity: 0.7; padding-left: 2px; }
-    .dash-heatmap-cell { border-radius: 5px; padding: 2px; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box; transition: all 0.2s; }
+    .dash-heatmap td { padding: 0; text-align: center; vertical-align: middle; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; }
+    .dash-heatmap td:first-child { text-align: left; vertical-align: middle; font-family: inherit; font-size: 0.68rem; opacity: 0.7; padding-left: 2px; }
+    .dash-heatmap td:last-child, .dash-heatmap tr:last-child td { font-weight: 700; opacity: 0.85; }
+    .dash-heatmap-cell { border-radius: 5px; padding: 4px 2px; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 22px; box-sizing: border-box; transition: all 0.2s; font-variant-numeric: tabular-nums; }
     .dash-heatmap-cell:hover { transform: scale(1.06); filter: brightness(1.15); }
 
     /* ── Comparison Side-by-Side ── */
@@ -17769,6 +17770,27 @@
                       <div class="u-mt-6">
                         <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
                         <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." style="width:100%;box-sizing:border-box;" />
+                      </div>
+                      <!-- 로컬 이미지 관리 -->
+                      <div id="editLocalImagesSection" class="u-mt-6" style="display:none;">
+                        <label style="display:block;margin-bottom:6px;font-weight:500;">보관 이미지</label>
+                        <div id="editLocalImagesGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                          <label class="btn ghost" style="cursor:pointer;font-size:0.8rem;padding:4px 10px;">
+                            📁 파일 업로드
+                            <input id="editImageFileInput" type="file" accept="image/*" style="display:none;" onchange="handleEditImageFileUpload(this)" />
+                          </label>
+                          <select id="editImageTypeSelect" style="font-size:0.8rem;padding:3px 6px;">
+                            <option value="앞면">앞면</option>
+                            <option value="뒷면">뒷면</option>
+                            <option value="추가" selected>추가</option>
+                          </select>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+                          <input id="editImageUrlInput" type="text" placeholder="이미지 URL 입력 후 다운로드" style="flex:1;min-width:200px;font-size:0.85rem;" />
+                          <button class="btn ghost" style="font-size:0.8rem;padding:4px 10px;" type="button" onclick="handleEditImageUrlAdd()">⬇ 다운로드</button>
+                        </div>
+                        <div id="editImageStatus" class="status-line" style="margin-top:4px;min-height:1em;font-size:0.8rem;"></div>
                       </div>
                       <div id="homeEditPackageContentsWrap" class="u-mt-6">
                         <label style="display:block;margin-bottom:4px;" data-i18n="media.manage.product.field.package_contents.label">패키지 구성</label>
@@ -31125,6 +31147,91 @@
       }
       return uploadedUrls.length;
     }
+
+    // ── 로컬 이미지 관리 ──────────────────────────────────────────
+    let _editLocalImages = [];
+
+    function renderEditLocalImages() {
+      const grid = $("editLocalImagesGrid");
+      const section = $("editLocalImagesSection");
+      if (!grid) return;
+      section.style.display = "";
+      if (!_editLocalImages.length) {
+        grid.innerHTML = `<span style="font-size:0.8rem;opacity:0.5;">등록된 이미지 없음</span>`;
+        return;
+      }
+      grid.innerHTML = _editLocalImages.map((item, i) => {
+        const src = item.local_path || item.uri || "";
+        const label = escapeHtml(item.type || "추가");
+        return `<div style="position:relative;display:inline-block;text-align:center;">
+          <img src="${escapeHtml(src)}" alt="${label}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--color-border);" onerror="this.style.opacity=0.3" />
+          <div style="font-size:0.65rem;margin-top:2px;opacity:0.7;">${label}</div>
+          <button type="button" onclick="deleteEditLocalImage(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;line-height:18px;padding:0;">✕</button>
+        </div>`;
+      }).join("");
+    }
+
+    function loadEditLocalImages(localImages) {
+      _editLocalImages = Array.isArray(localImages) ? localImages.slice() : [];
+      renderEditLocalImages();
+    }
+
+    async function handleEditImageFileUpload(input) {
+      const ownedItemId = Number($("editOwnedId")?.value || 0);
+      if (!ownedItemId || !input.files?.length) return;
+      const file = input.files[0];
+      const imageType = $("editImageTypeSelect")?.value || "추가";
+      setStatus("editImageStatus", "ok", "업로드 중...");
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetchWithRetry(`/owned-items/${ownedItemId}/images/upload?image_type=${encodeURIComponent(imageType)}`, { method: "POST", body: form });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, "업로드 실패"));
+        _editLocalImages = Array.isArray(data.items) ? data.items : _editLocalImages;
+        renderEditLocalImages();
+        setStatus("editImageStatus", "ok", "업로드 완료");
+      } catch (err) {
+        setStatus("editImageStatus", "err", errorMessageText(err, "업로드 실패"));
+      }
+      input.value = "";
+    }
+
+    async function handleEditImageUrlAdd() {
+      const ownedItemId = Number($("editOwnedId")?.value || 0);
+      const url = String($("editImageUrlInput")?.value || "").trim();
+      const imageType = $("editImageTypeSelect")?.value || "추가";
+      if (!ownedItemId || !url) return;
+      setStatus("editImageStatus", "ok", "다운로드 중...");
+      try {
+        const res = await fetchWithRetry(`/owned-items/${ownedItemId}/images/add-url?url=${encodeURIComponent(url)}&image_type=${encodeURIComponent(imageType)}`, { method: "POST" });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, "다운로드 실패"));
+        _editLocalImages = Array.isArray(data.items) ? data.items : _editLocalImages;
+        renderEditLocalImages();
+        setStatus("editImageStatus", "ok", "다운로드 완료");
+        if ($("editImageUrlInput")) $("editImageUrlInput").value = "";
+      } catch (err) {
+        setStatus("editImageStatus", "err", errorMessageText(err, "다운로드 실패"));
+      }
+    }
+
+    async function deleteEditLocalImage(index) {
+      const ownedItemId = Number($("editOwnedId")?.value || 0);
+      if (!ownedItemId) return;
+      if (!window.confirm("이 이미지를 목록에서 제거할까요?")) return;
+      try {
+        const res = await fetch(`/owned-items/${ownedItemId}/images/${index}`, { method: "DELETE" });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, "삭제 실패"));
+        _editLocalImages = Array.isArray(data.items) ? data.items : _editLocalImages;
+        renderEditLocalImages();
+        setStatus("editImageStatus", "ok", "삭제됨");
+      } catch (err) {
+        setStatus("editImageStatus", "err", errorMessageText(err, "삭제 실패"));
+      }
+    }
+    // ─────────────────────────────────────────────────────────────
 
     function renderHomeEditCoverImagePreview() {
       const root = $("homeEditCoverImagePreview");
@@ -48764,6 +48871,7 @@ async function loadDashboardClimate() {
       setConditionSelectValue("editCoverCondition", data.music_detail?.cover_condition || "");
       setConditionSelectValue("editDiscCondition", data.music_detail?.disc_condition || "");
       $("editCoverImageUrl").value = data.music_detail?.cover_image_url || "";
+      loadEditLocalImages(data.local_image_items || []);
       {
         const tl = Array.isArray(data.music_detail?.track_list) ? data.music_detail.track_list : [];
         const ti = Array.isArray(data.music_detail?.track_items) ? data.music_detail.track_items : [];
