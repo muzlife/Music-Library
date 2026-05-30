@@ -16551,13 +16551,11 @@
             <div class="kpi-head">30일 신규</div>
             <div class="kpi-value" id="homeDashRecent30">0</div>
           </div>
-        </div>
-        <!-- 실내 환경 (고정) -->
-        <div id="homeDashClimateBar" style="display:flex;align-items:center;gap:10px;padding:6px 12px;margin-bottom:8px;border-radius:8px;background:var(--theme-dashboard-panel-soft);border:1px solid var(--theme-dashboard-border);">
-          <span style="font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--theme-dashboard-text-dim);">실내 환경</span>
-          <span id="homeDashClimateTemp" style="font-family:var(--font-mono);font-size:1rem;font-weight:700;"></span>
-          <span id="homeDashClimateHumid" style="font-size:0.7rem;color:var(--theme-dashboard-text-muted);"></span>
-          <span id="homeDashClimateLabel" style="font-size:0.62rem;color:var(--theme-dashboard-text-dim);margin-left:auto;"></span>
+          <div class="dashboard-kpi-item">
+            <div class="kpi-head">실내 환경</div>
+            <div class="kpi-value" id="homeDashClimateTemp">--</div>
+            <div class="dashboard-kpi-sub" id="homeDashClimateHumid"></div>
+          </div>
         </div>
         <!-- 탭 버튼 -->
         <div id="homeDashViewTabs" class="subtabs u-mt-sm" style="display:flex;align-items:center;">
