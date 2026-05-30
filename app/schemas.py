@@ -992,6 +992,18 @@ class GoodsDetailCreate(BaseModel):
     hat_size: str | None = None
 
 
+class OwnedItemRelationItem(BaseModel):
+    relation_type: str
+    target_kind: str
+    target_ref: str
+    display_order: int | None = None
+    note: str | None = None
+
+
+class OwnedItemRelationSaveRequest(BaseModel):
+    relations: list[OwnedItemRelationItem] = Field(default_factory=list)
+
+
 class OwnedItemCreate(BaseModel):
     category: ItemCategory
     size_group: SizeGroup
