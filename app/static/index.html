@@ -16524,10 +16524,6 @@
         <!-- KPI 고정 바 -->
         <div id="homeDashKpiBar" class="dashboard-kpi-bar">
           <div class="dashboard-kpi-item">
-            <div class="kpi-head">30일 신규</div>
-            <div class="kpi-value" id="homeDashRecent30">0</div>
-          </div>
-          <div class="dashboard-kpi-item">
             <div class="kpi-head">전체</div>
             <div class="kpi-value" id="homeDashTotal">0</div>
           </div>
@@ -16552,13 +16548,15 @@
           </div>
           <div class="dashboard-kpi-item">
             <div class="kpi-head">콜렉팅</div>
-            <div class="kpi-value" id="homeDashHeroCollectorTotal"></div>
-            <div class="dashboard-kpi-sub" id="homeDashHeroCollectorBar"></div>
+            <div class="dashboard-kpi-sub" id="homeDashHeroCollectorBar" style="font-size:0.7rem;"></div>
           </div>
           <div class="dashboard-kpi-item">
             <div class="kpi-head">소스</div>
-            <div class="kpi-value" id="homeDashHeroSourceTotal"></div>
-            <div class="dashboard-kpi-sub" id="homeDashHeroSourceBar"></div>
+            <div class="dashboard-kpi-sub" id="homeDashHeroSourceBar" style="font-size:0.7rem;"></div>
+          </div>
+          <div class="dashboard-kpi-item">
+            <div class="kpi-head">30일 신규</div>
+            <div class="kpi-value" id="homeDashRecent30">0</div>
           </div>
         </div>
         <!-- 탭 버튼 -->
@@ -45133,7 +45131,6 @@ async function loadDashboardClimate() {
           const signed = Number(data.signed_items||0);
           const limited = Number(data.limited_items||0);
           const boxSet = Number(data.box_set_items||0);
-          setTextIfPresent("homeDashHeroCollectorTotal", formatCount(signed + limited + boxSet));
           setTextIfPresent("homeDashHeroCollectorBar", "싸인 " + formatCount(signed) + "  한정 " + formatCount(limited) + "  박스 " + formatCount(boxSet));
         }
         {
@@ -45142,9 +45139,6 @@ async function loadDashboardClimate() {
             const k = s.source || "OTHER";
             srcMap[k] = (srcMap[k] || 0) + (s.count || 0);
           });
-          let srcTotal = 0;
-          ["DISCOGS","MANIADB","ALADIN"].forEach(k => { srcTotal += (srcMap[k] || 0); });
-          setTextIfPresent("homeDashHeroSourceTotal", formatCount(srcTotal));
           const srcParts = [];
           ["DISCOGS","MANIADB","ALADIN"].forEach(k => {
             if (srcMap[k]) srcParts.push(k.substring(0,4) + " " + formatCount(srcMap[k]));
