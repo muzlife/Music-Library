@@ -31176,25 +31176,35 @@
       if (!images.length) return;
       let idx = Math.max(0, Math.min(startIndex, images.length - 1));
       const modal = document.getElementById("imageGalleryModal");
-      const preview = document.getElementById("imageGalleryPreviewCard");
+      const previewImg = document.getElementById("imageGalleryPreviewImg");
       const meta = document.getElementById("imageGalleryPreviewMeta");
-      if (!modal || !preview) return;
+      if (!modal || !previewImg) return;
       modal.style.display = "flex";
       modal.setAttribute("aria-hidden", "false");
       function show() {
         const img = images[idx];
         const src = img.local_path || img.uri || "";
-        preview.innerHTML = `<img src="${escapeHtml(src)}" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:4px;">`;
+        previewImg.src = src;
         meta.textContent = (img.type || "이미지") + ` (${idx + 1}/${images.length})`;
       }
       show();
-      modal.onclick = function(e) { if (e.target === modal) { modal.style.display = "none"; modal.setAttribute("aria-hidden", "true"); modal.onclick = null; } };
+      modal.onclick = function(e) { if (e.target === modal) { closeGallery(); } };
+      document.getElementById("imageGalleryCloseBtn").onclick = closeGallery;
+      function closeGallery() {
+        modal.style.display = "none";
+        modal.setAttribute("aria-hidden", "true");
+        modal.onclick = null;
+        const cb = document.getElementById("imageGalleryCloseBtn");
+        if (cb) cb.onclick = null;
+        document.removeEventListener("keydown", modal._keyHandler);
+      }
       // Keyboard nav
       const handler = function(e) {
         if (e.key === "Escape") { modal.style.display = "none"; modal.setAttribute("aria-hidden", "true"); document.removeEventListener("keydown", handler); return; }
         if (e.key === "ArrowLeft" && idx > 0) { idx--; show(); }
         if (e.key === "ArrowRight" && idx < images.length - 1) { idx++; show(); }
       };
+      document.removeEventListener("keydown", modal._keyHandler);
       document.addEventListener("keydown", handler);
       modal._keyHandler = handler;
     }
