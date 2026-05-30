@@ -849,8 +849,16 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
             items = []
             if payload.image_items:
                 items = [{"type": it.get("type", "추가"), "uri": it.get("uri", "")} for it in payload.image_items if it.get("uri")]
-            elif payload.cover_image_url:
-                items = [{"type": "앞면", "uri": payload.cover_image_url}]
+            if payload.cover_image_url:
+                items.append({"type": "앞면", "uri": payload.cover_image_url})
+            # Aladin: scrape extra images from product detail page
+            if source == "ALADIN" and source_ext_id:
+                try:
+                    from app.services.providers import _fetch_aladin_images_from_web
+                    extra = _fetch_aladin_images_from_web(source_ext_id, source_ext_id)
+                    items.extend(extra)
+                except Exception:
+                    pass
             if items:
                 download_images(owned_item_id=owned_item_id, image_items=items, source=source, static_dir=static_dir, source_external_id=source_ext_id)
         except Exception:
