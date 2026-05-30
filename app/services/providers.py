@@ -2476,6 +2476,42 @@ def _fetch_aladin_tracks_from_web(item_id: str, isbn: str) -> list[dict[str, Any
     return tracks
 
 
+
+def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any]]:
+    """Scrape product description images from Aladin product introduce page."""
+    url = "https://www.aladin.co.kr/shop/product/getContents.aspx"
+    params = {"ISBN": isbn, "name": "Introduce", "type": "0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9",
+        "Referer": f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}",
+        "X-Requested-With": "XMLHttpRequest",
+    }
+    try:
+        with _make_http_client() as client:
+            response = _get_with_retry(client, url, params=params, headers=headers)
+            response.raise_for_status()
+            html = response.text
+    except Exception:
+        return []
+
+    import re as _re
+    images: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for m in _re.finditer(r'<img[^>]+src="([^"]+)"', html):
+        src = m.group(1)
+        if not src.startswith("http"):
+            continue
+        if src in seen:
+            continue
+        seen.add(src)
+        alt_match = _re.search(r'alt="([^"]*)"', m.group(0))
+        alt = alt_match.group(1) if alt_match else ""
+        images.append({"type": alt or "상세", "uri": src})
+
+    return images
+
 def fetch_aladin_track_items(item_id: str) -> list[dict[str, Any]]:
     """Public helper: fetch Aladin tracklist for a given ItemId. Returns [] on failure."""
     try:
