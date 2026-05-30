@@ -253,7 +253,7 @@ def get_collection_dashboard() -> dict[str, Any]:
         box_set_items = box_row[0] if box_row else 0
         master_row = conn.execute("SELECT COUNT(*) FROM album_master").fetchone()
         total_master_count = master_row[0] if master_row else 0
-        spotify_row = conn.execute("SELECT COUNT(DISTINCT album_master_id) FROM album_master_external_ref WHERE UPPER(source_code) = 'SPOTIFY'").fetchone()
+        spotify_row = conn.execute("SELECT COUNT(*) FROM album_master WHERE spotify_album_id IS NOT NULL AND spotify_album_id != ''").fetchone()
         spotify_master_count = spotify_row[0] if spotify_row else 0
 
         audio_row = conn.execute(
