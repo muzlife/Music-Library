@@ -43352,6 +43352,13 @@ async function loadDashboardClimate() {
     async function refreshHomeManageContext(ownedItemId, opts = {}) {
       const targetOwnedItemId = Number(ownedItemId || 0);
       if (targetOwnedItemId <= 0) return;
+      // URL hash 갱신 — 직접 링크 공유/복원용
+      if (!opts._fromHash) {
+        const newHash = `#item/${targetOwnedItemId}`;
+        if (window.location.hash !== newHash) {
+          history.pushState(null, "", newHash);
+        }
+      }
       const keepMasterContext = Boolean(opts.keepMasterContext ?? homeSelectedMasterId);
       const masterId = Number(opts.masterId ?? homeSelectedMasterId ?? 0);
       if (keepMasterContext && masterId > 0 && opts.reloadMaster !== false) {
@@ -45714,6 +45721,8 @@ async function loadDashboardClimate() {
     function clearHomeEditor() {
       homeSelectedMasterId = null;
       homeSelectedItemId = null;
+      // URL hash 클리어
+      if (window.location.hash.startsWith("#item/")) history.pushState(null, "", " ");
       homeInlineEditorCollapsed = false;
       homeSelectedSourceCode = null;
       homeSelectedSourceExternalId = null;
@@ -56907,7 +56916,29 @@ async function loadDashboardClimate() {
       const routeShellMode = shellModeFromPath();
       appShellMode = routeShellMode;
       applyRouteSelectedShellMode(routeShellMode);
+      // hash 변경 시 아이템 복원
+      const hashItemId = _hashItemId();
+      if (hashItemId && hashItemId !== Number(homeSelectedItemId || 0)) {
+        refreshHomeManageContext(hashItemId, { _fromHash: true });
+      }
     });
+
+    // ── hash 라우팅 헬퍼 ──────────────────────────────────────────────────────
+    function _hashItemId() {
+      const m = window.location.hash.match(/^#item\/(\d+)$/);
+      return m ? Number(m[1]) : null;
+    }
+
+    // 페이지 로드 시 hash로 직접 이동
+    (function _restoreHashRoute() {
+      const itemId = _hashItemId();
+      if (!itemId) return;
+      // 초기화 완료 후 약간의 딜레이를 두고 열기 (탭·세션 초기화 대기)
+      setTimeout(() => {
+        switchMediaMode("manage");
+        refreshHomeManageContext(itemId, { _fromHash: true });
+      }, 800);
+    })();
   </script>
 </body>
 </html>
