@@ -41210,35 +41210,56 @@ function initDashboardDrilldown() {
     }
 
     function renderDashboardCollector(d) {
-      var b=document.getElementById('homeDashCollectorBody'); if(!b)return;
-      var fc=formatCount;
-      b.innerHTML='<div class="dash-collector-grid">'+
-        '<div class="dash-collector-item" data-dash-drilldown="sig_direct" style="cursor:pointer;"><span class="dash-collector-icon">✍️</span><span class="dash-collector-value">'+fc(d.signed_items||0)+'</span><span class="dash-collector-label">싸인본</span></div>'+
-        '<div class="dash-collector-item" data-dash-drilldown="limited_edition" style="cursor:pointer;"><span class="dash-collector-icon">💎</span><span class="dash-collector-value">'+fc(d.limited_items||0)+'</span><span class="dash-collector-label">한정반</span></div>'+
-        '<div class="dash-collector-item"><span class="dash-collector-icon">📀</span><span class="dash-collector-value">'+fc(d.multi_disc_items||0)+'</span><span class="dash-collector-label">멀티디스크</span></div>'+
-        '<div class="dash-collector-item"><span class="dash-collector-icon">🎗️</span><span class="dash-collector-value">'+fc(d.obi_items||0)+'</span><span class="dash-collector-label">OBI</span></div>'+
-        '<div class="dash-collector-item" data-dash-drilldown="promo_items" style="cursor:pointer;"><span class="dash-collector-icon">📢</span><span class="dash-collector-value">'+fc(d.promo_items||0)+'</span><span class="dash-collector-label">홍보반</span></div>'+
-        '<div class="dash-collector-item" data-dash-drilldown="other_items" style="cursor:pointer;"><span class="dash-collector-icon">📦</span><span class="dash-collector-value">'+fc(d.box_set_items||0)+'</span><span class="dash-collector-label">박스세트</span></div>'+
-      '</div>';
+      var b = document.getElementById('homeDashCollectorBody'); if (!b) return;
+      var fc = formatCount;
+      var items = [
+        { num: d.signed_items||0,     lbl:'싸인본',    color:'#fbbf24', drill:'sig_direct'     },
+        { num: d.limited_items||0,    lbl:'한정반',    color:'#a78bfa', drill:'limited_edition' },
+        { num: d.multi_disc_items||0, lbl:'멀티디스크', color:'#22d3ee', drill:null              },
+        { num: d.obi_items||0,        lbl:'OBI',       color:'#f9a8d4', drill:null              },
+        { num: d.promo_items||0,      lbl:'홍보반',    color:'#fb923c', drill:'promo_items'     },
+        { num: d.box_set_items||0,    lbl:'박스세트',   color:'#6b7280', drill:'other_items'     },
+      ];
+      b.innerHTML = '<div class="dash-tile-grid">' +
+        items.map(function(it) {
+          var drill = it.drill ? ' data-dash-drilldown="'+it.drill+'"' : '';
+          return '<div class="dash-tile"'+drill+'>' +
+            '<div class="dash-tile__num" style="color:'+it.color+';">'+fc(it.num)+'</div>' +
+            '<div class="dash-tile__lbl">'+it.lbl+'</div>' +
+            '</div>';
+        }).join('') +
+        '</div>';
     }
 
     function renderDashboardAlerts(d) {
-      var b=document.getElementById('homeDashAlertsBody'); if(!b)return;
-      var fc=formatCount;
-      var unassigned=0;
-      for(var i=0;i<(d.by_domain||[]).length;i++){if(d.by_domain[i].value==='UNASSIGNED')unassigned=d.by_domain[i].count;}
-      var alerts=[
-        {l:'소스 미연결',c:d.source_unlinked_items||0,cls:(d.source_unlinked_items>0?'alert-critical':'alert-info')},
-        {l:'마스터 미연결',c:d.master_unlinked_items||0,cls:(d.master_unlinked_items>0?'alert-critical':'alert-info')},
-        {l:'커버 없음',c:d.cover_missing_items||0,cls:(d.cover_missing_items>0?'alert-warning':'alert-info')},
-        {l:'장르 없음',c:d.genre_missing_items||0,cls:(d.genre_missing_items>0?'alert-warning':'alert-info')},
-        {l:'미배치',c:d.unslotted_in_collection_items||0,cls:(d.unslotted_in_collection_items>0?'alert-warning':'alert-info')},
-        {l:'도메인 미지정',c:unassigned,cls:'alert-info'},
+      var b = document.getElementById('homeDashAlertsBody'); if (!b) return;
+      var fc = formatCount;
+      var unassigned = 0;
+      for (var i = 0; i < (d.by_domain||[]).length; i++) {
+        if (d.by_domain[i].value === 'UNASSIGNED') unassigned = d.by_domain[i].count;
+      }
+      function alertColor(count, severity) {
+        if (count === 0) return '#4ade80';
+        if (severity === 'critical') return '#f87171';
+        if (severity === 'warning')  return '#fb923c';
+        return '#60a5fa';
+      }
+      var items = [
+        { lbl:'소스 미연결',   c: d.source_unlinked_items||0,         sev:'critical', drill:'source_unlinked'  },
+        { lbl:'마스터 미연결', c: d.master_unlinked_items||0,         sev:'critical', drill:'master_unlinked'  },
+        { lbl:'커버 없음',     c: d.cover_missing_items||0,           sev:'warning',  drill:'cover_missing'    },
+        { lbl:'장르 없음',     c: d.genre_missing_items||0,           sev:'warning',  drill:'genre_missing'    },
+        { lbl:'미배치',        c: d.unslotted_in_collection_items||0, sev:'warning',  drill:'unslotted'        },
+        { lbl:'도메인 미지정', c: unassigned,                          sev:'info',     drill:'genre_missing'    },
       ];
-      var h='<div class="dash-alert-grid">';
-      for(var j=0;j<alerts.length;j++){var dk=(alerts[j].l==='소스 미연결'?'source_unlinked':alerts[j].l==='마스터 미연결'?'master_unlinked':alerts[j].l==='커버 없음'?'cover_missing':alerts[j].l==='장르 없음'?'genre_missing':alerts[j].l==='미배치'?'unslotted':'genre_missing');h+='<div class="dash-alert-item '+alerts[j].cls+'" data-dash-drilldown="'+dk+'" style="cursor:pointer;"><span>'+alerts[j].l+'</span><span class="alert-count">'+fc(alerts[j].c)+'</span></div>';}
-      h+='</div>';
-      b.innerHTML=h;
+      b.innerHTML = '<div class="dash-tile-grid">' +
+        items.map(function(it) {
+          return '<div class="dash-tile" data-dash-drilldown="'+it.drill+'">' +
+            '<div class="dash-tile__num" style="color:'+alertColor(it.c, it.sev)+';">'+fc(it.c)+'</div>' +
+            '<div class="dash-tile__lbl">'+it.lbl+'</div>' +
+            '</div>';
+        }).join('') +
+        '</div>';
     }
 
     function renderDashboardRegImport(d) {
