@@ -16711,9 +16711,9 @@
               </div>
             </div>
 
-            <!-- Card 5: 포맷 × 도메인 + 발매국가 (medium) -->
-            <div class="dash-card" data-accent="pressing" data-widget-id="card-format-pressing" data-widget-label="포맷·발매 × 도메인" data-size="1/2" data-rows="2" data-role="bar-list">
-              <div class="dash-card__head"><span class="dash-card__dot"></span>포맷·발매</div>
+            <!-- Card 5: 발매 국가 -->
+            <div class="dash-card" data-accent="pressing" data-widget-id="card-format-pressing" data-widget-label="발매" data-size="1/2" data-rows="2" data-role="bar-list">
+              <div class="dash-card__head"><span class="dash-card__dot"></span>발매</div>
               <div id="homeDashFormatPressingBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
               </div>
@@ -41234,51 +41234,25 @@ function initDashboardDrilldown() {
 
     function renderDashboardFormatPressing(d) {
       var b = document.getElementById('homeDashFormatPressingBody'); if (!b) return;
-      var fr = d.by_format_domain||[], pr = (d.by_pressing_domain||[]).slice(0,10);
-      var fms = ['LP','CD','CASSETTE'], dms = ['KOREA','WESTERN','WORLD_OTHER'];
-      var dmColors = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa'};
-      var fl = {}; for (var i = 0; i < fr.length; i++) { fl[fr[i].format+'|'+fr[i].domain] = fr[i].count||0; }
+      var pr = (d.by_pressing_domain||[]).slice(0,10);
       var fc = formatCount;
-      // 포맷×도메인: 각 포맷을 bar row로 (도메인별 색상 파이)
-      var h = '<div class="dash-kpi-sub-label" style="margin-bottom:6px;">포맷 × 도메인</div>';
-      for (var f = 0; f < fms.length; f++) {
-        var total = 0; for (var dd = 0; dd < dms.length; dd++) total += fl[fms[f]+'|'+dms[dd]]||0;
-        if (!total) continue;
-        h += '<div class="dash-fin-bar-row" style="margin-bottom:4px;">' +
-          '<span class="dash-fin-bar-row__lbl" style="font-weight:700;">'+fms[f]+'</span>' +
-          '<div class="dash-fin-bar-row__track" style="display:flex;overflow:hidden;">';
-        for (var d2 = 0; d2 < dms.length; d2++) {
-          var v = fl[fms[f]+'|'+dms[d2]]||0; if (!v) continue;
-          var pct = Math.round(v/total*100);
-          h += '<div style="height:100%;width:'+pct+'%;background:'+(dmColors[dms[d2]]||'#888')+';transition:width 0.4s;" title="'+_dLabel(dms[d2])+': '+fc(v)+'"></div>';
-        }
-        h += '</div><span class="dash-fin-bar-row__val">'+fc(total)+'</span></div>';
-      }
-      // 도메인 범례
-      h += '<div style="display:flex;gap:8px;margin:4px 0 10px;flex-wrap:wrap;">';
-      for (var dm = 0; dm < dms.length; dm++) {
-        h += '<span style="font-size:0.6rem;display:flex;align-items:center;gap:3px;opacity:0.7;">' +
-          '<span style="width:8px;height:8px;border-radius:2px;background:'+(dmColors[dms[dm]]||'#888')+';flex-shrink:0;"></span>'+_dLabel(dms[dm])+'</span>';
-      }
-      h += '</div>';
-      // 프레싱 국가
-      h += '<div class="dash-kpi-sub-label" style="margin-bottom:6px;">발매 국가 Top 10</div>';
       var mp = Math.max(1, pr.reduce(function(m,x){return Math.max(m,x.count||0);}, 0));
       var pc2 = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316'};
+      var h = '';
       for (var q = 0; q < pr.length; q++) {
         var r = pr[q]; var pct2 = Math.round((r.count||0)/mp*100);
-        h += '<div class="dash-fin-bar-row" style="margin-bottom:2px;">' +
-          '<span class="dash-fin-bar-row__lbl" style="width:88px;font-size:0.65rem;" title="'+escapeHtml(r.pressing_country||'')+'">'+escapeHtml(r.pressing_country||'')+'</span>' +
+        h += '<div class="dash-fin-bar-row" style="margin-bottom:3px;">' +
+          '<span class="dash-fin-bar-row__lbl" style="width:88px;font-size:0.67rem;" title="'+escapeHtml(r.pressing_country||'')+'">'+escapeHtml(r.pressing_country||'')+'</span>' +
           '<div class="dash-fin-bar-row__track"><div class="dash-fin-bar-row__fill" style="width:'+pct2+'%;background:'+(pc2[r.domain]||'#888')+'"></div></div>' +
           '<span class="dash-fin-bar-row__val" style="width:36px;">'+fc(r.count)+'</span>' +
           '</div>';
       }
-      b.innerHTML = h;
+      b.innerHTML = h || '<div class="mini muted">데이터 없음</div>';
     }
 
     function renderDashboardArtistTimeline(d) {
       var b=document.getElementById('homeDashArtistTimelineBody'); if(!b)return;
-      var artists=(d.by_artist_decade||[]).slice(0,12);
+      var artists=(d.by_artist_decade||[]).slice(0,10);
       if(!artists.length){b.innerHTML='<div class="mini muted">데이터 없음</div>';return;}
       var minD=3000,maxD=0;
       for(var i=0;i<artists.length;i++){if(artists[i].min_decade<minD)minD=artists[i].min_decade;if(artists[i].max_decade>maxD)maxD=artists[i].max_decade;}
