@@ -45132,7 +45132,6 @@ async function loadDashboardClimate() {
         setTextIfPresent("homeDashDirectSigned", formatCount(data.direct_signed_items ?? 0));
         setTextIfPresent("homeDashPurchaseSigned", formatCount(data.purchase_signed_items ?? 0));
         setTextIfPresent("homeDashLimited", formatCount(data.limited_items ?? 0));
-        const _musicTotal = Number(data.music_items ?? 0);
         const _fmtQ = (n, tot) => { const v = Number(n ?? 0); if (!v) return "0"; if (!tot) return formatCount(v); const pct = Math.round((v / tot) * 100); return `${formatCount(v)} (${pct}%)`; };
         setTextIfPresent("homeDashGenreMissing", _fmtQ(data.genre_missing_items, _musicTotal));
         setTextIfPresent("homeDashFormatMissing", _fmtQ(data.media_missing_items, _musicTotal));
