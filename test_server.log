@@ -1,0 +1,8 @@
+INFO:     Started server process [82903]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8101 (Press CTRL+C to quit)
+[POST] /test
+Headers: Headers({'host': '127.0.0.1:8101', 'user-agent': 'curl/8.7.1', 'accept': '*/*', 'cookie': 'mycookie=myvalue'})
+Cookies: {'mycookie': 'myvalue'}
+INFO:     127.0.0.1:52839 - "POST /test HTTP/1.1" 200 OK
