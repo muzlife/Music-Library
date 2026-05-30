@@ -816,6 +816,7 @@ class AlbumMasterImportVariantsRequest(BaseModel):
     release_type: ReleaseType | None = None
     purchase_source: str | None = None
     memory_note: str | None = None
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)
     skip_if_owned: bool = True
@@ -1035,6 +1036,7 @@ class OwnedItemCreate(BaseModel):
     storage_slot_id: int | None = None
     thickness_mm: int | None = Field(default=None, ge=0)
     notes: str | None = None
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)
 
@@ -1096,6 +1098,7 @@ class OwnedItemListItem(BaseModel):
     is_promotional_not_for_sale: bool | None = None
     has_audio: bool = False
     audio_asset_count: int = 0
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     subtype_labels: list[str] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)
@@ -1518,6 +1521,7 @@ class OwnedItemDetailResponse(BaseModel):
     goods_detail: GoodsDetailCreate | None = None
     has_audio: bool = False
     audio_asset_count: int = 0
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     subtype_labels: list[str] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)
