@@ -45125,7 +45125,7 @@ async function loadDashboardClimate() {
           const signed = formatCount(data.signed_items||0);
           const limited = formatCount(data.limited_items||0);
           const boxSet = formatCount(data.box_set_items||0);
-          setTextIfPresent("homeDashCollectorBar", "싸인 " + signed + " 한정 " + limited + " 박스 " + boxSet);
+          setTextIfPresent("homeDashCollectorBar", "싸인 " + signed + " 한정 " + limited + " 박스세트 " + boxSet);
         }
         {
           const slotted = Number(data.slotted_in_collection_items ?? 0);
