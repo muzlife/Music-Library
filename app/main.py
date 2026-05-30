@@ -452,10 +452,12 @@ async def auth_guard(request: Request, call_next):
         "/owned-items/5074",
         "/owned-items/5074/auto-master",
         "/aladin-discogs-backfill/run",
+        "/owned-items/5074/sync-metadata",
         "/refresh-images",
         "/owned-items/5074",
         "/owned-items/5074/auto-master",
         "/aladin-discogs-backfill/run",
+        "/owned-items/5074/sync-metadata",
         "/spotify/callback",
     }
     if path in allowed_paths:
@@ -2913,6 +2915,10 @@ def _run_metadata_sync(
             )
             if not updated_fields:
                 skipped_count += 1
+                # Queue image download even if no metadata to update
+                _SYNC_IMAGE_QUEUE.append((
+                    owned_item_id, source_code, source_external_id, snapshot
+                ))
                 _record(MetadataSyncItemResult(
                     owned_item_id=owned_item_id,
                     source_code=source_code,
