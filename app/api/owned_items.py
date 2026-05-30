@@ -839,19 +839,45 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
     import threading
     from pathlib import Path
     from app.services.image_store import download_images
+    from ..db import get_conn
     source = (payload.source_code or "").strip().upper()
     if not source or source == "MANUAL":
         return
     static_dir = Path(__file__).resolve().parent.parent / "static"
-    source_ext_id = payload.source_external_id
+    source_ext_id = str(payload.source_external_id or "").strip() or None
+    music = payload.music_detail  # image data lives under music_detail, not at payload top level
+
     def _run():
         try:
-            items = []
-            if payload.image_items:
-                items = [{"type": it.get("type", "추가"), "uri": it.get("uri", "")} for it in payload.image_items if it.get("uri")]
-            if payload.cover_image_url:
-                items.append({"type": "앞면", "uri": payload.cover_image_url})
-            # Aladin: scrape extra images from product detail page
+            items: list[dict] = []
+
+            # 1. music_detail.image_items — Discogs 상세 로드 시 채워짐
+            if music and music.image_items:
+                items = [
+                    {"type": it.get("type") or "추가", "uri": it.get("uri") or ""}
+                    for it in music.image_items if it.get("uri")
+                ]
+
+            # 2. music_detail.cover_image_url — Discogs thumbnail, Aladin 커버
+            cover = str((music.cover_image_url if music else None) or "").strip()
+            if cover and not any(it.get("uri") == cover for it in items):
+                items.insert(0, {"type": "앞면", "uri": cover})
+
+            # 3. ManiaDB: 검색 결과에는 이미지 없음 → snapshot에서 가져오기
+            if source == "MANIADB" and source_ext_id and not items:
+                try:
+                    from app import main as _main_mod
+                    snap = _main_mod.get_source_release_snapshot(source="MANIADB", external_id=source_ext_id)
+                    snap_images = list((snap or {}).get("image_items") or [])
+                    snap_cover = str((snap or {}).get("cover_image_url") or "").strip()
+                    if snap_images:
+                        items = [{"type": it.get("type") or "추가", "uri": it.get("uri") or ""} for it in snap_images if it.get("uri")]
+                    elif snap_cover:
+                        items = [{"type": "앞면", "uri": snap_cover}]
+                except Exception:
+                    pass
+
+            # 4. Aladin: 상품 상세 페이지에서 추가 이미지 스크레이핑
             if source == "ALADIN" and source_ext_id:
                 try:
                     from app.services.providers import _fetch_aladin_images_from_web
@@ -859,8 +885,15 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
                     items.extend(extra)
                 except Exception:
                     pass
+
             if items:
-                download_images(owned_item_id=owned_item_id, image_items=items, source=source, static_dir=static_dir, source_external_id=source_ext_id)
+                download_images(
+                    owned_item_id=owned_item_id,
+                    image_items=items,
+                    source=source,
+                    static_dir=static_dir,
+                    source_external_id=source_ext_id,
+                )
         except Exception:
             pass
     threading.Thread(target=_run, daemon=True).start()
@@ -897,8 +930,17 @@ def refresh_images(request: Request, owned_item_id: int | None = None, limit: in
             except Exception: pass
         try:
             r = download_images(owned_item_id=oid, image_items=img_items, source=src, static_dir=static_dir, source_external_id=ext_id)
-            if r: refreshed += 1
-            else: skipped += 1
+            if r:
+                import json as _json
+                conn2 = get_conn()
+                with conn2:
+                    conn2.execute(
+                        "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
+                        (_json.dumps(r, ensure_ascii=False), oid)
+                    )
+                refreshed += 1
+            else:
+                skipped += 1
         except Exception: skipped += 1
     return {"refreshed": refreshed, "skipped": skipped}
 
