@@ -16488,8 +16488,6 @@
     /* Discogs-style clean gallery */
     .image-gallery-modal._local-mode {
       background: rgba(0,0,0,0.94) !important;
-      justify-content: center;
-      align-items: center;
     }
     .image-gallery-modal._local-mode .image-gallery-panel {
       background: transparent !important;
@@ -16499,27 +16497,26 @@
       max-height: 100vh !important;
       padding: 0 !important;
       width: auto !important;
-    }
-    .image-gallery-modal._local-mode .image-gallery-head,
-    .image-gallery-modal._local-mode .image-gallery-side,
-    .image-gallery-modal._local-mode .image-gallery-list,
-    .image-gallery-modal._local-mode .image-gallery-body {
-      display: none !important;
-    }
-    .image-gallery-modal._local-mode .image-gallery-preview {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 100vw;
-      height: 100vh;
+    }
+    .image-gallery-modal._local-mode .image-gallery-head,
+    .image-gallery-modal._local-mode .image-gallery-side,
+    .image-gallery-modal._local-mode .image-gallery-list {
+      display: none !important;
+    }
+    .image-gallery-modal._local-mode .image-gallery-body {
+      padding: 0 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent !important;
     }
     .image-gallery-modal._local-mode .image-gallery-preview-card {
       border: none !important;
       background: transparent !important;
       padding: 0 !important;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     .image-gallery-modal._local-mode #imageGalleryPreviewImg {
       max-width: 90vw;
@@ -16542,6 +16539,12 @@
       right: 20px;
       z-index: 10;
       opacity: 0.8;
+    }
+    .image-gallery-modal._local-mode #imageGalleryOpenOriginal {
+      position: fixed;
+      top: 20px;
+      right: 60px;
+      z-index: 10;
     }
   </style>
 </head>
