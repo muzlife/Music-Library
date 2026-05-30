@@ -2425,8 +2425,8 @@ def _fetch_aladin_tracks_from_web(item_id: str, isbn: str) -> list[dict[str, Any
     The TTB API ``OptResult=Tracklist`` rarely returns trackList for music items;
     the Introduce AJAX endpoint is more reliable.
     """
-    url = "https://www.aladin.co.kr/shop/product/getContents.aspx"
-    params = {"ISBN": isbn, "name": "Introduce", "type": "0"}
+    url = f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}"
+    params = {}
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -2479,17 +2479,17 @@ def _fetch_aladin_tracks_from_web(item_id: str, isbn: str) -> list[dict[str, Any
 
 def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any]]:
     """Scrape product description images from Aladin product introduce page."""
-    url = "https://www.aladin.co.kr/shop/product/getContents.aspx"
-    params = {"ISBN": isbn, "name": "Introduce", "type": "0"}
+    url = f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}"
+    params = {}
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "ko-KR,ko;q=0.9",
         "Referer": f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}",
-        "X-Requested-With": "XMLHttpRequest",
     }
     try:
-        with _make_http_client() as client:
-            response = _get_with_retry(client, url, params=params, headers=headers)
+        import httpx as _httpx
+        with _httpx.Client(follow_redirects=True, headers=headers, timeout=15.0) as client:
+            response = client.get(url)
             response.raise_for_status()
             html = response.text
     except Exception:
@@ -2499,16 +2499,26 @@ def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any
     images: list[dict[str, Any]] = []
     seen: set[str] = set()
 
-    for m in _re.finditer(r'<img[^>]+src="([^"]+)"', html):
+    for m in _re.finditer(r'<img[^>]+(?:src|data-src)="([^"]+)"', html):
         src = m.group(1)
         if not src.startswith("http"):
+            if src.startswith("//"):
+                src = "https:" + src
+            else:
+                continue
+        # Only collect product images, skip UI/banner elements
+        if "/product/" not in src and "/cover" not in src:
             continue
         if src in seen:
             continue
         seen.add(src)
         alt_match = _re.search(r'alt="([^"]*)"', m.group(0))
         alt = alt_match.group(1) if alt_match else ""
-        images.append({"type": alt or "상세", "uri": src})
+        label = alt or "상세"
+        # Skip duplicate cover (already captured by cover_image_url)
+        if "cover500" in src and images:
+            label = "커버"
+        images.append({"type": label, "uri": src})
 
     return images
 
