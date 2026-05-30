@@ -40546,7 +40546,8 @@ function _resetAllSearchFilters() {
         const el = document.getElementById(id); if (el) el.checked = false;
       });
       const osEl = document.getElementById("homeOwnershipStatus"); if (osEl) osEl.value = "";
-      const pkgEl = document.getElementById("homeSearchPackaging"); if (pkgEl) pkgEl.value = "";
+      const pkgList = document.getElementById("homePackagingList");
+      if (pkgList) pkgList.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
     }
 
 function initDashboardDrilldown() {
@@ -40651,8 +40652,10 @@ function initDashboardDrilldown() {
           openAdminConsole("search");
           setTimeout(() => {
             _resetAllSearchFilters();
-            const pkgEl = document.getElementById("homeSearchPackaging");
-            if (pkgEl) pkgEl.value = "Box Set";
+            const pkgList = document.getElementById("homePackagingList");
+            if (pkgList) pkgList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+              if (cb.value === "Box Set") cb.checked = true;
+            });
             const details = document.getElementById("homeSearchAdvancedDetails");
             if (details) details.open = true;
             if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
