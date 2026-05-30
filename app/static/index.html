@@ -31200,7 +31200,8 @@
         const img = images[idx];
         const src = img.local_path || img.uri || "";
         previewImg.src = src;
-        meta.textContent = (img.type || "이미지") + ` (${idx + 1}/${images.length})`;
+        previewImg.alt = img.type || "이미지";
+        if (meta) meta.textContent = (img.type || "이미지") + ` (${idx + 1}/${images.length})`;
         const p = document.getElementById("_localGalleryPrev");
         const n = document.getElementById("_localGalleryNext");
         if (p) p.style.opacity = idx > 0 ? "1" : "0.3";
