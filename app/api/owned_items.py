@@ -81,6 +81,7 @@ router = APIRouter(tags=["owned-items"])
 # a silent runtime NameError inside a route handler.
 from app.main import (  # noqa: E402
     MUSIC_CATEGORIES,
+    OwnedItemRelationSaveRequest,
     RELEASE_TYPES,
     SIZE_GROUP_CODES,
     _apply_discogs_korean_artist_name_to_owned_item,
@@ -833,7 +834,6 @@ def duplicate_owned_item(
     )
 
 
-@router.post("/owned-items", response_model=OwnedItemCreateResponse)
 def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> None:
     """Schedule background image download for a newly created item."""
     import threading
@@ -866,6 +866,7 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
     threading.Thread(target=_run, daemon=True).start()
 
 
+@router.post("/owned-items", response_model=OwnedItemCreateResponse)
 def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCreateResponse:
     _validate_signature(payload)
     _validate_collection_rank(payload)
