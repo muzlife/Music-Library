@@ -2740,6 +2740,20 @@ def _download_images_for_item(
                     (_json.dumps(result, ensure_ascii=False), owned_item_id),
                 )
 
+def _has_local_images(owned_item_id: int) -> bool:
+    """Check if the item already has local images."""
+    try:
+        with _get_db_conn() as conn:
+            row = conn.execute(
+                "SELECT local_image_items_json FROM music_item_detail WHERE owned_item_id=?",
+                (owned_item_id,)
+            ).fetchone()
+            if row and row[0] and row[0] not in ("[]", "null", ""):
+                return True
+    except Exception:
+        pass
+    return False
+
 def _start_sync_image_download_thread() -> None:
     """Start background thread to process the sync image queue."""
     global _SYNC_IMAGE_THREAD, _SYNC_IMAGE_QUEUE, _SYNC_IMAGE_COUNT
@@ -2915,10 +2929,11 @@ def _run_metadata_sync(
             )
             if not updated_fields:
                 skipped_count += 1
-                # Queue image download even if no metadata to update
-                _SYNC_IMAGE_QUEUE.append((
-                    owned_item_id, source_code, source_external_id, snapshot
-                ))
+                # Queue image download even if no metadata to update (only if no images yet)
+                if not _has_local_images(owned_item_id):
+                    _SYNC_IMAGE_QUEUE.append((
+                        owned_item_id, source_code, source_external_id, snapshot
+                    ))
                 _record(MetadataSyncItemResult(
                     owned_item_id=owned_item_id,
                     source_code=source_code,
@@ -2944,10 +2959,11 @@ def _run_metadata_sync(
 
             db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
             updated_count += 1
-            # Queue for image download after sync completes
-            _SYNC_IMAGE_QUEUE.append((
-                owned_item_id, source_code, source_external_id, snapshot
-            ))
+            # Queue for image download after sync completes (only if no images yet)
+            if not _has_local_images(owned_item_id):
+                _SYNC_IMAGE_QUEUE.append((
+                    owned_item_id, source_code, source_external_id, snapshot
+                ))
             _record(MetadataSyncItemResult(
                 owned_item_id=owned_item_id,
                 source_code=source_code,
