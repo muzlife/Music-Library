@@ -1574,6 +1574,8 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
                 "hat_size": hat_size,
             }
 
+    local_image_items = row.get("local_image_items") or []
+
     return OwnedItemDetailResponse(
         id=int(row["id"]),
         label_id=_build_label_id(category_code, int(row["id"])),
