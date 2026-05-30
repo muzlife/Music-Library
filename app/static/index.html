@@ -12759,8 +12759,9 @@
     .dash-tile {
       background: var(--dash-card-bg);
       padding: 8px 8px 7px 10px;
-      display: flex; flex-direction: column; justify-content: center; gap: 1px;
+      display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px;
       cursor: pointer; transition: background 0.12s;
+      text-align: center;
     }
     .dash-tile:hover { background: var(--dash-card-bg-hover); }
     .dash-tile__num {
@@ -12793,7 +12794,7 @@
     .dash-fin-bar-row__lbl { width: 60px; font-size: 0.67rem; opacity: 0.65; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dash-fin-bar-row__track { flex: 1; height: 8px; border-radius: 4px; background: rgba(128,128,128,0.10); overflow: hidden; min-width: 0; }
     .dash-fin-bar-row__fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-    .dash-fin-bar-row__val { font-family: var(--font-mono); font-size: 0.63rem; max-width: 110px; text-align: right; opacity: 0.75; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash-fin-bar-row__val { font-family: var(--font-mono); font-size: 0.63rem; width: 80px; text-align: right; flex-shrink: 0; }
     /* ── 등록 페이스 ── */
     .dash-reg-month-fill {
       height: 100%; border-radius: 5px;
@@ -41177,13 +41178,20 @@ function initDashboardDrilldown() {
         '<div class="dash-fin-stat"><div class="dash-fin-stat__lbl">주요 통화</div><div class="dash-fin-stat__val" style="font-size:0.82rem;">KRW '+krwPct+'%</div></div>' +
         '</div>' +
         '<hr class="dash-kpi-divider">';
+      // 가요(KOREA)를 기준 max로 고정
+      var koreaEntry = bd.filter(function(x){return x.domain==='KOREA';})[0];
+      var baseMax = koreaEntry ? (koreaEntry.total_spend||1) : ms;
       for (var q = 0; q < bd.length; q++) {
         var dd = bd[q];
-        var pct = ms > 0 ? Math.round((dd.total_spend||0) / ms * 100) : 0;
+        var pct = baseMax > 0 ? Math.min(100, Math.round((dd.total_spend||0) / baseMax * 100)) : 0;
+        var color = cl[dd.domain]||'#888';
         h += '<div class="dash-fin-bar-row">' +
           '<span class="dash-fin-bar-row__lbl">'+escapeHtml(_dLabel(dd.domain))+'</span>' +
-          '<div class="dash-fin-bar-row__track"><div class="dash-fin-bar-row__fill" style="width:'+pct+'%;background:'+(cl[dd.domain]||'#888')+'"></div></div>' +
-          '<span class="dash-fin-bar-row__val">₩'+fc(dd.total_spend)+' (avg ₩'+fc(dd.avg_price)+')</span>' +
+          '<div class="dash-fin-bar-row__track"><div class="dash-fin-bar-row__fill" style="width:'+pct+'%;background:'+color+'"></div></div>' +
+          '<span class="dash-fin-bar-row__val" style="text-align:right;line-height:1.3;">' +
+            '<span style="display:block;font-size:0.66rem;opacity:0.9;">₩'+fc(dd.total_spend)+'</span>' +
+            '<span style="display:block;font-size:0.58rem;opacity:0.55;">avg ₩'+fc(dd.avg_price)+'</span>' +
+          '</span>' +
           '</div>';
       }
       b.innerHTML = h;
