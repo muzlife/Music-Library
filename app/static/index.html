@@ -31163,12 +31163,40 @@
       grid.innerHTML = _editLocalImages.map((item, i) => {
         const src = item.local_path || item.uri || "";
         const label = escapeHtml(item.type || "추가");
-        return `<div style="position:relative;display:inline-block;text-align:center;">
-          <img src="${escapeHtml(src)}" alt="${label}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--color-border);" onerror="this.style.opacity=0.3" />
+        return `<div style="position:relative;display:inline-block;text-align:center;cursor:pointer;" onclick="openLocalImageGallery(${i})">
+          <img src="${escapeHtml(src)}" alt="${label}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--theme-dashboard-border);" onerror="this.style.opacity=0.3" />
           <div style="font-size:0.65rem;margin-top:2px;opacity:0.7;">${label}</div>
-          <button type="button" onclick="deleteEditLocalImage(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;line-height:18px;padding:0;">✕</button>
+          <button type="button" onclick="event.stopPropagation();deleteEditLocalImage(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;line-height:18px;padding:0;">✕</button>
         </div>`;
       }).join("");
+    }
+
+    function openLocalImageGallery(startIndex) {
+      const images = _editLocalImages || [];
+      if (!images.length) return;
+      let idx = Math.max(0, Math.min(startIndex, images.length - 1));
+      const modal = document.getElementById("imageGalleryModal");
+      const preview = document.getElementById("imageGalleryPreviewCard");
+      const meta = document.getElementById("imageGalleryPreviewMeta");
+      if (!modal || !preview) return;
+      modal.style.display = "flex";
+      modal.setAttribute("aria-hidden", "false");
+      function show() {
+        const img = images[idx];
+        const src = img.local_path || img.uri || "";
+        preview.innerHTML = `<img src="${escapeHtml(src)}" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:4px;">`;
+        meta.textContent = (img.type || "이미지") + ` (${idx + 1}/${images.length})`;
+      }
+      show();
+      modal.onclick = function(e) { if (e.target === modal) { modal.style.display = "none"; modal.setAttribute("aria-hidden", "true"); modal.onclick = null; } };
+      // Keyboard nav
+      const handler = function(e) {
+        if (e.key === "Escape") { modal.style.display = "none"; modal.setAttribute("aria-hidden", "true"); document.removeEventListener("keydown", handler); return; }
+        if (e.key === "ArrowLeft" && idx > 0) { idx--; show(); }
+        if (e.key === "ArrowRight" && idx < images.length - 1) { idx++; show(); }
+      };
+      document.addEventListener("keydown", handler);
+      modal._keyHandler = handler;
     }
 
     function loadEditLocalImages(localImages) {
