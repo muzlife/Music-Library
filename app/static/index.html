@@ -12426,12 +12426,13 @@
     .dash-card__head {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.7rem;
+      gap: 6px;
+      font-size: 0.68rem;
       font-weight: 600;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       color: var(--theme-dashboard-text-dim);
+      opacity: 0.75;
       flex-shrink: 0;
     }
     .dash-card__dot {
@@ -12738,7 +12739,7 @@
 
     /* ── Exception Alert Grid ── */
     .dash-alert-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .dash-alert-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--theme-dashboard-border); font-size: 0.72rem; cursor: pointer; transition: all 0.15s; }
+    .dash-alert-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); font-size: 0.72rem; cursor: pointer; transition: background 0.15s; }
     .dash-alert-item:hover { background: var(--theme-dashboard-panel-soft); }
     .dash-alert-item .alert-count { font-family: var(--font-mono); font-weight: 700; font-size: 0.9rem; }
     .dash-alert-item.alert-critical { border-left: 3px solid #ef4444; }
@@ -12747,7 +12748,7 @@
 
     /* ── Collector Grid ── */
     .dash-collector-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .dash-collector-item { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 8px; background: var(--theme-dashboard-panel-soft); border: 1px solid var(--theme-dashboard-border); text-align: center; }
+    .dash-collector-item { display: flex; flex-direction: column; align-items: center; padding: 10px 4px; border-radius: 10px; background: var(--theme-dashboard-panel-soft); text-align: center; }
     .dash-collector-icon { font-size: 1.1rem; margin-bottom: 2px; opacity: 0.7; }
     .dash-collector-value { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; letter-spacing: -0.04em; }
     .dash-collector-label { font-size: 0.6rem; opacity: 0.45; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.04em; }
