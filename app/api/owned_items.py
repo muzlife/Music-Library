@@ -864,6 +864,7 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
                 items.insert(0, {"type": "앞면", "uri": cover})
 
             # 3. ManiaDB: 검색 결과에는 이미지 없음 → snapshot에서 가져오기
+            #    snapshot에도 뒷면이 없으면 URL 패턴(_b.jpg)으로 뒷면 추가 시도
             if source == "MANIADB" and source_ext_id and not items:
                 try:
                     from app import main as _main_mod
@@ -874,6 +875,17 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
                         items = [{"type": it.get("type") or "추가", "uri": it.get("uri") or ""} for it in snap_images if it.get("uri")]
                     elif snap_cover:
                         items = [{"type": "앞면", "uri": snap_cover}]
+                    # 뒷면이 없으면 _f.jpg → _b.jpg 패턴으로 뒷면 URL 추가 시도
+                    has_back = any("뒷면" in (it.get("type") or "") for it in items)
+                    if not has_back and items:
+                        from app.services.providers import _maniadb_variant_cover_url, _extract_maniadb_album_id
+                        import re as _re
+                        album_id = _extract_maniadb_album_id(source_ext_id)
+                        seq_match = _re.search(r":(\d+)$", source_ext_id)
+                        variant_seq = seq_match.group(1) if seq_match else "1"
+                        back_url = _maniadb_variant_cover_url(album_id or "", variant_seq, "b") if album_id else None
+                        if back_url:
+                            items.append({"type": "뒷면", "uri": back_url})
                 except Exception:
                     pass
 
@@ -932,8 +944,7 @@ def refresh_images(request: Request, owned_item_id: int | None = None, limit: in
             r = download_images(owned_item_id=oid, image_items=img_items, source=src, static_dir=static_dir, source_external_id=ext_id)
             if r:
                 import json as _json
-                conn2 = get_conn()
-                with conn2:
+                with get_conn() as conn2:
                     conn2.execute(
                         "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
                         (_json.dumps(r, ensure_ascii=False), oid)
