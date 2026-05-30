@@ -188,24 +188,29 @@ def random_album() -> dict[str, Any]:
     with get_conn() as conn:
         conn.row_factory = __import__("sqlite3").Row
         row = conn.execute(
-            "SELECT COALESCE(NULLIF(oi.item_name_override,''), am.title) as title, "
+            "SELECT oi.id as owned_item_id, "
+            "COALESCE(NULLIF(oi.item_name_override,''), am.title) as title, "
             "oi.linked_artist_name as artist, am.release_year as release_year, "
-            "mid.cover_image_url as cover_url "
+            "mid.cover_image_url as cover_url, "
+            "ss.slot_code as slot_code "
             "FROM owned_item oi "
             "LEFT JOIN album_master am ON oi.linked_album_master_id = am.id "
             "LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id "
+            "LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id "
             "WHERE oi.status = 'IN_COLLECTION' "
             "ORDER BY RANDOM() LIMIT 1"
         ).fetchone()
     if row:
         year = str(row["release_year"] or "")
         return {
+            "owned_item_id": int(row["owned_item_id"] or 0),
             "title": str(row["title"] or ""),
             "artist": str(row["artist"] or ""),
             "year": year,
             "cover_url": str(row["cover_url"] or ""),
+            "slot_code": str(row["slot_code"] or ""),
         }
-    return {"title": None, "artist": None, "year": "", "cover_url": ""}
+    return {"owned_item_id": 0, "title": None, "artist": None, "year": "", "cover_url": "", "slot_code": ""}
 
 @router.patch("/storage-slots/{storage_slot_id}/owned-items/{owned_item_id}/order", response_model=SlotOrderMoveResponse)
 def move_owned_item_slot_order(
