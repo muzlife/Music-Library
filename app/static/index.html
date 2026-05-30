@@ -16542,23 +16542,23 @@
           </div>
           <div class="dashboard-kpi-item">
             <div class="kpi-head">장식장 점유</div>
-            <div class="kpi-value" id="homeDashSlotRate"></div>
-            <div class="dashboard-kpi-sub" id="homeDashSlotRateLabel"></div>
+            <div class="kpi-value" id="homeDashHeroSlotRate"></div>
+            <div class="dashboard-kpi-sub" id="homeDashHeroSlotRateLabel"></div>
           </div>
           <div class="dashboard-kpi-item">
             <div class="kpi-head">메타 보강</div>
-            <div class="kpi-value" id="homeDashMetaRate"></div>
-            <div class="dashboard-kpi-sub" id="homeDashMetaRateLabel"></div>
+            <div class="kpi-value" id="homeDashHeroMetaRate"></div>
+            <div class="dashboard-kpi-sub" id="homeDashHeroMetaRateLabel"></div>
           </div>
           <div class="dashboard-kpi-item">
             <div class="kpi-head">콜렉팅</div>
-            <div class="kpi-value" id="homeDashCollectorTotal"></div>
-            <div class="dashboard-kpi-sub" id="homeDashCollectorBar"></div>
+            <div class="kpi-value" id="homeDashHeroCollectorTotal"></div>
+            <div class="dashboard-kpi-sub" id="homeDashHeroCollectorBar"></div>
           </div>
           <div class="dashboard-kpi-item">
             <div class="kpi-head">소스</div>
-            <div class="kpi-value" id="homeDashSourceTotal"></div>
-            <div class="dashboard-kpi-sub" id="homeDashSourceBar"></div>
+            <div class="kpi-value" id="homeDashHeroSourceTotal"></div>
+            <div class="dashboard-kpi-sub" id="homeDashHeroSourceBar"></div>
           </div>
         </div>
         <!-- 탭 버튼 -->
@@ -16694,15 +16694,15 @@
             <!-- Card 16: 장식장 점유율 -->
             <div class="dash-card" data-widget-id="card-slot-rate" data-widget-label="장식장 점유율" data-size="1/4" data-accent="placement" data-rows="1/2" data-role="metric">
               <div class="dash-card__head"><span class="dash-card__dot"></span>장식장 점유율</div>
-              <div class="dash-card__value" id="homeDashSlotRate"></div>
-              <div class="dash-card__label" id="homeDashSlotRateLabel"></div>
+              <div class="dash-card__value" id="homeDashHeroSlotRate"></div>
+              <div class="dash-card__label" id="homeDashHeroSlotRateLabel"></div>
             </div>
 
             <!-- Card 17: 메타 보강률 -->
             <div class="dash-card" data-widget-id="card-meta-rate" data-widget-label="메타 보강률" data-size="1/4" data-accent="source" data-rows="1/2" data-role="metric">
               <div class="dash-card__head"><span class="dash-card__dot"></span>메타 보강률</div>
-              <div class="dash-card__value" id="homeDashMetaRate"></div>
-              <div class="dash-card__label" id="homeDashMetaRateLabel"></div>
+              <div class="dash-card__value" id="homeDashHeroMetaRate"></div>
+              <div class="dash-card__label" id="homeDashHeroMetaRateLabel"></div>
             </div>
 
             <!-- Card 18: 서명 음반 -->
@@ -45133,8 +45133,8 @@ async function loadDashboardClimate() {
           const signed = Number(data.signed_items||0);
           const limited = Number(data.limited_items||0);
           const boxSet = Number(data.box_set_items||0);
-          setTextIfPresent("homeDashCollectorTotal", formatCount(signed + limited + boxSet));
-          setTextIfPresent("homeDashCollectorBar", "싸인 " + formatCount(signed) + "  한정 " + formatCount(limited) + "  박스 " + formatCount(boxSet));
+          setTextIfPresent("homeDashHeroCollectorTotal", formatCount(signed + limited + boxSet));
+          setTextIfPresent("homeDashHeroCollectorBar", "싸인 " + formatCount(signed) + "  한정 " + formatCount(limited) + "  박스 " + formatCount(boxSet));
         }
         {
           const srcMap = {};
@@ -45144,12 +45144,27 @@ async function loadDashboardClimate() {
           });
           let srcTotal = 0;
           ["DISCOGS","MANIADB","ALADIN"].forEach(k => { srcTotal += (srcMap[k] || 0); });
-          setTextIfPresent("homeDashSourceTotal", formatCount(srcTotal));
+          setTextIfPresent("homeDashHeroSourceTotal", formatCount(srcTotal));
           const srcParts = [];
           ["DISCOGS","MANIADB","ALADIN"].forEach(k => {
             if (srcMap[k]) srcParts.push(k.substring(0,4) + " " + formatCount(srcMap[k]));
           });
-          setTextIfPresent("homeDashSourceBar", srcParts.join("  ") || "—");
+          setTextIfPresent("homeDashHeroSourceBar", srcParts.join("  ") || "—");
+        }
+                /* hero bar: slot rate */
+        {
+          const _inCol2 = Number(data.in_collection_items ?? 0);
+          const _slotted2 = Number(data.slotted_in_collection_items ?? 0);
+          const slotPct = _inCol2 > 0 ? Math.round(_slotted2 / _inCol2 * 100) : 0;
+          setTextIfPresent("homeDashHeroSlotRate", slotPct + "%");
+          setTextIfPresent("homeDashHeroSlotRateLabel", formatCount(_slotted2) + " / " + formatCount(_inCol2));
+        }
+        /* hero bar: meta rate */
+        {
+          const _srcUnlinked2 = Number(data.source_unlinked_items ?? 0);
+          const metaPct = _musicTotal > 0 ? Math.round((1 - _srcUnlinked2 / _musicTotal) * 100) : 0;
+          setTextIfPresent("homeDashHeroMetaRate", metaPct + "%");
+          setTextIfPresent("homeDashHeroMetaRateLabel", formatCount(_musicTotal - _srcUnlinked2) + " / " + formatCount(_musicTotal));
         }
         setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
         setTextIfPresent("homeDashDirectSigned", formatCount(data.direct_signed_items ?? 0));
@@ -45180,6 +45195,21 @@ async function loadDashboardClimate() {
           }
         }
         setTextIfPresent("homeDashBoxSet", formatCount(data.box_set_items ?? 0));
+                /* hero bar: slot rate */
+        {
+          const _inCol2 = Number(data.in_collection_items ?? 0);
+          const _slotted2 = Number(data.slotted_in_collection_items ?? 0);
+          const slotPct = _inCol2 > 0 ? Math.round(_slotted2 / _inCol2 * 100) : 0;
+          setTextIfPresent("homeDashHeroSlotRate", slotPct + "%");
+          setTextIfPresent("homeDashHeroSlotRateLabel", formatCount(_slotted2) + " / " + formatCount(_inCol2));
+        }
+        /* hero bar: meta rate */
+        {
+          const _srcUnlinked2 = Number(data.source_unlinked_items ?? 0);
+          const metaPct = _musicTotal > 0 ? Math.round((1 - _srcUnlinked2 / _musicTotal) * 100) : 0;
+          setTextIfPresent("homeDashHeroMetaRate", metaPct + "%");
+          setTextIfPresent("homeDashHeroMetaRateLabel", formatCount(_musicTotal - _srcUnlinked2) + " / " + formatCount(_musicTotal));
+        }
         setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
         setTextIfPresent("homeDashReg7d", formatCount(data.registered_last_7_days ?? 0));
         /* 1/4 cards */
