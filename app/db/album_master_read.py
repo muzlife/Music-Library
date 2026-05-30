@@ -514,6 +514,17 @@ def set_owned_item_linked_album_master(owned_item_id: int, album_master_id: int 
             "UPDATE owned_item SET linked_album_master_id = ?, updated_at = ? WHERE id = ?",
             (mid, utc_now_iso(), oid),
         )
+        # album_master_member 중복 멤버십 정리 — 마스터가 교체될 때 이전 항목 제거
+        if mid is not None:
+            conn.execute(
+                "DELETE FROM album_master_member WHERE owned_item_id = ? AND album_master_id != ?",
+                (oid, mid),
+            )
+        else:
+            conn.execute(
+                "DELETE FROM album_master_member WHERE owned_item_id = ?",
+                (oid,),
+            )
         return int(cur.rowcount or 0) > 0
 
 
