@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hahahoho Library — taste-skill UI/UX 디자인 리뷰</title>
+  <style>
+    :root {
+      --bg: #f4f4f0;
+      --surface: #ffffff;
+      --surface-2: #f9f9f6;
+      --ink: #171b20;
+      --ink-2: #3d4550;
+      --muted: #6b7280;
+      --line: #e2e4e8;
+      --teal: #0f766e;
+      --teal-soft: #d9f4f0;
+      --teal-mid: #5eaaa4;
+      --amber: #b45309;
+      --amber-soft: #fef3c7;
+      --red: #b91c1c;
+      --red-soft: #fee2e2;
+      --green: #166534;
+      --green-soft: #dcfce7;
+      --purple: #7c3aed;
+      --radius: 10px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    /* ── Layout ── */
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    .page-header {
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 48px;
+    }
+    .page-header-kicker {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--teal);
+      background: var(--teal-soft); border: 1px solid rgba(15,118,110,0.2);
+      border-radius: 99px; padding: 3px 10px; margin-bottom: 12px;
+    }
+    .page-header h1 {
+      font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+      color: var(--ink); line-height: 1.2; margin-bottom: 8px;
+    }
+    .page-header p { color: var(--muted); font-size: 14px; max-width: 560px; }
+
+    /* ── Score Card ── */
+    .score-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-bottom: 48px;
+    }
+    .score-card {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius-lg); padding: 20px;
+    }
+    .score-card-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .score-card-value { font-size: 32px; font-weight: 800; letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums; }
+    .score-card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .score-card.ok .score-card-value { color: var(--green); }
+    .score-card.warn .score-card-value { color: var(--amber); }
+    .score-card.fail .score-card-value { color: var(--red); }
+    .score-card.info .score-card-value { color: var(--teal); }
+
+    /* ── Section ── */
+    .section { margin-bottom: 56px; }
+    .section-head {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .section-head h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+    .section-badge {
+      font-size: 11px; font-weight: 600; border-radius: 99px;
+      padding: 2px 8px; letter-spacing: 0.04em;
+    }
+    .section-badge.fail { background: var(--red-soft); color: var(--red); }
+    .section-badge.warn { background: var(--amber-soft); color: var(--amber); }
+    .section-badge.ok { background: var(--green-soft); color: var(--green); }
+    .section-badge.info { background: var(--teal-soft); color: var(--teal); }
+
+    /* ── Audit Item ── */
+    .audit-list { display: flex; flex-direction: column; gap: 12px; }
+    .audit-item {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .audit-item-head {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 16px 20px;
+    }
+    .audit-icon {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; margin-top: 1px;
+    }
+    .audit-icon.fail { background: var(--red-soft); }
+    .audit-icon.warn { background: var(--amber-soft); }
+    .audit-icon.ok { background: var(--green-soft); }
+    .audit-icon.info { background: var(--teal-soft); }
+    .audit-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+    .audit-desc { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+    .audit-rule {
+      font-size: 11px; color: var(--muted);
+      border-top: 1px solid var(--line); padding: 10px 20px;
+      background: var(--surface-2);
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+    .audit-rule strong { color: var(--ink-2); }
+
+    /* ── Token Diff ── */
+    .token-diff {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: var(--line); border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 24px;
+    }
+    .token-diff-col { background: var(--surface); padding: 20px; }
+    .token-diff-col h3 {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+    .token-diff-col.before h3 { color: var(--red); }
+    .token-diff-col.after h3 { color: var(--teal); }
+    .token-diff-col pre {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 12px; line-height: 1.8; color: var(--ink-2);
+      overflow-x: auto;
+    }
+    .token-diff-col pre .del { color: var(--red); text-decoration: line-through; }
+    .token-diff-col pre .add { color: var(--teal); font-weight: 600; }
+    .token-diff-col pre .keep { color: var(--muted); }
+    .token-diff-col pre .comment { color: #9ca3af; font-style: italic; }
+
+    /* ── Color Swatch ── */
+    .swatch-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    .swatch {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+    }
+    .swatch-dot {
+      width: 44px; height: 44px; border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+    .swatch-name { font-size: 10px; color: var(--muted); text-align: center;
+      font-family: monospace; max-width: 52px; word-break: break-all; }
+
+    /* ── Component Preview ── */
+    .preview-block {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius-lg); overflow: hidden; margin-top: 20px;
+    }
+    .preview-block-label {
+      padding: 10px 16px; background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .preview-inner { padding: 24px; }
+
+    /* ── New Token Proposal ── */
+    .token-proposal {
+      background: #0f2826; border-radius: var(--radius-lg);
+      padding: 24px; margin-top: 20px;
+    }
+    .token-proposal pre {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 12px; line-height: 2; color: #a7f3d0;
+      overflow-x: auto;
+    }
+    .token-proposal pre .comment { color: #4ade80; opacity: 0.6; }
+    .token-proposal pre .var { color: #93c5fd; }
+    .token-proposal pre .val-teal { color: #5eead4; }
+    .token-proposal pre .val-neutral { color: #e2e8f0; }
+    .token-proposal pre .val-amber { color: #fcd34d; }
+    .token-proposal pre .val-red { color: #fca5a5; }
+    .token-proposal pre .val-ok { color: #86efac; }
+    .token-proposal pre .val-purple { color: #f87171; text-decoration: line-through; opacity: 0.5; }
+
+    /* ── Rule Checklist ── */
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .checklist li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 16px; background: var(--surface); border-radius: var(--radius);
+      border: 1px solid var(--line); font-size: 13px;
+    }
+    .checklist li .ci { font-size: 16px; flex-shrink: 0; margin-top: -1px; }
+    .checklist li .ct { color: var(--ink-2); }
+    .checklist li .ct strong { color: var(--ink); }
+
+    /* ── Component Fix Demo ── */
+    .demo-compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;
+    }
+    .demo-box {
+      border-radius: var(--radius); overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .demo-box-label {
+      padding: 8px 12px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+    }
+    .demo-box.before .demo-box-label { background: #fee2e2; color: var(--red); }
+    .demo-box.after .demo-box-label { background: var(--teal-soft); color: var(--teal); }
+    .demo-box-content { padding: 20px; background: #f6f6f1; }
+
+    /* ── OLD Selection (Before) ── */
+    .old-selected-item {
+      background: #f3e8ff; border: 1px solid rgba(139,92,246,0.36);
+      border-radius: 10px; padding: 12px 14px;
+      box-shadow: 0 2px 8px rgba(76,29,149,0.16);
+    }
+    .old-selected-title { font-size: 13px; font-weight: 600; color: #1f2a37; }
+    .old-selected-meta { font-size: 11px; color: #7c3aed; margin-top: 3px; }
+    .old-selected-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      background: #8b5cf6; color: white; border-radius: 4px;
+      padding: 2px 6px; margin-top: 6px; letter-spacing: 0.04em;
+    }
+
+    /* ── NEW Selection (After) ── */
+    .new-selected-item {
+      background: #d9f4f0; border: 1px solid rgba(15,118,110,0.3);
+      border-left: 3px solid #0f766e;
+      border-radius: 10px; padding: 12px 14px;
+      box-shadow: 0 2px 8px rgba(15,118,110,0.1);
+    }
+    .new-selected-title { font-size: 13px; font-weight: 600; color: #1f2a37; }
+    .new-selected-meta { font-size: 11px; color: #0f766e; margin-top: 3px;
+      font-family: "JetBrains Mono", monospace; }
+    .new-selected-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      background: #0f766e; color: white; border-radius: 4px;
+      padding: 2px 6px; margin-top: 6px; letter-spacing: 0.04em;
+    }
+
+    /* ── Format Chips ── */
+    .format-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .fchip {
+      font-size: 11px; font-weight: 600; border-radius: 6px;
+      padding: 3px 8px; border: 1px solid;
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0.04em;
+    }
+    /* Old — oversaturated */
+    .fchip.old-lp { background: #d9f4f0; border-color: #0f766e; color: #0f766e; }
+    .fchip.old-std { background: #fef3c7; border-color: #b45309; color: #b45309; }
+    .fchip.old-book { background: #dbeafe; border-color: #2563eb; color: #1d4ed8; }
+    .fchip.old-cassette { background: #fce7f3; border-color: #db2777; color: #be185d; }
+    .fchip.old-tape { background: #e0e7ff; border-color: #4338ca; color: #3730a3; }
+    .fchip.old-oversize { background: #ede9fe; border-color: #7c3aed; color: #6d28d9; }
+    /* New — desaturated, harmonious */
+    .fchip.new-lp { background: #d1ece9; border-color: #4a9e98; color: #0d5e58; }
+    .fchip.new-std { background: #faecd5; border-color: #c47b30; color: #7a4810; }
+    .fchip.new-book { background: #dce8f5; border-color: #5d89b4; color: #2a5a82; }
+    .fchip.new-cassette { background: #f5e1ec; border-color: #b06b8b; color: #7a2d50; }
+    .fchip.new-tape { background: #dfe4f2; border-color: #6670a8; color: #3a4478; }
+    .fchip.new-oversize { background: #e3e2ed; border-color: #7a7aa8; color: #48487a; }
+
+    /* ── Stat number example ── */
+    .stat-row { display: flex; gap: 20px; }
+    .stat-item { flex: 1; }
+    .stat-num-old { font-size: 28px; font-weight: 700; color: #1f2a37; }
+    .stat-num-new {
+      font-size: 28px; font-weight: 700; color: #1f2a37;
+      font-family: "JetBrains Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px;
+      text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Priority Table ── */
+    .priority-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .priority-table th {
+      text-align: left; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); padding: 8px 12px;
+      border-bottom: 2px solid var(--line);
+    }
+    .priority-table td {
+      padding: 12px 12px; border-bottom: 1px solid var(--line);
+      font-size: 13px; color: var(--ink-2); vertical-align: top;
+    }
+    .priority-table tr:last-child td { border-bottom: none; }
+    .priority-table tr:hover td { background: var(--surface-2); }
+    .priority-p1 { background: var(--red-soft); color: var(--red);
+      font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
+    .priority-p2 { background: var(--amber-soft); color: var(--amber);
+      font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
+    .priority-p3 { background: var(--teal-soft); color: var(--teal);
+      font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
+
+    /* ── Footer ── */
+    .page-footer {
+      margin-top: 64px; padding-top: 24px;
+      border-top: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-footer p { font-size: 12px; color: var(--muted); }
+
+    @media (max-width: 768px) {
+      .score-grid { grid-template-columns: 1fr 1fr; }
+      .token-diff { grid-template-columns: 1fr; }
+      .demo-compare { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ── Header ── -->
+  <header class="page-header">
+    <div class="page-header-kicker">taste-skill v1 · Design Review</div>
+    <h1>Hahahoho Library<br>UI/UX 디자인 감사 보고서</h1>
+    <p>기존 index.html을 taste-skill 기준 10개 섹션 대비 분석하고, 구체적 개선 토큰과 컴포넌트 수정안을 제안합니다.</p>
+  </header>
+
+  <!-- ── Score Overview ── -->
+  <div class="score-grid">
+    <div class="score-card fail">
+      <div class="score-card-label">Critical 위반</div>
+      <div class="score-card-value">2</div>
+      <div class="score-card-sub">즉시 수정 필요</div>
+    </div>
+    <div class="score-card warn">
+      <div class="score-card-label">Warning 개선</div>
+      <div class="score-card-value">4</div>
+      <div class="score-card-sub">우선 적용 권장</div>
+    </div>
+    <div class="score-card ok">
+      <div class="score-card-label">통과 항목</div>
+      <div class="score-card-value">7</div>
+      <div class="score-card-sub">taste-skill 준수</div>
+    </div>
+    <div class="score-card info">
+      <div class="score-card-label">전체 룰 수</div>
+      <div class="score-card-value">13</div>
+      <div class="score-card-sub">평가 기준</div>
+    </div>
+  </div>
+
+  <!-- ── Section 1: CRITICAL ── -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Critical 위반 — 즉시 수정</h2>
+      <span class="section-badge fail">2건</span>
+    </div>
+    <div class="audit-list">
+
+      <div class="audit-item">
+        <div class="audit-item-head">
+          <div class="audit-icon fail">🚫</div>
+          <div>
+            <div class="audit-title">THE LILA BAN — 퍼플 액센트 전면 사용</div>
+            <div class="audit-desc">
+              <code>--selected-accent: #8b5cf6</code>, <code>--selected-accent-strong: #7c3aed</code>, <code>--size-accent-oversize: #7c3aed</code> 등 보라계열이 선택 상태 핵심 컬러로 전체에 걸쳐 사용 중.
+              taste-skill은 "AI Purple/Blue 미학은 전면 금지(BANNED)"로 명시하며, 네온 글로우나 보라 버튼 등을 엄격히 차단합니다.
+              브랜드 컬러 <strong>Teal(#0f766e)</strong>이 이미 있으므로 선택 상태도 이 계열로 통일해야 합니다.
+            </div>
+          </div>
+        </div>
+        <div class="audit-rule">
+          taste-skill §3 Rule 2 · <strong>"THE LILA BAN: The AI Purple/Blue aesthetic is strictly BANNED."</strong>
+        </div>
+      </div>
+
+      <div class="audit-item">
+        <div class="audit-item-head">
+          <div class="audit-icon fail">🚫</div>
+          <div>
+            <div class="audit-title">액센트 컬러 10종 — "Max 1 Accent" 규칙 위반</div>
+            <div class="audit-desc">
+              현재 size별 컬러가 8종(<code>amber, blue, teal, teal-light, cyan, purple, pink, indigo</code>)이고
+              선택 상태용 purple, 브랜드 teal, 액센트 brown까지 포함하면 11개 이상의 액센트 컬러가 혼재합니다.
+              taste-skill은 "Max 1 Accent Color, Saturation &lt; 80%"를 요구합니다.
+              포맷 식별 컬러는 <strong>기능적 구분</strong>으로 유지하되, 채도를 낮추고 공통 기준을 세워야 합니다.
+            </div>
+          </div>
+        </div>
+        <div class="audit-rule">
+          taste-skill §3 Rule 2 · <strong>"Constraint: Max 1 Accent Color. Saturation &lt; 80%."</strong>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Before / After: Selection State -->
+    <div class="preview-block" style="margin-top: 24px;">
+      <div class="preview-block-label">컴포넌트 Before / After — 선택 상태 (Selected Item)</div>
+      <div class="preview-inner">
+        <div class="demo-compare">
+          <div class="demo-box before">
+            <div class="demo-box-label">Before — Purple (위반)</div>
+            <div class="demo-box-content">
+              <div class="old-selected-item">
+                <div class="old-selected-title">Aphex Twin — Selected Ambient Works</div>
+                <div class="old-selected-meta">LP · 1992 · Apollo Records</div>
+                <span class="old-selected-badge">선택됨</span>
+              </div>
+            </div>
+          </div>
+          <div class="demo-box after">
+            <div class="demo-box-label">After — Teal (권장)</div>
+            <div class="demo-box-content">
+              <div class="new-selected-item">
+                <div class="new-selected-title">Aphex Twin — Selected Ambient Works</div>
+                <div class="new-selected-meta">LP · 1992 · Apollo Records</div>
+                <span class="new-selected-badge">선택됨</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Before / After: Format Chips -->
+    <div class="preview-block" style="margin-top: 16px;">
+      <div class="preview-block-label">컴포넌트 Before / After — 포맷 칩 (Size/Type Chips)</div>
+      <div class="preview-inner">
+        <div class="demo-compare">
+          <div class="demo-box before">
+            <div class="demo-box-label">Before — 고채도 혼재</div>
+            <div class="demo-box-content">
+              <div class="format-chips">
+                <span class="fchip old-lp">LP</span>
+                <span class="fchip old-std">STD</span>
+                <span class="fchip old-book">BOOK</span>
+                <span class="fchip old-cassette">CASS</span>
+                <span class="fchip old-tape">TAPE</span>
+                <span class="fchip old-oversize">OVER</span>
+              </div>
+            </div>
+          </div>
+          <div class="demo-box after">
+            <div class="demo-box-label">After — 저채도 조화</div>
+            <div class="demo-box-content">
+              <div class="format-chips">
+                <span class="fchip new-lp">LP</span>
+                <span class="fchip new-std">STD</span>
+                <span class="fchip new-book">BOOK</span>
+                <span class="fchip new-cassette">CASS</span>
+                <span class="fchip new-tape">TAPE</span>
+                <span class="fchip new-oversize">OVER</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 2: WARNINGS ── -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Warning 개선사항</h2>
+      <span class="section-badge warn">4건</span>
+    </div>
+    <div class="audit-list">
+
+      <div class="audit-item">
+        <div class="audit-item-head">
+          <div class="audit-icon warn">⚠️</div>
+          <div>
+            <div class="audit-title">숫자에 모노스페이스 폰트 미적용</div>
+            <div class="audit-desc">
+              VISUAL_DENSITY 기준 이 UI는 7~8 범주(Cockpit Mode)입니다. taste-skill은 "VISUAL_DENSITY &gt; 7에서 모든 숫자는 Monospace(<code>font-mono</code>)를 사용"으로 명시합니다.
+              현재 대시보드의 통계값, 슬롯 번호, 위치 코드 등 숫자가 본문 폰트(Pretendard)로 표시되어 있어 정렬이 흔들리고 밀도감이 떨어집니다.
+              <code>JetBrains Mono</code> 또는 <code>Fira Code</code>를 숫자 전용으로 페어링하세요.
+            </div>
+          </div>
+        </div>
+        <div class="audit-rule">
+          taste-skill §6 VISUAL_DENSITY 8-10 · <strong>"Mandatory: Use Monospace (font-mono) for all numbers."</strong>
+        </div>
+      </div>
+
+      <div class="audit-item">
+        <div class="audit-item-head">
+          <div class="audit-icon warn">⚠️</div>
+          <div>
+            <div class="audit-title">카드 과다 사용 — border / divide 패턴으로 전환 필요</div>
+            <div class="audit-desc">
+              대시보드 패널들이 모두 card + shadow 컨테이너로 묶여 있어 경계가 중첩됩니다.
+              taste-skill §3 Rule 4는 VISUAL_DENSITY &gt; 7 환경에서는 "카드 컨테이너 BANNED, <code>border-t</code> / <code>divide-y</code> / 여백으로만 구분"을 요구합니다.
+              특히 대시보드 통계 영역, 운영 홈 미니카드 등은 카드 없이 순수 구분선+여백으로도 충분히 계층을 표현할 수 있습니다.
+            </div>
+          </div>
+        </div>
+        <div class="audit-rule">
+          taste-skill §3 Rule 4 · <strong>"DASHBOARD HARDENING: For VISUAL_DENSITY &gt; 7, generic card containers are strictly BANNED."</strong>
+        </div>
+      </div>
+
+      <div class="audit-item">
+        <div class="audit-item-head">
+          <div class="audit-icon warn">⚠️</div>
+          <div>
+            <div class="audit-title">야간 모드 주황 액센트 과포화</div>
+            <div class="audit-desc">
+              <code>--theme-shell-accent: #ff7a1a</code> (Night Mode)는 명도와 채도가 높아 어두운 배경에서 과하게 튑니다.
+              taste-skill은 "Saturation &lt; 80%"와 "Desaturate accents to blend elegantly with neutrals"를 요구합니다.
+              <code>#e8620a</code> 정도로 채도를 낮추고, 포커스/호버 상태에만 강하게 표현하는 전략이 적합합니다.
+            </div>
+          </div>
+        </div>
+        <div class="audit-rule">
+          taste-skill §3 Rule 2 · §7 Visual &amp; CSS · <strong>"NO Oversaturated Accents: Desaturate accents to blend elegantly with neutrals."</strong>
+        </div>
+      </div>
+
+      <div class="audit-item">
+        <div class="audit-item-head">
+          <div class="audit-icon warn">⚠️</div>
+          <div>
+            <div class="audit-title">3-칼럼 동일 카드 레이아웃 사용 패턴</div>
+            <div class="audit-desc">
+              대시보드 영웅 카드, 운영 홈 미니카드 영역에서 3개 동일 컬럼 패턴이 반복됩니다.
+              taste-skill은 이를 "THE GENERIC 3-EQUAL-CARD LAYOUT IS BANNED"으로 정의하며,
+              2-column Zig-Zag, 비대칭 그리드, 또는 수평 스크롤 방식을 강제합니다.
+              어드민 콘솔 특성상 완전한 제거는 어렵지만, 주요 Hero 영역만이라도 비대칭(2+1 또는 1+wide) 구조로 전환을 권장합니다.
+            </div>
+          </div>
+        </div>
+        <div class="audit-rule">
+          taste-skill §7 Layout · <strong>"NO 3-Column Card Layouts: The generic 3 equal cards horizontally feature row is BANNED."</strong>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Stat number demo -->
+    <div class="preview-block" style="margin-top: 24px;">
+      <div class="preview-block-label">숫자 타이포그래피 Before / After</div>
+      <div class="preview-inner">
+        <div class="demo-compare">
+          <div class="demo-box before">
+            <div class="demo-box-label">Before — 본문 폰트</div>
+            <div class="demo-box-content">
+              <div class="stat-row">
+                <div class="stat-item">
+                  <div class="stat-num-old">1,247</div>
+                  <div class="stat-label">총 보유</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-num-old">83</div>
+                  <div class="stat-label">미배치</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-num-old">A-04-12</div>
+                  <div class="stat-label">슬롯</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="demo-box after">
+            <div class="demo-box-label">After — JetBrains Mono</div>
+            <div class="demo-box-content">
+              <div class="stat-row">
+                <div class="stat-item">
+                  <div class="stat-num-new">1,247</div>
+                  <div class="stat-label">총 보유</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-num-new">83</div>
+                  <div class="stat-label">미배치</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-num-new">A-04-12</div>
+                  <div class="stat-label">슬롯</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 3: PASS ── -->
+  <section class="section">
+    <div class="section-head">
+      <h2>통과 — 잘 지켜진 항목</h2>
+      <span class="section-badge ok">7건</span>
+    </div>
+    <ul class="checklist">
+      <li>
+        <span class="ci">✅</span>
+        <span class="ct"><strong>No Pure Black:</strong> <code>--ink: #1f2a37</code> — Off-Black 사용 준수. #000000 없음.</span>
+      </li>
+      <li>
+        <span class="ci">✅</span>
+        <span class="ct"><strong>Diffuse Shadow:</strong> <code>0 16px 36px rgba(15,23,42,0.07)</code> — 넓게 퍼지는 미묘한 그림자 사용. 네온 아우터 글로우 없음.</span>
+      </li>
+      <li>
+        <span class="ci">✅</span>
+        <span class="ct"><strong>CSS Custom Properties 시스템:</strong> 모든 색상, 반경, 쉐도우가 변수로 체계화되어 테마 전환이 완전히 작동.</span>
+      </li>
+      <li>
+        <span class="ci">✅</span>
+        <span class="ct"><strong>다크/라이트 테마 구현:</strong> <code>data-theme="night"</code> / <code>"day"</code> 완전히 구현. 배경에 ambient gradient 사용.</span>
+      </li>
+      <li>
+        <span class="ci">✅</span>
+        <span class="ct"><strong>한국어 폰트 최적화:</strong> Pretendard + Apple SD Gothic Neo + Noto Sans KR 올바른 fallback 체인 구성.</span>
+      </li>
+      <li>
+        <span class="ci">✅</span>
+        <span class="ct"><strong>Liquid Glass 내부 굴절 보더:</strong> <code>inset 0 1px 0 rgba(255,255,255,0.4)</code> 내부 하이라이트 다수 사용. taste-skill §4 "Liquid Glass Refraction" 준수.</span>
+      </li>
+      <li>
+        <span class="ci">✅</span>
+        <span class="ct"><strong>Empty/Error 상태:</strong> 페이지 도움말, 메뉴얼 블록, 오류 메시지 패턴이 구현되어 있음. taste-skill §3 Rule 5 준수.</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ── Section 4: New Design Tokens ── -->
+  <section class="section">
+    <div class="section-head">
+      <h2>개선 디자인 토큰 제안</h2>
+      <span class="section-badge info">CSS 변수 교체안</span>
+    </div>
+
+    <!-- Color Palettes -->
+    <p style="font-size: 13px; color: var(--ink-2); margin-bottom: 16px;">
+      기존 브랜드 Teal을 단일 Primary 액센트로 강화하고, 포맷 칩은 채도를 낮춰 시스템 내 조화를 만듭니다.
+    </p>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px;">제안 팔레트</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="swatch-dot" style="background:#0f766e"></div><div class="swatch-name">teal-700<br>Primary</div></div>
+        <div class="swatch"><div class="swatch-dot" style="background:#14b8a6"></div><div class="swatch-name">teal-400<br>Active</div></div>
+        <div class="swatch"><div class="swatch-dot" style="background:#d9f4f0"></div><div class="swatch-name">teal-50<br>Soft</div></div>
+        <div class="swatch" style="margin-left:12px"><div class="swatch-dot" style="background:#1f2a37"></div><div class="swatch-name">ink<br>Text</div></div>
+        <div class="swatch"><div class="swatch-dot" style="background:#6b7280"></div><div class="swatch-name">muted<br>Sub</div></div>
+        <div class="swatch"><div class="swatch-dot" style="background:#f6f6f1"></div><div class="swatch-name">bg<br>Base</div></div>
+        <div class="swatch" style="margin-left:12px"><div class="swatch-dot" style="background:#e8620a"></div><div class="swatch-name">amber-night<br>Accent↓</div></div>
+        <div class="swatch"><div class="swatch-dot" style="background:#7c3aed;opacity:0.3"></div><div class="swatch-name" style="text-decoration:line-through">purple<br>BANNED</div></div>
+      </div>
+    </div>
+
+    <div class="token-proposal">
+      <pre>
+<span class="comment">/* ───── Hahahoho Library — 개선된 디자인 토큰 ───── */</span>
+<span class="comment">/* taste-skill 기준 적용 | 2026-05 */</span>
+
+:root {
+  <span class="comment">/* ── Primary accent (Teal only — Max 1 Accent) ── */</span>
+  <span class="var">--brand</span>:           <span class="val-teal">#0f766e</span>;       <span class="comment">/* PRIMARY — 모든 선택/액션에 사용 */</span>
+  <span class="var">--brand-active</span>:    <span class="val-teal">#14b8a6</span>;       <span class="comment">/* hover / focus 상태 */</span>
+  <span class="var">--brand-soft</span>:      <span class="val-teal">#d9f4f0</span>;       <span class="comment">/* 선택 배경, chip 배경 */</span>
+  <span class="var">--brand-ring</span>:      <span class="val-teal">rgba(15,118,110,0.28)</span>; <span class="comment">/* focus ring */</span>
+  <span class="var">--brand-shadow</span>:    <span class="val-teal">rgba(15,118,110,0.14)</span>; <span class="comment">/* 선택 shadow */</span>
+
+  <span class="comment">/* ── REMOVED: Purple accent (LILA BAN) ── */</span>
+  <span class="val-purple">--selected-accent: #8b5cf6;  ← 삭제</span>
+  <span class="val-purple">--selected-accent-strong: #7c3aed;  ← 삭제</span>
+  <span class="val-purple">--selected-surface: #f3e8ff;  ← 삭제</span>
+  <span class="val-purple">--selected-ring: rgba(139,92,246,0.36);  ← 삭제</span>
+
+  <span class="comment">/* ── Selected state → Teal 계열로 교체 ── */</span>
+  <span class="var">--selected-accent</span>:        <span class="val-teal">#0f766e</span>;
+  <span class="var">--selected-accent-strong</span>: <span class="val-teal">#0d6660</span>;
+  <span class="var">--selected-surface</span>:       <span class="val-teal">#d9f4f0</span>;
+  <span class="var">--selected-surface-soft</span>:  <span class="val-teal">#f0faf9</span>;
+  <span class="var">--selected-ring</span>:          <span class="val-teal">rgba(15,118,110,0.28)</span>;
+  <span class="var">--selected-shadow-soft</span>:   <span class="val-teal">rgba(15,118,110,0.12)</span>;
+
+  <span class="comment">/* ── Format type chips — 채도 낮춤 (Saturation &lt; 65%) ── */</span>
+  <span class="var">--size-accent-std</span>:       <span class="val-amber">#c47b30</span>;   <span class="comment">/* 기존 #b45309 → 명도+, 채도- */</span>
+  <span class="var">--size-accent-book</span>:      <span class="val-neutral">#5d89b4</span>;   <span class="comment">/* 기존 #2563eb → 탈포화 */</span>
+  <span class="var">--size-accent-lp</span>:        <span class="val-teal">#4a9e98</span>;   <span class="comment">/* 기존 #0f766e → 살짝 밝게 */</span>
+  <span class="var">--size-accent-lp10</span>:      <span class="val-teal">#5eaaa4</span>;   <span class="comment">/* 기존 #14b8a6 → 탈포화 */</span>
+  <span class="var">--size-accent-lp7</span>:       <span class="val-neutral">#4f8fa8</span>;   <span class="comment">/* 기존 #0891b2 → 탈포화 */</span>
+  <span class="var">--size-accent-oversize</span>:  <span class="val-neutral">#7a7aa8</span>;   <span class="comment">/* 기존 #7c3aed → 완전 탈포화 */</span>
+  <span class="var">--size-accent-cassette</span>:  <span class="val-neutral">#b06b8b</span>;   <span class="comment">/* 기존 #db2777 → 탈포화 */</span>
+  <span class="var">--size-accent-tape</span>:      <span class="val-neutral">#6670a8</span>;   <span class="comment">/* 기존 #4338ca → 탈포화 */</span>
+
+  <span class="comment">/* ── Typography — 숫자 전용 mono 추가 ── */</span>
+  <span class="var">--font-sans</span>:   <span class="val-neutral">"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui</span>;
+  <span class="var">--font-mono</span>:   <span class="val-neutral">"JetBrains Mono", "Fira Code", "Cascadia Code", monospace</span>;
+  <span class="comment">/* 적용 → 모든 숫자, 슬롯 코드, 통계값에: font-family: var(--font-mono) */</span>
+
+  <span class="comment">/* ── Night mode accent — 채도 낮춤 ── */</span>
+  <span class="comment">/* 기존 --theme-shell-accent: #ff7a1a → */</span>
+  <span class="var">--theme-shell-accent</span>:    <span class="val-amber">#e8620a</span>;   <span class="comment">/* Saturation 72% (기존 100%) */</span>
+}</pre>
+    </div>
+  </section>
+
+  <!-- ── Section 5: Implementation Priority ── -->
+  <section class="section">
+    <div class="section-head">
+      <h2>구현 우선순위 로드맵</h2>
+      <span class="section-badge info">단계별 실행</span>
+    </div>
+
+    <table class="priority-table">
+      <thead>
+        <tr>
+          <th style="width:60px">순위</th>
+          <th style="width:200px">작업</th>
+          <th>내용</th>
+          <th style="width:80px">난이도</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="priority-p1">P1</span></td>
+          <td><strong>Purple → Teal 교체</strong></td>
+          <td>
+            <code>--selected-accent</code> 계열 4개 변수를 Teal 기반으로 전면 교체.
+            CSS 변수 교체이므로 JS 로직 변경 없이 스타일만 수정.
+            <br><strong>예상 작업:</strong> :root 블록 10줄 수정
+          </td>
+          <td>낮음 ⚡</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p1">P1</span></td>
+          <td><strong>포맷 칩 채도 낮춤</strong></td>
+          <td>
+            <code>--size-accent-*</code> 8개 변수를 제안 팔레트로 교체.
+            기존 로직/클래스 변경 없이 변수값만 교체.
+            <br><strong>예상 작업:</strong> :root 블록 8줄 수정
+          </td>
+          <td>낮음 ⚡</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p2">P2</span></td>
+          <td><strong>숫자에 mono 폰트 적용</strong></td>
+          <td>
+            통계 수치, 슬롯 코드, 위치 번호, 아이템 수량에
+            <code>font-family: var(--font-mono)</code> 추가.
+            대상 클래스: <code>.dashboard-stat-line</code>, <code>.slot-code</code>, <code>.item-count</code> 등.
+            <br><strong>예상 작업:</strong> CSS 선택자 10~15개에 mono 속성 추가
+          </td>
+          <td>낮음 ⚡</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p2">P2</span></td>
+          <td><strong>Night accent 채도 낮춤</strong></td>
+          <td>
+            <code>data-theme="night"</code> 블록의 <code>--theme-shell-accent</code>를
+            <code>#ff7a1a</code>에서 <code>#e8620a</code>로 교체.
+            <br><strong>예상 작업:</strong> 1줄
+          </td>
+          <td>최저 ✨</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p3">P3</span></td>
+          <td><strong>대시보드 Hero 레이아웃 리팩터</strong></td>
+          <td>
+            동일 3-컬럼 Hero 카드 영역을 2+1 비대칭 그리드로 전환.
+            주요 통계는 넓은 왼쪽, 보조 지표는 오른쪽 스택.
+            <br><strong>예상 작업:</strong> Grid 변수 수정 + 마크업 일부 재구성
+          </td>
+          <td>중간 🔧</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p3">P3</span></td>
+          <td><strong>대시보드 카드 → divide 패턴</strong></td>
+          <td>
+            VISUAL_DENSITY 8 수준의 패널에서 card box 제거,
+            <code>border-top + padding</code>만으로 섹션 구분.
+            그림자 제거로 인한 공간감 증가.
+            <br><strong>예상 작업:</strong> 해당 컴포넌트 CSS 수정
+          </td>
+          <td>중간 🔧</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="page-footer">
+    <p>taste-skill v1 · github.com/Leonxlnx/taste-skill 기준 · Hahahoho Library Management Console</p>
+    <p style="font-family: monospace; font-size: 11px;">생성일 2026-05-02</p>
+  </footer>
+
+</div>
+</body>
+</html>

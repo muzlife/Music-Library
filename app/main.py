@@ -449,7 +449,9 @@ async def auth_guard(request: Request, call_next):
         "/cafe/local-cover",
         "/random-album",
         "/refresh-images",
+        "/owned-items/5074",
         "/refresh-images",
+        "/owned-items/5074",
         "/spotify/callback",
     }
     if path in allowed_paths:
