@@ -41153,9 +41153,9 @@ function initDashboardDrilldown() {
           var inten=v/mv, al=Math.round(15+inten*85);
           var cl=dc2[dm]||'#888';
           h+='<td><span class="dash-heatmap-cell" style="background:rgba('+hexToRgb(cl)+','+(al/100)+');" title="'+dm+' '+decs[k2]+'s: '+v+'">'+(v>0?v:'')+'</span></td>';}
-        h+='<td style="font-weight:700;">'+rt+'</td></tr>';}
+        h+='<td style="font-weight:700;text-align:center;">'+rt+'</td></tr>';}
       h+='<tr style="border-top:2px solid var(--theme-dashboard-border);"><td style="opacity:0.5;">합계</td>';
-      for(var m2=0;m2<decs.length;m2++){var ct=0;for(var n=0;n<ad.length;n++)ct+=lu[ad[n]+'|'+decs[m2]]||0;h+='<td style="opacity:0.5;">'+ct+'</td>';}
+      for(var m2=0;m2<decs.length;m2++){var ct=0;for(var n=0;n<ad.length;n++)ct+=lu[ad[n]+'|'+decs[m2]]||0;h+='<td style="opacity:0.5;text-align:center;">'+ct+'</td>';}
       h+='<td></td></tr></tbody></table>'; b.innerHTML=h;
     }
 
