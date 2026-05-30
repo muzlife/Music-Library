@@ -2506,7 +2506,6 @@ def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any
                 src = "https:" + src
             else:
                 continue
-        # Only collect product images, skip UI/banner elements
         if not any(k in src for k in ("/product/", "/cover", "/img/img_content/")):
             continue
         if src in seen:
@@ -2515,10 +2514,26 @@ def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any
         alt_match = _re.search(r'alt="([^"]*)"', m.group(0))
         alt = alt_match.group(1) if alt_match else ""
         label = alt or "상세"
-        # Skip duplicate cover (already captured by cover_image_url)
         if "cover500" in src and images:
             label = "커버"
         images.append({"type": label, "uri": src})
+
+    # Probe img_content images using ISBN pattern
+    isbn_match = _re.search(r'ISBN[^0-9]*(\d{9})', html)
+    if isbn_match:
+        isbn = isbn_match.group(1)
+        import httpx as _httpx
+        probe_headers = {"User-Agent": headers.get("User-Agent", "Mozilla/5.0")}
+        probe_url = f"https://image.aladin.co.kr/img/img_content/C{isbn}_P.jpg"
+        if probe_url not in seen:
+            try:
+                with _httpx.Client(timeout=5.0, headers=probe_headers) as pc:
+                    pr = pc.get(probe_url)
+                    if pr.status_code == 200 and "image" in (pr.headers.get("content-type") or ""):
+                        seen.add(probe_url)
+                        images.append({"type": "상세", "uri": probe_url})
+            except Exception:
+                pass
 
     return images
 
