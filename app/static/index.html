@@ -41234,20 +41234,62 @@ function initDashboardDrilldown() {
 
     function renderDashboardFormatPressing(d) {
       var b = document.getElementById('homeDashFormatPressingBody'); if (!b) return;
-      var pr = (d.by_pressing_domain||[]).slice(0,10);
+      var pr = d.by_pressing_domain||[];
+      if (!pr.length) { b.innerHTML = '<div class="mini muted">데이터 없음</div>'; return; }
       var fc = formatCount;
-      var mp = Math.max(1, pr.reduce(function(m,x){return Math.max(m,x.count||0);}, 0));
-      var pc2 = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316'};
+      var dc = {KOREA:'#4ade80', WESTERN:'#60a5fa', WORLD_OTHER:'#a78bfa', JAPAN:'#fb923c', GREATER_CHINA:'#f97316', UNASSIGNED:'#6b7280'};
+
+      // 국가별로 도메인 묶기
+      var groups = {}, order = [];
+      for (var i = 0; i < pr.length; i++) {
+        var r = pr[i], ctry = r.pressing_country || '(미상)';
+        if (!groups[ctry]) { groups[ctry] = { total: 0, domains: {} }; order.push(ctry); }
+        groups[ctry].domains[r.domain] = (groups[ctry].domains[r.domain]||0) + (r.count||0);
+        groups[ctry].total += (r.count||0);
+      }
+      // total 내림차순 상위 10
+      order.sort(function(a,b){ return groups[b].total - groups[a].total; });
+      order = order.slice(0, 10);
+      var maxTotal = Math.max(1, groups[order[0]] ? groups[order[0]].total : 1);
+
       var h = '';
-      for (var q = 0; q < pr.length; q++) {
-        var r = pr[q]; var pct2 = Math.round((r.count||0)/mp*100);
+      for (var j = 0; j < order.length; j++) {
+        var ctry = order[j], g = groups[ctry];
+        var short = ctry.length > 16 ? ctry.substring(0,15)+'…' : ctry;
+        var barPct = Math.round(g.total / maxTotal * 100);
+        // 스택 세그먼트
+        var segs = '', dks = Object.keys(g.domains).sort(function(a,b){return g.domains[b]-g.domains[a];});
+        for (var k = 0; k < dks.length; k++) {
+          var dm = dks[k], cnt = g.domains[dm];
+          var segPct = Math.round(cnt / g.total * 100);
+          segs += '<div title="'+escapeHtml(_dLabel(dm))+': '+fc(cnt)+'" style="height:100%;width:'+segPct+'%;background:'+(dc[dm]||'#6b7280')+';flex-shrink:0;transition:width 0.4s;"></div>';
+        }
         h += '<div class="dash-fin-bar-row" style="margin-bottom:3px;">' +
-          '<span class="dash-fin-bar-row__lbl" style="width:88px;font-size:0.67rem;" title="'+escapeHtml(r.pressing_country||'')+'">'+escapeHtml(r.pressing_country||'')+'</span>' +
-          '<div class="dash-fin-bar-row__track"><div class="dash-fin-bar-row__fill" style="width:'+pct2+'%;background:'+(pc2[r.domain]||'#888')+'"></div></div>' +
-          '<span class="dash-fin-bar-row__val" style="width:36px;">'+fc(r.count)+'</span>' +
+          '<span class="dash-fin-bar-row__lbl" style="width:88px;font-size:0.67rem;" title="'+escapeHtml(ctry)+'">'+escapeHtml(short)+'</span>' +
+          '<div class="dash-fin-bar-row__track" style="overflow:hidden;">' +
+            '<div style="height:100%;width:'+barPct+'%;display:flex;border-radius:3px;overflow:hidden;">'+segs+'</div>' +
+          '</div>' +
+          '<span class="dash-fin-bar-row__val" style="width:36px;">'+fc(g.total)+'</span>' +
           '</div>';
       }
-      b.innerHTML = h || '<div class="mini muted">데이터 없음</div>';
+      // 범례
+      var usedDomains = [];
+      for (var j2 = 0; j2 < order.length; j2++) {
+        var dks2 = Object.keys(groups[order[j2]].domains);
+        for (var k2 = 0; k2 < dks2.length; k2++) {
+          if (usedDomains.indexOf(dks2[k2]) < 0) usedDomains.push(dks2[k2]);
+        }
+      }
+      usedDomains.sort();
+      h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">';
+      for (var m = 0; m < usedDomains.length; m++) {
+        var dm2 = usedDomains[m];
+        h += '<span style="display:flex;align-items:center;gap:3px;font-size:0.6rem;opacity:0.7;">' +
+          '<span style="width:8px;height:8px;border-radius:2px;background:'+(dc[dm2]||'#6b7280')+';flex-shrink:0;"></span>' +
+          escapeHtml(_dLabel(dm2))+'</span>';
+      }
+      h += '</div>';
+      b.innerHTML = h;
     }
 
     function renderDashboardArtistTimeline(d) {
