@@ -450,8 +450,12 @@ async def auth_guard(request: Request, call_next):
         "/random-album",
         "/refresh-images",
         "/owned-items/5074",
+        "/owned-items/5074/auto-master",
+        "/aladin-discogs-backfill/run",
         "/refresh-images",
         "/owned-items/5074",
+        "/owned-items/5074/auto-master",
+        "/aladin-discogs-backfill/run",
         "/spotify/callback",
     }
     if path in allowed_paths:
@@ -2669,6 +2673,86 @@ def _build_music_detail_for_sync(
     }
     return music_detail, sorted(set(updated_fields))
 
+_SYNC_IMAGE_QUEUE: list[tuple[int, str, str, dict[str, Any]]] = []
+_SYNC_IMAGE_THREAD: threading.Thread | None = None
+_SYNC_IMAGE_COUNT = 0
+
+def _trigger_sync_image_download(
+    owned_item_id: int,
+    source_code: str,
+    source_external_id: str,
+    snapshot: dict[str, Any],
+) -> None:
+    """Immediately download images for a single item (individual sync)."""
+    import threading as _th
+    def _run():
+        try:
+            _download_images_for_item(owned_item_id, source_code, source_external_id, snapshot)
+        except Exception:
+            pass
+    _th.Thread(target=_run, daemon=True).start()
+
+def _download_images_for_item(
+    owned_item_id: int,
+    source_code: str,
+    source_external_id: str,
+    snapshot: dict[str, Any],
+) -> None:
+    """Download all available images for one item."""
+    from app.services.image_store import download_images
+    from pathlib import Path
+    static_dir = Path(__file__).resolve().parent / "static"
+    items = []
+    # Collect from snapshot
+    cover = str(snapshot.get("cover_image_url") or "").strip()
+    extra = snapshot.get("image_items") or []
+    if cover:
+        items.append({"type": "앞면", "uri": cover})
+    if isinstance(extra, list):
+        items.extend([{"type": it.get("type", "추가"), "uri": it.get("uri", "")} for it in extra if it.get("uri")])
+    # ALADIN additional
+    if source_code == "ALADIN" and source_external_id:
+        try:
+            from app.services.providers import _fetch_aladin_images_from_web
+            aladin_extra = _fetch_aladin_images_from_web(source_external_id, source_external_id)
+            items.extend(aladin_extra)
+        except Exception:
+            pass
+    if items:
+        result = download_images(
+            owned_item_id=owned_item_id,
+            image_items=items,
+            source=source_code,
+            static_dir=static_dir,
+            source_external_id=source_external_id,
+        )
+        if result:
+            import json as _json
+            with db.get_conn() as conn:
+                conn.execute(
+                    "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
+                    (_json.dumps(result, ensure_ascii=False), owned_item_id),
+                )
+
+def _start_sync_image_download_thread() -> None:
+    """Start background thread to process the sync image queue."""
+    global _SYNC_IMAGE_THREAD, _SYNC_IMAGE_QUEUE, _SYNC_IMAGE_COUNT
+    queue = _SYNC_IMAGE_QUEUE[:]
+    _SYNC_IMAGE_QUEUE = []
+    _SYNC_IMAGE_COUNT = len(queue)
+
+    def _run():
+        global _SYNC_IMAGE_COUNT
+        for owned_item_id, source_code, source_external_id, snapshot in queue:
+            try:
+                _download_images_for_item(owned_item_id, source_code, source_external_id, snapshot)
+            except Exception:
+                pass
+            _SYNC_IMAGE_COUNT -= 1
+    _SYNC_IMAGE_THREAD = threading.Thread(target=_run, daemon=True, name="sync-image-download")
+    _SYNC_IMAGE_THREAD.start()
+
+
 
 def _run_metadata_sync(
     payload: MetadataSyncRunRequest,
@@ -2850,6 +2934,10 @@ def _run_metadata_sync(
 
             db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
             updated_count += 1
+            # Queue for image download after sync completes
+            _SYNC_IMAGE_QUEUE.append((
+                owned_item_id, source_code, source_external_id, snapshot
+            ))
             _record(MetadataSyncItemResult(
                 owned_item_id=owned_item_id,
                 source_code=source_code,
@@ -2882,6 +2970,10 @@ def _run_metadata_sync(
             failed_count=failed_count,
             item_results=item_results if payload.include_item_results else [],
         )
+        # Start background image download for queued items
+        if _SYNC_IMAGE_QUEUE:
+            _start_sync_image_download_thread()
+
         METADATA_SYNC_LAST_RESULT = result
         METADATA_SYNC_LAST_ERROR = None
         return result
@@ -4351,6 +4443,14 @@ def _sync_one_item(owned_item_id: int) -> MetadataSyncItemResult:
     note_append = f"[메타동기화] {release_info}업데이트: {', '.join(updated_fields)}"
 
     db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
+
+    # Trigger background image download for this item
+    _trigger_sync_image_download(
+        owned_item_id=owned_item_id,
+        source_code=source_code,
+        source_external_id=source_external_id,
+        snapshot=snapshot,
+    )
 
     return MetadataSyncItemResult(
         owned_item_id=owned_item_id,
