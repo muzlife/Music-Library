@@ -12780,26 +12780,26 @@
       color: var(--theme-dashboard-text-muted);
     }
     /* ── 재정 인사이트 ── */
-    .dash-fin-hero { margin-bottom: 6px; }
+    .dash-fin-hero { margin-bottom: 4px; }
     .dash-fin-hero__num {
       font-family: var(--font-mono);
-      font-size: 1.8rem; font-weight: 800;
+      font-size: 1.4rem; font-weight: 800;
       letter-spacing: -0.05em; line-height: 1; color: #4ade80;
     }
-    .dash-fin-hero__sub { font-size: 0.65rem; color: var(--theme-dashboard-text-muted); margin-top: 2px; }
-    .dash-fin-stats { display: flex; gap: 8px; margin-bottom: 8px; }
+    .dash-fin-hero__sub { font-size: 0.6rem; color: var(--theme-dashboard-text-muted); margin-top: 1px; }
+    .dash-fin-stats { display: flex; gap: 6px; margin-bottom: 5px; }
     .dash-fin-stat {
-      flex: 1; padding: 8px 10px; border-radius: 8px;
+      flex: 1; padding: 4px 8px; border-radius: 6px;
       background: var(--theme-dashboard-panel-soft);
       border: 1px solid var(--theme-dashboard-border);
     }
-    .dash-fin-stat__lbl { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--theme-dashboard-text-muted); margin-bottom: 3px; }
-    .dash-fin-stat__val { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; }
-    .dash-fin-bar-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+    .dash-fin-stat__lbl { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--theme-dashboard-text-muted); margin-bottom: 1px; }
+    .dash-fin-stat__val { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+    .dash-fin-bar-row { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
     .dash-fin-bar-row__lbl { width: 60px; font-size: 0.67rem; opacity: 0.65; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .dash-fin-bar-row__track { flex: 1; height: 8px; border-radius: 4px; background: rgba(128,128,128,0.10); overflow: hidden; min-width: 0; }
+    .dash-fin-bar-row__track { flex: 1; height: 7px; border-radius: 4px; background: rgba(128,128,128,0.10); overflow: hidden; min-width: 0; }
     .dash-fin-bar-row__fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-    .dash-fin-bar-row__val { font-family: var(--font-mono); font-size: 0.63rem; width: 80px; text-align: right; flex-shrink: 0; }
+    .dash-fin-bar-row__val { font-family: var(--font-mono); font-size: 0.6rem; width: 76px; text-align: right; flex-shrink: 0; }
     /* ── 등록 페이스 ── */
     .dash-reg-month-fill {
       height: 100%; border-radius: 5px;
@@ -41182,7 +41182,7 @@ function initDashboardDrilldown() {
         '<div class="dash-fin-stat"><div class="dash-fin-stat__lbl">평균 단가</div><div class="dash-fin-stat__val">₩'+fc(ap)+'</div></div>' +
         '<div class="dash-fin-stat"><div class="dash-fin-stat__lbl">주요 통화</div><div class="dash-fin-stat__val" style="font-size:0.82rem;">KRW '+krwPct+'%</div></div>' +
         '</div>' +
-        '<hr class="dash-kpi-divider">';
+        '<hr class="dash-kpi-divider" style="margin:4px 0;">';
       // 가요(KOREA)를 기준 max로 고정
       var koreaEntry = bd.filter(function(x){return x.domain==='KOREA';})[0];
       var baseMax = koreaEntry ? (koreaEntry.total_spend||1) : ms;
