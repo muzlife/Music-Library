@@ -16541,7 +16541,6 @@
           <div class="dashboard-kpi-item">
             <span class="dashboard-kicker">배치</span>
             <strong id="homeDashPlacement">0</strong>
-            <span class="dashboard-kpi-sub" id="homeDashPlacementRate"></span>
           </div>
           <div class="dashboard-kpi-item">
             <span class="dashboard-kicker">메타 보강</span>
@@ -45130,8 +45129,7 @@ async function loadDashboardClimate() {
           const slotted = Number(data.slotted_in_collection_items ?? 0);
           const inCol = Number(data.in_collection_items ?? 0);
           const rate = inCol > 0 ? Math.round(slotted / inCol * 100) : 0;
-          setTextIfPresent("homeDashPlacement", formatCount(slotted));
-          setTextIfPresent("homeDashPlacementRate", rate + "%");
+          setTextIfPresent("homeDashPlacement", formatCount(slotted) + "(" + rate + "%)");
         }
         {
           const srcUnlinked = Number(data.source_unlinked_items ?? 0);
