@@ -16484,29 +16484,64 @@
     }
 
 
-    /* Clean gallery mode for local images */
+
+    /* Discogs-style clean gallery */
+    .image-gallery-modal._local-mode {
+      background: rgba(0,0,0,0.94) !important;
+      justify-content: center;
+      align-items: center;
+    }
     .image-gallery-modal._local-mode .image-gallery-panel {
-      background: transparent;
-      box-shadow: none;
-      max-width: 100vw;
-      max-height: 100vh;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      padding: 0 !important;
+      width: auto !important;
     }
     .image-gallery-modal._local-mode .image-gallery-head,
     .image-gallery-modal._local-mode .image-gallery-side,
-    .image-gallery-modal._local-mode .image-gallery-list {
-      display: none;
-    }
+    .image-gallery-modal._local-mode .image-gallery-list,
     .image-gallery-modal._local-mode .image-gallery-body {
-      padding: 0;
+      display: none !important;
+    }
+    .image-gallery-modal._local-mode .image-gallery-preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
     }
     .image-gallery-modal._local-mode .image-gallery-preview-card {
-      border: none;
-      background: transparent;
-      padding: 0;
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .image-gallery-modal._local-mode #imageGalleryPreviewImg {
       max-width: 90vw;
       max-height: 85vh;
+      object-fit: contain;
+      border-radius: 0;
+    }
+    .image-gallery-modal._local-mode #imageGalleryPreviewMeta {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.6);
+      font-size: 0.85rem;
+      z-index: 10;
+    }
+    .image-gallery-modal._local-mode #imageGalleryCloseBtn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+      opacity: 0.8;
     }
   </style>
 </head>
