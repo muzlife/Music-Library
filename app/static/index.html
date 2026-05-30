@@ -16554,11 +16554,15 @@
         <div id="homeDashViewStatus">
           <div class="dashboard-widget-grid">
 
-            <!-- Card 1: 컬렉션 스냅샷 (wide) -->
-            <div class="dash-card" data-accent="main" data-widget-id="card-snapshot" data-widget-label="컬렉션 스냅샷" data-size="1/1" data-rows="1" data-role="snapshot">
-              <div class="dash-card__head"><span class="dash-card__dot"></span>컬렉션 스냅샷</div>
-              <div id="homeDashSnapshotBody">
-                <div class="mini muted">불러오는 중&hellip;</div>
+            <!-- Card 1: 라이브러리 현황판 (wide) -->
+            <div class="dash-card" data-accent="main" data-widget-id="card-snapshot" data-widget-label="라이브러리 현황판" data-size="1/1" data-rows="1" data-role="snapshot">
+              <div class="dash-card__head"><span class="dash-card__dot"></span>라이브러리 현황판</div>
+              <div id="homeDashSnapshotBody" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+                <div style="flex:1;min-width:80px;"><div style="font-size:0.62rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.04em;">전체</div><div id="homeDashTotal" style="font-family:var(--font-mono);font-size:1.5rem;font-weight:700;letter-spacing:-0.04em;"></div></div>
+                <div style="flex:1;min-width:100px;"><div style="font-size:0.62rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.04em;">음반</div><div id="homeDashMusic" style="font-size:0.85rem;font-weight:600;white-space:nowrap;"></div></div>
+                <div style="flex:1;min-width:80px;"><div style="font-size:0.62rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.04em;">수집품</div><div id="homeDashGoods" style="font-family:var(--font-mono);font-size:1.2rem;font-weight:700;"></div></div>
+                <div style="flex:1;min-width:100px;"><div style="font-size:0.62rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.04em;">배치</div><div id="homeDashInCollection" style="font-size:0.85rem;font-weight:600;white-space:nowrap;"></div></div>
+                <div style="flex:1;min-width:80px;"><div style="font-size:0.62rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.04em;">30일 신규</div><div id="homeDashSigned" style="font-family:var(--font-mono);font-size:1.2rem;font-weight:700;"></div></div>
               </div>
             </div>
 
@@ -45097,21 +45101,24 @@ async function loadDashboardClimate() {
         if (!res.ok) throw new Error(data.detail || t("dashboard.status.load_failed"));
 
         phase = "summary";
-        /* snapshot: 음반(LP/CD) / 수집품 / 배치(배치율) / 30일신규 */
-        setTextIfPresent("homeDashTotal", formatCount((data.music_items ?? 0) + (data.goods_items ?? 0)));
-        setTextIfPresent("homeDashInCollection", formatCount(data.in_collection_items));
+        /* 현황판: 전체 / 음반(LP,CD) / 수집품 / 배치(배치율) / 30일신규 */
+        const _musicTotal = Number(data.music_items ?? 0);
+        const _goodsTotal = Number(data.goods_items ?? 0);
+        const _allTotal = _musicTotal + _goodsTotal;
+        setTextIfPresent("homeDashTotal", formatCount(_allTotal));
         {
           const lp = Number(data.by_category?.find?.(c => c.value === "LP")?.count ?? 0) || 0;
           const cd = Number(data.by_category?.find?.(c => c.value === "CD")?.count ?? 0) || 0;
-          setTextIfPresent("homeDashMusic", formatCount(data.music_items) + " (LP:" + formatCount(lp) + ", CD:" + formatCount(cd) + ")");
+          setTextIfPresent("homeDashMusic", formatCount(_musicTotal) + " (LP:" + formatCount(lp) + " CD:" + formatCount(cd) + ")");
         }
-        setTextIfPresent("homeDashGoods", formatCount(data.goods_items));
+        setTextIfPresent("homeDashGoods", formatCount(_goodsTotal));
         {
           const slotted = Number(data.slotted_in_collection_items ?? 0);
           const inCol = Number(data.in_collection_items ?? 0);
           const rate = inCol > 0 ? Math.round(slotted / inCol * 100) : 0;
-          setTextIfPresent("homeDashSigned", formatCount(slotted) + " (" + rate + "%)");
+          setTextIfPresent("homeDashInCollection", formatCount(slotted) + " (" + rate + "%)");
         }
+        setTextIfPresent("homeDashSigned", formatCount(data.registered_last_30_days));
         setTextIfPresent("homeDashDirectSigned", formatCount(data.direct_signed_items ?? 0));
         setTextIfPresent("homeDashPurchaseSigned", formatCount(data.purchase_signed_items ?? 0));
         setTextIfPresent("homeDashLimited", formatCount(data.limited_items ?? 0));
