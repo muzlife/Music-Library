@@ -16734,7 +16734,7 @@
             </div>
 
             <!-- Card 9: 예외 알림 (medium) -->
-            <div class="dash-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-size="1/4" data-rows="1/2" data-role="alerts">
+            <div class="dash-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-size="1/2" data-rows="1/2" data-role="alerts">
               <div class="dash-card__head"><span class="dash-card__dot"></span>예외 알림</div>
               <div id="homeDashAlertsBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -41089,6 +41089,14 @@ function initDashboardDrilldown() {
       return m ? parseInt(m[1],16)+','+parseInt(m[2],16)+','+parseInt(m[3],16) : '128,128,128';
     }
 
+    /* 대시보드 카드 공용 — 도메인 코드 → 표시명 */
+    var _DOMAIN_LABEL = {
+      KOREA:'가요', JAPAN:'J-POP', WESTERN:'팝/웨스턴',
+      GREATER_CHINA:'China', OTHER_ASIA:'아시아', WORLD_OTHER:'기타',
+      UNASSIGNED:'미분류', UNKNOWN:'미분류',
+    };
+    function _dLabel(code) { return _DOMAIN_LABEL[String(code||'').toUpperCase()] || code || ''; }
+
     function renderDashboardSnapshot(d) {
       var b=document.getElementById('homeDashSnapshotBody'); if(!b)return;
       var m=d.music_items||0, g=d.goods_items||0, t=m+g;
@@ -41129,7 +41137,7 @@ function initDashboardDrilldown() {
       for(var j=0;j<decs.length;j++)h+='<th>'+decs[j]+'s</th>';
       h+='<th>합계</th></tr></thead><tbody>';
       for(var a=0;a<ad.length;a++){
-        var dm=ad[a]; h+='<tr><td>'+dm+'</td>'; var rt=0;
+        var dm=ad[a]; h+='<tr><td>'+_dLabel(dm)+'</td>'; var rt=0;
         for(var k2=0;k2<decs.length;k2++){
           var v=lu[dm+'|'+decs[k2]]||0; rt+=v;
           var inten=v/mv, al=Math.round(15+inten*85);
@@ -41169,7 +41177,7 @@ function initDashboardDrilldown() {
         var dd = bd[q];
         var pct = ms > 0 ? Math.round((dd.total_spend||0) / ms * 100) : 0;
         h += '<div class="dash-fin-bar-row">' +
-          '<span class="dash-fin-bar-row__lbl">'+escapeHtml(dd.domain||'')+'</span>' +
+          '<span class="dash-fin-bar-row__lbl">'+escapeHtml(_dLabel(dd.domain))+'</span>' +
           '<div class="dash-fin-bar-row__track"><div class="dash-fin-bar-row__fill" style="width:'+pct+'%;background:'+(cl[dd.domain]||'#888')+'"></div></div>' +
           '<span class="dash-fin-bar-row__val">₩'+fc(dd.total_spend)+' (avg ₩'+fc(dd.avg_price)+')</span>' +
           '</div>';
@@ -41225,7 +41233,7 @@ function initDashboardDrilldown() {
         for (var d2 = 0; d2 < dms.length; d2++) {
           var v = fl[fms[f]+'|'+dms[d2]]||0; if (!v) continue;
           var pct = Math.round(v/total*100);
-          h += '<div style="height:100%;width:'+pct+'%;background:'+(dmColors[dms[d2]]||'#888')+';transition:width 0.4s;" title="'+dms[d2]+': '+fc(v)+'"></div>';
+          h += '<div style="height:100%;width:'+pct+'%;background:'+(dmColors[dms[d2]]||'#888')+';transition:width 0.4s;" title="'+_dLabel(dms[d2])+': '+fc(v)+'"></div>';
         }
         h += '</div><span class="dash-fin-bar-row__val">'+fc(total)+'</span></div>';
       }
@@ -41233,7 +41241,7 @@ function initDashboardDrilldown() {
       h += '<div style="display:flex;gap:8px;margin:4px 0 10px;flex-wrap:wrap;">';
       for (var dm = 0; dm < dms.length; dm++) {
         h += '<span style="font-size:0.6rem;display:flex;align-items:center;gap:3px;opacity:0.7;">' +
-          '<span style="width:8px;height:8px;border-radius:2px;background:'+(dmColors[dms[dm]]||'#888')+';flex-shrink:0;"></span>'+dms[dm]+'</span>';
+          '<span style="width:8px;height:8px;border-radius:2px;background:'+(dmColors[dms[dm]]||'#888')+';flex-shrink:0;"></span>'+_dLabel(dms[dm])+'</span>';
       }
       h += '</div>';
       // 프레싱 국가
@@ -41417,7 +41425,7 @@ function initDashboardDrilldown() {
           h += '<span style="font-size:0.65rem;padding:2px 8px;border-radius:20px;' +
                'background:rgba(128,128,128,0.1);border:1px solid rgba(128,128,128,0.15);' +
                'color:'+(dc[dm.value]||'#888')+';">' +
-               dm.value+' <strong style="font-family:var(--font-mono);">'+fc(dm.count)+'</strong></span>';
+               _dLabel(dm.value)+' <strong style="font-family:var(--font-mono);">'+fc(dm.count)+'</strong></span>';
         }
         h += '</div>';
       }
@@ -41435,7 +41443,7 @@ function initDashboardDrilldown() {
         for (var a = 0; a < ad.length; a++) {
           var color = dc[ad[a]]||'#888';
           h += '<div style="margin-bottom:4px;">' +
-            '<div style="font-size:0.62rem;font-weight:700;color:'+color+';margin-bottom:3px;">'+ad[a]+'</div>' +
+            '<div style="font-size:0.62rem;font-weight:700;color:'+color+';margin-bottom:3px;">'+_dLabel(ad[a])+'</div>' +
             '<div style="display:flex;gap:2px;align-items:flex-end;height:20px;">';
           for (var d2 = 0; d2 < decs.length; d2++) {
             var v = lu[ad[a]+'|'+decs[d2]]||0;
@@ -41446,7 +41454,7 @@ function initDashboardDrilldown() {
           h += '</div>' +
             '<div style="display:flex;gap:2px;margin-top:1px;">';
           for (var d3 = 0; d3 < decs.length; d3++) {
-            h += '<div style="flex:1;font-size:0.5rem;text-align:center;opacity:0.3;">'+String(decs[d3]).slice(2)+'s</div>';
+            h += '<div style="flex:1;font-size:0.5rem;text-align:center;opacity:0.3;letter-spacing:-0.02em;">'+String(decs[d3]).slice(2)+'s</div>';
           }
           h += '</div></div>';
         }
@@ -41470,7 +41478,7 @@ function initDashboardDrilldown() {
         h += '<div style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,0.07);">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">' +
           '<span style="flex:1;font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escapeHtml(r.source||'')+'">'+escapeHtml(shortSource)+'</span>' +
-          '<span style="font-size:0.6rem;color:'+color+';flex-shrink:0;">'+escapeHtml(r.domain||'')+'</span>' +
+          '<span style="font-size:0.6rem;color:'+color+';flex-shrink:0;">'+escapeHtml(_dLabel(r.domain))+'</span>' +
           '<span style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:'+color+';flex-shrink:0;width:32px;text-align:right;">'+fc(r.items)+'</span>' +
           '</div>' +
           '<div class="dash-fin-bar-row__track" style="height:4px;">' +
@@ -41633,8 +41641,9 @@ function initDashboardDrilldown() {
         if (!data.title) return;
         const artist = data.artist || "";
         const year = data.year ? "(" + data.year + ")" : "";
-        const metaText = [artist, year].filter(Boolean).join(" ");
-        setTextIfPresent("homeDashAlbumOfDay", data.title);
+        const titleText = artist ? artist + " — " + data.title : data.title;
+        const metaText = year;
+        setTextIfPresent("homeDashAlbumOfDay", titleText);
         setTextIfPresent("homeDashAlbumOfDayMeta", metaText);
         const cover = document.getElementById("homeDashAlbumCover");
         const placeholder = document.getElementById("homeDashAlbumPlaceholder");
