@@ -2518,7 +2518,44 @@ def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any
             label = "커버"
         images.append({"type": label, "uri": src})
 
-    # Probe img_content images using ISBN pattern
+    # 소개(Introduce) 섹션 AJAX 엔드포인트에서 추가 이미지 수집
+    # 알라딘 상품 소개 HTML은 메인 페이지가 아닌 별도 endpoint로 lazy-load됨:
+    # /shop/product/getContents.aspx?ISBN={isbn}&name=Introduce&type=0
+    # C + 9자리 숫자 형태 (알라딘 이미지 서버 ISBN 패턴, e.g. C002938753)
+    c_isbn_match = _re.search(r'\b(C\d{9})\b', html)
+    if c_isbn_match:
+        c_isbn = c_isbn_match.group(1)
+        import httpx as _httpx
+        from datetime import datetime as _dt
+        intro_url = (
+            f"https://www.aladin.co.kr/shop/product/getContents.aspx"
+            f"?ISBN={c_isbn}&name=Introduce&type=0&date={_dt.now().hour}"
+        )
+        try:
+            intro_headers = {
+                "User-Agent": headers.get("User-Agent", "Mozilla/5.0"),
+                "Accept-Language": "ko-KR,ko;q=0.9",
+                "Referer": url,
+            }
+            with _httpx.Client(timeout=10.0, follow_redirects=True, headers=intro_headers) as ic:
+                ir = ic.get(intro_url)
+                if ir.status_code == 200 and ir.text:
+                    for im in _re.finditer(r'<img[^>]+(?:src|data-src)=["\']([^"\']+)["\']', ir.text):
+                        src = im.group(1).strip()
+                        if src.startswith("//"):
+                            src = "https:" + src
+                        elif not src.startswith("http"):
+                            continue
+                        if "/img/img_content/" not in src and "/product/" not in src:
+                            continue
+                        if src in seen:
+                            continue
+                        seen.add(src)
+                        images.append({"type": "소개", "uri": src})
+        except Exception:
+            pass
+
+    # Probe img_content images using numeric ISBN pattern
     isbn_match = _re.search(r'ISBN[^0-9]*(\d{9})', html)
     if isbn_match:
         isbn = isbn_match.group(1)
