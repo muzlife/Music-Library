@@ -40541,6 +40541,14 @@
       if (mid && aid) spotifyTogglePanel(mid, aid);
     });
 
+function _resetAllSearchFilters() {
+      ["homeGenreMissing","homeFormatMissing","homeCatalogMissing","homeNewProduct","homePromo","homeLimitEd","homeSigDirect","homeSigPurchase"].forEach(id => {
+        const el = document.getElementById(id); if (el) el.checked = false;
+      });
+      const osEl = document.getElementById("homeOwnershipStatus"); if (osEl) osEl.value = "";
+      const pkgEl = document.getElementById("homeSearchPackaging"); if (pkgEl) pkgEl.value = "";
+    }
+
 function initDashboardDrilldown() {
       // 소스보강 탭으로 이동하고 미연결 대상 로드
       function _goSource() {
@@ -40619,34 +40627,37 @@ function initDashboardDrilldown() {
         media_missing:           () => _goSearch("homeFormatMissing"),
         catalog_missing:         () => _goSearch("homeCatalogMissing"),
         new_items:               () => _goSearchProductFlag("homeNewProduct"),
-        promo_items:             () => _goSearchProductFlag("homePromo"),
+        promo_items:             () => { openAdminConsole("search"); setTimeout(() => { _resetAllSearchFilters(); const el=document.getElementById("homePromo");if(el)el.checked=true; const d=document.getElementById("homeSearchAdvancedDetails");if(d)d.open=true; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
         other_items:             () => { openAdminConsole("search"); setTimeout(() => { ["homeNewProduct","homePromo","homeLimitEd"].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false;}); const o=document.getElementById("homeOwnershipStatus");if(o)o.value=""; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
         ownership_in_collection: () => _goSearchOwnership("IN_COLLECTION"),
         ownership_loaned:        () => _goSearchOwnership("LOANED"),
         ownership_sold:          () => _goSearchOwnership("SOLD"),
         ownership_lost:          () => _goSearchOwnership("LOST"),
-        limited_edition:         () => _goSearchProductFlag("homeLimitEd"),
+        limited_edition:         () => { openAdminConsole("search"); setTimeout(() => { _resetAllSearchFilters(); const el=document.getElementById("homeLimitEd");if(el)el.checked=true; const d=document.getElementById("homeSearchAdvancedDetails");if(d)d.open=true; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
         sig_direct:              () => {
           openAdminConsole("search");
           setTimeout(() => {
-            ["homeNewProduct","homePromo","homeLimitEd"].forEach(id => {
-              const el = document.getElementById(id);
-              if (el) el.checked = false;
-            });
-            const osEl = document.getElementById("homeOwnershipStatus");
-            if (osEl) osEl.value = "";
+            _resetAllSearchFilters();
             const sigD = document.getElementById("homeSigDirect");
             if (sigD) sigD.checked = true;
             const sigP = document.getElementById("homeSigPurchase");
-            if (sigP) sigP.checked = false;
+            if (sigP) sigP.checked = true;
             const details = document.getElementById("homeSearchAdvancedDetails");
             if (details) details.open = true;
             if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
           }, 200);
         },
-        multi_disc:              () => { openAdminConsole("search"); setTimeout(() => { ["homeNewProduct","homePromo","homeLimitEd"].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false;}); const o=document.getElementById("homeOwnershipStatus");if(o)o.value=""; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
-        obi_items:               () => { openAdminConsole("search"); setTimeout(() => { ["homeNewProduct","homePromo","homeLimitEd"].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false;}); const o=document.getElementById("homeOwnershipStatus");if(o)o.value=""; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
-        box_set:                 () => { openAdminConsole("search"); setTimeout(() => { ["homeNewProduct","homePromo","homeLimitEd"].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false;}); const o=document.getElementById("homeOwnershipStatus");if(o)o.value=""; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
+        box_set:                 () => {
+          openAdminConsole("search");
+          setTimeout(() => {
+            _resetAllSearchFilters();
+            const pkgEl = document.getElementById("homeSearchPackaging");
+            if (pkgEl) pkgEl.value = "Box Set";
+            const details = document.getElementById("homeSearchAdvancedDetails");
+            if (details) details.open = true;
+            if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
+          }, 200);
+        },
         sig_purchase:            () => {
           openAdminConsole("search");
           setTimeout(() => {
@@ -41459,8 +41470,8 @@ function initDashboardDrilldown() {
       var items = [
         { num: d.signed_items||0,     lbl:'싸인본',    color:'#fbbf24', drill:'sig_direct'      },
         { num: d.limited_items||0,    lbl:'한정반',    color:'#a78bfa', drill:'limited_edition'  },
-        { num: d.multi_disc_items||0, lbl:'멀티디스크', color:'#22d3ee', drill:'multi_disc'      },
-        { num: d.obi_items||0,        lbl:'OBI',       color:'#f9a8d4', drill:'obi_items'       },
+        { num: d.multi_disc_items||0, lbl:'멀티디스크', color:'#22d3ee', drill:null              },
+        { num: d.obi_items||0,        lbl:'OBI',       color:'#f9a8d4', drill:null              },
         { num: d.promo_items||0,      lbl:'홍보반',    color:'#fb923c', drill:'promo_items'      },
         { num: d.box_set_items||0,    lbl:'박스세트',   color:'#6b7280', drill:'box_set'         },
       ];
