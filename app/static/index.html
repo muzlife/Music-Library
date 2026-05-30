@@ -41220,25 +41220,33 @@ function initDashboardDrilldown() {
     }
 
     function renderDashboardMetaSource(d) {
-      var b=document.getElementById('homeDashMetaSourceBody'); if(!b)return;
-      var rows=d.by_source_completeness||[];
-      if(!rows.length){b.innerHTML='<div class="mini muted">데이터 없음</div>';return;}
-      var fc=formatCount, h='<table class="dash-completeness-table"><thead><tr><th>소스</th><th>총계</th><th>마스터</th><th>커버</th><th>장르</th><th>카탈로그</th></tr></thead><tbody>';
-      for(var i=0;i<rows.length;i++){
-        var r=rows[i];
-        var mp=r.total>0?Math.round(r.master_linked/r.total*100):0;
-        var cp=r.total>0?Math.round(r.cover_present/r.total*100):0;
-        var gp=r.total>0?Math.round(r.genre_present/r.total*100):0;
-        var clp=r.total>0?Math.round(r.catalog_present/r.total*100):0;
-        var bc2=function(p){return p>=95?'high':p>=70?'mid':'low';};
-        h+='<tr><td>'+escapeHtml(r.source||'')+'</td><td>'+fc(r.total)+'</td>'+
-          '<td><span class="pct">'+mp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(mp)+'" style="width:'+mp+'%"></span></span></td>'+
-          '<td><span class="pct">'+cp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(cp)+'" style="width:'+cp+'%"></span></span></td>'+
-          '<td><span class="pct">'+gp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(gp)+'" style="width:'+gp+'%"></span></span></td>'+
-          '<td><span class="pct">'+clp+'%</span><span class="dash-completeness-bar"><span class="dash-completeness-bar-fill '+bc2(clp)+'" style="width:'+clp+'%"></span></span></td></tr>';
+      var b = document.getElementById('homeDashMetaSourceBody'); if (!b) return;
+      var rows = d.by_source_completeness || [];
+      if (!rows.length) { b.innerHTML = '<div class="mini muted">데이터 없음</div>'; return; }
+      function pctClass(p) { return p >= 95 ? 'high' : p >= 70 ? 'mid' : 'low'; }
+      function barLine(tag, pct) {
+        return '<div class="dash-meta-bar-line">' +
+          '<span class="dash-meta-bar-tag">'+tag+'</span>' +
+          '<div class="dash-meta-bar-track"><div class="dash-meta-bar-fill '+pctClass(pct)+'" style="width:'+pct+'%"></div></div>' +
+          '<span class="dash-meta-bar-pct">'+pct+'%</span>' +
+          '</div>';
       }
-      h+='</tbody></table>';
-      b.innerHTML=h;
+      var h = '<div class="dash-meta-src-group">';
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        var mp  = r.total > 0 ? Math.round(r.master_linked  / r.total * 100) : 0;
+        var cp  = r.total > 0 ? Math.round(r.cover_present  / r.total * 100) : 0;
+        var gp  = r.total > 0 ? Math.round(r.genre_present  / r.total * 100) : 0;
+        if (i > 0) h += '<div style="height:1px;background:rgba(128,128,128,0.1);margin:4px 0;"></div>';
+        h += '<div class="dash-meta-src-row">' +
+          '<span class="dash-meta-src-name">'+escapeHtml(r.source||'')+'</span>' +
+          '<div class="dash-meta-bars">' +
+            barLine('마스터', mp) + barLine('커버', cp) + barLine('장르', gp) +
+          '</div>' +
+          '</div>';
+      }
+      h += '</div>';
+      b.innerHTML = h;
     }
 
     function renderDashboardCollector(d) {
@@ -41295,17 +41303,27 @@ function initDashboardDrilldown() {
     }
 
     function renderDashboardRegImport(d) {
-      var b=document.getElementById('homeDashRegImportBody'); if(!b)return;
-      var months=(d.by_registration_month||[]).slice(-10);
-      var maxReg=1;
-      for(var i=0;i<months.length;i++){if((months[i].count||0)>maxReg)maxReg=months[i].count;}
-      var fc=formatCount, h='<div class="dash-kpi-sub-label">월별 등록 추이</div><div class="dash-reg-pace">';
-      for(var j=0;j<months.length;j++){
-        var m=months[j], pct=Math.round((m.count||0)/maxReg*100);
-        h+='<div class="dash-reg-month"><span class="dash-reg-month-label">'+m.month+'</span><div class="dash-reg-month-bar"><div class="dash-reg-month-fill" style="width:'+pct+'%"></div></div><span class="dash-reg-month-count">'+fc(m.count)+'</span></div>';
+      var b = document.getElementById('homeDashRegImportBody'); if (!b) return;
+      var months = (d.by_registration_month || []).slice(-10);
+      var maxReg = Math.max(1, months.reduce(function(m,x){return Math.max(m,x.count||0);}, 0));
+      var fc = formatCount;
+      var h = '<div class="dash-reg-pace">';
+      for (var j = 0; j < months.length; j++) {
+        var m = months[j], pct = Math.round((m.count||0) / maxReg * 100);
+        h += '<div class="dash-reg-month">' +
+          '<span class="dash-reg-month-label">'+m.month+'</span>' +
+          '<div class="dash-reg-month-bar"><div class="dash-reg-month-fill" style="width:'+pct+'%"></div></div>' +
+          '<span class="dash-reg-month-count" style="font-weight:700;opacity:'+(pct===100?'1':'0.6')+';">'+fc(m.count)+'</span>' +
+          '</div>';
       }
-      h+='</div><hr class="dash-kpi-divider"><div class="dash-import-status"><div class="dash-import-count">'+fc(d.import_queue_size||0)+'</div><div><div class="dash-import-label" style="font-size:0.7rem;opacity:0.5;">구매 수입 대기</div><div class="dash-import-badge '+(d.import_queue_size>0?'pending':'clear')+'">'+(d.import_queue_size>0?'처리 필요':'완료')+'</div></div></div>';
-      b.innerHTML=h;
+      h += '</div>';
+      var qSize = d.import_queue_size || 0;
+      h += '<div class="dash-import-panel">' +
+        '<div class="dash-import-panel__num">'+fc(qSize)+'</div>' +
+        '<div><div class="dash-import-panel__lbl">구매 수입 대기</div>' +
+        '<span class="dash-import-panel__badge">'+(qSize > 0 ? '처리 필요' : '완료')+'</span>' +
+        '</div></div>';
+      b.innerHTML = h;
     }
 
 
