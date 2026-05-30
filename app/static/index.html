@@ -45115,8 +45115,8 @@ async function loadDashboardClimate() {
         const _goodsTotal = Number(data.goods_items ?? 0);
         setTextIfPresent("homeDashTotal", formatCount(_musicTotal + _goodsTotal));
         {
-          const lp = Number(data.by_category?.find?.(c => c.value === "LP")?.count ?? 0) || 0;
-          const cd = Number(data.by_category?.find?.(c => c.value === "CD")?.count ?? 0) || 0;
+          const lp = Number(data.by_category?.find?.(c => c.category === "LP")?.count ?? 0) || 0;
+          const cd = Number(data.by_category?.find?.(c => c.category === "CD")?.count ?? 0) || 0;
           setTextIfPresent("homeDashMusic", formatCount(_musicTotal));
           setTextIfPresent("homeDashMusicDetail", "LP " + formatCount(lp) + "  CD " + formatCount(cd));
         }
