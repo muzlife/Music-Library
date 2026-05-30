@@ -1616,6 +1616,7 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
         subtype_labels=row.get("subtype_labels") or [],
         soundtrack_option_ids=row.get("soundtrack_option_ids") or [],
         soundtrack_labels=row.get("soundtrack_labels") or [],
+        local_image_items=local_image_items,
     )
 
 
