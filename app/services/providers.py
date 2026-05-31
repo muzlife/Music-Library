@@ -1155,7 +1155,7 @@ def _discogs_format_meta(formats: Any, fallback_format_text: str | None = None) 
                 name = _pick_first_text(row.get("name"))
                 if name:
                     names.append(name)
-                    if media_type is None:
+                    if media_type is None and name not in ("Box Set", "All Media"):
                         media_type = name
                 for desc in _unique_text_list(row.get("descriptions")):
                     descs.append(desc)
@@ -1166,7 +1166,7 @@ def _discogs_format_meta(formats: Any, fallback_format_text: str | None = None) 
                 text = _pick_first_text(row)
                 if text:
                     names.append(text)
-                    if media_type is None:
+                    if media_type is None and text not in ("Box Set", "All Media"):
                         media_type = text
 
     combined = " ".join([*names, *descs, str(fallback_format_text or "")]).strip()
