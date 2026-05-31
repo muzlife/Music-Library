@@ -32009,6 +32009,14 @@
       const mode = currentShellMode();
       document.body.dataset.shellMode = mode;
       document.body.dataset.shellReadonly = isShellReadOnly(mode) ? "true" : "false";
+      /* dashboard elements: visible only in admin mode */
+      const showDashboard = mode === "admin";
+      const kpiBar = document.getElementById("homeDashKpiBar");
+      const viewTabs = document.getElementById("homeDashViewTabs");
+      const viewStatus = document.getElementById("homeDashViewStatus");
+      if (kpiBar) kpiBar.style.display = showDashboard ? "" : "none";
+      if (viewTabs) viewTabs.style.display = showDashboard ? "flex" : "none";
+      if (viewStatus) viewStatus.style.display = showDashboard ? "" : "none";
     }
 
     function syncShellButtons() {
