@@ -209,7 +209,7 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-                   AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '')
+                   AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '') AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')
                   THEN 1
                   ELSE 0
                 END
