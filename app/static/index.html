@@ -17893,11 +17893,15 @@
 
                           </select>
                         </div>
-                        <div id="homeEditFormatNameWrap" class="span-2">
-                          <label data-i18n="media.manage.field.packaging.label">패키징</label>
-                          <input id="editFormatName" type="hidden" />
-                          <div id="editFormatNameOptions" class="edit-format-name-options">
-                            <span class="muted mini">미디어 타입 선택 시 옵션 표시</span>
+                        <!-- 한정판 / 넘버링 (패키징 자리로 이동) -->
+                        <div class="span-2" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                          <label class="inline-check">
+                            <input id="editIsLimitedEdition" type="checkbox" />
+                            <span data-i18n="media.manage.product.field.is_limited_edition.label">한정판</span>
+                          </label>
+                          <div id="editEditionNumberWrap" class="u-hidden-initial" style="display:flex;align-items:center;gap:6px;">
+                            <label for="editEditionNumber" style="white-space:nowrap;font-size:0.82rem;" data-i18n="media.manage.product.field.edition_number.label">넘버링</label>
+                            <input id="editEditionNumber" type="text" placeholder="예: 5/1000" style="width:90px;" />
                           </div>
                         </div>
                         <div id="homeEditDiscCountWrap">
@@ -17925,6 +17929,7 @@
                           </select>
                         </div>
                       </div>
+                      <!-- 런아웃 매트릭스 / 프레싱 국가: Vinyl(LP), 10", 7" 선택 시만 표시 -->
                       <div id="homeEditVinylMetaRow" class="grid-12 grid-12--from-6 u-mt-6 u-hidden-initial">
                         <div id="homeEditRunoutMatrixWrap" class="span-3">
                           <label for="editRunoutMatrix" data-i18n="media.manage.field.runout_matrix.label">런아웃 매트릭스</label>
@@ -17935,31 +17940,15 @@
                           <input id="editPressingCountry" data-i18n-placeholder="media.manage.field.pressing_country.placeholder" placeholder="예: South Korea" />
                         </div>
                       </div>
-                      <div class="u-mt-6">
-                        <label for="editCoverImageUrl" data-i18n="media.manage.field.cover_image_url.label">커버 이미지 URL</label>
-                        <input id="editCoverImageUrl" data-i18n-placeholder="media.manage.field.cover_image_url.placeholder" placeholder="https://..." style="width:100%;box-sizing:border-box;" />
-                      </div>
-                      <!-- 로컬 이미지 관리 -->
-                      <div id="editLocalImagesSection" class="u-mt-6" style="display:none;">
-                        <label style="display:block;margin-bottom:6px;font-weight:500;">보관 이미지</label>
-                        <div id="editLocalImagesGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
-                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                          <label class="btn ghost" style="cursor:pointer;font-size:0.8rem;padding:4px 10px;">
-                            📁 파일 업로드
-                            <input id="editImageFileInput" type="file" accept="image/*" style="display:none;" onchange="handleEditImageFileUpload(this)" />
-                          </label>
-                          <select id="editImageTypeSelect" style="font-size:0.8rem;padding:3px 6px;">
-                            <option value="앞면">앞면</option>
-                            <option value="뒷면">뒷면</option>
-                            <option value="추가" selected>추가</option>
-                          </select>
+                      <!-- 패키징 (보관 이미지 상단으로 이동) -->
+                      <div id="homeEditFormatNameWrap" class="u-mt-6">
+                        <label data-i18n="media.manage.field.packaging.label">패키징</label>
+                        <input id="editFormatName" type="hidden" />
+                        <div id="editFormatNameOptions" class="edit-format-name-options">
+                          <span class="muted mini">미디어 타입 선택 시 옵션 표시</span>
                         </div>
-                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
-                          <input id="editImageUrlInput" type="text" placeholder="이미지 URL 입력 후 다운로드" style="flex:1;min-width:200px;font-size:0.85rem;" />
-                          <button class="btn ghost" style="font-size:0.8rem;padding:4px 10px;" type="button" onclick="handleEditImageUrlAdd()">⬇ 다운로드</button>
-                        </div>
-                        <div id="editImageStatus" class="status-line" style="margin-top:4px;min-height:1em;font-size:0.8rem;"></div>
                       </div>
+                      <!-- 패키지 구성 (보관 이미지 상단으로 이동) -->
                       <div id="homeEditPackageContentsWrap" class="u-mt-6">
                         <label style="display:block;margin-bottom:4px;" data-i18n="media.manage.product.field.package_contents.label">패키지 구성</label>
                         <div id="editPackageContentsOptions" class="edit-format-name-options">
@@ -17984,16 +17973,29 @@
                           <input id="editPackageContentsOtherText" type="text" placeholder="직접 입력" style="display:none;width:110px;font-size:0.8rem;padding:1px 4px;" />
                         </div>
                       </div>
-                      <div class="u-mt-6" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                        <label class="inline-check">
-                          <input id="editIsLimitedEdition" type="checkbox" />
-                          <span data-i18n="media.manage.product.field.is_limited_edition.label">한정판</span>
-                        </label>
-                        <div id="editEditionNumberWrap" class="u-hidden-initial" style="display:flex;align-items:center;gap:6px;">
-                          <label for="editEditionNumber" style="white-space:nowrap;font-size:0.82rem;" data-i18n="media.manage.product.field.edition_number.label">넘버링</label>
-                          <input id="editEditionNumber" type="text" placeholder="예: 5/1000" style="width:90px;" />
+                      <!-- 보관 이미지 -->
+                      <div id="editLocalImagesSection" class="u-mt-6" style="display:none;">
+                        <label style="display:block;margin-bottom:6px;font-weight:500;">보관 이미지</label>
+                        <div id="editLocalImagesGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                          <label class="btn ghost" style="cursor:pointer;font-size:0.8rem;padding:4px 10px;">
+                            📁 파일 업로드
+                            <input id="editImageFileInput" type="file" accept="image/*" style="display:none;" onchange="handleEditImageFileUpload(this)" />
+                          </label>
+                          <select id="editImageTypeSelect" style="font-size:0.8rem;padding:3px 6px;">
+                            <option value="앞면">앞면</option>
+                            <option value="뒷면">뒷면</option>
+                            <option value="추가" selected>추가</option>
+                          </select>
                         </div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+                          <input id="editImageUrlInput" type="text" placeholder="이미지 URL 입력 후 다운로드" style="flex:1;min-width:200px;font-size:0.85rem;" />
+                          <button class="btn ghost" style="font-size:0.8rem;padding:4px 10px;" type="button" onclick="handleEditImageUrlAdd()">⬇ 다운로드</button>
+                        </div>
+                        <div id="editImageStatus" class="status-line" style="margin-top:4px;min-height:1em;font-size:0.8rem;"></div>
                       </div>
+                      <!-- editCoverImageUrl: 숨김 처리 (저장 호환성 유지) -->
+                      <input id="editCoverImageUrl" type="hidden" />
 <details id="homeEditProductExtraDetails" class="ops-compact-extra-fields">
                         <summary>구매 / 컨디션 / 커버 / 메모</summary>
                         <div class="ops-compact-extra-fields-body home-manage-product-extra-grid">
