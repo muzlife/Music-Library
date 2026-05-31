@@ -4208,8 +4208,8 @@ def _load_operator_seoul_weather() -> dict[str, Any]:
     response = httpx.get(
         "https://api.open-meteo.com/v1/forecast",
         params={
-            "latitude": 37.5665,
-            "longitude": 126.9780,
+            "latitude": 36.4109,
+            "longitude": 128.1591,
             "current": "temperature_2m,relative_humidity_2m,is_day,weather_code",
             "daily": "temperature_2m_max,temperature_2m_min",
             "forecast_days": 1,
@@ -4234,8 +4234,8 @@ def _load_operator_seoul_weather() -> dict[str, Any]:
     available = temperature_c is not None
     return {
         "available": available,
-        "source": "seoul_weather",
-        "location_label": "서울",
+        "source": "sangju_weather",
+        "location_label": "상주",
         "description": "",
         "temperature_c": float(temperature_c) if temperature_c is not None else None,
         "humidity_percent": float(humidity_percent) if humidity_percent is not None else None,
