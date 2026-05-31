@@ -74,6 +74,9 @@ def _build_album_master_filter_sql(
     is_new: bool | None = None,
     is_promo: bool | None = None,
     album_master_id: int | None = None,
+    genre_missing: bool = False,
+    format_missing: bool = False,
+    catalog_missing: bool = False,
 ) -> tuple[str, list[Any]]:
     where_sql = ""
     params: list[Any] = []
@@ -405,6 +408,46 @@ def _build_album_master_filter_sql(
           )
         """
 
+
+    if genre_missing:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member ammg
+            JOIN owned_item oig ON oig.id = ammg.owned_item_id
+            LEFT JOIN music_item_detail midg ON midg.owned_item_id = oig.id
+            WHERE ammg.album_master_id = am.id
+              AND oig.category IN ('LP','CD','CASSETTE','8TRACK','DIGITAL','REEL_TO_REEL')
+              AND (midg.genres_json IS NULL OR TRIM(midg.genres_json) = '' OR midg.genres_json = '[]')
+          )
+        """
+
+    if format_missing:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member ammf
+            JOIN owned_item oif ON oif.id = ammf.owned_item_id
+            LEFT JOIN music_item_detail midf ON midf.owned_item_id = oif.id
+            WHERE ammf.album_master_id = am.id
+              AND oif.category IN ('LP','CD','CASSETTE','8TRACK','DIGITAL','REEL_TO_REEL')
+              AND (midf.format_name IS NULL OR TRIM(midf.format_name) = '')
+          )
+        """
+
+    if catalog_missing:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member ammc
+            JOIN owned_item oic ON oic.id = ammc.owned_item_id
+            LEFT JOIN music_item_detail midc ON midc.owned_item_id = oic.id
+            WHERE ammc.album_master_id = am.id
+              AND oic.category IN ('LP','CD','CASSETTE','8TRACK','DIGITAL','REEL_TO_REEL')
+              AND (midc.catalog_no IS NULL OR TRIM(midc.catalog_no) = '')
+          )
+        """
+
     return where_sql, params
 
 
@@ -560,6 +603,9 @@ def list_album_masters(
     is_new: bool | None = None,
     is_promo: bool | None = None,
     album_master_id: int | None = None,
+    genre_missing: bool = False,
+    format_missing: bool = False,
+    catalog_missing: bool = False,
 ) -> list[dict[str, Any]]:
     filter_sql, params = _build_album_master_filter_sql(
         source_code=source_code,
@@ -581,6 +627,9 @@ def list_album_masters(
         is_new=is_new,
         is_promo=is_promo,
         album_master_id=album_master_id,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
     )
 
     query = """
@@ -598,6 +647,36 @@ def list_album_masters(
         am.spotify_album_uri,
         am.spotify_matched_at,
         am.spotify_image_url,
+        (
+          SELECT mid.genres_json
+          FROM album_master_member amm_gen
+          JOIN owned_item oi_gen ON oi_gen.id = amm_gen.owned_item_id
+          LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi_gen.id
+          WHERE amm_gen.album_master_id = am.id
+            AND mid.genres_json IS NOT NULL
+            AND mid.genres_json <> '[]'
+            AND TRIM(mid.genres_json) <> ''
+          ORDER BY
+            CASE WHEN oi_gen.order_key IS NULL OR TRIM(oi_gen.order_key) = '' THEN 1 ELSE 0 END,
+            oi_gen.order_key ASC,
+            oi_gen.id ASC
+          LIMIT 1
+        ) AS genres_json,
+        (
+          SELECT mid.styles_json
+          FROM album_master_member amm_sty
+          JOIN owned_item oi_sty ON oi_sty.id = amm_sty.owned_item_id
+          LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi_sty.id
+          WHERE amm_sty.album_master_id = am.id
+            AND mid.styles_json IS NOT NULL
+            AND mid.styles_json <> '[]'
+            AND TRIM(mid.styles_json) <> ''
+          ORDER BY
+            CASE WHEN oi_sty.order_key IS NULL OR TRIM(oi_sty.order_key) = '' THEN 1 ELSE 0 END,
+            oi_sty.order_key ASC,
+            oi_sty.id ASC
+          LIMIT 1
+        ) AS styles_json,
         COUNT(amm.id) AS member_count,
         MAX(amm.owned_item_id) AS max_owned_item_id,
         (
@@ -795,6 +874,9 @@ def count_album_masters(
     is_limited: bool | None = None,
     is_new: bool | None = None,
     is_promo: bool | None = None,
+    genre_missing: bool = False,
+    format_missing: bool = False,
+    catalog_missing: bool = False,
 ) -> int:
     filter_sql, params = _build_album_master_filter_sql(
         source_code=source_code,
@@ -815,6 +897,9 @@ def count_album_masters(
         is_limited=is_limited,
         is_new=is_new,
         is_promo=is_promo,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
     )
     query = """
       SELECT COUNT(*) AS cnt

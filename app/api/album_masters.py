@@ -16,6 +16,7 @@ moving them out is a separate refactor) and reach into them via the lazy
 """
 
 from __future__ import annotations
+import json
 
 from typing import Any
 
@@ -597,6 +598,9 @@ def list_album_masters(
     is_new: bool | None = Query(default=None),
     is_promo: bool | None = Query(default=None),
     album_master_id: int | None = Query(default=None, ge=1),
+    genre_missing: bool = Query(default=False),
+    format_missing: bool = Query(default=False),
+    catalog_missing: bool = Query(default=False),
 ) -> list[AlbumMasterListItem]:
     main_module = _main()
     match_query = str(item_name or q or "").strip()
@@ -628,6 +632,9 @@ def list_album_masters(
         is_new=is_new,
         is_promo=is_promo,
         album_master_id=album_master_id,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
     )
     if include_total:
         total = db.count_album_masters(
@@ -649,6 +656,9 @@ def list_album_masters(
             is_limited=is_limited,
             is_new=is_new,
             is_promo=is_promo,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
         )
         response.headers["X-Total-Count"] = str(total)
     result: list[AlbumMasterListItem] = []
@@ -681,6 +691,10 @@ def list_album_masters(
                 seen_locations.add(text)
                 location_preview_items.append(text)
         row2["member_location_preview"] = location_preview_items
+        genres_raw = row2.pop("genres_json", None)
+        row2["genres"] = json.loads(genres_raw) if isinstance(genres_raw, str) and genres_raw.strip() else []
+        styles_raw = row2.pop("styles_json", None)
+        row2["styles"] = json.loads(styles_raw) if isinstance(styles_raw, str) and styles_raw.strip() else []
         member_location_actions, member_items_preview = main_module._album_master_member_context(
             int(row2.get("id") or 0)
         )

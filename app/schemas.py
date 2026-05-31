@@ -77,6 +77,7 @@ class MetadataCandidate(BaseModel):
     domain_code: DomainCode | None = None
     genres: list[str] = Field(default_factory=list)
     styles: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     disc_count: int | None = None
     speed_rpm: int | None = None
     disc_type: str | None = None
@@ -374,6 +375,7 @@ class ArtistContextResponse(BaseModel):
     country: str | None = None
     active_years: str | None = None
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     links: list[ArtistContextLink] = Field(default_factory=list)
 
 
@@ -667,6 +669,7 @@ class AlbumMasterVariantItem(BaseModel):
     domain_code: DomainCode | None = None
     genres: list[str] = Field(default_factory=list)
     styles: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     label_name: str | None = None
     catalog_no: str | None = None
     barcode: str | None = None
@@ -909,6 +912,7 @@ class AlbumMasterListItem(BaseModel):
     first_member_cell_code: str | None = None
     matched_track_preview: list[str] = Field(default_factory=list)
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     spotify_album_id: str | None = None
     spotify_album_uri: str | None = None
     spotify_matched_at: str | None = None
@@ -946,6 +950,7 @@ class MusicDetailCreate(BaseModel):
     track_list: list[str] = Field(default_factory=list)
     media_type: str | None = None
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     styles: list[str] = Field(default_factory=list)
     cover_condition: str | None = None
     disc_condition: str | None = None
@@ -1094,6 +1099,7 @@ class OwnedItemListItem(BaseModel):
     goods_primary_image_url: str | None = None
     track_list: list[str] = Field(default_factory=list)
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     cover_condition: str | None = None
     disc_condition: str | None = None
     is_promotional_not_for_sale: bool | None = None

@@ -6720,6 +6720,11 @@
       color: #0f172a;
     }
 
+    .home-master-genre-line {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
     .home-master-heading-line {
       display: flex;
       align-items: center;
@@ -16308,7 +16313,12 @@
       }
       .home-search-action button { width: auto; }
       .home-master-member-preview-body { gap: 3px; }
-      .home-master-heading-line {
+      .home-master-genre-line {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .home-master-heading-line {
         gap: 4px;
         align-items: flex-start;
       }
@@ -46935,9 +46945,11 @@ async function loadDashboardClimate() {
       const previewToggle = allMemberItemsPreview.length <= 3
         ? ""
         : `<button class="btn ghost tiny home-master-member-preview-toggle" type="button" data-home-toggle-member-preview="${row.id}" aria-expanded="${previewExpanded ? "true" : "false"}">${escapeHtml(previewExpanded ? t("media.manage.search.preview.collapse") : t("media.manage.search.preview.more", { count: formatCount(previewHiddenCount) }))}</button>`;
-            const genres = Array.isArray(row.genres) && row.genres.length > 0 ? row.genres.slice(0, 3) : [];
-      const genreChips = genres.length > 0
-        ? genres.map(g => `<span class="tag tag--genre">${escapeHtml(g)}</span>`).join("")
+            const genres = Array.isArray(row.genres) && row.genres.length > 0 ? row.genres : [];
+      const styles = Array.isArray(row.styles) && row.styles.length > 0 ? row.styles : [];
+      const genreDisplay = [...genres, ...styles.filter(s => !genres.includes(s))];
+      const genreLine = genreDisplay.length > 0
+        ? `<div class="home-master-genre-line">장르/스타일: ${escapeHtml(genreDisplay.join(', '))}</div>`
         : "";
       const sourceChip = `<span class="tag home-master-source-chip">${escapeHtml(sourceCode)}</span>`;
       const itemSourceChip = memberSourceCodes.length === 1 && memberSourceCodes[0] !== sourceCode
@@ -46947,7 +46959,7 @@ async function loadDashboardClimate() {
         <div class="result-item album-result ${Number(row.id) === Number(homeSelectedMasterId) ? "pick" : ""}" data-master-id="${row.id}">
           <div class="album-result-cover">${cover}</div>
           <div class="album-result-main">
-            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}${genreChips}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge">Spotify</span>` : ""}</div>
+            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge">Spotify</span>` : ""}</div>${genreLine}
             ${trackPreview.length ? `<div class="mini">${escapeHtml(t("media.manage.search.matched_tracks", { tracks: trackPreview.join(" | ") }))}</div>` : ""}
             ${memberItemsPreview.length ? `<div class="home-master-member-preview-list">
               ${memberItemsPreview.map((item) => homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode })).join("")}
