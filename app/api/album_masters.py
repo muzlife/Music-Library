@@ -1012,7 +1012,7 @@ def spotify_clear_match(
 
 
 @router.put("/album-masters/{album_master_id}/spotify/match")
-def spotify_set_match(
+async def spotify_set_match(
     album_master_id: int,
     request: Request,
 ) -> dict[str, Any]:
@@ -1021,7 +1021,7 @@ def spotify_set_match(
     _require_admin_request(request)
     import json as _json
 
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     spotify_album_id = str(body.get("spotify_album_id") or "").strip()
     spotify_album_uri = str(body.get("spotify_album_uri") or f"spotify:album:{spotify_album_id}").strip()
 
@@ -1131,14 +1131,14 @@ def spotify_album_tracks(
 # ── Generic Spotify play ────────────────────────────────────────────
 
 @router.post("/spotify/play")
-def spotify_play_uri(request: Request) -> dict[str, Any]:
+async def spotify_play_uri(request: Request) -> dict[str, Any]:
     """Play a Spotify URI (track or album). OPERATOR+."""
     from ..security import _require_operator_request
     _require_operator_request(request)
     import json as _json
     from ..services.spotify import SpotifyService
 
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     uri = str(body.get("uri") or "").strip()
     if not uri:
         raise HTTPException(status_code=400, detail="uri required")
