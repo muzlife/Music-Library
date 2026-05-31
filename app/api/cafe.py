@@ -83,6 +83,11 @@ router = APIRouter(tags=["cafe"])
 _spotify = SpotifyService()
 _local = LocalPlayer()
 
+# now-playing 캐시 (Spotify API 과호출 방지)
+import time as _time
+_NOW_PLAYING_CACHE: dict = {"data": None, "ts": 0.0}
+_NOW_PLAYING_TTL = 5.0  # 5초
+
 
 # ── helpers ─────────────────────────────────────────────────────
 
@@ -229,13 +234,21 @@ def cafe_queue(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
 @router.get("/cafe/now-playing")
 def cafe_now_playing() -> dict[str, Any]:
     """Public: current playback info (Spotify only for now)."""
+    now = _time.monotonic()
+    if _NOW_PLAYING_CACHE["data"] is not None and now - _NOW_PLAYING_CACHE["ts"] < _NOW_PLAYING_TTL:
+        return _NOW_PLAYING_CACHE["data"]
     pb = _spotify.current_playback_sync()
     if pb:
-        return {"available": True, "source": "spotify", **pb}
-    local = _local.current_track()
-    if local and local.get("is_playing"):
-        return {"available": True, **local}
-    return {"available": False}
+        result: dict[str, Any] = {"available": True, "source": "spotify", **pb}
+    else:
+        local = _local.current_track()
+        if local and local.get("is_playing"):
+            result = {"available": True, **local}
+        else:
+            result = {"available": False}
+    _NOW_PLAYING_CACHE["data"] = result
+    _NOW_PLAYING_CACHE["ts"] = now
+    return result
 
 
 # ── local playback ────────────────────────────────────────────────
