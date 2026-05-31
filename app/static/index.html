@@ -31461,7 +31461,7 @@
       if (!ownedItemId) return;
       if (!window.confirm("이 이미지를 목록에서 제거할까요?")) return;
       try {
-        const res = await fetch(`/owned-items/${ownedItemId}/images/${index}`, { method: "DELETE" });
+        const res = await fetchWithRetry(`/owned-items/${ownedItemId}/images/${index}`, { method: "DELETE" });
         const data = await safeJson(res);
         if (!res.ok) throw new Error(responseDetailText(data, "삭제 실패"));
         _editLocalImages = Array.isArray(data.items) ? data.items : _editLocalImages;
