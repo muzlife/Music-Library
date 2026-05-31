@@ -198,6 +198,26 @@ def list_owned_items(
            mid.track_list_json IS NULL OR TRIM(mid.track_list_json) = '' OR TRIM(mid.track_list_json) = '[]'
          )
         """
+
+    media_format_state_u = str(media_format_state or "ANY").strip().upper()
+    if media_format_state_u == "MISSING":
+        query += " AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '')"
+    elif media_format_state_u == "HAS":
+        query += " AND (mid.format_name IS NOT NULL AND TRIM(mid.format_name) <> '')"
+
+    size_group_state_u = str(size_group_state or "ANY").strip().upper()
+    if size_group_state_u == "MISMATCH":
+        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
+                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') != 'STD')"
+                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') != 'CASSETTE')"
+                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') != '8TRACK')"
+                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
+    elif size_group_state_u == "MATCH":
+        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
+                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') = 'STD')"
+                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') = 'CASSETTE')"
+                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') = '8TRACK')"
+                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
     elif track_state_u == "HAS":
         query += """
          AND (
@@ -377,6 +397,26 @@ def count_owned_items(
            mid.track_list_json IS NULL OR TRIM(mid.track_list_json) = '' OR TRIM(mid.track_list_json) = '[]'
          )
         """
+
+    media_format_state_u = str(media_format_state or "ANY").strip().upper()
+    if media_format_state_u == "MISSING":
+        query += " AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '')"
+    elif media_format_state_u == "HAS":
+        query += " AND (mid.format_name IS NOT NULL AND TRIM(mid.format_name) <> '')"
+
+    size_group_state_u = str(size_group_state or "ANY").strip().upper()
+    if size_group_state_u == "MISMATCH":
+        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
+                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') != 'STD')"
+                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') != 'CASSETTE')"
+                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') != '8TRACK')"
+                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
+    elif size_group_state_u == "MATCH":
+        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
+                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') = 'STD')"
+                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') = 'CASSETTE')"
+                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') = '8TRACK')"
+                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
     elif track_state_u == "HAS":
         query += """
          AND (

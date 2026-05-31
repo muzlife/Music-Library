@@ -1331,6 +1331,7 @@ class CollectionDashboardResponse(BaseModel):
     lost_items: int = 0
     genre_missing_items: int = 0
     media_missing_items: int = 0
+    category_size_mismatch_items: int = 0
     catalog_missing_items: int = 0
     limited_items: int = 0
     new_items: int = 0

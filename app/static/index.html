@@ -16819,7 +16819,7 @@
             </div>
 
             <!-- Card 9: 예외 알림 (medium) -->
-            <div class="dash-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-size="1/2" data-rows="1" data-role="alerts">
+            <div class="dash-card" data-widget-id="card-alerts" data-widget-label="예외 알림" data-size="1/2" data-rows="2" data-role="alerts">
               <div class="dash-card__head"><span class="dash-card__dot"></span>예외 알림</div>
               <div id="homeDashAlertsBody">
                 <div class="mini muted">불러오는 중&hellip;</div>
@@ -20482,6 +20482,8 @@
                 <option value="MASTER_MISSING" data-i18n="ops.exception.field.type.master_missing">마스터 없음</option>
                 <option value="COVER_MISSING" data-i18n="ops.exception.field.type.cover_missing">커버 없음</option>
                 <option value="PREFERRED_SIZE_MISMATCH" data-i18n="ops.exception.field.type.preferred_size_mismatch">보관 규격 예외</option>
+                <option value="MEDIA_MISSING" data-i18n="ops.exception.field.type.media_missing">미디어 타입 누락</option>
+                <option value="SIZE_MISMATCH" data-i18n="ops.exception.field.type.size_mismatch">규격 불일치</option>
                 <option value="TRACK_MISSING" data-i18n="ops.exception.field.type.track_missing">곡 정보 없음</option>
                 <option value="SPOTIFY_UNMATCHED" data-i18n="ops.exception.field.type.spotify_unmatched">스포티파이 미연결 마스터</option>
               </select>
@@ -22899,6 +22901,8 @@
         "ops.exception.field.type.master_missing": "마스터 없음",
         "ops.exception.field.type.cover_missing": "커버 없음",
         "ops.exception.field.type.preferred_size_mismatch": "보관 규격 예외",
+        "ops.exception.field.type.media_missing": "미디어 타입 누락",
+        "ops.exception.field.type.size_mismatch": "규격 불일치",
         "ops.exception.field.type.track_missing": "곡 정보 없음",
         "ops.exception.field.type.spotify_unmatched": "스포티파이 미연결 마스터",
         "ops.exception.field.limit.label": "표시 수",
@@ -36891,6 +36895,8 @@
       if (code === "COVER_MISSING") params.set("cover_state", "MISSING");
       if (code === "PREFERRED_SIZE_MISMATCH") params.set("preferred_storage_state", "MISMATCH");
       if (code === "TRACK_MISSING") params.set("track_state", "MISSING");
+      if (code === "MEDIA_MISSING") params.set("media_format_state", "MISSING");
+      if (code === "SIZE_MISMATCH") params.set("size_group_state", "MISMATCH");
       return params;
     }
 
@@ -41644,12 +41650,14 @@ function initDashboardDrilldown() {
         return '#60a5fa';
       }
       var items = [
-        { lbl:'소스 미연결',   c: d.source_unlinked_items||0,         sev:'critical', drill:'source_unlinked'  },
-        { lbl:'마스터 미연결', c: d.master_unlinked_items||0,         sev:'critical', drill:'master_unlinked'  },
-        { lbl:'커버 없음',     c: d.cover_missing_items||0,           sev:'warning',  drill:'cover_missing'    },
-        { lbl:'장르 없음',     c: d.genre_missing_items||0,           sev:'warning',  drill:'genre_missing'    },
-        { lbl:'미배치',        c: d.unslotted_in_collection_items||0, sev:'warning',  drill:'unslotted'        },
-        { lbl:'도메인 미지정', c: unassigned,                          sev:'info',     drill:'genre_missing'    },
+        { lbl:'소스 미연결',       c: d.source_unlinked_items||0,            sev:'critical', drill:'source_unlinked'  },
+        { lbl:'마스터 미연결',     c: d.master_unlinked_items||0,            sev:'critical', drill:'master_unlinked'  },
+        { lbl:'커버 없음',         c: d.cover_missing_items||0,              sev:'warning',  drill:'cover_missing'    },
+        { lbl:'장르 없음',         c: d.genre_missing_items||0,              sev:'warning',  drill:'genre_missing'    },
+        { lbl:'미디어 타입 누락',  c: d.media_missing_items||0,              sev:'warning',  drill:'media_missing'     },
+        { lbl:'규격 불일치',       c: d.category_size_mismatch_items||0,     sev:'warning',  drill:'size_mismatch'      },
+        { lbl:'미배치',            c: d.unslotted_in_collection_items||0,    sev:'warning',  drill:'unslotted'        },
+        { lbl:'도메인 미지정',     c: unassigned,                             sev:'info',     drill:'genre_missing'    },
       ];
       b.innerHTML = '<div class="dash-tile-grid">' +
         items.map(function(it) {
@@ -43849,7 +43857,7 @@ async function loadDashboardClimate() {
       const root = $("opsExceptionSummary");
       if (!root) return;
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED"];
       root.innerHTML = types.map((type) => `
         <button
           class="ops-exception-box ${activeType === type ? "active" : ""}"
@@ -44024,7 +44032,7 @@ async function loadDashboardClimate() {
 
     async function loadOpsExceptionCounts(opts = {}) {
       const silent = Boolean(opts?.silent);
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED"];
       try {
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loading"));
         const results = await Promise.all(types.map(async (type) => ({
@@ -44034,7 +44042,7 @@ async function loadDashboardClimate() {
         opsExceptionCounts = results.reduce((acc, entry) => {
           acc[entry.type] = Number(entry.count || 0);
           return acc;
-        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0 });
+        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, MEDIA_MISSING: 0, SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0 });
         renderOpsExceptionSummary();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loaded"));
       } catch (err) {
