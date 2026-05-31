@@ -32,7 +32,7 @@ AlbumMasterSource = Literal["AUTO", "DISCOGS", "MANIADB"]
 AlbumMasterBoundSource = Literal["DISCOGS", "MANIADB", "MANUAL"]
 MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB", "MUSICBRAINZ"]
 MetadataSyncSource = Literal["ALL", "DISCOGS", "MANIADB", "ALADIN"]
-DomainCode = Literal["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]
+DomainCode = Literal["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD", "WORLD_OTHER", "UNKNOWN"]
 ReleaseType = Literal["ALBUM", "EP", "SINGLE"]
 ClassificationOptionGroup = Literal["SUBTYPE", "SOUNDTRACK"]
 MusicCategory = Literal["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"]
@@ -908,6 +908,7 @@ class AlbumMasterListItem(BaseModel):
     first_member_column_code: str | None = None
     first_member_cell_code: str | None = None
     matched_track_preview: list[str] = Field(default_factory=list)
+    genres: list[str] = Field(default_factory=list)
     spotify_album_id: str | None = None
     spotify_album_uri: str | None = None
     spotify_matched_at: str | None = None
