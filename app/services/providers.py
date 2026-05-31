@@ -1181,10 +1181,15 @@ def _discogs_format_meta(formats: Any, fallback_format_text: str | None = None) 
 
 def _pick_artist_from_discogs_title(title: str) -> tuple[str | None, str]:
     # Discogs title often has format: "Artist - Release"
+    # Artist may have disambiguation number like "Artist (2)"
+    import re as _re
     if " - " not in title:
         return None, title
     left, right = title.split(" - ", 1)
-    return left.strip() or None, right.strip() or title
+    artist = left.strip()
+    # Strip Discogs disambiguation number: "Asia (2)" → "Asia"
+    artist = _re.sub(r'\s*\(\d+\)$', '', artist).strip()
+    return artist or None, right.strip() or title
 
 
 def _parse_discogs_candidates(data: dict[str, Any], barcode: str | None, query: str | None) -> list[Candidate]:
@@ -1229,7 +1234,7 @@ def _parse_discogs_candidates(data: dict[str, Any], barcode: str | None, query: 
                 format_name=format_meta.get("format_name")
                 or ((row.get("format") or [None])[0] if isinstance(row.get("format"), list) else row.get("format")),
                 barcode=str(row_barcode) if row_barcode else None,
-                catalog_no=_normalize_catalog_no(row.get("catno")),
+                catalog_no=_normalize_catalog_no(row.get("catno")) or _normalize_catalog_no((row.get("labels") or [{}])[0].get("catno") if row.get("labels") else None),
                 label_name=label_name,
                 cover_image_url=cover_image_url,
                 track_list=[],
@@ -2064,7 +2069,7 @@ def _fetch_discogs_release_detail(
     return {
         "label_name": label_name,
         "label_items": label_items,
-        "catalog_no": _normalize_catalog_no(data.get("catno")),
+        "catalog_no": _normalize_catalog_no(data.get("catno")) or _normalize_catalog_no((data.get("labels") or [{}])[0].get("catno") if data.get("labels") else None),
         "cover_image_url": cover_image_url,
         "track_list": tracks,
         "track_items": track_items,
@@ -2686,7 +2691,7 @@ def search_discogs_master_by_query(query: str, limit: int = 10) -> list[dict[str
                 "artist_or_brand": artist,
                 "release_year": _safe_year(row.get("year")),
                 "label_name": _pick_first_text(row.get("label")),
-                "catalog_no": _normalize_catalog_no(row.get("catno")),
+                "catalog_no": _normalize_catalog_no(row.get("catno")) or _normalize_catalog_no((row.get("labels") or [{}])[0].get("catno") if row.get("labels") else None),
                 "barcode": str(row_barcode).strip() if row_barcode else None,
                 "variant_count": None,
                 "confidence": round(confidence, 3),
