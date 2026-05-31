@@ -601,6 +601,7 @@ def list_album_masters(
     genre_missing: bool = Query(default=False),
     format_missing: bool = Query(default=False),
     catalog_missing: bool = Query(default=False),
+    spotify_state: str = Query(default="ANY", pattern="^(ANY|MISSING|MATCHED)$"),
 ) -> list[AlbumMasterListItem]:
     main_module = _main()
     match_query = str(item_name or q or "").strip()
@@ -635,6 +636,7 @@ def list_album_masters(
         genre_missing=genre_missing,
         format_missing=format_missing,
         catalog_missing=catalog_missing,
+        spotify_state=spotify_state,
     )
     if include_total:
         total = db.count_album_masters(
@@ -659,6 +661,7 @@ def list_album_masters(
         genre_missing=genre_missing,
         format_missing=format_missing,
         catalog_missing=catalog_missing,
+        spotify_state=spotify_state,
         )
         response.headers["X-Total-Count"] = str(total)
     result: list[AlbumMasterListItem] = []
