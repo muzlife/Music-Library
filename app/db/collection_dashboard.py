@@ -634,7 +634,12 @@ def get_collection_dashboard() -> dict[str, Any]:
                    COALESCE(NULLIF(currency_code, ''), 'UNKNOWN') AS currency,
                    COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
                    COUNT(*) AS items,
-                   ROUND(SUM(purchase_price), 0) AS total_spend
+                   ROUND(SUM(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS total_spend
             FROM owned_item
             WHERE purchase_price IS NOT NULL
               AND purchase_source IS NOT NULL AND TRIM(purchase_source) <> ''
@@ -648,7 +653,13 @@ def get_collection_dashboard() -> dict[str, Any]:
         # Card: Financial Overview
         by_currency_spend = conn.execute(
             """
-            SELECT currency_code, COUNT(*) AS items, ROUND(SUM(purchase_price), 0) AS total_spend
+            SELECT currency_code, COUNT(*) AS items,
+                   ROUND(SUM(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS total_spend
             FROM owned_item
             WHERE purchase_price IS NOT NULL AND currency_code IS NOT NULL
             GROUP BY currency_code
@@ -659,8 +670,18 @@ def get_collection_dashboard() -> dict[str, Any]:
             """
             SELECT COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
                    COUNT(*) AS items,
-                   ROUND(AVG(purchase_price), 0) AS avg_price,
-                   ROUND(SUM(purchase_price), 0) AS total_spend
+                   ROUND(AVG(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS avg_price,
+                   ROUND(SUM(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS total_spend
             FROM owned_item
             WHERE purchase_price IS NOT NULL
               AND category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
