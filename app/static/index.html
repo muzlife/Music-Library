@@ -29765,7 +29765,11 @@
       const container = $("editFormatNameOptions");
       if (!container) return;
       const key = _mediaTypeToPackagingKey(mediaType);
-      const options = key ? (PACKAGING_OPTIONS_BY_MEDIA[key] || []) : [];
+      // Normalize media type keys for packaging lookup
+      var _key = key;
+      if (_key === "CDr" || _key === "SACD") _key = "CD";
+      if (_key === "All Media") _key = "VINYL";
+      const options = _key ? (PACKAGING_OPTIONS_BY_MEDIA[_key] || []) : [];
       const currentValues = String($("editFormatName")?.value || "").split(",").map(s => s.trim()).filter(Boolean);
       if (!options.length) {
         container.innerHTML = '<span class="muted mini">미디어 타입 선택 시 옵션 표시</span>';
@@ -46042,7 +46046,10 @@ async function loadDashboardClimate() {
       if (packagingContainer) {
         const allPackaging = new Set();
         for (const mediaType in PACKAGING_OPTIONS_BY_MEDIA) {
-          (PACKAGING_OPTIONS_BY_MEDIA[mediaType] || []).forEach(opt => allPackaging.add(opt));
+          var _mt = mediaType;
+          if (_mt === "CDr" || _mt === "SACD") _mt = "CD";
+          if (_mt === "All Media") _mt = "VINYL";
+          (PACKAGING_OPTIONS_BY_MEDIA[_mt] || []).forEach(opt => allPackaging.add(opt));
         }
         let html = "";
         Array.from(allPackaging).sort().forEach(opt => {
