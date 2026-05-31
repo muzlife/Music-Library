@@ -2998,9 +2998,13 @@ def _parse_maniadb_release_legend(
         if image_items and not cover_image_url:
             cover_image_url = _pick_first_text(image_items[0].get("uri"))
         if not image_items:
-            cover_image_url = album_cover_image_url or _maniadb_variant_cover_url(album_id, variant_seq, "f")
-            if cover_image_url:
-                image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
+            # variant 전용 이미지가 없으면 다른 variant의 이미지를 사용하지 않음.
+            # album_cover_image_url은 앨범 페이지의 첫 이미지(다른 variant일 수 있음)이므로 사용하지 않는다.
+            # _maniadb_variant_cover_url로 직접 URL을 추측해 사용 (해당 variant 고유 이미지 경로).
+            guessed = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+            if guessed:
+                cover_image_url = guessed
+                image_items = [{"type": "앞면", "uri": guessed, "uri150": guessed}]
 
         track_block_match = re.search(r'<td\s+class="tracks">(.*?)</td>', block_html, re.IGNORECASE | re.DOTALL)
         if track_block_match:
@@ -3008,7 +3012,9 @@ def _parse_maniadb_release_legend(
             tokens = re.findall(r"\d+\.\s*(?:<[^>]+>\s*)*([^/<]+)", track_html)
             track_list = [t for t in (_clean_html_text(tok) for tok in tokens) if t]
     else:
-        cover_image_url = album_cover_image_url or _maniadb_variant_cover_url(album_id, variant_seq, "f")
+        # block_html 없는 경우: variant 고유 URL만 시도
+        guessed = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+        cover_image_url = guessed or None
         if cover_image_url:
             image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
 
