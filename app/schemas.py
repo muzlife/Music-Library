@@ -435,6 +435,21 @@ class OfficeClimateResponse(BaseModel):
     updated_at: str | None = None
 
 
+
+class ClimateCompareResponse(BaseModel):
+    indoor_available: bool = False
+    indoor_temperature_c: float | None = None
+    indoor_humidity_percent: float | None = None
+    indoor_comfort_label: str | None = None
+    outdoor_available: bool = False
+    outdoor_temperature_c: float | None = None
+    outdoor_humidity_percent: float | None = None
+    outdoor_weather_desc: str | None = None
+    outdoor_temperature_high_c: float | None = None
+    outdoor_temperature_low_c: float | None = None
+    updated_at: str | None = None
+
+
 class CustomerTrackRequestCreate(BaseModel):
     requested_track: str = Field(min_length=1, max_length=300)
     owned_item_id: int | None = Field(default=None, ge=1)
