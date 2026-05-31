@@ -1326,6 +1326,25 @@ def _infer_format_from_aladin_category(category_name: str | None) -> str | None:
     return None
 
 
+def _format_name_to_media_type(format_name: str | None) -> str | None:
+    if not format_name:
+        return None
+    upper = str(format_name).strip().upper()
+    if upper in ("LP", "VINYL"):
+        return "Vinyl"
+    if upper == "CD":
+        return "CD"
+    if upper == "CASSETTE":
+        return "Cassette"
+    if upper == "DIGITAL":
+        return "Digital"
+    if upper == "8TRACK":
+        return "8-Track Cartridge"
+    if upper == "REEL_TO_REEL":
+        return "Reel-to-Reel"
+    return format_name
+
+
 def _infer_format_from_text(format_text: str | None) -> str | None:
     if not format_text:
         return None
@@ -4514,7 +4533,7 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
             "catalog_no": None,
             "barcode": barcode,
             "format_name": format_name,
-            "media_type": None,
+            "media_type": _format_name_to_media_type(format_name),
             "release_type": None,
             "domain_code": infer_domain_code(
                 country="KR",
