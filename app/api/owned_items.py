@@ -144,6 +144,8 @@ def get_owned_items(
     slot_state: str = Query(default="ANY", pattern="^(ANY|SLOTTED|UNSLOTTED)$"),
     preferred_storage_state: str = Query(default="ANY", pattern="^(ANY|MISMATCH|MATCH)$"),
     track_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
+    media_format_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
+    size_group_state: str = Query(default="ANY", pattern="^(ANY|MISMATCH|MATCH)$"),
     music_only: bool = Query(default=False),
     sort: str = Query(default="DISPLAY", pattern="^(DISPLAY|RECENT)$"),
     include_total: bool = Query(default=False),
@@ -171,6 +173,8 @@ def get_owned_items(
         sort=sort,
         limit=limit,
         offset=offset,
+        media_format_state=media_format_state,
+        size_group_state=size_group_state,
     )
     if include_total:
         total = db.count_owned_items(
@@ -191,6 +195,8 @@ def get_owned_items(
             preferred_storage_state=preferred_storage_state,
             track_state=track_state,
             music_only=music_only,
+            media_format_state=media_format_state,
+            size_group_state=size_group_state,
         )
         response.headers["X-Total-Count"] = str(total)
     return [_to_owned_item_list_item(row) for row in rows]
