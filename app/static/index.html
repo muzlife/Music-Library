@@ -12602,6 +12602,14 @@
     .dashboard-kpi-item .kpi-head { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--theme-dashboard-text-dim); }
     .dashboard-kpi-item .kpi-value { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--theme-dashboard-text); }
     .dashboard-kpi-sub { font-size: 0.62rem; color: var(--theme-dashboard-text-muted); line-height: 1.4; }
+
+    @media (max-width: 720px) {
+      .dashboard-kpi-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+      .dashboard-kpi-item { padding: 10px 6px; }
+      .dashboard-kpi-item .kpi-value { font-size: 1.2rem; }
+      .dashboard-kpi-item .kpi-head { font-size: 0.56rem; }
+    }
+
     /* 현황판/운영판 패널 그리드 */
     .dashboard-status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
     .dashboard-ops-summary-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
