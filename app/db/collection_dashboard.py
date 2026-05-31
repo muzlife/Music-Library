@@ -195,6 +195,20 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND (
+                     (oi.category = 'LP' AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))
+                     OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') != 'STD')
+                     OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') != 'CASSETTE')
+                     OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') != '8TRACK')
+                     OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL')
+                   )
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS category_size_mismatch_items,
+              SUM(
+                CASE
+                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
                    AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '')
                   THEN 1
                   ELSE 0
@@ -887,6 +901,7 @@ def get_collection_dashboard() -> dict[str, Any]:
         "lost_items": int((summary["lost_items"] if summary else 0) or 0),
         "genre_missing_items": int((summary["genre_missing_items"] if summary else 0) or 0),
         "media_missing_items": int((summary["media_missing_items"] if summary else 0) or 0),
+        "category_size_mismatch_items": int((summary["category_size_mismatch_items"] if summary else 0) or 0),
         "catalog_missing_items": int((summary["catalog_missing_items"] if summary else 0) or 0),
         "limited_items": int((summary["limited_items"] if summary else 0) or 0),
         "new_items": int((summary["new_items"] if summary else 0) or 0),
