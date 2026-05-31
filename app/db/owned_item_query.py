@@ -201,9 +201,9 @@ def list_owned_items(
 
     media_format_state_u = str(media_format_state or "ANY").strip().upper()
     if media_format_state_u == "MISSING":
-        query += " AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '') AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
+        query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
     elif media_format_state_u == "HAS":
-        query += " AND ((mid.format_name IS NOT NULL AND TRIM(mid.format_name) <> '') OR (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''))"
+        query += " AND (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> '')"
 
     size_group_state_u = str(size_group_state or "ANY").strip().upper()
     if size_group_state_u == "MISMATCH":
@@ -400,9 +400,9 @@ def count_owned_items(
 
     media_format_state_u = str(media_format_state or "ANY").strip().upper()
     if media_format_state_u == "MISSING":
-        query += " AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '') AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
+        query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
     elif media_format_state_u == "HAS":
-        query += " AND ((mid.format_name IS NOT NULL AND TRIM(mid.format_name) <> '') OR (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''))"
+        query += " AND (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> '')"
 
     size_group_state_u = str(size_group_state or "ANY").strip().upper()
     if size_group_state_u == "MISMATCH":
