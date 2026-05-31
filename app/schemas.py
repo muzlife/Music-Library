@@ -1338,6 +1338,7 @@ class CollectionDashboardResponse(BaseModel):
     promo_items: int = 0
     other_condition_items: int = 0
     multi_disc_items: int = 0
+    box_set_items: int = 0
     obi_items: int = 0
     import_queue_size: int = 0
     by_artist: list[CollectionArtistCount] = Field(default_factory=list)
