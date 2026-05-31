@@ -136,6 +136,9 @@
       --dash-card-border-hover: rgba(107, 114, 128, 0.18);
       --dash-card-shadow: 0 2px 8px rgba(0,0,0,0.03);
       --dash-card-shadow-hover: 0 6px 16px rgba(0,0,0,0.05);
+      --dash-kpi-bg: rgba(255,255,255,0.85);
+      --dash-kpi-border: rgba(107,114,128,0.12);
+      --dash-kpi-shadow: 0 1px 3px rgba(0,0,0,0.04);
       --selected-accent: #0f766e;
       --selected-accent-strong: #0d6660;
       --selected-accent-deep: #0a4f4a;
@@ -12597,7 +12600,7 @@
 
     /* KPI 고정 바 */
     .dashboard-kpi-bar { display: flex; gap: 6px; padding: 8px 0 10px; border-bottom: 1px solid var(--theme-dashboard-border); margin-bottom: 8px; }
-    .dashboard-kpi-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 10px; border-radius: 10px; background: var(--theme-dashboard-panel-soft); border: 1px solid transparent; transition: border-color 150ms; }
+    .dashboard-kpi-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 10px; border-radius: 10px; background: var(--dash-kpi-bg, var(--theme-dashboard-panel-soft)); border: 1px solid var(--dash-kpi-border, transparent); box-shadow: var(--dash-kpi-shadow, none); transition: border-color 150ms; }
     .dashboard-kpi-item:hover { border-color: var(--theme-dashboard-border); }
     .dashboard-kpi-item .kpi-head { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--theme-dashboard-text-dim); }
     .dashboard-kpi-item .kpi-value { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--theme-dashboard-text); }
