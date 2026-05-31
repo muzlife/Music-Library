@@ -1586,19 +1586,32 @@
       display: none !important;
     }
 
-    body:not([data-shell-mode="admin"]) #homeDashboardCard > .dashboard-topbar,
-    body:not([data-shell-mode="admin"]) #homeDashboardCard > .dashboard-hero-grid,
-    body:not([data-shell-mode="admin"]) #homeDashboardCard > .dashboard-secondary-grid,
-    body:not([data-shell-mode="admin"]) #homeDashCabinetCloseBtn,
-    body:not([data-shell-mode="admin"]) .dashboard-selection-toolbar,
-    body:not([data-shell-mode="admin"]) #homeDashSelectedItemMeta,
-    body:not([data-shell-mode="admin"]) #homeDashSelectedSortArtistRow,
-    body:not([data-shell-mode="admin"]) #homeDashSelectedSortArtistStatus,
-    body:not([data-shell-mode="admin"]) #homeDashWorkbenchSortArtistRow,
-    body:not([data-shell-mode="admin"]) #homeDashWorkbenchSortArtistStatus,
-    body:not([data-shell-mode="admin"]) #homeDashKpiBar,
-    body:not([data-shell-mode="admin"]) #homeDashViewTabs,
-    body:not([data-shell-mode="admin"]) #homeDashViewStatus {
+    body[data-shell-mode="ops"] #homeDashboardCard > .dashboard-topbar,
+    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-topbar,
+    body[data-shell-mode="ops"] #homeDashboardCard > .dashboard-hero-grid,
+    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-hero-grid,
+    body[data-shell-mode="ops"] #homeDashboardCard > .dashboard-secondary-grid,
+    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-secondary-grid,
+    body[data-shell-mode="ops"] #homeDashCabinetCloseBtn,
+    body[data-shell-mode="cabinets"] #homeDashCabinetCloseBtn,
+    body[data-shell-mode="ops"] .dashboard-selection-toolbar,
+    body[data-shell-mode="cabinets"] .dashboard-selection-toolbar,
+    body[data-shell-mode="ops"] #homeDashSelectedItemMeta,
+    body[data-shell-mode="cabinets"] #homeDashSelectedItemMeta,
+    body[data-shell-mode="ops"] #homeDashSelectedSortArtistRow,
+    body[data-shell-mode="cabinets"] #homeDashSelectedSortArtistRow,
+    body[data-shell-mode="ops"] #homeDashSelectedSortArtistStatus,
+    body[data-shell-mode="cabinets"] #homeDashSelectedSortArtistStatus,
+    body[data-shell-mode="ops"] #homeDashWorkbenchSortArtistRow,
+    body[data-shell-mode="cabinets"] #homeDashWorkbenchSortArtistRow,
+    body[data-shell-mode="ops"] #homeDashWorkbenchSortArtistStatus,
+    body[data-shell-mode="cabinets"] #homeDashWorkbenchSortArtistStatus,
+    body[data-shell-mode="ops"] #homeDashKpiBar,
+    body[data-shell-mode="cabinets"] #homeDashKpiBar,
+    body[data-shell-mode="ops"] #homeDashViewTabs,
+    body[data-shell-mode="cabinets"] #homeDashViewTabs,
+    body[data-shell-mode="ops"] #homeDashViewStatus,
+    body[data-shell-mode="cabinets"] #homeDashViewStatus {
       display: none !important;
     }
 
@@ -12647,9 +12660,12 @@
     .dashboard-mini-charts-row { display: flex; gap: 8px; margin-top: 4px; }
     .dashboard-mini-chart { flex: 1; min-width: 0; }
     /* admin 모드에서만 대시보드 표시, 그 외(ops/cabinets)는 숨김 */
-    body:not([data-shell-mode="admin"]) #homeDashKpiBar,
-    body:not([data-shell-mode="admin"]) #homeDashViewTabs,
-    body:not([data-shell-mode="admin"]) #homeDashViewStatus { display: none !important; }
+    body[data-shell-mode="ops"] #homeDashKpiBar,
+    body[data-shell-mode="cabinets"] #homeDashKpiBar,
+    body[data-shell-mode="ops"] #homeDashViewTabs,
+    body[data-shell-mode="cabinets"] #homeDashViewTabs,
+    body[data-shell-mode="ops"] #homeDashViewStatus,
+    body[data-shell-mode="cabinets"] #homeDashViewStatus { display: none !important; }
     /* 기후 카드 */
     .dashboard-climate-card { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .dashboard-climate-value { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
