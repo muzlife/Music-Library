@@ -22295,6 +22295,7 @@
         "media.manage.master.variant.status.registering": "버전 등록 중... ({external_id})",
         "media.manage.master.variant.status.register_failed": "버전 등록 실패",
         "media.manage.master.variant.status.register_done": "등록 처리 완료: created {created_count}건, skipped {skipped_count}건{notices}",
+        "media.manage.master.variant.status.skipped_reason": "등록 건너뜀: {reason}",
         "media.manage.master.variant.status.notices": "\n{items}",
         "media.manage.master.variant.status.notice_item": "- {notice}",
         "media.manage.related_versions.relation.album_master_bind": "수동 묶음 기준",
@@ -24981,6 +24982,7 @@
         "media.manage.master.variant.status.registering": "Registering version... ({external_id})",
         "media.manage.master.variant.status.register_failed": "Failed to register the version",
         "media.manage.master.variant.status.register_done": "Registration complete: created {created_count}, skipped {skipped_count}{notices}",
+        "media.manage.master.variant.status.skipped_reason": "Skipped: {reason}",
         "media.manage.master.variant.status.notices": "\n{items}",
         "media.manage.master.variant.status.notice_item": "- {notice}",
         "media.manage.related_versions.relation.album_master_bind": "Manual grouping",
@@ -27683,6 +27685,7 @@
         "media.manage.master.variant.status.registering": "バージョン登録中... ({external_id})",
         "media.manage.master.variant.status.register_failed": "バージョン登録に失敗しました",
         "media.manage.master.variant.status.register_done": "登録処理完了: created {created_count}件, skipped {skipped_count}件{notices}",
+        "media.manage.master.variant.status.skipped_reason": "スキップ: {reason}",
         "media.manage.master.variant.status.notices": "\n{items}",
         "media.manage.master.variant.status.notice_item": "- {notice}",
         "media.manage.related_versions.relation.album_master_bind": "手動グループ基準",
@@ -41415,7 +41418,7 @@ function initDashboardDrilldown() {
     function renderDashboardFinance(d) {
       var b = document.getElementById('homeDashFinanceBody'); if (!b) return;
       var bc = d.by_currency_spend||[], bd = d.by_domain_spend||[];
-      var rt = {KRW:1, USD:1380, GBP:1750, JPY:9}, tKRW = 0, pi = 0;
+      var rt = {KRW:1, USD:1, GBP:1, JPY:1}, tKRW = 0, pi = 0;
       for (var i = 0; i < bc.length; i++) {
         tKRW += (bc[i].total_spend||0) * (rt[bc[i].currency_code]||1);
         pi += bc[i].items || 0;
@@ -47425,19 +47428,17 @@ async function loadDashboardClimate() {
               items: notices.map((v) => t("media.manage.master.variant.status.notice_item", { notice: v })).join("\n"),
             })
           : "";
-        setStatus(
-          "homeMasterAddStatus",
-          "ok",
-          t("media.manage.master.variant.status.register_done", {
-            created_count: formatCount(Number(data.created_count || 0)),
-            skipped_count: formatCount(Number(data.skipped_count || 0)),
-            notices: noticesText,
-          })
-        );
         await loadHomeMasterMembers(masterId, { autoOpenFirst: false });
         await loadHomeMasterAddVariants();
 
         const createdOwnedItemId = Number(createdItems[0]?.owned_item_id || 0);
+        const resultStatusType = createdItems.length > 0 ? "ok" : (skippedItems.length > 0 ? "ok" : "ok");
+        const resultStatusText = t("media.manage.master.variant.status.register_done", {
+          created_count: formatCount(Number(data.created_count || 0)),
+          skipped_count: formatCount(Number(data.skipped_count || 0)),
+          notices: noticesText,
+        });
+
         if (createdItems.length) {
           const masterListRow = homeSearchResults.find((row) => Number(row.id) === masterId);
           if (masterListRow) {
@@ -47447,6 +47448,7 @@ async function loadDashboardClimate() {
           renderHomeSearchResults(homeSearchResults);
         }
         if (createdOwnedItemId > 0) {
+          setStatus("homeMasterAddStatus", "ok", resultStatusText);
           await openMediaSearchDetailManage(masterId, createdOwnedItemId);
           return;
         }
@@ -47458,9 +47460,23 @@ async function loadDashboardClimate() {
           );
           const fallbackOwnedId = Number(fallbackOwned?.id || 0);
           if (fallbackOwnedId > 0) {
+            setStatus("homeMasterAddStatus", "ok", resultStatusText);
             await openMediaSearchDetailManage(masterId, fallbackOwnedId);
+            return;
           }
+          // Already owned but couldn't find the item - show the result
+          setStatus("homeMasterAddStatus", "ok", resultStatusText);
+          return;
         }
+
+        // Show error for non-already_owned skips, otherwise show success
+        setStatus(
+          "homeMasterAddStatus",
+          skippedReason ? "err" : "ok",
+          skippedReason
+            ? t("media.manage.master.variant.status.skipped_reason", { reason: skippedReason })
+            : resultStatusText
+        );
       } catch (err) {
         setStatus("homeMasterAddStatus", "err", err.message);
       }
