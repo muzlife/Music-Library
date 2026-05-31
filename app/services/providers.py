@@ -1366,6 +1366,8 @@ def _infer_format_from_text(format_text: str | None) -> str | None:
         return "CD"
     if "CASSETTE" in upper or "TAPE" in upper:
         return "CASSETTE"
+    if "BOX SET" in upper or "BOXSET" in upper:
+        return "Box Set"
     return None
 
 
