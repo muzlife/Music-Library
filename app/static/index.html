@@ -12655,6 +12655,9 @@
     .dashboard-climate-badge.ideal { background: rgba(76,175,80,0.18); color: #4caf50; }
     .dashboard-climate-badge.warn { background: rgba(249,115,22,0.18); color: #f97316; }
     .dashboard-climate-badge.alert { background: rgba(239,68,68,0.18); color: #ef4444; }
+    .dashboard-climate-inline { display: flex; align-items: baseline; gap: 4px; padding-left: 12px; border-left: 1px solid var(--theme-dashboard-border); }
+    .dashboard-climate-inline .dashboard-climate-value { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--theme-dashboard-text); }
+    .dashboard-climate-inline .dashboard-climate-unit { font-size: 0.72rem; color: var(--theme-dashboard-text-muted); }
 
     /* ═══════════════════════════════════════════════════
        Dashboard Widget Grid System v2
@@ -16712,6 +16715,11 @@
                 <div class="manual-block-note" data-i18n="manual.dashboard.note">위치 운영은 이 화면에서 처리하고, 메타 수정은 미디어 > 관리에서 처리하는 흐름이 가장 안전합니다.</div>
               </div>
             </details>
+          </div>
+          <div class="dashboard-climate-inline" id="homeDashClimateInline">
+            <span class="dashboard-climate-value" id="homeDashClimateTemp">--</span>
+            <span class="dashboard-climate-unit" id="homeDashClimateHumid"></span>
+          </div>
         </div>
 
       </div>
@@ -16745,11 +16753,7 @@
             <div class="kpi-head">30일 신규</div>
             <div class="kpi-value" id="homeDashRecent30">0</div>
           </div>
-          <div class="dashboard-kpi-item">
-            <div class="kpi-head">실내 환경</div>
-            <div class="kpi-value" id="homeDashClimateTemp">--</div>
-            <div class="dashboard-kpi-sub" id="homeDashClimateHumid"></div>
-          </div>
+
         </div>
         <!-- 탭 버튼 -->
         <div id="homeDashViewTabs" class="subtabs u-mt-sm" style="display:flex;align-items:center;">
