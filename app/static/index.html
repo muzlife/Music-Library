@@ -20210,38 +20210,6 @@
     </div>
 
     <div id="tabOps" class="tab-panel admin-console-shell">
-      <section class="card u-mb-8">
-        <div class="page-help-title-row">
-          <h2><span data-i18n="ops.system.title">시스템 상태</span></h2>
-          <button class="page-help-trigger" type="button" data-page-help-open="ops-system" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
-        </div>
-        <div class="mini" data-i18n="ops.system.subtitle">외부 로그인, 헬스체크, launchd 로그 위치를 한 번에 확인합니다.</div>
-        <details class="manual-block page-help-source" data-page-help-source="ops-system" hidden>
-          <summary data-i18n="manual.ops.summary">운영/연계 활용 매뉴얼</summary>
-          <div class="manual-block-body">
-            <ol>
-              <li data-i18n="manual.ops.item1">운영 구조를 점검하거나 장식장, 계정, 백업 같은 관리 항목을 다룰 때 이 탭을 엽니다.</li>
-              <li data-i18n="manual.ops.item2">먼저 시스템 상태에서 앱과 외부 접속 상태를 확인합니다.</li>
-              <li data-i18n="manual.ops.item3">장식장/슬롯 구조, 예외 큐, 계정, 백업, 메타 동기화는 목적에 맞는 서브탭에서 나눠 처리합니다.</li>
-              <li data-i18n="manual.ops.item4">대량 작업 전에는 `백업/내보내기`에서 DB 백업을 먼저 받고, 병목 상품은 `예외 큐`에서 우선 정리합니다.</li>
-            </ol>
-            <div class="manual-block-note" data-i18n="manual.ops.note">이 탭은 운영 기반을 다루는 곳입니다. 개별 상품 메타 수정이나 위치 이동은 다른 탭에서 처리하는 흐름이 더 안전합니다.</div>
-          </div>
-        </details>
-        <div class="dashboard-selection-toolbar u-mt-8">
-        <div id="opsSystemStatusSummary" class="dashboard-selection-summary" data-i18n="ops.system.summary.idle">상태 확인 전</div>
-          <div class="dashboard-selection-actions">
-            <button id="opsSystemStatusReloadBtn" class="btn ghost tiny" type="button" data-i18n="ops.system.action.reload">상태 새로고침</button>
-          </div>
-        </div>
-        <div id="opsSystemStatusLine" class="compact-line u-mt-6" data-i18n="ops.system.line.load">앱 헬스체크와 메타 동기화 상태를 불러옵니다.</div>
-        <div id="opsSystemStatusLinks" class="mini u-mt-4"></div>
-        <div id="opsSystemStatusPaths" class="mini muted u-mt-4"></div>
-        <div id="opsSystemStatusRecentLog" class="mini muted u-mt-4"></div>
-        <div id="opsQaStatusLine" class="compact-line u-mt-6" data-i18n="ops.system.line.qa">QA 현황을 불러옵니다.</div>
-        <div id="opsQaStatusPaths" class="mini muted u-mt-4"></div>
-        <div id="opsQaRemainingList" class="mini muted u-mt-4"></div>
-      </section>
       <div class="subtabs">
         <button id="opsCabinetTabBtn" class="subtab-btn active" type="button" data-i18n="ops.subtab.cabinet">장식장</button>
         <button id="opsSlotTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.slot">슬롯</button>
