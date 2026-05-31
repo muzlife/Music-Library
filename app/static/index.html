@@ -1586,32 +1586,20 @@
       display: none !important;
     }
 
-    body[data-shell-mode="ops"] #homeDashboardCard > .dashboard-topbar,
-    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-topbar,
-    body[data-shell-mode="ops"] #homeDashboardCard > .dashboard-hero-grid,
-    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-hero-grid,
-    body[data-shell-mode="ops"] #homeDashboardCard > .dashboard-secondary-grid,
-    body[data-shell-mode="cabinets"] #homeDashboardCard > .dashboard-secondary-grid,
-    body[data-shell-mode="ops"] #homeDashCabinetCloseBtn,
-    body[data-shell-mode="cabinets"] #homeDashCabinetCloseBtn,
-    body[data-shell-mode="ops"] .dashboard-selection-toolbar,
-    body[data-shell-mode="cabinets"] .dashboard-selection-toolbar,
-    body[data-shell-mode="ops"] #homeDashSelectedItemMeta,
-    body[data-shell-mode="cabinets"] #homeDashSelectedItemMeta,
-    body[data-shell-mode="ops"] #homeDashSelectedSortArtistRow,
-    body[data-shell-mode="cabinets"] #homeDashSelectedSortArtistRow,
-    body[data-shell-mode="ops"] #homeDashSelectedSortArtistStatus,
-    body[data-shell-mode="cabinets"] #homeDashSelectedSortArtistStatus,
-    body[data-shell-mode="ops"] #homeDashWorkbenchSortArtistRow,
-    body[data-shell-mode="cabinets"] #homeDashWorkbenchSortArtistRow,
-    body[data-shell-mode="ops"] #homeDashWorkbenchSortArtistStatus,
-    body[data-shell-mode="cabinets"] #homeDashWorkbenchSortArtistStatus,
-    body[data-shell-mode="ops"] #homeDashKpiBar,
-    body[data-shell-mode="cabinets"] #homeDashKpiBar,
-    body[data-shell-mode="ops"] #homeDashViewTabs,
-    body[data-shell-mode="cabinets"] #homeDashViewTabs,
-    body[data-shell-mode="ops"] #homeDashViewStatus,
-    body[data-shell-mode="cabinets"] #homeDashViewStatus {
+    /* admin 모드가 아닌 모든 상태(ops, cabinets, 미설정)에서 대시보드 숨김 */
+    body:not([data-shell-mode="admin"]) #homeDashboardCard > .dashboard-topbar,
+    body:not([data-shell-mode="admin"]) #homeDashboardCard > .dashboard-hero-grid,
+    body:not([data-shell-mode="admin"]) #homeDashboardCard > .dashboard-secondary-grid,
+    body:not([data-shell-mode="admin"]) #homeDashCabinetCloseBtn,
+    body:not([data-shell-mode="admin"]) .dashboard-selection-toolbar,
+    body:not([data-shell-mode="admin"]) #homeDashSelectedItemMeta,
+    body:not([data-shell-mode="admin"]) #homeDashSelectedSortArtistRow,
+    body:not([data-shell-mode="admin"]) #homeDashSelectedSortArtistStatus,
+    body:not([data-shell-mode="admin"]) #homeDashWorkbenchSortArtistRow,
+    body:not([data-shell-mode="admin"]) #homeDashWorkbenchSortArtistStatus,
+    body:not([data-shell-mode="admin"]) #homeDashKpiBar,
+    body:not([data-shell-mode="admin"]) #homeDashViewTabs,
+    body:not([data-shell-mode="admin"]) #homeDashViewStatus {
       display: none !important;
     }
 
@@ -12659,13 +12647,96 @@
     /* 카드 내 미니 차트 나란히 배치 */
     .dashboard-mini-charts-row { display: flex; gap: 8px; margin-top: 4px; }
     .dashboard-mini-chart { flex: 1; min-width: 0; }
-    /* admin 모드에서만 대시보드 표시, 그 외(ops/cabinets)는 숨김 */
-    body[data-shell-mode="ops"] #homeDashKpiBar,
-    body[data-shell-mode="cabinets"] #homeDashKpiBar,
-    body[data-shell-mode="ops"] #homeDashViewTabs,
-    body[data-shell-mode="cabinets"] #homeDashViewTabs,
-    body[data-shell-mode="ops"] #homeDashViewStatus,
-    body[data-shell-mode="cabinets"] #homeDashViewStatus { display: none !important; }
+    /* 대시보드 가시성은 상단 :not([data-shell-mode="admin"]) 블록에서 통합 처리 */
+    .dashboard-climate-panel {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .climate-outdoor {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+      opacity: 0.6;
+    }
+    .climate-sep-line {
+      width: 1px;
+      height: 28px;
+      background: currentColor;
+      opacity: 0.15;
+      flex-shrink: 0;
+    }
+    .climate-indoor {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .climate-indoor-top {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .climate-zone {
+      font-size: 0.62rem;
+      opacity: 0.45;
+      letter-spacing: 0.03em;
+    }
+    .climate-temp-sm {
+      font-size: 0.78rem;
+      opacity: 0.6;
+      font-variant-numeric: tabular-nums;
+    }
+    .climate-temp-unit {
+      font-size: 0.62rem;
+      opacity: 0.4;
+      margin-left: -2px;
+    }
+    .climate-hum-sm {
+      font-size: 0.85rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .climate-hum-main {
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .climate-hum-main.hum-ideal { color: #4caf50; }
+    .climate-hum-main.hum-warn  { color: #f97316; }
+    .climate-hum-main.hum-alert { color: #ef4444; }
+    .climate-hum-sm.hum-ideal   { color: #4caf50; }
+    .climate-hum-sm.hum-warn    { color: #f97316; }
+    .climate-hum-sm.hum-alert   { color: #ef4444; }
+    /* 습도 게이지 */
+    .climate-gauge {
+      position: relative;
+      width: 80px;
+      height: 4px;
+      background: rgba(128,128,128,0.18);
+      border-radius: 2px;
+      overflow: visible;
+    }
+    .climate-gauge-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s ease;
+      background: #4caf50;
+    }
+    .climate-gauge-fill.hum-warn  { background: #f97316; }
+    .climate-gauge-fill.hum-alert { background: #ef4444; }
+    /* 60% 제습기 기준선 */
+    .climate-gauge-mark {
+      position: absolute;
+      top: -3px;
+      left: 60%;
+      width: 1.5px;
+      height: 10px;
+      background: rgba(239,68,68,0.5);
+      border-radius: 1px;
+    }
     /* 기후 카드 */
     .dashboard-climate-card { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .dashboard-climate-value { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
@@ -16733,10 +16804,30 @@
               </div>
             </details>
           </div>
+          <!-- 실외/실내 온습도 (우측) -->
+          <div id="homeDashClimatePanel" class="dashboard-climate-panel">
+            <div class="climate-outdoor">
+              <span class="climate-zone">실외</span>
+              <span class="climate-temp-sm" id="homeDashOutdoorTemp">--</span><span class="climate-temp-unit">°</span>
+              <span class="climate-hum-sm" id="homeDashOutdoorHumid">--%</span>
+            </div>
+            <div class="climate-sep-line"></div>
+            <div class="climate-indoor">
+              <div class="climate-indoor-top">
+                <span class="climate-zone">실내</span>
+                <span class="climate-temp-sm" id="homeDashIndoorTemp">--</span><span class="climate-temp-unit">°</span>
+                <span class="climate-hum-main" id="homeDashIndoorHumid">--%</span>
+                <span class="climate-badge" id="homeDashIndoorBadge" hidden></span>
+              </div>
+              <div class="climate-gauge" title="제습기 기준: 60%">
+                <div class="climate-gauge-fill" id="homeDashHumGauge"></div>
+                <div class="climate-gauge-mark"></div>
+              </div>
+            </div>
+          </div>
 
         </div>
 
-      </div>
         <!-- KPI 고정 바 -->
         <div id="homeDashKpiBar" class="dashboard-kpi-bar">
           <div class="dashboard-kpi-item">
@@ -32009,14 +32100,7 @@
       const mode = currentShellMode();
       document.body.dataset.shellMode = mode;
       document.body.dataset.shellReadonly = isShellReadOnly(mode) ? "true" : "false";
-      /* dashboard elements: visible only in admin mode */
-      const showDashboard = mode === "admin";
-      const kpiBar = document.getElementById("homeDashKpiBar");
-      const viewTabs = document.getElementById("homeDashViewTabs");
-      const viewStatus = document.getElementById("homeDashViewStatus");
-      if (kpiBar) kpiBar.style.display = showDashboard ? "" : "none";
-      if (viewTabs) viewTabs.style.display = showDashboard ? "flex" : "none";
-      if (viewStatus) viewStatus.style.display = showDashboard ? "" : "none";
+      /* 대시보드 가시성은 CSS body:not([data-shell-mode="admin"]) 셀렉터가 처리 */
     }
 
     function syncShellButtons() {
@@ -41696,14 +41780,12 @@ function initDashboardDrilldown() {
         return '#60a5fa';
       }
       var items = [
-        { lbl:'소스 미연결',       c: d.source_unlinked_items||0,            sev:'critical', drill:'source_unlinked'  },
-        { lbl:'마스터 미연결',     c: d.master_unlinked_items||0,            sev:'critical', drill:'master_unlinked'  },
-        { lbl:'커버 없음',         c: d.cover_missing_items||0,              sev:'warning',  drill:'cover_missing'    },
-        { lbl:'장르 없음',         c: d.genre_missing_items||0,              sev:'warning',  drill:'genre_missing'    },
-        { lbl:'미디어 타입 누락',  c: d.media_missing_items||0,              sev:'warning',  drill:'media_missing'     },
-        { lbl:'규격 불일치',       c: d.category_size_mismatch_items||0,     sev:'warning',  drill:'size_mismatch'      },
-        { lbl:'미배치',            c: d.unslotted_in_collection_items||0,    sev:'warning',  drill:'unslotted'        },
-        { lbl:'도메인 미지정',     c: unassigned,                             sev:'info',     drill:'genre_missing'    },
+        { lbl:'소스 미연결',   c: d.source_unlinked_items||0,         sev:'critical', drill:'source_unlinked' },
+        { lbl:'커버 없음',     c: d.cover_missing_items||0,           sev:'warning',  drill:'cover_missing'   },
+        { lbl:'장르 없음',     c: d.genre_missing_items||0,           sev:'warning',  drill:'genre_missing'   },
+        { lbl:'규격 불일치',   c: d.category_size_mismatch_items||0,  sev:'warning',  drill:'size_mismatch'   },
+        { lbl:'미배치',        c: d.unslotted_in_collection_items||0, sev:'warning',  drill:'unslotted'       },
+        { lbl:'도메인 미지정', c: unassigned,                          sev:'info',     drill:'genre_missing'   },
       ];
       b.innerHTML = '<div class="dash-tile-grid">' +
         items.map(function(it) {
@@ -42056,16 +42138,39 @@ function initDashboardDrilldown() {
     }
 
 async function loadDashboardClimate() {
-      const tempEl = document.getElementById("homeDashClimateTemp");
-      const humEl = document.getElementById("homeDashClimateHumid");
-      if (!tempEl) return;
+      const outdoorTemp  = document.getElementById("homeDashOutdoorTemp");
+      const outdoorHumid = document.getElementById("homeDashOutdoorHumid");
+      const indoorTemp   = document.getElementById("homeDashIndoorTemp");
+      const indoorHumid  = document.getElementById("homeDashIndoorHumid");
+      const indoorBadge  = document.getElementById("homeDashIndoorBadge");
+      const humGauge     = document.getElementById("homeDashHumGauge");
+      if (!outdoorTemp && !indoorTemp) return;
+      function humClass(h) {
+        if (h == null) return "";
+        if (h > 70 || h < 35) return "hum-alert";
+        if (h >= 60 || h < 43) return "hum-warn";
+        return "hum-ideal";
+      }
       try {
-        const res = await fetch("/operator/office-climate");
+        const res = await fetch("/operator/climate-compare");
         if (!res.ok) return;
         const d = await safeJson(res);
-        if (!d.available) return;
-        if (tempEl) tempEl.textContent = d.temperature_c != null ? Number(d.temperature_c).toFixed(1) + "°C" : "--";
-        if (humEl) humEl.textContent = d.humidity_percent != null ? "/ " + Math.round(d.humidity_percent) + "%" : "";
+        const oh = d.outdoor_humidity_percent != null ? Math.round(d.outdoor_humidity_percent) : null;
+        const ih = d.indoor_humidity_percent  != null ? Math.round(d.indoor_humidity_percent)  : null;
+        if (outdoorTemp)  outdoorTemp.textContent = d.outdoor_temperature_c != null ? Number(d.outdoor_temperature_c).toFixed(1) : "--";
+        if (outdoorHumid) { outdoorHumid.textContent = oh != null ? oh + "%" : "--%"; outdoorHumid.className = "climate-hum-sm " + humClass(oh); }
+        if (indoorTemp)   indoorTemp.textContent  = d.indoor_temperature_c  != null ? Number(d.indoor_temperature_c).toFixed(1)  : "--";
+        if (indoorHumid)  { indoorHumid.textContent = ih != null ? ih + "%" : "--%"; indoorHumid.className = "climate-hum-main " + humClass(ih); }
+        if (humGauge && ih != null) {
+          humGauge.style.width = Math.min(ih, 100) + "%";
+          humGauge.className = "climate-gauge-fill " + humClass(ih);
+        }
+        if (indoorBadge && d.indoor_comfort_label) {
+          indoorBadge.textContent = d.indoor_comfort_label;
+          const cl = d.indoor_comfort_label;
+          indoorBadge.className = "dashboard-climate-badge " + (cl === "쾌적" ? "ideal" : (cl === "건조" || cl === "습함") ? "warn" : "alert");
+          indoorBadge.hidden = false;
+        }
       } catch (_) {}
     }
     function renderDashboardSourceRows(rows, totalItems) {
@@ -46049,7 +46154,7 @@ async function loadDashboardClimate() {
       homeSelectedMasterId = null;
       homeSelectedItemId = null;
       // URL hash 클리어
-      if (window.location.hash.startsWith("#item/")) history.pushState(null, "", " ");
+      if (window.location.hash.startsWith("#item/")) history.pushState(null, "", location.pathname);
       homeInlineEditorCollapsed = false;
       homeSelectedSourceCode = null;
       homeSelectedSourceExternalId = null;
