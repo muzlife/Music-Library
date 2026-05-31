@@ -44041,30 +44041,24 @@ async function loadDashboardClimate() {
         root.innerHTML = opsExceptionItems.map((master) => {
           const masterId = Number(master.id || 0);
           const title = String(master.title || master.album_title || "-").trim();
-          const artist = String(master.artist_name || master.artist || master.main_artist || "-").trim();
-          const labelName = String(master.label_name || master.label || "-").trim();
-          const catalogNo = String(master.catalog_no || master.catalogue_no || "-").trim();
-          const releasedDate = String(master.released_date || master.release_date || master.release_year || "-").trim();
+          const artist = String(master.artist_or_brand || master.artist_name || master.artist || "-").trim();
+          const releaseYear = master.release_year || "";
+          const displayTitle = artist !== "-" ? `${artist} - ${title}` : title;
+          const displayTitleWithYear = releaseYear ? `${displayTitle} (${releaseYear})` : displayTitle;
           const coverUrl = normalizeRenderableCoverUrl(master.cover_image_url || master.thumbnail_url);
           const coverHtml = coverUrl
             ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
             : `<span class="ops-exception-cover-placeholder">${escapeHtml(artist.substring(0, 2).toUpperCase() || "?")}</span>`;
           const metaBits = [
-            artist,
             `master #${masterId}`,
-          ].filter(Boolean);
-          const subBits = [
-            t("common.meta.release", { value: releasedDate }),
-            t("common.meta.label_catalog", { value: `${labelName} / ${catalogNo}` }),
             opsExceptionTypeHint(activeType),
           ].filter(Boolean);
           return `
             <div class="ops-exception-row">
               <div class="ops-exception-cover">${coverHtml}</div>
               <div class="ops-exception-main">
-                <div class="ops-exception-title">${escapeHtml(title)}</div>
+                <div class="ops-exception-title">${escapeHtml(displayTitleWithYear)}</div>
                 <div class="ops-exception-meta">${escapeHtml(metaBits.join(" | "))}</div>
-                <div class="ops-exception-submeta">${escapeHtml(subBits.join(" | "))}</div>
               </div>
               <div class="ops-exception-actions">
                 <button class="btn ghost" type="button" data-ops-exception-spotify-match="${masterId}"
