@@ -77,6 +77,7 @@ def list_owned_items(
 ) -> list[dict[str, Any]]:
     query = _owned_item_select_query() + " WHERE 1 = 1"
     params: list[Any] = []
+    query += " AND (oi.source_code IS NULL OR oi.source_code != 'MUSICBRAINZ')"
 
     if category:
         query += " AND oi.category = ?"
@@ -255,6 +256,7 @@ def count_owned_items(
       WHERE 1 = 1
     """
     params: list[Any] = []
+    query += " AND (oi.source_code IS NULL OR oi.source_code != 'MUSICBRAINZ')"
 
     if category:
         query += " AND oi.category = ?"
