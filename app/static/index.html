@@ -12655,9 +12655,9 @@
     .dashboard-climate-badge.ideal { background: rgba(76,175,80,0.18); color: #4caf50; }
     .dashboard-climate-badge.warn { background: rgba(249,115,22,0.18); color: #f97316; }
     .dashboard-climate-badge.alert { background: rgba(239,68,68,0.18); color: #ef4444; }
-    .dashboard-climate-inline { display: flex; align-items: baseline; gap: 4px; padding-left: 12px; border-left: 1px solid var(--theme-dashboard-border); }
-    .dashboard-climate-inline .dashboard-climate-value { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--theme-dashboard-text); }
-    .dashboard-climate-inline .dashboard-climate-unit { font-size: 0.72rem; color: var(--theme-dashboard-text-muted); }
+    .dashboard-climate-inline { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-left: 12px; border-left: 1px solid var(--theme-dashboard-border); }
+    .dashboard-climate-inline .dashboard-climate-value { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1.2; color: var(--theme-dashboard-text); }
+    .dashboard-climate-inline .dashboard-climate-unit { font-size: 0.65rem; color: var(--theme-dashboard-text-muted); white-space: nowrap; }
 
     /* ═══════════════════════════════════════════════════
        Dashboard Widget Grid System v2
@@ -16717,6 +16717,7 @@
             </details>
           </div>
           <div class="dashboard-climate-inline" id="homeDashClimateInline">
+            <span class="mini" style="font-size:0.56rem;opacity:0.5;">실내 / 실외</span>
             <span class="dashboard-climate-value" id="homeDashClimateTemp">--</span>
             <span class="dashboard-climate-unit" id="homeDashClimateHumid"></span>
           </div>
@@ -42038,12 +42039,19 @@ async function loadDashboardClimate() {
       const humEl = document.getElementById("homeDashClimateHumid");
       if (!tempEl) return;
       try {
-        const res = await fetch("/operator/office-climate");
+        const res = await fetch("/operator/climate-compare");
         if (!res.ok) return;
         const d = await safeJson(res);
-        if (!d.available) return;
-        if (tempEl) tempEl.textContent = d.temperature_c != null ? Number(d.temperature_c).toFixed(1) + "°C" : "--";
-        if (humEl) humEl.textContent = d.humidity_percent != null ? "/ " + Math.round(d.humidity_percent) + "%" : "";
+        if (d.indoor_available || d.outdoor_available) {
+          const parts = [];
+          if (d.indoor_temperature_c != null) parts.push(Number(d.indoor_temperature_c).toFixed(1) + "°");
+          if (d.outdoor_temperature_c != null) parts.push(Number(d.outdoor_temperature_c).toFixed(1) + "°");
+          if (tempEl) tempEl.textContent = parts.join(" / ");
+          const hparts = [];
+          if (d.indoor_humidity_percent != null) hparts.push("in " + Math.round(d.indoor_humidity_percent) + "%");
+          if (d.outdoor_humidity_percent != null) hparts.push("out " + Math.round(d.outdoor_humidity_percent) + "%");
+          if (humEl) humEl.textContent = hparts.join("  ");
+        }
       } catch (_) {}
     }
     function renderDashboardSourceRows(rows, totalItems) {

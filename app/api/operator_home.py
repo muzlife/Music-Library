@@ -12,6 +12,7 @@ from .. import db
 from .. import security
 from ..security import _require_operator_request
 from ..schemas import (
+    ClimateCompareResponse,
     ArtistContextRequest,
     ArtistContextResponse,
     CustomerTrackRequestCreate,
@@ -133,6 +134,45 @@ def operator_home_feed(
         limit=int(data.get("limit") or limit),
         total_count=int(data.get("total_count") or 0),
         items=[OpsHomeRecentItem(**row) for row in data.get("items") or []],
+    )
+
+
+
+@router.get("/operator/climate-compare", response_model=ClimateCompareResponse)
+def operator_climate_compare(request: Request) -> ClimateCompareResponse:
+    security._require_authenticated_request(request)
+    indoor = None
+    outdoor = None
+    # Try indoor
+    try:
+        indoor = _main()._load_operator_office_climate()
+        if indoor.get("available"):
+            _main()._OFFICE_CLIMATE_CACHE = dict(indoor)
+    except Exception:
+        indoor = _main()._OFFICE_CLIMATE_CACHE
+    # Try outdoor
+    try:
+        outdoor = _main()._load_operator_seoul_weather()
+        if outdoor.get("available"):
+            _main()._SEOUL_WEATHER_CACHE = dict(outdoor)
+    except Exception:
+        outdoor = _main()._SEOUL_WEATHER_CACHE
+
+    indoor_t = indoor.get("temperature_c") if indoor else None
+    indoor_h = indoor.get("humidity_percent") if indoor else None
+
+    return ClimateCompareResponse(
+        indoor_available=bool(indoor and indoor.get("available")),
+        indoor_temperature_c=float(indoor_t) if indoor_t is not None else None,
+        indoor_humidity_percent=float(indoor_h) if indoor_h is not None else None,
+        indoor_comfort_label=str(indoor.get("comfort_label") or "") if indoor else None,
+        outdoor_available=bool(outdoor and outdoor.get("available")),
+        outdoor_temperature_c=float(outdoor.get("temperature_c")) if outdoor and outdoor.get("temperature_c") is not None else None,
+        outdoor_humidity_percent=float(outdoor.get("humidity_percent")) if outdoor and outdoor.get("humidity_percent") is not None else None,
+        outdoor_weather_desc=outdoor.get("description") if outdoor else None,
+        outdoor_temperature_high_c=float(outdoor.get("temperature_high_c")) if outdoor and outdoor.get("temperature_high_c") is not None else None,
+        outdoor_temperature_low_c=float(outdoor.get("temperature_low_c")) if outdoor and outdoor.get("temperature_low_c") is not None else None,
+        updated_at=outdoor.get("updated_at") if outdoor else None,
     )
 
 
