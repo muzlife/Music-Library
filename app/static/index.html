@@ -54924,10 +54924,7 @@ async function loadDashboardClimate() {
       sharedCameraSelectedId = Number(button.getAttribute("data-shared-camera-id") || 0) || null;
       renderSharedCameraPage();
     });
-    /* homeOpenManageBtn removed */
-    /* homeOpenRegisterBtn removed */
-      switchSubTab("register", "collect");
-    });
+    /* homeOpenManageBtn & homeOpenRegisterBtn removed */
     $("mediaSearchModeBtn").addEventListener("click", () => switchMediaMode("search"));
     $("mediaManageModeBtn").addEventListener("click", () => switchMediaMode("manage"));
     $("mediaRegisterModeBtn").addEventListener("click", () => switchMediaMode("register"));
