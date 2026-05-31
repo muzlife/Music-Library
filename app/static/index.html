@@ -46528,7 +46528,7 @@ async function loadDashboardClimate() {
       const mappedReleaseType = pickMappedReleaseType(c?.release_type);
       const artist = String(c?.artist_or_brand || "").trim();
       const title = String(c?.title || "").trim();
-      const itemName = [artist, title].filter((v) => v).join(" - ") || title || `${category} linked`;
+      const itemName = title || [artist, title].filter((v) => v).join(" - ") || `${category} linked`;
       const sourceCodeUpper = String(c?.source || "").trim().toUpperCase();
       const collector = buildCollectorPayload(sourceCodeUpper, c || {});
       const trackList = Array.isArray(c?.track_list)

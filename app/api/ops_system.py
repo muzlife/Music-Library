@@ -445,11 +445,7 @@ def _build_ops_placement_hint_payload(owned_item_id: int) -> dict[str, Any]:
         or m._clean_text(detail_row.get("master_artist_or_brand"))
     )
     _raw_item_name = m._clean_text(detail_row.get("item_name_override")) or m._clean_text(detail_row.get("master_title"))
-    item_title = (
-        f"{artist_or_brand} - {_raw_item_name}"
-        if artist_or_brand and m._clean_text(detail_row.get("item_name_override"))
-        else _raw_item_name
-    )
+    item_title = _raw_item_name
     raw_year = detail_row.get("master_release_year") if detail_row.get("master_release_year") is not None else detail_row.get("release_year")
     try:
         release_year = int(raw_year) if raw_year is not None else None
