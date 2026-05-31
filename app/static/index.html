@@ -17499,23 +17499,7 @@
                 </label>
               </div>
             </div>
-            <div class="checkbox-group-sub">
-              <label>메타 결핍</label>
-              <div style="display: flex; gap: 12px; align-items: center; min-height: 38px;">
-                <label class="inline-check">
-                  <input id="homeGenreMissing" type="checkbox" />
-                  <span>장르 없음</span>
-                </label>
-                <label class="inline-check">
-                  <input id="homeFormatMissing" type="checkbox" />
-                  <span>미디어 없음</span>
-                </label>
-                <label class="inline-check">
-                  <input id="homeCatalogMissing" type="checkbox" />
-                  <span>카탈로그 없음</span>
-                </label>
-              </div>
-            </div>
+
           </div>
         </details>
         <div id="homeSearchStatus" class="status"></div>
@@ -20486,6 +20470,8 @@
                 <option value="SIZE_MISMATCH" data-i18n="ops.exception.field.type.size_mismatch">규격 불일치</option>
                 <option value="TRACK_MISSING" data-i18n="ops.exception.field.type.track_missing">곡 정보 없음</option>
                 <option value="SPOTIFY_UNMATCHED" data-i18n="ops.exception.field.type.spotify_unmatched">스포티파이 미연결 마스터</option>
+                <option value="GENRE_MISSING" data-i18n="ops.exception.field.type.genre_missing">장르 없음</option>
+                <option value="CATALOG_MISSING" data-i18n="ops.exception.field.type.catalog_missing">카탈로그 없음</option>
               </select>
             </div>
             <div class="ops-exception-inline-field ops-exception-inline-field--limit">
@@ -21230,6 +21216,10 @@
       PREFERRED_SIZE_MISMATCH: 0,
       TRACK_MISSING: 0,
       SPOTIFY_UNMATCHED: 0,
+      MEDIA_MISSING: 0,
+      SIZE_MISMATCH: 0,
+      GENRE_MISSING: 0,
+      CATALOG_MISSING: 0,
     };
     let opsExceptionItems = [];
     let opsExceptionTotalCount = 0;
@@ -21811,6 +21801,10 @@
         "common.exception.preferred_size_mismatch": "보관 규격 예외",
         "common.exception.track_missing": "곡 정보 없음",
         "common.exception.spotify_unmatched": "스포티파이 미연결 마스터",
+        "common.exception.media_missing": "미디어 타입 누락",
+        "common.exception.size_mismatch": "규격 불일치",
+        "common.exception.genre_missing": "장르 없음",
+        "common.exception.catalog_missing": "카탈로그 없음",
         "common.exception_hint.unslotted": "장식장 위치 지정 필요",
         "common.exception_hint.source_missing": "Discogs/ManiaDB 보강 필요",
         "common.exception_hint.master_missing": "앨범 마스터 연결 필요",
@@ -21818,6 +21812,10 @@
         "common.exception_hint.preferred_size_mismatch": "실물 규격과 권장 보관 규격이 다름",
         "common.exception_hint.track_missing": "곡 검색과 요청곡 대응을 위해 보강 필요",
         "common.exception_hint.spotify_unmatched": "스포티파이 앨범 매칭이 비어 있습니다.",
+        "common.exception_hint.media_missing": "미디어 타입(CD, LP 등)이 지정되지 않았습니다.",
+        "common.exception_hint.size_mismatch": "카테고리(LP/CD)와 보관 규격이 일치하지 않습니다.",
+        "common.exception_hint.genre_missing": "장르 정보가 비어 있는 상품입니다.",
+        "common.exception_hint.catalog_missing": "카탈로그 번호가 없는 상품입니다.",
         "operator.lookup.status.barcode_loading": "바코드 조회 중...",
         "operator.lookup.status.loading": "조회 중...",
         "operator.lookup.status.complete": "{count}건 조회",
@@ -24528,6 +24526,10 @@
         "common.exception.preferred_size_mismatch": "Size Mismatch",
         "common.exception.track_missing": "Tracklist Missing",
         "common.exception.spotify_unmatched": "Spotify Match Missing",
+        "common.exception.media_missing": "Media Type Missing",
+        "common.exception.size_mismatch": "Size Mismatch",
+        "common.exception.genre_missing": "Genre Missing",
+        "common.exception.catalog_missing": "Catalog Missing",
         "common.exception_hint.unslotted": "Cabinet location assignment needed",
         "common.exception_hint.source_missing": "Discogs/ManiaDB enrichment needed",
         "common.exception_hint.master_missing": "Album master link required",
@@ -24535,6 +24537,10 @@
         "common.exception_hint.preferred_size_mismatch": "Physical format differs from preferred storage size",
         "common.exception_hint.track_missing": "Needed for track search and request handling",
         "common.exception_hint.spotify_unmatched": "Spotify album binding is missing.",
+        "common.exception_hint.media_missing": "Media type (CD, LP, etc.) is not specified.",
+        "common.exception_hint.size_mismatch": "Category (LP/CD) does not match storage size group.",
+        "common.exception_hint.genre_missing": "Genre information is empty.",
+        "common.exception_hint.catalog_missing": "Catalog number is missing.",
         "operator.lookup.status.barcode_loading": "Looking up barcode...",
         "operator.lookup.status.loading": "Loading...",
         "operator.lookup.status.complete": "{count} results",
@@ -27235,6 +27241,10 @@
         "common.exception.preferred_size_mismatch": "保管規格例外",
         "common.exception.track_missing": "曲情報なし",
         "common.exception.spotify_unmatched": "Spotify未連結マスター",
+        "common.exception.media_missing": "メディアタイプ未指定",
+        "common.exception.size_mismatch": "サイズ不一致",
+        "common.exception.genre_missing": "ジャンルなし",
+        "common.exception.catalog_missing": "カタログなし",
         "common.exception_hint.unslotted": "キャビネット位置指定が必要",
         "common.exception_hint.source_missing": "Discogs/ManiaDB 補強が必要",
         "common.exception_hint.master_missing": "アルバムマスター連結が必要",
@@ -27242,6 +27252,10 @@
         "common.exception_hint.preferred_size_mismatch": "実物規格と推奨保管規格が異なります",
         "common.exception_hint.track_missing": "曲検索とリクエスト対応のため補強が必要です",
         "common.exception_hint.spotify_unmatched": "Spotifyアルバムの紐付けがありません。",
+        "common.exception_hint.media_missing": "メディアタイプ（CD、LPなど）が指定されていません。",
+        "common.exception_hint.size_mismatch": "カテゴリ（LP/CD）と保管サイズグループが一致しません。",
+        "common.exception_hint.genre_missing": "ジャンル情報が空の商品です。",
+        "common.exception_hint.catalog_missing": "カタログ番号がない商品です。",
         "operator.lookup.status.barcode_loading": "バーコードを照会中...",
         "operator.lookup.status.loading": "照会中...",
         "operator.lookup.status.complete": "{count}件を表示",
@@ -36864,6 +36878,10 @@
       if (code === "PREFERRED_SIZE_MISMATCH") return t("common.exception.preferred_size_mismatch");
       if (code === "TRACK_MISSING") return t("common.exception.track_missing");
       if (code === "SPOTIFY_UNMATCHED") return t("common.exception.spotify_unmatched");
+      if (code === "MEDIA_MISSING") return t("common.exception.media_missing");
+      if (code === "SIZE_MISMATCH") return t("common.exception.size_mismatch");
+      if (code === "GENRE_MISSING") return t("common.exception.genre_missing");
+      if (code === "CATALOG_MISSING") return t("common.exception.catalog_missing");
       return code || "-";
     }
 
@@ -36876,6 +36894,10 @@
       if (code === "PREFERRED_SIZE_MISMATCH") return t("common.exception_hint.preferred_size_mismatch");
       if (code === "TRACK_MISSING") return t("common.exception_hint.track_missing");
       if (code === "SPOTIFY_UNMATCHED") return t("common.exception_hint.spotify_unmatched");
+      if (code === "MEDIA_MISSING") return t("common.exception_hint.media_missing");
+      if (code === "SIZE_MISMATCH") return t("common.exception_hint.size_mismatch");
+      if (code === "GENRE_MISSING") return t("common.exception_hint.genre_missing");
+      if (code === "CATALOG_MISSING") return t("common.exception_hint.catalog_missing");
       return "";
     }
 
@@ -40689,7 +40711,7 @@
     });
 
 function _resetAllSearchFilters() {
-      ["homeGenreMissing","homeFormatMissing","homeCatalogMissing","homeNewProduct","homePromo","homeLimitEd","homeSigDirect","homeSigPurchase"].forEach(id => {
+      ["homeNewProduct","homePromo","homeLimitEd","homeSigDirect","homeSigPurchase"].forEach(id => {
         const el = document.getElementById(id); if (el) el.checked = false;
       });
       const osEl = document.getElementById("homeOwnershipStatus"); if (osEl) osEl.value = "";
@@ -40722,10 +40744,7 @@ function initDashboardDrilldown() {
         openAdminConsole("search");
         setTimeout(() => {
           // 기존 메타 필터 체크박스 모두 초기화
-          ["homeGenreMissing","homeFormatMissing","homeCatalogMissing"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.checked = false;
-          });
+
           const target = document.getElementById(checkboxId);
           if (target) {
             target.checked = true;
@@ -40771,9 +40790,9 @@ function initDashboardDrilldown() {
         source_unlinked:         () => _goSource(),
         master_unlinked:         () => _goException("MASTER_MISSING"),
         cover_missing:           () => _goException("COVER_MISSING"),
-        genre_missing:           () => _goSearch("homeGenreMissing"),
-        media_missing:           () => _goSearch("homeFormatMissing"),
-        catalog_missing:         () => _goSearch("homeCatalogMissing"),
+        genre_missing:           () => { openAdminConsole("ops"); setTimeout(() => { const tabs=document.querySelectorAll(".subtab-btn"); tabs.forEach(b=>{if(b.textContent.includes("예외"))b.click();}); setTimeout(()=>{ const sel=document.getElementById("opsExceptionType"); if(sel){sel.value="GENRE_MISSING";sel.dispatchEvent(new Event("change"));} document.getElementById("opsExceptionLoadBtn")?.click(); },300); },200); },
+        media_missing:           () => { openAdminConsole("ops"); setTimeout(() => { const tabs=document.querySelectorAll(".subtab-btn"); tabs.forEach(b=>{if(b.textContent.includes("예외"))b.click();}); setTimeout(()=>{ const sel=document.getElementById("opsExceptionType"); if(sel){sel.value="MEDIA_MISSING";sel.dispatchEvent(new Event("change"));} document.getElementById("opsExceptionLoadBtn")?.click(); },300); },200); },
+        catalog_missing:         () => { openAdminConsole("ops"); setTimeout(() => { const tabs=document.querySelectorAll(".subtab-btn"); tabs.forEach(b=>{if(b.textContent.includes("예외"))b.click();}); setTimeout(()=>{ const sel=document.getElementById("opsExceptionType"); if(sel){sel.value="CATALOG_MISSING";sel.dispatchEvent(new Event("change"));} document.getElementById("opsExceptionLoadBtn")?.click(); },300); },200); },
         new_items:               () => _goSearchProductFlag("homeNewProduct"),
         promo_items:             () => { openAdminConsole("search"); setTimeout(() => { _resetAllSearchFilters(); const el=document.getElementById("homePromo");if(el)el.checked=true; const d=document.getElementById("homeSearchAdvancedDetails");if(d)d.open=true; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
         other_items:             () => { openAdminConsole("search"); setTimeout(() => { ["homeNewProduct","homePromo","homeLimitEd"].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false;}); const o=document.getElementById("homeOwnershipStatus");if(o)o.value=""; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
@@ -43857,7 +43876,7 @@ async function loadDashboardClimate() {
       const root = $("opsExceptionSummary");
       if (!root) return;
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "GENRE_MISSING", "CATALOG_MISSING"];
       root.innerHTML = types.map((type) => `
         <button
           class="ops-exception-box ${activeType === type ? "active" : ""}"
@@ -43915,7 +43934,7 @@ async function loadDashboardClimate() {
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
 
       // --- SPOTIFY_UNMATCHED: Album Master rows ---
-      if (activeType === "SPOTIFY_UNMATCHED") {
+      if (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING" || activeType === "CATALOG_MISSING") {
         root.innerHTML = opsExceptionItems.map((master) => {
           const masterId = Number(master.id || 0);
           const title = String(master.title || master.album_title || "-").trim();
@@ -44016,8 +44035,12 @@ async function loadDashboardClimate() {
     }
 
     async function fetchOpsExceptionCount(type) {
-      if (type === "SPOTIFY_UNMATCHED") {
-        const res = await fetch("/album-masters?spotify_state=MISSING&include_total=true&limit=1");
+      if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
+        let url;
+        if (type === "SPOTIFY_UNMATCHED") url = "/album-masters?spotify_state=MISSING&include_total=true&limit=1";
+        else if (type === "GENRE_MISSING") url = "/album-masters?genre_missing=true&media_only=true&include_total=true&limit=1";
+        else url = "/album-masters?catalog_missing=true&media_only=true&include_total=true&limit=1";
+        const res = await fetch(url);
         if (!res.ok) throw new Error(t("ops.exception.status.count_failed", { type: opsExceptionTypeLabel(type) }));
         const headerTotal = Number(res.headers.get("X-Total-Count") || 0);
         return Number.isFinite(headerTotal) ? headerTotal : 0;
@@ -44032,7 +44055,7 @@ async function loadDashboardClimate() {
 
     async function loadOpsExceptionCounts(opts = {}) {
       const silent = Boolean(opts?.silent);
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "GENRE_MISSING", "CATALOG_MISSING"];
       try {
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loading"));
         const results = await Promise.all(types.map(async (type) => ({
@@ -44061,8 +44084,12 @@ async function loadDashboardClimate() {
         renderOpsExceptionList();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.list_loading_type", { type: opsExceptionTypeLabel(type) }));
         let res, data;
-        if (type === "SPOTIFY_UNMATCHED") {
-          res = await fetch(`/album-masters?spotify_state=MISSING&include_total=true&limit=${limit}`);
+        if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
+          let url = `/album-masters?include_total=true&limit=${limit}`;
+          if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
+          else if (type === "GENRE_MISSING") url += "&genre_missing=true&media_only=true";
+          else url += "&catalog_missing=true&media_only=true";
+          res = await fetch(url);
           data = await safeJson(res);
         } else {
           const params = buildOpsExceptionParams(type, { includeTotal: true, limit });
@@ -47690,9 +47717,7 @@ async function loadDashboardClimate() {
       if (isPromo) params.set("is_promo", "true");
       const ownershipStatus = $("homeOwnershipStatus")?.value || "";
       if (ownershipStatus) params.set("ownership_status", ownershipStatus);
-      if ($("homeGenreMissing")?.checked) params.set("genre_missing", "true");
-      if ($("homeFormatMissing")?.checked) params.set("format_missing", "true");
-      if ($("homeCatalogMissing")?.checked) params.set("catalog_missing", "true");
+      
 
       if ($("homeSigDirect").checked) params.append("signature_types", "IN_PERSON");
       if ($("homeSigPurchase").checked) params.append("signature_types", "PURCHASE_INCLUDED");
