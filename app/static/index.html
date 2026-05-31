@@ -16705,14 +16705,7 @@
               </div>
             </details>
         </div>
-        <div class="dashboard-actions">
-            <button id="homeOpenManageBtn" class="btn ghost icon-btn" type="button" data-i18n-title="dashboard.action.search" data-i18n-aria-label="dashboard.action.search" title="검색" aria-label="검색">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
-            </button>
-            <button id="homeOpenRegisterBtn" class="btn icon-btn" type="button" data-i18n-title="dashboard.action.new_item" data-i18n-aria-label="dashboard.action.new_item" title="신규 등록" aria-label="신규 등록">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-            </button>
-        </div>
+
       </div>
         <!-- KPI 고정 바 -->
         <div id="homeDashKpiBar" class="dashboard-kpi-bar">
@@ -44065,7 +44058,7 @@ async function loadDashboardClimate() {
         opsExceptionCounts = results.reduce((acc, entry) => {
           acc[entry.type] = Number(entry.count || 0);
           return acc;
-        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, MEDIA_MISSING: 0, SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0 });
+        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, MEDIA_MISSING: 0, SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0, GENRE_MISSING: 0, CATALOG_MISSING: 0 });
         renderOpsExceptionSummary();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loaded"));
       } catch (err) {
@@ -54923,9 +54916,8 @@ async function loadDashboardClimate() {
       sharedCameraSelectedId = Number(button.getAttribute("data-shared-camera-id") || 0) || null;
       renderSharedCameraPage();
     });
-    $("homeOpenManageBtn").addEventListener("click", () => openAdminConsole("media", { mediaMode: "search" }));
-    $("homeOpenRegisterBtn").addEventListener("click", () => {
-      openAdminConsole("media", { remember: false, mediaMode: "register" });
+    /* homeOpenManageBtn removed */
+    /* homeOpenRegisterBtn removed */
       switchSubTab("register", "collect");
     });
     $("mediaSearchModeBtn").addEventListener("click", () => switchMediaMode("search"));
@@ -55374,9 +55366,7 @@ async function loadDashboardClimate() {
     $("homeLimitEd").addEventListener("change", () => homeSearchOwnedItems({ resetPage: true }));
     $("homeNewProduct").addEventListener("change", () => homeSearchOwnedItems({ resetPage: true }));
     $("homePromo").addEventListener("change", () => homeSearchOwnedItems({ resetPage: true }));
-    $("homeGenreMissing").addEventListener("change", () => homeSearchOwnedItems({ resetPage: true }));
-    $("homeFormatMissing").addEventListener("change", () => homeSearchOwnedItems({ resetPage: true }));
-    $("homeCatalogMissing").addEventListener("change", () => homeSearchOwnedItems({ resetPage: true }));
+    // 메타 결핍 체크박스는 예외 큐로 이동됨
     $("homePageSize").addEventListener("change", () => {
       homeSearchPageSize = Math.max(1, Math.min(500, Number($("homePageSize").value || 30)));
       homeSearchOwnedItems({ resetPage: true });
