@@ -209,17 +209,17 @@ def list_owned_items(
 
     size_group_state_u = str(size_group_state or "ANY").strip().upper()
     if size_group_state_u == "MISMATCH":
-        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
-                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') != 'STD')"
-                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') != 'CASSETTE')"
-                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') != '8TRACK')"
-                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') != 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') != 'CASSETTE')"
+                  " OR (1=1 AND COALESCE(oi.size_group, '') != '8TRACK')"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
     elif size_group_state_u == "MATCH":
-        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
-                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') = 'STD')"
-                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') = 'CASSETTE')"
-                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') = '8TRACK')"
-                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') = 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') = 'CASSETTE')"
+                  " OR (1=1 AND COALESCE(oi.size_group, '') = '8TRACK')"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
     elif track_state_u == "HAS":
         query += """
          AND (
@@ -410,17 +410,17 @@ def count_owned_items(
 
     size_group_state_u = str(size_group_state or "ANY").strip().upper()
     if size_group_state_u == "MISMATCH":
-        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
-                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') != 'STD')"
-                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') != 'CASSETTE')"
-                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') != '8TRACK')"
-                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') != 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') != 'CASSETTE')"
+                  " OR (1=1 AND COALESCE(oi.size_group, '') != '8TRACK')"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
     elif size_group_state_u == "MATCH":
-        query += (" AND ((oi.category = 'LP' AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
-                  " OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') = 'STD')"
-                  " OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') = 'CASSETTE')"
-                  " OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') = '8TRACK')"
-                  " OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') = 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') = 'CASSETTE')"
+                  " OR (1=1 AND COALESCE(oi.size_group, '') = '8TRACK')"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
     elif track_state_u == "HAS":
         query += """
          AND (
