@@ -55540,7 +55540,17 @@ async function loadDashboardClimate() {
       syncHomeEditorMusicVisibility();
       renderHomeProductRelationSection();
     });
-    $("editMediaType").addEventListener("change", _syncVinylOnlyFields);
+    function _syncCategoryFromMedia() {
+      var mt = String($("editMediaType")?.value || "").trim();
+      var cat = "LP", sg = "LP";
+      if (["CD","CDr","SACD","Digital"].includes(mt)) { cat = "CD"; sg = "STD"; }
+      else if (["Cassette","8-Track Cartridge"].includes(mt)) { cat = "CASSETTE"; sg = "CASSETTE"; }
+      else if (mt === "Reel-To-Reel") { cat = "REEL_TO_REEL"; sg = "REEL_TO_REEL"; }
+      if ($("editCategory")) $("editCategory").value = cat;
+      if ($("editSizeGroup")) $("editSizeGroup").value = sg;
+      if ($("editPreferredStorageSizeGroup")) $("editPreferredStorageSizeGroup").value = sg;
+    }
+    $("editMediaType").addEventListener("change", function() { _syncVinylOnlyFields(); _syncCategoryFromMedia(); });
     $("editIsLimitedEdition").addEventListener("change", function() {
       setHiddenIfPresent("editEditionNumberWrap", !this.checked);
     });
