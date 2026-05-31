@@ -136,9 +136,7 @@
       --dash-card-border-hover: rgba(107, 114, 128, 0.18);
       --dash-card-shadow: 0 2px 8px rgba(0,0,0,0.03);
       --dash-card-shadow-hover: 0 6px 16px rgba(0,0,0,0.05);
-      --dash-kpi-bg: rgba(255,255,255,0.85);
-      --dash-kpi-border: rgba(107,114,128,0.12);
-      --dash-kpi-shadow: 0 1px 3px rgba(0,0,0,0.04);
+
       --selected-accent: #0f766e;
       --selected-accent-strong: #0d6660;
       --selected-accent-deep: #0a4f4a;
@@ -12603,7 +12601,7 @@
 
     /* KPI 고정 바 */
     .dashboard-kpi-bar { display: flex; gap: 6px; padding: 8px 0 10px; border-bottom: 1px solid var(--theme-dashboard-border); margin-bottom: 8px; }
-    .dashboard-kpi-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 10px; border-radius: 10px; background: var(--dash-kpi-bg, var(--theme-dashboard-panel-soft)); border: 1px solid var(--dash-kpi-border, transparent); box-shadow: var(--dash-kpi-shadow, none); transition: border-color 150ms; }
+    .dashboard-kpi-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 10px; border-radius: 10px; background: var(--theme-dashboard-panel-soft); border: 1px solid transparent; transition: border-color 150ms; }
     .dashboard-kpi-item:hover { border-color: var(--theme-dashboard-border); }
     .dashboard-kpi-item .kpi-head { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--theme-dashboard-text-dim); }
     .dashboard-kpi-item .kpi-value { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--theme-dashboard-text); }
@@ -12660,11 +12658,7 @@
     .dashboard-climate-badge.ideal { background: rgba(76,175,80,0.18); color: #4caf50; }
     .dashboard-climate-badge.warn { background: rgba(249,115,22,0.18); color: #f97316; }
     .dashboard-climate-badge.alert { background: rgba(239,68,68,0.18); color: #ef4444; }
-    .dashboard-climate-inline { display: flex; flex-direction: column; gap: 3px; padding-left: 12px; border-left: 1px solid var(--theme-dashboard-border); }
-    .dashboard-climate-row { display: flex; align-items: baseline; gap: 4px; }
-    .dashboard-climate-label { font-size: 0.56rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--theme-dashboard-text-dim); min-width: 28px; }
-    .dashboard-climate-inline .dashboard-climate-value { font-family: var(--font-mono); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--theme-dashboard-text); }
-    .dashboard-climate-inline .dashboard-climate-unit { font-size: 0.62rem; color: var(--theme-dashboard-text-muted); white-space: nowrap; }
+
 
     /* ═══════════════════════════════════════════════════
        Dashboard Widget Grid System v2
@@ -16723,18 +16717,7 @@
               </div>
             </details>
           </div>
-          <div class="dashboard-climate-inline" id="homeDashClimateInline">
-            <div class="dashboard-climate-row">
-              <span class="dashboard-climate-label">실내</span>
-              <span class="dashboard-climate-value" id="homeDashClimateTemp">--</span>
-              <span class="dashboard-climate-unit" id="homeDashClimateHumid"></span>
-            </div>
-            <div class="dashboard-climate-row">
-              <span class="dashboard-climate-label">실외</span>
-              <span class="dashboard-climate-value" id="homeDashOutdoorTemp">--</span>
-              <span class="dashboard-climate-unit" id="homeDashOutdoorHumid"></span>
-            </div>
-          </div>
+
         </div>
 
       </div>
@@ -42049,23 +42032,16 @@ function initDashboardDrilldown() {
     }
 
 async function loadDashboardClimate() {
-      const inTemp = document.getElementById("homeDashClimateTemp");
-      const inHum = document.getElementById("homeDashClimateHumid");
-      const outTemp = document.getElementById("homeDashOutdoorTemp");
-      const outHum = document.getElementById("homeDashOutdoorHumid");
-      if (!inTemp && !outTemp) return;
+      const tempEl = document.getElementById("homeDashClimateTemp");
+      const humEl = document.getElementById("homeDashClimateHumid");
+      if (!tempEl) return;
       try {
-        const res = await fetch("/operator/climate-compare");
+        const res = await fetch("/operator/office-climate");
         if (!res.ok) return;
         const d = await safeJson(res);
-        if (d.indoor_temperature_c != null) {
-          if (inTemp) inTemp.textContent = Number(d.indoor_temperature_c).toFixed(1) + "°C";
-          if (inHum) inHum.textContent = d.indoor_humidity_percent != null ? Math.round(d.indoor_humidity_percent) + "%" : "";
-        }
-        if (d.outdoor_temperature_c != null) {
-          if (outTemp) outTemp.textContent = Number(d.outdoor_temperature_c).toFixed(1) + "°C";
-          if (outHum) outHum.textContent = d.outdoor_humidity_percent != null ? Math.round(d.outdoor_humidity_percent) + "%" : "";
-        }
+        if (!d.available) return;
+        if (tempEl) tempEl.textContent = d.temperature_c != null ? Number(d.temperature_c).toFixed(1) + "°C" : "--";
+        if (humEl) humEl.textContent = d.humidity_percent != null ? "/ " + Math.round(d.humidity_percent) + "%" : "";
       } catch (_) {}
     }
     function renderDashboardSourceRows(rows, totalItems) {
