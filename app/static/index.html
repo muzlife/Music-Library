@@ -17831,6 +17831,10 @@
                             <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
                           </select>
                         </div>
+                        <div>
+                          <label for="editReleasedDate">상품 발매일</label>
+                          <input id="editReleasedDate" placeholder="예: 2023-05-10" />
+                        </div>
                       </div>
                       <div id="homeEditMusicMetaFieldsB" class="grid-12 grid-12--from-6 u-mt-6">
                         <div class="span-2">
@@ -17845,10 +17849,6 @@
                           <label for="editBarcode">바코드</label>
                           <input id="editBarcode" placeholder="예: 8809049750425" />
                         </div>
-                        <div>
-                          <label for="editReleasedDate">상품 발매일</label>
-                          <input id="editReleasedDate" placeholder="예: 2023-05-10" />
-                        </div>
                         <div class="span-2">
                           <label for="editStyles" data-i18n="media.manage.field.styles.label">스타일 (쉼표 구분)</label>
                           <input id="editStyles" data-i18n-placeholder="media.manage.field.styles.placeholder" placeholder="예: K-Rock, Prog Rock" />
@@ -17856,12 +17856,20 @@
                         <div class="span-2" style="display:flex;align-items:flex-end;gap:10px;padding-bottom:2px;flex-wrap:nowrap;">
                           <label class="inline-check" style="flex-shrink:0;">
                             <input id="editIsSecondHand" type="checkbox" />
-                            <span data-i18n="media.manage.product.field.is_new_item.label">새상품 여부</span>
+                            <span data-i18n="media.manage.product.field.is_new_item.label">새상품</span>
                           </label>
                           <label class="inline-check" style="flex-shrink:0;">
                             <input id="editPromoNfs" type="checkbox" />
-                            <span data-i18n="media.manage.product.field.is_promo.label">홍보반 여부</span>
+                            <span data-i18n="media.manage.product.field.is_promo.label">홍보반</span>
                           </label>
+                          <label class="inline-check" style="flex-shrink:0;">
+                            <input id="editIsLimitedEdition" type="checkbox" />
+                            <span data-i18n="media.manage.product.field.is_limited_edition.label">한정판</span>
+                          </label>
+                          <div id="editEditionNumberWrap" class="u-hidden-initial" style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                            <label for="editEditionNumber" style="white-space:nowrap;font-size:0.82rem;" data-i18n="media.manage.product.field.edition_number.label">넘버링</label>
+                            <input id="editEditionNumber" type="text" placeholder="예: 5/1000" style="width:90px;" />
+                          </div>
                           <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
                             <label for="editSignatureType" style="font-size:0.72rem;color:var(--ink);opacity:0.7;margin-bottom:1px;" data-i18n="media.manage.product.field.signature_type.label">싸인 유형</label>
                             <select id="editSignatureType" style="font-size:0.78rem;padding:2px 3px;max-width:120px;">
@@ -17895,17 +17903,6 @@
                             <option value="All Media">All Media</option>
 
                           </select>
-                        </div>
-                        <!-- 한정판 / 넘버링 (패키징 자리로 이동) -->
-                        <div class="span-2" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                          <label class="inline-check">
-                            <input id="editIsLimitedEdition" type="checkbox" />
-                            <span data-i18n="media.manage.product.field.is_limited_edition.label">한정판</span>
-                          </label>
-                          <div id="editEditionNumberWrap" class="u-hidden-initial" style="display:flex;align-items:center;gap:6px;">
-                            <label for="editEditionNumber" style="white-space:nowrap;font-size:0.82rem;" data-i18n="media.manage.product.field.edition_number.label">넘버링</label>
-                            <input id="editEditionNumber" type="text" placeholder="예: 5/1000" style="width:90px;" />
-                          </div>
                         </div>
                         <div id="homeEditDiscCountWrap">
                           <label for="editDiscCount" data-i18n="media.manage.field.disc_count.label">디스크 수</label>
@@ -22093,8 +22090,8 @@
         "media.manage.pkg_contents.tip.entry_form": "팬사인회나 경품 이벤트에 참여할 수 있는 고유 번호가 적힌 응모권입니다.",
         "media.manage.product.field.is_limited_edition.label": "한정판",
         "media.manage.product.field.edition_number.label": "넘버링",
-        "media.manage.product.field.is_new_item.label": "새상품 여부",
-        "media.manage.product.field.is_promo.label": "홍보반 여부",
+        "media.manage.product.field.is_new_item.label": "새상품",
+        "media.manage.product.field.is_promo.label": "홍보반",
         "media.manage.product.kicker": "바로 수정 가능",
         "media.manage.product.title": "상품 정보",
         "media.manage.product.field.label_id.label": "견출지 ID",
