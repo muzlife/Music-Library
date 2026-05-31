@@ -6,30 +6,15 @@
   <title>라이브러리 로그인</title>
   <style>
     :root {
-      --app-body-background:
-        radial-gradient(1200px 620px at 0% -12%, rgba(232, 98, 10, 0.14) 0%, transparent 54%),
-        radial-gradient(960px 520px at 100% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 46%),
-        linear-gradient(180deg, #06090d 0%, #0a1016 48%, #06090d 100%);
-      --theme-shell-surface: rgba(10, 14, 20, 0.98);
-      --theme-shell-surface-2: rgba(22, 29, 38, 0.98);
-      --theme-shell-border: rgba(132, 148, 170, 0.26);
-      --theme-shell-text: #eef3f8;
-      --theme-shell-text-muted: #b3bfcc;
-      --theme-shell-text-subtle: #a2afbe;
-      --theme-shell-accent: #e8620a;
-      --theme-admin-panel-bg: rgba(19, 25, 33, 0.98);
-      --theme-admin-panel-bg-2: rgba(9, 13, 18, 0.98);
-      --theme-admin-text: #f2f6fb;
-      --theme-admin-text-muted: #d0d9e4;
-      --theme-admin-text-meta: #b6c3d2;
-      --theme-dashboard-text: #f3f6fb;
-      --theme-dashboard-text-muted: #a4b1c0;
-      --theme-dashboard-border: rgba(132, 148, 170, 0.24);
       --brand: #0f766e;
       --danger: #dc2626;
     }
 
-    body[data-theme="night"] {
+    body {
+      --paper: rgba(18, 23, 29, 0.98);
+      --ink: #eef3f8;
+      --muted: #b3bfcc;
+      --line: rgba(137, 151, 171, 0.22);
       --app-body-background:
         radial-gradient(1200px 620px at 0% -12%, rgba(232, 98, 10, 0.14) 0%, transparent 54%),
         radial-gradient(960px 520px at 100% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 46%),
@@ -51,27 +36,150 @@
       --theme-dashboard-border: rgba(132, 148, 170, 0.24);
     }
 
-    body[data-theme="day"] {
+    body[data-theme="night"] {
+      --paper: rgba(18, 23, 29, 0.98);
+      --ink: #eef3f8;
+      --muted: #b3bfcc;
+      --line: rgba(137, 151, 171, 0.22);
+      --app-body-background:
+        radial-gradient(1200px 620px at 0% -12%, rgba(232, 98, 10, 0.14) 0%, transparent 54%),
+        radial-gradient(960px 520px at 100% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 46%),
+        linear-gradient(180deg, #06090d 0%, #0a1016 48%, #06090d 100%);
+      --theme-shell-surface: rgba(10, 14, 20, 0.98);
+      --theme-shell-surface-2: rgba(22, 29, 38, 0.98);
+      --theme-shell-border: rgba(132, 148, 170, 0.26);
+      --theme-shell-text: #eef3f8;
+      --theme-shell-text-muted: #b3bfcc;
+      --theme-shell-text-subtle: #a2afbe;
+      --theme-shell-accent: #e8620a;
+      --theme-admin-panel-bg: rgba(19, 25, 33, 0.98);
+      --theme-admin-panel-bg-2: rgba(9, 13, 18, 0.98);
+      --theme-admin-text: #f2f6fb;
+      --theme-admin-text-muted: #d0d9e4;
+      --theme-admin-text-meta: #b6c3d2;
+      --theme-dashboard-text: #f3f6fb;
+      --theme-dashboard-text-muted: #a4b1c0;
+      --theme-dashboard-border: rgba(132, 148, 170, 0.24);
+    }
+
+    body[data-theme="paper"] {
+      --paper: #fffef9;
+      --ink: #1f2a37;
+      --muted: #5a6270;
+      --line: #d9e0e5;
+      --app-body-background: #f6f6f1;
+      --theme-shell-surface: rgba(255, 254, 249, 0.98);
+      --theme-shell-surface-2: rgba(246, 246, 241, 0.98);
+      --theme-shell-border: rgba(107, 114, 128, 0.16);
+      --theme-shell-text: #1f2a37;
+      --theme-shell-text-muted: #5a6270;
+      --theme-shell-text-subtle: #838995;
+      --theme-shell-accent: #0d6660;
+      --theme-admin-panel-bg: rgba(255, 254, 249, 0.98);
+      --theme-admin-panel-bg-2: rgba(246, 246, 241, 0.98);
+      --theme-admin-text: #1f2a37;
+      --theme-admin-text-muted: #4e5660;
+      --theme-admin-text-meta: #6e7480;
+      --theme-dashboard-text: #1f2a37;
+      --theme-dashboard-text-muted: #5a6270;
+      --theme-dashboard-border: rgba(107, 114, 128, 0.14);
+    }
+
+    body[data-theme="light"] {
+      --paper: #ffffff;
+      --ink: #1a1d23;
+      --muted: #545a66;
+      --line: #e2e4e8;
+      --app-body-background: #f3f4f6;
+      --theme-shell-surface: #ffffff;
+      --theme-shell-surface-2: #f8f9fa;
+      --theme-shell-border: rgba(0, 0, 0, 0.08);
+      --theme-shell-text: #1a1d23;
+      --theme-shell-text-muted: #545a66;
+      --theme-shell-text-subtle: #838995;
+      --theme-shell-accent: #0f766e;
+      --theme-admin-panel-bg: #ffffff;
+      --theme-admin-panel-bg-2: #f8f9fa;
+      --theme-admin-text: #1a1d23;
+      --theme-admin-text-muted: #545a66;
+      --theme-admin-text-meta: #838995;
+      --theme-dashboard-text: #1a1d23;
+      --theme-dashboard-text-muted: #545a66;
+      --theme-dashboard-border: rgba(0, 0, 0, 0.06);
+    }
+
+    body[data-theme="slate"] {
+      --paper: rgba(205, 213, 221, 0.95);
+      --ink: #15202b;
+      --muted: #2d3a4d;
+      --line: rgba(82, 100, 120, 0.38);
       --app-body-background:
         radial-gradient(1200px 620px at 0% -12%, rgba(232, 98, 10, 0.06) 0%, transparent 54%),
         radial-gradient(960px 520px at 100% 0%, rgba(56, 189, 248, 0.04) 0%, transparent 46%),
         linear-gradient(180deg, #94a2ae 0%, #9daab7 48%, #909daa 100%);
       --theme-shell-surface: rgba(198, 207, 216, 0.95);
       --theme-shell-surface-2: rgba(189, 199, 209, 0.98);
-      --theme-shell-border: rgba(90, 108, 120, 0.38);
+      --theme-shell-border: rgba(90, 108, 128, 0.32);
       --theme-shell-text: #15202b;
-      --theme-shell-text-muted: #394b5f;
+      --theme-shell-text-muted: #2d3a4d;
       --theme-shell-text-subtle: #506275;
       --theme-shell-accent: #c86516;
       --theme-admin-panel-bg: rgba(198, 207, 216, 0.95);
       --theme-admin-panel-bg-2: rgba(189, 199, 209, 0.98);
       --theme-admin-text: #15202b;
-      --theme-admin-text-muted: #394b5f;
+      --theme-admin-text-muted: #2d3a4d;
       --theme-admin-text-meta: #506275;
       --theme-dashboard-text: #15202b;
-      --theme-dashboard-text-muted: #506275;
-      --theme-dashboard-border: rgba(90, 108, 128, 0.3);
+      --theme-dashboard-text-muted: #394b5f;
+      --theme-dashboard-border: rgba(90, 108, 128, 0.24);
     }
+
+    body[data-theme="ink"] {
+      --paper: rgba(18, 24, 32, 0.98);
+      --ink: #e6edf3;
+      --muted: #8b949e;
+      --line: rgba(110, 118, 129, 0.24);
+      --app-body-background: #0d1117;
+      --theme-shell-surface: rgba(13, 17, 23, 0.98);
+      --theme-shell-surface-2: rgba(22, 28, 36, 0.98);
+      --theme-shell-border: rgba(110, 118, 129, 0.24);
+      --theme-shell-text: #e6edf3;
+      --theme-shell-text-muted: #8b949e;
+      --theme-shell-text-subtle: #6e7681;
+      --theme-shell-accent: #d2991d;
+      --theme-admin-panel-bg: rgba(18, 24, 32, 0.98);
+      --theme-admin-panel-bg-2: rgba(10, 14, 20, 0.98);
+      --theme-admin-text: #e6edf3;
+      --theme-admin-text-muted: #8b949e;
+      --theme-admin-text-meta: #6e7681;
+      --theme-dashboard-text: #e6edf3;
+      --theme-dashboard-text-muted: #8b949e;
+      --theme-dashboard-border: rgba(110, 118, 129, 0.20);
+    }
+
+    body[data-theme="moss"] {
+      --paper: rgba(18, 28, 24, 0.98);
+      --ink: #dfede4;
+      --muted: #8da398;
+      --line: rgba(110, 140, 125, 0.24);
+      --app-body-background: #0f1714;
+      --theme-shell-surface: rgba(15, 23, 20, 0.98);
+      --theme-shell-surface-2: rgba(22, 32, 28, 0.98);
+      --theme-shell-border: rgba(110, 140, 125, 0.22);
+      --theme-shell-text: #dfede4;
+      --theme-shell-text-muted: #8da398;
+      --theme-shell-text-subtle: #6e8276;
+      --theme-shell-accent: #6ba87a;
+      --theme-admin-panel-bg: rgba(18, 28, 24, 0.98);
+      --theme-admin-panel-bg-2: rgba(10, 18, 15, 0.98);
+      --theme-admin-text: #dfede4;
+      --theme-admin-text-muted: #8da398;
+      --theme-admin-text-meta: #6e8276;
+      --theme-dashboard-text: #dfede4;
+      --theme-dashboard-text-muted: #8da398;
+      --theme-dashboard-border: rgba(110, 140, 125, 0.20);
+    }
+
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -334,7 +442,14 @@
       transition: border-color 140ms, box-shadow 140ms;
     }
 
-    body[data-theme="night"] .field-group input {
+    .field-group input {
+      color: var(--ink);
+      background: var(--paper);
+      border-color: var(--line);
+    }
+    body[data-theme="night"] .field-group input,
+    body[data-theme="ink"] .field-group input,
+    body[data-theme="moss"] .field-group input {
       color: var(--theme-admin-text);
       background: color-mix(in srgb, var(--theme-admin-panel-bg-2) 92%, var(--theme-shell-text) 8%);
     }
@@ -425,90 +540,64 @@
       outline: none;
     }
 
-    .shell-theme-toggle-sr {
-      position: absolute;
-      width: 1px; height: 1px;
-      padding: 0; margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
     .shell-theme-toggle {
-      position: relative;
-      display: inline-grid;
-      grid-auto-flow: column;
-      grid-auto-columns: max-content;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 0 8px;
-      min-width: 118px;
+      padding: 0 10px 0 6px;
+      min-width: 0;
       height: 28px;
-      border: 1px solid color-mix(in srgb, var(--theme-shell-border) 88%, transparent);
-      border-radius: 6px;
-      background: color-mix(in srgb, var(--theme-shell-surface-2) 88%, var(--theme-shell-surface) 12%);
+      border: 1px solid var(--theme-shell-border);
+      border-radius: 999px;
+      background: var(--theme-shell-surface-2);
       color: var(--theme-shell-text);
       font-size: 0.72rem;
-      font-weight: 700;
+      font-weight: 600;
+      line-height: 1;
       white-space: nowrap;
       cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+    }
+
+    .shell-theme-toggle:hover {
+      border-color: var(--theme-shell-accent);
+      background: color-mix(in srgb, var(--theme-shell-surface-2) 92%, var(--theme-shell-accent) 8%);
     }
 
     .shell-theme-toggle:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-shell-accent) 18%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-shell-accent) 24%, transparent);
+      border-color: var(--theme-shell-accent);
     }
 
-    .shell-theme-toggle-icon {
-      display: inline-flex;
-      align-items: center;
-      width: 16px; height: 16px;
+    .shell-theme-toggle:active {
+      transform: scale(0.97);
+    }
+
+    .theme-cycle-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--theme-shell-accent);
+      flex-shrink: 0;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-shell-accent) 18%, transparent);
+    }
+
+    .theme-cycle-label {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .theme-cycle-chevron {
+      width: 10px;
+      height: 10px;
       color: var(--theme-shell-text-subtle);
-      opacity: 0.72;
-      transition: color 180ms, opacity 180ms;
+      opacity: 0.55;
+      flex-shrink: 0;
     }
 
-    .shell-theme-toggle-icon svg {
-      width: 100%; height: 100%;
-      stroke: currentColor; fill: none;
-      stroke-width: 1.8;
-      stroke-linecap: round; stroke-linejoin: round;
+    .shell-theme-toggle:hover .theme-cycle-chevron {
+      opacity: 0.85;
     }
-
-    .shell-theme-toggle-track {
-      position: relative;
-      display: inline-flex;
-      width: 46px; min-width: 46px; height: 22px;
-      padding: 2px;
-      border-radius: 999px;
-      border: 1px solid color-mix(in srgb, var(--theme-shell-border) 92%, transparent);
-      background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--theme-shell-surface) 82%, var(--theme-shell-surface-2) 18%),
-        color-mix(in srgb, var(--theme-shell-surface) 68%, var(--theme-shell-surface-2) 32%)
-      );
-      box-shadow: inset 0 2px 6px rgba(0,0,0,.18), inset 0 -1px 0 rgba(255,255,255,.04);
-    }
-
-    .shell-theme-toggle-thumb {
-      width: 18px; height: 18px;
-      border-radius: 999px;
-      background: linear-gradient(
-        180deg,
-        color-mix(in srgb, white 76%, var(--theme-shell-accent) 24%),
-        color-mix(in srgb, white 58%, var(--theme-shell-accent) 42%)
-      );
-      box-shadow: 0 6px 14px rgba(5,8,12,.26), inset 0 1px 0 rgba(255,255,255,.68);
-      transition: transform 180ms ease, background 180ms ease;
-      transform: translateX(22px);
-    }
-
-    .shell-theme-toggle.is-day .shell-theme-toggle-thumb { transform: translateX(0); }
-    .shell-theme-toggle.is-day .shell-theme-toggle-icon--sun { color: color-mix(in srgb, var(--theme-shell-accent) 72%, var(--theme-shell-text) 28%); opacity: 1; }
-    .shell-theme-toggle.is-day .shell-theme-toggle-icon--moon { color: var(--theme-shell-text-subtle); opacity: 0.48; }
-    .shell-theme-toggle:not(.is-day) .shell-theme-toggle-icon--sun { color: var(--theme-shell-text-subtle); opacity: 0.48; }
-    .shell-theme-toggle:not(.is-day) .shell-theme-toggle-icon--moon { color: color-mix(in srgb, var(--theme-shell-text) 82%, var(--theme-shell-accent) 18%); opacity: 1; }
 
     /* ── Mobile ── */
     @media (max-width: 720px) {
@@ -625,35 +714,18 @@
                 <path d="M15.8 12.2h3.2"></path>
               </svg>
             </span>
-            <span id="loginLocaleLabel" class="shell-theme-toggle-sr"></span>
+            <span id="loginLocaleLabel" class="sr-only"></span>
             <select id="loginLocaleSelect" aria-label="language selector">
               <option value="ko" data-login-i18n="locale.option.ko"></option>
               <option value="en" data-login-i18n="locale.option.en"></option>
               <option value="ja" data-login-i18n="locale.option.ja"></option>
             </select>
           </label>
-          <button id="loginThemeToggle" class="shell-theme-toggle" type="button">
-            <span class="shell-theme-toggle-icon shell-theme-toggle-icon--sun" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <circle cx="12" cy="12" r="4.5"></circle>
-                <path d="M12 1.75v3"></path><path d="M12 19.25v3"></path>
-                <path d="M1.75 12h3"></path><path d="M19.25 12h3"></path>
-                <path d="M4.76 4.76l2.12 2.12"></path><path d="M17.12 17.12l2.12 2.12"></path>
-                <path d="M17.12 6.88l2.12-2.12"></path><path d="M4.76 19.24l2.12-2.12"></path>
-              </svg>
-            </span>
-            <span class="shell-theme-toggle-track" aria-hidden="true">
-              <span class="shell-theme-toggle-thumb"></span>
-            </span>
-            <span class="shell-theme-toggle-icon shell-theme-toggle-icon--moon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M18.7 13.3A7.8 7.8 0 1 1 10.7 5.3a6.1 6.1 0 0 0 8 8Z"></path>
-                <path d="M18.8 4.8v2"></path><path d="M17.8 5.8h2"></path>
-                <path d="M20.7 8.1v1.5"></path><path d="M19.95 8.85h1.5"></path>
-              </svg>
-            </span>
-            <span id="loginThemeToggleText" class="shell-theme-toggle-sr"></span>
-          </button>
+          <button id="loginThemeToggle" class="shell-theme-toggle" type="button" title="테마 전환" aria-label="테마 전환">
+          <span class="theme-cycle-dot" aria-hidden="true"></span>
+          <span id="loginThemeToggleText" class="theme-cycle-label">Night</span>
+          <svg class="theme-cycle-chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         </div>
 
         <div class="login-form-area">
@@ -814,7 +886,9 @@
       return normalized;
     }
     function normalizeLoginTheme(theme) {
-      return String(theme || "").trim().toLowerCase() === "day" ? "day" : "night";
+      const normalized = String(theme || "").trim().toLowerCase();
+      if (normalized === "day") return "light";
+      return {night:1,light:1,paper:1,slate:1,ink:1,moss:1}[normalized] ? normalized : "night";
     }
     function loadLoginTheme() {
       try { return normalizeLoginTheme(window.localStorage.getItem(LOGIN_THEME_STORAGE_KEY)); }
@@ -841,15 +915,11 @@
     }
     function syncLoginThemeToggle() {
       if (!themeToggle) return;
-      const isDay = loginTheme === "day";
-      const nextThemeKey = isDay ? "utility.theme.switch_to_night" : "utility.theme.switch_to_day";
-      themeToggle.classList.toggle("is-day", isDay);
-      themeToggle.setAttribute("aria-pressed", isDay ? "true" : "false");
-      themeToggle.setAttribute("title", messageByLoginLocale(nextThemeKey));
-      themeToggle.setAttribute("aria-label", messageByLoginLocale(nextThemeKey));
-      themeToggle.dataset.theme = loginTheme;
+      const themeLabel = ({"night":"Night","ink":"Ink","moss":"Moss","light":"Light","paper":"Paper","slate":"Slate"})[loginTheme] || loginTheme;
+      themeToggle.setAttribute("title", "Theme: " + themeLabel + " — click to cycle");
+      themeToggle.setAttribute("aria-label", "Current theme: " + themeLabel + ". Click to cycle through themes.");
       if (themeToggleText) {
-        themeToggleText.textContent = messageByLoginLocale(isDay ? "utility.theme.day" : "utility.theme.night");
+        themeToggleText.textContent = themeLabel;
       }
     }
     function applyLoginTheme(theme = loginTheme) {
@@ -889,7 +959,7 @@
       if (!message) return messageByLoginLocale("login.error_default");
       return localizeAuthFailureText(statusCode, message);
     }
-    function toggleLoginTheme() { applyLoginTheme(loginTheme === "day" ? "night" : "day"); }
+    function toggleLoginTheme() { const cycle = ["night","ink","moss","light","paper","slate"]; const idx = cycle.indexOf(loginTheme); applyLoginTheme(cycle[(idx + 1) % cycle.length]); }
     function wireLoginShellControls() {
       localeSelect?.addEventListener("change", (e) => applyLoginLocale(e.target.value));
       themeToggle?.addEventListener("click", toggleLoginTheme);
