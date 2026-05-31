@@ -74,6 +74,8 @@ def list_owned_items(
     sort: str,
     limit: int,
     offset: int,
+    media_format_state: str = "ANY",
+    size_group_state: str = "ANY",
 ) -> list[dict[str, Any]]:
     query = _owned_item_select_query() + " WHERE 1 = 1"
     params: list[Any] = []
@@ -268,6 +270,8 @@ def count_owned_items(
     preferred_storage_state: str,
     track_state: str,
     music_only: bool,
+    media_format_state: str = "ANY",
+    size_group_state: str = "ANY",
 ) -> int:
     query = """
       SELECT COUNT(*) AS cnt
