@@ -2909,6 +2909,7 @@ def _parse_maniadb_release_legend(
     album_title: str | None,
     block_html: str | None = None,
     album_cover_image_url: str | None = None,
+    album_genres: list[str] | None = None,
 ) -> dict[str, Any] | None:
     sid_match = re.search(r"(?:[?&]|&amp;)s=(\d+)", legend_html, re.IGNORECASE)
     fmt_match = re.search(r'alt="([^"]+)"', legend_html, re.IGNORECASE)
@@ -2992,7 +2993,7 @@ def _parse_maniadb_release_legend(
         "media_type": format_name,
         "release_type": None,
         "domain_code": "KOREA",
-        "genres": [],
+        "genres": album_genres or [],
         "styles": [],
         "label_name": label_name,
         "catalog_no": catno,
@@ -3366,6 +3367,13 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
 
     album_artist, album_title = _parse_maniadb_album_header(html_text)
     album_cover_image_url = _extract_maniadb_album_page_cover_image_url(html_text, album_id=album_id)
+
+    # Extract genre/style info from album page (outside variant blocks)
+    genre_match = re.search(r'GENRE/STYLE:\s*</td>\s*<td class="label-text">(.*?)</td>', html_text, re.DOTALL)
+    album_genres: list[str] = []
+    if genre_match:
+        album_genres = [g.strip() for g in re.findall(r'<aa[^>]*>([^<]+)</a>', genre_match.group(1)) if g.strip()]
+
     block_pattern = re.compile(r"<fieldset[^>]*>(.*?)</fieldset>", re.IGNORECASE | re.DOTALL)
     out: list[dict[str, Any]] = []
     for block in block_pattern.finditer(html_text):
@@ -3380,6 +3388,7 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
             album_title=album_title,
             block_html=block_html,
             album_cover_image_url=album_cover_image_url,
+            album_genres=album_genres,
         )
         if parsed is None:
             continue
