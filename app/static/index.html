@@ -29773,8 +29773,8 @@
 
     const PACKAGING_OPTIONS_BY_MEDIA = {
       VINYL: ["Single Jacket", "Gatefold", "Triple-fold", "Gimmick Sleeve", "Die-Cut Sleeve", "Pop-up Sleeve", "Box Set"],
-      CD: ["Jewel Case", "Double Jewel", "Slim Jewel", "Digipak", "Paper Sleeve", "Slipcase", "Digibook", "Eco-pack", "DVD Size Digipak", "Keep Case", "Gimmick Case", "Box Set"],
-      CASSETTE: ["Standard Case", "Slipcase", "Box Set"],
+      CD: ["Jewel Case", "Double Jewel", "Slim Jewel", "Digipak", "Paper Sleeve", "Slipcase", "Digibook", "Eco-pack", "DVD Size Digipak", "Keep Case", "Gimmick Case", "LP-Style Packaging", "Box Set"],
+      CASSETTE: ["Standard Case", "Slipcase", "LP-Style Packaging", "Box Set"],
       EIGHT_TRACK: ["Standard"],
       REEL: ["Standard Box"],
     };
@@ -29803,11 +29803,13 @@
           "DVD Size Digipak": "DVD 크기의 대형 디지팩.",
           "Keep Case": "DVD 케이스 형태의 플라스틱 케이스.",
           "Gimmick Case": "특수 가공된 이형 케이스.",
+          "LP-Style Packaging": "LP 크기 슬리브에 담긴 CD. LP 장에 보관 가능.",
           "Box Set": "박스에 담은 멀티 CD 에디션.",
         },
         CASSETTE: {
           "Standard Case": "일반 플라스틱 카세트 케이스.",
           "Slipcase": "케이스를 감싸는 외부 종이 슬립케이스.",
+          "LP-Style Packaging": "LP 크기 슬리브에 담긴 카세트. LP 장에 보관 가능.",
           "Box Set": "여러 카세트를 담은 박스 에디션.",
         },
         EIGHT_TRACK: {
@@ -29839,11 +29841,13 @@
           "DVD Size Digipak": "Larger digipak in DVD dimensions.",
           "Keep Case": "Plastic case in DVD keep-case form.",
           "Gimmick Case": "Special-effect or novelty case.",
+          "LP-Style Packaging": "CD packaged in an LP-sized sleeve. Can be stored in an LP shelf.",
           "Box Set": "Multi-CD edition packaged in a box.",
         },
         CASSETTE: {
           "Standard Case": "Standard plastic cassette case.",
           "Slipcase": "Outer cardboard slip-in sleeve over the case.",
+          "LP-Style Packaging": "Cassette in an LP-sized sleeve. Can be stored in an LP shelf.",
           "Box Set": "Multi-cassette edition in a box.",
         },
         EIGHT_TRACK: {
@@ -29875,11 +29879,13 @@
           "DVD Size Digipak": "DVD サイズの大型デジパック。",
           "Keep Case": "DVD ケース形状のプラスチックケース。",
           "Gimmick Case": "特殊加工の異形ケース。",
+          "LP-Style Packaging": "LP サイズのスリーブに入った CD。LP ラックに収納可能。",
           "Box Set": "複数 CD をまとめたボックスセット。",
         },
         CASSETTE: {
           "Standard Case": "標準のプラスチックカセットケース。",
           "Slipcase": "ケースを包む外装紙スリップケース。",
+          "LP-Style Packaging": "LP サイズのスリーブに入ったカセット。LP ラックに収納可能。",
           "Box Set": "複数カセットをまとめたボックスセット。",
         },
         EIGHT_TRACK: {
@@ -29900,7 +29906,7 @@
     function _mediaTypeToPackagingKey(mediaType) {
       const v = String(mediaType || "").toLowerCase().trim();
       if (/vinyl|lp|7"|10"|all\s*media/.test(v)) return "VINYL";
-      if (/\bcd\b|compact\s*disc|^cdr$|sacd/.test(v)) return "CD";
+      if (/\bcd\b|compact\s*disc|^cdr$|sacd|dvd|blu.ray|cd.rom/.test(v)) return "CD";
       if (/cassette/.test(v)) return "CASSETTE";
       if (/8track|8-track/.test(v)) return "EIGHT_TRACK";
       if (/reel/.test(v)) return "REEL";
