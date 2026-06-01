@@ -932,6 +932,9 @@ class AlbumMasterListItem(BaseModel):
     spotify_album_uri: str | None = None
     spotify_matched_at: str | None = None
     spotify_image_url: str | None = None
+    review_text: str | None = None
+    review_source: str | None = None
+    review_url: str | None = None
     updated_at: str
 
 

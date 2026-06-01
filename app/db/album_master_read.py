@@ -655,6 +655,9 @@ def list_album_masters(
         am.spotify_album_uri,
         am.spotify_matched_at,
         am.spotify_image_url,
+        am.review_text,
+        am.review_source,
+        am.review_url,
         (
           SELECT mid.genres_json
           FROM album_master_member amm_gen

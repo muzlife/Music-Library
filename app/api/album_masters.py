@@ -954,7 +954,15 @@ def spotify_batch_match(
     sp = SpotifyService()
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
-    result = batch_match_spotify(sp, limit=limit)
+    from spotipy.exceptions import SpotifyException
+    try:
+        result = batch_match_spotify(sp, limit=limit)
+    except SpotifyException as exc:
+        if exc.http_status == 429:
+            raise HTTPException(status_code=429, detail="Spotify API rate-limit exceeded")
+        raise HTTPException(status_code=502, detail=f"Spotify API error: {exc.msg}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to run batch match: {exc}")
     return {
         'ok': True,
         'limit': limit,
@@ -991,6 +999,32 @@ def spotify_play_master(
 
 
 # ── Spotify manual management ──────────────────────────────────────
+
+@router.post("/album-masters/{album_master_id}/review")
+def fetch_album_review(album_master_id: int) -> dict[str, Any]:
+    """Fetch Wikipedia review for an album master."""
+    from ..services.providers import fetch_wikipedia_album_review
+    from ..db.connection import get_conn, utc_now_iso
+    row = None
+    with get_conn() as conn:
+        row = conn.execute("SELECT artist_or_brand, title FROM album_master WHERE id = ?", (album_master_id,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Album master not found")
+    artist = str(row[0] or "").strip()
+    title = str(row[1] or "").strip()
+    if not artist or not title:
+        raise HTTPException(status_code=400, detail="Artist and title required")
+    review = fetch_wikipedia_album_review(artist, title)
+    if not review:
+        raise HTTPException(status_code=404, detail="No review found on Wikipedia")
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE album_master SET review_text = ?, review_source = ?, review_url = ?, updated_at = ? WHERE id = ?",
+            (review["review_text"], review["review_source"], review["review_url"], utc_now_iso(), album_master_id),
+        )
+        conn.commit()
+    return {"ok": True, "album_master_id": album_master_id, "source": review["review_source"]}
+
 
 @router.delete("/album-masters/{album_master_id}/spotify/match")
 def spotify_clear_match(
@@ -1091,6 +1125,8 @@ def spotify_search_albums(
 
 # ── Spotify tracks ──────────────────────────────────────────────────
 
+_ALBUM_TRACKS_CACHE: dict[str, dict[str, Any]] = {}
+
 @router.get("/spotify/albums/{spotify_album_id}/tracks")
 def spotify_album_tracks(
     spotify_album_id: str,
@@ -1100,35 +1136,56 @@ def spotify_album_tracks(
     from ..security import _require_operator_request
     _require_operator_request(request)
     from ..services.spotify import SpotifyService
+    from spotipy.exceptions import SpotifyException
+
+    if spotify_album_id in _ALBUM_TRACKS_CACHE:
+        return _ALBUM_TRACKS_CACHE[spotify_album_id]
 
     sp = SpotifyService()
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
 
-    items = sp.album_tracks_sync(spotify_album_id)
-    tracks = [
-        {
-            "track_id": t.get("id"),
-            "name": t.get("name"),
-            "track_number": t.get("track_number", 0),
-            "duration_ms": t.get("duration_ms", 0),
-            "uri": t.get("uri"),
-            "artists": [a.get("name", "") for a in t.get("artists", [])],
-        }
-        for t in items
-    ]
-        # Get album cover
-    album_cover = None
     try:
-        sp_client = sp._ensure_client_cc()
-        if sp_client:
-            album = sp_client.album(spotify_album_id)
-            images = album.get("images") or []
-            album_cover = images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None)
-    except Exception:
-        pass
-    return {"spotify_album_id": spotify_album_id, "total_tracks": len(tracks), "tracks": tracks, "image_url": album_cover,
-            "name": album.get("name", "") if album else "", "artist": ", ".join(a.get("name","") for a in album.get("artists",[])) if album else ""}
+        items = sp.album_tracks_sync(spotify_album_id)
+        tracks = [
+            {
+                "track_id": t.get("id"),
+                "name": t.get("name"),
+                "track_number": t.get("track_number", 0),
+                "duration_ms": t.get("duration_ms", 0),
+                "uri": t.get("uri"),
+                "artists": [a.get("name", "") for a in t.get("artists", [])],
+            }
+            for t in items
+        ]
+        
+        album_cover = None
+        album = None
+        try:
+            sp_client = sp._ensure_client_cc()
+            if sp_client:
+                album = sp_client.album(spotify_album_id)
+                images = album.get("images") or []
+                album_cover = images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None)
+        except Exception:
+            pass
+            
+        res = {
+            "spotify_album_id": spotify_album_id,
+            "total_tracks": len(tracks),
+            "tracks": tracks,
+            "image_url": album_cover,
+            "name": album.get("name", "") if album else "",
+            "artist": ", ".join(a.get("name", "") for a in album.get("artists", [])) if album else ""
+        }
+        _ALBUM_TRACKS_CACHE[spotify_album_id] = res
+        return res
+    except SpotifyException as exc:
+        if exc.http_status == 429:
+            raise HTTPException(status_code=429, detail="Spotify API rate-limit exceeded")
+        raise HTTPException(status_code=502, detail=f"Spotify API error: {exc.msg}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch tracklist: {exc}")
 
 
 # ── Generic Spotify play ────────────────────────────────────────────

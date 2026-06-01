@@ -1441,6 +1441,51 @@ def _infer_format_from_text(format_text: str | None) -> str | None:
     return result
 
 
+# --- Wikipedia album review ---
+
+def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | None] | None:
+    """Fetch album review extract from Wikipedia API."""
+    import urllib.request, urllib.parse, json as _json
+    query = f"{artist} {title} album"
+    params = urllib.parse.urlencode({
+        "action": "query",
+        "format": "json",
+        "list": "search",
+        "srsearch": query,
+        "srlimit": "3",
+        "srprop": "snippet",
+    })
+    try:
+        with urllib.request.urlopen(f"https://en.wikipedia.org/w/api.php?{params}", timeout=10) as resp:
+            data = _json.loads(resp.read())
+        pages = (data.get("query", {}).get("search") or [])
+        if not pages:
+            return None
+        page_title = pages[0]["title"]
+        # Get extract
+        params2 = urllib.parse.urlencode({
+            "action": "query",
+            "format": "json",
+            "prop": "extracts",
+            "exintro": "1",
+            "explaintext": "1",
+            "titles": page_title,
+        })
+        with urllib.request.urlopen(f"https://en.wikipedia.org/w/api.php?{params2}", timeout=10) as resp2:
+            data2 = _json.loads(resp2.read())
+        pages_data = (data2.get("query", {}).get("pages") or {})
+        extract = next(iter(pages_data.values())).get("extract", "")
+        if extract:
+            return {
+                "review_text": extract[:2000],
+                "review_source": "WIKIPEDIA",
+                "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title)}",
+            }
+    except Exception:
+        pass
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Aladin title/artist cleaning helpers
 #
