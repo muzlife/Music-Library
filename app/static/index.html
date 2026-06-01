@@ -2105,6 +2105,32 @@
       background: color-mix(in srgb, var(--paper) 60%, var(--bg) 40%);
       border: 1px solid var(--line);
     }
+    .master-meta-left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .master-meta-spotify {
+      width: 300px;
+      flex-shrink: 0;
+    }
+    .master-meta-spotify iframe {
+      display: block;
+      width: 100%;
+      border-radius: 12px;
+      border: none;
+    }
+    #searchSpotifyPanel {
+      margin-top: 10px;
+    }
+    #searchSpotifyPanel iframe {
+      display: block;
+      width: 100%;
+      border-radius: 12px;
+      border: none;
+    }
     .home-unified-edit-details {
       margin-top: 10px;
       border: 1px solid var(--color-border, #e0e0e0);
@@ -17648,6 +17674,9 @@
           <h3 data-i18n="media.search.context.title">선택한 상품</h3>
             <p class="mini muted" data-i18n="media.search.context.subtitle">상품 preview를 선택하면 현재 위치와 아티스트 컨텍스트를 여기서 확인하고 관리 화면으로 이어갈 수 있습니다.</p>
         </section>
+        <section id="searchSpotifyPanel" class="card u-position-reset" hidden>
+          <div id="searchSpotifyEmbed"></div>
+        </section>
       </aside>
       </div>
     </div>
@@ -17719,16 +17748,19 @@
           </div>
           <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
           <div id="homeMasterMetaCard" class="u-hidden-initial">
-            <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
-            <div class="home-master-meta-info">
-              <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
-              <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
-              <div id="homeMasterMetaYear" class="mini muted"></div>
-              <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
-              <input id="editOwnedId" type="hidden" />
-              <input id="editLabelId" type="hidden" />
-              <input id="editLinkedAlbumMasterId" type="hidden" />
+            <div class="master-meta-left">
+              <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
+              <div class="home-master-meta-info">
+                <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
+                <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
+                <div id="homeMasterMetaYear" class="mini muted"></div>
+                <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
+                <input id="editOwnedId" type="hidden" />
+                <input id="editLabelId" type="hidden" />
+                <input id="editLinkedAlbumMasterId" type="hidden" />
+              </div>
             </div>
+            <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
           </div>
           <!-- 통합 수정 패널 (기본 접힘) -->
           <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial">
@@ -40741,24 +40773,34 @@
 
     
     // ── Spotify embed player ──
+    function _spotifyEmbedHtml(albumId, height) {
+      var src = 'https://open.spotify.com/embed/album/' + encodeURIComponent(albumId) + '?utm_source=generator';
+      return '<iframe src="' + src + '" width="100%" height="' + (height||352) + '" frameborder="0" ' +
+        'allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>';
+    }
     function spotifyTogglePanel(masterId, albumId) {
-      var panel = document.getElementById('spotifyPanel-' + masterId);
-      if (panel) { panel.remove(); return; }
-      document.querySelectorAll('[id^="spotifyPanel-"]').forEach(function(p){ p.remove(); });
-      var meta = document.getElementById('homeMasterMetaCard');
-      if (!meta) return;
-      panel = document.createElement('div');
-      panel.id = 'spotifyPanel-' + masterId;
-      panel.className = 'spotify-player-panel open';
-      var embedSrc = 'https://open.spotify.com/embed/album/' + encodeURIComponent(albumId) + '?utm_source=generator';
-      panel.innerHTML =
-        '<iframe style="border-radius:12px;display:block;" ' +
-        'src="' + embedSrc + '" ' +
-        'width="100%" height="352" frameborder="0" ' +
-        'allowfullscreen="" ' +
-        'allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" ' +
-        'loading="lazy"></iframe>';
-      meta.parentNode.insertBefore(panel, meta.nextSibling);
+      // 관리 탭: 마스터 메타 카드 우측 슬롯
+      var manageSlot = document.getElementById('homeMasterSpotifyEmbed');
+      if (manageSlot && !manageSlot.closest('[hidden]') && document.getElementById('tabManage')?.classList.contains('active')) {
+        if (!manageSlot.hidden && manageSlot.dataset.albumId === albumId) {
+          manageSlot.hidden = true; manageSlot.innerHTML = ''; return;
+        }
+        manageSlot.innerHTML = _spotifyEmbedHtml(albumId, 352);
+        manageSlot.dataset.albumId = albumId;
+        manageSlot.hidden = false;
+        return;
+      }
+      // 검색 탭: 우측 컨텍스트 패널
+      var searchEmbed = document.getElementById('searchSpotifyEmbed');
+      var searchPanel = document.getElementById('searchSpotifyPanel');
+      if (searchEmbed && searchPanel) {
+        if (!searchPanel.hidden && searchEmbed.dataset.albumId === albumId) {
+          searchPanel.hidden = true; searchEmbed.innerHTML = ''; searchEmbed.dataset.albumId = ''; return;
+        }
+        searchEmbed.innerHTML = _spotifyEmbedHtml(albumId, 352);
+        searchEmbed.dataset.albumId = albumId;
+        searchPanel.hidden = false;
+      }
     }
     function spotifyPlayAlbum(id) { fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:'spotify:album:'+id})}).catch(function(){}); }
     function spotifyPlayTrack(uri) { if(uri) fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:uri})}).catch(function(){}); }
