@@ -119,7 +119,12 @@ def slot_size_ok_sql() -> str:
     """
     cd_sql = CD_LIKE_MEDIA_SQL
     vinyl_sql = VINYL_LIKE_MEDIA_SQL
-    lp_style_pkg = "(UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP-STYLE PACKAGING%' OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP STYLE PACKAGING%')"
+    lp_style_pkg = """(
+        UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP-STYLE PACKAGING%'
+        OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP STYLE PACKAGING%'
+        OR UPPER(COALESCE(mid.format_name,'')) LIKE '%LP-STYLE PACKAGING%'
+        OR UPPER(COALESCE(mid.format_name,'')) LIKE '%LP STYLE PACKAGING%'
+      )"""
     return f"""
     CASE
       WHEN mid.media_type IS NULL OR TRIM(mid.media_type) = '' THEN 1
