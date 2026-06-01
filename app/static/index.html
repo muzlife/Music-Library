@@ -19174,10 +19174,14 @@
                   <label for="goodsRegisterLabelNames" data-i18n="collectibles.register.field.label_names.label">연계 레이블명(쉼표 구분)</label>
                   <input id="goodsRegisterLabelNames" data-i18n-placeholder="collectibles.register.field.label_names.placeholder" placeholder="예: 서울음반, 서라벌레코드" />
                 </div>
-                <div class="ops-compact-form-actions">
-                  <button id="goodsRegisterSaveBtn" class="btn" type="button" data-i18n="collectibles.register.save">수집품 등록</button>
-                </div>
+
               </div>
+            </div>
+            <div style="margin:8px 0;">
+              <label>이미지 등록</label>
+              <input type="file" id="goodsRegisterImageFile" accept="image/*" multiple style="display:block;margin-top:4px;" />
+              <div id="goodsRegisterImagePreview" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;"></div>
+              <input id="goodsRegisterImageUrls" type="hidden" />
             </div>
             <details id="goodsRegisterExtraFields" class="ops-compact-extra-fields goods-extra-fields">
               <summary>추가 정보</summary>
@@ -19198,6 +19202,9 @@
             </details>
             <div id="goodsRegisterStatusLine" class="status"></div>
           </section>
+            <div class="ops-compact-form-actions u-mt-10">
+              <button id="goodsRegisterSaveBtn" class="btn" type="button" data-i18n="collectibles.register.save">수집품 등록</button>
+            </div>
         </div>
       </section>
     </div>
@@ -19702,8 +19709,7 @@
             <input id="goodsItemName" data-i18n-placeholder="media.register.detail.collectible.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
           </div>
           <div>
-            <label for="goodsImageUrls" data-i18n="media.register.detail.collectible.field.image_urls.label">사진 URL (줄바꿈, 복수)</label>
-            <textarea id="goodsImageUrls" placeholder="https://...&#10;https://..."></textarea>
+
           </div>
           <div class="grid-3 u-mt-10">
             <div id="posterSpecWrap">
@@ -55431,6 +55437,27 @@ async function loadDashboardClimate() {
     });
     $("goodsManageSaveMappingsBtn").addEventListener("click", saveGoodsManageMappings);
     $("goodsManageSaveRelationsBtn").addEventListener("click", saveGoodsManageRelations);
+    // Register image upload
+    var _regImageUrls = [];
+    $("goodsRegisterImageFile")?.addEventListener("change", async function() {
+      if (!this.files.length) return;
+      try {
+        var uploaded = await uploadUiImageFiles(this.files);
+        uploaded.forEach(function(url) { if (url) { _regImageUrls.push(url); addRegImagePreview(url); } });
+        $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
+      } catch(e) {} finally { this.value = ""; }
+    });
+    function addRegImagePreview(url) {
+      var p = document.getElementById("goodsRegisterImagePreview");
+      if (!p) return;
+      var item = document.createElement("span");
+      item.style.cssText = "position:relative;display:inline-block;";
+      var img = document.createElement("img"); img.src = url; img.style.cssText = "width:60px;height:60px;object-fit:cover;border-radius:4px;";
+      var rm = document.createElement("button"); rm.textContent = "✕"; rm.style.cssText = "position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:9px;line-height:16px;";
+      rm.onclick = function() { _regImageUrls = _regImageUrls.filter(function(u) { return u !== url; }); item.remove(); $("goodsRegisterImageUrls").value = _regImageUrls.join("\n"); };
+      item.appendChild(img); item.appendChild(rm);
+      p.appendChild(item);
+    }
     $("goodsRegisterSaveBtn").addEventListener("click", createGoodsRegisterItem);
     $("registerCollectTabBtn").addEventListener("click", () => switchSubTab("register", "collect"));
     $("registerPurchaseTabBtn").addEventListener("click", async () => {
