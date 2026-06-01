@@ -356,6 +356,7 @@ def count_owned_items(
       SELECT COUNT(*) AS cnt
       FROM owned_item oi
       LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+      LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
       WHERE 1 = 1
     """
     params: list[Any] = []
