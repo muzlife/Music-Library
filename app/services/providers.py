@@ -1119,6 +1119,71 @@ def _discogs_has_obi(formats: Any) -> bool | None:
     return None
 
 
+def _discogs_format_descriptions_flat(formats: Any) -> list[str]:
+    """format_items의 모든 name + descriptions 를 소문자 정규화해서 반환."""
+    texts: list[str] = []
+    if isinstance(formats, list):
+        for row in formats:
+            if not isinstance(row, dict):
+                continue
+            name = _pick_first_text(row.get("name"))
+            if name:
+                texts.append(name.strip().lower())
+            for d in (row.get("descriptions") or []):
+                s = str(d).strip().lower()
+                if s:
+                    texts.append(s)
+            t = _pick_first_text(row.get("text"))
+            if t:
+                texts.append(t.strip().lower())
+    return texts
+
+
+def _discogs_is_limited_edition(formats: Any) -> bool | None:
+    """Limited Edition / Deluxe Edition / Special Edition / Club Edition → is_limited_edition."""
+    KEYWORDS = {"limited edition", "deluxe edition", "special edition", "club edition", "collector's edition"}
+    texts = _discogs_format_descriptions_flat(formats)
+    return True if any(t in KEYWORDS for t in texts) else None
+
+
+def _discogs_is_promo(formats: Any) -> bool | None:
+    """Promo description → is_promotional_not_for_sale."""
+    texts = _discogs_format_descriptions_flat(formats)
+    return True if "promo" in texts else None
+
+
+def _discogs_disc_type(formats: Any) -> str | None:
+    """
+    Picture Disc → 'Picture'
+    Etched      → 'Etched'
+    Colored Vinyl / Colour Vinyl → 'Colored'
+    Clear Vinyl  → 'Clear'
+    Shaped Disc  → 'Shaped'
+    """
+    DISC_TYPE_MAP = {
+        "picture disc": "Picture",
+        "etched": "Etched",
+        "colored vinyl": "Colored",
+        "colour vinyl": "Colored",
+        "coloured vinyl": "Colored",
+        "clear vinyl": "Clear",
+        "clear": "Clear",
+        "shaped disc": "Shaped",
+        "shaped": "Shaped",
+    }
+    texts = _discogs_format_descriptions_flat(formats)
+    for t in texts:
+        if t in DISC_TYPE_MAP:
+            return DISC_TYPE_MAP[t]
+    return None
+
+
+def _discogs_is_numbered(formats: Any) -> bool | None:
+    """Numbered description → edition_number 플래그 (번호 자체는 수동 입력)."""
+    texts = _discogs_format_descriptions_flat(formats)
+    return True if "numbered" in texts else None
+
+
 def _discogs_release_type_from_text(format_text: str | None) -> str | None:
     text = str(format_text or "").strip().lower()
     if not text:
@@ -2104,6 +2169,9 @@ def _fetch_discogs_release_detail(
         "disc_count": disc_count,
         "speed_rpm": speed_rpm,
         "has_obi": has_obi,
+        "is_limited_edition": _discogs_is_limited_edition(formats),
+        "is_promotional_not_for_sale": True if _discogs_is_promo(formats) else None,
+        "disc_type": _discogs_disc_type(formats),
         "runout_matrix": runout_matrix,
         "pressing_country": pressing_country,
         "raw_detail": data,

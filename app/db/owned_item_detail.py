@@ -67,7 +67,7 @@ def _upsert_music_item_detail_in_conn(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(owned_item_id) DO UPDATE SET
           format_name = excluded.format_name,
-          is_promotional_not_for_sale = excluded.is_promotional_not_for_sale,
+          is_promotional_not_for_sale = MAX(excluded.is_promotional_not_for_sale, is_promotional_not_for_sale),
           artist_or_brand = excluded.artist_or_brand,
           release_year = excluded.release_year,
           released_date = excluded.released_date,
@@ -87,9 +87,9 @@ def _upsert_music_item_detail_in_conn(
           runout_matrix = excluded.runout_matrix,
           runout_matrix_json = excluded.runout_matrix_json,
           pressing_country = excluded.pressing_country,
-          disc_type = excluded.disc_type,
+          disc_type = COALESCE(excluded.disc_type, disc_type),
           package_contents = excluded.package_contents,
-          is_limited_edition = excluded.is_limited_edition,
+          is_limited_edition = CASE WHEN excluded.is_limited_edition IS NOT NULL THEN MAX(COALESCE(excluded.is_limited_edition,0), COALESCE(is_limited_edition,0)) ELSE is_limited_edition END,
           edition_number = excluded.edition_number,
           source_notes = excluded.source_notes,
           credits_json = excluded.credits_json,
