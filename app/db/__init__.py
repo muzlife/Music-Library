@@ -106,7 +106,8 @@ def slot_size_ok_sql() -> str:
     mid.media_type + mid.format_items_json + oi.size_group vs ss.allowed_size_group 비교.
 
     규칙:
-      - Box Set (format_items_json에 'Box Set' name): 기본 규격 또는 OVERSIZE 허용
+      - LP-Style Packaging (CD/Cassette 등): LP 슬롯 허용
+      - Box Set: 기본 규격 또는 OVERSIZE 허용
       - CD 계열(CD/CDr/SACD/Digital/DVD/Blu-ray/CD-ROM):
           Digibook 또는 DVD Size 패키징 → OVERSIZE 필요
           그 외 → STD
@@ -118,9 +119,15 @@ def slot_size_ok_sql() -> str:
     """
     cd_sql = CD_LIKE_MEDIA_SQL
     vinyl_sql = VINYL_LIKE_MEDIA_SQL
+    lp_style_pkg = "(UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP-STYLE PACKAGING%' OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP STYLE PACKAGING%')"
     return f"""
     CASE
       WHEN mid.media_type IS NULL OR TRIM(mid.media_type) = '' THEN 1
+
+      -- LP-Style Packaging: CD/Cassette 등이 LP 크기 슬리브로 포장 → LP 슬롯 허용
+      WHEN {lp_style_pkg}
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) IN ('LP','OVERSIZE')
+             THEN 1 ELSE 0 END
 
       -- Box Set: 기본 규격 또는 OVERSIZE 모두 허용
       WHEN UPPER(COALESCE(mid.format_items_json,'')) LIKE '%"BOX SET"%'
