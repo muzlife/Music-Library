@@ -137,6 +137,7 @@ def slot_size_ok_sql() -> str:
       -- Box Set: 기본 규격 또는 OVERSIZE 모두 허용
       WHEN UPPER(COALESCE(mid.format_items_json,'')) LIKE '%"BOX SET"%'
         OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%BOX SET%'
+        OR UPPER(COALESCE(mid.format_name,'')) LIKE '%BOX SET%'
         THEN CASE WHEN
           UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'OVERSIZE'
           OR (mid.media_type IN ({cd_sql})
