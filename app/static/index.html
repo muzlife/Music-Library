@@ -2098,6 +2098,7 @@
     /* 마스터 메타 카드 */
     #homeMasterMetaCard {
       display: flex;
+      flex-wrap: wrap;
       gap: 14px;
       align-items: flex-start;
       padding: 10px 14px;
@@ -4156,6 +4157,90 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    /* 검색 우측 패널: item_title (연도) */
+    .ops-ctx-title-line {
+      display: block;
+      margin-top: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+    .ops-ctx-title {
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .ops-ctx-year {
+      font-size: 0.78rem;
+      color: var(--muted, #94a3b8);
+      margin-left: 3px;
+    }
+    /* 검색 우측 패널: 스포티파이 인라인 */
+    .ops-ctx-spotify-wrap {
+      margin-top: 4px;
+    }
+    .ops-ctx-spotify-wrap iframe {
+      display: block;
+      width: 100%;
+      border-radius: 12px;
+      border: none;
+    }
+    /* 검색 우측 패널: 현재 위치 접기/펴기 */
+    .ops-ctx-location-details {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .ops-ctx-location-details--no-slot > summary {
+      pointer-events: none;
+      cursor: default;
+    }
+    .ops-ctx-location-details--no-slot > summary::marker,
+    .ops-ctx-location-details--no-slot > summary::-webkit-details-marker {
+      display: none;
+      content: "";
+    }
+    .ops-ctx-location-summary {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+      background: color-mix(in srgb, var(--paper) 90%, var(--bg) 10%);
+      list-style: none;
+    }
+    .ops-ctx-location-summary::-webkit-details-marker { display: none; }
+    .ops-ctx-location-label {
+      font-weight: 600;
+      color: var(--muted, #64748b);
+      flex-shrink: 0;
+    }
+    .ops-ctx-location-value {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+    .ops-ctx-location-details:not(.ops-ctx-location-details--no-slot) > .ops-ctx-location-summary::after {
+      content: "▼";
+      font-size: 0.6rem;
+      color: var(--muted, #94a3b8);
+      margin-left: auto;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+    }
+    .ops-ctx-location-details[open]:not(.ops-ctx-location-details--no-slot) > .ops-ctx-location-summary::after {
+      transform: rotate(180deg);
+    }
+    .ops-ctx-location-body {
+      padding: 8px 12px 12px;
+      border-top: 1px solid var(--line);
     }
 
     .operator-weather-head {
@@ -13853,6 +13938,14 @@
       z-index: 18;
     }
 
+    .dashboard-console-shell .dashboard-slot-shelfcard.pick + .dashboard-slot-shelfcard:not(.pick) {
+      margin-left: 20px;
+    }
+
+    .dashboard-console-shell :is(#homeDashSlotItems.dashboard-slot-shelfview--lp, #homeDashWorkbenchList.dashboard-slot-shelfview--lp) .dashboard-slot-shelfcard.pick + .dashboard-slot-shelfcard:not(.pick) {
+      margin-left: 12px;
+    }
+
     .dashboard-console-shell :is(.dashboard-slot-selectbtn, .dashboard-slot-editbtn, .dashboard-slot-locatebtn, .dashboard-slot-covercard-check) {
       border-radius: 6px;
       border-color: rgba(184, 196, 210, 0.18);
@@ -17801,29 +17894,29 @@
         <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial u-mt-4">
             <summary class="home-unified-edit-summary">수정 / 편집</summary>
             <div class="home-unified-edit-body">
-            <div class="home-editor-layout-wrapper">
-              <!-- ==================== LEFT PANEL ==================== -->
-              <div id="homeEditorLeftPane" class="home-editor-left-pane">
-        
-        <!-- ══ 섹션 1: 마스터 정보 ══ -->
-        <div id="homeSection1MasterInfo" style="margin-top: 4px;">
-          <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
-          <div id="homeMasterMetaCard" class="u-hidden-initial">
-            <div class="master-meta-left">
-              <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
-              <div class="home-master-meta-info">
-                <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
-                <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
-                <div id="homeMasterMetaYear" class="mini muted"></div>
-                <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
-                <input id="editOwnedId" type="hidden" />
-                <input id="editLabelId" type="hidden" />
-                <input id="editLinkedAlbumMasterId" type="hidden" />
+              <!-- ══ 섹션 1: 마스터 정보 ══ -->
+              <div id="homeSection1MasterInfo" style="margin-top: 4px;">
+                <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
+                <div id="homeMasterMetaCard" class="u-hidden-initial">
+                  <div class="master-meta-left">
+                    <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
+                    <div class="home-master-meta-info">
+                      <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
+                      <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
+                      <div id="homeMasterMetaYear" class="mini muted"></div>
+                      <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
+                      <input id="editOwnedId" type="hidden" />
+                      <input id="editLabelId" type="hidden" />
+                      <input id="editLinkedAlbumMasterId" type="hidden" />
+                    </div>
+                  </div>
+                  <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
+                </div>
               </div>
-            </div>
-            <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
-          </div>
-        </div>
+
+              <div class="home-editor-layout-wrapper">
+                <!-- ==================== LEFT PANEL ==================== -->
+                <div id="homeEditorLeftPane" class="home-editor-left-pane">
 
         <!-- Spotify manual matching (NEW) -->
         <div id="homeMasterSpotifyMatchSection" class="u-mt-4" style="padding:10px; border:1px solid var(--theme-admin-panel-border); border-radius:8px; background:var(--admin-console-panel-bg-2);">
@@ -18346,8 +18439,6 @@
                     </div>
                     <div id="homeEditStatus" class="status"></div>
                     </div>
-            </div>
-          </details>
           <div id="homeMasterSummarySection" class="u-hidden-initial">
                       <div class="section-divider u-mt-10">
                         <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
@@ -34294,39 +34385,67 @@
       const currentSlotCode = String(item?.current_slot_code || "").trim();
       const ownedItemId = Number(item?.owned_item_id || item?.id || 0);
       const canOpenCurrent = Boolean(currentSlotCode || (currentCabinetName && currentColumnCode && currentCellCode));
+
+      // Spotify: innerHTML 렌더 전에 미리 조회
+      const oid = Number(item?.owned_item_id || item?.id || 0);
+      let spotifyAlbumId = null;
+      for (const row of Array.isArray(homeSearchResults) ? homeSearchResults : []) {
+        const members = Array.isArray(row?.member_items_preview) ? row.member_items_preview : [];
+        if (members.some(m => Number(m?.owned_item_id || m?.id || 0) === oid)) {
+          spotifyAlbumId = row?.spotify_album_id || null;
+          break;
+        }
+      }
+
       root.innerHTML = `
         <div class="ops-library-context-head">
           <div class="ops-library-context-head-copy">
             <div class="ops-library-context-eyebrow">${escapeHtml(t("media.search.context.selection_label"))}</div>
-            <h3>${escapeHtml(title)}</h3>
-            ${artist ? `<div class="ops-library-context-subtitle">${escapeHtml(artist)}</div>` : ""}
+            <div class="ops-ctx-title-line">
+              <span class="ops-ctx-title">${(function(){
+                const sep = " - ";
+                let titleOnly = title;
+                if (artist && title.startsWith(artist + sep)) titleOnly = title.slice(artist.length + sep.length);
+                return escapeHtml(artist ? artist + sep + titleOnly : titleOnly);
+              })()}</span>
+              ${item?.master_release_year ? `<span class="ops-ctx-year">(${escapeHtml(String(item.master_release_year))})</span>` : ""}
+            </div>
           </div>
           <div class="ops-library-context-head-actions">
             ${ownedItemId > 0 ? `<button class="btn tiny" type="button" data-media-search-context-open-manage="${ownedItemId}">${escapeHtml(t("media.manage.search.action.open_detail_manage"))}</button>` : ""}
             <button class="btn ghost tiny" type="button" data-media-search-context-clear="1">${escapeHtml(t("operator.context.action.clear"))}</button>
           </div>
         </div>
-        <div class="operator-mini-list">
-          <div class="operator-mini-line operator-mini-card">
-            <strong>${escapeHtml(t("operator.context.field.current"))}</strong>
-            <span>${escapeHtml(currentLocation)}</span>
-            ${canOpenCurrent
-              ? `<button class="operator-mini-linkchip" type="button"
-                  data-operator-context-open-cabinet="${ownedItemId}"
-                  data-operator-slot-code="${escapeHtml(currentSlotCode)}"
-                  data-cabinet-name="${escapeHtml(currentCabinetName)}"
-                  data-column-code="${escapeHtml(currentColumnCode)}"
-                  data-cell-code="${escapeHtml(currentCellCode)}"
-                >${escapeHtml(t("operator.context.action.open"))}</button>`
-              : ""}
-          </div>
-        </div>
+        ${spotifyAlbumId ? `<div class="ops-ctx-spotify-wrap">${_spotifyEmbedHtml(spotifyAlbumId, 352)}</div>` : ""}
         ${renderOpsPluginSection(`
           ${renderOpsArtistContextCard(item, { cardId: "mediaSearchArtistContextCard" })}
         `)}
-        ${renderOpsLibraryContextMiniCabinetMap(item, { mapId: "mediaSearchContextMiniCabinetMap" })}
-        ${renderOpsLibraryContextSlotPreview(item, { rootId: "mediaSearchContextSlotPreview" })}
+        <details class="ops-ctx-location-details${canOpenCurrent ? "" : " ops-ctx-location-details--no-slot"}">
+          <summary class="ops-ctx-location-summary">
+            <span class="ops-ctx-location-label">${escapeHtml(t("operator.context.field.current"))}</span>
+            <span class="ops-ctx-location-value">${escapeHtml(currentLocation)}</span>
+          </summary>
+          <div class="ops-ctx-location-body">
+            ${canOpenCurrent ? `
+            <div class="u-mt-6">
+              <button class="operator-mini-linkchip" type="button"
+                data-operator-context-open-cabinet="${ownedItemId}"
+                data-operator-slot-code="${escapeHtml(currentSlotCode)}"
+                data-cabinet-name="${escapeHtml(currentCabinetName)}"
+                data-column-code="${escapeHtml(currentColumnCode)}"
+                data-cell-code="${escapeHtml(currentCellCode)}"
+              >${escapeHtml(t("operator.context.action.open"))}</button>
+            </div>` : ""}
+            ${renderOpsLibraryContextMiniCabinetMap(item, { mapId: "mediaSearchContextMiniCabinetMap" })}
+            ${renderOpsLibraryContextSlotPreview(item, { rootId: "mediaSearchContextSlotPreview" })}
+          </div>
+        </details>
       `;
+
+      // 별도 Spotify 패널 숨김 (인라인 통합)
+      const searchPanel = document.getElementById('searchSpotifyPanel');
+      if (searchPanel) searchPanel.hidden = true;
+
       loadOpsArtistContext(item, {
         cardId: "mediaSearchArtistContextCard",
         getActiveItem: () => mediaSearchSelectedContextItem,
@@ -34335,30 +34454,6 @@
         rootId: "mediaSearchContextSlotPreview",
         getActiveItem: () => mediaSearchSelectedContextItem,
       }).catch(() => {});
-      // Spotify embed: 해당 item이 속한 master의 spotify_album_id 조회
-      (function() {
-        const oid = Number(item?.owned_item_id || item?.id || 0);
-        let spotifyAlbumId = null;
-        for (const row of Array.isArray(homeSearchResults) ? homeSearchResults : []) {
-          const members = Array.isArray(row?.member_items_preview) ? row.member_items_preview : [];
-          if (members.some(m => Number(m?.owned_item_id || m?.id || 0) === oid)) {
-            spotifyAlbumId = row?.spotify_album_id || null;
-            break;
-          }
-        }
-        const searchEmbed = document.getElementById('searchSpotifyEmbed');
-        const searchPanel = document.getElementById('searchSpotifyPanel');
-        if (!searchEmbed || !searchPanel) return;
-        if (spotifyAlbumId) {
-          searchEmbed.innerHTML = _spotifyEmbedHtml(spotifyAlbumId, 352);
-          searchEmbed.dataset.albumId = spotifyAlbumId;
-          searchPanel.hidden = false;
-        } else {
-          searchPanel.hidden = true;
-          searchEmbed.innerHTML = '';
-          delete searchEmbed.dataset.albumId;
-        }
-      })();
     }
 
     function mediaSearchInlineEditorOwnedKey(ownedItemId) {
