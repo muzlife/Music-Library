@@ -136,8 +136,9 @@ def _build_collection_dashboard_first_item_hints(
 def get_collection_dashboard() -> dict[str, Any]:
     move_threshold = (datetime.now(timezone.utc) - timedelta(days=DASHBOARD_MOVE_WINDOW_DAYS)).isoformat()
     with get_conn() as conn:
+        _slot_ok = slot_size_ok_sql()
         summary = conn.execute(
-            """
+            f"""
             SELECT
               COUNT(*) AS total_items,
               SUM(CASE WHEN oi.status = 'IN_COLLECTION' THEN 1 ELSE 0 END) AS in_collection_items,
@@ -197,7 +198,7 @@ def get_collection_dashboard() -> dict[str, Any]:
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
                    AND oi.storage_slot_id IS NOT NULL
-                   AND ({slot_size_ok_sql()}) = 0
+                   AND ({_slot_ok}) = 0
                   THEN 1 ELSE 0 END
               ) AS category_size_mismatch_items,
               SUM(
