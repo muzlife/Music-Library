@@ -40740,46 +40740,25 @@
 
 
     
-    // ── Spotify player ──
-    async function spotifyTogglePanel(masterId, albumId) {
+    // ── Spotify embed player ──
+    function spotifyTogglePanel(masterId, albumId) {
       var panel = document.getElementById('spotifyPanel-' + masterId);
       if (panel) { panel.remove(); return; }
-      // Close others
       document.querySelectorAll('[id^="spotifyPanel-"]').forEach(function(p){ p.remove(); });
-      
       var meta = document.getElementById('homeMasterMetaCard');
       if (!meta) return;
       panel = document.createElement('div');
       panel.id = 'spotifyPanel-' + masterId;
       panel.className = 'spotify-player-panel open';
-      panel.innerHTML = '<div class="mini muted">트랙 불러오는 중...</div>';
+      var embedSrc = 'https://open.spotify.com/embed/album/' + encodeURIComponent(albumId) + '?utm_source=generator';
+      panel.innerHTML =
+        '<iframe style="border-radius:12px;display:block;" ' +
+        'src="' + embedSrc + '" ' +
+        'width="100%" height="352" frameborder="0" ' +
+        'allowfullscreen="" ' +
+        'allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" ' +
+        'loading="lazy"></iframe>';
       meta.parentNode.insertBefore(panel, meta.nextSibling);
-      
-      try {
-        var controller = new AbortController();
-        var timeout = setTimeout(function(){ controller.abort(); }, 10000);
-        var res;
-        try {
-          res = await fetch('/spotify/albums/' + encodeURIComponent(albumId) + '/tracks', {signal: controller.signal});
-        } catch(e) {
-          panel.innerHTML = '<div class="mini" style="color:#f97316;">Spotify API 응답 없음 (rate-limit 또는 네트워크 오류). 잠시 후 다시 시도하세요.</div>';
-          return;
-        }
-        clearTimeout(timeout);
-        if (!res.ok) {
-          var errText = res.status === 503 ? 'Spotify API rate-limit. 잠시 후 다시 시도.' : '트랙 로드 실패 (HTTP '+res.status+')';
-          panel.innerHTML = '<div class="mini" style="color:#ef4444;">'+errText+'</div>';
-          return;
-        }
-        var data = await res.json();
-        var tracks = data.tracks || [];
-        var html = '<button class="spotify-play-all" onclick="spotifyPlayAlbum(\'' + albumId + '\')">▶ 전체 재생</button>';
-        for (var i = 0; i < tracks.length; i++) {
-          var t = tracks[i]; var dur = t.duration_ms ? Math.floor(t.duration_ms/60000)+':'+String(Math.floor((t.duration_ms%60000)/1000)).padStart(2,'0') : '';
-          html += '<div class="spotify-track-row"><span class="spotify-track-num">'+(t.track_number||i+1)+'</span><span class="spotify-track-name">'+escapeHtml(t.name)+'</span><span class="spotify-track-dur">'+dur+'</span><button class="spotify-track-play" onclick="spotifyPlayTrack(\''+escapeHtml(t.uri||'')+'\')">▶</button></div>';
-        }
-        panel.innerHTML = html;
-      } catch(e) { panel.innerHTML = '<div class="mini" style="color:#ef4444;">오류</div>'; }
     }
     function spotifyPlayAlbum(id) { fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:'spotify:album:'+id})}).catch(function(){}); }
     function spotifyPlayTrack(uri) { if(uri) fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:uri})}).catch(function(){}); }
