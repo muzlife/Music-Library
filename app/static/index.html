@@ -44253,7 +44253,29 @@ async function loadDashboardClimate() {
           : t("common.source.manual");
         const labelCatText = `${row.label_name || "-"} / ${row.catalog_no || "-"}${barcodeText ? ` (${barcodeText})` : ""}`;
         const sizeMismatchText = activeType === "PREFERRED_SIZE_MISMATCH"
-          ? `${t("common.meta.physical_recommended")}: ${dashboardSizeGroupLabel(row.size_group)} / ${dashboardSizeGroupLabel(row.preferred_storage_size_group || row.size_group)}`
+          ? (function() {
+              // 패키징에서 필요 규격 도출 (SQL CASE와 동일 로직)
+              const fmtRaw = String(row.format_items_json || "").toUpperCase();
+              const media = String(row.media_type || "").trim();
+              const sg = String(row.size_group || "LP").trim().toUpperCase();
+              let required = null;
+              let reason = "";
+              if (media === "Reel-To-Reel") { required = "REEL_TO_REEL"; }
+              else if (media === "8-Track Cartridge") { required = "8TRACK"; }
+              else if (["CD","CDr","SACD"].includes(media) && (fmtRaw.includes("DIGIBOOK") || fmtRaw.includes("DVD SIZE") || fmtRaw.includes("BOX SET"))) {
+                required = "OVERSIZE";
+                reason = fmtRaw.includes("DIGIBOOK") ? "Digibook" : fmtRaw.includes("DVD SIZE") ? "DVD Size" : "Box Set";
+              } else if (["CD","CDr","SACD","Digital"].includes(media)) { required = "STD"; }
+              else if (["Vinyl","LP","Cassette","All Media"].includes(media) && fmtRaw.includes("BOX SET")) {
+                required = "OVERSIZE"; reason = "Box Set";
+              } else if (media === "Cassette") { required = "CASSETTE"; }
+              else if (["Vinyl","LP",'7"','10"',"All Media"].includes(media)) { required = sg || "LP"; }
+              const slotSg = String(row.slot_allowed_size_group || "").trim().toUpperCase() || "-";
+              const reqLabel = required ? dashboardSizeGroupLabel(required) : "-";
+              const slotLabel = slotSg !== "-" ? dashboardSizeGroupLabel(slotSg) : "-";
+              const reasonSuffix = reason ? ` (${reason})` : "";
+              return `슬롯 ${slotLabel} → 필요 ${reqLabel}${reasonSuffix}`;
+            })()
           : "";
         const trackMissingText = activeType === "TRACK_MISSING"
           ? t("common.meta.track_count", { value: formatCount((Array.isArray(row.track_list) ? row.track_list.length : 0) || (Array.isArray(row.track_items) ? row.track_items.length : 0)) })

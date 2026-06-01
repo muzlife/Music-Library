@@ -43,6 +43,7 @@ def _owned_item_select_query() -> str:
         oi.order_key,
         oi.storage_slot_id,
         ss.slot_code,
+        ss.allowed_size_group AS slot_allowed_size_group,
         oi.is_second_hand,
         oi.signature_type,
         oi.source_code,
