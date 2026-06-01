@@ -17912,38 +17912,35 @@
             <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
           </div>
 
-        <div id="homeAcquisitionSourceInfo" class="result-item mini u-mt-8 u-hidden-initial"></div>
-        <div id="homeAcquisitionSourceLink" class="mini u-mt-4 u-hidden-initial"></div>
-        <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6 u-hidden-initial">credits: -</div>
-        <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4 u-hidden-initial">matrix/identifiers: -</div>
-
         <!-- 통합 수정 패널 (기본 접힘) -->
         <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial u-mt-4">
             <summary class="home-unified-edit-summary">수정 / 편집</summary>
             <div class="home-unified-edit-body">
-              <!-- ══ 섹션 1: 마스터 정보 ══ -->
-              <div id="homeSection1MasterInfo" style="margin-top: 4px;">
-                <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
-                <div id="homeMasterMetaCard" class="u-hidden-initial">
-                  <div class="master-meta-left">
-                    <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
-                    <div class="home-master-meta-info">
-                      <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
-                      <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
-                      <div id="homeMasterMetaYear" class="mini muted"></div>
-                      <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
-                      <input id="editOwnedId" type="hidden" />
-                      <input id="editLabelId" type="hidden" />
-                      <input id="editLinkedAlbumMasterId" type="hidden" />
-                    </div>
-                  </div>
-                  <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
-                </div>
-              </div>
 
               <div class="home-editor-layout-wrapper">
                 <!-- ==================== LEFT PANEL ==================== -->
                 <div id="homeEditorLeftPane" class="home-editor-left-pane">
+                  <!-- ══ 섹션 1: 마스터 정보 ══ -->
+                  <div id="homeSection1MasterInfo" style="margin-top: 4px;">
+                    <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
+                    <div id="homeMasterMetaCard" class="u-hidden-initial">
+                      <div class="master-meta-left">
+                        <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
+                        <div class="home-master-meta-info">
+                          <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
+                          <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
+                          <div id="homeMasterMetaYear" class="mini muted"></div>
+                          <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
+                          <input id="editOwnedId" type="hidden" />
+                          <input id="editLabelId" type="hidden" />
+                          <input id="editLinkedAlbumMasterId" type="hidden" />
+                        </div>
+                      </div>
+                      <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
+                    </div>
+                  </div>
+                  <div id="homeAcquisitionSourceInfo" class="result-item mini u-mt-8"></div>
+                  <div id="homeAcquisitionSourceLink" class="mini u-mt-4"></div>
 
         <!-- Spotify manual matching (NEW) -->
         <div id="homeMasterSpotifyMatchSection" class="u-mt-4" style="padding:10px; border:1px solid var(--theme-admin-panel-border); border-radius:8px; background:var(--admin-console-panel-bg-2);">
@@ -17959,7 +17956,7 @@
         </div>
 
         <!-- 마스터 메타 수정 (details) -->
-        <details id="homeMasterEditDetails" class="home-unified-edit-details u-hidden-initial u-mt-2">
+        <details id="homeMasterEditDetails" class="home-unified-edit-details u-mt-2">
             <summary class="home-unified-edit-summary" data-i18n="media.manage.master.summary">앨범(마스터) 메타 수정</summary>
             <div class="home-unified-edit-body">
               <div class="home-unified-section-label">마스터 수정</div>
@@ -18442,6 +18439,8 @@
                     </div>
                     <div id="homeEditStatus" class="status"></div>
                     </div>
+          <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6">credits: -</div>
+          <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4">matrix/identifiers: -</div>
           <div id="homeMasterSummarySection" class="u-hidden-initial">
                       <div class="section-divider u-mt-10">
                         <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
@@ -18453,7 +18452,7 @@
           <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
                       <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
                     </div>
-          <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details u-hidden-initial">
+          <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details">
             <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
           <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack" style="border:none;background:none;box-shadow:none;margin-top:0;">
                     <div class="compact-stack-grid">
@@ -33897,6 +33896,30 @@
       );
     }
 
+    function renderAlbumReviewSection(item) {
+      const text = String(item?.review_text || "").trim();
+      if (!text) return "";
+      const source = String(item?.review_source || "").trim();
+      const TRUNCATE_LEN = 150;
+      const needsTruncate = text.length > TRUNCATE_LEN;
+      const previewText = needsTruncate ? text.slice(0, TRUNCATE_LEN) + "…" : text;
+      const sectionId = "albumReviewSection_" + String(item?.owned_item_id || item?.id || 0);
+      const textId = "albumReviewText_" + String(item?.owned_item_id || item?.id || 0);
+      const btnId = "albumReviewToggleBtn_" + String(item?.owned_item_id || item?.id || 0);
+
+      return `
+        <div class="ops-ctx-review" id="${escapeHtml(sectionId)}">
+          <div class="ops-ctx-review-label">${escapeHtml(t("media.search.context.review_label") || "앨범 리뷰")}</div>
+          <div class="ops-ctx-review-text" id="${escapeHtml(textId)}">${escapeHtml(previewText)}</div>
+          ${needsTruncate ? `<button class="btn ghost tiny ops-ctx-review-toggle" type="button" id="${escapeHtml(btnId)}"
+            data-review-full="${escapeHtml(text)}"
+            data-review-preview="${escapeHtml(previewText)}"
+            data-expanded="false">펼치기 ▼</button>` : ""}
+          ${source ? `<div class="ops-ctx-review-source">${escapeHtml(t("media.search.context.review_source_label") || "출처")}: ${escapeHtml(source)}</div>` : ""}
+        </div>
+      `;
+    }
+
     function renderOpsPluginSection(cardsHtml) {
       return `
         <section class="operator-mini-card ops-plugin-section">
@@ -34433,6 +34456,7 @@
         ${renderOpsPluginSection(`
           ${renderOpsArtistContextCard(item, { cardId: "mediaSearchArtistContextCard" })}
         `)}
+        ${renderAlbumReviewSection(item)}
         <details class="ops-ctx-location-details${canOpenCurrent ? "" : " ops-ctx-location-details--no-slot"}">
           <summary class="ops-ctx-location-summary">
             <span class="ops-ctx-location-label">${escapeHtml(t("operator.context.field.current"))}</span>
@@ -34458,6 +34482,24 @@
       // 별도 Spotify 패널 숨김 (인라인 통합)
       const searchPanel = document.getElementById('searchSpotifyPanel');
       if (searchPanel) searchPanel.hidden = true;
+
+      // 앨범 리뷰 펼치기/접기
+      root.querySelectorAll(".ops-ctx-review-toggle").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const expanded = btn.dataset.expanded === "true";
+          const textEl = document.getElementById(btn.id.replace("albumReviewToggleBtn_", "albumReviewText_"));
+          if (!textEl) return;
+          if (expanded) {
+            textEl.textContent = btn.dataset.reviewPreview;
+            btn.textContent = "펼치기 ▼";
+            btn.dataset.expanded = "false";
+          } else {
+            textEl.textContent = btn.dataset.reviewFull;
+            btn.textContent = "접기 ▲";
+            btn.dataset.expanded = "true";
+          }
+        });
+      });
 
       loadOpsArtistContext(item, {
         cardId: "mediaSearchArtistContextCard",
