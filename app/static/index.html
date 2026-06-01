@@ -44263,9 +44263,13 @@ async function loadDashboardClimate() {
               const sg = String(row.size_group || "LP").trim().toUpperCase();
               const CD_LIKE = ["CD","CDr","SACD","Digital","DVD","Blu-ray","CD-ROM"];
               const VINYL_LIKE = ["Vinyl","LP",'7"','10"',"All Media"];
+              const isLpStyle = fmtRaw.includes("LP-STYLE PACKAGING") || fmtRaw.includes("LP STYLE PACKAGING");
               const isBoxSet = fmtRaw.includes("BOX SET");
               const slotSg = String(row.slot_allowed_size_group || "").trim().toUpperCase() || "-";
               const slotLabel = slotSg !== "-" ? dashboardSizeGroupLabel(slotSg) : "-";
+              if (isLpStyle) {
+                return `슬롯 ${slotLabel} → LP-Style Packaging (LP 또는 OVERSIZE 허용)`;
+              }
               if (isBoxSet) {
                 // Box Set: 기본 규격 또는 OVERSIZE 모두 허용
                 const base = CD_LIKE.includes(media) ? "STD" : media === "Cassette" ? "CASSETTE" : sg || "LP";

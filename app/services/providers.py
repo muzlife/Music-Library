@@ -1141,7 +1141,7 @@ def _discogs_format_descriptions_flat(formats: Any) -> list[str]:
 
 def _discogs_is_limited_edition(formats: Any) -> bool | None:
     """Limited Edition / Deluxe Edition / Special Edition / Club Edition → is_limited_edition."""
-    KEYWORDS = {"limited edition", "deluxe edition", "special edition", "club edition", "collector's edition"}
+    KEYWORDS = {"limited edition", "limited"}
     texts = _discogs_format_descriptions_flat(formats)
     return True if any(t in KEYWORDS for t in texts) else None
 
