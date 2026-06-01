@@ -17912,6 +17912,11 @@
             <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
           </div>
 
+        <div id="homeAcquisitionSourceInfo" class="result-item mini u-mt-8 u-hidden-initial"></div>
+        <div id="homeAcquisitionSourceLink" class="mini u-mt-4 u-hidden-initial"></div>
+        <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6 u-hidden-initial">credits: -</div>
+        <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4 u-hidden-initial">matrix/identifiers: -</div>
+
         <!-- 통합 수정 패널 (기본 접힘) -->
         <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial u-mt-4">
             <summary class="home-unified-edit-summary">수정 / 편집</summary>
@@ -17939,8 +17944,6 @@
                       <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
                     </div>
                   </div>
-                  <div id="homeAcquisitionSourceInfo" class="result-item mini u-mt-8"></div>
-                  <div id="homeAcquisitionSourceLink" class="mini u-mt-4"></div>
 
         <!-- Spotify manual matching (NEW) -->
         <div id="homeMasterSpotifyMatchSection" class="u-mt-4" style="padding:10px; border:1px solid var(--theme-admin-panel-border); border-radius:8px; background:var(--admin-console-panel-bg-2);">
@@ -17956,7 +17959,7 @@
         </div>
 
         <!-- 마스터 메타 수정 (details) -->
-        <details id="homeMasterEditDetails" class="home-unified-edit-details u-mt-2">
+        <details id="homeMasterEditDetails" class="home-unified-edit-details u-hidden-initial u-mt-2">
             <summary class="home-unified-edit-summary" data-i18n="media.manage.master.summary">앨범(마스터) 메타 수정</summary>
             <div class="home-unified-edit-body">
               <div class="home-unified-section-label">마스터 수정</div>
@@ -18439,8 +18442,6 @@
                     </div>
                     <div id="homeEditStatus" class="status"></div>
                     </div>
-          <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6">credits: -</div>
-          <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4">matrix/identifiers: -</div>
           <div id="homeMasterSummarySection" class="u-hidden-initial">
                       <div class="section-divider u-mt-10">
                         <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
@@ -18452,7 +18453,7 @@
           <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
                       <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
                     </div>
-          <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details">
+          <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details u-hidden-initial">
             <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
           <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack" style="border:none;background:none;box-shadow:none;margin-top:0;">
                     <div class="compact-stack-grid">
