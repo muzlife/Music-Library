@@ -102,6 +102,8 @@ def operator_catalog_search(
                 master_domain_code=_master_dc,
                 override_domain_code=_override_dc,
                 sort_artist_name=_sort_artist,
+                review_text=str(row.get("review_text") or "").strip() or None,
+                review_source=str(row.get("review_source") or "").strip() or None,
             )
         )
     return OperatorCatalogSearchResponse(query=q, total_count=len(items), items=items)

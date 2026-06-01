@@ -347,6 +347,8 @@ class OperatorCatalogSearchItem(BaseModel):
     master_domain_code: str | None = None      # album_master.domain_code (자동 추정값)
     override_domain_code: str | None = None    # 수동 확정 여부 (not null → 확정)
     sort_artist_name: str | None = None        # album_master.sort_artist_name (교정 UI 표시)
+    review_text: str | None = None
+    review_source: str | None = None
 
 
 class OperatorCatalogSearchResponse(BaseModel):
