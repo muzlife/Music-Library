@@ -55755,7 +55755,7 @@ async function loadDashboardClimate() {
       if ($("editSizeGroup")) $("editSizeGroup").value = sg;
       if ($("editPreferredStorageSizeGroup")) $("editPreferredStorageSizeGroup").value = sg;
     }
-    $("editMediaType").addEventListener("change", function() { _syncVinylOnlyFields(); _syncCategoryFromMedia(); });
+    $("editMediaType").addEventListener("change", function() { if ($("editFormatName")) $("editFormatName").value = ""; _syncVinylOnlyFields(); _syncCategoryFromMedia(); });
     $("editIsLimitedEdition").addEventListener("change", function() {
       setHiddenIfPresent("editEditionNumberWrap", !this.checked);
     });
