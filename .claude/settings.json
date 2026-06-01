@@ -1,8 +1,3 @@
 {
-  "mcpServers": {
-    "deepseek-coder": {
-      "command": "python",
-      "args": ["mcp-deepseek/server.py"]
-    }
-  }
+  "enableAllProjectMcpServers": true
 }
