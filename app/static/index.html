@@ -2227,6 +2227,7 @@
 
     #homeCabinetSection {
       margin-top: 12px;
+      margin-bottom: 24px;
       display: grid;
       gap: 8px;
     }
@@ -9025,6 +9026,7 @@
     }
 
     .shelf-track-wrap {
+      position: relative;
       border: 1px solid var(--line);
       border-radius: 10px;
       background:
@@ -55439,14 +55441,18 @@ async function loadDashboardClimate() {
     $("goodsManageSaveRelationsBtn").addEventListener("click", saveGoodsManageRelations);
     // Register image upload
     var _regImageUrls = [];
-    $("goodsRegisterImageFile")?.addEventListener("change", async function() {
-      if (!this.files.length) return;
-      try {
-        var uploaded = await uploadUiImageFiles(this.files);
-        uploaded.forEach(function(url) { if (url) { _regImageUrls.push(url); addRegImagePreview(url); } });
-        $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
-      } catch(e) {} finally { this.value = ""; }
-    });
+    var _regFileInput = document.getElementById("goodsRegisterImageFile");
+    if (_regFileInput) {
+      _regFileInput.addEventListener("change", async function() {
+        if (!this.files.length) return;
+        try {
+          var uploaded = await uploadUiImageFiles(this.files);
+          uploaded.forEach(function(url) { if (url) { _regImageUrls.push(url); addRegImagePreview(url); } });
+          var hi = document.getElementById("goodsRegisterImageUrls");
+          if (hi) hi.value = _regImageUrls.join("\n");
+        } catch(e) { console.error("Image upload failed", e); } finally { this.value = ""; }
+      });
+    }
     function addRegImagePreview(url) {
       var p = document.getElementById("goodsRegisterImagePreview");
       if (!p) return;
