@@ -40779,27 +40779,32 @@
         'allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>';
     }
     function spotifyTogglePanel(masterId, albumId) {
-      // 관리 탭: 마스터 메타 카드 우측 슬롯
-      var manageSlot = document.getElementById('homeMasterSpotifyEmbed');
-      if (manageSlot && !manageSlot.closest('[hidden]') && document.getElementById('tabManage')?.classList.contains('active')) {
-        if (!manageSlot.hidden && manageSlot.dataset.albumId === albumId) {
-          manageSlot.hidden = true; manageSlot.innerHTML = ''; return;
+      var inManage = document.getElementById('tabManage')?.classList.contains('active');
+      var inSearch = document.getElementById('tabSearch')?.classList.contains('active');
+
+      if (inManage) {
+        var slot = document.getElementById('homeMasterSpotifyEmbed');
+        if (!slot) return;
+        if (!slot.hidden && slot.dataset.albumId === albumId) {
+          slot.hidden = true; slot.innerHTML = ''; return;
         }
-        manageSlot.innerHTML = _spotifyEmbedHtml(albumId, 352);
-        manageSlot.dataset.albumId = albumId;
-        manageSlot.hidden = false;
+        slot.innerHTML = _spotifyEmbedHtml(albumId, 352);
+        slot.dataset.albumId = albumId;
+        slot.hidden = false;
         return;
       }
-      // 검색 탭: 우측 컨텍스트 패널
-      var searchEmbed = document.getElementById('searchSpotifyEmbed');
-      var searchPanel = document.getElementById('searchSpotifyPanel');
-      if (searchEmbed && searchPanel) {
+
+      if (inSearch) {
+        var searchEmbed = document.getElementById('searchSpotifyEmbed');
+        var searchPanel = document.getElementById('searchSpotifyPanel');
+        if (!searchEmbed || !searchPanel) return;
         if (!searchPanel.hidden && searchEmbed.dataset.albumId === albumId) {
           searchPanel.hidden = true; searchEmbed.innerHTML = ''; searchEmbed.dataset.albumId = ''; return;
         }
         searchEmbed.innerHTML = _spotifyEmbedHtml(albumId, 352);
         searchEmbed.dataset.albumId = albumId;
         searchPanel.hidden = false;
+        return;
       }
     }
     function spotifyPlayAlbum(id) { fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:'spotify:album:'+id})}).catch(function(){}); }
