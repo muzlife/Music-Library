@@ -174,21 +174,100 @@ def list_owned_items(
 
     preferred_storage_state_u = str(preferred_storage_state or "ANY").strip().upper()
     if preferred_storage_state_u == "MISMATCH":
+        # 슬롯 규격 vs 미디어+패키징 기준 required_size_group 비교
         query += """
+         AND oi.storage_slot_id IS NOT NULL
+         AND mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''
          AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) <> UPPER(TRIM(COALESCE(oi.size_group, '')))
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
+         ) IS NOT NULL
+         AND UPPER(COALESCE(ss.allowed_size_group, '')) <> (
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
          )
-        """
+"""
     elif preferred_storage_state_u == "MATCH":
         query += """
+         AND oi.storage_slot_id IS NOT NULL
+         AND mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''
          AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) = UPPER(TRIM(COALESCE(oi.size_group, '')))
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
+         ) IS NOT NULL
+         AND UPPER(COALESCE(ss.allowed_size_group, '')) = (
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
          )
-        """
+"""
 
     track_state_u = str(track_state or "ANY").strip().upper()
     if track_state_u == "MISSING":
@@ -375,21 +454,100 @@ def count_owned_items(
 
     preferred_storage_state_u = str(preferred_storage_state or "ANY").strip().upper()
     if preferred_storage_state_u == "MISMATCH":
+        # 슬롯 규격 vs 미디어+패키징 기준 required_size_group 비교
         query += """
+         AND oi.storage_slot_id IS NOT NULL
+         AND mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''
          AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) <> UPPER(TRIM(COALESCE(oi.size_group, '')))
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
+         ) IS NOT NULL
+         AND UPPER(COALESCE(ss.allowed_size_group, '')) <> (
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
          )
-        """
+"""
     elif preferred_storage_state_u == "MATCH":
         query += """
+         AND oi.storage_slot_id IS NOT NULL
+         AND mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''
          AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) = UPPER(TRIM(COALESCE(oi.size_group, '')))
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
+         ) IS NOT NULL
+         AND UPPER(COALESCE(ss.allowed_size_group, '')) = (
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
          )
-        """
+"""
 
     track_state_u = str(track_state or "ANY").strip().upper()
     if track_state_u == "MISSING":

@@ -195,12 +195,49 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                   AND oi.storage_slot_id IS NOT NULL
+                   AND mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''
                    AND (
-                     (oi.category = 'LP' AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))
-                     OR (oi.category IN ('CD', 'DIGITAL') AND COALESCE(oi.size_group, '') != 'STD')
-                     OR (oi.category = 'CASSETTE' AND COALESCE(oi.size_group, '') != 'CASSETTE')
-                     OR (oi.category = '8TRACK' AND COALESCE(oi.size_group, '') != '8TRACK')
-                     OR (oi.category = 'REEL_TO_REEL' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL')
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
+                   ) IS NOT NULL
+                   AND UPPER(COALESCE(ss.allowed_size_group, '')) <> (
+      CASE
+        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
+        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
+        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
+             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
+          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
+        ) THEN 'OVERSIZE'
+        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
+        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
+          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
+        ELSE NULL
+      END
                    )
                   THEN 1
                   ELSE 0
@@ -252,6 +289,7 @@ def get_collection_dashboard() -> dict[str, Any]:
               ) AS other_condition_items
             FROM owned_item oi
             LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
             """
         ).fetchone()
 
