@@ -9,6 +9,8 @@ from fastapi.responses import FileResponse
 from .. import db
 from .. import security
 from ..schemas import DirectoryPickerRequest, DirectoryPickerResponse, UiImageUploadResponse
+from datetime import datetime, timezone
+from uuid import uuid4
 
 router = APIRouter()
 def _main():
@@ -117,11 +119,11 @@ async def ui_upload_image(file: UploadFile = File(...)) -> UiImageUploadResponse
     raw = await file.read()
     if not raw:
         raise HTTPException(status_code=400, detail="empty image file")
-    if len(raw) > MAX_IMAGE_UPLOAD_BYTES:
+    if len(raw) > _main().MAX_IMAGE_UPLOAD_BYTES:
         raise HTTPException(status_code=400, detail="image file is too large (max 20MB)")
 
     month_bucket = datetime.now(timezone.utc).strftime("%Y%m")
-    target_dir = IMAGE_UPLOAD_DIR / month_bucket
+    target_dir = _main().IMAGE_UPLOAD_DIR / month_bucket
     target_dir.mkdir(parents=True, exist_ok=True)
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
