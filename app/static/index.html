@@ -11486,6 +11486,43 @@
       color: var(--admin-console-text);
     }
 
+    /* 2열 배치 레이아웃 */
+    .home-editor-layout-wrapper {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      margin-top: 10px;
+    }
+    .home-editor-left-pane {
+      width: 280px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 8px;
+      overflow-y: auto;
+      max-height: calc(100vh - 120px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .home-editor-right-pane {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    @media (max-width: 768px) {
+      .home-editor-layout-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .home-editor-left-pane {
+        width: 100%;
+        position: static;
+        max-height: none;
+      }
+    }
+
     #tabManage .ops-compact-extra-fields > summary::before {
       color: var(--admin-console-text-meta);
     }
@@ -16681,6 +16718,50 @@
       right: 60px;
       z-index: 10;
     }
+
+    /* Media > Manage Redesign Layout */
+    .media-manage-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-top: 12px;
+    }
+    .media-manage-left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: sticky;
+      top: 20px;
+    }
+    .media-manage-right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+    @media (max-width: 1024px) {
+      .media-manage-layout {
+        grid-template-columns: 1fr;
+      }
+      .media-manage-left-panel {
+        position: static;
+      }
+    }
+
+    /* Spotify manual matching card */
+    .spotify-match-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--paper) 60%, var(--bg) 40%);
+      border: 1px solid var(--line);
+    }
+    .spotify-match-card .mini-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
   </style>
 </head>
 <body data-shell-mode="ops" data-shell-readonly="true" data-shell-density="compact" data-theme="night">
@@ -17716,36 +17797,16 @@
         <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6 u-hidden-initial">credits: -</div>
         <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4 u-hidden-initial">matrix/identifiers: -</div>
 
-        <!-- ══ 장식장 / 위치 정보 (최상단) ══ -->
-        <div id="homeCabinetSection">
-                    <div class="section-divider u-mt-8">
-                      <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
-                    </div>
-                    <div class="shelf-toolbar">
-                      <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
-                      <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
-                      <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
-                    </div>
-                    <div class="shelf-track-wrap">
-                      <div id="homeEditShelfTrack" class="shelf-track"></div>
-                    </div>
-                    <div id="homeEditShelfStatus" class="status"></div>
-                    <div class="row u-mt-6 u-flex-between-center-wrap">
-                      <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
-                      <div class="row home-manage-actions-right">
-                        <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
-                        <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
-                      </div>
-                    </div>
-                    <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
-                    <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
-                  </div>
-
+        <!-- 통합 수정 패널 (기본 접힘) -->
+        <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial u-mt-4">
+            <summary class="home-unified-edit-summary">수정 / 편집</summary>
+            <div class="home-unified-edit-body">
+            <div class="home-editor-layout-wrapper">
+              <!-- ==================== LEFT PANEL ==================== -->
+              <div id="homeEditorLeftPane" class="home-editor-left-pane">
+        
         <!-- ══ 섹션 1: 마스터 정보 ══ -->
-        <div id="homeSection1MasterInfo">
-          <div class="section-divider u-mt-8">
-            <h2><span data-i18n="media.manage.section1.title">1. 마스터 정보</span></h2>
-          </div>
+        <div id="homeSection1MasterInfo" style="margin-top: 4px;">
           <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
           <div id="homeMasterMetaCard" class="u-hidden-initial">
             <div class="master-meta-left">
@@ -17762,9 +17823,24 @@
             </div>
             <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
           </div>
-          <!-- 통합 수정 패널 (기본 접힘) -->
-          <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial">
-            <summary class="home-unified-edit-summary">수정 / 편집</summary>
+        </div>
+
+        <!-- Spotify manual matching (NEW) -->
+        <div id="homeMasterSpotifyMatchSection" class="u-mt-4" style="padding:10px; border:1px solid var(--theme-admin-panel-border); border-radius:8px; background:var(--admin-console-panel-bg-2);">
+          <div style="font-weight:600; font-size:0.8rem; margin-bottom:6px; display:flex; align-items:center; gap:4px; color:var(--admin-console-text);">
+            <span>🎵 Spotify 매칭</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <input id="homeMasterSpotifyMatchId" type="text" placeholder="Spotify Album ID 입력" style="font-size:0.8rem; padding:3px 6px; flex:1;" />
+            <button id="homeMasterSpotifyMatchBtn" class="btn ghost tiny" type="button">연결</button>
+            <button id="homeMasterSpotifyUnmatchBtn" class="btn ghost tiny" type="button">해제</button>
+          </div>
+          <div id="homeMasterSpotifyMatchStatus" class="status" style="margin-top:4px; font-size:0.75rem;"></div>
+        </div>
+
+        <!-- 마스터 메타 수정 (details) -->
+        <details id="homeMasterEditDetails" class="home-unified-edit-details u-hidden-initial u-mt-2">
+            <summary class="home-unified-edit-summary" data-i18n="media.manage.master.summary">앨범(마스터) 메타 수정</summary>
             <div class="home-unified-edit-body">
               <div class="home-unified-section-label">마스터 수정</div>
               <div id="homeMasterCorrectionRow" class="row u-mt-0 u-row-end-gap-8-wrap">
@@ -17820,9 +17896,59 @@
                 <div class="dashboard-selected-sort-artist-note mini" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
               </div>
               <div id="homeMasterSortArtistStatus" class="status"></div>
-              <!-- 상품 수정 폼 (section 2-1에서 이동) -->
-              <div class="home-unified-section-divider home-unified-section-label">상품 수정</div>
-            <div id="homeEditMusicProductSplit" class="home-music-product-split">
+            </div>
+          </details>
+
+          <!-- ══ 섹션 3: 마스터 삭제 ══ -->
+          <div id="homeSection3MasterDelete" style="margin-top: 12px;">
+            <div class="home-master-danger-zone" style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: rgba(220,53,69,0.05);">
+              <div class="section-divider u-mt-0">
+                <h2 style="color: var(--err);"><span data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</span></h2>
+              </div>
+              <div class="mini" data-i18n="media.manage.master.delete.note">상품 편집을 먼저 마친 뒤, 정말 필요할 때만 사용하세요. 연결 상품까지 함께 삭제할 수 있습니다.</div>
+              <div id="homeMasterDeleteActions" class="row home-manage-actions-right" style="margin-top: 8px;">
+                <label class="inline-check u-maxw-250">
+                  <input id="homeMasterDeleteCascade" type="checkbox" />
+                  <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
+                </label>
+                <button id="homeMasterDeleteBtn" class="btn ghost danger tiny" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
+              </div>
+            </div>
+          </div>
+        </div><!-- /homeEditorLeftPane -->
+
+        <!-- ==================== RIGHT PANEL ==================== -->
+        <div id="homeEditorRightPane" class="home-editor-right-pane">
+          <!-- ══ 장식장 / 위치 정보 (최상단) ══ -->
+          <div id="homeCabinetSection">
+            <div class="section-divider u-mt-0">
+              <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
+            </div>
+            <div class="shelf-toolbar">
+              <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
+              <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
+              <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
+            </div>
+            <div class="shelf-track-wrap">
+              <div id="homeEditShelfTrack" class="shelf-track"></div>
+            </div>
+            <div id="homeEditShelfStatus" class="status"></div>
+            <div class="row u-mt-6 u-flex-between-center-wrap">
+              <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
+              <div class="row home-manage-actions-right">
+                <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
+                <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
+              </div>
+            </div>
+            <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
+            <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
+          </div>
+
+          <!-- ══ 상품 수정 ══ -->
+          <div class="section-divider u-mt-8">
+            <h2>상품 수정</h2>
+          </div>
+          <div id="homeEditMusicProductSplit" class="home-music-product-split">
             <div id="homeEditLeftPane">
             <div class="home-edit-section-frame">
             <div id="homeEditMusicBox" class="music-box u-hidden-initial">
@@ -18535,23 +18661,7 @@
           </div>
         </div>
 
-        <!-- ══ 섹션 3: 마스터 삭제 ══ -->
-        <div id="homeSection3MasterDelete">
-          <div class="home-master-danger-zone">
-                      <div class="section-divider u-mt-0">
-                        <h2 data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</h2>
-                      </div>
-                      <div class="mini" data-i18n="media.manage.master.delete.note">상품 편집을 먼저 마친 뒤, 정말 필요할 때만 사용하세요. 연결 상품까지 함께 삭제할 수 있습니다.</div>
-                      <div id="homeMasterDeleteActions" class="row home-manage-actions-right">
-                        <label class="inline-check u-maxw-250">
-                          <input id="homeMasterDeleteCascade" type="checkbox" />
-                          <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
-                        </label>
-                        <button id="homeMasterDeleteBtn" class="btn ghost" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
-                      </div>
-                    </div>
-        </div>
-
+        <!-- ══ 보유 음원 디렉토리 (TrackMapBox) ══ -->
         <div id="homeTrackMapBox" class="music-box u-hidden-initial" hidden>
                   <div class="section-divider u-mt-0">
                     <h2 data-i18n="media.manage.track_map.directory.title">보유 음원 디렉토리</h2>
@@ -18580,6 +18690,10 @@
                   </div>
                 </div>
 
+              </div><!-- /homeEditorRightPane -->
+            </div><!-- /home-editor-layout-wrapper -->
+          </div><!-- /home-unified-edit-body -->
+        </details>
       </section>
       </div>
     </div>
@@ -20579,10 +20693,10 @@
                 <option value="MASTER_MISSING" data-i18n="ops.exception.field.type.master_missing">마스터 없음</option>
                 <option value="COVER_MISSING" data-i18n="ops.exception.field.type.cover_missing">커버 없음</option>
                 <option value="PREFERRED_SIZE_MISMATCH" data-i18n="ops.exception.field.type.preferred_size_mismatch">보관 규격 예외</option>
-                <option value="MEDIA_MISSING" data-i18n="ops.exception.field.type.media_missing">미디어 타입 누락</option>
+                <option value="MEDIA_MISSING" data-i18n="ops.exception.field.type.media_missing">미디어 타입 없음</option>
                 <option value="SIZE_MISMATCH" data-i18n="ops.exception.field.type.size_mismatch">규격 불일치</option>
                 <option value="TRACK_MISSING" data-i18n="ops.exception.field.type.track_missing">곡 정보 없음</option>
-                <option value="SPOTIFY_UNMATCHED" data-i18n="ops.exception.field.type.spotify_unmatched">스포티파이 미연결 마스터</option>
+                <option value="SPOTIFY_UNMATCHED" data-i18n="ops.exception.field.type.spotify_unmatched">스포티파이 미연결</option>
                 <option value="GENRE_MISSING" data-i18n="ops.exception.field.type.genre_missing">장르 없음</option>
                 <option value="CATALOG_MISSING" data-i18n="ops.exception.field.type.catalog_missing">카탈로그 없음</option>
               </select>
@@ -21913,8 +22027,8 @@
         "common.exception.cover_missing": "커버 없음",
         "common.exception.preferred_size_mismatch": "보관 규격 예외",
         "common.exception.track_missing": "곡 정보 없음",
-        "common.exception.spotify_unmatched": "스포티파이 미연결 마스터",
-        "common.exception.media_missing": "미디어 타입 누락",
+        "common.exception.spotify_unmatched": "스포티파이 미연결",
+        "common.exception.media_missing": "미디어 타입 없음",
         "common.exception.size_mismatch": "규격 불일치",
         "common.exception.genre_missing": "장르 없음",
         "common.exception.catalog_missing": "카탈로그 없음",
@@ -21922,13 +22036,13 @@
         "common.exception_hint.source_missing": "Discogs/ManiaDB 보강 필요",
         "common.exception_hint.master_missing": "앨범 마스터 연결 필요",
         "common.exception_hint.cover_missing": "커버 확보 필요",
-        "common.exception_hint.preferred_size_mismatch": "실물 규격과 권장 보관 규격이 다름",
-        "common.exception_hint.track_missing": "곡 검색과 요청곡 대응을 위해 보강 필요",
-        "common.exception_hint.spotify_unmatched": "스포티파이 앨범 매칭이 비어 있습니다.",
-        "common.exception_hint.media_missing": "미디어 타입(CD, LP 등)이 지정되지 않았습니다.",
-        "common.exception_hint.size_mismatch": "카테고리(LP/CD)와 보관 규격이 일치하지 않습니다.",
-        "common.exception_hint.genre_missing": "장르 정보가 비어 있는 상품입니다.",
-        "common.exception_hint.catalog_missing": "카탈로그 번호가 없는 상품입니다.",
+        "common.exception_hint.preferred_size_mismatch": "슬롯 규격과 실물 규격 불일치",
+        "common.exception_hint.track_missing": "트랙 정보 보강 필요",
+        "common.exception_hint.spotify_unmatched": "스포티파이 앨범 연결 필요",
+        "common.exception_hint.media_missing": "미디어 타입 지정 필요",
+        "common.exception_hint.size_mismatch": "카테고리와 보관 규격 불일치",
+        "common.exception_hint.genre_missing": "장르 정보 보강 필요",
+        "common.exception_hint.catalog_missing": "카탈로그 번호 없음",
         "operator.lookup.status.barcode_loading": "바코드 조회 중...",
         "operator.lookup.status.loading": "조회 중...",
         "operator.lookup.status.complete": "{count}건 조회",
@@ -23012,10 +23126,10 @@
         "ops.exception.field.type.master_missing": "마스터 없음",
         "ops.exception.field.type.cover_missing": "커버 없음",
         "ops.exception.field.type.preferred_size_mismatch": "보관 규격 예외",
-        "ops.exception.field.type.media_missing": "미디어 타입 누락",
+        "ops.exception.field.type.media_missing": "미디어 타입 없음",
         "ops.exception.field.type.size_mismatch": "규격 불일치",
         "ops.exception.field.type.track_missing": "곡 정보 없음",
-        "ops.exception.field.type.spotify_unmatched": "스포티파이 미연결 마스터",
+        "ops.exception.field.type.spotify_unmatched": "스포티파이 미연결",
         "ops.exception.field.limit.label": "표시 수",
         "ops.exception.field.preset.label": "저장된 필터",
         "ops.exception.field.preset.empty": "선택 안 함",
@@ -44139,7 +44253,7 @@ async function loadDashboardClimate() {
           : t("common.source.manual");
         const labelCatText = `${row.label_name || "-"} / ${row.catalog_no || "-"}${barcodeText ? ` (${barcodeText})` : ""}`;
         const sizeMismatchText = activeType === "PREFERRED_SIZE_MISMATCH"
-          ? `${t("common.meta.physical_recommended")}: ${sizeGroupLabel(row.size_group)} / ${sizeGroupLabel(row.preferred_storage_size_group || row.size_group)}`
+          ? `${t("common.meta.physical_recommended")}: ${dashboardSizeGroupLabel(row.size_group)} / ${dashboardSizeGroupLabel(row.preferred_storage_size_group || row.size_group)}`
           : "";
         const trackMissingText = activeType === "TRACK_MISSING"
           ? t("common.meta.track_count", { value: formatCount((Array.isArray(row.track_list) ? row.track_list.length : 0) || (Array.isArray(row.track_items) ? row.track_items.length : 0)) })
@@ -44150,7 +44264,7 @@ async function loadDashboardClimate() {
           sourceText,
         ].filter(Boolean);
         const subBits = [
-          t("common.meta.release", { value: releaseText }),
+          t("common.meta.release_date", { value: releaseText }),
           t("common.meta.label_catalog", { value: labelCatText }),
           t("common.meta.location", { value: locationText }),
           sizeMismatchText,
@@ -44464,7 +44578,7 @@ async function loadDashboardClimate() {
         });
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || t("ops.exception.status.align_update_failed"));
-        setStatus("opsExceptionStatus", "ok", t("ops.exception.status.align_saved", { size: sizeGroupLabel(nextPreferred) }));
+        setStatus("opsExceptionStatus", "ok", t("ops.exception.status.align_saved", { size: dashboardSizeGroupLabel(nextPreferred) }));
         refreshOpsExceptionInBackground();
         refreshHomeSearchInBackground();
         refreshHomeDashboardInBackground();
