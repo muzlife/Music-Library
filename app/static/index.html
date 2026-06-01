@@ -34211,6 +34211,30 @@
         rootId: "mediaSearchContextSlotPreview",
         getActiveItem: () => mediaSearchSelectedContextItem,
       }).catch(() => {});
+      // Spotify embed: 해당 item이 속한 master의 spotify_album_id 조회
+      (function() {
+        const oid = Number(item?.owned_item_id || item?.id || 0);
+        let spotifyAlbumId = null;
+        for (const row of Array.isArray(homeSearchResults) ? homeSearchResults : []) {
+          const members = Array.isArray(row?.member_items_preview) ? row.member_items_preview : [];
+          if (members.some(m => Number(m?.owned_item_id || m?.id || 0) === oid)) {
+            spotifyAlbumId = row?.spotify_album_id || null;
+            break;
+          }
+        }
+        const searchEmbed = document.getElementById('searchSpotifyEmbed');
+        const searchPanel = document.getElementById('searchSpotifyPanel');
+        if (!searchEmbed || !searchPanel) return;
+        if (spotifyAlbumId) {
+          searchEmbed.innerHTML = _spotifyEmbedHtml(spotifyAlbumId, 352);
+          searchEmbed.dataset.albumId = spotifyAlbumId;
+          searchPanel.hidden = false;
+        } else {
+          searchPanel.hidden = true;
+          searchEmbed.innerHTML = '';
+          delete searchEmbed.dataset.albumId;
+        }
+      })();
     }
 
     function mediaSearchInlineEditorOwnedKey(ownedItemId) {
