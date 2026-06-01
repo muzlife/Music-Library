@@ -55748,9 +55748,12 @@ async function loadDashboardClimate() {
     function _syncCategoryFromMedia() {
       var mt = String($("editMediaType")?.value || "").trim();
       var cat = "LP", sg = "LP";
-      if (["CD","CDr","SACD","Digital"].includes(mt)) { cat = "CD"; sg = "STD"; }
-      else if (["Cassette","8-Track Cartridge"].includes(mt)) { cat = "CASSETTE"; sg = "CASSETTE"; }
+      if (["CD","CDr","SACD","Digital","DVD","Blu-ray","CD-ROM"].includes(mt)) { cat = "CD"; sg = "STD"; }
+      else if (mt === "Cassette") { cat = "CASSETTE"; sg = "CASSETTE"; }
+      else if (mt === "8-Track Cartridge") { cat = "8TRACK"; sg = "8TRACK"; }
       else if (mt === "Reel-To-Reel") { cat = "REEL_TO_REEL"; sg = "REEL_TO_REEL"; }
+      else if (mt === '7"') { cat = "LP"; sg = "LP7"; }
+      else if (mt === '10"') { cat = "LP"; sg = "LP10"; }
       if ($("editCategory")) $("editCategory").value = cat;
       if ($("editSizeGroup")) $("editSizeGroup").value = sg;
       if ($("editPreferredStorageSizeGroup")) $("editPreferredStorageSizeGroup").value = sg;
