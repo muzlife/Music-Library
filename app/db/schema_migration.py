@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 12
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -840,6 +840,26 @@ def _migration_v10_add_cafe_tablet_and_reaction_tables(conn: sqlite3.Connection)
     )
 
 
+def _migration_v11_add_local_image_items_json(conn: sqlite3.Connection) -> None:
+    """Add local_image_items_json column to music_item_detail if it does not exist."""
+    if _table_exists(conn, "music_item_detail") and not _column_exists(
+        conn, "music_item_detail", "local_image_items_json"
+    ):
+        conn.execute("ALTER TABLE music_item_detail ADD COLUMN local_image_items_json TEXT")
+
+
+def _migration_v12_add_album_master_review_fields(conn: sqlite3.Connection) -> None:
+    """Add review_text, review_source, review_url to album_master if they do not exist."""
+    if not _table_exists(conn, "album_master"):
+        return
+    if not _column_exists(conn, "album_master", "review_text"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN review_text TEXT")
+    if not _column_exists(conn, "album_master", "review_source"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN review_source TEXT")
+    if not _column_exists(conn, "album_master", "review_url"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN review_url TEXT")
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -851,6 +871,8 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     8: _migration_v8_add_customer_track_weather_and_decks,
     9: _migration_v9_add_spotify_album_fields,
     10: _migration_v10_add_cafe_tablet_and_reaction_tables,
+    11: _migration_v11_add_local_image_items_json,
+    12: _migration_v12_add_album_master_review_fields,
 }
 
 
