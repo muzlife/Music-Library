@@ -34377,7 +34377,11 @@
       for (const row of Array.isArray(homeSearchResults) ? homeSearchResults : []) {
         const items = Array.isArray(row?.member_items_preview) ? row.member_items_preview : [];
         const match = items.find((item) => Number(item?.owned_item_id || item?.id || 0) === targetOwnedItemId);
-        if (match) return match;
+        if (match) return {
+          ...match,
+          review_text: match.review_text ?? row.review_text ?? null,
+          review_source: match.review_source ?? row.review_source ?? null,
+        };
       }
       return null;
     }
