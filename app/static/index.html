@@ -9036,6 +9036,7 @@
           color-mix(in srgb, var(--bg) 74%, var(--theme-dashboard-panel, var(--paper)) 26%) 100%
         );
       overflow: hidden;
+      isolation: isolate; /* shelf-item z-index가 컨테이너 밖으로 새는 것을 방지 */
       padding: 6px 0;
     }
 
@@ -17885,6 +17886,30 @@
 
             <section id="homeEditorCard" class="card u-mt-0 u-hidden-initial">
         <div id="homeEditorSelectedLabel" class="mini" data-i18n="media.manage.selected_label">선택된 상품</div>
+          <div id="homeCabinetSection">
+            <div class="section-divider u-mt-0">
+              <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
+            </div>
+            <div class="shelf-toolbar">
+              <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
+              <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
+              <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
+            </div>
+            <div class="shelf-track-wrap">
+              <div id="homeEditShelfTrack" class="shelf-track"></div>
+            </div>
+            <div id="homeEditShelfStatus" class="status"></div>
+            <div class="row u-mt-6 u-flex-between-center-wrap">
+              <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
+              <div class="row home-manage-actions-right">
+                <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
+                <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
+              </div>
+            </div>
+            <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
+            <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
+          </div>
+
         <div id="homeAcquisitionSourceInfo" class="result-item mini u-mt-8 u-hidden-initial"></div>
         <div id="homeAcquisitionSourceLink" class="mini u-mt-4 u-hidden-initial"></div>
         <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6 u-hidden-initial">credits: -</div>
@@ -18013,30 +18038,6 @@
         <!-- ==================== RIGHT PANEL ==================== -->
         <div id="homeEditorRightPane" class="home-editor-right-pane">
           <!-- ══ 장식장 / 위치 정보 (최상단) ══ -->
-          <div id="homeCabinetSection">
-            <div class="section-divider u-mt-0">
-              <h2><span data-i18n="media.manage.location.title">장식장 / 위치 정보</span><span class="section-help-dot" tabindex="0" data-help-key="help.media.manage.location">?</span></h2>
-            </div>
-            <div class="shelf-toolbar">
-              <button id="homeEditShelfPrevBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--previous" type="button" title="◀ 이전" aria-label="◀ 이전" data-i18n="media.manage.location.action.prev" data-i18n-title="media.manage.location.action.prev" data-i18n-aria-label="media.manage.location.action.prev">◀ 이전</button>
-              <div id="homeEditShelfCenterText" class="mini" data-i18n="media.manage.location.center">선택된 상품 기준 장식장 배열</div>
-              <button id="homeEditShelfNextBtn" class="btn ghost shelf-nav-btn icon-symbol-btn icon-symbol-btn--next" type="button" title="다음 ▶" aria-label="다음 ▶" data-i18n="media.manage.location.action.next" data-i18n-title="media.manage.location.action.next" data-i18n-aria-label="media.manage.location.action.next">다음 ▶</button>
-            </div>
-            <div class="shelf-track-wrap">
-              <div id="homeEditShelfTrack" class="shelf-track"></div>
-            </div>
-            <div id="homeEditShelfStatus" class="status"></div>
-            <div class="row u-mt-6 u-flex-between-center-wrap">
-              <div id="homeLocationInfo" class="compact-line u-flex-1-420"></div>
-              <div class="row home-manage-actions-right">
-                <button id="homeRestorePreviousSlotBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.location.action.restore_previous">이전 위치 복구</button>
-                <button id="homeOpenDashboardSlotBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--open" type="button" title="대시보드에서 위치 정리" aria-label="대시보드에서 위치 정리" data-i18n="media.manage.location.action.open_dashboard" data-i18n-title="media.manage.location.action.open_dashboard" data-i18n-aria-label="media.manage.location.action.open_dashboard">대시보드에서 위치 정리</button>
-              </div>
-            </div>
-            <div id="homeLocationSlotStatus" class="status u-hidden-initial"></div>
-            <div id="homeLocationSlotList" class="home-location-slot-list u-hidden-initial"></div>
-          </div>
-
           <!-- ══ 상품 수정 ══ -->
           <div class="section-divider u-mt-8">
             <h2>상품 수정</h2>
@@ -19004,10 +19005,7 @@
                     <label for="goodsManageDescription" data-i18n="collectibles.manage.field.description.label">설명</label>
                     <textarea id="goodsManageDescription" data-i18n-placeholder="collectibles.manage.field.description.placeholder" placeholder="예: 투어 현장 판매 포스터"></textarea>
                   </div>
-                  <div class="ops-compact-form-actions">
-                    <button id="goodsManageSaveBtn" class="btn" type="button" data-i18n="collectibles.manage.save">수집품 저장</button>
-                    <button id="goodsManageDeleteBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.delete">수집품 삭제</button>
-                  </div>
+<!-- save/delete moved below -->
                 </div>
               </div>
               <div id="goodsManageStatusLine" class="status"></div>
@@ -19071,19 +19069,24 @@
             </section>
 
             <section id="goodsManageNotesSection" class="goods-map-section">
-              <details id="goodsManageNotesDetails" class="ops-compact-extra-fields">
-                <summary>운영 메모 / 이미지</summary>
-                <div class="ops-compact-extra-fields-body goods-form-grid">
-                  <div class="span-3">
-                    <label for="goodsManageMemoryNote" data-i18n="collectibles.manage.field.memory_note.label">메모</label>
-                    <textarea id="goodsManageMemoryNote" data-i18n-placeholder="collectibles.manage.field.memory_note.placeholder" placeholder="운영 메모"></textarea>
-                  </div>
-                  <div class="span-3">
-                    <label for="goodsManageImageUrls" data-i18n="collectibles.manage.field.image_urls.label">이미지 URL (줄바꿈, 복수)</label>
-                    <textarea id="goodsManageImageUrls" data-i18n-placeholder="collectibles.manage.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
-                  </div>
+              <div class="result-head u-mb-0"><strong>운영 메모 / 이미지</strong></div>
+              <div class="ops-compact-form-grid u-mt-6">
+                <div class="span-2">
+                  <label for="goodsManageMemoryNote" data-i18n="collectibles.manage.field.memory_note.label">메모</label>
+                  <textarea id="goodsManageMemoryNote" data-i18n-placeholder="collectibles.manage.field.memory_note.placeholder" placeholder="운영 메모"></textarea>
                 </div>
-              </details>
+                <div class="span-2">
+                  <label for="goodsManageImageUrls" data-i18n="collectibles.manage.field.image_urls.label">이미지 URL (줄바꿈, 복수)</label>
+                  <textarea id="goodsManageImageUrls" data-i18n-placeholder="collectibles.manage.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
+                </div>
+              </div>
+            </section>
+
+            <section id="goodsManageActionsSection" class="goods-map-section">
+              <div class="ops-compact-form-actions">
+                <button id="goodsManageSaveBtn" class="btn" type="button" data-i18n="collectibles.manage.save">수집품 저장</button>
+                <button id="goodsManageDeleteBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.delete">수집품 삭제</button>
+              </div>
             </section>
           </section>
         </div>
