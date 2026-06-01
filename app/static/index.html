@@ -18058,6 +18058,9 @@
                             <option value="Reel-To-Reel">Reel-To-Reel</option>
                             <option value="CDr">CDr</option>
                             <option value="SACD">SACD</option>
+                            <option value="DVD">DVD</option>
+                            <option value="Blu-ray">Blu-ray</option>
+                            <option value="CD-ROM">CD-ROM</option>
                             <option value="All Media">All Media</option>
 
                           </select>
@@ -44254,25 +44257,30 @@ async function loadDashboardClimate() {
         const labelCatText = `${row.label_name || "-"} / ${row.catalog_no || "-"}${barcodeText ? ` (${barcodeText})` : ""}`;
         const sizeMismatchText = activeType === "PREFERRED_SIZE_MISMATCH"
           ? (function() {
-              // 패키징에서 필요 규격 도출 (SQL CASE와 동일 로직)
               const fmtRaw = String(row.format_items_json || "").toUpperCase();
               const media = String(row.media_type || "").trim();
               const sg = String(row.size_group || "LP").trim().toUpperCase();
-              let required = null;
-              let reason = "";
+              const CD_LIKE = ["CD","CDr","SACD","Digital","DVD","Blu-ray","CD-ROM"];
+              const VINYL_LIKE = ["Vinyl","LP",'7"','10"',"All Media"];
+              const isBoxSet = fmtRaw.includes("BOX SET");
+              const slotSg = String(row.slot_allowed_size_group || "").trim().toUpperCase() || "-";
+              const slotLabel = slotSg !== "-" ? dashboardSizeGroupLabel(slotSg) : "-";
+              if (isBoxSet) {
+                // Box Set: 기본 규격 또는 OVERSIZE 모두 허용
+                const base = CD_LIKE.includes(media) ? "STD" : media === "Cassette" ? "CASSETTE" : sg || "LP";
+                const baseLabel = dashboardSizeGroupLabel(base);
+                return `슬롯 ${slotLabel} → Box Set (${baseLabel} 또는 OVERSIZE 허용)`;
+              }
+              let required = null, reason = "";
               if (media === "Reel-To-Reel") { required = "REEL_TO_REEL"; }
               else if (media === "8-Track Cartridge") { required = "8TRACK"; }
-              else if (["CD","CDr","SACD"].includes(media) && (fmtRaw.includes("DIGIBOOK") || fmtRaw.includes("DVD SIZE") || fmtRaw.includes("BOX SET"))) {
-                required = "OVERSIZE";
-                reason = fmtRaw.includes("DIGIBOOK") ? "Digibook" : fmtRaw.includes("DVD SIZE") ? "DVD Size" : "Box Set";
-              } else if (["CD","CDr","SACD","Digital"].includes(media)) { required = "STD"; }
-              else if (["Vinyl","LP","Cassette","All Media"].includes(media) && fmtRaw.includes("BOX SET")) {
-                required = "OVERSIZE"; reason = "Box Set";
-              } else if (media === "Cassette") { required = "CASSETTE"; }
-              else if (["Vinyl","LP",'7"','10"',"All Media"].includes(media)) { required = sg || "LP"; }
-              const slotSg = String(row.slot_allowed_size_group || "").trim().toUpperCase() || "-";
+              else if (media === "Cassette") { required = "CASSETTE"; }
+              else if (CD_LIKE.includes(media)) {
+                if (fmtRaw.includes("DIGIBOOK")) { required = "OVERSIZE"; reason = "Digibook"; }
+                else if (fmtRaw.includes("DVD SIZE")) { required = "OVERSIZE"; reason = "DVD Size"; }
+                else { required = "STD"; }
+              } else if (VINYL_LIKE.includes(media)) { required = sg || "LP"; }
               const reqLabel = required ? dashboardSizeGroupLabel(required) : "-";
-              const slotLabel = slotSg !== "-" ? dashboardSizeGroupLabel(slotSg) : "-";
               const reasonSuffix = reason ? ` (${reason})` : "";
               return `슬롯 ${slotLabel} → 필요 ${reqLabel}${reasonSuffix}`;
             })()

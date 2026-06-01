@@ -48,6 +48,7 @@ from typing import Any
 
 from app.db import (  # noqa: E402  — package surface
     DASHBOARD_MOVE_WINDOW_DAYS,
+    slot_size_ok_sql,
     _build_label_id,
     _normalize_cabinet_sort_policy_value,
     _normalize_domain_code_value,
@@ -196,52 +197,8 @@ def get_collection_dashboard() -> dict[str, Any]:
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
                    AND oi.storage_slot_id IS NOT NULL
-                   AND mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> ''
-                   AND (
-      CASE
-        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
-        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
-        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
-             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
-        ) THEN 'OVERSIZE'
-        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
-        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
-             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
-        ) THEN 'OVERSIZE'
-        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
-        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
-          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
-        ELSE NULL
-      END
-                   ) IS NOT NULL
-                   AND UPPER(COALESCE(ss.allowed_size_group, '')) <> (
-      CASE
-        WHEN mid.media_type = 'Reel-To-Reel' THEN 'REEL_TO_REEL'
-        WHEN mid.media_type = '8-Track Cartridge' THEN '8TRACK'
-        WHEN mid.media_type IN ('CD', 'CDr', 'SACD') AND (
-             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DIGIBOOK%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%DVD SIZE%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
-        ) THEN 'OVERSIZE'
-        WHEN mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') THEN 'STD'
-        WHEN mid.media_type IN ('Vinyl', 'LP', 'Cassette', 'All Media') AND (
-             UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOX SET%'
-          OR UPPER(COALESCE(mid.format_items_json, '')) LIKE '%BOXSET%'
-        ) THEN 'OVERSIZE'
-        WHEN mid.media_type = 'Cassette' THEN 'CASSETTE'
-        WHEN mid.media_type IN ('Vinyl', 'LP', '7"', '10"', 'All Media')
-          THEN COALESCE(NULLIF(TRIM(oi.size_group), ''), 'LP')
-        ELSE NULL
-      END
-                   )
-                  THEN 1
-                  ELSE 0
-                END
+                   AND ({slot_size_ok_sql()}) = 0
+                  THEN 1 ELSE 0 END
               ) AS category_size_mismatch_items,
               SUM(
                 CASE

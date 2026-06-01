@@ -92,6 +92,88 @@ def _size_group_check_sql() -> str:
     return "', '".join(SIZE_GROUP_CODES)
 
 
+# CD 계열 미디어 타입 (DVD, Blu-ray, CD-ROM 포함)
+CD_LIKE_MEDIA_TYPES = ("CD", "CDr", "SACD", "Digital", "DVD", "Blu-ray", "CD-ROM")
+CD_LIKE_MEDIA_SQL = ", ".join(f"'{m}'" for m in CD_LIKE_MEDIA_TYPES)
+
+VINYL_LIKE_MEDIA_TYPES = ("Vinyl", "LP", '7"', '10"', "All Media")
+VINYL_LIKE_MEDIA_SQL = ", ".join(f"'{m}'" for m in VINYL_LIKE_MEDIA_TYPES)
+
+
+def slot_size_ok_sql() -> str:
+    """
+    슬롯 규격 판정 SQL (1=OK, 0=MISMATCH).
+    mid.media_type + mid.format_items_json + oi.size_group vs ss.allowed_size_group 비교.
+
+    규칙:
+      - Box Set (format_items_json에 'Box Set' name): 기본 규격 또는 OVERSIZE 허용
+      - CD 계열(CD/CDr/SACD/Digital/DVD/Blu-ray/CD-ROM):
+          Digibook 또는 DVD Size 패키징 → OVERSIZE 필요
+          그 외 → STD
+      - Vinyl 계열(Vinyl/LP/7"/10"/All Media): oi.size_group 기준 (LP/LP7/LP10)
+      - Cassette → CASSETTE
+      - 8-Track Cartridge → 8TRACK
+      - Reel-To-Reel → REEL_TO_REEL
+      - 미지정/기타 → 판정 제외 (1 반환)
+    """
+    cd_sql = CD_LIKE_MEDIA_SQL
+    vinyl_sql = VINYL_LIKE_MEDIA_SQL
+    return f"""
+    CASE
+      WHEN mid.media_type IS NULL OR TRIM(mid.media_type) = '' THEN 1
+
+      -- Box Set: 기본 규격 또는 OVERSIZE 모두 허용
+      WHEN UPPER(COALESCE(mid.format_items_json,'')) LIKE '%"BOX SET"%'
+        OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%BOX SET%'
+        THEN CASE WHEN
+          UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'OVERSIZE'
+          OR (mid.media_type IN ({cd_sql})
+              AND UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'STD')
+          OR (mid.media_type = 'Cassette'
+              AND UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'CASSETTE')
+          OR (mid.media_type IN ({vinyl_sql})
+              AND UPPER(TRIM(COALESCE(ss.allowed_size_group,'')))
+                  = UPPER(COALESCE(NULLIF(TRIM(oi.size_group),''),'LP')))
+          THEN 1 ELSE 0 END
+
+      -- Reel-To-Reel
+      WHEN mid.media_type = 'Reel-To-Reel'
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'REEL_TO_REEL'
+             THEN 1 ELSE 0 END
+
+      -- 8-Track Cartridge
+      WHEN mid.media_type = '8-Track Cartridge'
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = '8TRACK'
+             THEN 1 ELSE 0 END
+
+      -- Cassette
+      WHEN mid.media_type = 'Cassette'
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'CASSETTE'
+             THEN 1 ELSE 0 END
+
+      -- CD 계열 (DVD, Blu-ray, CD-ROM 포함)
+      WHEN mid.media_type IN ({cd_sql})
+        THEN CASE
+          WHEN UPPER(COALESCE(mid.format_items_json,'')) LIKE '%DIGIBOOK%'
+            OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%DVD SIZE%'
+            THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'OVERSIZE'
+                 THEN 1 ELSE 0 END
+          ELSE
+            CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'STD'
+                 THEN 1 ELSE 0 END
+          END
+
+      -- Vinyl 계열
+      WHEN mid.media_type IN ({vinyl_sql})
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,'')))
+                      = UPPER(COALESCE(NULLIF(TRIM(oi.size_group),''),'LP'))
+             THEN 1 ELSE 0 END
+
+      ELSE 1
+    END
+    """
+
+
 def _normalize_domain_code_sql(expr: str) -> str:
     return f"""
     CASE UPPER(TRIM(COALESCE({expr}, '')))
@@ -1030,6 +1112,11 @@ def init_db() -> None:
               label_items_json TEXT,
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
+              disc_type TEXT,
+              package_contents TEXT,
+              is_limited_edition INTEGER,
+              edition_number TEXT,
+              local_image_items_json TEXT,
               FOREIGN KEY (owned_item_id) REFERENCES owned_item(id) ON DELETE CASCADE
             );
 
