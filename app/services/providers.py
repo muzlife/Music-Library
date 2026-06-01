@@ -3012,9 +3012,15 @@ def _parse_maniadb_release_legend(
 ) -> dict[str, Any] | None:
     sid_match = re.search(r"(?:[?&]|&amp;)s=(\d+)", legend_html, re.IGNORECASE)
     fmt_match = re.search(r'alt="([^"]+)"', legend_html, re.IGNORECASE)
-    clean = _clean_html_text(legend_html)
+    # <img alt="..."> 텍스트를 보존한 뒤 HTML 정리
+    legend_with_alt = re.sub(r'<img[^>]+alt="([^"]+)"[^>]*/?>',
+                             lambda m: m.group(1), legend_html, flags=re.IGNORECASE)
+    clean = _clean_html_text(legend_with_alt)
     chunks = [c.strip() for c in clean.split("::") if c.strip()]
-    if len(chunks) < 2:
+    # variant 링크(s=N)가 있으면 유효한 release 블록 — chunks 1개여도 허용
+    if not chunks:
+        return None
+    if len(chunks) < 2 and not re.search(r"(?:[?&]|&amp;)s=\d+", legend_html):
         return None
 
     date_token = chunks[0]
@@ -3074,11 +3080,30 @@ def _parse_maniadb_release_legend(
                 cover_image_url = guessed
                 image_items = [{"type": "앞면", "uri": guessed, "uri150": guessed}]
 
+        # class="tracks" 또는 class="trackno"/"song" 구조 모두 처리
         track_block_match = re.search(r'<td\s+class="tracks">(.*?)</td>', block_html, re.IGNORECASE | re.DOTALL)
         if track_block_match:
             track_html = track_block_match.group(1)
             tokens = re.findall(r"\d+\.\s*(?:<[^>]+>\s*)*([^/<]+)", track_html)
             track_list = [t for t in (_clean_html_text(tok) for tok in tokens) if t]
+        else:
+            # ManiaDB 신형 구조: <td class="trackno">N.</td> ... <td class="song">곡명</td>
+            song_cells = re.findall(
+                r'<td[^>]+class="song"[^>]*>(.*?)</td>',
+                block_html, re.IGNORECASE | re.DOTALL,
+            )
+            parsed_titles: list[str] = []
+            for cell in song_cells:
+                # <div class="song"> 안의 <a> 링크 텍스트 추출
+                a_match = re.search(r'<a[^>]*>(.*?)</a>', cell, re.IGNORECASE | re.DOTALL)
+                raw = a_match.group(1) if a_match else cell
+                # &nbsp; / 이미지 태그 제거
+                raw = re.sub(r'&nbsp;', ' ', raw, flags=re.IGNORECASE)
+                raw = re.sub(r'<img[^>]*/>', '', raw, flags=re.IGNORECASE)
+                title = _clean_html_text(raw).strip()
+                if title:
+                    parsed_titles.append(title)
+            track_list = parsed_titles
     else:
         # block_html 없는 경우: variant 고유 URL만 시도
         guessed = _maniadb_variant_cover_url(album_id, variant_seq, "f")
