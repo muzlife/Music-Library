@@ -1163,7 +1163,7 @@ def collect_review_from_url(
     from ..security import _require_admin_request
     _require_admin_request(request)
     from ..services.providers import fetch_review_from_url
-    from ..services.review_pipeline import summarize_to_korean
+    from ..services.review_pipeline import translate_to_korean_with_deepl
     from ..db.album_master_review import save_review
     from ..db.connection import get_conn
     import urllib.parse
@@ -1183,18 +1183,19 @@ def collect_review_from_url(
     if not raw_text:
         raise HTTPException(status_code=422, detail="Could not extract text from URL")
 
+    domain = urllib.parse.urlparse(url).netloc or "URL"
+    source_base = domain.upper().replace("WWW.", "").replace(".", "_")[:30]
     try:
-        korean_summary = summarize_to_korean(raw_text)
-        domain = urllib.parse.urlparse(url).netloc or "URL"
-        source = domain.upper().replace("WWW.", "").replace(".", "_")[:30]
+        review_text = translate_to_korean_with_deepl(raw_text)
+        source = source_base + "_KO"
     except Exception:
-        korean_summary = raw_text
-        source = "URL_RAW"
+        review_text = raw_text
+        source = source_base + "_RAW"
 
     with get_conn() as conn:
-        save_review(conn, album_master_id, korean_summary, source, url)
+        save_review(conn, album_master_id, review_text, source, url)
 
-    return {"ok": True, "album_master_id": album_master_id, "source": source}
+    return {"ok": True, "album_master_id": album_master_id, "source": source, "review_text": review_text}
 
 
 class _ReviewManualBody(BaseModel):
