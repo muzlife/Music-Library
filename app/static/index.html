@@ -4243,35 +4243,9 @@
       padding: 8px 12px 12px;
       border-top: 1px solid var(--line);
     }
-    .ops-ctx-review {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-top: 8px;
-    }
-    .ops-ctx-review-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--muted, #64748b);
-      padding: 7px 12px 0;
-    }
-    .ops-ctx-review-text {
-      font-size: 0.78rem;
-      line-height: 1.55;
-      color: var(--ink);
-      padding: 4px 12px 8px;
+    .ops-album-review-card .ops-artist-context-summary {
       white-space: pre-wrap;
       word-break: break-word;
-    }
-    .ops-ctx-review-toggle {
-      margin: 0 12px 8px;
-    }
-    .ops-ctx-review-source {
-      font-size: 0.7rem;
-      color: var(--muted, #94a3b8);
-      padding: 0 12px 8px;
-      border-top: 1px solid var(--line);
-      padding-top: 6px;
     }
 
     .operator-weather-head {
@@ -22260,6 +22234,8 @@
         "media.search.context.subtitle": "상품 preview를 선택하면 현재 위치와 아티스트 컨텍스트를 여기서 확인하고 관리 화면으로 이어갈 수 있습니다.",
         "media.search.context.review_label": "앨범 리뷰",
         "media.search.context.review_source_label": "출처",
+        "media.search.context.review_expand": "펼치기 ▼",
+        "media.search.context.review_collapse": "접기 ▲",
         "media.search.subtitle": "리스트는 마스터 기준입니다. 결과를 선택하면 보유 상품과 상세 수정 화면으로 이동합니다.",
         "media.search.section.owned_items": "보유 상품 검색",
         "media.search.field.artist.label": "아티스트명",
@@ -24963,6 +24939,8 @@
         "media.search.context.subtitle": "Select a member-item preview to inspect its current location, artist context, and jump into manage.",
         "media.search.context.review_label": "Album review",
         "media.search.context.review_source_label": "Source",
+        "media.search.context.review_expand": "Expand ▼",
+        "media.search.context.review_collapse": "Collapse ▲",
         "media.search.subtitle": "This list is master-first. Choose a result to continue into linked items and detailed editing.",
         "media.search.section.owned_items": "Owned Item Search",
         "media.search.field.artist.label": "Artist",
@@ -27680,6 +27658,8 @@
         "media.search.context.subtitle": "商品 preview を選ぶと、現在位置とアーティストコンテキストを確認し、そのまま管理へ進めます。",
         "media.search.context.review_label": "アルバムレビュー",
         "media.search.context.review_source_label": "出典",
+        "media.search.context.review_expand": "展開 ▼",
+        "media.search.context.review_collapse": "閉じる ▲",
         "media.search.subtitle": "リストはマスター基準です。結果を選ぶと連結商品と詳細編集へ続きます。",
         "media.search.section.owned_items": "所蔵商品検索",
         "media.search.field.artist.label": "アーティスト名",
@@ -33940,20 +33920,35 @@
       const TRUNCATE_LEN = 150;
       const needsTruncate = text.length > TRUNCATE_LEN;
       const previewText = needsTruncate ? text.slice(0, TRUNCATE_LEN) + "…" : text;
-      const sectionId = "albumReviewSection_" + String(item?.owned_item_id || item?.id || 0);
+      const cardId = "albumReviewCard_" + String(item?.owned_item_id || item?.id || 0);
       const textId = "albumReviewText_" + String(item?.owned_item_id || item?.id || 0);
       const btnId = "albumReviewToggleBtn_" + String(item?.owned_item_id || item?.id || 0);
+      const expandLabel = escapeHtml(t("media.search.context.review_expand") || "펼치기 ▼");
+      const collapseLabel = escapeHtml(t("media.search.context.review_collapse") || "접기 ▲");
 
       return `
-        <div class="ops-ctx-review" id="${escapeHtml(sectionId)}">
-          <div class="ops-ctx-review-label">${escapeHtml(t("media.search.context.review_label") || "앨범 리뷰")}</div>
-          <div class="ops-ctx-review-text" id="${escapeHtml(textId)}">${escapeHtml(previewText)}</div>
-          ${needsTruncate ? `<button class="btn ghost tiny ops-ctx-review-toggle" type="button" id="${escapeHtml(btnId)}"
-            data-review-full="${escapeHtml(text)}"
-            data-review-preview="${escapeHtml(previewText)}"
-            data-expanded="false">펼치기 ▼</button>` : ""}
-          ${source ? `<div class="ops-ctx-review-source">${escapeHtml(t("media.search.context.review_source_label") || "출처")}: ${escapeHtml(source)}</div>` : ""}
-        </div>
+        <section id="${escapeHtml(cardId)}" class="operator-mini-card ops-album-review-card">
+          <div class="ops-artist-context-head">
+            <strong>${escapeHtml(t("media.search.context.review_label") || "앨범 리뷰")}</strong>
+          </div>
+          <div class="ops-artist-context-summary-wrap">
+            <p class="ops-artist-context-summary" id="${escapeHtml(textId)}">${escapeHtml(previewText)}</p>
+            ${needsTruncate ? `
+              <button
+                type="button"
+                class="ops-artist-context-toggle"
+                id="${escapeHtml(btnId)}"
+                data-review-full="${escapeHtml(text)}"
+                data-review-preview="${escapeHtml(previewText)}"
+                data-show-label="${expandLabel}"
+                data-hide-label="${collapseLabel}"
+                data-expanded="false"
+                aria-expanded="false"
+              >${expandLabel}</button>
+            ` : ""}
+          </div>
+          ${source ? `<div class="ops-artist-context-meta"><span class="ops-artist-context-pill"><strong>${escapeHtml(t("media.search.context.review_source_label") || "출처")}</strong>${escapeHtml(source)}</span></div>` : ""}
+        </section>
       `;
     }
 
@@ -34496,8 +34491,8 @@
         ${spotifyAlbumId ? `<div class="ops-ctx-spotify-wrap">${_spotifyEmbedHtml(spotifyAlbumId, 352)}</div>` : ""}
         ${renderOpsPluginSection(`
           ${renderOpsArtistContextCard(item, { cardId: "mediaSearchArtistContextCard" })}
+          ${renderAlbumReviewSection(item)}
         `)}
-        ${renderAlbumReviewSection(item)}
         <details class="ops-ctx-location-details${canOpenCurrent ? "" : " ops-ctx-location-details--no-slot"}">
           <summary class="ops-ctx-location-summary">
             <span class="ops-ctx-location-label">${escapeHtml(t("operator.context.field.current"))}</span>
@@ -34525,19 +34520,21 @@
       if (searchPanel) searchPanel.hidden = true;
 
       // 앨범 리뷰 펼치기/접기
-      root.querySelectorAll(".ops-ctx-review-toggle").forEach(function(btn) {
+      root.querySelectorAll(".ops-album-review-card .ops-artist-context-toggle").forEach(function(btn) {
         btn.addEventListener("click", function() {
           const expanded = btn.dataset.expanded === "true";
           const textEl = document.getElementById(btn.id.replace("albumReviewToggleBtn_", "albumReviewText_"));
           if (!textEl) return;
           if (expanded) {
             textEl.textContent = btn.dataset.reviewPreview;
-            btn.textContent = "펼치기 ▼";
+            btn.textContent = btn.dataset.showLabel || "펼치기 ▼";
             btn.dataset.expanded = "false";
+            btn.setAttribute("aria-expanded", "false");
           } else {
             textEl.textContent = btn.dataset.reviewFull;
-            btn.textContent = "접기 ▲";
+            btn.textContent = btn.dataset.hideLabel || "접기 ▲";
             btn.dataset.expanded = "true";
+            btn.setAttribute("aria-expanded", "true");
           }
         });
       });
