@@ -1003,16 +1003,66 @@ def spotify_play_master(
 
 # ── Review collection ──────────────────────────────────────────────
 
+@router.post("/album-masters/review/batch-preview")
+def batch_review_preview(
+    request: Request,
+    limit: int = Query(default=5, ge=1, le=20),
+) -> dict[str, Any]:
+    """Preview DeepL translation for N masters without review (no DB write). ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.providers import fetch_wikipedia_album_review
+    from ..services.review_pipeline import translate_to_korean_with_deepl
+    from ..db.album_master_review import get_masters_without_review
+    from ..db.connection import get_conn
+
+    with get_conn() as conn:
+        masters = get_masters_without_review(conn, limit=limit)
+
+    results = []
+    for master in masters:
+        mid = master["id"]
+        artist = str(master.get("artist_or_brand") or "").strip()
+        title = str(master.get("title") or "").strip()
+        entry: dict[str, Any] = {
+            "master_id": mid,
+            "artist": artist,
+            "title": title,
+            "raw_text": None,
+            "translated_text": None,
+            "review_url": None,
+            "error": None,
+        }
+        if not artist or not title:
+            entry["error"] = "missing artist or title"
+            results.append(entry)
+            continue
+        raw = fetch_wikipedia_album_review(artist, title)
+        if not raw:
+            entry["error"] = "no Wikipedia page found"
+            results.append(entry)
+            continue
+        entry["raw_text"] = raw["review_text"]
+        entry["review_url"] = raw.get("review_url")
+        try:
+            entry["translated_text"] = translate_to_korean_with_deepl(raw["review_text"])
+        except Exception as e:
+            entry["error"] = str(e)
+        results.append(entry)
+
+    return {"ok": True, "limit": limit, "results": results}
+
+
 @router.post("/album-masters/review/batch")
 def batch_collect_reviews(
     request: Request,
     limit: int = Query(default=50, ge=1, le=200),
 ) -> dict[str, Any]:
-    """Batch collect Wikipedia reviews for masters without review. ADMIN only."""
+    """Batch collect Wikipedia reviews with DeepL translation. ADMIN only."""
     from ..security import _require_admin_request
     _require_admin_request(request)
     from ..services.providers import fetch_wikipedia_album_review
-    from ..services.review_pipeline import summarize_to_korean
+    from ..services.review_pipeline import translate_to_korean_with_deepl
     from ..db.album_master_review import get_masters_without_review, save_review, count_masters_without_review
     from ..db.connection import get_conn
 
@@ -1033,15 +1083,13 @@ def batch_collect_reviews(
             failed += 1
             continue
         try:
-            korean_summary = summarize_to_korean(raw["review_text"])
-            source = raw["review_source"]
-            url = raw.get("review_url")
+            translated = translate_to_korean_with_deepl(raw["review_text"])
+            source = "WIKIPEDIA_KO"
         except Exception:
-            korean_summary = (raw["review_text"] or "")[:300]
+            translated = raw["review_text"] or ""
             source = "WIKIPEDIA_RAW"
-            url = raw.get("review_url")
         with get_conn() as conn:
-            save_review(conn, mid, korean_summary, source, url)
+            save_review(conn, mid, translated, source, raw.get("review_url"))
         succeeded += 1
 
     with get_conn() as conn:
@@ -1062,7 +1110,7 @@ def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any
     from ..security import _require_admin_request
     _require_admin_request(request)
     from ..services.providers import fetch_wikipedia_album_review
-    from ..services.review_pipeline import summarize_to_korean
+    from ..services.review_pipeline import translate_to_korean_with_deepl
     from ..db.album_master_review import save_review
     from ..db.connection import get_conn
 
@@ -1082,20 +1130,20 @@ def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any
         raise HTTPException(status_code=404, detail="No Wikipedia album page found")
 
     try:
-        korean_summary = summarize_to_korean(raw["review_text"])
-        source = raw["review_source"]
+        review_text = translate_to_korean_with_deepl(raw["review_text"])
+        source = "WIKIPEDIA_KO"
     except Exception:
-        korean_summary = (raw["review_text"] or "")[:300]
+        review_text = raw["review_text"] or ""
         source = "WIKIPEDIA_RAW"
 
     with get_conn() as conn:
-        save_review(conn, album_master_id, korean_summary, source, raw.get("review_url"))
+        save_review(conn, album_master_id, review_text, source, raw.get("review_url"))
 
     return {
         "ok": True,
         "album_master_id": album_master_id,
         "source": source,
-        "review_text": korean_summary,
+        "review_text": review_text,
         "review_url": raw.get("review_url"),
     }
 
@@ -1137,7 +1185,7 @@ def collect_review_from_url(
         domain = urllib.parse.urlparse(url).netloc or "URL"
         source = domain.upper().replace("WWW.", "").replace(".", "_")[:30]
     except Exception:
-        korean_summary = raw_text[:300]
+        korean_summary = raw_text
         source = "URL_RAW"
 
     with get_conn() as conn:

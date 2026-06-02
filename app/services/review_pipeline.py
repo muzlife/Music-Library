@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import httpx
+
+from ..config import get_settings
 from .deepseek_client import chat_complete
 
 _SUMMARIZE_SYSTEM = (
@@ -33,10 +36,54 @@ def _is_korean_text(text: str) -> bool:
     return (korean_chars / len(text)) >= 0.15
 
 
+def translate_to_korean_with_deepl(text: str) -> str:
+    """Translate text to Korean using DeepL. Returns translated text.
+
+    Raises RuntimeError if DeepL is not configured.
+    Raises httpx.HTTPError on API failure.
+    """
+    content = str(text or "").strip()
+    if not content:
+        return content
+
+    settings = get_settings()
+    auth_key = str(settings.deepl_auth_key or "").strip()
+    base_url = str(settings.deepl_base_url or "").strip()
+    if not auth_key:
+        raise RuntimeError("DEEPL_AUTH_KEY not configured")
+
+    api_root = "https://api-free.deepl.com" if auth_key.endswith(":fx") else "https://api.deepl.com"
+    if base_url:
+        from urllib.parse import urlparse
+        parsed = urlparse(base_url)
+        if str(parsed.hostname or "").lower() in {"api-free.deepl.com", "api.deepl.com"}:
+            api_root = f"{parsed.scheme or 'https'}://{parsed.hostname}"
+
+    response = httpx.post(
+        f"{api_root}/v2/translate",
+        headers={
+            "Authorization": f"DeepL-Auth-Key {auth_key}",
+            "User-Agent": "hahahoho-library/0.1 (review translation)",
+        },
+        json={"text": [content], "target_lang": "KO"},
+        timeout=30.0,
+    )
+    response.raise_for_status()
+    payload = response.json() or {}
+    translations = payload.get("translations")
+    if not isinstance(translations, list) or not translations:
+        raise RuntimeError("DeepL returned empty translations")
+    translated = str((translations[0] or {}).get("text") or "").strip()
+    if not translated:
+        raise RuntimeError("DeepL returned empty text")
+    return translated
+
+
 def summarize_to_korean(text: str) -> str:
     """Summarize text to Korean within 300 chars using DeepSeek.
 
-    Falls back to raw text[:300] if DeepSeek fails.
+    Raises RuntimeError if DeepSeek is not configured so callers can
+    fall back to saving raw text.  Other API errors fall back to raw text.
     """
     truncated = text[:_MAX_INPUT]
     prompt_template = _SUMMARIZE_PROMPT_KO if _is_korean_text(truncated) else _SUMMARIZE_PROMPT_EN
@@ -46,5 +93,7 @@ def summarize_to_korean(text: str) -> str:
             system=_SUMMARIZE_SYSTEM,
         )
         return result.strip()[:_MAX_RESULT * 2] or text[:_MAX_RESULT]
+    except RuntimeError:
+        raise
     except Exception:
         return text[:_MAX_RESULT]

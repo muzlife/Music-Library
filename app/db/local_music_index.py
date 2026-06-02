@@ -165,5 +165,52 @@ def get_index_stats() -> dict[str, Any]:
     }
 
 
+def get_local_track_by_path(file_path: str) -> dict[str, Any] | None:
+    """Get metadata for a local track from the index. Falls back to dynamic reading if missing in DB."""
+    with get_conn() as conn:
+        _ensure_index_table(conn)
+        row = conn.execute(
+            "SELECT * FROM local_music_index WHERE file_path = ?",
+            (file_path,),
+        ).fetchone()
+    if row:
+        return dict(row)
+    
+    # Fallback to dynamic parsing
+    if os.path.isfile(file_path):
+        tags = _read_tags(file_path)
+        if not tags:
+            # Fallback parsing from filename
+            name = Path(file_path).stem
+            artist = ""
+            title = name
+            if " - " in name:
+                parts = name.split(" - ", 1)
+                artist = parts[0].strip()
+                title = parts[1].strip()
+            tags = {
+                "title": title,
+                "artist": artist,
+                "album": str(Path(file_path).parent.name),
+                "genre": "",
+                "year": "",
+                "track_number": 0,
+                "duration_seconds": 0.0,
+            }
+        # Check has_cover
+        has_cover = 0
+        try:
+            from tinytag import TinyTag
+            ttag = TinyTag.get(file_path, image=True)
+            if ttag.get_image():
+                has_cover = 1
+        except Exception:
+            pass
+        tags["has_cover"] = has_cover
+        tags["file_path"] = file_path
+        return tags
+    return None
+
+
 # Re-export
-__all__ = ["_ensure_index_table", "rebuild_index", "search_local_index", "get_index_stats"]
+__all__ = ["_ensure_index_table", "rebuild_index", "search_local_index", "get_index_stats", "get_local_track_by_path"]

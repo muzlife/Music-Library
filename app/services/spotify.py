@@ -16,6 +16,14 @@ from ..config import get_settings
 logger = logging.getLogger(__name__)
 
 
+import time
+
+_PLAYBACK_CACHE = {
+    "timestamp": 0.0,
+    "value": None,
+}
+
+
 class SpotifyService:
     def __init__(self) -> None:
         settings = get_settings()
@@ -103,6 +111,30 @@ class SpotifyService:
             })
         return items
 
+    def search_albums_sync(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
+        limit = min(limit, 10)
+        sp = self._ensure_client_cc()
+        if sp is None:
+            return []
+        try:
+            results = sp.search(q=query, type="album", limit=limit)
+        except Exception:
+            logger.exception("spotify album search failed")
+            return []
+        items: list[dict[str, Any]] = []
+        for item in (results.get("albums", {}).get("items") or []):
+            images = item.get("images") or []
+            items.append({
+                "spotify_album_id": item.get("id"),
+                "spotify_album_uri": item.get("uri"),
+                "name": item.get("name"),
+                "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
+                "release_date": item.get("release_date"),
+                "total_tracks": item.get("total_tracks", 0),
+                "image_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
+            })
+        return items
+
     def track_sync(self, track_id: str) -> dict[str, Any] | None:
         """Get a single track by ID (CC client)."""
         sp = self._ensure_client_cc()
@@ -172,19 +204,29 @@ class SpotifyService:
             return False
 
     def current_playback_sync(self) -> dict[str, Any] | None:
+        now = time.time()
+        if now - _PLAYBACK_CACHE["timestamp"] < 5.0:
+            return _PLAYBACK_CACHE["value"]
+
         sp = self._ensure_client()
         if sp is None:
+            _PLAYBACK_CACHE["timestamp"] = now
+            _PLAYBACK_CACHE["value"] = None
             return None
         try:
             pb = sp.current_playback()
         except Exception:
+            _PLAYBACK_CACHE["timestamp"] = now
+            _PLAYBACK_CACHE["value"] = None
             return None
         if not pb or not pb.get("is_playing"):
+            _PLAYBACK_CACHE["timestamp"] = now
+            _PLAYBACK_CACHE["value"] = None
             return None
         item = pb.get("item") or {}
         album = item.get("album", {})
         images = album.get("images") or []
-        return {
+        val = {
             "spotify_track_id": item.get("id"),
             "title": item.get("name"),
             "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
@@ -195,3 +237,6 @@ class SpotifyService:
             "track_uri": item.get("uri"),
             "is_playing": True,
         }
+        _PLAYBACK_CACHE["timestamp"] = now
+        _PLAYBACK_CACHE["value"] = val
+        return val

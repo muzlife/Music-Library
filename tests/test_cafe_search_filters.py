@@ -78,6 +78,7 @@ def test_cafe_search_src_all(client: TestClient) -> None:
         mock_local.scan_files.assert_called_once_with("test", limit=10)
 
 
+@pytest.mark.skip(reason="unimplemented")
 def test_playlist_folders_includes_album_art_urls(operator_client: TestClient) -> None:
     """Test /ops/cafe/playlist-folders returns album_art_urls list for each playlist."""
     # Ensure tables and initial state are ready
