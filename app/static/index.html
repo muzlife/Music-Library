@@ -34658,10 +34658,14 @@
       // Spotify: innerHTML 렌더 전에 미리 조회
       const oid = Number(item?.owned_item_id || item?.id || 0);
       let spotifyAlbumId = null;
+      let masterIdForReview = 0;
       for (const row of Array.isArray(homeSearchResults) ? homeSearchResults : []) {
         const members = Array.isArray(row?.member_items_preview) ? row.member_items_preview : [];
         if (members.some(m => Number(m?.owned_item_id || m?.id || 0) === oid)) {
           spotifyAlbumId = row?.spotify_album_id || null;
+          masterIdForReview = Number(row?.id || 0);
+          // Merge fresh review_text if not in cached item
+          if (!item.review_text && row.review_text) item = { ...item, review_text: row.review_text, review_source: row.review_source };
           break;
         }
       }
@@ -34688,7 +34692,7 @@
         ${spotifyAlbumId ? `<div class="ops-ctx-spotify-wrap">${_spotifyEmbedHtml(spotifyAlbumId, 352)}</div>` : ""}
         ${renderOpsPluginSection(`
           ${renderOpsArtistContextCard(item, { cardId: "mediaSearchArtistContextCard" })}
-          ${renderAlbumReviewSection(item)}
+          <div id="mediaSearchReviewSection">${renderAlbumReviewSection(item)}</div>
         `)}
         <details class="ops-ctx-location-details${canOpenCurrent ? "" : " ops-ctx-location-details--no-slot"}">
           <summary class="ops-ctx-location-summary">
@@ -34715,6 +34719,37 @@
       // 별도 Spotify 패널 숨김 (인라인 통합)
       const searchPanel = document.getElementById('searchSpotifyPanel');
       if (searchPanel) searchPanel.hidden = true;
+
+      // 캐시에 review_text가 없으면 마스터 API로 최신 데이터 가져와서 갱신
+      if (!item.review_text && masterIdForReview > 0) {
+        fetchWithRetry(`/album-masters/${masterIdForReview}`).then((res) => res.json()).then((masterData) => {
+          if (masterData?.review_text) {
+            const reviewEl = document.getElementById("mediaSearchReviewSection");
+            if (reviewEl) {
+              reviewEl.innerHTML = renderAlbumReviewSection({ ...item, review_text: masterData.review_text, review_source: masterData.review_source });
+              reviewEl.querySelectorAll(".ops-artist-context-toggle").forEach(function(btn) {
+                btn.addEventListener("click", function() {
+                  const expanded = this.getAttribute("aria-expanded") === "true";
+                  const textId = this.id.replace("albumReviewToggleBtn_", "albumReviewText_");
+                  const textEl = document.getElementById(textId);
+                  if (!textEl) return;
+                  if (expanded) {
+                    textEl.textContent = this.getAttribute("data-review-preview") || "";
+                    this.textContent = this.getAttribute("data-show-label") || "펼치기 ▼";
+                    this.setAttribute("aria-expanded", "false");
+                    this.setAttribute("data-expanded", "false");
+                  } else {
+                    textEl.textContent = this.getAttribute("data-review-full") || "";
+                    this.textContent = this.getAttribute("data-hide-label") || "접기 ▲";
+                    this.setAttribute("aria-expanded", "true");
+                    this.setAttribute("data-expanded", "true");
+                  }
+                });
+              });
+            }
+          }
+        }).catch(() => {});
+      }
 
       // 앨범 리뷰 펼치기/접기
       root.querySelectorAll(".ops-album-review-card .ops-artist-context-toggle").forEach(function(btn) {
