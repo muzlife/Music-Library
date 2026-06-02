@@ -2080,8 +2080,7 @@
     }
 
     #homeSection1MasterInfo,
-    #homeSection2ProductInfo,
-    #homeSection3MasterDelete {
+    #homeSection2ProductInfo {
       margin-top: 12px;
       display: grid;
       gap: 12px;
@@ -2131,6 +2130,46 @@
       width: 100%;
       border-radius: 12px;
       border: none;
+    }
+    /* 관리 패널 섹션 스택 */
+    .manage-sections-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 8px;
+    }
+    .manage-section-details {
+      border-top: 1px solid var(--line);
+    }
+    .manage-section-details:last-child {
+      border-bottom: 1px solid var(--line);
+    }
+    .manage-section-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      user-select: none;
+      list-style: none;
+    }
+    .manage-section-summary::-webkit-details-marker { display: none; }
+    .manage-section-summary::marker { display: none; }
+    .manage-section-summary::before {
+      content: "▶";
+      font-size: 9px;
+      margin-right: 6px;
+      color: var(--muted);
+      transition: transform 0.15s;
+    }
+    .manage-section-details[open] > .manage-section-summary::before {
+      content: "▼";
+    }
+    .manage-section-details > .manage-section-body {
+      padding: 8px 0 16px 0;
     }
     .home-unified-edit-details {
       margin-top: 10px;
@@ -11617,42 +11656,6 @@
       color: var(--admin-console-text);
     }
 
-    /* 2열 배치 레이아웃 */
-    .home-editor-layout-wrapper {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      margin-top: 10px;
-    }
-    .home-editor-left-pane {
-      width: 280px;
-      flex-shrink: 0;
-      position: sticky;
-      top: 8px;
-      overflow-y: auto;
-      max-height: calc(100vh - 120px);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .home-editor-right-pane {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    @media (max-width: 768px) {
-      .home-editor-layout-wrapper {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .home-editor-left-pane {
-        width: 100%;
-        position: static;
-        max-height: none;
-      }
-    }
 
     #tabManage .ops-compact-extra-fields > summary::before {
       color: var(--admin-console-text-meta);
