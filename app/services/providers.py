@@ -1444,25 +1444,39 @@ def _infer_format_from_text(format_text: str | None) -> str | None:
 # --- Wikipedia album review ---
 
 def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | None] | None:
-    """Fetch album review extract from Wikipedia API."""
+    """Fetch album page extract from Wikipedia API.
+
+    Searches for the album page specifically — not the artist page.
+    Returns None if no album-titled page is found in the top 5 results.
+    """
     import urllib.request, urllib.parse, json as _json
-    query = f"{artist} {title} album"
+    query = f"{title} {artist} album"
     params = urllib.parse.urlencode({
         "action": "query",
         "format": "json",
         "list": "search",
         "srsearch": query,
-        "srlimit": "3",
+        "srlimit": "5",
         "srprop": "snippet",
     })
     try:
-        with urllib.request.urlopen(f"https://en.wikipedia.org/w/api.php?{params}", timeout=10) as resp:
+        req = urllib.request.Request(
+            f"https://en.wikipedia.org/w/api.php?{params}",
+            headers={"User-Agent": "hahahoho-library/0.1"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
             data = _json.loads(resp.read())
-        pages = (data.get("query", {}).get("search") or [])
+        pages = data.get("query", {}).get("search") or []
         if not pages:
             return None
-        page_title = pages[0]["title"]
-        # Get extract
+        title_lower = title.lower()
+        page_title = None
+        for page in pages:
+            if title_lower in page["title"].lower():
+                page_title = page["title"]
+                break
+        if not page_title:
+            return None
         params2 = urllib.parse.urlencode({
             "action": "query",
             "format": "json",
@@ -1471,19 +1485,51 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
             "explaintext": "1",
             "titles": page_title,
         })
-        with urllib.request.urlopen(f"https://en.wikipedia.org/w/api.php?{params2}", timeout=10) as resp2:
+        req2 = urllib.request.Request(
+            f"https://en.wikipedia.org/w/api.php?{params2}",
+            headers={"User-Agent": "hahahoho-library/0.1"},
+        )
+        with urllib.request.urlopen(req2, timeout=10) as resp2:
             data2 = _json.loads(resp2.read())
-        pages_data = (data2.get("query", {}).get("pages") or {})
+        pages_data = data2.get("query", {}).get("pages") or {}
         extract = next(iter(pages_data.values())).get("extract", "")
         if extract:
             return {
-                "review_text": extract[:2000],
+                "review_text": extract[:3000],
                 "review_source": "WIKIPEDIA",
-                "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title)}",
+                "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title, safe=' ')}",
             }
     except Exception:
         pass
     return None
+
+
+def fetch_review_from_url(url: str) -> str | None:
+    """Fetch and extract main body text from any URL.
+
+    Tries <article>, <main>, then all <p> tags in order.
+    Returns up to 3000 chars, or None on error.
+    """
+    import httpx
+    from bs4 import BeautifulSoup
+    try:
+        resp = httpx.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "hahahoho-library/0.1"},
+            follow_redirects=True,
+        )
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.content, "html.parser")
+        container = soup.find("article") or soup.find("main") or soup.find("body")
+        if not container:
+            return None
+        paragraphs = container.find_all("p")
+        text = "\n".join(p.get_text(" ", strip=True) for p in paragraphs if p.get_text(strip=True))
+        text = text.strip()
+        return text[:3000] if text else None
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------
