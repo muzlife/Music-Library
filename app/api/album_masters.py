@@ -21,6 +21,7 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
+from pydantic import BaseModel
 
 from .. import db
 from ..schemas import (
@@ -1000,30 +1001,197 @@ def spotify_play_master(
 
 # ── Spotify manual management ──────────────────────────────────────
 
-@router.post("/album-masters/{album_master_id}/review")
-def fetch_album_review(album_master_id: int) -> dict[str, Any]:
-    """Fetch Wikipedia review for an album master."""
+# ── Review collection ──────────────────────────────────────────────
+
+@router.post("/album-masters/review/batch")
+def batch_collect_reviews(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+) -> dict[str, Any]:
+    """Batch collect Wikipedia reviews for masters without review. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
     from ..services.providers import fetch_wikipedia_album_review
-    from ..db.connection import get_conn, utc_now_iso
-    row = None
+    from ..services.review_pipeline import summarize_to_korean
+    from ..db.album_master_review import get_masters_without_review, save_review, count_masters_without_review
+    from ..db.connection import get_conn
+
     with get_conn() as conn:
-        row = conn.execute("SELECT artist_or_brand, title FROM album_master WHERE id = ?", (album_master_id,)).fetchone()
+        masters = get_masters_without_review(conn, limit=limit)
+
+    succeeded = 0
+    failed = 0
+    for master in masters:
+        mid = master["id"]
+        artist = str(master.get("artist_or_brand") or "").strip()
+        title = str(master.get("title") or "").strip()
+        if not artist or not title:
+            failed += 1
+            continue
+        raw = fetch_wikipedia_album_review(artist, title)
+        if not raw:
+            failed += 1
+            continue
+        try:
+            korean_summary = summarize_to_korean(raw["review_text"])
+            source = raw["review_source"]
+            url = raw.get("review_url")
+        except Exception:
+            korean_summary = (raw["review_text"] or "")[:300]
+            source = "WIKIPEDIA_RAW"
+            url = raw.get("review_url")
+        with get_conn() as conn:
+            save_review(conn, mid, korean_summary, source, url)
+        succeeded += 1
+
+    with get_conn() as conn:
+        remaining_after = count_masters_without_review(conn)
+
+    return {
+        "ok": True,
+        "processed": len(masters),
+        "succeeded": succeeded,
+        "failed": failed,
+        "remaining": remaining_after,
+    }
+
+
+@router.post("/album-masters/{album_master_id}/review/auto")
+def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any]:
+    """Fetch Wikipedia review for one master, summarize to Korean. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.providers import fetch_wikipedia_album_review
+    from ..services.review_pipeline import summarize_to_korean
+    from ..db.album_master_review import save_review
+    from ..db.connection import get_conn
+
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT artist_or_brand, title FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Album master not found")
     artist = str(row[0] or "").strip()
     title = str(row[1] or "").strip()
     if not artist or not title:
         raise HTTPException(status_code=400, detail="Artist and title required")
-    review = fetch_wikipedia_album_review(artist, title)
-    if not review:
-        raise HTTPException(status_code=404, detail="No review found on Wikipedia")
+
+    raw = fetch_wikipedia_album_review(artist, title)
+    if not raw:
+        raise HTTPException(status_code=404, detail="No Wikipedia album page found")
+
+    try:
+        korean_summary = summarize_to_korean(raw["review_text"])
+        source = raw["review_source"]
+    except Exception:
+        korean_summary = (raw["review_text"] or "")[:300]
+        source = "WIKIPEDIA_RAW"
+
     with get_conn() as conn:
-        conn.execute(
-            "UPDATE album_master SET review_text = ?, review_source = ?, review_url = ?, updated_at = ? WHERE id = ?",
-            (review["review_text"], review["review_source"], review["review_url"], utc_now_iso(), album_master_id),
-        )
-        conn.commit()
-    return {"ok": True, "album_master_id": album_master_id, "source": review["review_source"]}
+        save_review(conn, album_master_id, korean_summary, source, raw.get("review_url"))
+
+    return {"ok": True, "album_master_id": album_master_id, "source": source}
+
+
+class _ReviewUrlBody(BaseModel):
+    url: str
+
+
+@router.post("/album-masters/{album_master_id}/review/url")
+def collect_review_from_url(
+    album_master_id: int, body: _ReviewUrlBody, request: Request
+) -> dict[str, Any]:
+    """Fetch review from a URL, summarize to Korean. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.providers import fetch_review_from_url
+    from ..services.review_pipeline import summarize_to_korean
+    from ..db.album_master_review import save_review
+    from ..db.connection import get_conn
+    import urllib.parse
+
+    url = body.url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="url required")
+
+    with get_conn() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Album master not found")
+
+    raw_text = fetch_review_from_url(url)
+    if not raw_text:
+        raise HTTPException(status_code=422, detail="Could not extract text from URL")
+
+    try:
+        korean_summary = summarize_to_korean(raw_text)
+        domain = urllib.parse.urlparse(url).netloc or "URL"
+        source = domain.upper().replace("WWW.", "").replace(".", "_")[:30]
+    except Exception:
+        korean_summary = raw_text[:300]
+        source = "URL_RAW"
+
+    with get_conn() as conn:
+        save_review(conn, album_master_id, korean_summary, source, url)
+
+    return {"ok": True, "album_master_id": album_master_id, "source": source}
+
+
+class _ReviewManualBody(BaseModel):
+    text: str
+    source: str = "MANUAL"
+
+
+@router.post("/album-masters/{album_master_id}/review/manual")
+def save_review_manual(
+    album_master_id: int, body: _ReviewManualBody, request: Request
+) -> dict[str, Any]:
+    """Save a manually written review (no DeepSeek). ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..db.album_master_review import save_review
+    from ..db.connection import get_conn
+
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text required")
+
+    with get_conn() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Album master not found")
+
+    source = (body.source or "MANUAL").strip()[:50]
+    with get_conn() as conn:
+        save_review(conn, album_master_id, text, source, None)
+
+    return {"ok": True, "album_master_id": album_master_id, "source": source}
+
+
+@router.delete("/album-masters/{album_master_id}/review")
+def delete_review(album_master_id: int, request: Request) -> dict[str, Any]:
+    """Clear review for an album master. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..db.album_master_review import clear_review
+    from ..db.connection import get_conn
+
+    with get_conn() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Album master not found")
+
+    with get_conn() as conn:
+        clear_review(conn, album_master_id)
+
+    return {"ok": True, "album_master_id": album_master_id}
 
 
 @router.delete("/album-masters/{album_master_id}/spotify/match")
