@@ -138,6 +138,7 @@ def cafe_tags() -> dict[str, Any]:
 def cafe_search(
     q: str = Query(min_length=1, max_length=200),
     limit: int = Query(default=10, ge=1, le=30),
+    src: str = Query(default="all"),
 ) -> dict[str, Any]:
     """Search Spotify + local tags. Public (no auth — tablet access)."""
     results: list[dict[str, Any]] = []
@@ -145,34 +146,36 @@ def cafe_search(
     # Spotify search with retry
     import logging, time
     _log = logging.getLogger(__name__)
-    spotify_results = _spotify.search_tracks_sync(q, limit=limit)
-    if not spotify_results:
-        time.sleep(0.5)
+    if src in ("spotify", "all"):
         spotify_results = _spotify.search_tracks_sync(q, limit=limit)
-    _log.info(f"cafe search q={q!r} spotify={len(spotify_results)}")
-    for item in spotify_results:
-        item["source"] = "spotify"
-    results.extend(spotify_results)
+        if not spotify_results:
+            time.sleep(0.5)
+            spotify_results = _spotify.search_tracks_sync(q, limit=limit)
+        _log.info(f"cafe search q={q!r} spotify={len(spotify_results)}")
+        for item in spotify_results:
+            item["source"] = "spotify"
+        results.extend(spotify_results)
 
     # Local file search (skip if NAS slow)
-    # local_files = _local.scan_files(q, limit=limit)
-    # results.extend(local_files)
+    if src in ("local", "all"):
+        local_files = _local.scan_files(q, limit=limit)
+        results.extend(local_files)
 
-    # Local tag search (simple text match on tag_value)
-    local_tags = db.find_tracks_by_tag(q, limit=limit)
-    for tag in local_tags:
-        if tag.get("owned_item_id"):
-            item_row = db.get_owned_item(tag["owned_item_id"])
-            if item_row:
-                results.append({
-                    "source": "local",
-                    "owned_item_id": tag["owned_item_id"],
-                    "title": item_row.get("item_title") or item_row.get("item_name_override") or "",
-                    "artist": item_row.get("artist_or_brand") or "",
-                    "album_art_url": item_row.get("cover_image_url"),
-                    "tag_type": tag.get("tag_type"),
-                    "tag_value": tag.get("tag_value"),
-                })
+        # Local tag search (simple text match on tag_value)
+        local_tags = db.find_tracks_by_tag(q, limit=limit)
+        for tag in local_tags:
+            if tag.get("owned_item_id"):
+                item_row = db.get_owned_item(tag["owned_item_id"])
+                if item_row:
+                    results.append({
+                        "source": "local",
+                        "owned_item_id": tag["owned_item_id"],
+                        "title": item_row.get("item_title") or item_row.get("item_name_override") or "",
+                        "artist": item_row.get("artist_or_brand") or "",
+                        "album_art_url": item_row.get("cover_image_url"),
+                        "tag_type": tag.get("tag_type"),
+                        "tag_value": tag.get("tag_value"),
+                    })
 
     # Always ensure at least a helpful message
     if not results:
@@ -254,11 +257,11 @@ def cafe_now_playing() -> dict[str, Any]:
 # ── local playback ────────────────────────────────────────────────
 
 @router.post("/ops/cafe/play-local")
-def staff_play_local(request: Request) -> dict[str, Any]:
+async def staff_play_local(request: Request) -> dict[str, Any]:
     """Staff: play a local file. OPERATOR+"""
     import json as _json
     security._require_operator_request(request)
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     file_path = str(body.get("file_path") or "").strip()
     request_id = int(body.get("request_id") or 0)
 
@@ -465,24 +468,6 @@ def spotify_callback(request: Request):
         return {"error": str(e)}
 
 
-# ── Spotify OAuth callback ────────────────────────────────────────
-
-@router.get("/spotify/callback")
-def spotify_callback(request: Request):
-    """Handle Spotify OAuth redirect after user authorization."""
-    code = request.query_params.get("code")
-    if not code:
-        return {"error": "no authorization code received"}
-    try:
-        sp = _spotify._ensure_client()
-        if sp is None:
-            return {"error": "spotify not configured"}
-        token_info = sp.auth_manager.get_access_token(code, check_cache=False)
-        return {"ok": True, "message": "Spotify OAuth complete! You can close this page."}
-    except Exception as e:
-        return {"error": str(e)}
-
-
 # ── lyrics ────────────────────────────────────────────────────────
 
 @router.get("/cafe/lyrics")
@@ -558,11 +543,11 @@ def staff_playlists(request: Request) -> dict[str, Any]:
     return {"items": rows}
 
 @router.post("/ops/cafe/playlists")
-def staff_create_playlist(request: Request) -> dict[str, Any]:
+async def staff_create_playlist(request: Request) -> dict[str, Any]:
     """Staff: create a new playlist. OPERATOR+"""
     security._require_operator_request(request)
     import json as _json
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     name = str(body.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name required")
@@ -582,11 +567,11 @@ def staff_playlist_detail(playlist_id: int, request: Request) -> dict[str, Any]:
     return pl
 
 @router.post("/ops/cafe/playlists/{playlist_id}/items")
-def staff_add_playlist_item(playlist_id: int, request: Request) -> dict[str, Any]:
+async def staff_add_playlist_item(playlist_id: int, request: Request) -> dict[str, Any]:
     """Staff: add track to playlist. OPERATOR+"""
     security._require_operator_request(request)
     import json as _json
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     item_id = db.add_playlist_item(
         playlist_id=playlist_id,
         title=str(body.get("title") or ""),
@@ -613,11 +598,11 @@ def staff_delete_playlist(playlist_id: int, request: Request) -> dict[str, Any]:
     return {"ok": True}
 
 @router.post("/ops/cafe/playlists/{playlist_id}/play-next")
-def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[str, Any]:
+async def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[str, Any]:
     """Staff: play next track from playlist. OPERATOR+"""
     security._require_operator_request(request)
     import json as _json
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     current_idx = int(body.get("current_index", -1))
     item = db.get_next_playlist_item(playlist_id, current_idx)
     if not item:

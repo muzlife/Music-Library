@@ -86,7 +86,10 @@ def get_album_master_basic(album_master_id: int) -> dict[str, Any] | None:
                    spotify_album_id,
                    spotify_album_uri,
                    spotify_image_url,
-                   CAST(json_extract(raw_json, '$.id') AS TEXT) AS source_release_id
+                   CAST(json_extract(raw_json, '$.id') AS TEXT) AS source_release_id,
+                   review_text,
+                   review_source,
+                   review_url
             FROM album_master
             WHERE id = ?
             LIMIT 1
