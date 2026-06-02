@@ -18120,7 +18120,10 @@
           </div><!-- /manage-section-body -->
         </details><!-- /homeMasterEditDetails -->
 
-          <!-- ══ 마스터 / 보유 상품 및 마스터 연계 수집품 (이동됨) ══ -->
+        <details id="manageSection5OwnedItems" class="manage-section-details">
+          <summary class="manage-section-summary" data-i18n="media.manage.section.owned_items">보유 상품</summary>
+          <div class="manage-section-body">
+          <!-- ══ 마스터 / 보유 상품 ══ -->
           <div id="homeMasterSummarySection" class="u-hidden-initial">
             <div class="section-divider u-mt-10">
               <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
@@ -18132,6 +18135,9 @@
           <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
             <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
           </div>
+          </div><!-- /manage-section-body -->
+        </details><!-- /manageSection5OwnedItems -->
+
           <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details">
             <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
             <div id="homeLinkedGoodsPanel" class="home-goods-panel" style="border:none;background:none;box-shadow:none;margin-top:0;">
@@ -18618,6 +18624,9 @@
           </div><!-- /manage-section-body -->
         </details><!-- /manageSection1Product -->
 
+        <details id="manageSection6AddLink" class="manage-section-details">
+          <summary class="manage-section-summary" data-i18n="media.manage.section.add_link">추가 · 연계</summary>
+          <div class="manage-section-body">
         <!-- ══ 섹션 2: 상품 정보 ══ -->
         <div id="homeSection2ProductInfo">
           <div id="homeEditorStandaloneMount" class="u-mt-10"></div>
@@ -18625,7 +18634,7 @@
           <!-- 2-1: 보유 상품 -->
           <div id="homeSection21OwnedItem">
             <div class="section-divider u-mt-8">
-              <h2><span data-i18n="media.manage.section2_1.title">2-1. 보유 상품</span></h2>
+              <h2><span data-i18n="media.manage.section2_1.title">보유 상품 목록</span></h2>
             </div>
             <!-- 마스터 하위 전체 상품 목록 (클릭 시 하단 편집 폼 활성) -->
             <div id="homeMasterRelatedList" class="related-list"></div>
@@ -18711,7 +18720,7 @@
           <!-- 2-2: 상품 추가 (마스터에서 / 다른소스에서) -->
           <div id="homeSection22ProductAdd">
             <div class="section-divider u-mt-12">
-              <h2><span data-i18n="media.manage.section2_2.title">2-2. 상품 추가</span></h2>
+              <h2><span data-i18n="media.manage.section2_2.title">상품 추가</span></h2>
             </div>
 
             <!-- 2-2-A: 마스터에서 추가 (현 마스터와 연결할 후보 검색) -->
@@ -18810,7 +18819,7 @@
           <!-- 2-3: 상품 연계 수집품 -->
           <div id="homeProductLinkedGoodsSection">
             <div class="section-divider u-mt-12">
-              <h2><span data-i18n="media.manage.section2_3.title">2-3. 상품 연계 수집품</span><span class="section-help-dot" tabindex="0" data-help="현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.">?</span></h2>
+              <h2><span data-i18n="media.manage.section2_3.title">연계 수집품</span><span class="section-help-dot" tabindex="0" data-help="현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.">?</span></h2>
             </div>
             <!-- 마스터 연계 수집품 (섹션 1에서 이동) -->
             <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack u-hidden-initial u-mt-6">
@@ -18830,7 +18839,7 @@
             </div>
             <div id="homeProductLinkedGoodsStatus" class="status"></div>
           </div>
-        </div>
+        </div><!-- /homeSection2ProductInfo -->
 
         <!-- ══ 보유 음원 디렉토리 (TrackMapBox) ══ -->
         <div id="homeTrackMapBox" class="music-box u-hidden-initial" hidden>
@@ -18861,6 +18870,8 @@
                   </div>
                 </div>
 
+          </div><!-- /manage-section-body -->
+        </details><!-- /manageSection6AddLink -->
         </div><!-- /homeEditUnifiedDetails -->
       </section>
       </div>
@@ -22638,13 +22649,13 @@
         "media.manage.master.edit.status.no_linked_items": "이 마스터에 연결된 보유 상품이 없습니다.",
         "media.manage.section1.title": "1. 마스터 정보",
         "media.manage.section2.title": "2. 상품 정보",
-        "media.manage.section2_1.title": "2-1. 보유 상품",
-        "media.manage.section2_2.title": "2-2. 상품 추가",
+        "media.manage.section2_1.title": "보유 상품 목록",
+        "media.manage.section2_2.title": "상품 추가",
         "media.manage.section2_2.from_master.kicker": "마스터에서 추가",
         "media.manage.section2_2.from_master.title": "마스터 연계 추가",
         "media.manage.section2_2.from_source.kicker": "다른소스에서 추가",
         "media.manage.section2_2.from_source.title": "다른소스에서 추가",
-        "media.manage.section2_3.title": "2-3. 상품 연계 수집품",
+        "media.manage.section2_3.title": "연계 수집품",
         "media.manage.section2_3.note": "현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.",
         "media.manage.section2_3.action.open_register": "수집품 탭에서 연계 수집품 등록",
         "media.manage.master.structure.kicker": "마스터 / 연계 작업",
@@ -25357,13 +25368,13 @@
         "media.manage.master.edit.status.no_linked_items": "There are no owned items linked to this master.",
         "media.manage.section1.title": "1. Master Info",
         "media.manage.section2.title": "2. Product Info",
-        "media.manage.section2_1.title": "2-1. Owned Item",
-        "media.manage.section2_2.title": "2-2. Add Product",
+        "media.manage.section2_1.title": "Owned Items",
+        "media.manage.section2_2.title": "Add Product",
         "media.manage.section2_2.from_master.kicker": "From Master",
         "media.manage.section2_2.from_master.title": "Master Candidate Lookup / Link",
         "media.manage.section2_2.from_source.kicker": "From Other Source",
         "media.manage.section2_2.from_source.title": "Add via Barcode / Source Search",
-        "media.manage.section2_3.title": "2-3. Linked Collectibles",
+        "media.manage.section2_3.title": "Linked Collectibles",
         "media.manage.section2_3.note": "Collectibles directly linked to the current owned item.",
         "media.manage.section2_3.action.open_register": "Register linked collectibles in Collectibles tab",
         "media.manage.master.structure.kicker": "Master / relationship work",
@@ -28061,13 +28072,13 @@
         "media.manage.master.edit.status.no_linked_items": "このマスターに連携された所蔵商品がありません。",
         "media.manage.section1.title": "1. マスター情報",
         "media.manage.section2.title": "2. 商品情報",
-        "media.manage.section2_1.title": "2-1. 所蔵商品",
-        "media.manage.section2_2.title": "2-2. 商品追加",
+        "media.manage.section2_1.title": "所蔵商品一覧",
+        "media.manage.section2_2.title": "商品追加",
         "media.manage.section2_2.from_master.kicker": "マスターから追加",
         "media.manage.section2_2.from_master.title": "マスター候補検索 / 連携",
         "media.manage.section2_2.from_source.kicker": "他ソースから追加",
         "media.manage.section2_2.from_source.title": "バーコード / ソース検索で追加",
-        "media.manage.section2_3.title": "2-3. 商品連携収集品",
+        "media.manage.section2_3.title": "連携収集品",
         "media.manage.section2_3.note": "現在の所蔵商品(owned_item)に直接連携された収集品一覧です。",
         "media.manage.section2_3.action.open_register": "収集品タブで連携収集品を登録",
         "media.manage.master.structure.kicker": "マスター / 連携作業",
