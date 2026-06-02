@@ -103,3 +103,35 @@ def test_fetch_review_from_url_returns_none_on_error():
         result = fetch_review_from_url("https://example.com/review")
 
     assert result is None
+
+
+def test_summarize_to_korean_calls_deepseek():
+    """DeepSeek가 성공하면 요약 결과 반환."""
+    from app.services.review_pipeline import summarize_to_korean
+    from unittest.mock import patch
+
+    with patch("app.services.review_pipeline.chat_complete", return_value="한국어 요약 결과") as mock_chat:
+        result = summarize_to_korean("This is an English album review.")
+
+    mock_chat.assert_called_once()
+    assert result == "한국어 요약 결과"
+
+
+def test_summarize_to_korean_fallback_on_error():
+    """DeepSeek 실패 시 원문 앞 300자 반환."""
+    from app.services.review_pipeline import summarize_to_korean
+    from unittest.mock import patch
+
+    long_text = "A" * 500
+
+    with patch("app.services.review_pipeline.chat_complete", side_effect=RuntimeError("api error")):
+        result = summarize_to_korean(long_text)
+
+    assert result == "A" * 300
+
+
+def test_is_korean_text_detection():
+    """한글 비율 15% 이상이면 True."""
+    from app.services.review_pipeline import _is_korean_text
+    assert _is_korean_text("이 앨범은 훌륭하다 great album") is True
+    assert _is_korean_text("This is purely English text") is False
