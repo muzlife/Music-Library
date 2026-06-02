@@ -18098,7 +18098,6 @@
                   <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" style="flex:1;" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
                   <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
                 </div>
-                <div class="dashboard-selected-sort-artist-note mini" style="margin:0; color:var(--text-muted);" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
               </div>
               <div id="homeMasterSortArtistStatus" class="status"></div>
             </div>
@@ -18142,11 +18141,9 @@
             <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
             <div id="homeLinkedGoodsPanel" class="home-goods-panel" style="border:none;background:none;box-shadow:none;margin-top:0;">
               <div class="compact-stack-grid">
-                <div class="mini muted span-2 u-mt-0" data-i18n="media.manage.collectibles.panel_intro">수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
                 <div class="section-divider span-2 u-mt-10">
                   <h2 data-i18n="media.manage.collectibles.panel_title">마스터 연계 수집품</h2>
                 </div>
-                <div class="mini span-2 u-mt-6" data-i18n="media.manage.collectibles.panel_note">콜라보, 레이블 행사 수집품, 단독 수집품은 `수집품` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.</div>
                 <div class="span-2">
                   <label data-i18n="media.manage.collectibles.field.current_master">현재 연계 기준</label>
                   <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
@@ -18240,7 +18237,7 @@
                       <div id="homeEditMusicSourceSummary" class="source-meta-summary">
                         <div class="source-meta-summary-head">
                           <strong data-i18n="media.manage.source_meta.title">소스 메타 요약</strong>
-                          <span id="homeEditMusicSourceSummaryHint" class="mini" data-i18n="media.manage.source_meta.hint">외부 소스 메타는 후보 교체로 갱신</span>
+                          <span class="section-help-dot" tabindex="0" data-help-key="media.manage.source_meta.hint_help">?</span>
                         </div>
                         <div id="homeEditMusicSourceSummaryMain" class="compact-line">-</div>
                         <div id="homeEditMusicSourceSummarySub" class="compact-line">-</div>
@@ -18639,8 +18636,7 @@
             <!-- 마스터 하위 전체 상품 목록 (클릭 시 하단 편집 폼 활성) -->
             <div id="homeMasterRelatedList" class="related-list"></div>
             <details id="homeProductRelationSection" class="home-manage-secondary-block goods-map-section u-mt-10 u-hidden-initial">
-                      <summary class="home-manage-secondary-summary" data-i18n="media.manage.product_relation.title">상품 관계</summary>
-                      <div class="mini home-master-lookup-note" data-i18n="media.manage.product_relation.subtitle">마스터, 시리즈, 박스세트, 연관 발매를 함께 관리</div>
+                      <summary class="home-manage-secondary-summary" data-i18n="media.manage.product_relation.title">상품 관계<span class="section-help-dot" tabindex="0" data-help-key="media.manage.product_relation.subtitle_help">?</span></summary>
                       <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
 
                       <div class="goods-map-section compact-stack u-grid-cols-1">
@@ -22392,6 +22388,7 @@
         "media.manage.location.status.slot_items_done": "같은 칸 상품 조회 완료: {count}",
         "media.manage.source_meta.title": "소스 메타 요약",
         "media.manage.source_meta.hint": "외부 소스 메타는 후보 교체로 갱신",
+        "media.manage.source_meta.hint_help": "외부 소스 메타는 후보 교체로 갱신합니다. 소스 보강 탭에서 다른 소스로 교체하세요.",
         "media.manage.source_meta.state.no_acquisition_source": "확보 소스 정보가 없습니다.",
         "media.manage.source_meta.state.image_present": "커버 이미지 있음",
         "media.manage.source_meta.state.image_absent": "커버 이미지 없음 (직접 등록 가능)",
@@ -22768,6 +22765,7 @@
         "media.manage.related_versions.status.loaded": "연계 상품 조회 완료: {count}",
         "media.manage.product_relation.title": "상품 관계",
         "media.manage.product_relation.subtitle": "마스터, 시리즈, 박스세트, 연관 발매를 함께 관리",
+        "media.manage.product_relation.subtitle_help": "마스터, 시리즈, 박스세트, 연관 발매를 함께 관리합니다.",
         "media.manage.product_relation.scope.shared": "동일상품 묶음 관계를 공유합니다. group: {group}",
         "media.manage.product_relation.scope.single": "현재 상품 기준으로 관계를 관리합니다.",
         "media.manage.product_relation.scope.empty": "먼저 상품을 선택하세요.",
@@ -25113,6 +25111,7 @@
         "media.manage.location.status.slot_items_done": "Loaded items in the same slot: {count}",
         "media.manage.source_meta.title": "Source Metadata Summary",
         "media.manage.source_meta.hint": "External source metadata updates when a candidate is replaced",
+        "media.manage.source_meta.hint_help": "External source metadata is refreshed by replacing the source candidate. Use the Source Enhancement tab.",
         "media.manage.source_meta.state.no_acquisition_source": "No acquisition source information.",
         "media.manage.source_meta.state.image_present": "Cover image available",
         "media.manage.source_meta.state.image_absent": "No cover image (can be added manually)",
@@ -25487,6 +25486,7 @@
         "media.manage.related_versions.status.loaded": "Linked items loaded: {count}",
         "media.manage.product_relation.title": "Product Relations",
         "media.manage.product_relation.subtitle": "Manage master, series, box set, and related release links together",
+        "media.manage.product_relation.subtitle_help": "Manage master, series, box set, and related release links together.",
         "media.manage.product_relation.scope.shared": "This item shares one relation scope across the copy group. group: {group}",
         "media.manage.product_relation.scope.single": "Relations are managed only for this item.",
         "media.manage.product_relation.scope.empty": "Select an item first.",
@@ -27850,6 +27850,7 @@
         "media.manage.location.status.slot_items_done": "同じスロットの商品の読み込み完了: {count}",
         "media.manage.source_meta.title": "ソースメタ要約",
         "media.manage.source_meta.hint": "外部ソースメタは候補差し替えで更新されます",
+        "media.manage.source_meta.hint_help": "外部ソースのメタデータは候補交換で更新されます。ソース補強タブで別のソースに交換してください。",
         "media.manage.source_meta.state.no_acquisition_source": "確保ソース情報がありません。",
         "media.manage.source_meta.state.image_present": "カバー画像あり",
         "media.manage.source_meta.state.image_absent": "カバー画像なし（手動登録可能）",
@@ -28220,6 +28221,7 @@
         "media.manage.related_versions.status.loaded": "連携商品読み込み完了: {count}",
         "media.manage.product_relation.title": "商品関係",
         "media.manage.product_relation.subtitle": "マスター、シリーズ、ボックスセット、関連発売をまとめて管理します",
+        "media.manage.product_relation.subtitle_help": "マスター、シリーズ、ボックスセット、関連発売をまとめて管理します。",
         "media.manage.product_relation.scope.shared": "同一商品グループで関係を共有しています。group: {group}",
         "media.manage.product_relation.scope.single": "現在の商品単位で関係を管理します。",
         "media.manage.product_relation.scope.empty": "先に商品を選択してください。",
@@ -45672,7 +45674,7 @@ async function loadDashboardClimate() {
         operatorMetaPairHtml(t("media.manage.source_meta.label.memo"), memoText, { subtle: true }),
       ].filter((value) => value).join('<span class="operator-meta-separator">/</span>');
 
-      $("homeEditMusicSourceSummaryHint").textContent = t("media.manage.source_meta.hint");
+      setTextIfPresent("homeEditMusicSourceSummaryHint", t("media.manage.source_meta.hint"));
       $("homeEditMusicSourceSummaryMain").innerHTML = mainSummaryHtml || `<span class="operator-meta-value">-</span>`;
       $("homeEditMusicSourceSummarySub").innerHTML = subSummaryHtml || `<span class="operator-meta-value">-</span>`;
       setDisplayIfPresent("homeEditMusicSourceSummaryExtra", "none");
@@ -46746,7 +46748,6 @@ async function loadDashboardClimate() {
       setHtmlIfPresent("homeAcquisitionSourceInfo", `<span class='muted'>${escapeHtml(t("media.manage.source_meta.state.no_acquisition_source"))}</span>`);
       setHtmlIfPresent("homeAcquisitionSourceLink", "");
       renderHomeCollectorSummary(null);
-      setTextIfPresent("homeEditMusicSourceSummaryHint", t("media.manage.source_meta.hint"));
       setHtmlIfPresent("homeEditMusicSourceSummaryMain", `<span class='operator-meta-value'>-</span>`);
       setHtmlIfPresent("homeEditMusicSourceSummarySub", `<span class='operator-meta-value'>-</span>`);
       setHtmlIfPresent("homeEditMusicSourceSummaryExtra", "-");
