@@ -20868,6 +20868,7 @@
                 <option value="SIZE_MISMATCH" data-i18n="ops.exception.field.type.size_mismatch">규격 불일치</option>
                 <option value="TRACK_MISSING" data-i18n="ops.exception.field.type.track_missing">곡 정보 없음</option>
                 <option value="SPOTIFY_UNMATCHED" data-i18n="ops.exception.field.type.spotify_unmatched">스포티파이 미연결</option>
+                <option value="REVIEW_MISSING" data-i18n="ops.exception.field.type.review_missing">리뷰 미등록</option>
                 <option value="GENRE_MISSING" data-i18n="ops.exception.field.type.genre_missing">장르 없음</option>
                 <option value="CATALOG_MISSING" data-i18n="ops.exception.field.type.catalog_missing">카탈로그 없음</option>
               </select>
@@ -22214,6 +22215,7 @@
         "common.exception.preferred_size_mismatch": "보관 규격 예외",
         "common.exception.track_missing": "곡 정보 없음",
         "common.exception.spotify_unmatched": "스포티파이 미연결",
+        "common.exception.review_missing": "리뷰 미등록",
         "common.exception.media_missing": "미디어 타입 없음",
         "common.exception.size_mismatch": "규격 불일치",
         "common.exception.genre_missing": "장르 없음",
@@ -22225,6 +22227,8 @@
         "common.exception_hint.preferred_size_mismatch": "슬롯 규격과 실물 규격 불일치",
         "common.exception_hint.track_missing": "트랙 정보 보강 필요",
         "common.exception_hint.spotify_unmatched": "스포티파이 앨범 연결 필요",
+        "common.exception_hint.review_missing": "Wikipedia 리뷰가 등록되지 않은 음반 마스터",
+        "ops.exception.field.type.review_missing": "리뷰 미등록",
         "common.exception_hint.media_missing": "미디어 타입 지정 필요",
         "common.exception_hint.size_mismatch": "카테고리와 보관 규격 불일치",
         "common.exception_hint.genre_missing": "장르 정보 보강 필요",
@@ -24963,6 +24967,7 @@
         "common.exception.preferred_size_mismatch": "Size Mismatch",
         "common.exception.track_missing": "Tracklist Missing",
         "common.exception.spotify_unmatched": "Spotify Match Missing",
+        "common.exception.review_missing": "Review Missing",
         "common.exception.media_missing": "Media Type Missing",
         "common.exception.size_mismatch": "Size Mismatch",
         "common.exception.genre_missing": "Genre Missing",
@@ -24974,6 +24979,8 @@
         "common.exception_hint.preferred_size_mismatch": "Physical format differs from preferred storage size",
         "common.exception_hint.track_missing": "Needed for track search and request handling",
         "common.exception_hint.spotify_unmatched": "Spotify album binding is missing.",
+        "common.exception_hint.review_missing": "Album masters with no Wikipedia review registered.",
+        "ops.exception.field.type.review_missing": "Review Missing",
         "common.exception_hint.media_missing": "Media type (CD, LP, etc.) is not specified.",
         "common.exception_hint.size_mismatch": "Category (LP/CD) does not match storage size group.",
         "common.exception_hint.genre_missing": "Genre information is empty.",
@@ -27702,6 +27709,7 @@
         "common.exception.preferred_size_mismatch": "保管規格例外",
         "common.exception.track_missing": "曲情報なし",
         "common.exception.spotify_unmatched": "Spotify未連結マスター",
+        "common.exception.review_missing": "レビュー未登録",
         "common.exception.media_missing": "メディアタイプ未指定",
         "common.exception.size_mismatch": "サイズ不一致",
         "common.exception.genre_missing": "ジャンルなし",
@@ -27713,6 +27721,8 @@
         "common.exception_hint.preferred_size_mismatch": "実物規格と推奨保管規格が異なります",
         "common.exception_hint.track_missing": "曲検索とリクエスト対応のため補強が必要です",
         "common.exception_hint.spotify_unmatched": "Spotifyアルバムの紐付けがありません。",
+        "common.exception_hint.review_missing": "Wikipediaレビューが未登録のアルバムマスター。",
+        "ops.exception.field.type.review_missing": "レビュー未登録",
         "common.exception_hint.media_missing": "メディアタイプ（CD、LPなど）が指定されていません。",
         "common.exception_hint.size_mismatch": "カテゴリ（LP/CD）と保管サイズグループが一致しません。",
         "common.exception_hint.genre_missing": "ジャンル情報が空の商品です。",
@@ -37515,6 +37525,7 @@
       if (code === "PREFERRED_SIZE_MISMATCH") return t("common.exception.preferred_size_mismatch");
       if (code === "TRACK_MISSING") return t("common.exception.track_missing");
       if (code === "SPOTIFY_UNMATCHED") return t("common.exception.spotify_unmatched");
+      if (code === "REVIEW_MISSING") return t("common.exception.review_missing");
       if (code === "MEDIA_MISSING") return t("common.exception.media_missing");
       if (code === "SIZE_MISMATCH") return t("common.exception.size_mismatch");
       if (code === "GENRE_MISSING") return t("common.exception.genre_missing");
@@ -37531,6 +37542,7 @@
       if (code === "PREFERRED_SIZE_MISMATCH") return t("common.exception_hint.preferred_size_mismatch");
       if (code === "TRACK_MISSING") return t("common.exception_hint.track_missing");
       if (code === "SPOTIFY_UNMATCHED") return t("common.exception_hint.spotify_unmatched");
+      if (code === "REVIEW_MISSING") return t("common.exception_hint.review_missing");
       if (code === "MEDIA_MISSING") return t("common.exception_hint.media_missing");
       if (code === "SIZE_MISMATCH") return t("common.exception_hint.size_mismatch");
       if (code === "GENRE_MISSING") return t("common.exception_hint.genre_missing");
@@ -44528,7 +44540,7 @@ async function loadDashboardClimate() {
       const root = $("opsExceptionSummary");
       if (!root) return;
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "GENRE_MISSING", "CATALOG_MISSING"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "REVIEW_MISSING", "GENRE_MISSING", "CATALOG_MISSING"];
       root.innerHTML = types.map((type) => `
         <button
           class="ops-exception-box ${activeType === type ? "active" : ""}"
@@ -44712,10 +44724,11 @@ async function loadDashboardClimate() {
     }
 
     async function fetchOpsExceptionCount(type) {
-      if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
+      if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING") {
         let url;
         if (type === "SPOTIFY_UNMATCHED") url = "/album-masters?spotify_state=MISSING&include_total=true&limit=1";
         else if (type === "GENRE_MISSING") url = "/album-masters?genre_missing=true&media_only=true&include_total=true&limit=1";
+        else if (type === "REVIEW_MISSING") url = "/album-masters?review_missing=true&media_only=true&include_total=true&limit=1";
         else url = "/album-masters?catalog_missing=true&media_only=true&include_total=true&limit=1";
         const res = await fetchWithRetry(url);
         if (!res.ok) throw new Error(t("ops.exception.status.count_failed", { type: opsExceptionTypeLabel(type) }));
@@ -44732,7 +44745,7 @@ async function loadDashboardClimate() {
 
     async function loadOpsExceptionCounts(opts = {}) {
       const silent = Boolean(opts?.silent);
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "GENRE_MISSING", "CATALOG_MISSING"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "REVIEW_MISSING", "GENRE_MISSING", "CATALOG_MISSING"];
       try {
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loading"));
         const results = await Promise.all(types.map(async (type) => ({
@@ -44742,7 +44755,7 @@ async function loadDashboardClimate() {
         opsExceptionCounts = results.reduce((acc, entry) => {
           acc[entry.type] = Number(entry.count || 0);
           return acc;
-        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, MEDIA_MISSING: 0, SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0, GENRE_MISSING: 0, CATALOG_MISSING: 0 });
+        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, MEDIA_MISSING: 0, SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0, REVIEW_MISSING: 0, GENRE_MISSING: 0, CATALOG_MISSING: 0 });
         renderOpsExceptionSummary();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loaded"));
       } catch (err) {
@@ -44761,10 +44774,11 @@ async function loadDashboardClimate() {
         renderOpsExceptionList();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.list_loading_type", { type: opsExceptionTypeLabel(type) }));
         let res, data;
-        if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
+        if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING") {
           let url = `/album-masters?include_total=true&limit=${limit}`;
           if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
           else if (type === "GENRE_MISSING") url += "&genre_missing=true&media_only=true";
+          else if (type === "REVIEW_MISSING") url += "&review_missing=true&media_only=true";
           else url += "&catalog_missing=true&media_only=true";
           res = await fetchWithRetry(url);
           data = await safeJson(res);

@@ -1448,8 +1448,9 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
 
     Searches for the album page specifically — not the artist page.
     Returns None if no album-titled page is found in the top 5 results.
+    Retries once on 429 with a 10-second backoff.
     """
-    import urllib.request, urllib.parse, json as _json
+    import urllib.request, urllib.parse, json as _json, time as _time
     query = f"{title} {artist} album"
     params = urllib.parse.urlencode({
         "action": "query",
@@ -1462,10 +1463,18 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
     try:
         req = urllib.request.Request(
             f"https://en.wikipedia.org/w/api.php?{params}",
-            headers={"User-Agent": "hahahoho-library/0.1"},
+            headers={"User-Agent": "hahahoho-library/0.1 (album-review-bot)"},
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = _json.loads(resp.read())
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = _json.loads(resp.read())
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt == 0:
+                    _time.sleep(10)
+                    continue
+                raise
         pages = data.get("query", {}).get("search") or []
         if not pages:
             return None
