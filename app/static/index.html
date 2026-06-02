@@ -18018,7 +18018,8 @@
             <button id="homeMasterReviewDeleteBtn" class="btn ghost tiny danger" type="button" style="display:none" data-i18n="media.manage.master.review.action.delete">삭제</button>
           </div>
           <div id="homeMasterReviewPreview" class="home-master-review-preview" style="display:none"></div>
-          <div id="homeMasterReviewActions" class="row" style="gap:4px">
+          <button id="homeMasterReviewToggleBtn" type="button" class="btn ghost tiny" style="display:none;margin-top:4px;"></button>
+          <div id="homeMasterReviewActions" class="row" style="gap:4px;margin-top:6px;">
             <button id="homeMasterReviewAutoBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.auto">Wikipedia 자동수집</button>
             <button id="homeMasterReviewUrlBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.url">URL 입력</button>
             <button id="homeMasterReviewManualBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.manual">직접 입력</button>
@@ -34050,7 +34051,7 @@
       const text = String(item?.review_text || "").trim();
       if (!text) return "";
       const source = String(item?.review_source || "").trim();
-      const TRUNCATE_LEN = 150;
+      const TRUNCATE_LEN = 200;
       const needsTruncate = text.length > TRUNCATE_LEN;
       const previewText = needsTruncate ? text.slice(0, TRUNCATE_LEN) + "…" : text;
       const cardId = "albumReviewCard_" + String(item?.owned_item_id || item?.id || 0);
@@ -34097,16 +34098,27 @@
       const preview = $("homeMasterReviewPreview");
       const sourceTag = $("homeMasterReviewSourceTag");
       const deleteBtn = $("homeMasterReviewDeleteBtn");
+      const toggleBtn = $("homeMasterReviewToggleBtn");
+      const MANAGE_PREVIEW_LEN = 200;
 
       if (reviewText) {
-        preview.textContent = reviewText.slice(0, 200) + (reviewText.length > 200 ? "…" : "");
+        const needsTruncate = reviewText.length > MANAGE_PREVIEW_LEN;
+        preview.textContent = needsTruncate ? reviewText.slice(0, MANAGE_PREVIEW_LEN) + "…" : reviewText;
+        preview.dataset.fullText = reviewText;
+        preview.dataset.expanded = "false";
         preview.style.display = "";
         sourceTag.textContent = reviewSource ? `출처: ${reviewSource}` : "";
         deleteBtn.style.display = "";
+        if (toggleBtn) {
+          toggleBtn.style.display = needsTruncate ? "" : "none";
+          toggleBtn.textContent = "더보기 ▼";
+          toggleBtn.dataset.expanded = "false";
+        }
       } else {
         preview.style.display = "none";
         sourceTag.textContent = "";
         deleteBtn.style.display = "none";
+        if (toggleBtn) toggleBtn.style.display = "none";
       }
 
       $("homeMasterReviewUrlForm").style.display = "none";
@@ -56364,6 +56376,23 @@ async function loadDashboardClimate() {
     $("homeMasterDeleteCancelBtn").addEventListener("click", () => {
       const panel = $("homeMasterDeleteConfirm");
       if (panel) panel.style.display = "none";
+    });
+    $("homeMasterReviewToggleBtn")?.addEventListener("click", () => {
+      const preview = $("homeMasterReviewPreview");
+      const btn = $("homeMasterReviewToggleBtn");
+      if (!preview || !btn) return;
+      const expanded = btn.dataset.expanded === "true";
+      const MANAGE_PREVIEW_LEN = 200;
+      const fullText = preview.dataset.fullText || "";
+      if (expanded) {
+        preview.textContent = fullText.slice(0, MANAGE_PREVIEW_LEN) + "…";
+        btn.textContent = "더보기 ▼";
+        btn.dataset.expanded = "false";
+      } else {
+        preview.textContent = fullText;
+        btn.textContent = "접기 ▲";
+        btn.dataset.expanded = "true";
+      }
     });
     $("homeMasterReviewAutoBtn")?.addEventListener("click", async () => {
       const masterId = currentHomeMasterId();
