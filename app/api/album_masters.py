@@ -1091,7 +1091,13 @@ def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any
     with get_conn() as conn:
         save_review(conn, album_master_id, korean_summary, source, raw.get("review_url"))
 
-    return {"ok": True, "album_master_id": album_master_id, "source": source}
+    return {
+        "ok": True,
+        "album_master_id": album_master_id,
+        "source": source,
+        "review_text": korean_summary,
+        "review_url": raw.get("review_url"),
+    }
 
 
 class _ReviewUrlBody(BaseModel):
@@ -1260,34 +1266,7 @@ def spotify_search_albums(
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
 
-    tracks = sp.search_tracks_sync(q, limit=limit * 2)
-    # Collect unique albums from track results
-    seen: set[str] = set()
-    albums: list[dict[str, Any]] = []
-    for t in tracks:
-        # Resolve album from track
-        try:
-            track = sp.track_sync(t.get("spotify_track_id", ""))
-            if not track:
-                continue
-            album = track.get("album", {})
-            aid = album.get("id", "")
-            if aid and aid not in seen:
-                seen.add(aid)
-                images = album.get("images") or []
-                albums.append({
-                    "spotify_album_id": aid,
-                    "spotify_album_uri": album.get("uri", ""),
-                    "name": album.get("name", ""),
-                    "artist": ", ".join(a.get("name", "") for a in album.get("artists", [])),
-                    "release_date": album.get("release_date", ""),
-                    "total_tracks": album.get("total_tracks", 0),
-                    "image_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
-                })
-        except Exception:
-            continue
-        if len(albums) >= limit:
-            break
+    albums = sp.search_albums_sync(q, limit=limit)
     return {"query": q, "total_count": len(albums), "items": albums}
 
 

@@ -56338,18 +56338,42 @@ async function loadDashboardClimate() {
       const btn = $("homeMasterReviewAutoBtn");
       const status = $("homeMasterReviewStatus");
       btn.disabled = true;
-      status.textContent = "Wikipedia에서 수집 중...";
+
+      const steps = [
+        "① Wikipedia 검색 중...",
+        "② 앨범 페이지 확인 중...",
+        "③ 텍스트 추출 중...",
+        "④ 한국어 요약 중 (DeepSeek)...",
+      ];
+      let stepIdx = 0;
+      status.textContent = steps[0];
+      const stepTimer = setInterval(() => {
+        stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+        status.textContent = steps[stepIdx];
+      }, 2500);
+
       try {
         const res = await apiFetch(`/album-masters/${masterId}/review/auto`, { method: "POST" });
+        clearInterval(stepTimer);
         const data = await res.json();
         if (data.ok) {
-          status.textContent = `완료 (출처: ${data.source})`;
+          const charCount = String(data.review_text || "").length;
+          const preview = String(data.review_text || "").slice(0, 80).replace(/\n/g, " ");
+          const sourceLabel = data.source || "WIKIPEDIA";
+          const urlPart = data.review_url ? ` <a href="${data.review_url}" target="_blank" rel="noopener" style="font-size:0.7rem">원문↗</a>` : "";
+          status.innerHTML = `✅ 수집 완료 — 출처: <strong>${sourceLabel}</strong> · ${charCount}자${urlPart}<br><span style="font-size:0.75rem;color:var(--muted)">${preview}${charCount > 80 ? "…" : ""}</span>`;
           await refreshCurrentMasterReview(masterId);
         } else {
-          status.textContent = data.detail || "실패";
+          const detail = data.detail || "수집 실패";
+          if (res.status === 404) {
+            status.textContent = `⚠️ Wikipedia에서 앨범 페이지를 찾지 못했습니다 (${detail})`;
+          } else {
+            status.textContent = `❌ ${detail}`;
+          }
         }
       } catch (e) {
-        status.textContent = String(e);
+        clearInterval(stepTimer);
+        status.textContent = `❌ 오류: ${String(e)}`;
       }
       btn.disabled = false;
     });
