@@ -45674,7 +45674,6 @@ async function loadDashboardClimate() {
         operatorMetaPairHtml(t("media.manage.source_meta.label.memo"), memoText, { subtle: true }),
       ].filter((value) => value).join('<span class="operator-meta-separator">/</span>');
 
-      setTextIfPresent("homeEditMusicSourceSummaryHint", t("media.manage.source_meta.hint"));
       $("homeEditMusicSourceSummaryMain").innerHTML = mainSummaryHtml || `<span class="operator-meta-value">-</span>`;
       $("homeEditMusicSourceSummarySub").innerHTML = subSummaryHtml || `<span class="operator-meta-value">-</span>`;
       setDisplayIfPresent("homeEditMusicSourceSummaryExtra", "none");
