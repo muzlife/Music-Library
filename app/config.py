@@ -12,6 +12,7 @@ class Settings:
     discogs_token: str | None
     aladin_ttb_key: str | None
     deepl_auth_key: str | None
+    deepseek_api_key: str | None
     aladin_base_url: str
     aladin_lookup_url: str
     maniadb_base_url: str
@@ -83,6 +84,7 @@ def get_settings() -> Settings:
         discogs_token=os.getenv("DISCOGS_TOKEN"),
         aladin_ttb_key=os.getenv("ALADIN_TTB_KEY"),
         deepl_auth_key=os.getenv("DEEPL_AUTH_KEY"),
+        deepseek_api_key=(os.getenv("DEEPSEEK_API_KEY") or "").strip() or None,
         aladin_base_url=os.getenv(
             "ALADIN_BASE_URL",
             "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
