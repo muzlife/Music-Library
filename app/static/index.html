@@ -18040,9 +18040,9 @@
         </details><!-- /manageSection2SpotifyReview -->
 
         <!-- 마스터 메타 수정 (details) -->
-        <details id="homeMasterEditDetails" class="home-unified-edit-details u-hidden-initial u-mt-2">
-            <summary class="home-unified-edit-summary" data-i18n="media.manage.master.summary">앨범(마스터) 메타 수정</summary>
-            <div class="home-unified-edit-body">
+        <details id="homeMasterEditDetails" class="manage-section-details u-hidden-initial">
+            <summary class="manage-section-summary" data-i18n="media.manage.section.master_meta">마스터 메타 수정</summary>
+          <div class="manage-section-body">
               <div class="home-unified-section-label">마스터 수정</div>
               <div id="homeMasterCorrectionRow" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
                 <div style="display:flex; flex-direction:column; gap:4px;">
@@ -18102,7 +18102,23 @@
               </div>
               <div id="homeMasterSortArtistStatus" class="status"></div>
             </div>
-          </details>
+              <!-- 마스터 삭제 -->
+              <div id="homeSection3MasterDelete" style="margin-top: 12px;">
+                <div class="home-master-danger-zone" style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: rgba(220,53,69,0.05);">
+                  <div class="section-divider u-mt-0">
+                    <h2 style="color: var(--err);"><span data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</span><span class="section-help-dot" tabindex="0" data-help-key="media.manage.master.delete.note_help">?</span></h2>
+                  </div>
+                  <div id="homeMasterDeleteActions" class="row home-manage-actions-right" style="margin-top: 8px;">
+                    <label class="inline-check u-maxw-250">
+                      <input id="homeMasterDeleteCascade" type="checkbox" />
+                      <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
+                    </label>
+                    <button id="homeMasterDeleteBtn" class="btn ghost danger tiny" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
+                  </div>
+                </div>
+              </div>
+          </div><!-- /manage-section-body -->
+        </details><!-- /homeMasterEditDetails -->
 
           <!-- ══ 마스터 / 보유 상품 및 마스터 연계 수집품 (이동됨) ══ -->
           <div id="homeMasterSummarySection" class="u-hidden-initial">
@@ -18207,22 +18223,6 @@
             </div>
           </details>
 
-          <!-- ══ 섹션 3: 마스터 삭제 ══ -->
-          <div id="homeSection3MasterDelete" style="margin-top: 12px;">
-            <div class="home-master-danger-zone" style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: rgba(220,53,69,0.05);">
-              <div class="section-divider u-mt-0">
-                <h2 style="color: var(--err);"><span data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</span></h2>
-              </div>
-              <div class="mini" data-i18n="media.manage.master.delete.note">상품 편집을 먼저 마친 뒤, 정말 필요할 때만 사용하세요. 연결 상품까지 함께 삭제할 수 있습니다.</div>
-              <div id="homeMasterDeleteActions" class="row home-manage-actions-right" style="margin-top: 8px;">
-                <label class="inline-check u-maxw-250">
-                  <input id="homeMasterDeleteCascade" type="checkbox" />
-                  <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
-                </label>
-                <button id="homeMasterDeleteBtn" class="btn ghost danger tiny" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
-              </div>
-            </div>
-          </div>
           <!-- ══ 장식장 / 위치 정보 (최상단) ══ -->
         <details id="manageSection1Product" class="manage-section-details" open>
           <summary class="manage-section-summary" data-i18n="media.manage.section.product">상품 수정</summary>
@@ -22806,6 +22806,7 @@
         "media.manage.source_link.discogs_product": "Discogs 상품 열기",
         "media.manage.master.delete.title": "앨범(마스터) 삭제",
         "media.manage.master.delete.note": "상품 편집을 먼저 마친 뒤, 정말 필요할 때만 사용하세요. 연결 상품까지 함께 삭제할 수 있습니다.",
+        "media.manage.master.delete.note_help": "상품 편집을 먼저 마친 뒤, 정말 필요할 때만 사용하세요. 연결 상품까지 함께 삭제할 수 있습니다.",
         "media.manage.master.delete.cascade": "연결 상품도 함께 삭제",
         "media.manage.master.delete.action": "앨범(마스터) 삭제",
         "media.manage.master.delete.required": "삭제할 앨범(마스터)을 먼저 선택하세요.",
@@ -25524,6 +25525,7 @@
         "media.manage.source_link.discogs_product": "Open Discogs item",
         "media.manage.master.delete.title": "Delete Album (Master)",
         "media.manage.master.delete.note": "Finish editing the item first, then use this only when truly necessary. You can delete linked items together as well.",
+        "media.manage.master.delete.note_help": "Finish editing items first. Use only when absolutely necessary. This can delete all linked items too.",
         "media.manage.master.delete.cascade": "Also delete linked items",
         "media.manage.master.delete.action": "Delete Album (Master)",
         "media.manage.master.delete.required": "Select an album master to delete.",
@@ -28256,6 +28258,7 @@
         "media.manage.source_link.discogs_product": "Discogs 商品を開く",
         "media.manage.master.delete.title": "アルバム(マスター)削除",
         "media.manage.master.delete.note": "商品編集を先に終えたうえで、本当に必要な場合だけ使用してください。連携商品もまとめて削除できます。",
+        "media.manage.master.delete.note_help": "商品編集を先に終わらせてから、本当に必要な時だけ使ってください。連結商品も一緒に削除できます。",
         "media.manage.master.delete.cascade": "連携商品も一緒に削除",
         "media.manage.master.delete.action": "アルバム(マスター)削除",
         "media.manage.master.delete.required": "削除するアルバム(マスター)を先に選択してください。",
