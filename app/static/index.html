@@ -44597,8 +44597,8 @@ async function loadDashboardClimate() {
       }
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
 
-      // --- SPOTIFY_UNMATCHED: Album Master rows ---
-      if (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING" || activeType === "CATALOG_MISSING") {
+      // --- Album Master rows (SPOTIFY_UNMATCHED / GENRE_MISSING / CATALOG_MISSING / REVIEW_MISSING) ---
+      if (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING" || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING") {
         root.innerHTML = opsExceptionItems.map((master) => {
           const masterId = Number(master.id || 0);
           const title = String(master.title || master.album_title || "-").trim();
@@ -44614,6 +44614,11 @@ async function loadDashboardClimate() {
             `master #${masterId}`,
             opsExceptionTypeHint(activeType),
           ].filter(Boolean);
+          const actionBtn = activeType === "REVIEW_MISSING"
+            ? `<button class="btn ghost" type="button" data-ops-exception-review-auto="${masterId}">${escapeHtml(t("media.manage.master.review.action.auto") || "Wikipedia 자동수집")}</button>`
+            : `<button class="btn ghost" type="button" data-ops-exception-spotify-match="${masterId}"
+                data-spotify-match-title="${escapeHtml(title)}" data-spotify-match-artist="${escapeHtml(artist)}"
+              >${escapeHtml(t("ops.exception.action.spotify_match"))}</button>`;
           return `
             <div class="ops-exception-row">
               <div class="ops-exception-cover">${coverHtml}</div>
@@ -44621,11 +44626,7 @@ async function loadDashboardClimate() {
                 <div class="ops-exception-title">${escapeHtml(displayTitleWithYear)}</div>
                 <div class="ops-exception-meta">${escapeHtml(metaBits.join(" | "))}</div>
               </div>
-              <div class="ops-exception-actions">
-                <button class="btn ghost" type="button" data-ops-exception-spotify-match="${masterId}"
-                  data-spotify-match-title="${escapeHtml(title)}" data-spotify-match-artist="${escapeHtml(artist)}"
-                >${escapeHtml(t("ops.exception.action.spotify_match"))}</button>
-              </div>
+              <div class="ops-exception-actions">${actionBtn}</div>
             </div>
           `;
         }).join("");
@@ -58070,7 +58071,30 @@ async function loadDashboardClimate() {
     }
 
     // Delegated click handler for spotify match button in exception list
-    document.addEventListener("click", (e) => {
+    document.addEventListener("click", async (e) => {
+      // Review auto-collect
+      const reviewBtn = e.target.closest("[data-ops-exception-review-auto]");
+      if (reviewBtn) {
+        e.preventDefault();
+        const masterId = reviewBtn.getAttribute("data-ops-exception-review-auto");
+        reviewBtn.disabled = true;
+        reviewBtn.textContent = "수집 중...";
+        try {
+          const res = await fetchWithRetry(`/album-masters/${masterId}/review/auto`, { method: "POST" });
+          const data = await res.json();
+          if (data.ok) {
+            reviewBtn.textContent = "완료";
+            reviewBtn.classList.remove("ghost");
+          } else {
+            reviewBtn.disabled = false;
+            reviewBtn.textContent = data.detail || "실패";
+          }
+        } catch (err) {
+          reviewBtn.disabled = false;
+          reviewBtn.textContent = String(err);
+        }
+        return;
+      }
       // Open modal
       const matchBtn = e.target.closest("[data-ops-exception-spotify-match]");
       if (matchBtn) {
