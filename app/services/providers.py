@@ -1506,7 +1506,7 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
         extract = page_data.get("extract", "")
         if extract:
             return {
-                "review_text": extract[:3000],
+                "review_text": extract,
                 "review_source": "WIKIPEDIA",
                 "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title.replace(' ', '_'), safe='()')}",
             }
@@ -1539,7 +1539,7 @@ def fetch_review_from_url(url: str) -> str | None:
         paragraphs = container.find_all("p")
         text = "\n".join(p.get_text(" ", strip=True) for p in paragraphs if p.get_text(strip=True))
         text = text.strip()
-        return text[:3000] if text else None
+        return text if text else None
     except Exception as exc:
         import logging as _logging
         _logging.getLogger(__name__).warning("fetch_review_from_url(%s) failed: %s", url, exc)
