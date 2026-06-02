@@ -4247,6 +4247,45 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
+    .home-master-review-section {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .home-master-review-section-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .home-master-review-section-head strong {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .home-master-review-preview {
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 6px;
+    }
+    .home-master-review-source-tag {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .home-master-review-url-input {
+      width: 100%;
+      margin-bottom: 4px;
+    }
+    .home-master-review-manual-textarea {
+      width: 100%;
+      min-height: 80px;
+      resize: vertical;
+      margin-bottom: 4px;
+    }
 
     .operator-weather-head {
       grid-area: head;
@@ -17918,8 +17957,7 @@
 
         <div id="homeAcquisitionSourceInfo" class="result-item mini u-mt-8 u-hidden-initial"></div>
         <div id="homeAcquisitionSourceLink" class="mini u-mt-4 u-hidden-initial"></div>
-        <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6 u-hidden-initial">credits: -</div>
-        <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4 u-hidden-initial">matrix/identifiers: -</div>
+
 
         <!-- 통합 수정 패널 (기본 접힘) -->
         <details id="homeEditUnifiedDetails" class="home-unified-edit-details u-hidden-initial u-mt-4">
@@ -17967,30 +18005,30 @@
             <summary class="home-unified-edit-summary" data-i18n="media.manage.master.summary">앨범(마스터) 메타 수정</summary>
             <div class="home-unified-edit-body">
               <div class="home-unified-section-label">마스터 수정</div>
-              <div id="homeMasterCorrectionRow" class="row u-mt-0 u-row-end-gap-8-wrap">
-                <label class="u-fixed-label-130">
-                  <div class="dashboard-selected-sort-artist-label mini">
+              <div id="homeMasterCorrectionRow" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
                     <span>아티스트명</span><span class="help-dot" tabindex="0" data-help="운영 기준 아티스트명. 비우면 소스 기준을 따릅니다.">?</span>
                   </div>
-                  <input id="homeMasterCorrectionArtist" type="text" style="width:160px" placeholder="예: 산울림" />
-                </label>
-                <label class="u-fixed-label-160">
-                  <div class="dashboard-selected-sort-artist-label mini">
+                  <input id="homeMasterCorrectionArtist" type="text" style="width:100%;" placeholder="예: 산울림" />
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
                     <span>앨범명</span><span class="help-dot" tabindex="0" data-help="운영 기준 앨범명. 비우면 소스 기준을 따릅니다.">?</span>
                   </div>
-                  <input id="homeMasterCorrectionTitle" type="text" style="width:200px" placeholder="예: 산울림 - 제13집" />
-                </label>
-                <label class="u-fixed-label-130">
-                  <div class="dashboard-selected-sort-artist-label mini">
+                  <input id="homeMasterCorrectionTitle" type="text" style="width:100%;" placeholder="예: 산울림 - 제13집" />
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
                     <span data-i18n="media.manage.master.correction.field.release_year.label">발매연도</span><span class="help-dot" tabindex="0" data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
                   </div>
-                  <input id="homeMasterCorrectionReleaseYear" type="number" min="1900" max="2100" placeholder="예: 1978" />
-                </label>
-                <label class="u-fixed-label-160">
-                  <div class="dashboard-selected-sort-artist-label mini">
+                  <input id="homeMasterCorrectionReleaseYear" type="number" min="1900" max="2100" style="width:100%;" placeholder="예: 1978" />
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
                     <span data-i18n="media.manage.master.correction.field.domain_code.label">도메인</span><span class="help-dot" tabindex="0" data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
                   </div>
-                  <select id="homeMasterCorrectionDomainCode">
+                  <select id="homeMasterCorrectionDomainCode" style="width:100%;">
                     <option value=""></option>
                     <option value="KOREA" data-i18n="common.domain.korea">가요</option>
                     <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
@@ -18000,26 +18038,165 @@
                     <option value="WORLD" data-i18n="common.domain.world">월드 기타</option>
                     <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
                   </select>
-                </label>
-                <label class="u-flex-1-280">
-                  <div class="dashboard-selected-sort-artist-label mini">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
                     <span data-i18n="media.manage.master.correction.field.note.label">교정 메모</span><span class="help-dot" tabindex="0" data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다.">?</span>
                   </div>
-                  <input id="homeMasterCorrectionNote" type="text" placeholder="예: Discogs는 재반 기준, 내부 정렬은 원발매 기준" />
-                </label>
-                <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
-                <div id="homeMasterCorrectionSourceHint" class="mini u-flex-1-280" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
+                  <input id="homeMasterCorrectionNote" type="text" style="width:100%;" placeholder="예: Discogs는 재반 기준, 내부 정렬은 원발매 기준" />
+                </div>
+                <div class="row" style="align-items:center; justify-content:space-between; gap:8px; margin-top:4px;">
+                  <div id="homeMasterCorrectionSourceHint" class="mini" style="color:var(--text-muted);" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
+                  <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
+                </div>
               </div>
               <div id="homeMasterCorrectionStatus" class="status"></div>
-              <div id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master">
-                <label class="dashboard-selected-sort-artist-label mini" for="homeMasterSortArtistName">
+              <div id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master u-mt-6" style="display:flex; flex-direction:column; gap:4px; padding:0; border:none; background:none;">
+                <label class="dashboard-selected-sort-artist-label mini" for="homeMasterSortArtistName" style="margin:0;">
                   <span data-i18n="media.manage.master.sort_artist.label">정렬 아티스트명</span><span class="help-dot" tabindex="0" data-help="같은 앨범 마스터의 LP, CD 등 모든 미디어 정렬에 공통으로 적용됩니다.">?</span>
                 </label>
-                <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-                <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
-                <div class="dashboard-selected-sort-artist-note mini" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
+                <div class="row" style="width:100%; gap:8px;">
+                  <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" style="flex:1;" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
+                  <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+                </div>
+                <div class="dashboard-selected-sort-artist-note mini" style="margin:0; color:var(--text-muted);" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
               </div>
               <div id="homeMasterSortArtistStatus" class="status"></div>
+              <!-- 리뷰 관리 섹션 -->
+              <div id="homeMasterReviewSection" class="home-master-review-section" style="display:none">
+                <div class="home-master-review-section-head">
+                  <strong data-i18n="media.manage.master.review.title">앨범 리뷰</strong>
+                  <span id="homeMasterReviewSourceTag" class="home-master-review-source-tag"></span>
+                  <button id="homeMasterReviewDeleteBtn" class="btn ghost tiny danger" type="button" style="display:none" data-i18n="media.manage.master.review.action.delete">삭제</button>
+                </div>
+                <div id="homeMasterReviewPreview" class="home-master-review-preview" style="display:none"></div>
+                <div id="homeMasterReviewActions" class="row" style="gap:4px">
+                  <button id="homeMasterReviewAutoBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.auto">Wikipedia 자동수집</button>
+                  <button id="homeMasterReviewUrlBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.url">URL 입력</button>
+                  <button id="homeMasterReviewManualBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.manual">직접 입력</button>
+                </div>
+                <!-- URL 입력 폼 -->
+                <div id="homeMasterReviewUrlForm" style="display:none;margin-top:6px">
+                  <input id="homeMasterReviewUrlInput" type="url" class="home-master-review-url-input" placeholder="https://..." />
+                  <div class="row" style="gap:4px;margin-top:4px">
+                    <button id="homeMasterReviewUrlSubmitBtn" class="btn tiny" type="button" data-i18n="media.manage.master.review.action.fetch">수집</button>
+                    <button id="homeMasterReviewUrlCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
+                  </div>
+                </div>
+                <!-- 직접 입력 폼 -->
+                <div id="homeMasterReviewManualForm" style="display:none;margin-top:6px">
+                  <input id="homeMasterReviewManualSource" type="text" style="width:160px;margin-bottom:4px" placeholder="출처명 (예: ISM)" />
+                  <textarea id="homeMasterReviewManualText" class="home-master-review-manual-textarea" placeholder="리뷰 텍스트를 입력하세요"></textarea>
+                  <div class="row" style="gap:4px;margin-top:4px">
+                    <button id="homeMasterReviewManualSubmitBtn" class="btn tiny" type="button" data-i18n="common.action.save">저장</button>
+                    <button id="homeMasterReviewManualCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
+                  </div>
+                </div>
+                <div id="homeMasterReviewStatus" class="status" style="margin-top:6px"></div>
+              </div>
+            </div>
+          </details>
+
+          <!-- ══ 마스터 / 보유 상품 및 마스터 연계 수집품 (이동됨) ══ -->
+          <div id="homeMasterSummarySection" class="u-hidden-initial">
+            <div class="section-divider u-mt-10">
+              <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
+            </div>
+            <div id="homeMasterStatus" class="status"></div>
+            <div id="homeMasterMeta" class="compact-line u-mt-6"><span id="homeMasterSpotifyBadge"></span></div>
+          </div>
+          <div id="homeMasterActionMount"></div>
+          <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
+            <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
+          </div>
+          <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details">
+            <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
+            <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack" style="border:none;background:none;box-shadow:none;margin-top:0;">
+              <div class="compact-stack-grid">
+                <div class="mini muted span-2 u-mt-0" data-i18n="media.manage.collectibles.panel_intro">수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
+                <div class="section-divider span-2 u-mt-10">
+                  <h2 data-i18n="media.manage.collectibles.panel_title">마스터 연계 수집품</h2>
+                </div>
+                <div class="mini span-2 u-mt-6" data-i18n="media.manage.collectibles.panel_note">콜라보, 레이블 행사 수집품, 단독 수집품은 `수집품` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.</div>
+                <div class="span-2">
+                  <label data-i18n="media.manage.collectibles.field.current_master">현재 연계 기준</label>
+                  <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
+                </div>
+              </div>
+              <div class="home-linked-goods-register-row">
+                <div class="home-linked-goods-register-action">
+                  <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">수집품 탭에서 연계 수집품 등록</button>
+                  <span class="help-dot" tabindex="0" data-help-key="media.manage.collectibles.register_method.help">?</span>
+                </div>
+              </div>
+              <div id="homeLinkedGoodsStatus" class="status span-2"></div>
+              <div id="homeLinkedGoodsLegacyFields" class="span-2 u-hidden-initial" hidden>
+                <div class="grid-6">
+                  <div>
+                    <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
+                    <select id="homeLinkedGoodsCategory">
+                      <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
+                      <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
+                    </select>
+                  </div>
+                  <div class="span-2">
+                    <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
+                    <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
+                  </div>
+                  <div>
+                    <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
+                    <select id="homeLinkedGoodsSizeGroup">
+                      <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid-6 u-mt-6">
+                  <div>
+                    <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
+                    <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
+                  </div>
+                  <div class="span-2">
+                    <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
+                    <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
+                  </div>
+                  <div id="homeLinkedPosterSpecWrap">
+                    <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
+                    <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
+                  </div>
+                  <div id="homeLinkedTshirtSizeWrap">
+                    <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
+                    <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
+                  </div>
+                  <div id="homeLinkedCupMaterialWrap">
+                    <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
+                    <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
+                  </div>
+                  <div id="homeLinkedHatSizeWrap">
+                    <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
+                    <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
+                  </div>
+                </div>
+                <div class="grid-6 u-mt-6">
+                  <div class="span-2">
+                    <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
+                    <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
+                  </div>
+                  <div class="span-2">
+                    <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
+                    <textarea
+                      id="homeLinkedGoodsImagePaste"
+                      class="image-paste-box"
+                      data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
+                      placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
+                    ></textarea>
+                  </div>
+                  <div class="span-2">
+                    <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
+                    <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
+                  </div>
+                </div>
+                <input id="homeLinkedGoodsImageUrls" type="hidden" />
+              </div>
             </div>
           </details>
 
@@ -18174,20 +18351,6 @@
                           <select id="editSpeedRpm">
                             <option value="">미지정</option>
                             <option value="33">33 1/3</option>
-                            <option value="45">45</option>
-                            <option value="78">78</option>
-                          </select>
-                        </div>
-                        <div id="homeEditDiscTypeWrap" class="u-hidden-initial">
-                          <label for="editDiscType" data-i18n="media.manage.field.disc_type.label">디스크 유형</label>
-                          <select id="editDiscType">
-                            <option value="">미지정</option>
-                            <option value="Standard">Standard</option>
-                            <option value="Picture">Picture Disc</option>
-                            <option value="Shaped">Shaped Disc</option>
-                            <option value="Colored">Colored Vinyl</option>
-                            <option value="Clear">Clear Vinyl</option>
-                            <option value="Etched">Etched</option>
                           </select>
                         </div>
                       </div>
@@ -18445,109 +18608,10 @@
                       <button id="homeEditDeleteBtn" class="btn ghost" type="button" data-i18n="media.manage.product.action.delete">삭제</button>
                     </div>
                     <div id="homeEditStatus" class="status"></div>
+                    <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6">credits: -</div>
+                    <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4">matrix/identifiers: -</div>
                     </div>
-          <div id="homeMasterSummarySection" class="u-hidden-initial">
-                      <div class="section-divider u-mt-10">
-                        <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
-                      </div>
-                      <div id="homeMasterStatus" class="status"></div>
-                      <div id="homeMasterMeta" class="compact-line u-mt-6"><span id="homeMasterSpotifyBadge"></span></div>
-                    </div>
-          <div id="homeMasterActionMount"></div>
-          <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
-                      <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
-                    </div>
-          <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details u-hidden-initial">
-            <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
-          <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack" style="border:none;background:none;box-shadow:none;margin-top:0;">
-                    <div class="compact-stack-grid">
-                      <div class="mini muted span-2 u-mt-0" data-i18n="media.manage.collectibles.panel_intro">수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
-                      <div class="section-divider span-2 u-mt-10">
-                        <h2 data-i18n="media.manage.collectibles.panel_title">마스터 연계 수집품</h2>
-                      </div>
-                      <div class="mini span-2 u-mt-6" data-i18n="media.manage.collectibles.panel_note">콜라보, 레이블 행사 수집품, 단독 수집품은 `수집품` 탭에서 별도로 등록한 뒤 필요할 때만 현재 마스터와 연결하면 됩니다.</div>
-                      <div class="span-2">
-                        <label data-i18n="media.manage.collectibles.field.current_master">현재 연계 기준</label>
-                        <div id="homeLinkedGoodsMasterInfo" class="compact-line" data-i18n="media.manage.collectibles.state.no_master">현재 선택된 앨범 마스터가 없습니다.</div>
-                      </div>
-                    </div>
-                    <div class="home-linked-goods-register-row">
-                      <div class="home-linked-goods-register-action">
-                        <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">수집품 탭에서 연계 수집품 등록</button>
-                        <span class="help-dot" tabindex="0" data-help-key="media.manage.collectibles.register_method.help">?</span>
-                      </div>
-                    </div>
-                    <div id="homeLinkedGoodsStatus" class="status span-2"></div>
-                    <div id="homeLinkedGoodsLegacyFields" class="span-2 u-hidden-initial" hidden>
-                      <div class="grid-6">
-                        <div>
-                          <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
-                          <select id="homeLinkedGoodsCategory">
-                            <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
-                            <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
-                          </select>
-                        </div>
-                        <div class="span-2">
-                          <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
-                          <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
-                        </div>
-                        <div>
-                          <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
-                          <select id="homeLinkedGoodsSizeGroup">
-                            <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="grid-6 u-mt-6">
-                        <div>
-                          <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
-                          <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
-                        </div>
-                        <div class="span-2">
-                          <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
-                          <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
-                        </div>
-                        <div id="homeLinkedPosterSpecWrap">
-                          <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
-                          <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
-                        </div>
-                        <div id="homeLinkedTshirtSizeWrap">
-                          <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
-                          <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
-                        </div>
-                        <div id="homeLinkedCupMaterialWrap">
-                          <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
-                          <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
-                        </div>
-                        <div id="homeLinkedHatSizeWrap">
-                          <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
-                          <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
-                        </div>
-                      </div>
-                      <div class="grid-6 u-mt-6">
-                        <div class="span-2">
-                          <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
-                          <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
-                        </div>
-                        <div class="span-2">
-                          <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
-                          <textarea
-                            id="homeLinkedGoodsImagePaste"
-                            class="image-paste-box"
-                            data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
-                            placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
-                          ></textarea>
-                        </div>
-                        <div class="span-2">
-                          <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
-                          <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
-                        </div>
-                      </div>
-                      <input id="homeLinkedGoodsImageUrls" type="hidden" />
-                    </div>
-                  </div>
-          </details>
-        </div>
+
 
         <!-- ══ 섹션 2: 상품 정보 ══ -->
         <div id="homeSection2ProductInfo">
@@ -22519,6 +22583,7 @@
         "media.manage.product.delete.confirm": "상품을 삭제할까요?\n\n{item_name}\nlabel_id: {label_id}\nowned_item_id: {owned_item_id}\n\n이 작업은 되돌릴 수 없습니다.",
         "media.manage.product.delete.progress": "상품 삭제 중... (owned_item_id={owned_item_id})",
         "media.manage.product.delete.already_gone": "이미 삭제된 상품으로 확인되어 목록을 새로고침했습니다. (owned_item_id={owned_item_id})",
+        "media.manage.master.summary": "앨범(마스터) 메타 수정",
         "media.manage.master.summary.title": "마스터 / 보유 상품",
         "media.manage.master.sort_artist.label": "정렬 아티스트명",
         "media.manage.master.sort_artist.placeholder": "예: 산울림 / 山下達郎 / 周杰倫",
@@ -22529,6 +22594,12 @@
         "media.manage.master.sort_artist.status.save_failed": "정렬 아티스트명 저장 실패",
         "media.manage.master.sort_artist.status.saved": "정렬 아티스트명 저장 완료: {name}",
         "media.manage.master.sort_artist.status.cleared": "정렬 아티스트명을 비웠습니다.",
+        "media.manage.master.review.title": "앨범 리뷰",
+        "media.manage.master.review.action.auto": "Wikipedia 자동수집",
+        "media.manage.master.review.action.url": "URL 입력",
+        "media.manage.master.review.action.manual": "직접 입력",
+        "media.manage.master.review.action.fetch": "수집",
+        "media.manage.master.review.action.delete": "삭제",
         "media.manage.master.correction.field.release_year.label": "운영 발매연도",
         "media.manage.master.correction.field.domain_code.label": "운영 도메인",
         "media.manage.master.correction.field.note.label": "교정 메모",
@@ -25220,6 +25291,7 @@
         "media.manage.product.delete.confirm": "Delete this item?\n\n{item_name}\nlabel_id: {label_id}\nowned_item_id: {owned_item_id}\n\nThis action cannot be undone.",
         "media.manage.product.delete.progress": "Deleting item... (owned_item_id={owned_item_id})",
         "media.manage.product.delete.already_gone": "The item was already deleted, so the list has been refreshed. (owned_item_id={owned_item_id})",
+        "media.manage.master.summary": "Edit Album (Master) Meta",
         "media.manage.master.summary.title": "Master / Owned Items",
         "media.manage.master.sort_artist.label": "Sort Artist",
         "media.manage.master.sort_artist.placeholder": "e.g. Sanullim / Tatsuro Yamashita / Jay Chou",
@@ -25230,6 +25302,12 @@
         "media.manage.master.sort_artist.status.save_failed": "Failed to save sort artist name",
         "media.manage.master.sort_artist.status.saved": "Sort artist saved: {name}",
         "media.manage.master.sort_artist.status.cleared": "Sort artist cleared.",
+        "media.manage.master.review.title": "Album review",
+        "media.manage.master.review.action.auto": "Auto (Wikipedia)",
+        "media.manage.master.review.action.url": "From URL",
+        "media.manage.master.review.action.manual": "Manual entry",
+        "media.manage.master.review.action.fetch": "Fetch",
+        "media.manage.master.review.action.delete": "Delete",
         "media.manage.master.correction.field.release_year.label": "Effective Release Year",
         "media.manage.master.correction.field.domain_code.label": "Effective Domain",
         "media.manage.master.correction.field.note.label": "Correction Note",
@@ -27906,6 +27984,7 @@
         "media.manage.product.delete.confirm": "この商品を削除しますか?\n\n{item_name}\nlabel_id: {label_id}\nowned_item_id: {owned_item_id}\n\nこの操作は元に戻せません。",
         "media.manage.product.delete.progress": "商品を削除中... (owned_item_id={owned_item_id})",
         "media.manage.product.delete.already_gone": "既に削除された商品と判断され、一覧を再読み込みしました。 (owned_item_id={owned_item_id})",
+        "media.manage.master.summary": "アルバム（マスター）メタ修正",
         "media.manage.master.summary.title": "マスター / 所蔵商品",
         "media.manage.master.sort_artist.label": "整列アーティスト名",
         "media.manage.master.sort_artist.placeholder": "例: サヌリム / 山下達郎 / 周杰倫",
@@ -27916,6 +27995,12 @@
         "media.manage.master.sort_artist.status.save_failed": "整列アーティスト名の保存に失敗しました",
         "media.manage.master.sort_artist.status.saved": "整列アーティスト名を保存しました: {name}",
         "media.manage.master.sort_artist.status.cleared": "整列アーティスト名を空にしました。",
+        "media.manage.master.review.title": "アルバムレビュー",
+        "media.manage.master.review.action.auto": "Wikipedia自動収集",
+        "media.manage.master.review.action.url": "URL入力",
+        "media.manage.master.review.action.manual": "手動入力",
+        "media.manage.master.review.action.fetch": "収集",
+        "media.manage.master.review.action.delete": "削除",
         "media.manage.master.correction.field.release_year.label": "運用発売年",
         "media.manage.master.correction.field.domain_code.label": "運用ドメイン",
         "media.manage.master.correction.field.note.label": "補正メモ",
@@ -33950,6 +34035,48 @@
           ${source ? `<div class="ops-artist-context-meta"><span class="ops-artist-context-pill"><strong>${escapeHtml(t("media.search.context.review_source_label") || "출처")}</strong>${escapeHtml(source)}</span></div>` : ""}
         </section>
       `;
+    }
+
+    function renderHomeMasterReviewSection(master) {
+      const section = $("homeMasterReviewSection");
+      if (!section) return;
+      if (!master) { section.style.display = "none"; return; }
+      section.style.display = "";
+
+      const reviewText = String(master.review_text || "").trim();
+      const reviewSource = String(master.review_source || "").trim();
+
+      const preview = $("homeMasterReviewPreview");
+      const sourceTag = $("homeMasterReviewSourceTag");
+      const deleteBtn = $("homeMasterReviewDeleteBtn");
+
+      if (reviewText) {
+        preview.textContent = reviewText.slice(0, 200) + (reviewText.length > 200 ? "…" : "");
+        preview.style.display = "";
+        sourceTag.textContent = reviewSource ? `출처: ${reviewSource}` : "";
+        deleteBtn.style.display = "";
+      } else {
+        preview.style.display = "none";
+        sourceTag.textContent = "";
+        deleteBtn.style.display = "none";
+      }
+
+      $("homeMasterReviewUrlForm").style.display = "none";
+      $("homeMasterReviewManualForm").style.display = "none";
+      $("homeMasterReviewStatus").textContent = "";
+      $("homeMasterReviewUrlInput").value = "";
+      $("homeMasterReviewManualText").value = "";
+      $("homeMasterReviewManualSource").value = "";
+    }
+
+    function currentHomeMasterId() {
+      return Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0) || null;
+    }
+
+    async function refreshCurrentMasterReview(masterId) {
+      const res = await apiFetch(`/album-masters/${masterId}`);
+      const data = await res.json();
+      renderHomeMasterReviewSection(data);
     }
 
     function renderOpsPluginSection(cardsHtml) {
@@ -46027,13 +46154,19 @@ async function loadDashboardClimate() {
         setDisplayIfPresent("homeMasterGoodsSection", "none");
         // 마스터 없으면 연계 패널 details 숨기기
         const detailsEl = $("homeLinkedGoodsPanelDetails");
-        if (detailsEl) detailsEl.hidden = true;
+        if (detailsEl) {
+          detailsEl.hidden = true;
+          detailsEl.classList.add("u-hidden-initial");
+        }
         return;
       }
       setDisplayIfPresent("homeMasterGoodsSection", "block");
       // 마스터 있으면 details 표시 (기본 접힘 상태 유지)
       const detailsEl = $("homeLinkedGoodsPanelDetails");
-      if (detailsEl) detailsEl.hidden = false;
+      if (detailsEl) {
+        detailsEl.hidden = false;
+        detailsEl.classList.remove("u-hidden-initial");
+      }
       if (!Array.isArray(homeMasterInfo?.collectibles) && homeLinkedCollectiblesLoading) {
         setHtmlIfPresent("homeMasterGoodsList", `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.loading"))}</div>`);
         return;
@@ -46074,6 +46207,7 @@ async function loadDashboardClimate() {
 
     function syncHomeMasterCorrectionEditor() {
       const unifiedDetails = $("homeEditUnifiedDetails");
+      const masterEditDetails = $("homeMasterEditDetails");
       const releaseYearInput = $("homeMasterCorrectionReleaseYear");
       const domainCodeInput = $("homeMasterCorrectionDomainCode");
       const noteInput = $("homeMasterCorrectionNote");
@@ -46085,6 +46219,7 @@ async function loadDashboardClimate() {
       const masterId = Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0);
       if (masterId <= 0) {
         if (unifiedDetails) unifiedDetails.classList.add("u-hidden-initial");
+        if (masterEditDetails) masterEditDetails.classList.add("u-hidden-initial");
         releaseYearInput.value = "";
         domainCodeInput.value = "";
         noteInput.value = "";
@@ -46093,9 +46228,14 @@ async function loadDashboardClimate() {
         saveBtn.disabled = true;
         sourceHint.textContent = t("media.manage.master.correction.source_hint_pending");
         setStatus("homeMasterCorrectionStatus", "ok", "");
+        const spMatchId = $("homeMasterSpotifyMatchId");
+        if (spMatchId) spMatchId.value = "";
+        setStatus("homeMasterSpotifyMatchStatus", "ok", "");
+        renderHomeMasterReviewSection(null);
         return;
       }
       if (unifiedDetails) unifiedDetails.classList.remove("u-hidden-initial");
+      if (masterEditDetails) masterEditDetails.classList.remove("u-hidden-initial");
       releaseYearInput.value = String(
         homeMasterInfo?.override_release_year
         ?? homeMasterInfo?.release_year
@@ -46109,6 +46249,9 @@ async function loadDashboardClimate() {
       noteInput.value = String(homeMasterInfo?.override_note || "").trim();
       if (titleInput) titleInput.value = String(homeMasterInfo?.override_title || homeMasterInfo?.title || "").trim();
       if (artistInput) artistInput.value = String(homeMasterInfo?.override_artist_or_brand || homeMasterInfo?.artist_or_brand || "").trim();
+      const spMatchId = $("homeMasterSpotifyMatchId");
+      if (spMatchId) spMatchId.value = String(homeMasterInfo?.spotify_album_id || "").trim();
+      setStatus("homeMasterSpotifyMatchStatus", "ok", "");
       const sourceReleaseYear = homeMasterInfo?.source_release_year ?? homeMasterInfo?.release_year ?? null;
       const sourceDomainCode = String(
         homeMasterInfo?.source_domain_code
@@ -46120,6 +46263,7 @@ async function loadDashboardClimate() {
         domain: sourceDomainCode ? dashboardDomainLabel(sourceDomainCode) : t("common.unspecified"),
       });
       saveBtn.disabled = false;
+      renderHomeMasterReviewSection(homeMasterInfo);
     }
 
     function syncHomeRelatedSelectedMetaPreview() {
@@ -49246,6 +49390,64 @@ async function loadDashboardClimate() {
         );
       } catch (err) {
         setStatus("homeMasterCorrectionStatus", "err", err.message);
+      }
+    }
+
+    async function linkHomeMasterSpotify() {
+      const masterId = Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0);
+      if (masterId <= 0) {
+        setStatus("homeMasterSpotifyMatchStatus", "err", t("media.manage.master.correction.status.master_required"));
+        return;
+      }
+      const spotifyId = $("homeMasterSpotifyMatchId")?.value.trim() || "";
+      if (!spotifyId) {
+        setStatus("homeMasterSpotifyMatchStatus", "err", "Spotify Album ID를 입력해주세요.");
+        return;
+      }
+      try {
+        setStatus("homeMasterSpotifyMatchStatus", "ok", "연결 중...");
+        const res = await fetch(`/album-masters/${masterId}/spotify/match`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ spotify_album_id: spotifyId }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
+        setStatus("homeMasterSpotifyMatchStatus", "ok", "연결되었습니다.");
+        if (homeMasterInfo && Number(homeMasterInfo.album_master_id || 0) === masterId) {
+          homeMasterInfo.spotify_album_id = spotifyId;
+          homeMasterInfo.spotify_album_uri = `spotify:album:${spotifyId}`;
+        }
+        renderHomeMasterMetaCard();
+      } catch (err) {
+        setStatus("homeMasterSpotifyMatchStatus", "err", "연결 실패: " + err.message);
+      }
+    }
+
+    async function unlinkHomeMasterSpotify() {
+      const masterId = Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0);
+      if (masterId <= 0) {
+        setStatus("homeMasterSpotifyMatchStatus", "err", t("media.manage.master.correction.status.master_required"));
+        return;
+      }
+      if (!confirm("Spotify 연결을 해제할까요?")) return;
+      try {
+        setStatus("homeMasterSpotifyMatchStatus", "ok", "해제 중...");
+        const res = await fetch(`/album-masters/${masterId}/spotify/match`, {
+          method: "DELETE",
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
+        setStatus("homeMasterSpotifyMatchStatus", "ok", "해제되었습니다.");
+        const input = $("homeMasterSpotifyMatchId");
+        if (input) input.value = "";
+        if (homeMasterInfo && Number(homeMasterInfo.album_master_id || 0) === masterId) {
+          homeMasterInfo.spotify_album_id = null;
+          homeMasterInfo.spotify_album_uri = null;
+        }
+        renderHomeMasterMetaCard();
+      } catch (err) {
+        setStatus("homeMasterSpotifyMatchStatus", "err", "해제 실패: " + err.message);
       }
     }
 
@@ -55982,6 +56184,13 @@ async function loadDashboardClimate() {
     $("editItemName").addEventListener("input", syncHomeMasterInlineEditor);
     $("homeMasterCorrectionSaveBtn").addEventListener("click", saveHomeMasterCorrection);
     $("homeMasterSortArtistSaveBtn").addEventListener("click", saveHomeMasterSortArtistName);
+    $("homeMasterSpotifyMatchBtn").addEventListener("click", linkHomeMasterSpotify);
+    $("homeMasterSpotifyUnmatchBtn").addEventListener("click", unlinkHomeMasterSpotify);
+    $("homeMasterSpotifyMatchId").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      linkHomeMasterSpotify();
+    });
     $("homeMasterCorrectionNote").addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
@@ -56071,6 +56280,114 @@ async function loadDashboardClimate() {
     $("editTrackList")?.addEventListener("input", () => renderHomeTrackInfoPanel());
     $("homeEditDeleteBtn").addEventListener("click", deleteHomeSelectedItem);
     $("homeMasterDeleteBtn").addEventListener("click", () => deleteHomeSelectedMaster());
+    $("homeMasterReviewAutoBtn")?.addEventListener("click", async () => {
+      const masterId = currentHomeMasterId();
+      if (!masterId) return;
+      const btn = $("homeMasterReviewAutoBtn");
+      const status = $("homeMasterReviewStatus");
+      btn.disabled = true;
+      status.textContent = "Wikipedia에서 수집 중...";
+      try {
+        const res = await apiFetch(`/album-masters/${masterId}/review/auto`, { method: "POST" });
+        const data = await res.json();
+        if (data.ok) {
+          status.textContent = `완료 (출처: ${data.source})`;
+          await refreshCurrentMasterReview(masterId);
+        } else {
+          status.textContent = data.detail || "실패";
+        }
+      } catch (e) {
+        status.textContent = String(e);
+      }
+      btn.disabled = false;
+    });
+    $("homeMasterReviewUrlBtn")?.addEventListener("click", () => {
+      $("homeMasterReviewUrlForm").style.display = "";
+      $("homeMasterReviewManualForm").style.display = "none";
+    });
+    $("homeMasterReviewUrlCancelBtn")?.addEventListener("click", () => {
+      $("homeMasterReviewUrlForm").style.display = "none";
+    });
+    $("homeMasterReviewUrlSubmitBtn")?.addEventListener("click", async () => {
+      const masterId = currentHomeMasterId();
+      const url = ($("homeMasterReviewUrlInput").value || "").trim();
+      if (!masterId || !url) return;
+      const btn = $("homeMasterReviewUrlSubmitBtn");
+      const status = $("homeMasterReviewStatus");
+      btn.disabled = true;
+      status.textContent = "URL에서 수집 중...";
+      try {
+        const res = await apiFetch(`/album-masters/${masterId}/review/url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          status.textContent = `완료 (출처: ${data.source})`;
+          $("homeMasterReviewUrlForm").style.display = "none";
+          await refreshCurrentMasterReview(masterId);
+        } else {
+          status.textContent = data.detail || "실패";
+        }
+      } catch (e) {
+        status.textContent = String(e);
+      }
+      btn.disabled = false;
+    });
+    $("homeMasterReviewManualBtn")?.addEventListener("click", () => {
+      $("homeMasterReviewManualForm").style.display = "";
+      $("homeMasterReviewUrlForm").style.display = "none";
+    });
+    $("homeMasterReviewManualCancelBtn")?.addEventListener("click", () => {
+      $("homeMasterReviewManualForm").style.display = "none";
+    });
+    $("homeMasterReviewManualSubmitBtn")?.addEventListener("click", async () => {
+      const masterId = currentHomeMasterId();
+      const text = ($("homeMasterReviewManualText").value || "").trim();
+      const source = ($("homeMasterReviewManualSource").value || "MANUAL").trim();
+      if (!masterId || !text) return;
+      const btn = $("homeMasterReviewManualSubmitBtn");
+      const status = $("homeMasterReviewStatus");
+      btn.disabled = true;
+      status.textContent = "저장 중...";
+      try {
+        const res = await apiFetch(`/album-masters/${masterId}/review/manual`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, source }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          status.textContent = "저장 완료";
+          $("homeMasterReviewManualForm").style.display = "none";
+          await refreshCurrentMasterReview(masterId);
+        } else {
+          status.textContent = data.detail || "실패";
+        }
+      } catch (e) {
+        status.textContent = String(e);
+      }
+      btn.disabled = false;
+    });
+    $("homeMasterReviewDeleteBtn")?.addEventListener("click", async () => {
+      const masterId = currentHomeMasterId();
+      if (!masterId || !confirm("리뷰를 삭제하시겠습니까?")) return;
+      const status = $("homeMasterReviewStatus");
+      status.textContent = "삭제 중...";
+      try {
+        const res = await apiFetch(`/album-masters/${masterId}/review`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.ok) {
+          status.textContent = "삭제 완료";
+          await refreshCurrentMasterReview(masterId);
+        } else {
+          status.textContent = data.detail || "실패";
+        }
+      } catch (e) {
+        status.textContent = String(e);
+      }
+    });
     $("homeMasterAddLoadBtn").addEventListener("click", () => loadHomeManageMasterLookup({ resetPage: true }));
     $("homeMasterAddResetBtn").addEventListener("click", () => {
       resetHomeMasterLookupUi({ clearInputs: true });
