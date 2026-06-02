@@ -18111,7 +18111,7 @@
           </div>
           <details id="homeLinkedGoodsPanelDetails" class="home-unified-edit-details">
             <summary class="home-unified-edit-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
-            <div id="homeLinkedGoodsPanel" class="home-goods-panel compact-stack" style="border:none;background:none;box-shadow:none;margin-top:0;">
+            <div id="homeLinkedGoodsPanel" class="home-goods-panel" style="border:none;background:none;box-shadow:none;margin-top:0;">
               <div class="compact-stack-grid">
                 <div class="mini muted span-2 u-mt-0" data-i18n="media.manage.collectibles.panel_intro">수집품 등록과 검색은 상단 `수집품` 탭에서 독립적으로 관리하고, 여기서는 현재 마스터 기준 연결만 시작합니다.</div>
                 <div class="section-divider span-2 u-mt-10">
@@ -21246,6 +21246,19 @@
 
       <div class="layout u-mt-16">
         <section class="card">
+          <h2 data-i18n="ops.review_batch.title">앨범 리뷰 자동수집</h2>
+          <p class="sub" data-i18n="ops.review_batch.subtitle">리뷰가 없는 앨범 마스터를 Wikipedia에서 자동 수집하고 DeepSeek로 한국어 요약합니다.</p>
+          <div class="row u-mt-10" style="align-items:center;gap:16px">
+            <span id="reviewBatchRemainingCount" class="mini muted">-</span>
+            <button id="reviewBatchStatusBtn" class="btn ghost" type="button" data-i18n="ops.review_batch.action.reload">상태 새로고침</button>
+            <button id="reviewBatchRunBtn" class="btn secondary" type="button" data-i18n="ops.review_batch.action.run">자동수집 실행 (50건)</button>
+          </div>
+          <div id="reviewBatchStatus" class="status u-mt-8"></div>
+        </section>
+      </div>
+
+      <div class="layout u-mt-16">
+        <section class="card">
           <h2>알라딘 → Discogs 마스터 매칭</h2>
           <p class="sub">알라딘 입수건의 바코드를 Discogs API로 조회해 마스터를 연결하고 포맷 정보를 업데이트합니다. 실행 시간은 건수에 비례합니다(약 2초/건).</p>
           <div class="grid-3">
@@ -23498,6 +23511,10 @@
         "ops.meta_sync.summary.last_result_none": "최근결과: 없음",
         "ops.meta_sync.summary.last_error": "최근오류: {error}",
         "ops.meta_sync.summary.full": "{auto} | 배치 limit {limit} | 상태 {state} | {last}{error}",
+        "ops.review_batch.title": "앨범 리뷰 자동수집",
+        "ops.review_batch.subtitle": "리뷰가 없는 앨범 마스터를 Wikipedia에서 자동 수집하고 DeepSeek로 한국어 요약합니다.",
+        "ops.review_batch.action.reload": "상태 새로고침",
+        "ops.review_batch.action.run": "자동수집 실행 (50건)",
         "ops.exception.status.reset_defaults": "현재 역할의 기본 탭과 기본 필터를 초기화했습니다.",
         "ops.exception.status.preset_name_required": "저장할 필터 이름을 입력하세요.",
         "ops.exception.field.preset.saved_name": "저장 필터",
@@ -26204,6 +26221,10 @@
         "ops.meta_sync.summary.last_result_none": "Last result: none",
         "ops.meta_sync.summary.last_error": "Last error: {error}",
         "ops.meta_sync.summary.full": "{auto} | batch limit {limit} | state {state} | {last}{error}",
+        "ops.review_batch.title": "Album review auto-collect",
+        "ops.review_batch.subtitle": "Fetch Wikipedia reviews for masters without review and summarize to Korean via DeepSeek.",
+        "ops.review_batch.action.reload": "Refresh status",
+        "ops.review_batch.action.run": "Run auto-collect (50)",
         "ops.exception.status.reset_defaults": "Reset the default tab and default filter for this role.",
         "ops.exception.status.preset_name_required": "Enter a preset name to save.",
         "ops.exception.field.preset.saved_name": "Saved filter",
@@ -28922,6 +28943,10 @@
         "ops.meta_sync.summary.last_result_none": "最近結果: なし",
         "ops.meta_sync.summary.last_error": "最近エラー: {error}",
         "ops.meta_sync.summary.full": "{auto} | バッチ limit {limit} | 状態 {state} | {last}{error}",
+        "ops.review_batch.title": "アルバムレビュー自動収集",
+        "ops.review_batch.subtitle": "レビューのないマスターをWikipediaから自動収集し、DeepSeekで韓国語要約します。",
+        "ops.review_batch.action.reload": "状態更新",
+        "ops.review_batch.action.run": "自動収集実行 (50件)",
         "ops.exception.status.reset_defaults": "現在の役割の基本タブと基本フィルタを初期化しました。",
         "ops.exception.status.preset_name_required": "保存するフィルタ名を入力してください。",
         "ops.exception.field.preset.saved_name": "保存フィルタ",
@@ -56065,6 +56090,33 @@ async function loadDashboardClimate() {
     $("metaSyncRunBtn").addEventListener("click", runMetadataSyncNow);
     $("aladinDiscogsBackfillStatusBtn").addEventListener("click", loadAladinDiscogsBackfillStatus);
     $("aladinDiscogsBackfillRunBtn").addEventListener("click", runAladinDiscogsBackfill);
+    $("reviewBatchStatusBtn")?.addEventListener("click", async () => {
+      const status = $("reviewBatchStatus");
+      status.textContent = "상태 조회 중...";
+      try {
+        const res = await apiFetch("/album-masters/review/batch", { method: "POST" });
+        const data = await res.json();
+        $("reviewBatchRemainingCount").textContent = `미수집 약 ${data.remaining}건`;
+        status.textContent = `처리: ${data.processed}건 / 성공: ${data.succeeded}건 / 실패: ${data.failed}건 / 잔여: ${data.remaining}건`;
+      } catch (e) {
+        status.textContent = String(e);
+      }
+    });
+    $("reviewBatchRunBtn")?.addEventListener("click", async () => {
+      const btn = $("reviewBatchRunBtn");
+      const status = $("reviewBatchStatus");
+      btn.disabled = true;
+      status.textContent = "자동수집 실행 중... (최대 수 분 소요)";
+      try {
+        const res = await apiFetch("/album-masters/review/batch?limit=50", { method: "POST" });
+        const data = await res.json();
+        $("reviewBatchRemainingCount").textContent = `미수집 약 ${data.remaining}건`;
+        status.textContent = `완료 — 처리: ${data.processed}건 / 성공: ${data.succeeded}건 / 실패: ${data.failed}건 / 잔여: ${data.remaining}건`;
+      } catch (e) {
+        status.textContent = String(e);
+      }
+      btn.disabled = false;
+    });
     $("quickCategory").addEventListener("change", syncQuickSizeGroup);
     $("quickCreateBtn").addEventListener("click", createQuickOwnedItem);
     $("quickResetBtn").addEventListener("click", resetQuickForm);
