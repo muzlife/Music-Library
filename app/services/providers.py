@@ -3133,6 +3133,13 @@ def _parse_maniadb_release_legend(
     year = _maniadb_release_year_from_token(date_token)
     released_date = date_token if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_token or "") else None
 
+    # Detect swapped order: if chunk[0] is not a date but chunk[1] is
+    if not released_date and re.fullmatch(r"\d{4}-\d{2}-\d{2}", label_token or ""):
+        released_date = label_token
+        label_token = date_token
+        if not year:
+            year = _maniadb_release_year_from_token(released_date)
+
     label_name = label_token
     catno: str | None = None
     barcode: str | None = None
