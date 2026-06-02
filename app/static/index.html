@@ -2113,7 +2113,7 @@
       align-items: flex-start;
     }
     .master-meta-spotify {
-      width: 300px;
+      width: 50%;
       flex-shrink: 0;
     }
     .master-meta-spotify iframe {
@@ -2143,6 +2143,15 @@
     }
     .manage-section-details:last-child {
       border-bottom: 1px solid var(--line);
+    }
+    .manage-section-title {
+      display: flex;
+      align-items: center;
+      padding: 10px 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin: 0;
     }
     .manage-section-summary {
       display: flex;
@@ -17968,8 +17977,21 @@
 
         <!-- 관리 섹션 스택 -->
         <div id="homeEditUnifiedDetails" class="manage-sections-wrapper u-hidden-initial u-mt-4">
-        <details id="manageSection2SpotifyReview" class="manage-section-details" open>
-          <summary class="manage-section-summary" data-i18n="media.manage.section.spotify_review">Spotify · 리뷰</summary>
+        <div id="manageSection2SpotifyReview" class="manage-section-details">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h2 class="manage-section-title" data-i18n="media.manage.section.spotify_review">마스터 정보</h2>
+            <button id="homeMasterDeleteBtn" class="btn ghost danger tiny" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
+          </div>
+          <div id="homeMasterDeleteConfirm" style="display:none;margin:4px 0 6px;padding:8px 10px;border:1px solid var(--err,#dc3545);border-radius:6px;background:rgba(220,53,69,0.05);">
+            <label class="inline-check">
+              <input id="homeMasterDeleteCascade" type="checkbox" checked />
+              <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
+            </label>
+            <div class="row" style="gap:6px;margin-top:6px;">
+              <button id="homeMasterDeleteConfirmBtn" class="btn danger tiny" type="button" data-i18n="media.manage.master.delete.action">삭제 확인</button>
+              <button id="homeMasterDeleteCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
+            </div>
+          </div>
           <div class="manage-section-body">
                   <!-- ══ 섹션 1: 마스터 정보 ══ -->
                   <div id="homeSection1MasterInfo" style="margin-top: 4px;">
@@ -17978,7 +18000,7 @@
                       <div class="master-meta-left">
                         <div id="homeMasterMetaCover" class="home-master-meta-cover"></div>
                         <div class="home-master-meta-info">
-                          <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span></div>
+                          <div id="homeMasterMetaTitle" class="home-master-meta-title" style="display:flex;align-items:center;gap:6px;"><span id="homeMasterMetaTitleText"></span><span id="homeMasterMetaTitleBadge"></span><span id="homeMasterCountBadges" style="display:flex;gap:3px;"></span></div>
                           <div id="homeMasterMetaArtist" class="home-master-meta-artist muted"></div>
                           <div id="homeMasterMetaYear" class="mini muted"></div>
                           <div id="homeMasterMetaLink" class="mini u-mt-2"></div>
@@ -17988,24 +18010,8 @@
                         </div>
                       </div>
                       <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
-                    </div>
-                  </div>
-
-        <!-- Spotify manual matching (NEW) -->
-        <div id="homeMasterSpotifyMatchSection" class="u-mt-4" style="padding:10px; border:1px solid var(--theme-admin-panel-border); border-radius:8px; background:var(--admin-console-panel-bg-2);">
-          <div style="font-weight:600; font-size:0.8rem; margin-bottom:6px; display:flex; align-items:center; gap:4px; color:var(--admin-console-text);">
-            <span>🎵 Spotify 매칭</span>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <input id="homeMasterSpotifyMatchId" type="text" placeholder="Spotify Album ID 입력" style="font-size:0.8rem; padding:3px 6px; flex:1;" />
-            <button id="homeMasterSpotifyMatchBtn" class="btn ghost tiny" type="button">연결</button>
-            <button id="homeMasterSpotifyUnmatchBtn" class="btn ghost tiny" type="button">해제</button>
-          </div>
-          <div id="homeMasterSpotifyMatchStatus" class="status" style="margin-top:4px; font-size:0.75rem;"></div>
-        </div>
-
-        <!-- 리뷰 관리 섹션 (homeMasterEditDetails 밖으로 이동됨) -->
-        <div id="homeMasterReviewSection" class="home-master-review-section" style="display:none">
+                      <!-- 리뷰 관리 섹션 -->
+                      <div id="homeMasterReviewSection" class="home-master-review-section" style="display:none;width:100%;">
           <div class="home-master-review-section-head">
             <strong data-i18n="media.manage.master.review.title">앨범 리뷰</strong>
             <span id="homeMasterReviewSourceTag" class="home-master-review-source-tag"></span>
@@ -18036,105 +18042,96 @@
           </div>
           <div id="homeMasterReviewStatus" class="status" style="margin-top:6px"></div>
         </div>
-          </div><!-- /manage-section-body -->
-        </details><!-- /manageSection2SpotifyReview -->
-
-        <!-- 마스터 메타 수정 (details) -->
-        <details id="homeMasterEditDetails" class="manage-section-details u-hidden-initial">
+                      <details id="homeMasterEditDetails" class="manage-section-details u-hidden-initial" style="margin-top:8px;width:100%;">
             <summary class="manage-section-summary" data-i18n="media.manage.section.master_meta">마스터 메타 수정</summary>
-          <div class="manage-section-body">
-              <div class="home-unified-section-label">마스터 수정</div>
-              <div id="homeMasterCorrectionRow" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
-                    <span>아티스트명</span><span class="help-dot" tabindex="0" data-help="운영 기준 아티스트명. 비우면 소스 기준을 따릅니다.">?</span>
-                  </div>
-                  <input id="homeMasterCorrectionArtist" type="text" style="width:100%;" placeholder="예: 산울림" />
-                </div>
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
-                    <span>앨범명</span><span class="help-dot" tabindex="0" data-help="운영 기준 앨범명. 비우면 소스 기준을 따릅니다.">?</span>
-                  </div>
-                  <input id="homeMasterCorrectionTitle" type="text" style="width:100%;" placeholder="예: 산울림 - 제13집" />
-                </div>
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
-                    <span data-i18n="media.manage.master.correction.field.release_year.label">발매연도</span><span class="help-dot" tabindex="0" data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
-                  </div>
-                  <input id="homeMasterCorrectionReleaseYear" type="number" min="1900" max="2100" style="width:100%;" placeholder="예: 1978" />
-                </div>
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
-                    <span data-i18n="media.manage.master.correction.field.domain_code.label">도메인</span><span class="help-dot" tabindex="0" data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
-                  </div>
-                  <select id="homeMasterCorrectionDomainCode" style="width:100%;">
-                    <option value=""></option>
-                    <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                    <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                    <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                    <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                    <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                    <option value="WORLD" data-i18n="common.domain.world">월드 기타</option>
-                    <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                  </select>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
-                    <span data-i18n="media.manage.master.correction.field.note.label">교정 메모</span><span class="help-dot" tabindex="0" data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다.">?</span>
-                  </div>
-                  <input id="homeMasterCorrectionNote" type="text" style="width:100%;" placeholder="예: Discogs는 재반 기준, 내부 정렬은 원발매 기준" />
-                </div>
-                <div class="row" style="align-items:center; justify-content:space-between; gap:8px; margin-top:4px;">
-                  <div id="homeMasterCorrectionSourceHint" class="mini" style="color:var(--text-muted);" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
-                  <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
-                </div>
+            <div class="manage-section-body">
+            <div id="homeMasterSpotifyMatchSection" style="padding:10px; border:1px solid var(--theme-admin-panel-border); border-radius:8px; background:var(--admin-console-panel-bg-2); margin-bottom:12px;">
+              <div style="font-weight:600; font-size:0.8rem; margin-bottom:6px; display:flex; align-items:center; gap:4px; color:var(--admin-console-text);">
+                <span>🎵 Spotify 매칭</span>
               </div>
-              <div id="homeMasterCorrectionStatus" class="status"></div>
-              <div id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master u-mt-6" style="display:flex; flex-direction:column; gap:4px; padding:0; border:none; background:none;">
-                <label class="dashboard-selected-sort-artist-label mini" for="homeMasterSortArtistName" style="margin:0;">
-                  <span data-i18n="media.manage.master.sort_artist.label">정렬 아티스트명</span><span class="help-dot" tabindex="0" data-help="같은 앨범 마스터의 LP, CD 등 모든 미디어 정렬에 공통으로 적용됩니다.">?</span>
-                </label>
-                <div class="row" style="width:100%; gap:8px;">
-                  <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" style="flex:1;" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-                  <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
-                </div>
+              <div style="display:flex; gap:6px;">
+                <input id="homeMasterSpotifyMatchId" type="text" placeholder="Spotify Album ID 입력" style="font-size:0.8rem; padding:3px 6px; flex:1;" />
+                <button id="homeMasterSpotifyMatchBtn" class="btn ghost tiny" type="button">연결</button>
+                <button id="homeMasterSpotifyUnmatchBtn" class="btn ghost tiny" type="button">해제</button>
               </div>
-              <div id="homeMasterSortArtistStatus" class="status"></div>
-              <!-- 마스터 삭제 -->
-              <div id="homeSection3MasterDelete" style="margin-top: 12px;">
-                <div class="home-master-danger-zone" style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: rgba(220,53,69,0.05);">
-                  <div class="section-divider u-mt-0">
-                    <h2 style="color: var(--err);"><span data-i18n="media.manage.master.delete.title">앨범(마스터) 삭제</span><span class="section-help-dot" tabindex="0" data-help-key="media.manage.master.delete.note_help">?</span></h2>
+              <div id="homeMasterSpotifyMatchStatus" class="status" style="margin-top:4px; font-size:0.75rem;"></div>
+            </div>
+                <div class="home-unified-section-label">마스터 수정</div>
+                <div id="homeMasterCorrectionRow" style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end; margin-top:8px;">
+                  <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:90px;">
+                    <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
+                      <span>아티스트명</span><span class="help-dot" tabindex="0" data-help="운영 기준 아티스트명. 비우면 소스 기준을 따릅니다.">?</span>
+                    </div>
+                    <input id="homeMasterCorrectionArtist" type="text" placeholder="예: 산울림" />
                   </div>
-                  <div id="homeMasterDeleteActions" class="row home-manage-actions-right" style="margin-top: 8px;">
-                    <label class="inline-check u-maxw-250">
-                      <input id="homeMasterDeleteCascade" type="checkbox" />
-                      <span data-i18n="media.manage.master.delete.cascade">연결 상품도 함께 삭제</span>
-                    </label>
-                    <button id="homeMasterDeleteBtn" class="btn ghost danger tiny" type="button" disabled data-i18n="media.manage.master.delete.action">앨범(마스터) 삭제</button>
+                  <div style="display:flex; flex-direction:column; gap:2px; flex:2; min-width:120px;">
+                    <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
+                      <span>앨범명</span><span class="help-dot" tabindex="0" data-help="운영 기준 앨범명. 비우면 소스 기준을 따릅니다.">?</span>
+                    </div>
+                    <input id="homeMasterCorrectionTitle" type="text" placeholder="예: 산울림 - 제13집" />
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:2px; width:70px; flex-shrink:0;">
+                    <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
+                      <span data-i18n="media.manage.master.correction.field.release_year.label">발매연도</span><span class="help-dot" tabindex="0" data-help="외부 소스 기준과 다르게 운영 정렬용 발매연도를 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
+                    </div>
+                    <input id="homeMasterCorrectionReleaseYear" type="number" min="1900" max="2100" placeholder="1978" />
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:2px; width:80px; flex-shrink:0;">
+                    <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
+                      <span data-i18n="media.manage.master.correction.field.domain_code.label">도메인</span><span class="help-dot" tabindex="0" data-help="외부 소스 도메인과 다르게 내부 정렬용 도메인을 고정할 때 사용합니다. 비우면 현재 소스 기준을 따릅니다.">?</span>
+                    </div>
+                    <select id="homeMasterCorrectionDomainCode">
+                      <option value=""></option>
+                      <option value="KOREA" data-i18n="common.domain.korea">가요</option>
+                      <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
+                      <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
+                      <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
+                      <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
+                      <option value="WORLD" data-i18n="common.domain.world">월드 기타</option>
+                      <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
+                    </select>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:2px; flex:2; min-width:120px;">
+                    <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
+                      <span data-i18n="media.manage.master.correction.field.note.label">교정 메모</span><span class="help-dot" tabindex="0" data-help="왜 운영 기준을 따로 쓰는지 남기는 메모입니다.">?</span>
+                    </div>
+                    <input id="homeMasterCorrectionNote" type="text" placeholder="예: Discogs는 재반 기준, 내부 정렬은 원발매 기준" />
+                  </div>
+                  <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" style="flex-shrink:0;align-self:flex-end;" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
+                </div>
+                <div id="homeMasterCorrectionSourceHint" class="mini u-mt-4" style="color:var(--text-muted);" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
+                <div id="homeMasterCorrectionStatus" class="status"></div>
+                <div id="homeMasterSortArtistRow" class="dashboard-selected-sort-artist-row dashboard-selected-sort-artist-row--master u-mt-6" style="display:flex; flex-direction:column; gap:4px; padding:0; border:none; background:none; width:fit-content;">
+                  <label class="dashboard-selected-sort-artist-label mini" for="homeMasterSortArtistName" style="margin:0;">
+                    <span data-i18n="media.manage.master.sort_artist.label">정렬 아티스트명</span><span class="help-dot" tabindex="0" data-help="같은 앨범 마스터의 LP, CD 등 모든 미디어 정렬에 공통으로 적용됩니다.">?</span>
+                  </label>
+                  <div class="row" style="gap:8px;">
+                    <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" style="width:220px;" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
+                    <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
                   </div>
                 </div>
-              </div>
+                <div id="homeMasterSortArtistStatus" class="status"></div>
+            </div><!-- /manage-section-body -->
+                      </details><!-- /homeMasterEditDetails -->
+                    </div><!-- /homeMasterMetaCard -->
+                  </div><!-- /homeSection1MasterInfo -->
           </div><!-- /manage-section-body -->
-        </details><!-- /homeMasterEditDetails -->
+        </div><!-- /manageSection2SpotifyReview -->
 
-        <details id="manageSection5OwnedItems" class="manage-section-details">
-          <summary class="manage-section-summary" data-i18n="media.manage.section.owned_items">보유 상품</summary>
+        <div id="manageSection5OwnedItems" class="manage-section-details">
+          <h2 class="manage-section-title" data-i18n="media.manage.section.owned_items">보유 상품</h2>
           <div class="manage-section-body">
           <!-- ══ 마스터 / 보유 상품 ══ -->
           <div id="homeMasterSummarySection" class="u-hidden-initial">
-            <div class="section-divider u-mt-10">
-              <h2 data-i18n="media.manage.master.summary.title">마스터 / 보유 상품<span class="section-help-dot" tabindex="0" data-help="선택한 앨범 마스터와 그 아래 연결된 보유 상품을 확인하는 영역입니다. 어떤 버전을 가지고 있는지 비교하고, 상품별 상세 수정으로 이어지는 중심 화면입니다.">?</span></h2>
-            </div>
             <div id="homeMasterStatus" class="status"></div>
-            <div id="homeMasterMeta" class="compact-line u-mt-6"><span id="homeMasterSpotifyBadge"></span></div>
+            <div id="homeMasterRelatedList" class="related-list u-mt-8"></div>
           </div>
           <div id="homeMasterActionMount"></div>
           <div id="homeMasterInlineEditorParking" class="u-hidden-initial">
             <div id="homeMasterInlineEditorHost" class="home-related-inline-editor-host"></div>
           </div>
           </div><!-- /manage-section-body -->
-        </details><!-- /manageSection5OwnedItems -->
+        </div><!-- /manageSection5OwnedItems -->
 
           <details id="homeLinkedGoodsPanelDetails" class="manage-section-details">
             <summary class="manage-section-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
@@ -18229,6 +18226,7 @@
         <details id="manageSection1Product" class="manage-section-details" open>
           <summary class="manage-section-summary" data-i18n="media.manage.section.product">상품 수정</summary>
           <div class="manage-section-body">
+          <div id="homeEditorStandaloneMount" class="u-mt-10"></div>
           <div id="homeEditMusicProductSplit" class="home-music-product-split">
             <div id="homeEditLeftPane">
             <div class="home-edit-section-frame">
@@ -18616,25 +18614,7 @@
                     <div id="homeCollectorMatrixInfo" class="compact-line u-mt-4">matrix/identifiers: -</div>
                     </div>
 
-
-          </div><!-- /manage-section-body -->
-        </details><!-- /manageSection1Product -->
-
-        <details id="manageSection6AddLink" class="manage-section-details">
-          <summary class="manage-section-summary" data-i18n="media.manage.section.add_link">추가 · 연계</summary>
-          <div class="manage-section-body">
-        <!-- ══ 섹션 2: 상품 정보 ══ -->
-        <div id="homeSection2ProductInfo">
-          <div id="homeEditorStandaloneMount" class="u-mt-10"></div>
-
-          <!-- 2-1: 보유 상품 -->
-          <div id="homeSection21OwnedItem">
-            <div class="section-divider u-mt-8">
-              <h2><span data-i18n="media.manage.section2_1.title">보유 상품 목록</span></h2>
-            </div>
-            <!-- 마스터 하위 전체 상품 목록 (클릭 시 하단 편집 폼 활성) -->
-            <div id="homeMasterRelatedList" class="related-list"></div>
-            <details id="homeProductRelationSection" class="home-manage-secondary-block goods-map-section u-mt-10 u-hidden-initial">
+          <details id="homeProductRelationSection" class="home-manage-secondary-block goods-map-section u-mt-10 u-hidden-initial">
                       <summary class="home-manage-secondary-summary" data-i18n="media.manage.product_relation.title">상품 관계<span class="section-help-dot" tabindex="0" data-help-key="media.manage.product_relation.subtitle_help">?</span></summary>
                       <div id="homeProductRelationScopeInfo" class="mini muted" data-i18n="media.manage.product_relation.scope.empty">먼저 상품을 선택하세요.</div>
 
@@ -18710,7 +18690,36 @@
                         </div>
                       </div>
                     </details>
+
+          <div id="homeProductLinkedGoodsSection">
+            <div class="section-divider u-mt-12">
+              <h2><span data-i18n="media.manage.section2_3.title">연계 수집품</span><span class="section-help-dot" tabindex="0" data-help="현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.">?</span></h2>
+            </div>
+            <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack u-hidden-initial u-mt-6">
+                    <div class="compact-stack-grid">
+                      <div class="section-divider span-2 u-mt-0">
+                        <h2 data-i18n="media.manage.collectibles.title">연계 수집품<span class="section-help-dot" tabindex="0" data-help="음반/상품 편집 구역과 분리된 연계 수집품 목록입니다.">?</span></h2>
+                      </div>
+                      <div id="homeMasterGoodsList" class="related-list span-2"></div>
+                    </div>
+                  </div>
+            <div id="homeProductLinkedGoodsList" class="related-list u-mt-6"></div>
+            <div class="home-linked-goods-register-row u-mt-8">
+              <div class="home-linked-goods-register-action">
+                <button id="homeProductLinkedGoodsOpenBtn" class="btn ghost" type="button" data-i18n="media.manage.section2_3.action.open_register">수집품 탭에서 연계 수집품 등록</button>
+              </div>
+            </div>
+            <div id="homeProductLinkedGoodsStatus" class="status"></div>
           </div>
+
+          </div><!-- /manage-section-body -->
+        </details><!-- /manageSection1Product -->
+
+        <details id="manageSection6AddLink" class="manage-section-details">
+          <summary class="manage-section-summary" data-i18n="media.manage.section.add_link">추가 · 연계</summary>
+          <div class="manage-section-body">
+        <!-- ══ 섹션 2: 상품 정보 ══ -->
+        <div id="homeSection2ProductInfo">
 
           <!-- 2-2: 상품 추가 (마스터에서 / 다른소스에서) -->
           <div id="homeSection22ProductAdd">
@@ -18811,29 +18820,6 @@
             </div>
           </div>
 
-          <!-- 2-3: 상품 연계 수집품 -->
-          <div id="homeProductLinkedGoodsSection">
-            <div class="section-divider u-mt-12">
-              <h2><span data-i18n="media.manage.section2_3.title">연계 수집품</span><span class="section-help-dot" tabindex="0" data-help="현재 보유 상품(owned_item)에 직접 연결된 수집품 목록입니다.">?</span></h2>
-            </div>
-            <!-- 마스터 연계 수집품 (섹션 1에서 이동) -->
-            <div id="homeMasterGoodsSection" class="home-goods-zone compact-stack u-hidden-initial u-mt-6">
-                    <div class="compact-stack-grid">
-                      <div class="section-divider span-2 u-mt-0">
-                        <h2 data-i18n="media.manage.collectibles.title">연계 수집품<span class="section-help-dot" tabindex="0" data-help="음반/상품 편집 구역과 분리된 연계 수집품 목록입니다.">?</span></h2>
-                      </div>
-                      <div id="homeMasterGoodsList" class="related-list span-2"></div>
-                    </div>
-                  </div>
-            <!-- 상품 직접 연계 수집품 -->
-            <div id="homeProductLinkedGoodsList" class="related-list u-mt-6"></div>
-            <div class="home-linked-goods-register-row u-mt-8">
-              <div class="home-linked-goods-register-action">
-                <button id="homeProductLinkedGoodsOpenBtn" class="btn ghost" type="button" data-i18n="media.manage.section2_3.action.open_register">수집품 탭에서 연계 수집품 등록</button>
-              </div>
-            </div>
-            <div id="homeProductLinkedGoodsStatus" class="status"></div>
-          </div>
         </div><!-- /homeSection2ProductInfo -->
 
         <!-- ══ 보유 음원 디렉토리 (TrackMapBox) ══ -->
@@ -21255,13 +21241,15 @@
       <div class="layout u-mt-16">
         <section class="card">
           <h2 data-i18n="ops.review_batch.title">앨범 리뷰 자동수집</h2>
-          <p class="sub" data-i18n="ops.review_batch.subtitle">리뷰가 없는 앨범 마스터를 Wikipedia에서 자동 수집하고 DeepSeek로 한국어 요약합니다.</p>
-          <div class="row u-mt-10" style="align-items:center;gap:16px">
+          <p class="sub">Wikipedia 원문을 DeepL로 한국어 번역해 저장합니다.</p>
+          <div class="row u-mt-10" style="align-items:center;gap:16px;flex-wrap:wrap;">
             <span id="reviewBatchRemainingCount" class="mini muted">-</span>
             <button id="reviewBatchStatusBtn" class="btn ghost" type="button" data-i18n="ops.review_batch.action.reload">상태 새로고침</button>
+            <button id="reviewBatchPreviewBtn" class="btn ghost" type="button">샘플 미리보기 (5건)</button>
             <button id="reviewBatchRunBtn" class="btn secondary" type="button" data-i18n="ops.review_batch.action.run">자동수집 실행 (50건)</button>
           </div>
           <div id="reviewBatchStatus" class="status u-mt-8"></div>
+          <div id="reviewBatchPreviewResults" style="display:none;margin-top:12px;"></div>
         </section>
       </div>
 
@@ -22367,7 +22355,7 @@
         "media.manage.selected_label": "선택된 상품",
         "media.manage.section.location": "위치",
         "media.manage.section.product": "상품 수정",
-        "media.manage.section.spotify_review": "Spotify · 리뷰",
+        "media.manage.section.spotify_review": "마스터 정보",
         "media.manage.section.master_meta": "마스터 메타 수정",
         "media.manage.section.owned_items": "보유 상품",
         "media.manage.section.add_link": "추가 · 연계",
@@ -25090,7 +25078,7 @@
         "media.manage.selected_label": "Selected Item",
         "media.manage.section.location": "Location",
         "media.manage.section.product": "Product edit",
-        "media.manage.section.spotify_review": "Spotify · Review",
+        "media.manage.section.spotify_review": "Master Info",
         "media.manage.section.master_meta": "Master metadata",
         "media.manage.section.owned_items": "Owned items",
         "media.manage.section.add_link": "Add · Link",
@@ -27829,7 +27817,7 @@
         "media.manage.selected_label": "選択された商品",
         "media.manage.section.location": "位置",
         "media.manage.section.product": "商品編集",
-        "media.manage.section.spotify_review": "Spotify · レビュー",
+        "media.manage.section.spotify_review": "マスター情報",
         "media.manage.section.master_meta": "マスターメタ修正",
         "media.manage.section.owned_items": "保有商品",
         "media.manage.section.add_link": "追加・連携",
@@ -34134,7 +34122,7 @@
     }
 
     async function refreshCurrentMasterReview(masterId) {
-      const res = await apiFetch(`/album-masters/${masterId}`);
+      const res = await fetchWithRetry(`/album-masters/${masterId}`);
       const data = await res.json();
       renderHomeMasterReviewSection(data);
     }
@@ -44289,7 +44277,7 @@ async function loadDashboardClimate() {
       homeInlineEditorCollapsed = false;
       await openMediaSearchDetailManage(masterId, targetOwnedItemId);
       requestAnimationFrame(() => {
-        $("homeSection21OwnedItem")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        $("homeMasterRelatedList")?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
 
@@ -46074,6 +46062,8 @@ async function loadDashboardClimate() {
         $("homeEditMusicProductSplit"),
         $("homeEditGoodsBox"),
         $("homeEditorActionBlock"),
+        $("homeProductRelationSection"),
+        $("homeProductLinkedGoodsSection"),
       ].filter((node) => node);
       for (const block of blocks) {
         if (block.parentElement !== host) {
@@ -46094,15 +46084,10 @@ async function loadDashboardClimate() {
 
     function mountHomeMasterActionBlocks() {
       // DOM is statically structured since v3 restructuring; no-op.
-      const manageSection = $("homeManageMasterSection");
       const mount = $("homeMasterActionMount");
       const addBlock = $("homeMasterAddBlock");
       const metaBlock = $("homeEditorMetaFetchBlock");
-      const productRelationSection = $("homeProductRelationSection");
-      if (!manageSection || !mount || !addBlock || !metaBlock) return;
-      if (productRelationSection && productRelationSection.parentElement !== manageSection) {
-        manageSection.insertBefore(productRelationSection, mount);
-      }
+      if (!mount || !addBlock || !metaBlock) return;
       if (addBlock.parentElement !== mount) {
         mount.appendChild(addBlock);
       }
@@ -46842,9 +46827,10 @@ async function loadDashboardClimate() {
     function syncHomeMasterDeleteUi() {
       const hasMaster = Number(homeSelectedMasterId || 0) > 0;
       $("homeMasterDeleteBtn").disabled = !hasMaster;
-      $("homeMasterDeleteCascade").disabled = !hasMaster;
       if (!hasMaster) {
-        $("homeMasterDeleteCascade").checked = false;
+        const confirmPanel = $("homeMasterDeleteConfirm");
+        if (confirmPanel) confirmPanel.style.display = "none";
+        $("homeMasterDeleteCascade").checked = true;
       }
     }
 
@@ -47766,10 +47752,7 @@ async function loadDashboardClimate() {
           spotify_image_url: masterData?.spotify_image_url || null,
         };
         renderHomeRelatedVersions();
-        setStatus("homeMasterStatus", "ok", t("media.manage.master.members.status.loaded", {
-          music_count: countWithUnit(items.length),
-          collectible_count: countWithUnit(collectibles.length),
-        }));
+        setStatus("homeMasterStatus", "ok", "");
 
         if (autoOpenFirst) {
           const firstOwnedItemId = Number(items[0]?.id || 0);
@@ -49278,7 +49261,28 @@ async function loadDashboardClimate() {
         const releaseLink = itemSourceLinkHtml(itemSrc, itemExtId, "원본 릴리즈");
         if (releaseLink) masterLinkParts.push(releaseLink);
       }
-      const masterLink = masterLinkParts.join(" · ");
+      // Compact source chip: DISCOGS#293875
+      let sourceChipHtml = "";
+      if (msc && msid) {
+        const chipUrl = msc === "DISCOGS"
+          ? `https://www.discogs.com/master/${encodeURIComponent(msid)}`
+          : msc === "MANIADB"
+          ? `https://www.maniadb.com/album/${encodeURIComponent(msid)}`
+          : null;
+        const chipLabel = `${msc}#${msid}`;
+        sourceChipHtml = chipUrl
+          ? `<a href="${chipUrl}" target="_blank" rel="noreferrer noopener" class="tag" style="font-size:0.7rem;">${escapeHtml(chipLabel)}</a>`
+          : `<span class="tag" style="font-size:0.7rem;">${escapeHtml(chipLabel)}</span>`;
+      }
+      setHtmlIfPresent("homeMasterMetaLink", sourceChipHtml);
+
+      // Count badges: 음반N 수집품N
+      const metaItems = Array.isArray(homeMasterInfo?.items) ? homeMasterInfo.items : [];
+      const metaMusic = metaItems.filter((r) => isMusicOwnedRow(r));
+      const metaCollectibles = Array.isArray(homeMasterInfo?.collectibles) ? homeMasterInfo.collectibles : [];
+      const countBadgesHtml = `<span class="tag" style="font-size:0.7rem;">음반${metaMusic.length}</span><span class="tag" style="font-size:0.7rem;">수집품${metaCollectibles.length}</span>`;
+      setHtmlIfPresent("homeMasterCountBadges", countBadgesHtml);
+
       setHtmlIfPresent("homeMasterMetaCover",
         coverUrl
           ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
@@ -49291,15 +49295,15 @@ async function loadDashboardClimate() {
       setHtmlIfPresent("homeMasterMetaTitleBadge", spBadge);
       setTextIfPresent("homeMasterMetaArtist", artist);
       setTextIfPresent("homeMasterMetaYear",   year ? String(year) : "");
-      setHtmlIfPresent("homeMasterMetaLink",   masterLink);
       card.classList.remove("u-hidden-initial");
     }
 
     function renderHomeRelatedVersions() {
       parkHomeMasterInlineEditor();
       if (!homeMasterInfo) {
-        setTextIfPresent("homeMasterMeta", homeMasterMetaPlaceholderText());
         setHtmlIfPresent("homeMasterRelatedList", homeMasterRelatedPlaceholderHtml());
+        setHtmlIfPresent("homeMasterCountBadges", "");
+        setHtmlIfPresent("homeMasterMetaLink", "");
         setDisplayIfPresent("homeMasterSummarySection", "none");
         renderHomeMasterMetaCard();
         renderHomeLinkedCollectiblesSection();
@@ -49313,38 +49317,7 @@ async function loadDashboardClimate() {
       const items = Array.isArray(homeMasterInfo.items) ? homeMasterInfo.items : [];
       const musicItems = items.filter((row) => isMusicOwnedRow(row));
       const collectibles = Array.isArray(homeMasterInfo.collectibles) ? homeMasterInfo.collectibles : [];
-      const relationText = {
-        ALBUM_MASTER_BIND: t("media.manage.related_versions.relation.album_master_bind"),
-        SOURCE_MASTER: t("media.manage.related_versions.relation.source_master"),
-        NONE: t("media.manage.related_versions.relation.none")
-      }[homeMasterInfo.relation_type || "NONE"] || t("media.manage.related_versions.relation.none");
 
-      const source = homeMasterInfo.source
-        ? `${homeMasterInfo.source}#${homeMasterInfo.master_external_id || "-"}`
-        : "-";
-      const title = homeMasterInfo.title || "-";
-      const artist = homeMasterInfo.artist_or_brand || "-";
-      const sortArtist = String(homeMasterInfo.sort_artist_name || "").trim();
-      const sortArtistText = sortArtist
-        ? t("media.manage.related_versions.summary.sort_artist", { name: sortArtist })
-        : "";
-
-      const masterSpotifyId = homeMasterInfo?.spotify_album_id || null;
-      setHtmlIfPresent("homeMasterSpotifyBadge", masterSpotifyId
-        ? `<span class="spotify-badge" style="margin-left:0;margin-right:8px;">Spotify</span>`
-        : "");
-      setTextIfPresent(
-        "homeMasterMeta",
-        t("media.manage.related_versions.summary", {
-          relation: relationText,
-          source,
-          title,
-          artist,
-          sort_artist: sortArtistText,
-          music_count: countWithUnit(musicItems.length),
-          collectible_count: countWithUnit(collectibles.length),
-        })
-      );
       setDisplayIfPresent("homeMasterSummarySection", "block");
       renderHomeMasterMetaCard();
       renderHomeLinkedCollectiblesSection();
@@ -50570,22 +50543,8 @@ async function loadDashboardClimate() {
         return;
       }
       const cascadeItems = Boolean($("homeMasterDeleteCascade").checked);
-      const masterRow = homeSearchResults.find((row) => Number(row.id) === masterId);
-      const masterTitle = masterRow ? resolveAlbumMasterName(masterRow) : `album_master_id=${masterId}`;
-      const confirmText = cascadeItems
-        ? t("media.manage.master.delete.confirm.cascade", {
-            title: masterTitle,
-            master_id: masterId,
-          })
-        : t("media.manage.master.delete.confirm.keep_items", {
-            title: masterTitle,
-            master_id: masterId,
-          });
-      const ok = window.confirm(confirmText);
-      if (!ok) {
-        setStatus("homeSearchStatus", "ok", t("media.manage.master.delete.cancelled"));
-        return;
-      }
+      const confirmPanel = $("homeMasterDeleteConfirm");
+      if (confirmPanel) confirmPanel.style.display = "none";
       try {
         const modeText = cascadeItems ? t("media.manage.master.delete.cascade") : t("media.manage.master.delete.action");
         setStatus("homeSearchStatus", "ok", t("media.manage.master.delete.progress", { mode: modeText }));
@@ -56127,7 +56086,7 @@ async function loadDashboardClimate() {
       const status = $("reviewBatchStatus");
       status.textContent = "상태 조회 중...";
       try {
-        const res = await apiFetch("/album-masters/review/batch", { method: "POST" });
+        const res = await fetchWithRetry("/album-masters/review/batch", { method: "POST" });
         const data = await res.json();
         $("reviewBatchRemainingCount").textContent = `미수집 약 ${data.remaining}건`;
         status.textContent = `처리: ${data.processed}건 / 성공: ${data.succeeded}건 / 실패: ${data.failed}건 / 잔여: ${data.remaining}건`;
@@ -56135,13 +56094,46 @@ async function loadDashboardClimate() {
         status.textContent = String(e);
       }
     });
+    $("reviewBatchPreviewBtn")?.addEventListener("click", async () => {
+      const btn = $("reviewBatchPreviewBtn");
+      const status = $("reviewBatchStatus");
+      const previewArea = $("reviewBatchPreviewResults");
+      btn.disabled = true;
+      status.textContent = "샘플 5건 번역 중... (DeepL)";
+      previewArea.style.display = "none";
+      previewArea.innerHTML = "";
+      try {
+        const res = await fetchWithRetry("/album-masters/review/batch-preview?limit=5", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "preview failed");
+        const rows = Array.isArray(data.results) ? data.results : [];
+        if (!rows.length) { status.textContent = "미수집 마스터가 없습니다."; }
+        else {
+          status.textContent = `샘플 ${rows.length}건 번역 완료 — 아래에서 확인 후 일괄 실행하세요.`;
+          previewArea.innerHTML = rows.map((r) => {
+            const title = escapeHtml(`${r.artist} - ${r.title} (master_id=${r.master_id})`);
+            if (r.error) return `<div style="margin-bottom:12px;padding:8px;border:1px solid var(--err,#dc3545);border-radius:6px;"><strong>${title}</strong><div class="mini" style="color:var(--err)">오류: ${escapeHtml(r.error)}</div></div>`;
+            const translated = escapeHtml(r.translated_text || "");
+            const url = r.review_url ? `<a href="${escapeHtml(r.review_url)}" target="_blank" rel="noopener" style="font-size:0.7rem;">원문↗</a>` : "";
+            return `<div style="margin-bottom:12px;padding:8px;border:1px solid var(--line);border-radius:6px;">
+              <div style="font-size:0.75rem;font-weight:600;margin-bottom:4px;">${title} ${url}</div>
+              <div style="font-size:0.8rem;line-height:1.5;">${translated}</div>
+            </div>`;
+          }).join("");
+          previewArea.style.display = "";
+        }
+      } catch (e) {
+        status.textContent = `오류: ${String(e)}`;
+      }
+      btn.disabled = false;
+    });
     $("reviewBatchRunBtn")?.addEventListener("click", async () => {
       const btn = $("reviewBatchRunBtn");
       const status = $("reviewBatchStatus");
       btn.disabled = true;
       status.textContent = "자동수집 실행 중... (최대 수 분 소요)";
       try {
-        const res = await apiFetch("/album-masters/review/batch?limit=50", { method: "POST" });
+        const res = await fetchWithRetry("/album-masters/review/batch?limit=50", { method: "POST" });
         const data = await res.json();
         $("reviewBatchRemainingCount").textContent = `미수집 약 ${data.remaining}건`;
         status.textContent = `완료 — 처리: ${data.processed}건 / 성공: ${data.succeeded}건 / 실패: ${data.failed}건 / 잔여: ${data.remaining}건`;
@@ -56364,7 +56356,15 @@ async function loadDashboardClimate() {
     $("homeEditTrackSaveBtn")?.addEventListener("click", saveHomeEditedItem);
     $("editTrackList")?.addEventListener("input", () => renderHomeTrackInfoPanel());
     $("homeEditDeleteBtn").addEventListener("click", deleteHomeSelectedItem);
-    $("homeMasterDeleteBtn").addEventListener("click", () => deleteHomeSelectedMaster());
+    $("homeMasterDeleteBtn").addEventListener("click", () => {
+      const panel = $("homeMasterDeleteConfirm");
+      if (panel) panel.style.display = panel.style.display === "none" ? "" : "none";
+    });
+    $("homeMasterDeleteConfirmBtn").addEventListener("click", () => deleteHomeSelectedMaster());
+    $("homeMasterDeleteCancelBtn").addEventListener("click", () => {
+      const panel = $("homeMasterDeleteConfirm");
+      if (panel) panel.style.display = "none";
+    });
     $("homeMasterReviewAutoBtn")?.addEventListener("click", async () => {
       const masterId = currentHomeMasterId();
       if (!masterId) return;
@@ -56386,7 +56386,7 @@ async function loadDashboardClimate() {
       }, 2500);
 
       try {
-        const res = await apiFetch(`/album-masters/${masterId}/review/auto`, { method: "POST" });
+        const res = await fetchWithRetry(`/album-masters/${masterId}/review/auto`, { method: "POST" });
         clearInterval(stepTimer);
         const data = await res.json();
         if (data.ok) {
@@ -56426,7 +56426,7 @@ async function loadDashboardClimate() {
       btn.disabled = true;
       status.textContent = "URL에서 수집 중...";
       try {
-        const res = await apiFetch(`/album-masters/${masterId}/review/url`, {
+        const res = await fetchWithRetry(`/album-masters/${masterId}/review/url`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url }),
@@ -56461,7 +56461,7 @@ async function loadDashboardClimate() {
       btn.disabled = true;
       status.textContent = "저장 중...";
       try {
-        const res = await apiFetch(`/album-masters/${masterId}/review/manual`, {
+        const res = await fetchWithRetry(`/album-masters/${masterId}/review/manual`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text, source }),
@@ -56485,7 +56485,7 @@ async function loadDashboardClimate() {
       const status = $("homeMasterReviewStatus");
       status.textContent = "삭제 중...";
       try {
-        const res = await apiFetch(`/album-masters/${masterId}/review`, { method: "DELETE" });
+        const res = await fetchWithRetry(`/album-masters/${masterId}/review`, { method: "DELETE" });
         const data = await res.json();
         if (data.ok) {
           status.textContent = "삭제 완료";
