@@ -1471,8 +1471,9 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
             return None
         title_lower = title.lower()
         page_title = None
+        import re as _re
         for page in pages:
-            if title_lower in page["title"].lower():
+            if _re.search(r'\b' + _re.escape(title_lower) + r'\b', page["title"].lower()):
                 page_title = page["title"]
                 break
         if not page_title:
@@ -1492,15 +1493,17 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
         with urllib.request.urlopen(req2, timeout=10) as resp2:
             data2 = _json.loads(resp2.read())
         pages_data = data2.get("query", {}).get("pages") or {}
-        extract = next(iter(pages_data.values())).get("extract", "")
+        page_data = next(iter(pages_data.values()), {})
+        extract = page_data.get("extract", "")
         if extract:
             return {
                 "review_text": extract[:3000],
                 "review_source": "WIKIPEDIA",
-                "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title, safe=' ')}",
+                "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title.replace(' ', '_'), safe='()')}",
             }
-    except Exception:
-        pass
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).warning("fetch_wikipedia_album_review failed: %s", exc)
     return None
 
 
@@ -1528,7 +1531,9 @@ def fetch_review_from_url(url: str) -> str | None:
         text = "\n".join(p.get_text(" ", strip=True) for p in paragraphs if p.get_text(strip=True))
         text = text.strip()
         return text[:3000] if text else None
-    except Exception:
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).warning("fetch_review_from_url(%s) failed: %s", url, exc)
         return None
 
 
