@@ -17968,6 +17968,9 @@
 
         <!-- 관리 섹션 스택 -->
         <div id="homeEditUnifiedDetails" class="manage-sections-wrapper u-hidden-initial u-mt-4">
+        <details id="manageSection2SpotifyReview" class="manage-section-details" open>
+          <summary class="manage-section-summary" data-i18n="media.manage.section.spotify_review">Spotify · 리뷰</summary>
+          <div class="manage-section-body">
                   <!-- ══ 섹션 1: 마스터 정보 ══ -->
                   <div id="homeSection1MasterInfo" style="margin-top: 4px;">
                     <!-- 마스터 메타 카드: 커버아트 + 앨범명 + 아티스트 + 연도 + 링크 -->
@@ -18000,6 +18003,41 @@
           </div>
           <div id="homeMasterSpotifyMatchStatus" class="status" style="margin-top:4px; font-size:0.75rem;"></div>
         </div>
+
+        <!-- 리뷰 관리 섹션 (homeMasterEditDetails 밖으로 이동됨) -->
+        <div id="homeMasterReviewSection" class="home-master-review-section" style="display:none">
+          <div class="home-master-review-section-head">
+            <strong data-i18n="media.manage.master.review.title">앨범 리뷰</strong>
+            <span id="homeMasterReviewSourceTag" class="home-master-review-source-tag"></span>
+            <button id="homeMasterReviewDeleteBtn" class="btn ghost tiny danger" type="button" style="display:none" data-i18n="media.manage.master.review.action.delete">삭제</button>
+          </div>
+          <div id="homeMasterReviewPreview" class="home-master-review-preview" style="display:none"></div>
+          <div id="homeMasterReviewActions" class="row" style="gap:4px">
+            <button id="homeMasterReviewAutoBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.auto">Wikipedia 자동수집</button>
+            <button id="homeMasterReviewUrlBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.url">URL 입력</button>
+            <button id="homeMasterReviewManualBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.manual">직접 입력</button>
+          </div>
+          <!-- URL 입력 폼 -->
+          <div id="homeMasterReviewUrlForm" style="display:none;margin-top:6px">
+            <input id="homeMasterReviewUrlInput" type="url" class="home-master-review-url-input" placeholder="https://..." />
+            <div class="row" style="gap:4px;margin-top:4px">
+              <button id="homeMasterReviewUrlSubmitBtn" class="btn tiny" type="button" data-i18n="media.manage.master.review.action.fetch">수집</button>
+              <button id="homeMasterReviewUrlCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
+            </div>
+          </div>
+          <!-- 직접 입력 폼 -->
+          <div id="homeMasterReviewManualForm" style="display:none;margin-top:6px">
+            <input id="homeMasterReviewManualSource" type="text" style="width:160px;margin-bottom:4px" placeholder="출처명 (예: ISM)" />
+            <textarea id="homeMasterReviewManualText" class="home-master-review-manual-textarea" placeholder="리뷰 텍스트를 입력하세요"></textarea>
+            <div class="row" style="gap:4px;margin-top:4px">
+              <button id="homeMasterReviewManualSubmitBtn" class="btn tiny" type="button" data-i18n="common.action.save">저장</button>
+              <button id="homeMasterReviewManualCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
+            </div>
+          </div>
+          <div id="homeMasterReviewStatus" class="status" style="margin-top:6px"></div>
+        </div>
+          </div><!-- /manage-section-body -->
+        </details><!-- /manageSection2SpotifyReview -->
 
         <!-- 마스터 메타 수정 (details) -->
         <details id="homeMasterEditDetails" class="home-unified-edit-details u-hidden-initial u-mt-2">
@@ -18063,38 +18101,6 @@
                 <div class="dashboard-selected-sort-artist-note mini" style="margin:0; color:var(--text-muted);" data-i18n="media.manage.master.sort_artist.note">같은 마스터의 모든 미디어 정렬에 공통 적용됩니다.</div>
               </div>
               <div id="homeMasterSortArtistStatus" class="status"></div>
-              <!-- 리뷰 관리 섹션 -->
-              <div id="homeMasterReviewSection" class="home-master-review-section" style="display:none">
-                <div class="home-master-review-section-head">
-                  <strong data-i18n="media.manage.master.review.title">앨범 리뷰</strong>
-                  <span id="homeMasterReviewSourceTag" class="home-master-review-source-tag"></span>
-                  <button id="homeMasterReviewDeleteBtn" class="btn ghost tiny danger" type="button" style="display:none" data-i18n="media.manage.master.review.action.delete">삭제</button>
-                </div>
-                <div id="homeMasterReviewPreview" class="home-master-review-preview" style="display:none"></div>
-                <div id="homeMasterReviewActions" class="row" style="gap:4px">
-                  <button id="homeMasterReviewAutoBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.auto">Wikipedia 자동수집</button>
-                  <button id="homeMasterReviewUrlBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.url">URL 입력</button>
-                  <button id="homeMasterReviewManualBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.manual">직접 입력</button>
-                </div>
-                <!-- URL 입력 폼 -->
-                <div id="homeMasterReviewUrlForm" style="display:none;margin-top:6px">
-                  <input id="homeMasterReviewUrlInput" type="url" class="home-master-review-url-input" placeholder="https://..." />
-                  <div class="row" style="gap:4px;margin-top:4px">
-                    <button id="homeMasterReviewUrlSubmitBtn" class="btn tiny" type="button" data-i18n="media.manage.master.review.action.fetch">수집</button>
-                    <button id="homeMasterReviewUrlCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
-                  </div>
-                </div>
-                <!-- 직접 입력 폼 -->
-                <div id="homeMasterReviewManualForm" style="display:none;margin-top:6px">
-                  <input id="homeMasterReviewManualSource" type="text" style="width:160px;margin-bottom:4px" placeholder="출처명 (예: ISM)" />
-                  <textarea id="homeMasterReviewManualText" class="home-master-review-manual-textarea" placeholder="리뷰 텍스트를 입력하세요"></textarea>
-                  <div class="row" style="gap:4px;margin-top:4px">
-                    <button id="homeMasterReviewManualSubmitBtn" class="btn tiny" type="button" data-i18n="common.action.save">저장</button>
-                    <button id="homeMasterReviewManualCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
-                  </div>
-                </div>
-                <div id="homeMasterReviewStatus" class="status" style="margin-top:6px"></div>
-              </div>
             </div>
           </details>
 
