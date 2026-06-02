@@ -39,7 +39,8 @@ def test_wikipedia_picks_album_page_over_artist():
         result = fetch_wikipedia_album_review("Humming Urban Stereo", "Shabbat Shalom")
 
     assert result is not None
-    assert "Shabbat Shalom" in result["review_url"]
+    assert " " not in result["review_url"]
+    assert "Shabbat_Shalom" in result["review_url"]
     assert result["review_source"] == "WIKIPEDIA"
 
 
