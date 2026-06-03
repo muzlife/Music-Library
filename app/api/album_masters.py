@@ -754,6 +754,8 @@ def update_album_master_correction(
         override_note=payload.override_note,
         override_title=payload.override_title,
         override_artist_or_brand=payload.override_artist_or_brand,
+        genres=payload.genres,
+        styles=payload.styles,
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="album_master not found")
@@ -779,6 +781,8 @@ def update_album_master_correction(
         override_title=str(updated.get("override_title") or "").strip() or None,
         override_artist_or_brand=str(updated.get("override_artist_or_brand") or "").strip() or None,
         has_manual_correction=bool(updated.get("has_manual_correction")),
+        genres=updated.get("genres") or [],
+        styles=updated.get("styles") or [],
     )
 
 
