@@ -1734,7 +1734,6 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBul
     updated_item_ids = db.bulk_update_owned_items(
         owned_item_ids,
         status=status,
-        domain_code=domain_code,
         release_type=release_type,
         is_second_hand=is_second_hand,
         purchase_source=purchase_source,

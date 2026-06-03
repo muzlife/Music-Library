@@ -28,7 +28,6 @@ Cross-package dependencies kept on the package surface
   Other dependencies live in OTHER submodules and are also pulled
   via the package surface:
     `_log_owned_item_location_event_in_conn` (owned_item_slot, Phase 23)
-    `_sync_album_master_domain_code_in_conn` (album_master_core, Phase 19)
     `set_owned_item_copy_group` (owned_item_copy_group, Phase 22)
     `get_owned_item_location_snapshot` (owned_item_track, Phase 25)
 
@@ -54,7 +53,6 @@ from app.db import (  # noqa: E402  — package surface
     _next_order_key_in_conn,
     _normalize_owned_item_row,
     _owned_item_select_query,
-    _sync_album_master_domain_code_in_conn,
     _upsert_goods_item_detail_in_conn,
     _upsert_music_item_detail_in_conn,
     get_conn,
@@ -106,12 +104,12 @@ def insert_owned_item(payload: dict[str, Any]) -> int:
         cur = conn.execute(
             """
             INSERT INTO owned_item (
-              master_item_id, linked_album_master_id, linked_artist_name, copy_group_key, category, domain_code, release_type, item_name_override, quantity, is_second_hand, size_group, preferred_storage_size_group, status,
+              master_item_id, linked_album_master_id, linked_artist_name, copy_group_key, category, release_type, item_name_override, quantity, is_second_hand, size_group, preferred_storage_size_group, status,
               condition_grade, signature_type, source_code, source_external_id, signed_by, signed_at, acquisition_date,
               purchase_price, currency_code, purchase_source, memory_note, display_rank, order_key,
               storage_slot_id, thickness_mm, notes, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 payload.get("master_item_id"),
@@ -119,7 +117,6 @@ def insert_owned_item(payload: dict[str, Any]) -> int:
                 payload.get("linked_artist_name"),
                 payload.get("copy_group_key"),
                 payload["category"],
-                payload.get("domain_code"),
                 payload.get("release_type"),
                 payload.get("item_name_override"),
                 payload["quantity"],
@@ -248,7 +245,6 @@ def update_owned_item(owned_item_id: int, payload: dict[str, Any]) -> bool:
               linked_artist_name = ?,
               copy_group_key = ?,
               category = ?,
-              domain_code = ?,
               release_type = ?,
               item_name_override = ?,
               quantity = ?,
@@ -280,7 +276,6 @@ def update_owned_item(owned_item_id: int, payload: dict[str, Any]) -> bool:
                 payload.get("linked_artist_name"),
                 payload.get("copy_group_key"),
                 payload["category"],
-                payload.get("domain_code"),
                 payload.get("release_type"),
                 payload.get("item_name_override"),
                 payload["quantity"],
@@ -345,7 +340,6 @@ def bulk_update_owned_items(
     owned_item_ids: list[int],
     *,
     status: str | None = None,
-    domain_code: str | None = None,
     release_type: str | None = None,
     is_second_hand: bool | None = None,
     purchase_source: str | None = None,
@@ -365,7 +359,7 @@ def bulk_update_owned_items(
         placeholders = ",".join("?" for _ in ids)
         rows = conn.execute(
             f"""
-            SELECT id, status, domain_code, release_type, is_second_hand, purchase_source, memory_note, preferred_storage_size_group, linked_album_master_id
+            SELECT id, status, release_type, is_second_hand, purchase_source, memory_note, preferred_storage_size_group
             FROM owned_item
             WHERE id IN ({placeholders})
             """,
@@ -374,13 +368,11 @@ def bulk_update_owned_items(
         existing_by_id = {int(row["id"]): dict(row) for row in rows}
         updates = []
         updated_ids = []
-        master_ids_to_sync: set[int] = set()
         for owned_item_id in ids:
             row = existing_by_id.get(owned_item_id)
             if not row:
                 continue
             next_status = status if status is not None else row.get("status")
-            next_domain_code = domain_code if domain_code is not None else row.get("domain_code")
             next_release_type = release_type if release_type is not None else row.get("release_type")
             next_is_second_hand = int(bool(is_second_hand)) if is_second_hand is not None else int(bool(row.get("is_second_hand")))
             next_purchase_source = purchase_source if purchase_source is not None else row.get("purchase_source")
@@ -393,7 +385,6 @@ def bulk_update_owned_items(
                 next_memory_note = f"{existing_note}\n{note_text}".strip() if existing_note else note_text
             if (
                 next_status == row.get("status")
-                and next_domain_code == row.get("domain_code")
                 and next_release_type == row.get("release_type")
                 and next_is_second_hand == int(bool(row.get("is_second_hand")))
                 and next_purchase_source == row.get("purchase_source")
@@ -404,7 +395,6 @@ def bulk_update_owned_items(
             updates.append(
                 (
                     next_status,
-                    next_domain_code,
                     next_release_type,
                     next_is_second_hand,
                     next_purchase_source,
@@ -415,16 +405,12 @@ def bulk_update_owned_items(
                 )
             )
             updated_ids.append(owned_item_id)
-            linked_album_master_id = int(row.get("linked_album_master_id") or 0)
-            if linked_album_master_id > 0:
-                master_ids_to_sync.add(linked_album_master_id)
         if updates:
             conn.executemany(
                 """
                 UPDATE owned_item
                 SET
                   status = ?,
-                  domain_code = ?,
                   release_type = ?,
                   is_second_hand = ?,
                   purchase_source = ?,
@@ -435,9 +421,6 @@ def bulk_update_owned_items(
                 """,
                 updates,
             )
-            if domain_code is not None:
-                for album_master_id in sorted(master_ids_to_sync):
-                    _sync_album_master_domain_code_in_conn(conn, album_master_id)
     return updated_ids
 
 
