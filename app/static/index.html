@@ -37705,6 +37705,34 @@
       return "";
     }
 
+    function buildMasterExceptionUrl(type, limit) {
+      let url = `/album-masters?include_total=true&limit=${limit}`;
+      if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
+      else if (type === "GENRE_MISSING")    url += "&genre_missing=true&media_only=true";
+      else if (type === "REVIEW_MISSING")   url += "&review_missing=true&media_only=true";
+      else                                   url += "&catalog_missing=true&media_only=true";
+      const artist = String($("opsExArtist")?.value || "").trim();
+      const title  = String($("opsExTitle")?.value  || "").trim();
+      const domain = String($("opsExceptionDomain")?.value || "").trim();
+      const releaseYear = String($("opsExReleaseYear")?.value || "").trim();
+      if (artist)      url += `&artist_or_brand=${encodeURIComponent(artist)}`;
+      if (title)       url += `&q=${encodeURIComponent(title)}`;
+      if (domain)      url += `&domain_code=${encodeURIComponent(domain)}`;
+      if (releaseYear) url += `&release_year=${encodeURIComponent(releaseYear)}`;
+      return url;
+    }
+
+    function buildMasterExceptionCountUrl(type) {
+      let url = `/album-masters?include_total=true&limit=1`;
+      if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
+      else if (type === "GENRE_MISSING")    url += "&genre_missing=true&media_only=true";
+      else if (type === "REVIEW_MISSING")   url += "&review_missing=true&media_only=true";
+      else                                   url += "&catalog_missing=true&media_only=true";
+      const domain = String($("opsExceptionDomain")?.value || "").trim();
+      if (domain) url += `&domain_code=${encodeURIComponent(domain)}`;
+      return url;
+    }
+
     function buildOpsExceptionParams(type, opts = {}) {
       const params = new URLSearchParams({
         music_only: "true",
@@ -44913,12 +44941,7 @@ async function loadDashboardClimate() {
 
     async function fetchOpsExceptionCount(type) {
       if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING") {
-        let url;
-        if (type === "SPOTIFY_UNMATCHED") url = "/album-masters?spotify_state=MISSING&include_total=true&limit=1";
-        else if (type === "GENRE_MISSING") url = "/album-masters?genre_missing=true&media_only=true&include_total=true&limit=1";
-        else if (type === "REVIEW_MISSING") url = "/album-masters?review_missing=true&media_only=true&include_total=true&limit=1";
-        else url = "/album-masters?catalog_missing=true&media_only=true&include_total=true&limit=1";
-        const res = await fetchWithRetry(url);
+        const res = await fetchWithRetry(buildMasterExceptionCountUrl(type));
         if (!res.ok) throw new Error(t("ops.exception.status.count_failed", { type: opsExceptionTypeLabel(type) }));
         const headerTotal = Number(res.headers.get("X-Total-Count") || 0);
         return Number.isFinite(headerTotal) ? headerTotal : 0;
@@ -44963,16 +44986,7 @@ async function loadDashboardClimate() {
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.list_loading_type", { type: opsExceptionTypeLabel(type) }));
         let res, data;
         if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING") {
-          let url = `/album-masters?include_total=true&limit=${limit}`;
-          if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
-          else if (type === "GENRE_MISSING") url += "&genre_missing=true&media_only=true";
-          else if (type === "REVIEW_MISSING") {
-            url += "&review_missing=true&media_only=true";
-            const domainVal = String($("opsExceptionDomain")?.value || "").trim();
-            if (domainVal) url += `&domain_code=${encodeURIComponent(domainVal)}`;
-          }
-          else url += "&catalog_missing=true&media_only=true";
-          res = await fetchWithRetry(url);
+          res = await fetchWithRetry(buildMasterExceptionUrl(type, limit));
           data = await safeJson(res);
         } else {
           const params = buildOpsExceptionParams(type, { includeTotal: true, limit });
