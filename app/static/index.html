@@ -18304,10 +18304,6 @@
                           <label for="editBarcode">바코드</label>
                           <input id="editBarcode" placeholder="예: 8809049750425" />
                         </div>
-                        <div class="span-2">
-                          <label for="editStyles" data-i18n="media.manage.field.styles.label">스타일 (쉼표 구분)</label>
-                          <input id="editStyles" data-i18n-placeholder="media.manage.field.styles.placeholder" placeholder="예: K-Rock, Prog Rock" />
-                        </div>
                         <div class="span-2" style="display:flex;align-items:flex-end;gap:10px;padding-bottom:2px;flex-wrap:nowrap;">
                           <label class="inline-check" style="flex-shrink:0;">
                             <input id="editIsSecondHand" type="checkbox" />
@@ -18570,7 +18566,6 @@
                           <input id="editCategory" type="hidden" value="LP" />
                           <input id="editSizeGroup" type="hidden" value="STD" />
                           <input id="editReleaseType" type="hidden" value="" />
-                          <input id="editGenres" type="hidden" />
                         </div>
 
                       </div>
@@ -46832,8 +46827,6 @@ async function loadDashboardClimate() {
       $("editReleaseType").value = "";
       $("editMediaType").value = "";
       _syncVinylOnlyFields();
-      $("editGenres").value = "";
-      $("editStyles").value = "";
       $("editReleasedDate").value = "";
       $("editDiscCount").value = "";
       $("editSpeedRpm").value = "";
@@ -47135,8 +47128,6 @@ async function loadDashboardClimate() {
         if (c.runout_matrix) $("editRunoutMatrix").value = joinRunoutList(c.runout_matrix);
         if (c.pressing_country) $("editPressingCountry").value = c.pressing_country;
         if (c.media_type) { $("editMediaType").value = c.media_type; _syncVinylOnlyFields(); }
-        $("editGenres").value = joinCommaList(c.genres);
-        $("editStyles").value = joinCommaList(c.styles);
         if (c.cover_image_url) $("editCoverImageUrl").value = c.cover_image_url;
         if (Array.isArray(c.track_list) && c.track_list.length) {
           $("editTrackList").value = c.track_list.join("\n");
@@ -49904,8 +49895,6 @@ async function loadDashboardClimate() {
       $("editPressingCountry").value = data.music_detail?.pressing_country || "";
       $("editMediaType").value = data.music_detail?.media_type || "";
       _syncVinylOnlyFields();
-      $("editGenres").value = joinCommaList(data.music_detail?.genres || []);
-      $("editStyles").value = joinCommaList(data.music_detail?.styles || []);
       setConditionSelectValue("editCoverCondition", data.music_detail?.cover_condition || "");
       setConditionSelectValue("editDiscCondition", data.music_detail?.disc_condition || "");
       $("editCoverImageUrl").value = data.music_detail?.cover_image_url || "";
@@ -50090,8 +50079,6 @@ async function loadDashboardClimate() {
           runout_matrix: editRunout.length ? editRunout : collectorBase.runout_matrix,
           pressing_country: editPressingInput || collectorBase.pressing_country || null,
           media_type: $("editMediaType").value.trim() || null,
-          genres: splitCommaList($("editGenres").value),
-          styles: splitCommaList($("editStyles").value),
           cover_image_url: $("editCoverImageUrl").value.trim() || null,
           track_list: trackList,
           cover_condition: normalizeConditionGradeValue($("editCoverCondition").value) || null,
