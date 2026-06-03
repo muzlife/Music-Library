@@ -166,31 +166,15 @@ def _sync_album_master_domain_code_in_conn(
 
     current_code = _normalize_domain_code_value(master_row["domain_code"])
     resolved_code = _normalize_domain_code_value(preferred_domain_code)
-    if not resolved_code and current_code:
-        return current_code
+    # No longer derives domain from oi.domain_code — master domain is authoritative
     if not resolved_code:
-        row = conn.execute(
-            """
-            SELECT oi.domain_code, COUNT(*) AS cnt
-            FROM album_master_member amm
-            JOIN owned_item oi ON oi.id = amm.owned_item_id
-            WHERE amm.album_master_id = ?
-              AND oi.domain_code IS NOT NULL
-              AND TRIM(oi.domain_code) <> ''
-            GROUP BY oi.domain_code
-            ORDER BY COUNT(*) DESC, oi.domain_code ASC
-            LIMIT 1
-            """,
-            (master_id,),
-        ).fetchone()
-        resolved_code = _normalize_domain_code_value(row["domain_code"]) if row is not None else None
-
-    if resolved_code and resolved_code != current_code:
+        return current_code
+    if resolved_code != current_code:
         conn.execute(
             "UPDATE album_master SET domain_code = ?, updated_at = ? WHERE id = ?",
             (resolved_code, utc_now_iso(), master_id),
         )
-    return resolved_code or current_code
+    return resolved_code
 
 
 def upsert_album_master(
