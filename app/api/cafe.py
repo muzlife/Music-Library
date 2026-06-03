@@ -83,10 +83,21 @@ router = APIRouter(tags=["cafe"])
 _spotify = SpotifyService()
 _local = LocalPlayer()
 
-# now-playing 캐시 (Spotify API 과호출 방지)
-import time as _time
-_NOW_PLAYING_CACHE: dict = {"data": None, "ts": 0.0}
-_NOW_PLAYING_TTL = 5.0  # 5초
+# ── SSE now-playing state ─────────────────────────────────────────
+
+_sse_clients: set[asyncio.Queue] = set()
+_now_playing_state: dict | None = None
+
+
+def _broadcast(data: dict) -> None:
+    """Push now-playing state to all connected SSE clients."""
+    global _now_playing_state
+    _now_playing_state = data
+    for q in list(_sse_clients):
+        try:
+            q.put_nowait(data)
+        except asyncio.QueueFull:
+            pass
 
 
 # ── helpers ─────────────────────────────────────────────────────
