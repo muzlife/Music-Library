@@ -89,7 +89,9 @@ def get_album_master_basic(album_master_id: int) -> dict[str, Any] | None:
                    CAST(json_extract(raw_json, '$.id') AS TEXT) AS source_release_id,
                    review_text,
                    review_source,
-                   review_url
+                   review_url,
+                   genres_json,
+                   styles_json
             FROM album_master
             WHERE id = ?
             LIMIT 1
@@ -98,7 +100,13 @@ def get_album_master_basic(album_master_id: int) -> dict[str, Any] | None:
         ).fetchone()
     if row is None:
         return None
-    return dict(row)
+    result = dict(row)
+    # Parse genres and styles from JSON
+    raw_genres = result.pop("genres_json", None)
+    result["genres"] = json.loads(raw_genres) if isinstance(raw_genres, str) and raw_genres.strip() else []
+    raw_styles = result.pop("styles_json", None)
+    result["styles"] = json.loads(raw_styles) if isinstance(raw_styles, str) and raw_styles.strip() else []
+    return result
 
 
 def update_album_master_genres(
