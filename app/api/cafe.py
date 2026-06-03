@@ -685,15 +685,17 @@ async def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[s
     if not item:
         return {"ok": False, "reason": "no more tracks"}
     if item.get("spotify_track_uri"):
-        _spotify.play_sync(item["spotify_track_uri"])
-        _broadcast({"available": True, "source": "spotify",
-                    "title": item.get("title", ""), "artist": item.get("artist", ""),
-                    "album_art_url": item.get("album_art_url"), "is_playing": True})
+        ok = _spotify.play_sync(item["spotify_track_uri"])
+        if ok:
+            _broadcast({"available": True, "source": "spotify",
+                        "title": item.get("title", ""), "artist": item.get("artist", ""),
+                        "album_art_url": item.get("album_art_url"), "is_playing": True})
     elif item.get("local_file_path"):
-        _local.play(item["local_file_path"])
-        track = _local.current_track()
-        if track:
-            _broadcast({"available": True, **track})
+        ok = _local.play(item["local_file_path"])
+        if ok:
+            track = _local.current_track()
+            if track:
+                _broadcast({"available": True, **track})
     return {"ok": True, "item": item}
 
 
