@@ -1209,7 +1209,7 @@ def _resolve_purchase_import_vendor_code(
             "YOUR ORDERS",
         )
     )
-    if "SAILMUSIC@NAVER.COM" in upper or "세일뮤직" in text:
+    if "__VENDOR_EMAIL__" in upper or "세일뮤직" in text:
         return "SAILMUSIC"
     if has_ebay_marker:
         return "EBAY"
