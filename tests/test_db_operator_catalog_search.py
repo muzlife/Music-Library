@@ -423,7 +423,7 @@ def test_slot_artist_sort_uses_item_released_date_before_title_when_master_year_
         source_master_id="alpha-master",
         title="Alpha Album",
         artist_or_brand="Angelo Branduardi",
-        domain_code="WORLD",
+        domain_code="WORLD_OTHER",
         release_year=1994,
         raw={"source": "DISCOGS", "master_external_id": "alpha-master", "title": "Alpha Album", "artist_or_brand": "Angelo Branduardi", "release_year": 1994},
     )
@@ -432,7 +432,7 @@ def test_slot_artist_sort_uses_item_released_date_before_title_when_master_year_
         source_master_id="bravo-master",
         title="Bravo Album",
         artist_or_brand="Angelo Branduardi",
-        domain_code="WORLD",
+        domain_code="WORLD_OTHER",
         release_year=1994,
         raw={"source": "DISCOGS", "master_external_id": "bravo-master", "title": "Bravo Album", "artist_or_brand": "Angelo Branduardi", "release_year": 1994},
     )
