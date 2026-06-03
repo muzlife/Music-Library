@@ -47740,7 +47740,7 @@ async function loadDashboardClimate() {
         <div class="result-item album-result ${Number(row.id) === Number(homeSelectedMasterId) ? "pick" : ""}" data-master-id="${row.id}">
           <div class="album-result-cover">${cover}</div>
           <div class="album-result-main">
-            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge">Spotify</span>` : ""}${row.review_text ? `<span class="tag" style="font-size:0.65rem;opacity:0.8;">리뷰</span>` : ""}</div>${genreLine}
+            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge" data-sp-master="${escapeHtml(String(row.id))}" data-sp-album="${escapeHtml(row.spotify_album_id)}">Spotify</span>` : ""}${row.review_text ? `<span class="tag" style="font-size:0.65rem;opacity:0.8;">리뷰</span>` : ""}</div>${genreLine}
             ${trackPreview.length ? `<div class="mini">${escapeHtml(t("media.manage.search.matched_tracks", { tracks: trackPreview.join(" | ") }))}</div>` : ""}
             ${memberItemsPreview.length ? `<div class="home-master-member-preview-list">
               ${memberItemsPreview.map((item) => homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode })).join("")}
@@ -49334,7 +49334,13 @@ async function loadDashboardClimate() {
       if (!spEditRow || spEditRow.style.display === "none") {
         const spId = String(homeMasterInfo?.spotify_album_id || "").trim();
         const spText = $("homeMasterMetaSpotifyText");
-        if (spText) spText.textContent = `Spotify Album Code: ${spId || "-"}`;
+        if (spText) {
+          if (spId) {
+            spText.innerHTML = `Spotify: ${escapeHtml(spId)} <span class="spotify-badge" data-sp-master="${masterIdVal}" data-sp-album="${escapeHtml(spId)}" style="cursor:pointer;vertical-align:middle;">▶</span>`;
+          } else {
+            spText.textContent = "Spotify Album Code: -";
+          }
+        }
         const spRow = $("homeMasterMetaSpotifyRow");
         if (spRow) spRow.style.display = "flex";
       }
