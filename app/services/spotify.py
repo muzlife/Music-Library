@@ -50,7 +50,8 @@ class SpotifyService:
                 client_credentials_manager=SpotifyClientCredentials(
                     client_id=self.client_id,
                     client_secret=self.client_secret,
-                )
+                ),
+                retries=0,  # Let our daemon handle 429/backoff, not spotipy internally
             )
         except Exception:
             logger.exception("failed to initialize spotipy CC client")

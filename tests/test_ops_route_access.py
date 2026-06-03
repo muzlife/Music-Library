@@ -78,16 +78,16 @@ def test_system_status_uses_forwarded_qa_host_for_external_urls(admin_client):
     response = admin_client.get(
         "/system/status",
         headers={
-            "host": "qa-library.muzlife.com",
-            "x-forwarded-host": "qa-library.muzlife.com",
+            "host": "__QA_DOMAIN__",
+            "x-forwarded-host": "__QA_DOMAIN__",
             "x-forwarded-proto": "https",
         },
     )
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["external_login_url"] == "https://qa-library.muzlife.com/login"
-    assert payload["external_health_url"] == "https://qa-library.muzlife.com/health"
+    assert payload["external_login_url"] == "https://__QA_DOMAIN__/login"
+    assert payload["external_health_url"] == "https://__QA_DOMAIN__/health"
 
 
 def test_authenticated_ops_serves_index_html(operator_client):

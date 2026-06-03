@@ -27,7 +27,7 @@ def _resolve_root() -> Path:
 ROOT = _resolve_root()
 ENV_PATH = ROOT / '.env.local'
 QA_CSV_PATH = ROOT / 'docs' / 'qa' / 'qa_master_sheet.csv'
-EXTERNAL_BASE_URL = 'https://qa-library.muzlife.com'
+EXTERNAL_BASE_URL = 'https://__QA_DOMAIN__'
 LOCAL_BASE_URL = 'http://127.0.0.1:8100'
 LOCAL_HEALTH_URL = f'{LOCAL_BASE_URL}/health'
 LAUNCHD_LABEL = f'gui/{os.getuid()}/com.muzlife.library-qa'

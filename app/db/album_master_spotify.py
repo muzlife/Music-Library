@@ -74,11 +74,9 @@ def _get_tracks_for_master(conn: Any, master_id: int) -> list[str]:
 def _is_compilation(spotify_album_name: str) -> bool:
     s = str(spotify_album_name or "").lower()
     keywords = [
-        "greatest hits", "best of", "the best", "collection",
+        "greatest hits", "best of", "the best",
         "anthology", "compilation", "various artists",
-        "tribute to", "gold", "platinum", "ultimate",
-        "definitive", "essential", "very best", "the essential",
-        "complete", "box set", "deluxe edition", "remastered",
+        "tribute to", "very best",
     ]
     for kw in keywords:
         if kw in s:
