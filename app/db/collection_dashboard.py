@@ -186,14 +186,7 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(CASE WHEN oi.status = 'LOANED' THEN 1 ELSE 0 END) AS loaned_items,
               SUM(CASE WHEN oi.status = 'SOLD' THEN 1 ELSE 0 END) AS sold_items,
               SUM(CASE WHEN oi.status = 'LOST' THEN 1 ELSE 0 END) AS lost_items,
-              SUM(
-                CASE
-                  WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-                   AND (mid.genres_json IS NULL OR TRIM(mid.genres_json) = '' OR mid.genres_json = '[]')
-                  THEN 1
-                  ELSE 0
-                END
-              ) AS genre_missing_items,
+              0 AS genre_missing_items_placeholder,
               SUM(
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
@@ -265,6 +258,10 @@ def get_collection_dashboard() -> dict[str, Any]:
         total_master_count = master_row[0] if master_row else 0
         spotify_row = conn.execute("SELECT COUNT(*) FROM album_master WHERE spotify_album_id IS NOT NULL AND spotify_album_id != ''").fetchone()
         spotify_master_count = spotify_row[0] if spotify_row else 0
+        genre_missing_master_row = conn.execute(
+            "SELECT COUNT(*) FROM album_master WHERE genres_json IS NULL OR TRIM(genres_json) = '' OR genres_json = '[]'"
+        ).fetchone()
+        genre_missing_master_count = int(genre_missing_master_row[0] if genre_missing_master_row else 0)
 
         audio_row = conn.execute(
             """
@@ -895,7 +892,7 @@ def get_collection_dashboard() -> dict[str, Any]:
         "loaned_items": int((summary["loaned_items"] if summary else 0) or 0),
         "sold_items": int((summary["sold_items"] if summary else 0) or 0),
         "lost_items": int((summary["lost_items"] if summary else 0) or 0),
-        "genre_missing_items": int((summary["genre_missing_items"] if summary else 0) or 0),
+        "genre_missing_items": genre_missing_master_count,
         "media_missing_items": int((summary["media_missing_items"] if summary else 0) or 0),
         "category_size_mismatch_items": int((summary["category_size_mismatch_items"] if summary else 0) or 0),
         "catalog_missing_items": int((summary["catalog_missing_items"] if summary else 0) or 0),

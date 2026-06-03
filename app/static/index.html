@@ -49331,7 +49331,7 @@ async function loadDashboardClimate() {
       }
 
       const spEditRow = $("homeMasterMetaSpotifyEditRow");
-      if (!spEditRow || spEditRow.style.display === "none") {
+      {
         const spId = String(homeMasterInfo?.spotify_album_id || "").trim();
         const spText = $("homeMasterMetaSpotifyText");
         if (spText) {
@@ -49341,8 +49341,10 @@ async function loadDashboardClimate() {
             spText.textContent = "Spotify Album Code: -";
           }
         }
-        const spRow = $("homeMasterMetaSpotifyRow");
-        if (spRow) spRow.style.display = "flex";
+        if (!spEditRow || spEditRow.style.display === "none") {
+          const spRow = $("homeMasterMetaSpotifyRow");
+          if (spRow) spRow.style.display = "flex";
+        }
       }
 
       (function() {
