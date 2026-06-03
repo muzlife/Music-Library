@@ -545,7 +545,7 @@ def test_gcs_backup_preflight_reports_env_and_gsutil_readiness(tmp_path: Path):
     app_root.mkdir()
     env_file = app_root / ".env.local"
     env_file.write_text(
-        "GCS_BACKUP_PREFIX=gs://muzlife-library-backups/prod\nGSUTIL_BIN=gsutil\n",
+        "GCS_BACKUP_PREFIX=gs://__GCS_BUCKET__/prod\nGSUTIL_BIN=gsutil\n",
         "utf-8",
     )
 
@@ -575,7 +575,7 @@ def test_gcs_backup_preflight_reports_env_and_gsutil_readiness(tmp_path: Path):
     payload = json.loads(result.stdout)
 
     assert payload["status"] == "ready"
-    assert payload["gcs_backup_prefix"] == "gs://muzlife-library-backups/prod"
+    assert payload["gcs_backup_prefix"] == "gs://__GCS_BUCKET__/prod"
     assert payload["gsutil_bin"].endswith("gsutil")
 
 
