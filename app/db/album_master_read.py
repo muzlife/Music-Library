@@ -413,15 +413,7 @@ def _build_album_master_filter_sql(
 
     if genre_missing:
         where_sql += """
-          AND EXISTS (
-            SELECT 1
-            FROM album_master_member ammg
-            JOIN owned_item oig ON oig.id = ammg.owned_item_id
-            LEFT JOIN music_item_detail midg ON midg.owned_item_id = oig.id
-            WHERE ammg.album_master_id = am.id
-              AND oig.category IN ('LP','CD','CASSETTE','8TRACK','DIGITAL','REEL_TO_REEL')
-              AND (midg.genres_json IS NULL OR TRIM(midg.genres_json) = '' OR midg.genres_json = '[]')
-          )
+          AND (am.genres_json IS NULL OR TRIM(am.genres_json) = '' OR am.genres_json = '[]')
         """
 
     if format_missing:
@@ -664,36 +656,8 @@ def list_album_masters(
         am.review_text,
         am.review_source,
         am.review_url,
-        (
-          SELECT mid.genres_json
-          FROM album_master_member amm_gen
-          JOIN owned_item oi_gen ON oi_gen.id = amm_gen.owned_item_id
-          LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi_gen.id
-          WHERE amm_gen.album_master_id = am.id
-            AND mid.genres_json IS NOT NULL
-            AND mid.genres_json <> '[]'
-            AND TRIM(mid.genres_json) <> ''
-          ORDER BY
-            CASE WHEN oi_gen.order_key IS NULL OR TRIM(oi_gen.order_key) = '' THEN 1 ELSE 0 END,
-            oi_gen.order_key ASC,
-            oi_gen.id ASC
-          LIMIT 1
-        ) AS genres_json,
-        (
-          SELECT mid.styles_json
-          FROM album_master_member amm_sty
-          JOIN owned_item oi_sty ON oi_sty.id = amm_sty.owned_item_id
-          LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi_sty.id
-          WHERE amm_sty.album_master_id = am.id
-            AND mid.styles_json IS NOT NULL
-            AND mid.styles_json <> '[]'
-            AND TRIM(mid.styles_json) <> ''
-          ORDER BY
-            CASE WHEN oi_sty.order_key IS NULL OR TRIM(oi_sty.order_key) = '' THEN 1 ELSE 0 END,
-            oi_sty.order_key ASC,
-            oi_sty.id ASC
-          LIMIT 1
-        ) AS styles_json,
+        am.genres_json,
+        am.styles_json,
         COUNT(amm.id) AS member_count,
         MAX(amm.owned_item_id) AS max_owned_item_id,
         (
