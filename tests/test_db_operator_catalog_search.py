@@ -585,3 +585,46 @@ def test_search_operator_catalog_includes_review_fields(isolated_operator_search
     assert "review_source" in item
     assert item["review_text"] == "좋은 앨범입니다."
     assert item["review_source"] == "음악취향Y"
+
+
+def test_owned_item_domain_filter_uses_master_domain(tmp_path, monkeypatch):
+    """domain_code 필터가 am.domain_code 기준으로 동작해야 한다."""
+    monkeypatch.setenv("LIBRARY_DB_PATH", str(tmp_path / "library.db"))
+    get_settings.cache_clear()
+    db.init_db()
+
+    import sqlite3
+    conn = sqlite3.connect(str(tmp_path / "library.db"))
+    conn.row_factory = sqlite3.Row
+
+    # album_master: domain=WESTERN
+    conn.execute("""INSERT INTO album_master (id, source_code, source_master_id, title,
+        artist_or_brand, domain_code, release_year, raw_json, created_at, updated_at)
+        VALUES (1,'DISCOGS','1','Test Album','Test Artist','WESTERN',2000,'{}',
+        '2024-01-01T00:00:00Z','2024-01-01T00:00:00Z')""")
+    # owned_item: domain=KOREA (oi.domain_code intentionally wrong — master is authoritative)
+    conn.execute("""INSERT INTO owned_item (id, category, size_group,
+        preferred_storage_size_group, status, signature_type, domain_code, created_at, updated_at)
+        VALUES (1,'LP','LP','LP','IN_COLLECTION','NONE','KOREA',
+        '2024-01-01T00:00:00Z','2024-01-01T00:00:00Z')""")
+    conn.execute("""INSERT INTO album_master_member (album_master_id, owned_item_id, created_at)
+        VALUES (1, 1, '2024-01-01T00:00:00Z')""")
+    conn.commit()
+    conn.close()
+
+    common = dict(
+        music_only=True, status=None, q=None, artist_or_brand=None,
+        item_name=None, catalog_no=None, barcode=None, release_year=None,
+        source_state="ANY", master_state="ANY", cover_state="ANY",
+        slot_state="ANY", preferred_storage_state="ANY", track_state="ANY",
+        media_format_state="ANY", size_group_state="ANY",
+        release_type=None, category=None, sort="RECENT", limit=10, offset=0,
+    )
+
+    # WESTERN filter → should find item (master is WESTERN)
+    results_western = db.list_owned_items(domain_code="WESTERN", **common)
+    assert len(results_western) == 1, f"WESTERN filter should return 1 item, got {len(results_western)}"
+
+    # KOREA filter → should NOT find item (master is WESTERN, not KOREA)
+    results_korea = db.list_owned_items(domain_code="KOREA", **common)
+    assert len(results_korea) == 0, f"KOREA filter should return 0 items, got {len(results_korea)}"

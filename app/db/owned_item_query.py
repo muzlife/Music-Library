@@ -89,7 +89,15 @@ def list_owned_items(
         query += " AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')"
 
     if domain_code:
-        query += " AND oi.domain_code = ?"
+        query += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm_d
+            JOIN album_master am_d ON am_d.id = amm_d.album_master_id
+            WHERE amm_d.owned_item_id = oi.id
+              AND COALESCE(am_d.override_domain_code, am_d.domain_code) = ?
+          )
+        """
         params.append(domain_code)
 
     if release_type:
@@ -279,7 +287,15 @@ def count_owned_items(
         query += " AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')"
 
     if domain_code:
-        query += " AND oi.domain_code = ?"
+        query += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm_d
+            JOIN album_master am_d ON am_d.id = amm_d.album_master_id
+            WHERE amm_d.owned_item_id = oi.id
+              AND COALESCE(am_d.override_domain_code, am_d.domain_code) = ?
+          )
+        """
         params.append(domain_code)
 
     if release_type:
