@@ -2002,6 +2002,7 @@ from .album_master_core import (  # noqa: E402
     merge_album_masters,
     normalize_album_master_source_id,
     promote_album_master_source,
+    update_album_master_genres,
     upsert_album_master,
 )
 from .album_master_member import (  # noqa: E402
