@@ -351,6 +351,10 @@ async def staff_play_local(request: Request) -> dict[str, Any]:
     if not file_path:
         raise HTTPException(status_code=400, detail="file_path required")
     ok = _local.play(file_path)
+    if ok:
+        track = _local.current_track()
+        if track:
+            _broadcast({"available": True, **track})
     return {"ok": ok, "file_path": file_path}
 
 
@@ -359,6 +363,7 @@ def staff_pause_local(request: Request) -> dict[str, Any]:
     """Staff: pause/resume local playback. OPERATOR+"""
     security._require_operator_request(request)
     ok = _local.pause()
+    _broadcast({"available": False})
     return {"ok": ok}
 
 @router.post("/ops/cafe/stop-local")
@@ -366,6 +371,7 @@ def staff_stop_local(request: Request) -> dict[str, Any]:
     """Staff: stop local playback. OPERATOR+"""
     security._require_operator_request(request)
     _local.stop()
+    _broadcast({"available": False})
     return {"ok": True}
 
 
@@ -455,6 +461,7 @@ def staff_pause(request: Request) -> dict[str, Any]:
     """Staff: pause Spotify playback. OPERATOR+"""
     security._require_operator_request(request)
     ok = _spotify.pause_sync()
+    _broadcast({"available": False})
     return {"ok": ok}
 
 
@@ -463,6 +470,7 @@ def staff_skip(request: Request) -> dict[str, Any]:
     """Staff: skip — just pause for now (Spotify free-tier limitation)."""
     security._require_operator_request(request)
     _spotify.pause_sync()
+    _broadcast({"available": False})
     return {"ok": True, "note": "paused — select next track manually"}
 
 
@@ -678,8 +686,14 @@ async def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[s
         return {"ok": False, "reason": "no more tracks"}
     if item.get("spotify_track_uri"):
         _spotify.play_sync(item["spotify_track_uri"])
+        _broadcast({"available": True, "source": "spotify",
+                    "title": item.get("title", ""), "artist": item.get("artist", ""),
+                    "album_art_url": item.get("album_art_url"), "is_playing": True})
     elif item.get("local_file_path"):
         _local.play(item["local_file_path"])
+        track = _local.current_track()
+        if track:
+            _broadcast({"available": True, **track})
     return {"ok": True, "item": item}
 
 
