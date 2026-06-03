@@ -37723,6 +37723,20 @@
       if (code === "TRACK_MISSING") params.set("track_state", "MISSING");
       if (code === "MEDIA_MISSING") params.set("media_format_state", "MISSING");
       if (code === "SIZE_MISMATCH") params.set("size_group_state", "MISMATCH");
+
+      // 검색 필터
+      const artist = String($("opsExArtist")?.value || "").trim();
+      const title  = String($("opsExTitle")?.value  || "").trim();
+      const barcode = String($("opsExBarcode")?.value || "").trim();
+      const catalogNo = String($("opsExCatalogNo")?.value || "").trim();
+      const releaseYear = String($("opsExReleaseYear")?.value || "").trim();
+      const domain = String($("opsExceptionDomain")?.value || "").trim();
+      if (artist)      params.set("artist_or_brand", artist);
+      if (title)       params.set("item_name", title);
+      if (barcode)     params.set("barcode", barcode);
+      if (catalogNo)   params.set("catalog_no", catalogNo);
+      if (releaseYear) params.set("release_year", releaseYear);
+      if (domain)      params.set("domain_code", domain);
       return params;
     }
 
