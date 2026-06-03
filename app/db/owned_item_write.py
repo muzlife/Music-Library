@@ -44,6 +44,7 @@ form, the bulk-edit modal, the test suite) keep working unchanged.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import Any
 
@@ -62,6 +63,29 @@ from app.db import (  # noqa: E402  — package surface
     set_owned_item_copy_group,
     utc_now_iso,
 )
+
+
+def _sync_music_detail_genres_to_master_in_conn(
+    conn: sqlite3.Connection,
+    payload: dict,
+    music_detail: dict,
+    now: str,
+) -> None:
+    linked_master_id = int(payload.get("linked_album_master_id") or 0)
+    if linked_master_id <= 0:
+        return
+    clean_genres = [str(v).strip() for v in (music_detail.get("genres") or []) if str(v).strip()]
+    clean_styles = [str(v).strip() for v in (music_detail.get("styles") or []) if str(v).strip()]
+    if clean_genres:
+        conn.execute(
+            "UPDATE album_master SET genres_json = ?, updated_at = ? WHERE id = ?",
+            (json.dumps(clean_genres, ensure_ascii=True), now, linked_master_id),
+        )
+    if clean_styles:
+        conn.execute(
+            "UPDATE album_master SET styles_json = ?, updated_at = ? WHERE id = ?",
+            (json.dumps(clean_styles, ensure_ascii=True), now, linked_master_id),
+        )
 
 
 def insert_owned_item(payload: dict[str, Any]) -> int:
@@ -136,6 +160,7 @@ def insert_owned_item(payload: dict[str, Any]) -> int:
         music_detail = payload.get("music_detail")
         if music_detail:
             _upsert_music_item_detail_in_conn(conn, owned_item_id=owned_item_id, music_detail=music_detail, now=now)
+            _sync_music_detail_genres_to_master_in_conn(conn, payload, music_detail, now)
         goods_detail = payload.get("goods_detail")
         if goods_detail:
             _upsert_goods_item_detail_in_conn(conn, owned_item_id=owned_item_id, goods_detail=goods_detail, now=now)
@@ -294,6 +319,7 @@ def update_owned_item(owned_item_id: int, payload: dict[str, Any]) -> bool:
         music_detail = payload.get("music_detail")
         if music_detail:
             _upsert_music_item_detail_in_conn(conn, owned_item_id=owned_item_id, music_detail=music_detail, now=now)
+            _sync_music_detail_genres_to_master_in_conn(conn, payload, music_detail, now)
         else:
             conn.execute("DELETE FROM music_item_detail WHERE owned_item_id = ?", (owned_item_id,))
         goods_detail = payload.get("goods_detail")
