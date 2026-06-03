@@ -35,7 +35,7 @@
     <key>DEEPL_BASE_URL</key>
     <string>https://api-free.deepl.com/v2/translate</string>
     <key>HOME_ASSISTANT_BASE_URL</key>
-    <string>https://ha.muzlife.com</string>
+    <string>https://__HA_DOMAIN__</string>
     <key>MANIADB_BASE_URL</key>
     <string>http://www.maniadb.com</string>
     <key>DISCOGS_USER_AGENT</key>
@@ -51,9 +51,9 @@
     <key>METADATA_SYNC_BATCH_LIMIT</key>
     <string>300</string>
     <key>OFFICE_CLIMATE_TEMPERATURE_ENTITY_ID</key>
-    <string>sensor.on_seubdogye_temperature</string>
+    <string>__HA_TEMP_SENSOR__</string>
     <key>OFFICE_CLIMATE_HUMIDITY_ENTITY_ID</key>
-    <string>sensor.on_seubdogye_humidity</string>
+    <string>__HA_HUMIDITY_SENSOR__</string>
     <key>APP_HOST</key>
     <string>0.0.0.0</string>
     <key>APP_PORT</key>
