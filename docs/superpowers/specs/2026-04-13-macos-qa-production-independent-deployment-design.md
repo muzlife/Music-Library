@@ -71,29 +71,29 @@
 
 - 서비스명: `library-prod`
 - 도메인: `library.muzlife.com`
-- 앱 루트 예시: `/Users/<user>/apps/hahahoho-prod`
-- 런타임 루트 예시: `/Users/<user>/apps/hahahoho-prod/runtime`
+- 앱 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod`
+- 런타임 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime`
 
 구성 예시
-- DB: `/Users/<user>/apps/hahahoho-prod/runtime/data/library.db`
-- 업로드: `/Users/<user>/apps/hahahoho-prod/runtime/uploads`
-- 로그: `/Users/<user>/apps/hahahoho-prod/runtime/logs`
-- 백업: `/Users/<user>/apps/hahahoho-prod/runtime/backups`
-- import 임시 파일: `/Users/<user>/apps/hahahoho-prod/runtime/imports`
+- DB: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/data/library.db`
+- 업로드: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/uploads`
+- 로그: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/logs`
+- 백업: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/backups`
+- import 임시 파일: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/imports`
 
 ### QA M4
 
 - 서비스명: `library-qa`
 - 도메인: `__QA_DOMAIN__`
-- 앱 루트 예시: `/Users/<user>/apps/hahahoho-qa`
-- 런타임 루트 예시: `/Users/<user>/apps/hahahoho-qa/runtime`
+- 앱 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-qa`
+- 런타임 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime`
 
 구성 예시
-- DB: `/Users/<user>/apps/hahahoho-qa/runtime/data/library.db`
-- 업로드: `/Users/<user>/apps/hahahoho-qa/runtime/uploads`
-- 로그: `/Users/<user>/apps/hahahoho-qa/runtime/logs`
-- 백업: `/Users/<user>/apps/hahahoho-qa/runtime/backups`
-- 운영 복제 import: `/Users/<user>/apps/hahahoho-qa/runtime/imports`
+- DB: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/data/library.db`
+- 업로드: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/uploads`
+- 로그: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/logs`
+- 백업: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/backups`
+- 운영 복제 import: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/imports`
 
 ### 분리 원칙
 

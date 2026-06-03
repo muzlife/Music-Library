@@ -8,11 +8,11 @@
 - 헬스체크: [https://library.muzlife.com/health](https://library.muzlife.com/health)
 
 관련 문서
-- 운영자용 ERD 요약: [library_erd_operator.md](/Volumes/Data/Works/07.hahahoho/docs/library_erd_operator.md)
-- 개발자용 ERD 상세: [library_erd.md](/Volumes/Data/Works/07.hahahoho/docs/library_erd.md)
-- 구매 내역 수입 가이드: [purchase_mail_import.md](/Volumes/Data/Works/07.hahahoho/docs/purchase_mail_import.md)
-- 상용화 체크리스트: [go_live_checklist.md](/Volumes/Data/Works/07.hahahoho/docs/go_live_checklist.md)
-- macOS QA/운영 런북: [macos_qa_prod_runbook.md](/Volumes/Data/Works/07.hahahoho/docs/macos_qa_prod_runbook.md)
+- 운영자용 ERD 요약: [library_erd_operator.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/library_erd_operator.md)
+- 개발자용 ERD 상세: [library_erd.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/library_erd.md)
+- 구매 내역 수입 가이드: [purchase_mail_import.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/purchase_mail_import.md)
+- 상용화 체크리스트: [go_live_checklist.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/go_live_checklist.md)
+- macOS QA/운영 런북: [macos_qa_prod_runbook.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/macos_qa_prod_runbook.md)
 
 ## 1. 운영 원칙
 
@@ -218,7 +218,7 @@
 - 가격
 - 후보 수
 
-더 자세한 설정은 [purchase_mail_import.md](/Volumes/Data/Works/07.hahahoho/docs/purchase_mail_import.md)를 봅니다.
+더 자세한 설정은 [purchase_mail_import.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/purchase_mail_import.md)를 봅니다.
 
 ### 7-4. 대량 등록
 
@@ -238,7 +238,7 @@
 주의
 - CSV 업로드는 자동 등록이 아니라 `검수 큐` 중심 흐름입니다.
 - 위치 컬럼과 release id가 정확할수록 수작업이 줄어듭니다.
-- 예제 파일은 [csv_import_sample.csv](/Volumes/Data/Works/07.hahahoho/docs/csv_import_sample.csv)를 기준으로 맞춥니다.
+- 예제 파일은 [csv_import_sample.csv](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/csv_import_sample.csv)를 기준으로 맞춥니다.
 
 ### 7-5. 마스터 정리
 

@@ -27,14 +27,14 @@
 
 ```bash
 # 1. 현재 .env.local을 안전 백업
-cp /Volumes/Data/Works/07.hahahoho/.env.local /Volumes/Data/Works/07.hahahoho/.env.local.bak.$(date +%Y%m%d_%H%M)
+cp /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local.bak.$(date +%Y%m%d_%H%M)
 
 # 2. 권한이 600인지 확인 (혹시 644면 즉시 600)
-stat -f "%Sp %N" /Volumes/Data/Works/07.hahahoho/.env.local
-chmod 600 /Volumes/Data/Works/07.hahahoho/.env.local
+stat -f "%Sp %N" /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local
+chmod 600 /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local
 
 # 3. 운영기에서도 동일하게
-ssh USER@PROD_HOST.local 'cp /Users/USER/apps/hahahoho-prod/.env /Users/USER/apps/hahahoho-prod/.env.bak.$(date +%Y%m%d_%H%M) && chmod 600 /Users/USER/apps/hahahoho-prod/.env'
+ssh USER@PROD_HOST.local 'cp /Users/USER/apps/__PROJECT_SLUG__-prod/.env /Users/USER/apps/__PROJECT_SLUG__-prod/.env.bak.$(date +%Y%m%d_%H%M) && chmod 600 /Users/USER/apps/__PROJECT_SLUG__-prod/.env'
 ```
 
 새 값을 만들 때 쓰는 도구.
@@ -87,7 +87,7 @@ python3 -c "import secrets, string; print(''.join(secrets.choice(string.ascii_le
    ```bash
    # 운영/연계 → 메타 제공자 → "DeepL 연결 테스트" 버튼이 200 ok 응답
    curl -s -X POST http://127.0.0.1:8000/ops/provider-settings/deepl-test \
-        -H "Cookie: hahahoho_session=..." | jq .
+        -H "Cookie: __PROJECT_SLUG___session=..." | jq .
    ```
 
 ---
@@ -100,7 +100,7 @@ python3 -c "import secrets, string; print(''.join(secrets.choice(string.ascii_le
 
 ```bash
 # 시드가 끝났는지 확인 (DB에 row가 보여야 함)
-ssh USER@PROD_HOST.local "sqlite3 /Users/USER/apps/hahahoho-prod/runtime/data/library.db \
+ssh USER@PROD_HOST.local "sqlite3 /Users/USER/apps/__PROJECT_SLUG__-prod/runtime/data/library.db \
   'SELECT username, role FROM auth_account WHERE is_active = 1;'"
 # admin/ADMIN, operator/OPERATOR, kinolifecom/OPERATOR ... 가 보이면 시드 완료
 ```
@@ -125,7 +125,7 @@ LIBRARY_OPERATOR_ACCOUNTS=
 ```bash
 curl -s -X PATCH "http://127.0.0.1:8000/admin/auth-accounts/<username>" \
      -H "Content-Type: application/json" \
-     -H "Cookie: hahahoho_session=..." \
+     -H "Cookie: __PROJECT_SLUG___session=..." \
      -d '{"password": "<새-비번>"}'
 ```
 
@@ -142,7 +142,7 @@ curl -s -X POST http://127.0.0.1:8000/auth/login \
 2. DB에서 흔적까지 지우려면:
    ```bash
    curl -s -X DELETE "http://127.0.0.1:8000/admin/auth-accounts/<username>" \
-        -H "Cookie: hahahoho_session=..."
+        -H "Cookie: __PROJECT_SLUG___session=..."
    ```
 
 ---
@@ -161,11 +161,11 @@ echo "$NEW_SECRET"
 vim runtime/plist/com.muzlife.library-qa.plist
 # install_qa_plist.sh로 반영
 sed -i.bak "s|^LIBRARY_AUTH_SESSION_SECRET=.*|LIBRARY_AUTH_SESSION_SECRET=\"$NEW_SECRET\"|" \
-    /Volumes/Data/Works/07.hahahoho/.env.local
+    /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local
 
 # 운영기에도 동일하게
 ssh USER@PROD_HOST.local \
-  "sed -i.bak 's|^LIBRARY_AUTH_SESSION_SECRET=.*|LIBRARY_AUTH_SESSION_SECRET=\"$NEW_SECRET\"|' /Users/USER/apps/hahahoho-prod/.env"
+  "sed -i.bak 's|^LIBRARY_AUTH_SESSION_SECRET=.*|LIBRARY_AUTH_SESSION_SECRET=\"$NEW_SECRET\"|' /Users/USER/apps/__PROJECT_SLUG__-prod/.env"
 ```
 
 재시작 후 모든 사용자가 `/login` 으로 리다이렉트되면 OK.
@@ -214,7 +214,7 @@ ssh USER@PROD_HOST.local \
    ```bash
    # 운영 홈 → 사무실 온습도 위젯이 정상 표시되면 OK
    curl -s http://127.0.0.1:8000/operator/office-climate \
-        -H "Cookie: hahahoho_session=..." | jq .
+        -H "Cookie: __PROJECT_SLUG___session=..." | jq .
    ```
 
 ---
@@ -249,13 +249,13 @@ curl -s https://library.muzlife.com/health
 
 ```bash
 # 1Password CLI 가 설치돼 있다면
-op item create --category=secure-note --title="hahahoho .env.local backup $(date +%Y-%m-%d)" \
-  --vault=Private notesPlain="$(cat /Volumes/Data/Works/07.hahahoho/.env.local.bak.<날짜>)"
+op item create --category=secure-note --title="__PROJECT_SLUG__ .env.local backup $(date +%Y-%m-%d)" \
+  --vault=Private notesPlain="$(cat /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local.bak.<날짜>)"
 
 # 그 후 디스크 백업 삭제
-shred -uvz /Volumes/Data/Works/07.hahahoho/.env.local.bak.*  # GNU
+shred -uvz /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local.bak.*  # GNU
 # macOS 기본은 shred 없음 → rm -P 사용
-rm -P /Volumes/Data/Works/07.hahahoho/.env.local.bak.*
+rm -P /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local.bak.*
 ```
 
 ---

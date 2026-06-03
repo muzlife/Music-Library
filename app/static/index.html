@@ -21131,7 +21131,7 @@
             </div>
             <div>
               <label for="opsAutoBackupDir" data-i18n="ops.restore.field.dir.label">저장 경로</label>
-              <input id="opsAutoBackupDir" data-i18n-placeholder="ops.restore.field.dir.placeholder" placeholder="예: /Volumes/Backups/hahahoho" />
+              <input id="opsAutoBackupDir" data-i18n-placeholder="ops.restore.field.dir.placeholder" placeholder="예: /Volumes/Backups/__PROJECT_SLUG__" />
             </div>
             <div>
               <label for="opsAutoBackupScope" data-i18n="ops.restore.field.scope.label">백업 범위</label>
@@ -21645,14 +21645,14 @@
     let opsExceptionLoading = false;
     let opsExceptionSelectedIds = new Set();
     let masterOwnedPrefilledIds = new Set();
-    const OPS_EXCEPTION_PRESET_KEY = "hahahoho.opsExceptionPresets.v1";
-    const OPS_EXCEPTION_PRESET_DEFAULT_KEY = "hahahoho.opsExceptionPresets.default.v1";
-    const APP_MAIN_TAB_MEMORY_KEY = "hahahoho.mainTabByRole.v1";
-    const APP_SUBTAB_MEMORY_KEY = "hahahoho.subTabByRole.v1";
-    const DASHBOARD_WORKBENCH_PREFS_KEY = "hahahoho.dashboardWorkbenchPrefsByRole.v1";
-    const DASHBOARD_CABINET_SELECTION_STORAGE_KEY = "hahahoho.dashboardCabinetSelection.v1";
-    const APP_LOCALE_STORAGE_KEY = "hahahoho.appLocale.v1";
-    const APP_THEME_STORAGE_KEY = "hahahoho.uiTheme.v1";
+    const OPS_EXCEPTION_PRESET_KEY = "__PROJECT_SLUG__.opsExceptionPresets.v1";
+    const OPS_EXCEPTION_PRESET_DEFAULT_KEY = "__PROJECT_SLUG__.opsExceptionPresets.default.v1";
+    const APP_MAIN_TAB_MEMORY_KEY = "__PROJECT_SLUG__.mainTabByRole.v1";
+    const APP_SUBTAB_MEMORY_KEY = "__PROJECT_SLUG__.subTabByRole.v1";
+    const DASHBOARD_WORKBENCH_PREFS_KEY = "__PROJECT_SLUG__.dashboardWorkbenchPrefsByRole.v1";
+    const DASHBOARD_CABINET_SELECTION_STORAGE_KEY = "__PROJECT_SLUG__.dashboardCabinetSelection.v1";
+    const APP_LOCALE_STORAGE_KEY = "__PROJECT_SLUG__.appLocale.v1";
+    const APP_THEME_STORAGE_KEY = "__PROJECT_SLUG__.uiTheme.v1";
     const SUPPORTED_APP_LOCALES = new Set(["ko", "en", "ja"]);
     let appLocale = "ko";
     let appTheme = "night";
@@ -22145,7 +22145,7 @@
         "utility.theme.night": "야간",
         "utility.theme.switch_to_day": "주간 모드로 전환",
         "utility.theme.switch_to_night": "야간 모드로 전환",
-        "utility.ops_home_short": "hahahoho",
+        "utility.ops_home_short": "__PROJECT_SLUG__",
         "common.all": "전체",
         "common.unspecified": "미지정",
         "common.default": "기본값",
@@ -23413,7 +23413,7 @@
         "ops.providers.field.discogs_contact_email.label": "연락처 이메일",
         "ops.providers.field.discogs_contact_email.placeholder": "예: ops@example.com",
         "ops.providers.field.discogs_user_agent.label": "Discogs User-Agent",
-        "ops.providers.field.discogs_user_agent.placeholder": "예: hahahoho-library/0.1 (contact: ops@example.com)",
+        "ops.providers.field.discogs_user_agent.placeholder": "예: __PROJECT_SLUG__-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.aladin_ttb_key.label": "Aladin TTB Key",
         "ops.providers.field.aladin_base_url.label": "Aladin Base URL",
         "ops.providers.field.aladin_base_url.placeholder": "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
@@ -23453,7 +23453,7 @@
         "ops.restore.field.enabled.label": "자동 백업 사용",
         "ops.restore.field.interval.label": "주기(일)",
         "ops.restore.field.dir.label": "저장 경로",
-        "ops.restore.field.dir.placeholder": "예: /Volumes/Backups/hahahoho",
+        "ops.restore.field.dir.placeholder": "예: /Volumes/Backups/__PROJECT_SLUG__",
         "ops.restore.field.scope.label": "백업 범위",
         "ops.restore.scope.db": "DB만",
         "ops.restore.scope.full": "전체(zip)",
@@ -24897,7 +24897,7 @@
         "utility.theme.night": "Night",
         "utility.theme.switch_to_day": "Switch to day mode",
         "utility.theme.switch_to_night": "Switch to night mode",
-        "utility.ops_home_short": "hahahoho",
+        "utility.ops_home_short": "__PROJECT_SLUG__",
         "common.all": "All",
         "common.unspecified": "Unspecified",
         "common.default": "Default",
@@ -26135,7 +26135,7 @@
         "ops.providers.field.discogs_contact_email.label": "Contact Email",
         "ops.providers.field.discogs_contact_email.placeholder": "e.g. ops@example.com",
         "ops.providers.field.discogs_user_agent.label": "Discogs User-Agent",
-        "ops.providers.field.discogs_user_agent.placeholder": "e.g. hahahoho-library/0.1 (contact: ops@example.com)",
+        "ops.providers.field.discogs_user_agent.placeholder": "e.g. __PROJECT_SLUG__-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.aladin_ttb_key.label": "Aladin TTB Key",
         "ops.providers.field.aladin_base_url.label": "Aladin Base URL",
         "ops.providers.field.aladin_base_url.placeholder": "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
@@ -26175,7 +26175,7 @@
         "ops.restore.field.enabled.label": "Enable Auto Backup",
         "ops.restore.field.interval.label": "Interval (days)",
         "ops.restore.field.dir.label": "Save Path",
-        "ops.restore.field.dir.placeholder": "e.g. /Volumes/Backups/hahahoho",
+        "ops.restore.field.dir.placeholder": "e.g. /Volumes/Backups/__PROJECT_SLUG__",
         "ops.restore.field.scope.label": "Backup Scope",
         "ops.restore.scope.db": "DB only",
         "ops.restore.scope.full": "Full (zip)",
@@ -27639,7 +27639,7 @@
         "utility.theme.night": "夜間",
         "utility.theme.switch_to_day": "昼間モードに切り替え",
         "utility.theme.switch_to_night": "夜間モードに切り替え",
-        "utility.ops_home_short": "hahahoho",
+        "utility.ops_home_short": "__PROJECT_SLUG__",
         "common.all": "すべて",
         "common.unspecified": "未指定",
         "common.default": "既定値",
@@ -28869,7 +28869,7 @@
         "ops.providers.field.discogs_contact_email.label": "連絡先メール",
         "ops.providers.field.discogs_contact_email.placeholder": "例: ops@example.com",
         "ops.providers.field.discogs_user_agent.label": "Discogs User-Agent",
-        "ops.providers.field.discogs_user_agent.placeholder": "例: hahahoho-library/0.1 (contact: ops@example.com)",
+        "ops.providers.field.discogs_user_agent.placeholder": "例: __PROJECT_SLUG__-library/0.1 (contact: ops@example.com)",
         "ops.providers.field.aladin_ttb_key.label": "Aladin TTB Key",
         "ops.providers.field.aladin_base_url.label": "Aladin Base URL",
         "ops.providers.field.aladin_base_url.placeholder": "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
@@ -28909,7 +28909,7 @@
         "ops.restore.field.enabled.label": "自動バックアップを使用",
         "ops.restore.field.interval.label": "周期(日)",
         "ops.restore.field.dir.label": "保存先",
-        "ops.restore.field.dir.placeholder": "例: /Volumes/Backups/hahahoho",
+        "ops.restore.field.dir.placeholder": "例: /Volumes/Backups/__PROJECT_SLUG__",
         "ops.restore.field.scope.label": "バックアップ範囲",
         "ops.restore.scope.db": "DBのみ",
         "ops.restore.scope.full": "全体(zip)",
@@ -40670,10 +40670,10 @@
     }
 
     function _saveDashboardCabinetMemory(cabinetKey, slotCode) {
-      try { localStorage.setItem("hahahoho_dash_cabinet", JSON.stringify({ cabinetKey, slotCode, ts: Date.now() })); } catch(_) {}
+      try { localStorage.setItem("__PROJECT_SLUG___dash_cabinet", JSON.stringify({ cabinetKey, slotCode, ts: Date.now() })); } catch(_) {}
     }
     function _loadDashboardCabinetMemory() {
-      try { const v = localStorage.getItem("hahahoho_dash_cabinet"); return v ? JSON.parse(v) : null; } catch(_) { return null; }
+      try { const v = localStorage.getItem("__PROJECT_SLUG___dash_cabinet"); return v ? JSON.parse(v) : null; } catch(_) { return null; }
     }
     function restoreDashboardCabinetSelectionMemory() {
       try {
@@ -42891,7 +42891,7 @@ async function loadDashboardClimate() {
           health_link: `<a href="${escapeHtml(String(data?.external_health_url || "https://library.muzlife.com/health"))}" target="_blank" rel="noreferrer">library.muzlife.com/health</a>`,
         });
         pathsEl.textContent = t("ops.system.paths", {
-          path: String(data?.launchd_err_log || "/Volumes/Data/Works/07.hahahoho/logs/launchd/library.err.log"),
+          path: String(data?.launchd_err_log || "/Volumes/Data/Works/07.__PROJECT_SLUG__/logs/launchd/library.err.log"),
         });
         recentLogEl.textContent = recentLaunchdLines.length
           ? t("ops.system.logs.recent", { lines: recentLaunchdLines.join(" | ") })
@@ -42904,8 +42904,8 @@ async function loadDashboardClimate() {
           not_started_count: formatCount(Number(qaSummary?.not_started_count || 0)),
         });
         qaPathsEl.innerHTML = t("ops.system.qa.paths", {
-          master_link: `<a href="${escapeHtml(String(qaSummary?.qa_master_sheet || "/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv"))}" target="_blank" rel="noreferrer">qa_master_sheet.csv</a>`,
-          manual_link: `<a href="${escapeHtml(String(qaSummary?.qa_manual_sheet || "/Volumes/Data/Works/07.hahahoho/docs/qa/qa_manual_remaining.csv"))}" target="_blank" rel="noreferrer">qa_manual_remaining.csv</a>`,
+          master_link: `<a href="${escapeHtml(String(qaSummary?.qa_master_sheet || "/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/qa/qa_master_sheet.csv"))}" target="_blank" rel="noreferrer">qa_master_sheet.csv</a>`,
+          manual_link: `<a href="${escapeHtml(String(qaSummary?.qa_manual_sheet || "/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/qa/qa_manual_remaining.csv"))}" target="_blank" rel="noreferrer">qa_manual_remaining.csv</a>`,
           updated: qaSummary?.updated_at
             ? t("ops.system.qa.updated_suffix", { updated_at: escapeHtml(String(qaSummary.updated_at)) })
             : "",
@@ -42923,13 +42923,13 @@ async function loadDashboardClimate() {
           health_link: `<a href="https://library.muzlife.com/health" target="_blank" rel="noreferrer">library.muzlife.com/health</a>`,
         });
         pathsEl.textContent = t("ops.system.paths", {
-          path: "/Volumes/Data/Works/07.hahahoho/logs/launchd/library.err.log | /Volumes/Data/Works/07.hahahoho/logs/launchd/library.out.log",
+          path: "/Volumes/Data/Works/07.__PROJECT_SLUG__/logs/launchd/library.err.log | /Volumes/Data/Works/07.__PROJECT_SLUG__/logs/launchd/library.out.log",
         });
         recentLogEl.textContent = t("ops.system.logs.recent_load_failed");
         qaLineEl.textContent = t("ops.system.qa.load_failed");
         qaPathsEl.textContent = t("ops.system.qa.paths", {
-          master_link: "/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv",
-          manual_link: "/Volumes/Data/Works/07.hahahoho/docs/qa/qa_manual_remaining.csv",
+          master_link: "/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/qa/qa_master_sheet.csv",
+          manual_link: "/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/qa/qa_manual_remaining.csv",
           updated: "",
         });
         qaRemainingEl.textContent = t("ops.system.qa.load_failed");
@@ -55404,7 +55404,7 @@ async function loadDashboardClimate() {
         deepl_auth_key: $("opsProviderDeeplAuthKey").value.trim() || null,
         discogs_user_agent: (() => {
           const _email = $("opsProviderDiscogsContactEmail")?.value.trim();
-          return _email ? `hahahoho-library/0.1 (contact: ${_email})` : null;
+          return _email ? `__PROJECT_SLUG__-library/0.1 (contact: ${_email})` : null;
         })(),
         aladin_base_url: $("opsProviderAladinBaseUrl").value.trim() || null,
         maniadb_base_url: $("opsProviderManiadbBaseUrl").value.trim() || null,
@@ -55553,7 +55553,7 @@ async function loadDashboardClimate() {
         const includeEnvFile = $("opsExportFullIncludeEnvFile").checked ? "true" : "false";
         const filename = await triggerBrowserDownload(
           `/ops/export/full-backup?include_env_file=${encodeURIComponent(includeEnvFile)}`,
-          "hahahoho-library-full-backup.zip"
+          "__PROJECT_SLUG__-library-full-backup.zip"
         );
         setStatus("opsExportStatus", "ok", t("ops.export.status.full_started", { filename }));
       } catch (err) {
@@ -55636,7 +55636,7 @@ async function loadDashboardClimate() {
     async function downloadOpsDbBackup() {
       try {
         setStatus("opsExportStatus", "ok", t("ops.export.status.db_prepare"));
-        const filename = await triggerBrowserDownload("/ops/export/db-backup", "hahahoho-library-backup.db");
+        const filename = await triggerBrowserDownload("/ops/export/db-backup", "__PROJECT_SLUG__-library-backup.db");
         setStatus("opsExportStatus", "ok", t("ops.export.status.db_started", { filename }));
       } catch (err) {
         setStatus("opsExportStatus", "err", errorMessageText(err, t("ops.export.status.db_failed")));

@@ -7,9 +7,9 @@
 
 ## Current State
 
-- 로그인 화면은 [app/static/login.html](/Volumes/Data/Works/07.hahahoho/app/static/login.html) 의 독립 정적 파일이다.
+- 로그인 화면은 [app/static/login.html](/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/login.html) 의 독립 정적 파일이다.
 - 현재 로그인 화면은 고정 밝은 테마만 제공한다.
-- 운영/관리 화면은 [app/static/index.html](/Volumes/Data/Works/07.hahahoho/app/static/index.html) 에서 `localStorage` 기반으로 `locale/theme`를 유지한다.
+- 운영/관리 화면은 [app/static/index.html](/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html) 에서 `localStorage` 기반으로 `locale/theme`를 유지한다.
 - 로그인 화면은 이 저장 상태를 읽거나 쓸 수 없다.
 - 결과적으로 로그인 화면과 본 콘솔의 헤더, 컬러 시스템, 상태 유지 방식이 분리돼 있다.
 
@@ -105,8 +105,8 @@
 
 로그인 화면은 메인 콘솔과 같은 **저장 키 문자열**을 사용한다.
 
-- locale storage key literal: `hahahoho.appLocale.v1`
-- theme storage key literal: `hahahoho.uiTheme.v1`
+- locale storage key literal: `__PROJECT_SLUG__.appLocale.v1`
+- theme storage key literal: `__PROJECT_SLUG__.uiTheme.v1`
 
 구현 경계는 `login.html` 한 파일이므로, 이번 범위에서는 별도 공통 스크립트를 추출하지 않는다.  
 대신 로그인 화면 안에 위 두 literal key를 직접 적고, 메인 콘솔과 동일한 값만 사용한다.
@@ -199,7 +199,7 @@
 
 ### Primary File
 
-- [app/static/login.html](/Volumes/Data/Works/07.hahahoho/app/static/login.html)
+- [app/static/login.html](/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/login.html)
 
 ### Optional Test Files
 

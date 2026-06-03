@@ -8,7 +8,7 @@ Extend the `Nexus OS / operational console` visual language from the already red
 
 ## Relationship To Existing Spec
 This document extends:
-- [2026-04-16-dashboard-and-master-console-redesign-design.md](/Volumes/Data/Works/07.hahahoho/docs/superpowers/specs/2026-04-16-dashboard-and-master-console-redesign-design.md)
+- [2026-04-16-dashboard-and-master-console-redesign-design.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/superpowers/specs/2026-04-16-dashboard-and-master-console-redesign-design.md)
 
 That earlier spec remains the design source for:
 - `#tabHome`
@@ -18,7 +18,7 @@ That earlier spec remains the design source for:
 This document covers the rest of the admin tabs and the shared shell rules needed to unify them.
 
 ## Scope
-- Shared admin shell in `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Shared admin shell in `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
   - top header
   - tab navigation
   - shared tab panel framing
@@ -146,7 +146,7 @@ Use the same color mapping and spacing rhythm across all admin tabs.
 - `#tabMedia`
 - `#tabCollectibles`
 - `#tabOps`
-- shared tab/button routing and shell utility areas already handled in `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- shared tab/button routing and shell utility areas already handled in `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
 
 ### `#tabSimple` Anchors
 - `#opsHomeLayout`

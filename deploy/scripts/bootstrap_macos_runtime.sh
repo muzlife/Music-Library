@@ -9,8 +9,8 @@ Usage:
   ./deploy/scripts/bootstrap_macos_runtime.sh <prod|qa> <app_root>
 
 Examples:
-  ./deploy/scripts/bootstrap_macos_runtime.sh prod /Users/me/apps/hahahoho-prod
-  ./deploy/scripts/bootstrap_macos_runtime.sh qa /Users/me/apps/hahahoho-qa
+  ./deploy/scripts/bootstrap_macos_runtime.sh prod /Users/me/apps/__PROJECT_SLUG__-prod
+  ./deploy/scripts/bootstrap_macos_runtime.sh qa /Users/me/apps/__PROJECT_SLUG__-qa
 EOF
 }
 

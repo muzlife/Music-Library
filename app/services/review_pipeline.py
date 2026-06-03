@@ -63,7 +63,7 @@ def translate_to_korean_with_deepl(text: str) -> str:
         f"{api_root}/v2/translate",
         headers={
             "Authorization": f"DeepL-Auth-Key {auth_key}",
-            "User-Agent": "hahahoho-library/0.1 (review translation)",
+            "User-Agent": "__PROJECT_SLUG__-library/0.1 (review translation)",
         },
         json={"text": [content], "target_lang": "KO"},
         timeout=30.0,

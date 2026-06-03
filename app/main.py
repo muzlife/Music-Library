@@ -292,7 +292,7 @@ ALADIN_DISCOGS_BACKFILL_LAST_ERROR: str | None = None
 AUTO_BACKUP_LOCK = threading.Lock()
 AUTO_BACKUP_STOP_EVENT = threading.Event()
 AUTO_BACKUP_THREAD: threading.Thread | None = None
-LAUNCHD_LOG_DIR = Path.home() / "Library" / "Logs" / "hahahoho-library"
+LAUNCHD_LOG_DIR = Path.home() / "Library" / "Logs" / "__PROJECT_SLUG__-library"
 LAUNCHD_ERR_LOG_PATH = LAUNCHD_LOG_DIR / "library.err.log"
 
 
@@ -303,7 +303,7 @@ def _resolve_project_root() -> Path:
       1. Explicit `LIBRARY_PROJECT_ROOT` env var (preferred for QA/Prod).
       2. The directory two levels above this file (works for in-repo runs).
 
-    The repo used to embed `/Volumes/Data/Works/07.hahahoho` as a literal in nine
+    The repo used to embed `/Volumes/Data/Works/07.__PROJECT_SLUG__` as a literal in nine
     places. That made the same code break on a teammate's laptop, on a
     runtime that mounted the repo elsewhere, or inside CI. Anchoring on a
     single env var keeps QA/Prod overridable while keeping the local dev
@@ -3079,8 +3079,8 @@ def _create_local_db_backup(backup_dir: str, *, reason: str = "manual") -> str:
     target_dir = Path(_normalize_backup_dir_path(backup_dir))
     target_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    final_path = target_dir / f"hahahoho-library-{reason}-{timestamp}.db"
-    temp_path = target_dir / f".hahahoho-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
+    final_path = target_dir / f"__PROJECT_SLUG__-library-{reason}-{timestamp}.db"
+    temp_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
     _write_db_snapshot_to_path(temp_path)
     temp_path.replace(final_path)
     return str(final_path)
@@ -3095,13 +3095,13 @@ def _create_local_full_backup_bundle(
     target_dir = Path(_normalize_backup_dir_path(backup_dir))
     target_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    final_path = target_dir / f"hahahoho-library-{reason}-{timestamp}.zip"
-    temp_path = target_dir / f".hahahoho-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
-    temp_db_path = target_dir / f".hahahoho-library-{reason}-{timestamp}-{uuid4().hex}.db"
+    final_path = target_dir / f"__PROJECT_SLUG__-library-{reason}-{timestamp}.zip"
+    temp_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
+    temp_db_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.db"
     project_root = Path(__file__).resolve().parents[1]
     env_path = project_root / ".env.local"
     manifest = {
-        "kind": "hahahoho-library-full-backup",
+        "kind": "__PROJECT_SLUG__-library-full-backup",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "db_filename": "library.db",
         "includes_uploads": IMAGE_UPLOAD_DIR.exists(),
@@ -3268,7 +3268,7 @@ def _restore_library_bundle_from_upload(upload_path: str, original_filename: str
             raise ValueError("복구 파일에 library.db가 없습니다.")
         has_uploads = any(name.startswith("uploads/") and not name.endswith("/") for name in names)
         has_env = ".env.local" in names
-        extract_root = Path(tempfile.mkdtemp(prefix="hahahoho-restore-bundle-"))
+        extract_root = Path(tempfile.mkdtemp(prefix="__PROJECT_SLUG__-restore-bundle-"))
         try:
             extracted_db_path = extract_root / "library.db"
             with bundle.open(db_member, "r") as source_db, open(extracted_db_path, "wb") as target_db:
@@ -3413,7 +3413,7 @@ def _start_auto_backup_worker() -> None:
 async def restore_db_backup(request: Request, file: UploadFile = File(...)) -> DatabaseRestoreResponse:
     _require_admin_request(request)
     filename = str(file.filename or "").strip() or "restore.db"
-    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-restore-", suffix=".db", delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-restore-", suffix=".db", delete=False)
     tmp_path = tmp.name
     tmp.close()
     try:
@@ -3438,7 +3438,7 @@ async def restore_db_backup(request: Request, file: UploadFile = File(...)) -> D
 async def restore_full_backup(request: Request, file: UploadFile = File(...)) -> DatabaseRestoreResponse:
     _require_admin_request(request)
     filename = str(file.filename or "").strip() or "restore.zip"
-    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-full-restore-", suffix=".zip", delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-full-restore-", suffix=".zip", delete=False)
     tmp_path = tmp.name
     tmp.close()
     try:

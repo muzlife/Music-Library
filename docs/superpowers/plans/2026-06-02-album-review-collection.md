@@ -252,7 +252,7 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
     try:
         req = urllib.request.Request(
             f"https://en.wikipedia.org/w/api.php?{params}",
-            headers={"User-Agent": "hahahoho-library/0.1"},
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = _json.loads(resp.read())
@@ -279,7 +279,7 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
         })
         req2 = urllib.request.Request(
             f"https://en.wikipedia.org/w/api.php?{params2}",
-            headers={"User-Agent": "hahahoho-library/0.1"},
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
         )
         with urllib.request.urlopen(req2, timeout=10) as resp2:
             data2 = _json.loads(resp2.read())
@@ -313,7 +313,7 @@ def fetch_review_from_url(url: str) -> str | None:
         resp = httpx.get(
             url,
             timeout=15,
-            headers={"User-Agent": "hahahoho-library/0.1"},
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
             follow_redirects=True,
         )
         resp.raise_for_status()
@@ -921,7 +921,7 @@ Expected: `OK`
 - [ ] **Step 4: 서버 기동 확인**
 
 ```bash
-cd /Volumes/Data/Works/07.hahahoho
+cd /Volumes/Data/Works/07.__PROJECT_SLUG__
 python3 -c "from app.api.album_masters import router; print('OK')"
 ```
 
@@ -1287,7 +1287,7 @@ renderHomeMasterReviewSection(homeMasterInfo);
 - [ ] **Step 9: QA 배포**
 
 ```bash
-cp app/static/index.html /Users/__DEV_USER__/apps/hahahoho-qa/app/static/index.html
+cp app/static/index.html /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/static/index.html
 ```
 
 - [ ] **Step 10: Commit**
@@ -1416,7 +1416,7 @@ JA:
 - [ ] **Step 4: QA 배포**
 
 ```bash
-cp app/static/index.html /Users/__DEV_USER__/apps/hahahoho-qa/app/static/index.html
+cp app/static/index.html /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/static/index.html
 ```
 
 - [ ] **Step 5: Commit**
@@ -1435,24 +1435,24 @@ git commit -m "feat(ui): add batch review collection section in ops meta sync ta
 - [ ] **Step 1: QA 백엔드 파일 배포**
 
 ```bash
-cp app/config.py /Users/__DEV_USER__/apps/hahahoho-qa/app/config.py
-cp app/services/deepseek_client.py /Users/__DEV_USER__/apps/hahahoho-qa/app/services/deepseek_client.py
-cp app/services/review_pipeline.py /Users/__DEV_USER__/apps/hahahoho-qa/app/services/review_pipeline.py
-cp app/services/providers.py /Users/__DEV_USER__/apps/hahahoho-qa/app/services/providers.py
-cp app/db/album_master_review.py /Users/__DEV_USER__/apps/hahahoho-qa/app/db/album_master_review.py
-cp app/api/album_masters.py /Users/__DEV_USER__/apps/hahahoho-qa/app/api/album_masters.py
+cp app/config.py /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/config.py
+cp app/services/deepseek_client.py /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/services/deepseek_client.py
+cp app/services/review_pipeline.py /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/services/review_pipeline.py
+cp app/services/providers.py /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/services/providers.py
+cp app/db/album_master_review.py /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/db/album_master_review.py
+cp app/api/album_masters.py /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/api/album_masters.py
 ```
 
 - [ ] **Step 2: 구문 검사**
 
 ```bash
 python3 -m py_compile \
-  /Users/__DEV_USER__/apps/hahahoho-qa/app/config.py \
-  /Users/__DEV_USER__/apps/hahahoho-qa/app/services/deepseek_client.py \
-  /Users/__DEV_USER__/apps/hahahoho-qa/app/services/review_pipeline.py \
-  /Users/__DEV_USER__/apps/hahahoho-qa/app/services/providers.py \
-  /Users/__DEV_USER__/apps/hahahoho-qa/app/db/album_master_review.py \
-  /Users/__DEV_USER__/apps/hahahoho-qa/app/api/album_masters.py \
+  /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/config.py \
+  /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/services/deepseek_client.py \
+  /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/services/review_pipeline.py \
+  /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/services/providers.py \
+  /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/db/album_master_review.py \
+  /Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/app/api/album_masters.py \
   && echo OK
 ```
 

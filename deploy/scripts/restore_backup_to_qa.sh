@@ -7,8 +7,8 @@ Usage:
   ./deploy/scripts/restore_backup_to_qa.sh <qa_app_root> <db_backup_path> [uploads_tgz]
 
 Examples:
-  ./deploy/scripts/restore_backup_to_qa.sh /Users/me/apps/hahahoho-qa /tmp/library-20260413.db
-  ./deploy/scripts/restore_backup_to_qa.sh /Users/me/apps/hahahoho-qa /tmp/library-20260413.db /tmp/uploads-20260413.tgz
+  ./deploy/scripts/restore_backup_to_qa.sh /Users/me/apps/__PROJECT_SLUG__-qa /tmp/library-20260413.db
+  ./deploy/scripts/restore_backup_to_qa.sh /Users/me/apps/__PROJECT_SLUG__-qa /tmp/library-20260413.db /tmp/uploads-20260413.tgz
 EOF
 }
 

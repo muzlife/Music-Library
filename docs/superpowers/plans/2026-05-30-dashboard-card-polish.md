@@ -677,12 +677,12 @@ git commit -m "feat: renderDashboardMetaSource — remove table, flex progress b
 ## Task 9: QA 동기화 및 최종 검증
 
 **Files:**
-- Run: `rsync` → `~/apps/hahahoho-qa/app/static/index.html`
+- Run: `rsync` → `~/apps/__PROJECT_SLUG__-qa/app/static/index.html`
 
 - [ ] **Step 1: QA 동기화**
 
 ```bash
-rsync -a --checksum app/static/index.html ~/apps/hahahoho-qa/app/static/index.html && echo "synced"
+rsync -a --checksum app/static/index.html ~/apps/__PROJECT_SLUG__-qa/app/static/index.html && echo "synced"
 ```
 Expected: `synced`
 

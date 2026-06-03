@@ -95,7 +95,7 @@ git commit -m "docs: add macOS QA/prod runbook"
 ```env
 APP_HOST=127.0.0.1
 APP_PORT=8000
-LIBRARY_DB_PATH=/Users/__USER__/apps/hahahoho-prod/runtime/data/library.db
+LIBRARY_DB_PATH=/Users/__USER__/apps/__PROJECT_SLUG__-prod/runtime/data/library.db
 LIBRARY_AUTH_COOKIE_SECURE=1
 ```
 
@@ -104,7 +104,7 @@ LIBRARY_AUTH_COOKIE_SECURE=1
 ```env
 APP_HOST=127.0.0.1
 APP_PORT=8100
-LIBRARY_DB_PATH=/Users/__USER__/apps/hahahoho-qa/runtime/data/library.db
+LIBRARY_DB_PATH=/Users/__USER__/apps/__PROJECT_SLUG__-qa/runtime/data/library.db
 LIBRARY_AUTH_COOKIE_SECURE=1
 ```
 

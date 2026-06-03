@@ -101,7 +101,7 @@ def system_status(request: Request) -> dict[str, Any]:
 def export_db_backup(request: Request, background_tasks: BackgroundTasks) -> FileResponse:
     _require_operator_request(request)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-library-", suffix=".db", delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-library-", suffix=".db", delete=False)
     tmp_path = tmp.name
     tmp.close()
     with db.get_conn() as source_conn:
@@ -114,7 +114,7 @@ def export_db_backup(request: Request, background_tasks: BackgroundTasks) -> Fil
     return FileResponse(
         tmp_path,
         media_type="application/octet-stream",
-        filename=f"hahahoho-library-backup-{timestamp}.db",
+        filename=f"__PROJECT_SLUG__-library-backup-{timestamp}.db",
     )
 
 

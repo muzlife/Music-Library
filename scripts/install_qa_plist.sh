@@ -31,5 +31,5 @@ if pgrep -f 'uvicorn.*8100' >/dev/null 2>&1; then
   echo "✅  QA server is running on port 8100"
 else
   echo "⚠️   QA server not running yet — check logs:"
-  echo "    tail -20 ~/apps/hahahoho-qa/runtime/logs/launchd.qa.stderr.log"
+  echo "    tail -20 ~/apps/__PROJECT_SLUG__-qa/runtime/logs/launchd.qa.stderr.log"
 fi

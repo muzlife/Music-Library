@@ -50,11 +50,11 @@ validate_runtime_role() {
   local root_name expected_port expected_db_path actual_db_path
   root_name="$(basename "${ROOT_DIR}")"
   case "${root_name}" in
-    hahahoho-prod)
+    __PROJECT_SLUG__-prod)
       expected_port="8000"
       expected_db_path="${ROOT_DIR}/runtime/data/library.db"
       ;;
-    hahahoho-qa)
+    __PROJECT_SLUG__-qa)
       expected_port="8100"
       expected_db_path="${ROOT_DIR}/runtime/data/library.db"
       ;;

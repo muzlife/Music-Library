@@ -62,7 +62,7 @@
 - [ ] **Step 2: 구문 검사**
 
 ```bash
-cd /Volumes/Data/Works/07.hahahoho
+cd /Volumes/Data/Works/07.__PROJECT_SLUG__
 python3 -m py_compile app/db/__init__.py && echo OK
 ```
 
@@ -145,7 +145,7 @@ def test_search_operator_catalog_includes_review_fields(isolated_operator_search
 - [ ] **Step 2: 테스트 실패 확인**
 
 ```bash
-cd /Volumes/Data/Works/07.hahahoho
+cd /Volumes/Data/Works/07.__PROJECT_SLUG__
 pytest tests/test_db_operator_catalog_search.py::test_search_operator_catalog_includes_review_fields -v 2>&1 | tail -10
 ```
 

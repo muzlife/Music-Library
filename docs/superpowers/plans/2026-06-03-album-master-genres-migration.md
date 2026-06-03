@@ -65,7 +65,7 @@ def test_album_master_has_genres_columns(tmp_path):
 - [ ] **Step 2: Run test to confirm it fails**
 
 ```bash
-cd /Volumes/Data/Works/07.hahahoho
+cd /Volumes/Data/Works/07.__PROJECT_SLUG__
 python -m pytest tests/test_schema_migration.py::test_album_master_has_genres_columns -v
 ```
 Expected: FAIL (columns don't exist yet)
@@ -534,11 +534,11 @@ Expected: `True`
 Start the QA server and trigger a single-item sync for an item that has Discogs source and a linked master:
 ```bash
 # Find a DISCOGS item with a linked master
-sqlite3 ~/apps/hahahoho-qa/library.db \
+sqlite3 ~/apps/__PROJECT_SLUG__-qa/library.db \
   "SELECT oi.id FROM owned_item oi WHERE oi.source_code='DISCOGS' AND oi.linked_album_master_id IS NOT NULL LIMIT 1;"
 
 # Check current master genres (should be populated from backfill, but verify)
-sqlite3 ~/apps/hahahoho-qa/library.db \
+sqlite3 ~/apps/__PROJECT_SLUG__-qa/library.db \
   "SELECT am.id, am.genres_json, am.styles_json FROM album_master am JOIN owned_item oi ON oi.linked_album_master_id=am.id WHERE oi.source_code='DISCOGS' LIMIT 3;"
 ```
 

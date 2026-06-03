@@ -61,7 +61,7 @@ def _write_db_snapshot(source_db: Path, target_path: Path) -> None:
 
 
 def _compute_db_fingerprint(db_path: Path) -> tuple[str, Path]:
-    temp_dir = Path(tempfile.mkdtemp(prefix="hahahoho-db-fingerprint-"))
+    temp_dir = Path(tempfile.mkdtemp(prefix="__PROJECT_SLUG__-db-fingerprint-"))
     snapshot_path = temp_dir / "library.db"
     try:
         _write_db_snapshot(db_path, snapshot_path)
@@ -186,7 +186,7 @@ def _create_daily_db_backup(app_root: Path, *, keep: int = 30) -> dict[str, obje
 
         backup_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-        backup_path = backup_dir / f"hahahoho-library-daily-db-{timestamp}.db"
+        backup_path = backup_dir / f"__PROJECT_SLUG__-library-daily-db-{timestamp}.db"
         manifest_path = backup_path.with_suffix(".db.json")
         snapshot_path.replace(backup_path)
         report = _build_report(
@@ -236,10 +236,10 @@ def _create_weekly_full_backup(app_root: Path, *, keep: int = 12, include_env_fi
 
         backup_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-        backup_path = backup_dir / f"hahahoho-library-weekly-full-{timestamp}.zip"
+        backup_path = backup_dir / f"__PROJECT_SLUG__-library-weekly-full-{timestamp}.zip"
         manifest_path = backup_path.with_suffix(".zip.json")
         bundle_manifest = {
-            "kind": "hahahoho-library-full-backup",
+            "kind": "__PROJECT_SLUG__-library-full-backup",
             "created_at": _utc_now_iso(),
             "db_filename": "library.db",
             "includes_uploads": paths["uploads_dir"].exists(),
@@ -358,7 +358,7 @@ def _extract_full_bundle(bundle_path: Path, qa_root: Path) -> None:
         shutil.rmtree(qa_uploads_dir)
     qa_uploads_dir.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.TemporaryDirectory(prefix="hahahoho-qa-sync-") as temp_dir_text:
+    with tempfile.TemporaryDirectory(prefix="__PROJECT_SLUG__-qa-sync-") as temp_dir_text:
         temp_dir = Path(temp_dir_text)
         with zipfile.ZipFile(bundle_path) as archive:
             archive.extract("library.db", path=temp_dir)
@@ -439,7 +439,7 @@ def _sync_prod_backup_to_qa(prod_full_backup_dir: Path, qa_app_root: Path) -> di
         _write_json(state_path, report)
         return report
 
-    with tempfile.TemporaryDirectory(prefix="hahahoho-qa-rollback-") as snapshot_text:
+    with tempfile.TemporaryDirectory(prefix="__PROJECT_SLUG__-qa-rollback-") as snapshot_text:
         snapshot_root = Path(snapshot_text)
         _snapshot_qa_state(qa_app_root, snapshot_root)
         try:

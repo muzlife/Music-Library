@@ -36,7 +36,7 @@ BACKUP_SCRIPT_PATHS = (
 
 
 def test_bootstrap_script_creates_runtime_dirs_and_env(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-qa"
+    app_root = tmp_path / "__PROJECT_SLUG__-qa"
     result = subprocess.run(
         [str(BOOTSTRAP_SCRIPT), "qa", str(app_root)],
         check=True,
@@ -54,7 +54,7 @@ def test_bootstrap_script_creates_runtime_dirs_and_env(tmp_path: Path):
 
 
 def test_launchd_install_script_renders_plist_into_home(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-prod"
+    app_root = tmp_path / "__PROJECT_SLUG__-prod"
     app_root.mkdir()
     home_dir = tmp_path / "home"
     env = dict(os.environ, HOME=str(home_dir))
@@ -76,7 +76,7 @@ def test_launchd_install_script_renders_plist_into_home(tmp_path: Path):
 
 
 def test_launchd_install_script_rejects_non_isolated_prod_root(tmp_path: Path):
-    app_root = tmp_path / "hahahoho"
+    app_root = tmp_path / "__PROJECT_SLUG__"
     app_root.mkdir()
     home_dir = tmp_path / "home"
     env = dict(os.environ, HOME=str(home_dir))
@@ -90,7 +90,7 @@ def test_launchd_install_script_rejects_non_isolated_prod_root(tmp_path: Path):
     )
 
     assert result.returncode != 0
-    assert "hahahoho-prod" in result.stderr
+    assert "__PROJECT_SLUG__-prod" in result.stderr
     assert not (home_dir / "Library" / "LaunchAgents" / "com.muzlife.library-prod.plist").exists()
 
 
@@ -111,7 +111,7 @@ def test_cloudflare_render_script_writes_hostname_and_tunnel(tmp_path: Path):
 
 
 def test_restore_backup_script_copies_db_and_extracts_uploads(tmp_path: Path):
-    qa_root = tmp_path / "hahahoho-qa"
+    qa_root = tmp_path / "__PROJECT_SLUG__-qa"
     db_backup = tmp_path / "library.db"
     db_backup.write_text("db-bytes", "utf-8")
 
@@ -140,7 +140,7 @@ def test_launchd_runtime_entrypoint_script_exists():
 
 
 def test_run_api_script_loads_unquoted_env_values_with_spaces(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-prod"
+    app_root = tmp_path / "__PROJECT_SLUG__-prod"
     scripts_dir = app_root / "scripts"
     python_bin = app_root / ".venv" / "bin"
     capture_path = tmp_path / "captured-drive-path.txt"
@@ -188,7 +188,7 @@ def test_run_api_script_loads_unquoted_env_values_with_spaces(tmp_path: Path):
 
 
 def test_run_api_script_rejects_prod_root_without_matching_library_db_path(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-prod"
+    app_root = tmp_path / "__PROJECT_SLUG__-prod"
     scripts_dir = app_root / "scripts"
     python_bin = app_root / ".venv" / "bin"
     capture_path = tmp_path / "captured-run.txt"
@@ -234,7 +234,7 @@ def test_run_api_script_rejects_prod_root_without_matching_library_db_path(tmp_p
 
 
 def test_run_api_script_rejects_qa_root_with_prod_port_and_db_path(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-qa"
+    app_root = tmp_path / "__PROJECT_SLUG__-qa"
     scripts_dir = app_root / "scripts"
     python_bin = app_root / ".venv" / "bin"
     capture_path = tmp_path / "captured-run.txt"
@@ -261,7 +261,7 @@ def test_run_api_script_rejects_qa_root_with_prod_port_and_db_path(tmp_path: Pat
 
     (app_root / ".env.local").write_text(
         "APP_PORT=8000\n"
-        "LIBRARY_DB_PATH=/Users/tester/apps/hahahoho-prod/runtime/data/library.db\n",
+        "LIBRARY_DB_PATH=/Users/tester/apps/__PROJECT_SLUG__-prod/runtime/data/library.db\n",
         "utf-8",
     )
 
@@ -281,7 +281,7 @@ def test_run_api_script_rejects_qa_root_with_prod_port_and_db_path(tmp_path: Pat
 
 
 def test_run_api_script_validate_only_exits_before_python_start(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-prod"
+    app_root = tmp_path / "__PROJECT_SLUG__-prod"
     scripts_dir = app_root / "scripts"
     python_bin = app_root / ".venv" / "bin"
     capture_path = tmp_path / "captured-run.txt"
@@ -358,8 +358,8 @@ def test_backup_shell_scripts_are_executable():
 
 
 def test_backup_launchd_install_script_renders_three_jobs(tmp_path: Path):
-    prod_root = tmp_path / "hahahoho-prod"
-    qa_root = tmp_path / "hahahoho-qa"
+    prod_root = tmp_path / "__PROJECT_SLUG__-prod"
+    qa_root = tmp_path / "__PROJECT_SLUG__-qa"
     prod_root.mkdir()
     qa_root.mkdir()
     home_dir = tmp_path / "home"
@@ -390,7 +390,7 @@ def test_backup_launchd_install_script_renders_three_jobs(tmp_path: Path):
 
 
 def test_backup_launchd_install_script_rejects_non_isolated_roots(tmp_path: Path):
-    prod_root = tmp_path / "hahahoho"
+    prod_root = tmp_path / "__PROJECT_SLUG__"
     qa_root = tmp_path / "qa"
     prod_root.mkdir()
     qa_root.mkdir()
@@ -406,14 +406,14 @@ def test_backup_launchd_install_script_rejects_non_isolated_roots(tmp_path: Path
     )
 
     assert result.returncode != 0
-    assert "hahahoho-prod" in result.stderr or "hahahoho-qa" in result.stderr
+    assert "__PROJECT_SLUG__-prod" in result.stderr or "__PROJECT_SLUG__-qa" in result.stderr
     assert not (home_dir / "Library" / "LaunchAgents" / "com.muzlife.backup-daily-db.plist").exists()
 
 
 def test_backup_launchd_install_script_can_render_qa_only(tmp_path: Path):
     home_dir = tmp_path / "home"
-    prod_root = tmp_path / "hahahoho-prod"
-    qa_root = tmp_path / "hahahoho-qa"
+    prod_root = tmp_path / "__PROJECT_SLUG__-prod"
+    qa_root = tmp_path / "__PROJECT_SLUG__-qa"
     prod_backup_dir = tmp_path / "mirror" / "weekly-full"
     prod_root.mkdir()
     qa_root.mkdir()
@@ -541,7 +541,7 @@ def test_backup_launchd_bootstrap_script_can_start_prod_only(tmp_path: Path):
 
 
 def test_gcs_backup_preflight_reports_env_and_gsutil_readiness(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-prod"
+    app_root = tmp_path / "__PROJECT_SLUG__-prod"
     app_root.mkdir()
     env_file = app_root / ".env.local"
     env_file.write_text(
@@ -580,7 +580,7 @@ def test_gcs_backup_preflight_reports_env_and_gsutil_readiness(tmp_path: Path):
 
 
 def test_drive_backup_preflight_reports_ready_when_google_drive_dir_is_configured(tmp_path: Path):
-    app_root = tmp_path / "hahahoho-prod"
+    app_root = tmp_path / "__PROJECT_SLUG__-prod"
     drive_dir = tmp_path / "Google Drive" / "LibraryBackups"
     app_root.mkdir()
     drive_dir.mkdir(parents=True)

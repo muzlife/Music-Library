@@ -13,14 +13,14 @@
 ## File Structure & Ownership
 
 **Modify**
-- `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-left-nav-accordion/app/static/index.html`
+- `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-left-nav-accordion/app/static/index.html`
   - Add admin sidebar markup and CSS rules.
   - Hide in-body menus for admin mode.
   - Add Ops docs block above System Status.
   - Add JS to sync sidebar state with existing tab/subtab logic.
 
 **Modify tests**
-- `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-left-nav-accordion/tests/test_admin_density_compaction.py`
+- `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-left-nav-accordion/tests/test_admin_density_compaction.py`
   - Add static HTML assertions for sidebar markup, admin-only menu hiding selectors, and Ops docs block.
 
 ---
@@ -28,7 +28,7 @@
 ### Task 1: Add failing tests for new admin left-nav structure
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-left-nav-accordion/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-left-nav-accordion/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -88,7 +88,7 @@ git commit -m "test: expect admin left nav structure"
 ### Task 2: Add admin left sidebar markup + Ops docs block
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-left-nav-accordion/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-left-nav-accordion/app/static/index.html`
 
 - [ ] **Step 1: Add sidebar markup**
   - Insert an `<aside id="adminSideNav">` inside the admin shell wrapper.
@@ -122,7 +122,7 @@ git commit -m "feat: add admin left nav markup"
 ### Task 3: Hide in-body menus for admin mode via CSS
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-left-nav-accordion/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-left-nav-accordion/app/static/index.html`
 
 - [ ] **Step 1: Add admin-only CSS rules**
   - Add rules that hide `.goods-mode-tabs` and `.subtabs` only when `body[data-shell-mode="admin"]`.
@@ -148,7 +148,7 @@ git commit -m "style: hide admin body menus"
 ### Task 4: Sidebar styles (layout + accordion)
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-left-nav-accordion/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-left-nav-accordion/app/static/index.html`
 
 - [ ] **Step 1: Add sidebar layout CSS**
   - Fixed left column for admin mode, body content uses remaining width.
@@ -173,7 +173,7 @@ git commit -m "style: admin sidebar layout"
 ### Task 5: JS sync for sidebar (state + accordion behavior)
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-left-nav-accordion/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-left-nav-accordion/app/static/index.html`
 
 - [ ] **Step 1: Add sidebar state helpers**
   - Build `syncAdminSidebarNav()` that reads the current active admin tab + subtab (media/goods/ops).

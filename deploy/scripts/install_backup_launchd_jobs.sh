@@ -9,8 +9,8 @@ Usage:
   ./deploy/scripts/install_backup_launchd_jobs.sh [--mode all|prod|qa] [--prod-backup-dir <dir>] <prod_app_root> <qa_app_root>
 
 Examples:
-  ./deploy/scripts/install_backup_launchd_jobs.sh /Users/me/apps/hahahoho-prod /Users/me/apps/hahahoho-qa
-  ./deploy/scripts/install_backup_launchd_jobs.sh --mode qa --prod-backup-dir /Users/me/apps/hahahoho-qa/runtime/imports/prod-weekly-full /Users/me/apps/hahahoho-prod /Users/me/apps/hahahoho-qa
+  ./deploy/scripts/install_backup_launchd_jobs.sh /Users/me/apps/__PROJECT_SLUG__-prod /Users/me/apps/__PROJECT_SLUG__-qa
+  ./deploy/scripts/install_backup_launchd_jobs.sh --mode qa --prod-backup-dir /Users/me/apps/__PROJECT_SLUG__-qa/runtime/imports/prod-weekly-full /Users/me/apps/__PROJECT_SLUG__-prod /Users/me/apps/__PROJECT_SLUG__-qa
 EOF
 }
 
@@ -51,8 +51,8 @@ require_expected_root_name() {
   fi
 }
 
-require_expected_root_name "hahahoho-prod" "${PROD_APP_ROOT}"
-require_expected_root_name "hahahoho-qa" "${QA_APP_ROOT}"
+require_expected_root_name "__PROJECT_SLUG__-prod" "${PROD_APP_ROOT}"
+require_expected_root_name "__PROJECT_SLUG__-qa" "${QA_APP_ROOT}"
 
 if [[ -z "${PROD_BACKUP_DIR}" ]]; then
   PROD_BACKUP_DIR="${PROD_APP_ROOT}/runtime/backups/weekly-full"
