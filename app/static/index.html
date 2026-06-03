@@ -44796,6 +44796,101 @@ async function loadDashboardClimate() {
       if ($("opsExceptionClearBtn")) $("opsExceptionClearBtn").disabled = selectedCount <= 0;
     }
 
+    async function renderOpsExceptionContextPanel(row, type) {
+      const card = $("opsExContextCard");
+      const body = $("opsExContextBody");
+      const empty = $("opsExContextEmpty");
+      if (!card || !body) return;
+      if (!row) {
+        card.style.display = "none";
+        if (empty) empty.style.display = "";
+        return;
+      }
+      card.style.display = "";
+      if (empty) empty.style.display = "none";
+
+      const isMasterType = (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING"
+                            || type === "CATALOG_MISSING" || type === "REVIEW_MISSING");
+
+      if (isMasterType) {
+        const masterId = Number(row.id || 0);
+        const title = String(row.title || "-").trim();
+        const artist = String(row.artist_or_brand || "-").trim();
+        const year = row.release_year ? ` (${row.release_year})` : "";
+        const cover = normalizeRenderableCoverUrl(row.cover_image_url);
+        const coverHtml = cover
+          ? `<img src="${escapeHtml(cover)}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line);" />`
+          : `<div style="width:64px;height:64px;border-radius:8px;border:1px solid var(--line);background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);">${escapeHtml(artist.substring(0,2).toUpperCase()||"?")}</div>`;
+        body.innerHTML = `
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
+            ${coverHtml}
+            <div style="min-width:0;">
+              <div style="font-weight:700;font-size:0.85rem;line-height:1.2;">${escapeHtml(artist)}</div>
+              <div style="font-size:0.8rem;margin-top:2px;">${escapeHtml(title)}${escapeHtml(year)}</div>
+              <div class="mini muted" style="margin-top:4px;">master #${masterId}</div>
+            </div>
+          </div>
+          <div id="opsExCtxMasterItems" class="mini muted">보유 상품 조회 중...</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            <button class="btn ghost tiny" type="button"
+              onclick="openMediaSearchDetailManage(${masterId},0)">관리 화면으로</button>
+            <button class="btn ghost tiny" type="button"
+              data-ops-exception-review-auto="${masterId}">Wikipedia 자동수집</button>
+          </div>
+        `;
+        try {
+          const res = await fetchWithRetry(`/owned-items?album_master_id=${masterId}&limit=10&include_total=true`);
+          const data = await safeJson(res);
+          const items = Array.isArray(data) ? data : [];
+          const total = Number(res.headers.get("X-Total-Count") || items.length);
+          const el = $("opsExCtxMasterItems");
+          if (!el) return;
+          if (!items.length) { el.textContent = "보유 상품 없음"; return; }
+          el.innerHTML = `<strong style="font-size:0.75rem;">보유 상품 ${total}건</strong><div style="margin-top:4px;display:flex;flex-direction:column;gap:2px;">${
+            items.slice(0,5).map(it => {
+              const name = resolveOwnedAlbumName(it);
+              const loc = it.slot_code || t("common.unslotted");
+              return `<div style="font-size:0.72rem;">${escapeHtml(name)} — ${escapeHtml(loc)}</div>`;
+            }).join("")
+          }${total > 5 ? `<div class="mini muted">외 ${total-5}건</div>` : ""}</div>`;
+        } catch (_) {}
+      } else {
+        const ownedItemId = Number(row.id || 0);
+        body.innerHTML = `<div class="mini muted">상품 #${ownedItemId} 상세 조회 중...</div>`;
+        try {
+          const res = await fetchWithRetry(`/owned-items/${ownedItemId}`);
+          const data = await safeJson(res);
+          if (!res.ok) throw new Error(data.detail || "조회 실패");
+          const name = resolveOwnedAlbumName(data);
+          const loc = data.slot_code || t("common.unslotted");
+          const artist = data.music_detail?.artist_or_brand || data.linked_artist_name || "-";
+          const label = data.music_detail?.label_name || "-";
+          const catno = data.music_detail?.catalog_no || "-";
+          const cover = normalizeRenderableCoverUrl(data.music_detail?.cover_image_url);
+          const coverHtml = cover
+            ? `<img src="${escapeHtml(cover)}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line);" />`
+            : "";
+          body.innerHTML = `
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
+              ${coverHtml}
+              <div style="min-width:0;">
+                <div style="font-weight:700;font-size:0.85rem;">${escapeHtml(artist)}</div>
+                <div style="font-size:0.8rem;margin-top:2px;">${escapeHtml(name)}</div>
+                <div class="mini muted" style="margin-top:4px;">${escapeHtml(label)} / ${escapeHtml(catno)}</div>
+                <div class="mini muted">위치: ${escapeHtml(loc)}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+              <button class="btn ghost tiny" type="button"
+                onclick="openMediaSearchDetailManage(0,${ownedItemId})">관리 화면으로</button>
+            </div>
+          `;
+        } catch (err) {
+          body.innerHTML = `<div class="mini muted" style="color:var(--err);">오류: ${escapeHtml(String(err.message||err))}</div>`;
+        }
+      }
+    }
+
     function renderOpsExceptionList() {
       const root = $("opsExceptionList");
       if (!root) return;
@@ -44814,7 +44909,7 @@ async function loadDashboardClimate() {
 
       // --- Album Master rows (SPOTIFY_UNMATCHED / GENRE_MISSING / CATALOG_MISSING / REVIEW_MISSING) ---
       if (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING" || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING") {
-        root.innerHTML = opsExceptionItems.map((master) => {
+        root.innerHTML = opsExceptionItems.map((master, idx) => {
           const masterId = Number(master.id || 0);
           const title = String(master.title || master.album_title || "-").trim();
           const artist = String(master.artist_or_brand || master.artist_name || master.artist || "-").trim();
@@ -44839,7 +44934,7 @@ async function loadDashboardClimate() {
                 data-spotify-match-title="${escapeHtml(title)}" data-spotify-match-artist="${escapeHtml(artist)}"
               >${escapeHtml(t("ops.exception.action.spotify_match"))}</button>`;
           return `
-            <div class="ops-exception-row${activeType === "REVIEW_MISSING" ? " ops-exception-row--with-check" : ""} ${checked ? "is-selected" : ""}">
+            <div class="ops-exception-row${activeType === "REVIEW_MISSING" ? " ops-exception-row--with-check" : ""} ${checked ? "is-selected" : ""}" data-ops-ex-row-idx="${idx}">
               ${checkboxHtml}
               <div class="ops-exception-cover">${coverHtml}</div>
               <div class="ops-exception-main">
@@ -44850,6 +44945,18 @@ async function loadDashboardClimate() {
             </div>
           `;
         }).join("");
+        // wire row click → context panel
+        root.querySelectorAll(".ops-exception-row[data-ops-ex-row-idx]").forEach((rowEl) => {
+          rowEl.style.cursor = "pointer";
+          rowEl.addEventListener("click", (e) => {
+            if (e.target.closest("input,button,a,label")) return;
+            const idx = Number(rowEl.dataset.opsExRowIdx || -1);
+            const item = Array.isArray(opsExceptionItems) ? opsExceptionItems[idx] : null;
+            root.querySelectorAll(".ops-exception-row").forEach(r => r.classList.remove("is-ctx-selected"));
+            rowEl.classList.add("is-ctx-selected");
+            void renderOpsExceptionContextPanel(item, activeType);
+          });
+        });
         // wire checkboxes
         root.querySelectorAll("[data-ops-exception-master-check]").forEach((cb) => {
           cb.addEventListener("change", () => {
@@ -44863,7 +44970,7 @@ async function loadDashboardClimate() {
       }
 
       // --- Standard OwnedItem rows ---
-      root.innerHTML = opsExceptionItems.map((row) => {
+      root.innerHTML = opsExceptionItems.map((row, idx) => {
         const ownedItemId = Number(row.id || 0);
         const checked = opsExceptionSelectedIds.has(ownedItemId);
         const title = resolveOwnedAlbumName(row);
@@ -44929,7 +45036,7 @@ async function loadDashboardClimate() {
           opsExceptionTypeHint(activeType),
         ].filter(Boolean);
         return `
-          <div class="ops-exception-row">
+          <div class="ops-exception-row" data-ops-ex-row-idx="${idx}">
             <div class="ops-exception-cover">${coverHtml}</div>
             <div class="ops-exception-main">
               <div class="ops-exception-title">${escapeHtml(title)}</div>
@@ -44949,6 +45056,18 @@ async function loadDashboardClimate() {
           </div>
         `;
       }).join("");
+      // wire row click → context panel
+      root.querySelectorAll(".ops-exception-row[data-ops-ex-row-idx]").forEach((rowEl) => {
+        rowEl.style.cursor = "pointer";
+        rowEl.addEventListener("click", (e) => {
+          if (e.target.closest("input,button,a,label")) return;
+          const idx = Number(rowEl.dataset.opsExRowIdx || -1);
+          const item = Array.isArray(opsExceptionItems) ? opsExceptionItems[idx] : null;
+          root.querySelectorAll(".ops-exception-row").forEach(r => r.classList.remove("is-ctx-selected"));
+          rowEl.classList.add("is-ctx-selected");
+          void renderOpsExceptionContextPanel(item, activeType);
+        });
+      });
       syncOpsExceptionSelectionControls();
     }
 
