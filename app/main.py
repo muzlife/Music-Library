@@ -194,6 +194,7 @@ async def lifespan(app: FastAPI):
         )
     _start_metadata_sync_worker()
     _start_auto_backup_worker()
+    asyncio.create_task(_cafe_now_playing_worker())  # SSE now-playing worker
     try:
         yield
     finally:
@@ -7463,7 +7464,7 @@ from app.api.audit_log import router as audit_log_router
 app.include_router(audit_log_router)
 from app.api.cafe_admin import router as cafe_admin_router
 app.include_router(cafe_admin_router)
-from app.api.cafe import router as cafe_router
+from app.api.cafe import router as cafe_router, _now_playing_worker as _cafe_now_playing_worker
 app.include_router(cafe_router)
 
 # ── Backward-compatible re-exports for tests ──
