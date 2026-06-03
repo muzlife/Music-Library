@@ -49,7 +49,7 @@
 - [ ] 필요 시 `pip install -r requirements.txt`
 - [ ] `launchctl kickstart` 또는 배포 스크립트로 앱 재기동
 - [ ] 로컬 `/health` 확인
-- [ ] 외부 `https://library.muzlife.com/health` 확인
+- [ ] 외부 `https://__PROD_DOMAIN__/health` 확인
 - [ ] 로그인 화면 노출 확인
 
 ## 5. 운영 스모크 체크

@@ -2,7 +2,7 @@
 
 ## 개요
 
-이 문서는 `__DEV_MACHINE__`를 `QA`, `__PROD_MACHINE__`을 `운영`으로 완전히 분리해서 `__QA_DOMAIN__` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
+이 문서는 `__DEV_MACHINE__`를 `QA`, `__PROD_MACHINE__`을 `운영`으로 완전히 분리해서 `__QA_DOMAIN__` / `__PROD_DOMAIN__` 기준으로 운영하는 절차를 정리합니다.
 
 관련 문서
 - 운영 매뉴얼: [management_tool_manual.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/management_tool_manual.md)
@@ -10,7 +10,7 @@
 - QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/qa/qa_master_sheet.csv)
 
 - QA: `https://__QA_DOMAIN__/`
-- 운영: `https://library.muzlife.com/`
+- 운영: `https://__PROD_DOMAIN__/`
 - 외부 진입: `Cloudflare DNS + Cloudflare Tunnel`
 - 서비스 관리: macOS `launchd`
 - 앱 실행: 저장소의 [`scripts/run_api.sh`](/Volumes/Data/Works/07.__PROJECT_SLUG__/scripts/run_api.sh)
@@ -25,7 +25,7 @@
 - 코드 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod`
 - 런타임 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime`
 - 로컬 앱 포트: `127.0.0.1:8000`
-- 외부 도메인: `library.muzlife.com`
+- 외부 도메인: `__PROD_DOMAIN__`
 
 ### QA 서버: `__DEV_MACHINE__`
 
@@ -153,7 +153,7 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 
 권장 매핑:
 
-- `library.muzlife.com -> http://127.0.0.1:8000`
+- `__PROD_DOMAIN__ -> http://127.0.0.1:8000`
 - `__QA_DOMAIN__ -> http://127.0.0.1:8100`
 
 Cloudflare 절차 예시:
@@ -162,7 +162,7 @@ Cloudflare 절차 예시:
 cloudflared tunnel login
 cloudflared tunnel create library-prod
 cloudflared tunnel create library-qa
-cloudflared tunnel route dns <PROD_TUNNEL_ID> library.muzlife.com
+cloudflared tunnel route dns <PROD_TUNNEL_ID> __PROD_DOMAIN__
 cloudflared tunnel route dns <QA_TUNNEL_ID> __QA_DOMAIN__
 ```
 
@@ -394,7 +394,7 @@ PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 권장 점검 항목:
 
 - `qa_master_sheet.csv`의 `environment=prod`, `phase=Post-release` 행 실행
-- `https://library.muzlife.com/` 접속
+- `https://__PROD_DOMAIN__/` 접속
 - 로그인
 - 관리 메인 진입
 - 검색

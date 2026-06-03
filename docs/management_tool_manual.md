@@ -4,8 +4,8 @@
 기준은 `관리자`와 `현장 운영자`가 같은 도구를 쓰더라도 서로 다른 책임 범위로 움직인다는 점입니다.
 
 기준 주소
-- 운영 로그인: [https://library.muzlife.com/login](https://library.muzlife.com/login)
-- 헬스체크: [https://library.muzlife.com/health](https://library.muzlife.com/health)
+- 운영 로그인: [https://__PROD_DOMAIN__/login](https://__PROD_DOMAIN__/login)
+- 헬스체크: [https://__PROD_DOMAIN__/health](https://__PROD_DOMAIN__/health)
 
 관련 문서
 - 운영자용 ERD 요약: [library_erd_operator.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/library_erd_operator.md)

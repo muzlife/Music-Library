@@ -238,7 +238,7 @@ ssh USER@PROD_HOST.local 'launchctl kickstart -k gui/$(id -u)/com.muzlife.librar
 ### 외부 health
 ```bash
 curl -s https://__QA_DOMAIN__/health
-curl -s https://library.muzlife.com/health
+curl -s https://__PROD_DOMAIN__/health
 ```
 
 ---

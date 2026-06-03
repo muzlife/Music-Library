@@ -70,7 +70,7 @@ def _external_base_url_for_request(request: Request) -> str:
     forwarded_proto = str(request.headers.get("x-forwarded-proto") or "").split(",", 1)[0].strip().lower()
     scheme = forwarded_proto or str(request.url.scheme or "").strip().lower() or "https"
     if not host or host in {"127.0.0.1", "localhost", "testserver"}:
-        return "https://library.muzlife.com"
+        return "https://__PROD_DOMAIN__"
     if scheme not in {"http", "https"}:
         scheme = "https"
     return f"{scheme}://{host}"
