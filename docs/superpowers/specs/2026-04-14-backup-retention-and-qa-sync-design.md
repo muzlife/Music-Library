@@ -206,16 +206,16 @@
 
 ## 실행 구조
 
-### 운영 서버(Mac mini 2018)
+### 운영 서버(__PROD_MACHINE__)
 
 - `launchd` 작업 2개
   - `com.muzlife.backup-daily-db`
   - `com.muzlife.backup-weekly-full`
 - 산출물 위치
-  - `__PROD_USER__/apps/hahahoho-prod/runtime/backups/db/`
-  - `__PROD_USER__/apps/hahahoho-prod/runtime/backups/full/`
+  - `/Users/__PROD_USER__/apps/hahahoho-prod/runtime/backups/db/`
+  - `/Users/__PROD_USER__/apps/hahahoho-prod/runtime/backups/full/`
 - 메타 기록 위치
-  - `__PROD_USER__/apps/hahahoho-prod/runtime/backups/metadata/`
+  - `/Users/__PROD_USER__/apps/hahahoho-prod/runtime/backups/metadata/`
 - GCS 업로드
   - 각 백업 스크립트 후속 단계에서 수행
   - 또는 운영 안정화 후 별도 작업으로 분리 가능
@@ -225,9 +225,9 @@
 - `launchd` 작업 1개
   - `com.muzlife.qa-sync-weekly`
 - 입력 위치
-  - `/Users/jingunpark/apps/hahahoho-qa/runtime/imports/`
+  - `/Users/__DEV_USER__/apps/hahahoho-qa/runtime/imports/`
 - 적용 메타 기록
-  - `/Users/jingunpark/apps/hahahoho-qa/runtime/imports/metadata/`
+  - `/Users/__DEV_USER__/apps/hahahoho-qa/runtime/imports/metadata/`
 
 ### GCS 버킷 구조
 

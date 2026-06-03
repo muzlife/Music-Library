@@ -2,8 +2,8 @@
 
 ## 목표
 
-- `Mac mini M4`를 `QA` 전용 서버로 운영한다.
-- `Mac mini 2018`을 `운영` 전용 서버로 운영한다.
+- `__DEV_MACHINE__`를 `QA` 전용 서버로 운영한다.
+- `__PROD_MACHINE__`을 `운영` 전용 서버로 운영한다.
 - `QA`는 운영 데이터를 복제해 실제 운영과 유사한 검증 환경으로 쓴다.
 - 배포는 항상 `QA 검증 -> 운영 배포` 순서로 진행한다.
 - `Synology`를 웹 진입점, 프록시, 인증서, 스토리지 의존성에서 제외한다.
@@ -22,7 +22,7 @@
 ### 1. 권장안: `Cloudflare DNS + Cloudflare Tunnel + 각 맥 전용 앱 런타임`
 
 - 외부 진입점은 Cloudflare가 담당하고, 각 맥은 tunnel client를 통해 외부 도메인과 연결된다.
-- `library.muzlife.com -> Mac mini 2018`
+- `library.muzlife.com -> __PROD_MACHINE__`
 - `qa-library.muzlife.com -> M4`
 - 각 맥은 내부에서만 앱 포트를 연다.
 
@@ -37,7 +37,7 @@
 
 ### 2. 자가 엣지안: `라우터/소형 프록시 + 각 맥 전용 앱 런타임`
 
-- 별도 엣지 장비가 `qa-library.muzlife.com` 과 `library.muzlife.com`을 받아 Host 기준으로 `M4`, `Mac mini 2018`에 분기한다.
+- 별도 엣지 장비가 `qa-library.muzlife.com` 과 `library.muzlife.com`을 받아 Host 기준으로 `M4`, `__PROD_MACHINE__`에 분기한다.
 
 장점
 - 네트워크를 완전히 자가 통제할 수 있다.
@@ -57,7 +57,7 @@
 ## 권장 구조
 
 - `M4`: QA 전용
-- `Mac mini 2018`: 운영 전용
+- `__PROD_MACHINE__`: 운영 전용
 - 외부 도메인 분기: `Cloudflare Tunnel`
 - 앱 실행: macOS `launchd`
 - 앱 포트:
@@ -67,7 +67,7 @@
 
 ## 환경 분리 규칙
 
-### 운영 Mac mini 2018
+### 운영 __PROD_MACHINE__
 
 - 서비스명: `library-prod`
 - 도메인: `library.muzlife.com`
@@ -114,7 +114,7 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 ### 권장 연결
 
-- `library.muzlife.com -> Cloudflare Tunnel -> Mac mini 2018:127.0.0.1:8000`
+- `library.muzlife.com -> Cloudflare Tunnel -> __PROD_MACHINE__:127.0.0.1:8000`
 - `qa-library.muzlife.com -> Cloudflare Tunnel -> M4:127.0.0.1:8100`
 
 ### TLS
@@ -248,7 +248,7 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 ## 절차형 구축 순서
 
-### 단계 1. Mac mini 2018 운영 서버 구축
+### 단계 1. __PROD_MACHINE__ 운영 서버 구축
 
 1. 운영 전용 디렉터리 생성
 2. 운영 전용 `.venv` 생성
@@ -293,7 +293,7 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 ## 성공 기준
 
 - `qa-library.muzlife.com` 는 항상 `M4 QA`에 연결된다.
-- `library.muzlife.com` 는 항상 `Mac mini 2018 운영`에 연결된다.
+- `library.muzlife.com` 는 항상 `__PROD_MACHINE__ 운영`에 연결된다.
 - 운영 데이터 복제가 QA에서 실제로 복원된다.
 - QA 검증 후 같은 커밋만 운영에 반영된다.
 - 운영 배포 직전 백업과 롤백 절차가 문서화되어 있다.
@@ -303,6 +303,6 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 1. `launchd plist` 템플릿 작성
 2. `Cloudflare Tunnel` 설정 절차 문서 작성
-3. `Mac mini 2018 운영 / M4 QA` 폴더 구조와 `.env.local` 예시 문서화
+3. `__PROD_MACHINE__ 운영 / M4 QA` 폴더 구조와 `.env.local` 예시 문서화
 4. 운영 백업 -> QA 복제 스크립트 작성
 5. 배포 체크리스트를 `QA`와 `운영`으로 나눠 문서화

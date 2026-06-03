@@ -16,9 +16,9 @@
 기록 항목
 - 배포 대상 커밋: `5409b8cdc26939826c4abd4075f616b81560f7ae` (`main`, local commit + deploy_to_prod.sh)
 - 직전 운영 커밋: `c671ff4990f8b676166fbbc09f53608266c4e2f3` (배포 직전 운영 기준 코드)
-- 직전 운영 DB 백업: `__PROD_USER__/apps/hahahoho-prod/runtime/backups/daily-db/hahahoho-library-daily-db-20260418-063130.db`
+- 직전 운영 DB 백업: `/Users/__PROD_USER__/apps/hahahoho-prod/runtime/backups/daily-db/hahahoho-library-daily-db-20260418-063130.db`
 - 배포 담당: `Codex`
-- 승인자: `jingunpark`
+- 승인자: `__DEV_USER__`
 
 ## 2. QA 사전 검증
 

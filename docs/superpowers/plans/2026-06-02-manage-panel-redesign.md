@@ -924,7 +924,7 @@ grep -n "homeLinkedGoodsPanelDetails" app/static/index.html | head -10
 
 ```bash
 python3 -m py_compile app/api/album_masters.py && echo OK
-cp app/static/index.html /Users/jingunpark/apps/hahahoho-qa/app/static/index.html
+cp app/static/index.html /Users/__DEV_USER__/apps/hahahoho-qa/app/static/index.html
 ```
 
 - [ ] **Step 5: QA 서버 재시작**
