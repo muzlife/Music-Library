@@ -18345,19 +18345,6 @@
                           <input id="editItemName" data-i18n-placeholder="media.manage.product.field.item_name.placeholder" placeholder="예: 산울림 - 제13집" />
                         </div>
                         <div>
-                          <label for="editDomainCode" data-i18n="media.manage.product.field.domain_code.label">도메인</label>
-                          <select id="editDomainCode">
-                            <option value="" data-i18n="common.unspecified">미지정</option>
-                            <option value="KOREA" data-i18n="common.domain.korea">가요</option>
-                            <option value="JAPAN" data-i18n="common.domain.japan">제이팝</option>
-                            <option value="GREATER_CHINA" data-i18n="common.domain.greater_china">씨팝</option>
-                            <option value="WESTERN" data-i18n="common.domain.western">팝/웨스턴</option>
-                            <option value="OTHER_ASIA" data-i18n="common.domain.other_asia">아시아 기타</option>
-                            <option value="WORLD" data-i18n="common.domain.world">월드 기타</option>
-                            <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
-                          </select>
-                        </div>
-                        <div>
                           <label for="editReleasedDate">상품 발매일</label>
                           <input id="editReleasedDate" placeholder="예: 2023-05-10" />
                         </div>
@@ -20962,7 +20949,7 @@
               <label for="opsExceptionDomain">도메인</label>
               <select id="opsExceptionDomain">
                 <option value="">전체</option>
-                <option value="KOREA">가요</option>
+                <option value="KOREA" selected>가요</option>
                 <option value="JAPAN">제이팝</option>
                 <option value="GREATER_CHINA">씨팝</option>
                 <option value="WESTERN">팝/웨스턴</option>
@@ -45140,6 +45127,8 @@ async function loadDashboardClimate() {
         );
         const headerTotal = Number(res.headers.get("X-Total-Count") || opsExceptionItems.length || 0);
         opsExceptionTotalCount = Number.isFinite(headerTotal) ? headerTotal : opsExceptionItems.length;
+        // 카운트 카드를 실제 로드된 총수로 동기화
+        if (opsExceptionCounts[type] !== undefined) opsExceptionCounts[type] = opsExceptionTotalCount;
         renderOpsExceptionSummary();
         renderOpsExceptionList();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.list_loaded", { type: opsExceptionTypeLabel(type), count: countWithUnit(opsExceptionTotalCount) }));
@@ -47131,7 +47120,6 @@ async function loadDashboardClimate() {
       setDisplayIfPresent("homeEditMusicSourceSummary", "none");
       setDisplayIfPresent("homeEditMusicSourceTracksWrap", "none");
       syncHomeMasterInlineEditor();
-      $("editDomainCode").value = "";
       $("editReleaseType").value = "";
       $("editMediaType").value = "";
       _syncVinylOnlyFields();
@@ -47424,7 +47412,6 @@ async function loadDashboardClimate() {
       if (MUSIC_CATEGORIES.has($("editCategory").value)) {
         const mappedDomain = pickMappedDomain(c.domain_code);
         const mappedReleaseType = pickMappedReleaseType(c.release_type);
-        if (mappedDomain) $("editDomainCode").value = mappedDomain;
         if (mappedReleaseType) $("editReleaseType").value = mappedReleaseType;
         if (c.artist_or_brand) $("editArtistName").value = c.artist_or_brand;
         if (c.released_date) $("editReleasedDate").value = c.released_date;
@@ -47501,7 +47488,6 @@ async function loadDashboardClimate() {
         signature_type: "NONE",
         source_code: sourceCode,
         source_external_id: sourceCode ? sourceExternalId : null,
-        domain_code: valueOf("editDomainCode").trim() || mappedDomain || null,
         release_type: valueOf("editReleaseType").trim() || mappedReleaseType || null,
         linked_album_master_id: Number(albumMasterId),
         linked_artist_name: null,
@@ -50191,7 +50177,6 @@ async function loadDashboardClimate() {
       $("editItemName").value = data.item_name_override || "";
       $("editSizeGroup").value = data.size_group || defaultSizeGroupForCategory(data.category);
       $("editPreferredStorageSizeGroup").value = data.preferred_storage_size_group || data.size_group || defaultSizeGroupForCategory(data.category);
-      $("editDomainCode").value = data.domain_code || "";
       $("editReleaseType").value = data.release_type || "";
       $("editLinkedAlbumMasterId").value = data.linked_album_master_id ? String(data.linked_album_master_id) : "";
       $("editLinkedArtistName").value = data.linked_artist_name || "";
@@ -50369,7 +50354,6 @@ async function loadDashboardClimate() {
         signature_type: $("editSignatureType").value,
         source_code: homeSelectedSourceCode,
         source_external_id: homeSelectedSourceExternalId,
-        domain_code: $("editDomainCode").value || null,
         release_type: $("editReleaseType").value || null,
         linked_album_master_id: $("editLinkedAlbumMasterId").value.trim()
           ? Number($("editLinkedAlbumMasterId").value)
