@@ -1287,7 +1287,7 @@ renderHomeMasterReviewSection(homeMasterInfo);
 - [ ] **Step 9: QA 배포**
 
 ```bash
-cp app/static/index.html /Users/jingunpark/apps/hahahoho-qa/app/static/index.html
+cp app/static/index.html /Users/__DEV_USER__/apps/hahahoho-qa/app/static/index.html
 ```
 
 - [ ] **Step 10: Commit**
@@ -1416,7 +1416,7 @@ JA:
 - [ ] **Step 4: QA 배포**
 
 ```bash
-cp app/static/index.html /Users/jingunpark/apps/hahahoho-qa/app/static/index.html
+cp app/static/index.html /Users/__DEV_USER__/apps/hahahoho-qa/app/static/index.html
 ```
 
 - [ ] **Step 5: Commit**
@@ -1435,24 +1435,24 @@ git commit -m "feat(ui): add batch review collection section in ops meta sync ta
 - [ ] **Step 1: QA 백엔드 파일 배포**
 
 ```bash
-cp app/config.py /Users/jingunpark/apps/hahahoho-qa/app/config.py
-cp app/services/deepseek_client.py /Users/jingunpark/apps/hahahoho-qa/app/services/deepseek_client.py
-cp app/services/review_pipeline.py /Users/jingunpark/apps/hahahoho-qa/app/services/review_pipeline.py
-cp app/services/providers.py /Users/jingunpark/apps/hahahoho-qa/app/services/providers.py
-cp app/db/album_master_review.py /Users/jingunpark/apps/hahahoho-qa/app/db/album_master_review.py
-cp app/api/album_masters.py /Users/jingunpark/apps/hahahoho-qa/app/api/album_masters.py
+cp app/config.py /Users/__DEV_USER__/apps/hahahoho-qa/app/config.py
+cp app/services/deepseek_client.py /Users/__DEV_USER__/apps/hahahoho-qa/app/services/deepseek_client.py
+cp app/services/review_pipeline.py /Users/__DEV_USER__/apps/hahahoho-qa/app/services/review_pipeline.py
+cp app/services/providers.py /Users/__DEV_USER__/apps/hahahoho-qa/app/services/providers.py
+cp app/db/album_master_review.py /Users/__DEV_USER__/apps/hahahoho-qa/app/db/album_master_review.py
+cp app/api/album_masters.py /Users/__DEV_USER__/apps/hahahoho-qa/app/api/album_masters.py
 ```
 
 - [ ] **Step 2: 구문 검사**
 
 ```bash
 python3 -m py_compile \
-  /Users/jingunpark/apps/hahahoho-qa/app/config.py \
-  /Users/jingunpark/apps/hahahoho-qa/app/services/deepseek_client.py \
-  /Users/jingunpark/apps/hahahoho-qa/app/services/review_pipeline.py \
-  /Users/jingunpark/apps/hahahoho-qa/app/services/providers.py \
-  /Users/jingunpark/apps/hahahoho-qa/app/db/album_master_review.py \
-  /Users/jingunpark/apps/hahahoho-qa/app/api/album_masters.py \
+  /Users/__DEV_USER__/apps/hahahoho-qa/app/config.py \
+  /Users/__DEV_USER__/apps/hahahoho-qa/app/services/deepseek_client.py \
+  /Users/__DEV_USER__/apps/hahahoho-qa/app/services/review_pipeline.py \
+  /Users/__DEV_USER__/apps/hahahoho-qa/app/services/providers.py \
+  /Users/__DEV_USER__/apps/hahahoho-qa/app/db/album_master_review.py \
+  /Users/__DEV_USER__/apps/hahahoho-qa/app/api/album_masters.py \
   && echo OK
 ```
 

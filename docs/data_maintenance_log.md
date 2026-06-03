@@ -75,7 +75,7 @@ CD 카테고리인데 media_type이 NULL/공백인 항목 조회 (약 135건)
 
 Discogs 스냅샷 데이터를 기반으로 특정 owned_item(2944번)의 메타데이터 복구
 
-**실행 위치**: Mac mini 2018 (matia 계정)
+**실행 위치**: __PROD_MACHINE__ (__PROD_USER__ 계정)
 **상태**: ✅ 1회 실행 완료
 
 ---

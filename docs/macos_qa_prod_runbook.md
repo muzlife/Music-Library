@@ -2,7 +2,7 @@
 
 ## 개요
 
-이 문서는 `Mac mini M4`를 `QA`, `Mac mini 2018`을 `운영`으로 완전히 분리해서 `qa-library.muzlife.com` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
+이 문서는 `__DEV_MACHINE__`를 `QA`, `__PROD_MACHINE__`을 `운영`으로 완전히 분리해서 `qa-library.muzlife.com` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
 
 관련 문서
 - 운영 매뉴얼: [management_tool_manual.md](/Volumes/Data/Works/07.hahahoho/docs/management_tool_manual.md)
@@ -19,7 +19,7 @@
 
 ## 1. 서버 역할 고정
 
-### 운영 서버: `Mac mini 2018`
+### 운영 서버: `__PROD_MACHINE__`
 
 - 서비스명: `library-prod`
 - 코드 루트 예시: `/Users/<user>/apps/hahahoho-prod`
@@ -27,7 +27,7 @@
 - 로컬 앱 포트: `127.0.0.1:8000`
 - 외부 도메인: `library.muzlife.com`
 
-### QA 서버: `Mac mini M4`
+### QA 서버: `__DEV_MACHINE__`
 
 - 서비스명: `library-qa`
 - 코드 루트 예시: `/Users/<user>/apps/hahahoho-qa`
@@ -356,14 +356,14 @@ pytest -q tests/test_ops_shell_bootstrap.py
 필수 전제:
 
 1. QA 장비(M4)에 `self-hosted`, `macOS` 라벨의 GitHub Actions runner가 실행 중이어야 합니다.
-2. runner 사용자에게 `matia@macmini2018.local` SSH 접속 권한이 있어야 합니다.
+2. runner 사용자에게 `__PROD_USER__@__PROD_HOST__.local` SSH 접속 권한이 있어야 합니다.
 3. 저장소 Variables에 아래 값이 있어야 합니다.
 4. GitHub `production` environment 승인 규칙을 켜서 비개발자가 `Run workflow` 후 승인만 할 수 있게 두는 것이 좋습니다.
 
 ```text
-PROD_SSH_TARGET=matia@macmini2018.local
-PROD_APP_ROOT=/Users/matia/apps/hahahoho-prod
-PROD_SSH_KEY_PATH=/Users/jingunpark/.ssh/id_ed25519_kanu
+PROD_SSH_TARGET=__PROD_USER__@__PROD_HOST__.local
+PROD_APP_ROOT=/Users/__PROD_USER__/apps/hahahoho-prod
+PROD_SSH_KEY_PATH=/Users/__DEV_USER__/.ssh/id_ed25519_kanu
 PROD_LAUNCHD_LABEL=com.muzlife.library-prod
 PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 ```
@@ -420,7 +420,7 @@ PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 
 ## 12. 첫 구축 체크리스트
 
-1. Mac mini 2018 운영 디렉터리 생성
+1. __PROD_MACHINE__ 운영 디렉터리 생성
 2. M4 QA 디렉터리 생성
 3. 양쪽 `.venv` 설치
 4. 양쪽 `.env.local` 작성

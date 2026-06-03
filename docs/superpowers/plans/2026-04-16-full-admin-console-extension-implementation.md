@@ -545,7 +545,7 @@ Verify with keyboard tabbing:
 
 If implementation is complete, sync to QA and verify:
 ```bash
-rsync -a --delete --exclude '.git/' --exclude '.venv/' --exclude '.mypy_cache/' --exclude '.pytest_cache/' --exclude '__pycache__/' --exclude 'data/' --exclude 'logs/' --exclude 'test-results/' --exclude 'app/static/uploads/' --exclude 'Purchases/' --exclude '.superpowers/' --exclude '.env.local' /Volumes/Data/Works/07.hahahoho/ /Users/jingunpark/apps/hahahoho-qa/
+rsync -a --delete --exclude '.git/' --exclude '.venv/' --exclude '.mypy_cache/' --exclude '.pytest_cache/' --exclude '__pycache__/' --exclude 'data/' --exclude 'logs/' --exclude 'test-results/' --exclude 'app/static/uploads/' --exclude 'Purchases/' --exclude '.superpowers/' --exclude '.env.local' /Volumes/Data/Works/07.hahahoho/ /Users/__DEV_USER__/apps/hahahoho-qa/
 launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 curl -s http://127.0.0.1:8100/health
 curl -s https://qa-library.muzlife.com/health

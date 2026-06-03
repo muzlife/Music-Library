@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `Mac mini M4`를 `QA`, `Mac mini 2018`을 `운영`으로 완전히 분리하고 `qa-library.muzlife.com` / `library.muzlife.com` 기준의 독립 배포 절차와 템플릿 자산을 저장소에 추가한다.
+**Goal:** `__DEV_MACHINE__`를 `QA`, `__PROD_MACHINE__`을 `운영`으로 완전히 분리하고 `qa-library.muzlife.com` / `library.muzlife.com` 기준의 독립 배포 절차와 템플릿 자산을 저장소에 추가한다.
 
 **Architecture:** 실행 자산은 코드와 분리된 문서/템플릿으로 먼저 고정한다. `launchd` 템플릿, `Cloudflare Tunnel` 템플릿, QA/운영 `.env` 예시, 운영 백업을 QA로 복제하는 런북을 저장소에 두고, 실제 장비 값은 플레이스홀더 치환으로 채운다.
 
