@@ -39,3 +39,40 @@ def test_spotify_service_configured_initializes(monkeypatch):
     assert svc.client_id == "test_id"
     assert svc.client_secret == "test_secret"
     assert svc.redirect_uri == "http://localhost:8100/callback"
+
+
+def test_current_playback_sync_returns_dict_when_playing(monkeypatch):
+    """재생 중일 때 올바른 딕셔너리를 반환해야 한다."""
+    sp = SpotifyService()
+
+    mock_pb = {
+        "is_playing": True,
+        "progress_ms": 45000,
+        "item": {
+            "id": "track123",
+            "name": "Test Track",
+            "uri": "spotify:track:track123",
+            "duration_ms": 200000,
+            "artists": [{"name": "Test Artist"}],
+            "album": {
+                "name": "Test Album",
+                "images": [{"url": "http://img/large"}, {"url": "http://img/medium"}],
+            },
+        },
+    }
+
+    class FakeClient:
+        def current_playback(self):
+            return mock_pb
+
+    monkeypatch.setattr(sp, '_ensure_client', lambda: FakeClient())
+    result = sp.current_playback_sync()
+
+    assert result is not None
+    assert result["title"] == "Test Track"
+    assert result["artist"] == "Test Artist"
+    assert result["album_name"] == "Test Album"
+    assert result["album_art_url"] == "http://img/medium"  # images[1]
+    assert result["duration_ms"] == 200000
+    assert result["position_ms"] == 45000
+    assert result["is_playing"] is True

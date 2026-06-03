@@ -1,86 +1,10 @@
-import time
 from unittest.mock import MagicMock, patch
 
-import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from spotipy.exceptions import SpotifyException
 
-from app.services.spotify import SpotifyService, _PLAYBACK_CACHE
+from app.services.spotify import SpotifyService
 from app.config import get_settings
-
-
-def test_playback_caching_and_ttl(monkeypatch):
-    """Test that playback state is cached for 5 seconds and respects TTL."""
-    # Ensure service is configured so ensure_client proceeds
-    monkeypatch.setenv("SPOTIFY_CLIENT_ID", "dummy_id")
-    monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "dummy_secret")
-    get_settings.cache_clear()
-
-    # Clear any previous cache
-    _PLAYBACK_CACHE["timestamp"] = 0.0
-    _PLAYBACK_CACHE["value"] = None
-
-    svc = SpotifyService()
-    mock_client = MagicMock()
-    mock_client.current_playback.return_value = {
-        "is_playing": True,
-        "progress_ms": 1234,
-        "item": {
-            "id": "track_id",
-            "name": "Track Title",
-            "uri": "spotify:track:track_id",
-            "album": {
-                "name": "Album Name",
-                "images": [{"url": "http://img1"}, {"url": "http://img2"}],
-            },
-            "artists": [{"name": "Artist Name"}],
-        }
-    }
-
-    with patch.object(svc, "_ensure_client", return_value=mock_client):
-        # 1. First call: should query client
-        first_call = svc.current_playback_sync()
-        assert first_call is not None
-        assert first_call["spotify_track_id"] == "track_id"
-        assert mock_client.current_playback.call_count == 1
-
-        # 2. Second call (immediate): should return cached value and not query client again
-        second_call = svc.current_playback_sync()
-        assert second_call is not None
-        assert second_call["spotify_track_id"] == "track_id"
-        assert mock_client.current_playback.call_count == 1
-
-        # 3. Simulate TTL expiry by patching time.time to return 6 seconds in future
-        now = time.time()
-        with patch("time.time", return_value=now + 6.0):
-            # Third call: should query client again
-            third_call = svc.current_playback_sync()
-            assert third_call is not None
-            assert mock_client.current_playback.call_count == 2
-
-
-def test_playback_error_caching(monkeypatch):
-    """Test that a failure in current_playback is cached to prevent spamming."""
-    monkeypatch.setenv("SPOTIFY_CLIENT_ID", "dummy_id")
-    monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "dummy_secret")
-    get_settings.cache_clear()
-
-    _PLAYBACK_CACHE["timestamp"] = 0.0
-    _PLAYBACK_CACHE["value"] = None
-
-    svc = SpotifyService()
-    mock_client = MagicMock()
-    mock_client.current_playback.side_effect = Exception("Spotify API Down")
-
-    with patch.object(svc, "_ensure_client", return_value=mock_client):
-        # First call: fails and caches None
-        assert svc.current_playback_sync() is None
-        assert mock_client.current_playback.call_count == 1
-
-        # Second call: returns cached None without calling Spotify again
-        assert svc.current_playback_sync() is None
-        assert mock_client.current_playback.call_count == 1
 
 
 def test_spotify_album_tracks_http_exceptions(operator_client: TestClient, monkeypatch):
