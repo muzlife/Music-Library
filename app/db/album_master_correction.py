@@ -29,6 +29,7 @@ unchanged.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from app.db import (  # noqa: E402  — package surface
@@ -55,7 +56,9 @@ def get_album_master_correction_state(album_master_id: int) -> dict[str, Any] | 
               override_domain_code,
               override_note,
               override_title,
-              override_artist_or_brand
+              override_artist_or_brand,
+              genres_json,
+              styles_json
             FROM album_master
             WHERE id = ?
             LIMIT 1
@@ -65,6 +68,10 @@ def get_album_master_correction_state(album_master_id: int) -> dict[str, Any] | 
     if row is None:
         return None
     data = dict(row)
+    raw_genres = data.pop("genres_json", None)
+    data["genres"] = json.loads(raw_genres) if isinstance(raw_genres, str) and raw_genres.strip() else []
+    raw_styles = data.pop("styles_json", None)
+    data["styles"] = json.loads(raw_styles) if isinstance(raw_styles, str) and raw_styles.strip() else []
     data["domain_code"] = _normalize_domain_code_value(data.get("domain_code"))
     data["source_domain_code"] = _normalize_domain_code_value(data.get("source_domain_code")) or data["domain_code"]
     data["override_domain_code"] = _normalize_domain_code_value(data.get("override_domain_code"))
@@ -96,6 +103,8 @@ def update_album_master_correction(
     override_note: str | None,
     override_title: str | None = None,
     override_artist_or_brand: str | None = None,
+    genres: list[str] | None = None,
+    styles: list[str] | None = None,
 ) -> dict[str, Any] | None:
     master_id = int(album_master_id or 0)
     if master_id <= 0:
@@ -105,6 +114,8 @@ def update_album_master_correction(
     normalized_title = str(override_title or "").strip() or None
     normalized_artist = str(override_artist_or_brand or "").strip() or None
     release_year_value = int(release_year) if release_year is not None else None
+    clean_genres = [str(v).strip() for v in genres if str(v).strip()] if genres is not None else None
+    clean_styles = [str(v).strip() for v in styles if str(v).strip()] if styles is not None else None
     now = utc_now_iso()
 
     with get_conn() as conn:
@@ -150,6 +161,8 @@ def update_album_master_correction(
                 override_artist_or_brand = ?,
                 title = COALESCE(?, title),
                 artist_or_brand = COALESCE(?, artist_or_brand),
+                genres_json = CASE WHEN ? IS NOT NULL THEN ? ELSE genres_json END,
+                styles_json = CASE WHEN ? IS NOT NULL THEN ? ELSE styles_json END,
                 updated_at = ?
             WHERE id = ?
             """,
@@ -165,6 +178,10 @@ def update_album_master_correction(
                 normalized_artist,
                 normalized_title,
                 normalized_artist,
+                json.dumps(clean_genres, ensure_ascii=True) if clean_genres is not None else None,
+                json.dumps(clean_genres, ensure_ascii=True) if clean_genres is not None else None,
+                json.dumps(clean_styles, ensure_ascii=True) if clean_styles is not None else None,
+                json.dumps(clean_styles, ensure_ascii=True) if clean_styles is not None else None,
                 now,
                 master_id,
             ),

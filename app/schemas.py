@@ -1498,6 +1498,8 @@ class AlbumMasterCorrectionUpdateRequest(BaseModel):
     override_note: str | None = None
     override_title: str | None = None
     override_artist_or_brand: str | None = None
+    genres: list[str] | None = None
+    styles: list[str] | None = None
 
 
 class AlbumMasterCorrectionUpdateResponse(BaseModel):
@@ -1512,6 +1514,8 @@ class AlbumMasterCorrectionUpdateResponse(BaseModel):
     override_title: str | None = None
     override_artist_or_brand: str | None = None
     has_manual_correction: bool = False
+    genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
 
 
 class OwnedItemDetailResponse(BaseModel):
