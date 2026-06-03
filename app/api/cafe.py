@@ -112,7 +112,7 @@ async def _now_playing_worker() -> None:
       nothing playing → 60s
     """
     prev_state: dict | None = None
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     while True:
         interval = 60
