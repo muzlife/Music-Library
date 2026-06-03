@@ -39,3 +39,11 @@ app/static/uploads/
 /scripts/backfill_aladin_discogs_master.py
 /scripts/diagnose_aladin_api.py
 /scripts/normalize_item_name.py
+
+# Database file (local only)
+library.db
+
+# Additional DB variants
+app.db
+library_analyze.db
+*.log

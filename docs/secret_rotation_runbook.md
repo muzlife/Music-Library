@@ -34,7 +34,7 @@ stat -f "%Sp %N" /Volumes/Data/Works/07.hahahoho/.env.local
 chmod 600 /Volumes/Data/Works/07.hahahoho/.env.local
 
 # 3. 운영기에서도 동일하게
-ssh matia@__PROD_HOST__ 'cp __PROD_USER__/apps/hahahoho-prod/.env __PROD_USER__/apps/hahahoho-prod/.env.bak.$(date +%Y%m%d_%H%M) && chmod 600 __PROD_USER__/apps/hahahoho-prod/.env'
+ssh USER@PROD_HOST.local 'cp /Users/USER/apps/hahahoho-prod/.env /Users/USER/apps/hahahoho-prod/.env.bak.$(date +%Y%m%d_%H%M) && chmod 600 /Users/USER/apps/hahahoho-prod/.env'
 ```
 
 새 값을 만들 때 쓰는 도구.
@@ -100,7 +100,7 @@ python3 -c "import secrets, string; print(''.join(secrets.choice(string.ascii_le
 
 ```bash
 # 시드가 끝났는지 확인 (DB에 row가 보여야 함)
-ssh matia@__PROD_HOST__ "sqlite3 __PROD_USER__/apps/hahahoho-prod/runtime/data/library.db \
+ssh USER@PROD_HOST.local "sqlite3 /Users/USER/apps/hahahoho-prod/runtime/data/library.db \
   'SELECT username, role FROM auth_account WHERE is_active = 1;'"
 # admin/ADMIN, operator/OPERATOR, kinolifecom/OPERATOR ... 가 보이면 시드 완료
 ```
@@ -164,8 +164,8 @@ sed -i.bak "s|^LIBRARY_AUTH_SESSION_SECRET=.*|LIBRARY_AUTH_SESSION_SECRET=\"$NEW
     /Volumes/Data/Works/07.hahahoho/.env.local
 
 # 운영기에도 동일하게
-ssh matia@__PROD_HOST__ \
-  "sed -i.bak 's|^LIBRARY_AUTH_SESSION_SECRET=.*|LIBRARY_AUTH_SESSION_SECRET=\"$NEW_SECRET\"|' __PROD_USER__/apps/hahahoho-prod/.env"
+ssh USER@PROD_HOST.local \
+  "sed -i.bak 's|^LIBRARY_AUTH_SESSION_SECRET=.*|LIBRARY_AUTH_SESSION_SECRET=\"$NEW_SECRET\"|' /Users/USER/apps/hahahoho-prod/.env"
 ```
 
 재시작 후 모든 사용자가 `/login` 으로 리다이렉트되면 OK.
@@ -231,7 +231,7 @@ curl -s http://127.0.0.1:8100/health
 
 ### Production
 ```bash
-ssh matia@__PROD_HOST__ 'launchctl kickstart -k gui/$(id -u)/com.muzlife.library-prod && sleep 2 && curl -s http://127.0.0.1:8000/health'
+ssh USER@PROD_HOST.local 'launchctl kickstart -k gui/$(id -u)/com.muzlife.library-prod && sleep 2 && curl -s http://127.0.0.1:8000/health'
 # {"status":"ok"} 면 OK
 ```
 
