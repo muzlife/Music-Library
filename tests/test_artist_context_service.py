@@ -390,7 +390,7 @@ def test_translate_text_with_deepl_uses_header_authentication_and_json_payload(m
     assert captured["url"] == "https://api-free.deepl.com/v2/translate"
     assert captured["headers"] == {
         "Authorization": "DeepL-Auth-Key test-key:fx",
-        "User-Agent": "hahahoho-library/0.1 (ops translation)",
+        "User-Agent": "__PROJECT_SLUG__-library/0.1 (ops translation)",
     }
     assert captured["json"] == {
         "text": ["Connection check"],

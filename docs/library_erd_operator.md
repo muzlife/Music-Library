@@ -1,7 +1,7 @@
 # 라이브러리 운영 ERD 요약
 
 이 문서는 운영자와 기획자가 화면 흐름을 이해할 수 있도록 핵심 엔터티만 묶어서 설명한 요약 ERD입니다.  
-실제 컬럼 단위 설명은 [library_erd.md](/Volumes/Data/Works/07.hahahoho/docs/library_erd.md)를 기준으로 봅니다.
+실제 컬럼 단위 설명은 [library_erd.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/library_erd.md)를 기준으로 봅니다.
 
 ## 1. 한눈에 보는 구조
 

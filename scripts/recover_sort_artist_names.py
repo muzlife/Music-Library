@@ -21,7 +21,7 @@ def _resolve_root() -> Path:
 
 ROOT = _resolve_root()
 ENV_PATH = ROOT / ".env.local"
-DEFAULT_BASE_URL = "https://library.muzlife.com"
+DEFAULT_BASE_URL = "https://__PROD_DOMAIN__"
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

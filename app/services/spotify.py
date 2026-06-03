@@ -42,7 +42,8 @@ class SpotifyService:
                 client_credentials_manager=SpotifyClientCredentials(
                     client_id=self.client_id,
                     client_secret=self.client_secret,
-                )
+                ),
+                retries=0,  # Let our daemon handle 429/backoff, not spotipy internally
             )
         except Exception:
             logger.exception("failed to initialize spotipy CC client")
@@ -100,6 +101,30 @@ class SpotifyService:
                 "album_art_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
                 "duration_ms": item.get("duration_ms"),
                 "track_uri": item.get("uri"),
+            })
+        return items
+
+    def search_albums_sync(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
+        limit = min(limit, 10)
+        sp = self._ensure_client_cc()
+        if sp is None:
+            return []
+        try:
+            results = sp.search(q=query, type="album", limit=limit)
+        except Exception:
+            logger.exception("spotify album search failed")
+            return []
+        items: list[dict[str, Any]] = []
+        for item in (results.get("albums", {}).get("items") or []):
+            images = item.get("images") or []
+            items.append({
+                "spotify_album_id": item.get("id"),
+                "spotify_album_uri": item.get("uri"),
+                "name": item.get("name"),
+                "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
+                "release_date": item.get("release_date"),
+                "total_tracks": item.get("total_tracks", 0),
+                "image_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
             })
         return items
 
@@ -178,6 +203,7 @@ class SpotifyService:
         try:
             pb = sp.current_playback()
         except Exception:
+            logger.exception("spotify current_playback failed")
             return None
         if not pb or not pb.get("is_playing"):
             return None

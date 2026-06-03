@@ -43,6 +43,7 @@ def _owned_item_select_query() -> str:
         oi.order_key,
         oi.storage_slot_id,
         ss.slot_code,
+        ss.allowed_size_group AS slot_allowed_size_group,
         oi.is_second_hand,
         oi.signature_type,
         oi.source_code,
@@ -85,6 +86,7 @@ def _owned_item_select_query() -> str:
         mid.credits_json,
         mid.identifier_items_json,
         mid.image_items_json,
+        mid.local_image_items_json,
         mid.company_items_json,
         mid.series_json,
         mid.format_items_json,
@@ -246,6 +248,7 @@ def _normalize_owned_item_row(obj: dict[str, Any]) -> dict[str, Any]:
     obj["credits"] = _json_to_string_list(obj.pop("credits_json", None))
     obj["identifier_items"] = _json_to_dict_list(obj.pop("identifier_items_json", None))
     obj["image_items"] = _json_to_dict_list(obj.pop("image_items_json", None))
+    obj["local_image_items"] = _json_to_dict_list(obj.pop("local_image_items_json", None))
     obj["company_items"] = _json_to_dict_list(obj.pop("company_items_json", None))
     obj["series"] = _json_to_string_list(obj.pop("series_json", None))
     obj["format_items"] = _json_to_dict_list(obj.pop("format_items_json", None))

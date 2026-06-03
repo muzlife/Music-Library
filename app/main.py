@@ -292,7 +292,7 @@ ALADIN_DISCOGS_BACKFILL_LAST_ERROR: str | None = None
 AUTO_BACKUP_LOCK = threading.Lock()
 AUTO_BACKUP_STOP_EVENT = threading.Event()
 AUTO_BACKUP_THREAD: threading.Thread | None = None
-LAUNCHD_LOG_DIR = Path.home() / "Library" / "Logs" / "hahahoho-library"
+LAUNCHD_LOG_DIR = Path.home() / "Library" / "Logs" / "__PROJECT_SLUG__-library"
 LAUNCHD_ERR_LOG_PATH = LAUNCHD_LOG_DIR / "library.err.log"
 
 
@@ -303,7 +303,7 @@ def _resolve_project_root() -> Path:
       1. Explicit `LIBRARY_PROJECT_ROOT` env var (preferred for QA/Prod).
       2. The directory two levels above this file (works for in-repo runs).
 
-    The repo used to embed `/Volumes/Data/Works/07.hahahoho` as a literal in nine
+    The repo used to embed `/Volumes/Data/Works/07.__PROJECT_SLUG__` as a literal in nine
     places. That made the same code break on a teammate's laptop, on a
     runtime that mounted the repo elsewhere, or inside CI. Anchoring on a
     single env var keeps QA/Prod overridable while keeping the local dev
@@ -446,6 +446,18 @@ async def auth_guard(request: Request, call_next):
         "/cafe/tablet",
         "/cafe/lyrics",
         "/cafe/tags",
+        "/cafe/local-cover",
+        "/random-album",
+        "/refresh-images",
+        "/owned-items/5074",
+        "/owned-items/5074/auto-master",
+        "/aladin-discogs-backfill/run",
+        "/owned-items/5074/sync-metadata",
+        "/refresh-images",
+        "/owned-items/5074",
+        "/owned-items/5074/auto-master",
+        "/aladin-discogs-backfill/run",
+        "/owned-items/5074/sync-metadata",
         "/spotify/callback",
     }
     if path in allowed_paths:
@@ -1197,7 +1209,7 @@ def _resolve_purchase_import_vendor_code(
             "YOUR ORDERS",
         )
     )
-    if "SAILMUSIC@NAVER.COM" in upper or "세일뮤직" in text:
+    if "__VENDOR_EMAIL__" in upper or "세일뮤직" in text:
         return "SAILMUSIC"
     if has_ebay_marker:
         return "EBAY"
@@ -2663,6 +2675,104 @@ def _build_music_detail_for_sync(
     }
     return music_detail, sorted(set(updated_fields))
 
+def _get_db_conn():
+    from app.db import get_conn
+    return get_conn()
+
+_SYNC_IMAGE_QUEUE: list[tuple[int, str, str, dict[str, Any]]] = []
+_SYNC_IMAGE_THREAD: threading.Thread | None = None
+_SYNC_IMAGE_COUNT = 0
+
+def _trigger_sync_image_download(
+    owned_item_id: int,
+    source_code: str,
+    source_external_id: str,
+    snapshot: dict[str, Any],
+) -> None:
+    """Immediately download images for a single item (individual sync)."""
+    import threading as _th
+    def _run():
+        try:
+            _download_images_for_item(owned_item_id, source_code, source_external_id, snapshot)
+        except Exception:
+            pass
+    _th.Thread(target=_run, daemon=True).start()
+
+def _download_images_for_item(
+    owned_item_id: int,
+    source_code: str,
+    source_external_id: str,
+    snapshot: dict[str, Any],
+) -> None:
+    """Download all available images for one item."""
+    from app.services.image_store import download_images
+    from pathlib import Path
+    static_dir = Path(__file__).resolve().parent / "static"
+    items = []
+    # Collect from snapshot
+    cover = str(snapshot.get("cover_image_url") or "").strip()
+    extra = snapshot.get("image_items") or []
+    if cover:
+        items.append({"type": "앞면", "uri": cover})
+    if isinstance(extra, list):
+        items.extend([{"type": it.get("type", "추가"), "uri": it.get("uri", "")} for it in extra if it.get("uri")])
+    # ALADIN additional
+    if source_code == "ALADIN" and source_external_id:
+        try:
+            from app.services.providers import _fetch_aladin_images_from_web
+            aladin_extra = _fetch_aladin_images_from_web(source_external_id, source_external_id)
+            items.extend(aladin_extra)
+        except Exception:
+            pass
+    if items:
+        result = download_images(
+            owned_item_id=owned_item_id,
+            image_items=items,
+            source=source_code,
+            static_dir=static_dir,
+            source_external_id=source_external_id,
+        )
+        if result:
+            import json as _json
+            with _get_db_conn() as conn:
+                conn.execute(
+                    "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
+                    (_json.dumps(result, ensure_ascii=False), owned_item_id),
+                )
+
+def _has_local_images(owned_item_id: int) -> bool:
+    """Check if the item already has local images."""
+    try:
+        with _get_db_conn() as conn:
+            row = conn.execute(
+                "SELECT local_image_items_json FROM music_item_detail WHERE owned_item_id=?",
+                (owned_item_id,)
+            ).fetchone()
+            if row and row[0] and row[0] not in ("[]", "null", ""):
+                return True
+    except Exception:
+        pass
+    return False
+
+def _start_sync_image_download_thread() -> None:
+    """Start background thread to process the sync image queue."""
+    global _SYNC_IMAGE_THREAD, _SYNC_IMAGE_QUEUE, _SYNC_IMAGE_COUNT
+    queue = _SYNC_IMAGE_QUEUE[:]
+    _SYNC_IMAGE_QUEUE = []
+    _SYNC_IMAGE_COUNT = len(queue)
+
+    def _run():
+        global _SYNC_IMAGE_COUNT
+        for owned_item_id, source_code, source_external_id, snapshot in queue:
+            try:
+                _download_images_for_item(owned_item_id, source_code, source_external_id, snapshot)
+            except Exception:
+                pass
+            _SYNC_IMAGE_COUNT -= 1
+    _SYNC_IMAGE_THREAD = threading.Thread(target=_run, daemon=True, name="sync-image-download")
+    _SYNC_IMAGE_THREAD.start()
+
+
 
 def _run_metadata_sync(
     payload: MetadataSyncRunRequest,
@@ -2819,6 +2929,11 @@ def _run_metadata_sync(
             )
             if not updated_fields:
                 skipped_count += 1
+                # Queue image download even if no metadata to update (only if no images yet)
+                if not _has_local_images(owned_item_id):
+                    _SYNC_IMAGE_QUEUE.append((
+                        owned_item_id, source_code, source_external_id, snapshot
+                    ))
                 _record(MetadataSyncItemResult(
                     owned_item_id=owned_item_id,
                     source_code=source_code,
@@ -2843,7 +2958,19 @@ def _run_metadata_sync(
                 note_append = f"[메타동기화] {release_info}업데이트: {', '.join(updated_fields)}"
 
             db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
+            linked_master_id = int(row.get("linked_album_master_id") or 0)
+            if linked_master_id > 0:
+                db.update_album_master_genres(
+                    album_master_id=linked_master_id,
+                    genres=music_detail.get("genres") or [],
+                    styles=music_detail.get("styles") or [],
+                )
             updated_count += 1
+            # Queue for image download after sync completes (only if no images yet)
+            if not _has_local_images(owned_item_id):
+                _SYNC_IMAGE_QUEUE.append((
+                    owned_item_id, source_code, source_external_id, snapshot
+                ))
             _record(MetadataSyncItemResult(
                 owned_item_id=owned_item_id,
                 source_code=source_code,
@@ -2876,6 +3003,10 @@ def _run_metadata_sync(
             failed_count=failed_count,
             item_results=item_results if payload.include_item_results else [],
         )
+        # Start background image download for queued items
+        if _SYNC_IMAGE_QUEUE:
+            _start_sync_image_download_thread()
+
         METADATA_SYNC_LAST_RESULT = result
         METADATA_SYNC_LAST_ERROR = None
         return result
@@ -2948,8 +3079,8 @@ def _create_local_db_backup(backup_dir: str, *, reason: str = "manual") -> str:
     target_dir = Path(_normalize_backup_dir_path(backup_dir))
     target_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    final_path = target_dir / f"hahahoho-library-{reason}-{timestamp}.db"
-    temp_path = target_dir / f".hahahoho-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
+    final_path = target_dir / f"__PROJECT_SLUG__-library-{reason}-{timestamp}.db"
+    temp_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
     _write_db_snapshot_to_path(temp_path)
     temp_path.replace(final_path)
     return str(final_path)
@@ -2964,13 +3095,13 @@ def _create_local_full_backup_bundle(
     target_dir = Path(_normalize_backup_dir_path(backup_dir))
     target_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    final_path = target_dir / f"hahahoho-library-{reason}-{timestamp}.zip"
-    temp_path = target_dir / f".hahahoho-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
-    temp_db_path = target_dir / f".hahahoho-library-{reason}-{timestamp}-{uuid4().hex}.db"
+    final_path = target_dir / f"__PROJECT_SLUG__-library-{reason}-{timestamp}.zip"
+    temp_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
+    temp_db_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.db"
     project_root = Path(__file__).resolve().parents[1]
     env_path = project_root / ".env.local"
     manifest = {
-        "kind": "hahahoho-library-full-backup",
+        "kind": "__PROJECT_SLUG__-library-full-backup",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "db_filename": "library.db",
         "includes_uploads": IMAGE_UPLOAD_DIR.exists(),
@@ -3137,7 +3268,7 @@ def _restore_library_bundle_from_upload(upload_path: str, original_filename: str
             raise ValueError("복구 파일에 library.db가 없습니다.")
         has_uploads = any(name.startswith("uploads/") and not name.endswith("/") for name in names)
         has_env = ".env.local" in names
-        extract_root = Path(tempfile.mkdtemp(prefix="hahahoho-restore-bundle-"))
+        extract_root = Path(tempfile.mkdtemp(prefix="__PROJECT_SLUG__-restore-bundle-"))
         try:
             extracted_db_path = extract_root / "library.db"
             with bundle.open(db_member, "r") as source_db, open(extracted_db_path, "wb") as target_db:
@@ -3282,7 +3413,7 @@ def _start_auto_backup_worker() -> None:
 async def restore_db_backup(request: Request, file: UploadFile = File(...)) -> DatabaseRestoreResponse:
     _require_admin_request(request)
     filename = str(file.filename or "").strip() or "restore.db"
-    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-restore-", suffix=".db", delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-restore-", suffix=".db", delete=False)
     tmp_path = tmp.name
     tmp.close()
     try:
@@ -3307,7 +3438,7 @@ async def restore_db_backup(request: Request, file: UploadFile = File(...)) -> D
 async def restore_full_backup(request: Request, file: UploadFile = File(...)) -> DatabaseRestoreResponse:
     _require_admin_request(request)
     filename = str(file.filename or "").strip() or "restore.zip"
-    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-full-restore-", suffix=".zip", delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-full-restore-", suffix=".zip", delete=False)
     tmp_path = tmp.name
     tmp.close()
     try:
@@ -4345,6 +4476,21 @@ def _sync_one_item(owned_item_id: int) -> MetadataSyncItemResult:
     note_append = f"[메타동기화] {release_info}업데이트: {', '.join(updated_fields)}"
 
     db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
+    linked_master_id = int(row.get("linked_album_master_id") or 0)
+    if linked_master_id > 0:
+        db.update_album_master_genres(
+            album_master_id=linked_master_id,
+            genres=music_detail.get("genres") or [],
+            styles=music_detail.get("styles") or [],
+        )
+
+    # Trigger background image download for this item
+    _trigger_sync_image_download(
+        owned_item_id=owned_item_id,
+        source_code=source_code,
+        source_external_id=source_external_id,
+        snapshot=snapshot,
+    )
 
     return MetadataSyncItemResult(
         owned_item_id=owned_item_id,
@@ -4506,7 +4652,7 @@ def _run_aladin_discogs_backfill(*, dry_run: bool = False, sleep_sec: float = 2.
                 music_detail_clean = {k: v for k, v in music_detail_raw.items() if v is not None}
 
                 if not dry_run:
-                    with db.get_conn() as conn:
+                    with _get_db_conn() as conn:
                         db._upsert_music_item_detail_in_conn(conn, owned_item_id, music_detail_clean)
                 stats["detail_updated"] += 1
                 stats["matched_items"].append(matched_entry)

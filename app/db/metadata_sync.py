@@ -105,12 +105,12 @@ def list_metadata_sync_candidates(
             OR TRIM(COALESCE(mid.cover_image_url, '')) = ''
             OR TRIM(COALESCE(mid.barcode, '')) = ''
             OR TRIM(COALESCE(mid.media_type, '')) = ''
-            OR mid.genres_json IS NULL
-            OR TRIM(COALESCE(mid.genres_json, '')) = ''
-            OR TRIM(COALESCE(mid.genres_json, '')) = '[]'
-            OR mid.styles_json IS NULL
-            OR TRIM(COALESCE(mid.styles_json, '')) = ''
-            OR TRIM(COALESCE(mid.styles_json, '')) = '[]'
+            OR am.genres_json IS NULL
+            OR TRIM(COALESCE(am.genres_json, '')) = ''
+            OR TRIM(COALESCE(am.genres_json, '')) = '[]'
+            OR am.styles_json IS NULL
+            OR TRIM(COALESCE(am.styles_json, '')) = ''
+            OR TRIM(COALESCE(am.styles_json, '')) = '[]'
             OR mid.track_list_json IS NULL
             OR TRIM(COALESCE(mid.track_list_json, '')) = ''
             OR TRIM(COALESCE(mid.track_list_json, '')) = '[]'

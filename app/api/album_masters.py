@@ -16,10 +16,12 @@ moving them out is a separate refactor) and reach into them via the lazy
 """
 
 from __future__ import annotations
+import json
 
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
+from pydantic import BaseModel
 
 from .. import db
 from ..schemas import (
@@ -597,6 +599,11 @@ def list_album_masters(
     is_new: bool | None = Query(default=None),
     is_promo: bool | None = Query(default=None),
     album_master_id: int | None = Query(default=None, ge=1),
+    genre_missing: bool = Query(default=False),
+    format_missing: bool = Query(default=False),
+    catalog_missing: bool = Query(default=False),
+    review_missing: bool = Query(default=False),
+    spotify_state: str = Query(default="ANY", pattern="^(ANY|MISSING|MATCHED)$"),
 ) -> list[AlbumMasterListItem]:
     main_module = _main()
     match_query = str(item_name or q or "").strip()
@@ -628,6 +635,11 @@ def list_album_masters(
         is_new=is_new,
         is_promo=is_promo,
         album_master_id=album_master_id,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
+        review_missing=review_missing,
+        spotify_state=spotify_state,
     )
     if include_total:
         total = db.count_album_masters(
@@ -649,6 +661,11 @@ def list_album_masters(
             is_limited=is_limited,
             is_new=is_new,
             is_promo=is_promo,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
+        review_missing=review_missing,
+        spotify_state=spotify_state,
         )
         response.headers["X-Total-Count"] = str(total)
     result: list[AlbumMasterListItem] = []
@@ -681,6 +698,10 @@ def list_album_masters(
                 seen_locations.add(text)
                 location_preview_items.append(text)
         row2["member_location_preview"] = location_preview_items
+        genres_raw = row2.pop("genres_json", None)
+        row2["genres"] = json.loads(genres_raw) if isinstance(genres_raw, str) and genres_raw.strip() else []
+        styles_raw = row2.pop("styles_json", None)
+        row2["styles"] = json.loads(styles_raw) if isinstance(styles_raw, str) and styles_raw.strip() else []
         member_location_actions, member_items_preview = main_module._album_master_member_context(
             int(row2.get("id") or 0)
         )
@@ -733,6 +754,8 @@ def update_album_master_correction(
         override_note=payload.override_note,
         override_title=payload.override_title,
         override_artist_or_brand=payload.override_artist_or_brand,
+        genres=payload.genres,
+        styles=payload.styles,
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="album_master not found")
@@ -758,6 +781,8 @@ def update_album_master_correction(
         override_title=str(updated.get("override_title") or "").strip() or None,
         override_artist_or_brand=str(updated.get("override_artist_or_brand") or "").strip() or None,
         has_manual_correction=bool(updated.get("has_manual_correction")),
+        genres=updated.get("genres") or [],
+        styles=updated.get("styles") or [],
     )
 
 
@@ -928,16 +953,31 @@ def spotify_batch_match(
     request: Request,
     limit: int = Query(default=50, ge=1, le=200),
 ) -> dict[str, Any]:
-    """Batch match album_masters to Spotify. ADMIN only."""
-    from ..security import _require_admin_request
-    _require_admin_request(request)
+    """Batch match album_masters to Spotify. ADMIN or webhook token."""
+    import secrets as _secrets
+    from ..config import get_settings as _get_settings
+    _cfg = _get_settings()
+    _token = str(_cfg.spotify_batch_webhook_token or "").strip()
+    _provided = str(request.headers.get("x-spotify-batch-token") or "").strip()
+    _token_ok = bool(_token) and _secrets.compare_digest(_provided, _token)
+    if not _token_ok:
+        from ..security import _require_admin_request
+        _require_admin_request(request)
     from ..services.spotify import SpotifyService
     from ..db.album_master_spotify import batch_match_spotify
 
     sp = SpotifyService()
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
-    result = batch_match_spotify(sp, limit=limit)
+    from spotipy.exceptions import SpotifyException
+    try:
+        result = batch_match_spotify(sp, limit=limit)
+    except SpotifyException as exc:
+        if exc.http_status == 429:
+            raise HTTPException(status_code=429, detail="Spotify API rate-limit exceeded")
+        raise HTTPException(status_code=502, detail=f"Spotify API error: {exc.msg}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to run batch match: {exc}")
     return {
         'ok': True,
         'limit': limit,
@@ -975,6 +1015,254 @@ def spotify_play_master(
 
 # ── Spotify manual management ──────────────────────────────────────
 
+# ── Review collection ──────────────────────────────────────────────
+
+@router.post("/album-masters/review/batch-preview")
+def batch_review_preview(
+    request: Request,
+    limit: int = Query(default=5, ge=1, le=20),
+) -> dict[str, Any]:
+    """Preview DeepL translation for N masters without review (no DB write). ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.providers import fetch_wikipedia_album_review
+    from ..services.review_pipeline import translate_to_korean_with_deepl
+    from ..db.album_master_review import get_masters_without_review
+    from ..db.connection import get_conn
+
+    with get_conn() as conn:
+        masters = get_masters_without_review(conn, limit=limit)
+
+    results = []
+    for master in masters:
+        mid = master["id"]
+        artist = str(master.get("artist_or_brand") or "").strip()
+        title = str(master.get("title") or "").strip()
+        entry: dict[str, Any] = {
+            "master_id": mid,
+            "artist": artist,
+            "title": title,
+            "raw_text": None,
+            "translated_text": None,
+            "review_url": None,
+            "error": None,
+        }
+        if not artist or not title:
+            entry["error"] = "missing artist or title"
+            results.append(entry)
+            continue
+        raw = fetch_wikipedia_album_review(artist, title)
+        if not raw:
+            entry["error"] = "no Wikipedia page found"
+            results.append(entry)
+            continue
+        entry["raw_text"] = raw["review_text"]
+        entry["review_url"] = raw.get("review_url")
+        try:
+            entry["translated_text"] = translate_to_korean_with_deepl(raw["review_text"])
+        except Exception as e:
+            entry["error"] = str(e)
+        results.append(entry)
+
+    return {"ok": True, "limit": limit, "results": results}
+
+
+@router.post("/album-masters/review/batch")
+def batch_collect_reviews(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+) -> dict[str, Any]:
+    """Batch collect Wikipedia reviews with DeepL translation. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.providers import fetch_wikipedia_album_review
+    from ..services.review_pipeline import translate_to_korean_with_deepl
+    from ..db.album_master_review import get_masters_without_review, save_review, count_masters_without_review
+    from ..db.connection import get_conn
+
+    with get_conn() as conn:
+        masters = get_masters_without_review(conn, limit=limit)
+
+    succeeded = 0
+    failed = 0
+    for master in masters:
+        mid = master["id"]
+        artist = str(master.get("artist_or_brand") or "").strip()
+        title = str(master.get("title") or "").strip()
+        if not artist or not title:
+            failed += 1
+            continue
+        raw = fetch_wikipedia_album_review(artist, title)
+        if not raw:
+            failed += 1
+            continue
+        try:
+            translated = translate_to_korean_with_deepl(raw["review_text"])
+            source = "WIKIPEDIA_KO"
+        except Exception:
+            translated = raw["review_text"] or ""
+            source = "WIKIPEDIA_RAW"
+        with get_conn() as conn:
+            save_review(conn, mid, translated, source, raw.get("review_url"))
+        succeeded += 1
+
+    with get_conn() as conn:
+        remaining_after = count_masters_without_review(conn)
+
+    return {
+        "ok": True,
+        "processed": len(masters),
+        "succeeded": succeeded,
+        "failed": failed,
+        "remaining": remaining_after,
+    }
+
+
+@router.post("/album-masters/{album_master_id}/review/auto")
+def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any]:
+    """Fetch Wikipedia review for one master, summarize to Korean. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.providers import fetch_wikipedia_album_review
+    from ..services.review_pipeline import translate_to_korean_with_deepl
+    from ..db.album_master_review import save_review
+    from ..db.connection import get_conn
+
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT artist_or_brand, title FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Album master not found")
+    artist = str(row[0] or "").strip()
+    title = str(row[1] or "").strip()
+    if not artist or not title:
+        raise HTTPException(status_code=400, detail="Artist and title required")
+
+    raw = fetch_wikipedia_album_review(artist, title)
+    if not raw:
+        raise HTTPException(status_code=404, detail="No Wikipedia album page found")
+
+    try:
+        review_text = translate_to_korean_with_deepl(raw["review_text"])
+        source = "WIKIPEDIA_KO"
+    except Exception:
+        review_text = raw["review_text"] or ""
+        source = "WIKIPEDIA_RAW"
+
+    with get_conn() as conn:
+        save_review(conn, album_master_id, review_text, source, raw.get("review_url"))
+
+    return {
+        "ok": True,
+        "album_master_id": album_master_id,
+        "source": source,
+        "review_text": review_text,
+        "review_url": raw.get("review_url"),
+    }
+
+
+class _ReviewUrlBody(BaseModel):
+    url: str
+
+
+@router.post("/album-masters/{album_master_id}/review/url")
+def collect_review_from_url(
+    album_master_id: int, body: _ReviewUrlBody, request: Request
+) -> dict[str, Any]:
+    """Fetch review from a URL, summarize to Korean. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.providers import fetch_review_from_url
+    from ..services.review_pipeline import translate_to_korean_with_deepl
+    from ..db.album_master_review import save_review
+    from ..db.connection import get_conn
+    import urllib.parse
+
+    url = body.url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="url required")
+
+    with get_conn() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Album master not found")
+
+    raw_text = fetch_review_from_url(url)
+    if not raw_text:
+        raise HTTPException(status_code=422, detail="Could not extract text from URL")
+
+    domain = urllib.parse.urlparse(url).netloc or "URL"
+    source_base = domain.upper().replace("WWW.", "").replace(".", "_")[:30]
+    try:
+        review_text = translate_to_korean_with_deepl(raw_text)
+        source = source_base + "_KO"
+    except Exception:
+        review_text = raw_text
+        source = source_base + "_RAW"
+
+    with get_conn() as conn:
+        save_review(conn, album_master_id, review_text, source, url)
+
+    return {"ok": True, "album_master_id": album_master_id, "source": source, "review_text": review_text}
+
+
+class _ReviewManualBody(BaseModel):
+    text: str
+    source: str = "MANUAL"
+
+
+@router.post("/album-masters/{album_master_id}/review/manual")
+def save_review_manual(
+    album_master_id: int, body: _ReviewManualBody, request: Request
+) -> dict[str, Any]:
+    """Save a manually written review (no DeepSeek). ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..db.album_master_review import save_review
+    from ..db.connection import get_conn
+
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text required")
+
+    with get_conn() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Album master not found")
+
+    source = (body.source or "MANUAL").strip()[:50]
+    with get_conn() as conn:
+        save_review(conn, album_master_id, text, source, None)
+
+    return {"ok": True, "album_master_id": album_master_id, "source": source}
+
+
+@router.delete("/album-masters/{album_master_id}/review")
+def delete_review(album_master_id: int, request: Request) -> dict[str, Any]:
+    """Clear review for an album master. ADMIN only."""
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..db.album_master_review import clear_review
+    from ..db.connection import get_conn
+
+    with get_conn() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM album_master WHERE id = ?", (album_master_id,)
+        ).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Album master not found")
+
+    with get_conn() as conn:
+        clear_review(conn, album_master_id)
+
+    return {"ok": True, "album_master_id": album_master_id}
+
+
 @router.delete("/album-masters/{album_master_id}/spotify/match")
 def spotify_clear_match(
     album_master_id: int,
@@ -998,7 +1286,7 @@ def spotify_clear_match(
 
 
 @router.put("/album-masters/{album_master_id}/spotify/match")
-def spotify_set_match(
+async def spotify_set_match(
     album_master_id: int,
     request: Request,
 ) -> dict[str, Any]:
@@ -1007,7 +1295,7 @@ def spotify_set_match(
     _require_admin_request(request)
     import json as _json
 
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     spotify_album_id = str(body.get("spotify_album_id") or "").strip()
     spotify_album_uri = str(body.get("spotify_album_uri") or f"spotify:album:{spotify_album_id}").strip()
 
@@ -1041,38 +1329,13 @@ def spotify_search_albums(
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
 
-    tracks = sp.search_tracks_sync(q, limit=limit * 2)
-    # Collect unique albums from track results
-    seen: set[str] = set()
-    albums: list[dict[str, Any]] = []
-    for t in tracks:
-        # Resolve album from track
-        try:
-            track = sp.track_sync(t.get("spotify_track_id", ""))
-            if not track:
-                continue
-            album = track.get("album", {})
-            aid = album.get("id", "")
-            if aid and aid not in seen:
-                seen.add(aid)
-                images = album.get("images") or []
-                albums.append({
-                    "spotify_album_id": aid,
-                    "spotify_album_uri": album.get("uri", ""),
-                    "name": album.get("name", ""),
-                    "artist": ", ".join(a.get("name", "") for a in album.get("artists", [])),
-                    "release_date": album.get("release_date", ""),
-                    "total_tracks": album.get("total_tracks", 0),
-                    "image_url": images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None),
-                })
-        except Exception:
-            continue
-        if len(albums) >= limit:
-            break
+    albums = sp.search_albums_sync(q, limit=limit)
     return {"query": q, "total_count": len(albums), "items": albums}
 
 
 # ── Spotify tracks ──────────────────────────────────────────────────
+
+_ALBUM_TRACKS_CACHE: dict[str, dict[str, Any]] = {}
 
 @router.get("/spotify/albums/{spotify_album_id}/tracks")
 def spotify_album_tracks(
@@ -1083,48 +1346,69 @@ def spotify_album_tracks(
     from ..security import _require_operator_request
     _require_operator_request(request)
     from ..services.spotify import SpotifyService
+    from spotipy.exceptions import SpotifyException
+
+    if spotify_album_id in _ALBUM_TRACKS_CACHE:
+        return _ALBUM_TRACKS_CACHE[spotify_album_id]
 
     sp = SpotifyService()
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
 
-    items = sp.album_tracks_sync(spotify_album_id)
-    tracks = [
-        {
-            "track_id": t.get("id"),
-            "name": t.get("name"),
-            "track_number": t.get("track_number", 0),
-            "duration_ms": t.get("duration_ms", 0),
-            "uri": t.get("uri"),
-            "artists": [a.get("name", "") for a in t.get("artists", [])],
-        }
-        for t in items
-    ]
-        # Get album cover
-    album_cover = None
     try:
-        sp_client = sp._ensure_client_cc()
-        if sp_client:
-            album = sp_client.album(spotify_album_id)
-            images = album.get("images") or []
-            album_cover = images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None)
-    except Exception:
-        pass
-    return {"spotify_album_id": spotify_album_id, "total_tracks": len(tracks), "tracks": tracks, "image_url": album_cover,
-            "name": album.get("name", "") if album else "", "artist": ", ".join(a.get("name","") for a in album.get("artists",[])) if album else ""}
+        items = sp.album_tracks_sync(spotify_album_id)
+        tracks = [
+            {
+                "track_id": t.get("id"),
+                "name": t.get("name"),
+                "track_number": t.get("track_number", 0),
+                "duration_ms": t.get("duration_ms", 0),
+                "uri": t.get("uri"),
+                "artists": [a.get("name", "") for a in t.get("artists", [])],
+            }
+            for t in items
+        ]
+        
+        album_cover = None
+        album = None
+        try:
+            sp_client = sp._ensure_client_cc()
+            if sp_client:
+                album = sp_client.album(spotify_album_id)
+                images = album.get("images") or []
+                album_cover = images[1]["url"] if len(images) > 1 else (images[0]["url"] if images else None)
+        except Exception:
+            pass
+            
+        res = {
+            "spotify_album_id": spotify_album_id,
+            "total_tracks": len(tracks),
+            "tracks": tracks,
+            "image_url": album_cover,
+            "name": album.get("name", "") if album else "",
+            "artist": ", ".join(a.get("name", "") for a in album.get("artists", [])) if album else ""
+        }
+        _ALBUM_TRACKS_CACHE[spotify_album_id] = res
+        return res
+    except SpotifyException as exc:
+        if exc.http_status == 429:
+            raise HTTPException(status_code=429, detail="Spotify API rate-limit exceeded")
+        raise HTTPException(status_code=502, detail=f"Spotify API error: {exc.msg}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch tracklist: {exc}")
 
 
 # ── Generic Spotify play ────────────────────────────────────────────
 
 @router.post("/spotify/play")
-def spotify_play_uri(request: Request) -> dict[str, Any]:
+async def spotify_play_uri(request: Request) -> dict[str, Any]:
     """Play a Spotify URI (track or album). OPERATOR+."""
     from ..security import _require_operator_request
     _require_operator_request(request)
     import json as _json
     from ..services.spotify import SpotifyService
 
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     uri = str(body.get("uri") or "").strip()
     if not uri:
         raise HTTPException(status_code=400, detail="uri required")

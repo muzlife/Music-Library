@@ -27,7 +27,7 @@ def _resolve_root() -> Path:
 ROOT = _resolve_root()
 ENV_PATH = ROOT / '.env.local'
 QA_CSV_PATH = ROOT / 'docs' / 'qa' / 'qa_master_sheet.csv'
-EXTERNAL_BASE_URL = 'https://qa-library.muzlife.com'
+EXTERNAL_BASE_URL = 'https://__QA_DOMAIN__'
 LOCAL_BASE_URL = 'http://127.0.0.1:8100'
 LOCAL_HEALTH_URL = f'{LOCAL_BASE_URL}/health'
 LAUNCHD_LABEL = f'gui/{os.getuid()}/com.muzlife.library-qa'
@@ -107,14 +107,14 @@ def note(*parts: str) -> str:
 def build_client() -> Any:
     cookie_jar = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cookie_jar))
-    opener.addheaders = [('User-Agent', 'hahahoho-smoke-qa/1.0')]
+    opener.addheaders = [('User-Agent', '__PROJECT_SLUG__-smoke-qa/1.0')]
     opener._qa_auth_cookie = ''  # type: ignore[attr-defined]
     return opener
 
 
 def _capture_auth_cookie(opener: Any, headers: dict[str, str]) -> None:
     set_cookie = str(headers.get('set-cookie') or '').strip()
-    match = re.search(r'(hahahoho_session=[^;]+)', set_cookie)
+    match = re.search(r'(__PROJECT_SLUG___session=[^;]+)', set_cookie)
     if match:
         opener._qa_auth_cookie = match.group(1)  # type: ignore[attr-defined]
 

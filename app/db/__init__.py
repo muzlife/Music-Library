@@ -15,13 +15,13 @@ ORDER_KEY_STEP = 1024
 SQLITE_BUSY_TIMEOUT_MS = 30_000
 DASHBOARD_MOVE_WINDOW_DAYS = 1
 SIZE_GROUP_CODES = ("STD", "BOOK", "LP", "LP10", "LP7", "OVERSIZE", "CASSETTE", "8TRACK", "REEL_TO_REEL", "GOODS")
-DOMAIN_CODES = ("KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN")
+DOMAIN_CODES = ("KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD", "WORLD_OTHER", "UNKNOWN")
 CABINET_SORT_POLICIES = ("ARTIST_RELEASE_TITLE", "LABEL_ID", "TITLE_RELEASE")
 GOODS_RELATION_TYPE_CODES = ("SERIES", "VARIANT", "SET_MEMBER", "RELATED", "PROMO_FOR")
 LEGACY_DOMAIN_CODE_MAP = {
     "KOREAN": "KOREA",
     "JPOP": "JAPAN",
-    "OTHER": "WORLD_OTHER",
+    "OTHER": "WORLD",
 }
 LABEL_PREFIX_BY_CATEGORY = {
     "LP": "LP",
@@ -92,18 +92,113 @@ def _size_group_check_sql() -> str:
     return "', '".join(SIZE_GROUP_CODES)
 
 
+# CD 계열 미디어 타입 (DVD, Blu-ray, CD-ROM 포함)
+CD_LIKE_MEDIA_TYPES = ("CD", "CDr", "SACD", "Digital", "DVD", "Blu-ray", "CD-ROM")
+CD_LIKE_MEDIA_SQL = ", ".join(f"'{m}'" for m in CD_LIKE_MEDIA_TYPES)
+
+VINYL_LIKE_MEDIA_TYPES = ("Vinyl", "LP", '7"', '10"', "All Media")
+VINYL_LIKE_MEDIA_SQL = ", ".join(f"'{m}'" for m in VINYL_LIKE_MEDIA_TYPES)
+
+
+def slot_size_ok_sql() -> str:
+    """
+    슬롯 규격 판정 SQL (1=OK, 0=MISMATCH).
+    mid.media_type + mid.format_items_json + oi.size_group vs ss.allowed_size_group 비교.
+
+    규칙:
+      - LP-Style Packaging (CD/Cassette 등): LP 슬롯 허용
+      - Box Set: 기본 규격 또는 OVERSIZE 허용
+      - CD 계열(CD/CDr/SACD/Digital/DVD/Blu-ray/CD-ROM):
+          Digibook 또는 DVD Size 패키징 → OVERSIZE 필요
+          그 외 → STD
+      - Vinyl 계열(Vinyl/LP/7"/10"/All Media): oi.size_group 기준 (LP/LP7/LP10)
+      - Cassette → CASSETTE
+      - 8-Track Cartridge → 8TRACK
+      - Reel-To-Reel → REEL_TO_REEL
+      - 미지정/기타 → 판정 제외 (1 반환)
+    """
+    cd_sql = CD_LIKE_MEDIA_SQL
+    vinyl_sql = VINYL_LIKE_MEDIA_SQL
+    lp_style_pkg = """(
+        UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP-STYLE PACKAGING%'
+        OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%LP STYLE PACKAGING%'
+        OR UPPER(COALESCE(mid.format_name,'')) LIKE '%LP-STYLE PACKAGING%'
+        OR UPPER(COALESCE(mid.format_name,'')) LIKE '%LP STYLE PACKAGING%'
+      )"""
+    return f"""
+    CASE
+      WHEN mid.media_type IS NULL OR TRIM(mid.media_type) = '' THEN 1
+
+      -- LP-Style Packaging: CD/Cassette 등이 LP 크기 슬리브로 포장 → LP 슬롯 허용
+      WHEN {lp_style_pkg}
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) IN ('LP','OVERSIZE')
+             THEN 1 ELSE 0 END
+
+      -- Box Set: 기본 규격 또는 OVERSIZE 모두 허용
+      WHEN UPPER(COALESCE(mid.format_items_json,'')) LIKE '%"BOX SET"%'
+        OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%BOX SET%'
+        OR UPPER(COALESCE(mid.format_name,'')) LIKE '%BOX SET%'
+        THEN CASE WHEN
+          UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'OVERSIZE'
+          OR (mid.media_type IN ({cd_sql})
+              AND UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'STD')
+          OR (mid.media_type = 'Cassette'
+              AND UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'CASSETTE')
+          OR (mid.media_type IN ({vinyl_sql})
+              AND UPPER(TRIM(COALESCE(ss.allowed_size_group,'')))
+                  = UPPER(COALESCE(NULLIF(TRIM(oi.size_group),''),'LP')))
+          THEN 1 ELSE 0 END
+
+      -- Reel-To-Reel
+      WHEN mid.media_type = 'Reel-To-Reel'
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'REEL_TO_REEL'
+             THEN 1 ELSE 0 END
+
+      -- 8-Track Cartridge
+      WHEN mid.media_type = '8-Track Cartridge'
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = '8TRACK'
+             THEN 1 ELSE 0 END
+
+      -- Cassette
+      WHEN mid.media_type = 'Cassette'
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'CASSETTE'
+             THEN 1 ELSE 0 END
+
+      -- CD 계열 (DVD, Blu-ray, CD-ROM 포함)
+      WHEN mid.media_type IN ({cd_sql})
+        THEN CASE
+          WHEN UPPER(COALESCE(mid.format_items_json,'')) LIKE '%DIGIBOOK%'
+            OR UPPER(COALESCE(mid.format_items_json,'')) LIKE '%DVD SIZE%'
+            THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'OVERSIZE'
+                 THEN 1 ELSE 0 END
+          ELSE
+            CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,''))) = 'STD'
+                 THEN 1 ELSE 0 END
+          END
+
+      -- Vinyl 계열
+      WHEN mid.media_type IN ({vinyl_sql})
+        THEN CASE WHEN UPPER(TRIM(COALESCE(ss.allowed_size_group,'')))
+                      = UPPER(COALESCE(NULLIF(TRIM(oi.size_group),''),'LP'))
+             THEN 1 ELSE 0 END
+
+      ELSE 1
+    END
+    """
+
+
 def _normalize_domain_code_sql(expr: str) -> str:
     return f"""
     CASE UPPER(TRIM(COALESCE({expr}, '')))
       WHEN 'KOREAN' THEN 'KOREA'
       WHEN 'JPOP' THEN 'JAPAN'
-      WHEN 'OTHER' THEN 'WORLD_OTHER'
+      WHEN 'OTHER' THEN 'WORLD'
       WHEN 'KOREA' THEN 'KOREA'
       WHEN 'JAPAN' THEN 'JAPAN'
       WHEN 'GREATER_CHINA' THEN 'GREATER_CHINA'
       WHEN 'WESTERN' THEN 'WESTERN'
       WHEN 'OTHER_ASIA' THEN 'OTHER_ASIA'
-      WHEN 'WORLD_OTHER' THEN 'WORLD_OTHER'
+      WHEN 'WORLD_OTHER' THEN 'WORLD'
       WHEN 'UNKNOWN' THEN 'UNKNOWN'
       ELSE NULL
     END
@@ -1030,6 +1125,11 @@ def init_db() -> None:
               label_items_json TEXT,
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
+              disc_type TEXT,
+              package_contents TEXT,
+              is_limited_edition INTEGER,
+              edition_number TEXT,
+              local_image_items_json TEXT,
               FOREIGN KEY (owned_item_id) REFERENCES owned_item(id) ON DELETE CASCADE
             );
 
@@ -1175,6 +1275,9 @@ def init_db() -> None:
               spotify_album_uri TEXT,
               spotify_matched_at TEXT,
               spotify_image_url TEXT,
+              review_text TEXT,
+              review_source TEXT,
+              review_url TEXT,
               raw_json TEXT NOT NULL DEFAULT '{{}}',
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
@@ -1899,6 +2002,7 @@ from .album_master_core import (  # noqa: E402
     merge_album_masters,
     normalize_album_master_source_id,
     promote_album_master_source,
+    update_album_master_genres,
     upsert_album_master,
 )
 from .album_master_member import (  # noqa: E402

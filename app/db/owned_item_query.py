@@ -43,6 +43,7 @@ from typing import Any
 
 from app.db import (  # noqa: E402  — package surface
     _normalize_owned_item_row,
+    slot_size_ok_sql,
     _owned_item_select_query,
     get_album_master_binding_for_owned_item,
     get_album_master_domain_hint,
@@ -74,9 +75,12 @@ def list_owned_items(
     sort: str,
     limit: int,
     offset: int,
+    media_format_state: str = "ANY",
+    size_group_state: str = "ANY",
 ) -> list[dict[str, Any]]:
     query = _owned_item_select_query() + " WHERE 1 = 1"
     params: list[Any] = []
+    query += " AND (oi.source_code IS NULL OR oi.source_code != 'MUSICBRAINZ')"
 
     if category:
         query += " AND oi.category = ?"
@@ -171,21 +175,9 @@ def list_owned_items(
 
     preferred_storage_state_u = str(preferred_storage_state or "ANY").strip().upper()
     if preferred_storage_state_u == "MISMATCH":
-        query += """
-         AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) <> UPPER(TRIM(COALESCE(oi.size_group, '')))
-         )
-        """
+        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 0"
     elif preferred_storage_state_u == "MATCH":
-        query += """
-         AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) = UPPER(TRIM(COALESCE(oi.size_group, '')))
-         )
-        """
+        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 1"
 
     track_state_u = str(track_state or "ANY").strip().upper()
     if track_state_u == "MISSING":
@@ -197,6 +189,26 @@ def list_owned_items(
            mid.track_list_json IS NULL OR TRIM(mid.track_list_json) = '' OR TRIM(mid.track_list_json) = '[]'
          )
         """
+
+    media_format_state_u = str(media_format_state or "ANY").strip().upper()
+    if media_format_state_u == "MISSING":
+        query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
+    elif media_format_state_u == "HAS":
+        query += " AND (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> '')"
+
+    size_group_state_u = str(size_group_state or "ANY").strip().upper()
+    if size_group_state_u == "MISMATCH":
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') != 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') != 'CASSETTE')"
+                  " OR (1=0)"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
+    elif size_group_state_u == "MATCH":
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') = 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') = 'CASSETTE')"
+                  " OR (1=0)"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
     elif track_state_u == "HAS":
         query += """
          AND (
@@ -247,14 +259,18 @@ def count_owned_items(
     preferred_storage_state: str,
     track_state: str,
     music_only: bool,
+    media_format_state: str = "ANY",
+    size_group_state: str = "ANY",
 ) -> int:
     query = """
       SELECT COUNT(*) AS cnt
       FROM owned_item oi
       LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+      LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
       WHERE 1 = 1
     """
     params: list[Any] = []
+    query += " AND (oi.source_code IS NULL OR oi.source_code != 'MUSICBRAINZ')"
 
     if category:
         query += " AND oi.category = ?"
@@ -349,21 +365,9 @@ def count_owned_items(
 
     preferred_storage_state_u = str(preferred_storage_state or "ANY").strip().upper()
     if preferred_storage_state_u == "MISMATCH":
-        query += """
-         AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) <> UPPER(TRIM(COALESCE(oi.size_group, '')))
-         )
-        """
+        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 0"
     elif preferred_storage_state_u == "MATCH":
-        query += """
-         AND (
-           oi.preferred_storage_size_group IS NOT NULL
-           AND TRIM(oi.preferred_storage_size_group) <> ''
-           AND UPPER(TRIM(COALESCE(oi.preferred_storage_size_group, ''))) = UPPER(TRIM(COALESCE(oi.size_group, '')))
-         )
-        """
+        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 1"
 
     track_state_u = str(track_state or "ANY").strip().upper()
     if track_state_u == "MISSING":
@@ -375,6 +379,26 @@ def count_owned_items(
            mid.track_list_json IS NULL OR TRIM(mid.track_list_json) = '' OR TRIM(mid.track_list_json) = '[]'
          )
         """
+
+    media_format_state_u = str(media_format_state or "ANY").strip().upper()
+    if media_format_state_u == "MISSING":
+        query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
+    elif media_format_state_u == "HAS":
+        query += " AND (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> '')"
+
+    size_group_state_u = str(size_group_state or "ANY").strip().upper()
+    if size_group_state_u == "MISMATCH":
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') != 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') != 'CASSETTE')"
+                  " OR (1=0)"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
+    elif size_group_state_u == "MATCH":
+        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
+                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') = 'STD')"
+                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') = 'CASSETTE')"
+                  " OR (1=0)"
+                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
     elif track_state_u == "HAS":
         query += """
          AND (

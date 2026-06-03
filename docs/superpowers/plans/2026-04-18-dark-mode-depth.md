@@ -13,8 +13,8 @@
 ### Task 1: Lock Depth A Expectations
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
-- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_ops_shell_bootstrap.py`
+- Test: `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -28,7 +28,7 @@ Expected: FAIL because current night values still match the flatter depth set.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Update only the relevant night theme token values and any necessary token-fed surface rules in `/Volumes/Data/Works/07.hahahoho/app/static/index.html`.
+Update only the relevant night theme token values and any necessary token-fed surface rules in `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -39,8 +39,8 @@ Expected: PASS
 ### Task 2: Verify Adjacent Night Surfaces
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
-- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
+- Test: `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Write the failing regression expectation**
 
@@ -65,7 +65,7 @@ Expected: PASS
 ### Task 3: Final Verification
 
 **Files:**
-- Test: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Test: `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Run the final grouped verification**
 

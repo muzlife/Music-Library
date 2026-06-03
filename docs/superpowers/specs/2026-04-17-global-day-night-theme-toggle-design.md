@@ -24,12 +24,12 @@
 - 언어 선택기 옆에 주간/야간 스위치 추가
 - 스위치는 compact utility 패턴을 재사용
 - 기본 표시는 아이콘 + 짧은 상태 텍스트
-- 토글 상태 저장 키: `hahahoho.ui.theme`
+- 토글 상태 저장 키: `__PROJECT_SLUG__.ui.theme`
 
 ## State Model
 
 초기화 순서:
-1. `localStorage["hahahoho.ui.theme"]`
+1. `localStorage["__PROJECT_SLUG__.ui.theme"]`
 2. 없으면 `"night"`
 
 적용:

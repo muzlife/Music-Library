@@ -105,7 +105,7 @@
 - 대상: `runtime/data/library.db`
 - 주기: 매일 1회
 - 권장 시각: 새벽 03:00
-- 파일명 예시: `hahahoho-library-daily-db-YYYYMMDD-HHMMSS.db`
+- 파일명 예시: `__PROJECT_SLUG__-library-daily-db-YYYYMMDD-HHMMSS.db`
 - 변경 감지: 직전 성공 백업과 SHA-256 비교
 - 동일하면:
   - 새 백업 파일 삭제
@@ -119,7 +119,7 @@
   - `app/static/uploads/`
 - 주기: 주 1회
 - 권장 시각: 일요일 새벽 04:00
-- 파일명 예시: `hahahoho-library-weekly-full-YYYYMMDD-HHMMSS.zip`
+- 파일명 예시: `__PROJECT_SLUG__-library-weekly-full-YYYYMMDD-HHMMSS.zip`
 - 변경 감지:
   - DB snapshot hash
   - uploads fingerprint
@@ -206,16 +206,16 @@
 
 ## 실행 구조
 
-### 운영 서버(Mac mini 2018)
+### 운영 서버(__PROD_MACHINE__)
 
 - `launchd` 작업 2개
   - `com.muzlife.backup-daily-db`
   - `com.muzlife.backup-weekly-full`
 - 산출물 위치
-  - `__PROD_USER__/apps/hahahoho-prod/runtime/backups/db/`
-  - `__PROD_USER__/apps/hahahoho-prod/runtime/backups/full/`
+  - `/Users/__PROD_USER__/apps/__PROJECT_SLUG__-prod/runtime/backups/db/`
+  - `/Users/__PROD_USER__/apps/__PROJECT_SLUG__-prod/runtime/backups/full/`
 - 메타 기록 위치
-  - `__PROD_USER__/apps/hahahoho-prod/runtime/backups/metadata/`
+  - `/Users/__PROD_USER__/apps/__PROJECT_SLUG__-prod/runtime/backups/metadata/`
 - GCS 업로드
   - 각 백업 스크립트 후속 단계에서 수행
   - 또는 운영 안정화 후 별도 작업으로 분리 가능
@@ -225,18 +225,18 @@
 - `launchd` 작업 1개
   - `com.muzlife.qa-sync-weekly`
 - 입력 위치
-  - `/Users/jingunpark/apps/hahahoho-qa/runtime/imports/`
+  - `/Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/runtime/imports/`
 - 적용 메타 기록
-  - `/Users/jingunpark/apps/hahahoho-qa/runtime/imports/metadata/`
+  - `/Users/__DEV_USER__/apps/__PROJECT_SLUG__-qa/runtime/imports/metadata/`
 
 ### GCS 버킷 구조
 
 추천 예시:
 
-- `gs://muzlife-library-backups/prod/db/`
-- `gs://muzlife-library-backups/prod/full/`
-- `gs://muzlife-library-backups/prod/metadata/`
-- `gs://muzlife-library-backups/qa/applied-manifests/`
+- `gs://__GCS_BUCKET__/prod/db/`
+- `gs://__GCS_BUCKET__/prod/full/`
+- `gs://__GCS_BUCKET__/prod/metadata/`
+- `gs://__GCS_BUCKET__/qa/applied-manifests/`
 
 원칙:
 

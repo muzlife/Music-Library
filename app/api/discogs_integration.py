@@ -9,6 +9,10 @@ from .. import security
 from ..schemas import DiscogsIdentityResponse, DiscogsOwnedSyncResponse
 
 router = APIRouter()
+import threading
+ALADIN_DISCOGS_BACKFILL_LOCK = threading.Lock()
+ALADIN_DISCOGS_BACKFILL_THREAD = None
+
 def _main():
     from app import main as main_module
     return main_module
@@ -35,7 +39,7 @@ def run_aladin_discogs_backfill_async(
     if ALADIN_DISCOGS_BACKFILL_LOCK.locked():
         raise HTTPException(status_code=409, detail="aladin discogs backfill already running")
     t = threading.Thread(
-        target=_aladin_discogs_backfill_thread_worker,
+        target=_main()._aladin_discogs_backfill_thread_worker,
         kwargs={"dry_run": dry_run, "sleep_sec": sleep_sec},
         name="aladin-discogs-backfill",
         daemon=True,

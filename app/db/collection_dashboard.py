@@ -48,6 +48,7 @@ from typing import Any
 
 from app.db import (  # noqa: E402  — package surface
     DASHBOARD_MOVE_WINDOW_DAYS,
+    slot_size_ok_sql,
     _build_label_id,
     _normalize_cabinet_sort_policy_value,
     _normalize_domain_code_value,
@@ -135,8 +136,9 @@ def _build_collection_dashboard_first_item_hints(
 def get_collection_dashboard() -> dict[str, Any]:
     move_threshold = (datetime.now(timezone.utc) - timedelta(days=DASHBOARD_MOVE_WINDOW_DAYS)).isoformat()
     with get_conn() as conn:
+        _slot_ok = slot_size_ok_sql()
         summary = conn.execute(
-            """
+            f"""
             SELECT
               COUNT(*) AS total_items,
               SUM(CASE WHEN oi.status = 'IN_COLLECTION' THEN 1 ELSE 0 END) AS in_collection_items,
@@ -184,18 +186,18 @@ def get_collection_dashboard() -> dict[str, Any]:
               SUM(CASE WHEN oi.status = 'LOANED' THEN 1 ELSE 0 END) AS loaned_items,
               SUM(CASE WHEN oi.status = 'SOLD' THEN 1 ELSE 0 END) AS sold_items,
               SUM(CASE WHEN oi.status = 'LOST' THEN 1 ELSE 0 END) AS lost_items,
+              0 AS genre_missing_items_placeholder,
               SUM(
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-                   AND (mid.genres_json IS NULL OR TRIM(mid.genres_json) = '' OR mid.genres_json = '[]')
-                  THEN 1
-                  ELSE 0
-                END
-              ) AS genre_missing_items,
+                   AND oi.storage_slot_id IS NOT NULL
+                   AND ({_slot_ok}) = 0
+                  THEN 1 ELSE 0 END
+              ) AS category_size_mismatch_items,
               SUM(
                 CASE
                   WHEN oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-                   AND (mid.format_name IS NULL OR TRIM(mid.format_name) = '')
+                   AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')
                   THEN 1
                   ELSE 0
                 END
@@ -238,6 +240,7 @@ def get_collection_dashboard() -> dict[str, Any]:
               ) AS other_condition_items
             FROM owned_item oi
             LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
             """
         ).fetchone()
 
@@ -247,6 +250,18 @@ def get_collection_dashboard() -> dict[str, Any]:
             FROM goods_item
             """
         ).fetchone()
+
+        # Additional stats
+        box_row = conn.execute("SELECT COUNT(*) FROM music_item_detail WHERE format_name = 'Box Set'").fetchone()
+        box_set_items = box_row[0] if box_row else 0
+        master_row = conn.execute("SELECT COUNT(*) FROM album_master").fetchone()
+        total_master_count = master_row[0] if master_row else 0
+        spotify_row = conn.execute("SELECT COUNT(*) FROM album_master WHERE spotify_album_id IS NOT NULL AND spotify_album_id != ''").fetchone()
+        spotify_master_count = spotify_row[0] if spotify_row else 0
+        genre_missing_master_row = conn.execute(
+            "SELECT COUNT(*) FROM album_master WHERE genres_json IS NULL OR TRIM(genres_json) = '' OR genres_json = '[]'"
+        ).fetchone()
+        genre_missing_master_count = int(genre_missing_master_row[0] if genre_missing_master_row else 0)
 
         audio_row = conn.execute(
             """
@@ -626,7 +641,12 @@ def get_collection_dashboard() -> dict[str, Any]:
                    COALESCE(NULLIF(currency_code, ''), 'UNKNOWN') AS currency,
                    COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
                    COUNT(*) AS items,
-                   ROUND(SUM(purchase_price), 0) AS total_spend
+                   ROUND(SUM(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS total_spend
             FROM owned_item
             WHERE purchase_price IS NOT NULL
               AND purchase_source IS NOT NULL AND TRIM(purchase_source) <> ''
@@ -640,7 +660,13 @@ def get_collection_dashboard() -> dict[str, Any]:
         # Card: Financial Overview
         by_currency_spend = conn.execute(
             """
-            SELECT currency_code, COUNT(*) AS items, ROUND(SUM(purchase_price), 0) AS total_spend
+            SELECT currency_code, COUNT(*) AS items,
+                   ROUND(SUM(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS total_spend
             FROM owned_item
             WHERE purchase_price IS NOT NULL AND currency_code IS NOT NULL
             GROUP BY currency_code
@@ -651,8 +677,18 @@ def get_collection_dashboard() -> dict[str, Any]:
             """
             SELECT COALESCE(NULLIF(domain_code, ''), 'UNASSIGNED') AS domain,
                    COUNT(*) AS items,
-                   ROUND(AVG(purchase_price), 0) AS avg_price,
-                   ROUND(SUM(purchase_price), 0) AS total_spend
+                   ROUND(AVG(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS avg_price,
+                   ROUND(SUM(purchase_price * CASE currency_code
+                     WHEN 'USD' THEN 1380
+                     WHEN 'GBP' THEN 1750
+                     WHEN 'JPY' THEN 9
+                     ELSE 1
+                   END), 0) AS total_spend
             FROM owned_item
             WHERE purchase_price IS NOT NULL
               AND category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
@@ -786,7 +822,10 @@ def get_collection_dashboard() -> dict[str, Any]:
     legacy_goods_items = int((summary["goods_items"] if summary else 0) or 0)
     standalone_goods_items = int((standalone_goods_row["cnt"] if standalone_goods_row else 0) or 0)
 
+
+
     return {
+    
         "total_items": int((summary["total_items"] if summary else 0) or 0),
         "in_collection_items": int((summary["in_collection_items"] if summary else 0) or 0),
         "music_items": int((summary["music_items"] if summary else 0) or 0),
@@ -795,6 +834,9 @@ def get_collection_dashboard() -> dict[str, Any]:
         "direct_signed_items": int((summary["direct_signed_items"] if summary else 0) or 0),
         "purchase_signed_items": int((summary["purchase_signed_items"] if summary else 0) or 0),
         "second_hand_items": int((summary["second_hand_items"] if summary else 0) or 0),
+        "box_set_items": box_set_items,
+        "total_master_count": total_master_count,
+        "spotify_master_count": spotify_master_count,
         "audio_mapped_items": int((audio_row["cnt"] if audio_row else 0) or 0),
         "registered_last_30_days": int((summary["registered_last_30_days"] if summary else 0) or 0),
         "registered_last_7_days": int((summary["registered_last_7_days"] if summary else 0) or 0),
@@ -850,8 +892,9 @@ def get_collection_dashboard() -> dict[str, Any]:
         "loaned_items": int((summary["loaned_items"] if summary else 0) or 0),
         "sold_items": int((summary["sold_items"] if summary else 0) or 0),
         "lost_items": int((summary["lost_items"] if summary else 0) or 0),
-        "genre_missing_items": int((summary["genre_missing_items"] if summary else 0) or 0),
+        "genre_missing_items": genre_missing_master_count,
         "media_missing_items": int((summary["media_missing_items"] if summary else 0) or 0),
+        "category_size_mismatch_items": int((summary["category_size_mismatch_items"] if summary else 0) or 0),
         "catalog_missing_items": int((summary["catalog_missing_items"] if summary else 0) or 0),
         "limited_items": int((summary["limited_items"] if summary else 0) or 0),
         "new_items": int((summary["new_items"] if summary else 0) or 0),

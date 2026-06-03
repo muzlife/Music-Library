@@ -1119,6 +1119,71 @@ def _discogs_has_obi(formats: Any) -> bool | None:
     return None
 
 
+def _discogs_format_descriptions_flat(formats: Any) -> list[str]:
+    """format_items의 모든 name + descriptions 를 소문자 정규화해서 반환."""
+    texts: list[str] = []
+    if isinstance(formats, list):
+        for row in formats:
+            if not isinstance(row, dict):
+                continue
+            name = _pick_first_text(row.get("name"))
+            if name:
+                texts.append(name.strip().lower())
+            for d in (row.get("descriptions") or []):
+                s = str(d).strip().lower()
+                if s:
+                    texts.append(s)
+            t = _pick_first_text(row.get("text"))
+            if t:
+                texts.append(t.strip().lower())
+    return texts
+
+
+def _discogs_is_limited_edition(formats: Any) -> bool | None:
+    """Limited Edition / Deluxe Edition / Special Edition / Club Edition → is_limited_edition."""
+    KEYWORDS = {"limited edition", "limited"}
+    texts = _discogs_format_descriptions_flat(formats)
+    return True if any(t in KEYWORDS for t in texts) else None
+
+
+def _discogs_is_promo(formats: Any) -> bool | None:
+    """Promo description → is_promotional_not_for_sale."""
+    texts = _discogs_format_descriptions_flat(formats)
+    return True if "promo" in texts else None
+
+
+def _discogs_disc_type(formats: Any) -> str | None:
+    """
+    Picture Disc → 'Picture'
+    Etched      → 'Etched'
+    Colored Vinyl / Colour Vinyl → 'Colored'
+    Clear Vinyl  → 'Clear'
+    Shaped Disc  → 'Shaped'
+    """
+    DISC_TYPE_MAP = {
+        "picture disc": "Picture",
+        "etched": "Etched",
+        "colored vinyl": "Colored",
+        "colour vinyl": "Colored",
+        "coloured vinyl": "Colored",
+        "clear vinyl": "Clear",
+        "clear": "Clear",
+        "shaped disc": "Shaped",
+        "shaped": "Shaped",
+    }
+    texts = _discogs_format_descriptions_flat(formats)
+    for t in texts:
+        if t in DISC_TYPE_MAP:
+            return DISC_TYPE_MAP[t]
+    return None
+
+
+def _discogs_is_numbered(formats: Any) -> bool | None:
+    """Numbered description → edition_number 플래그 (번호 자체는 수동 입력)."""
+    texts = _discogs_format_descriptions_flat(formats)
+    return True if "numbered" in texts else None
+
+
 def _discogs_release_type_from_text(format_text: str | None) -> str | None:
     text = str(format_text or "").strip().lower()
     if not text:
@@ -1155,7 +1220,7 @@ def _discogs_format_meta(formats: Any, fallback_format_text: str | None = None) 
                 name = _pick_first_text(row.get("name"))
                 if name:
                     names.append(name)
-                    if media_type is None:
+                    if media_type is None and name not in ("Box Set", "All Media"):
                         media_type = name
                 for desc in _unique_text_list(row.get("descriptions")):
                     descs.append(desc)
@@ -1166,7 +1231,7 @@ def _discogs_format_meta(formats: Any, fallback_format_text: str | None = None) 
                 text = _pick_first_text(row)
                 if text:
                     names.append(text)
-                    if media_type is None:
+                    if media_type is None and text not in ("Box Set", "All Media"):
                         media_type = text
 
     combined = " ".join([*names, *descs, str(fallback_format_text or "")]).strip()
@@ -1181,10 +1246,15 @@ def _discogs_format_meta(formats: Any, fallback_format_text: str | None = None) 
 
 def _pick_artist_from_discogs_title(title: str) -> tuple[str | None, str]:
     # Discogs title often has format: "Artist - Release"
+    # Artist may have disambiguation number like "Artist (2)"
+    import re as _re
     if " - " not in title:
         return None, title
     left, right = title.split(" - ", 1)
-    return left.strip() or None, right.strip() or title
+    artist = left.strip()
+    # Strip Discogs disambiguation number: "Asia (2)" → "Asia"
+    artist = _re.sub(r'\s*\(\d+\)$', '', artist).strip()
+    return artist or None, right.strip() or title
 
 
 def _parse_discogs_candidates(data: dict[str, Any], barcode: str | None, query: str | None) -> list[Candidate]:
@@ -1229,7 +1299,7 @@ def _parse_discogs_candidates(data: dict[str, Any], barcode: str | None, query: 
                 format_name=format_meta.get("format_name")
                 or ((row.get("format") or [None])[0] if isinstance(row.get("format"), list) else row.get("format")),
                 barcode=str(row_barcode) if row_barcode else None,
-                catalog_no=_normalize_catalog_no(row.get("catno")),
+                catalog_no=_normalize_catalog_no(row.get("catno")) or _normalize_catalog_no((row.get("labels") or [{}])[0].get("catno") if row.get("labels") else None),
                 label_name=label_name,
                 cover_image_url=cover_image_url,
                 track_list=[],
@@ -1326,6 +1396,25 @@ def _infer_format_from_aladin_category(category_name: str | None) -> str | None:
     return None
 
 
+def _format_name_to_media_type(format_name: str | None) -> str | None:
+    if not format_name:
+        return None
+    upper = str(format_name).strip().upper()
+    if upper in ("LP", "VINYL"):
+        return "Vinyl"
+    if upper == "CD":
+        return "CD"
+    if upper == "CASSETTE":
+        return "Cassette"
+    if upper == "DIGITAL":
+        return "Digital"
+    if upper == "8TRACK":
+        return "8-Track Cartridge"
+    if upper == "REEL_TO_REEL":
+        return "Reel-to-Reel"
+    return format_name
+
+
 def _infer_format_from_text(format_text: str | None) -> str | None:
     if not format_text:
         return None
@@ -1341,8 +1430,132 @@ def _infer_format_from_text(format_text: str | None) -> str | None:
     if "CD" in upper:
         return "CD"
     if "CASSETTE" in upper or "TAPE" in upper:
-        return "CASSETTE"
+        result = "CASSETTE"
+    else:
+        result = None
+    
+    # Append Box Set if present in descriptions
+    if "BOX SET" in upper or "BOXSET" in upper:
+        result = (result + ", Box Set") if result else "Box Set"
+    
+    return result
+
+
+# --- Wikipedia album review ---
+
+def _clean_review_text(text: str) -> str:
+    """Remove Wikipedia citation markers and tidy whitespace."""
+    import re as _re
+    # [ 1 ], [1], [ citation needed ], [edit], etc.
+    text = _re.sub(r"\[\s*\d+\s*\]", "", text)
+    text = _re.sub(r"\[\s*[a-zA-Z ]{1,30}\s*\]", "", text)
+    # collapse multiple spaces / clean up spacing before punctuation
+    text = _re.sub(r" {2,}", " ", text)
+    text = _re.sub(r" ([.,;:!?])", r"\1", text)
+    return text.strip()
+
+
+def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | None] | None:
+    """Fetch album page extract from Wikipedia API.
+
+    Searches for the album page specifically — not the artist page.
+    Returns None if no album-titled page is found in the top 5 results.
+    Retries once on 429 with a 10-second backoff.
+    """
+    import urllib.request, urllib.parse, json as _json, time as _time
+    query = f"{title} {artist} album"
+    params = urllib.parse.urlencode({
+        "action": "query",
+        "format": "json",
+        "list": "search",
+        "srsearch": query,
+        "srlimit": "5",
+        "srprop": "snippet",
+    })
+    try:
+        req = urllib.request.Request(
+            f"https://en.wikipedia.org/w/api.php?{params}",
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1 (album-review-bot)"},
+        )
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = _json.loads(resp.read())
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt == 0:
+                    _time.sleep(10)
+                    continue
+                raise
+        pages = data.get("query", {}).get("search") or []
+        if not pages:
+            return None
+        title_lower = title.lower()
+        page_title = None
+        import re as _re
+        for page in pages:
+            if _re.search(r'\b' + _re.escape(title_lower) + r'\b', page["title"].lower()):
+                page_title = page["title"]
+                break
+        if not page_title:
+            return None
+        params2 = urllib.parse.urlencode({
+            "action": "query",
+            "format": "json",
+            "prop": "extracts",
+            "exintro": "1",
+            "explaintext": "1",
+            "titles": page_title,
+        })
+        req2 = urllib.request.Request(
+            f"https://en.wikipedia.org/w/api.php?{params2}",
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
+        )
+        with urllib.request.urlopen(req2, timeout=10) as resp2:
+            data2 = _json.loads(resp2.read())
+        pages_data = data2.get("query", {}).get("pages") or {}
+        page_data = next(iter(pages_data.values()), {})
+        extract = page_data.get("extract", "")
+        if extract:
+            return {
+                "review_text": _clean_review_text(extract),
+                "review_source": "WIKIPEDIA",
+                "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title.replace(' ', '_'), safe='()')}",
+            }
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).warning("fetch_wikipedia_album_review failed: %s", exc)
     return None
+
+
+def fetch_review_from_url(url: str) -> str | None:
+    """Fetch and extract main body text from any URL.
+
+    Tries <article>, <main>, then all <p> tags in order.
+    Returns up to 3000 chars, or None on error.
+    """
+    import httpx
+    from bs4 import BeautifulSoup
+    try:
+        resp = httpx.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
+            follow_redirects=True,
+        )
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.content, "html.parser")
+        container = soup.find("article") or soup.find("main") or soup.find("body")
+        if not container:
+            return None
+        paragraphs = container.find_all("p")
+        text = "\n".join(p.get_text(" ", strip=True) for p in paragraphs if p.get_text(strip=True))
+        text = _clean_review_text(text)
+        return text if text else None
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).warning("fetch_review_from_url(%s) failed: %s", url, exc)
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -2045,7 +2258,7 @@ def _fetch_discogs_release_detail(
     return {
         "label_name": label_name,
         "label_items": label_items,
-        "catalog_no": _normalize_catalog_no(data.get("catno")),
+        "catalog_no": _normalize_catalog_no(data.get("catno")) or _normalize_catalog_no((data.get("labels") or [{}])[0].get("catno") if data.get("labels") else None),
         "cover_image_url": cover_image_url,
         "track_list": tracks,
         "track_items": track_items,
@@ -2073,6 +2286,9 @@ def _fetch_discogs_release_detail(
         "disc_count": disc_count,
         "speed_rpm": speed_rpm,
         "has_obi": has_obi,
+        "is_limited_edition": _discogs_is_limited_edition(formats),
+        "is_promotional_not_for_sale": True if _discogs_is_promo(formats) else None,
+        "disc_type": _discogs_disc_type(formats),
         "runout_matrix": runout_matrix,
         "pressing_country": pressing_country,
         "raw_detail": data,
@@ -2425,8 +2641,8 @@ def _fetch_aladin_tracks_from_web(item_id: str, isbn: str) -> list[dict[str, Any
     The TTB API ``OptResult=Tracklist`` rarely returns trackList for music items;
     the Introduce AJAX endpoint is more reliable.
     """
-    url = "https://www.aladin.co.kr/shop/product/getContents.aspx"
-    params = {"ISBN": isbn, "name": "Introduce", "type": "0"}
+    url = f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}"
+    params = {}
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -2475,6 +2691,104 @@ def _fetch_aladin_tracks_from_web(item_id: str, isbn: str) -> list[dict[str, Any
         tracks.append({"position": position, "title": title, "duration": ""})
     return tracks
 
+
+
+def _fetch_aladin_images_from_web(item_id: str, isbn: str) -> list[dict[str, Any]]:
+    """Scrape product description images from Aladin product introduce page."""
+    url = f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}"
+    params = {}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9",
+        "Referer": f"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId={item_id}",
+    }
+    try:
+        import httpx as _httpx
+        with _httpx.Client(follow_redirects=True, headers=headers, timeout=15.0) as client:
+            response = client.get(url)
+            response.raise_for_status()
+            html = response.text
+    except Exception:
+        return []
+
+    import re as _re
+    images: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for m in _re.finditer(r'<img[^>]+(?:src|data-src)="([^"]+)"', html):
+        src = m.group(1)
+        if not src.startswith("http"):
+            if src.startswith("//"):
+                src = "https:" + src
+            else:
+                continue
+        if not any(k in src for k in ("/product/", "/cover", "/img/img_content/")):
+            continue
+        if src in seen:
+            continue
+        seen.add(src)
+        alt_match = _re.search(r'alt="([^"]*)"', m.group(0))
+        alt = alt_match.group(1) if alt_match else ""
+        label = alt or "상세"
+        if "cover500" in src and images:
+            label = "커버"
+        images.append({"type": label, "uri": src})
+
+    # 소개(Introduce) 섹션 AJAX 엔드포인트에서 추가 이미지 수집
+    # 알라딘 상품 소개 HTML은 메인 페이지가 아닌 별도 endpoint로 lazy-load됨:
+    # /shop/product/getContents.aspx?ISBN={isbn}&name=Introduce&type=0
+    # C + 9자리 숫자 형태 (알라딘 이미지 서버 ISBN 패턴, e.g. C002938753)
+    c_isbn_match = _re.search(r'\b(C\d{9})\b', html)
+    if c_isbn_match:
+        c_isbn = c_isbn_match.group(1)
+        import httpx as _httpx
+        from datetime import datetime as _dt
+        intro_url = (
+            f"https://www.aladin.co.kr/shop/product/getContents.aspx"
+            f"?ISBN={c_isbn}&name=Introduce&type=0&date={_dt.now().hour}"
+        )
+        try:
+            intro_headers = {
+                "User-Agent": headers.get("User-Agent", "Mozilla/5.0"),
+                "Accept-Language": "ko-KR,ko;q=0.9",
+                "Referer": url,
+            }
+            with _httpx.Client(timeout=10.0, follow_redirects=True, headers=intro_headers) as ic:
+                ir = ic.get(intro_url)
+                if ir.status_code == 200 and ir.text:
+                    for im in _re.finditer(r'<img[^>]+(?:src|data-src)=["\']([^"\']+)["\']', ir.text):
+                        src = im.group(1).strip()
+                        if src.startswith("//"):
+                            src = "https:" + src
+                        elif not src.startswith("http"):
+                            continue
+                        if "/img/img_content/" not in src and "/product/" not in src:
+                            continue
+                        if src in seen:
+                            continue
+                        seen.add(src)
+                        images.append({"type": "소개", "uri": src})
+        except Exception:
+            pass
+
+    # Probe img_content images using numeric ISBN pattern
+    isbn_match = _re.search(r'ISBN[^0-9]*(\d{9})', html)
+    if isbn_match:
+        isbn = isbn_match.group(1)
+        import httpx as _httpx
+        probe_headers = {"User-Agent": headers.get("User-Agent", "Mozilla/5.0")}
+        probe_url = f"https://image.aladin.co.kr/img/img_content/C{isbn}_P.jpg"
+        if probe_url not in seen:
+            try:
+                with _httpx.Client(timeout=5.0, headers=probe_headers) as pc:
+                    pr = pc.get(probe_url)
+                    if pr.status_code == 200 and "image" in (pr.headers.get("content-type") or ""):
+                        seen.add(probe_url)
+                        images.append({"type": "상세", "uri": probe_url})
+            except Exception:
+                pass
+
+    return images
 
 def fetch_aladin_track_items(item_id: str) -> list[dict[str, Any]]:
     """Public helper: fetch Aladin tracklist for a given ItemId. Returns [] on failure."""
@@ -2569,7 +2883,7 @@ def search_discogs_master_by_query(query: str, limit: int = 10) -> list[dict[str
                 "artist_or_brand": artist,
                 "release_year": _safe_year(row.get("year")),
                 "label_name": _pick_first_text(row.get("label")),
-                "catalog_no": _normalize_catalog_no(row.get("catno")),
+                "catalog_no": _normalize_catalog_no(row.get("catno")) or _normalize_catalog_no((row.get("labels") or [{}])[0].get("catno") if row.get("labels") else None),
                 "barcode": str(row_barcode).strip() if row_barcode else None,
                 "variant_count": None,
                 "confidence": round(confidence, 3),
@@ -2811,18 +3125,32 @@ def _parse_maniadb_release_legend(
     album_title: str | None,
     block_html: str | None = None,
     album_cover_image_url: str | None = None,
+    album_genres: list[str] | None = None,
 ) -> dict[str, Any] | None:
     sid_match = re.search(r"(?:[?&]|&amp;)s=(\d+)", legend_html, re.IGNORECASE)
     fmt_match = re.search(r'alt="([^"]+)"', legend_html, re.IGNORECASE)
-    clean = _clean_html_text(legend_html)
+    # <img alt="..."> 텍스트를 보존한 뒤 HTML 정리
+    legend_with_alt = re.sub(r'<img[^>]+alt="([^"]+)"[^>]*/?>',
+                             lambda m: m.group(1), legend_html, flags=re.IGNORECASE)
+    clean = _clean_html_text(legend_with_alt)
     chunks = [c.strip() for c in clean.split("::") if c.strip()]
-    if len(chunks) < 2:
+    # variant 링크(s=N)가 있으면 유효한 release 블록 — chunks 1개여도 허용
+    if not chunks:
+        return None
+    if len(chunks) < 2 and not re.search(r"(?:[?&]|&amp;)s=\d+", legend_html):
         return None
 
     date_token = chunks[0]
     label_token = chunks[1] if len(chunks) >= 2 else ""
     year = _maniadb_release_year_from_token(date_token)
     released_date = date_token if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_token or "") else None
+
+    # Detect swapped order: if chunk[0] is not a date but chunk[1] is
+    if not released_date and re.fullmatch(r"\d{4}-\d{2}-\d{2}", label_token or ""):
+        released_date = label_token
+        label_token = date_token
+        if not year:
+            year = _maniadb_release_year_from_token(released_date)
 
     label_name = label_token
     catno: str | None = None
@@ -2868,17 +3196,42 @@ def _parse_maniadb_release_legend(
         if image_items and not cover_image_url:
             cover_image_url = _pick_first_text(image_items[0].get("uri"))
         if not image_items:
-            cover_image_url = album_cover_image_url or _maniadb_variant_cover_url(album_id, variant_seq, "f")
-            if cover_image_url:
-                image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
+            # variant 전용 이미지가 없으면 다른 variant의 이미지를 사용하지 않음.
+            # album_cover_image_url은 앨범 페이지의 첫 이미지(다른 variant일 수 있음)이므로 사용하지 않는다.
+            # _maniadb_variant_cover_url로 직접 URL을 추측해 사용 (해당 variant 고유 이미지 경로).
+            guessed = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+            if guessed:
+                cover_image_url = guessed
+                image_items = [{"type": "앞면", "uri": guessed, "uri150": guessed}]
 
+        # class="tracks" 또는 class="trackno"/"song" 구조 모두 처리
         track_block_match = re.search(r'<td\s+class="tracks">(.*?)</td>', block_html, re.IGNORECASE | re.DOTALL)
         if track_block_match:
             track_html = track_block_match.group(1)
             tokens = re.findall(r"\d+\.\s*(?:<[^>]+>\s*)*([^/<]+)", track_html)
             track_list = [t for t in (_clean_html_text(tok) for tok in tokens) if t]
+        else:
+            # ManiaDB 신형 구조: <td class="trackno">N.</td> ... <td class="song">곡명</td>
+            song_cells = re.findall(
+                r'<td[^>]+class="song"[^>]*>(.*?)</td>',
+                block_html, re.IGNORECASE | re.DOTALL,
+            )
+            parsed_titles: list[str] = []
+            for cell in song_cells:
+                # <div class="song"> 안의 <a> 링크 텍스트 추출
+                a_match = re.search(r'<a[^>]*>(.*?)</a>', cell, re.IGNORECASE | re.DOTALL)
+                raw = a_match.group(1) if a_match else cell
+                # &nbsp; / 이미지 태그 제거
+                raw = re.sub(r'&nbsp;', ' ', raw, flags=re.IGNORECASE)
+                raw = re.sub(r'<img[^>]*/>', '', raw, flags=re.IGNORECASE)
+                title = _clean_html_text(raw).strip()
+                if title:
+                    parsed_titles.append(title)
+            track_list = parsed_titles
     else:
-        cover_image_url = album_cover_image_url or _maniadb_variant_cover_url(album_id, variant_seq, "f")
+        # block_html 없는 경우: variant 고유 URL만 시도
+        guessed = _maniadb_variant_cover_url(album_id, variant_seq, "f")
+        cover_image_url = guessed or None
         if cover_image_url:
             image_items = [{"type": "앞면", "uri": cover_image_url, "uri150": cover_image_url}]
 
@@ -2894,7 +3247,7 @@ def _parse_maniadb_release_legend(
         "media_type": format_name,
         "release_type": None,
         "domain_code": "KOREA",
-        "genres": [],
+        "genres": album_genres or [],
         "styles": [],
         "label_name": label_name,
         "catalog_no": catno,
@@ -3268,6 +3621,13 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
 
     album_artist, album_title = _parse_maniadb_album_header(html_text)
     album_cover_image_url = _extract_maniadb_album_page_cover_image_url(html_text, album_id=album_id)
+
+    # Extract genre/style info from album page (outside variant blocks)
+    genre_match = re.search(r'GENRE/STYLE:\s*</td>\s*<td class="label-text">(.*?)</td>', html_text, re.DOTALL)
+    album_genres: list[str] = []
+    if genre_match:
+        album_genres = [g.strip() for g in re.findall(r'<aa[^>]*>([^<]+)</a>', genre_match.group(1)) if g.strip()]
+
     block_pattern = re.compile(r"<fieldset[^>]*>(.*?)</fieldset>", re.IGNORECASE | re.DOTALL)
     out: list[dict[str, Any]] = []
     for block in block_pattern.finditer(html_text):
@@ -3282,6 +3642,7 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
             album_title=album_title,
             block_html=block_html,
             album_cover_image_url=album_cover_image_url,
+            album_genres=album_genres,
         )
         if parsed is None:
             continue
@@ -4407,7 +4768,7 @@ def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any]
             "catalog_no": None,
             "barcode": barcode,
             "format_name": format_name,
-            "media_type": None,
+            "media_type": _format_name_to_media_type(format_name),
             "release_type": None,
             "domain_code": infer_domain_code(
                 country="KR",

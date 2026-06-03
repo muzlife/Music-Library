@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 # --- Constants ----------------------------------------------------------- #
-AUTH_COOKIE_NAME = "hahahoho_session"
+AUTH_COOKIE_NAME = "__PROJECT_SLUG___session"
 AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 14  # 14 days
 AUTH_ROLE_ADMIN = "ADMIN"
 AUTH_ROLE_OPERATOR = "OPERATOR"

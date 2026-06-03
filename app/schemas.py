@@ -28,11 +28,11 @@ ReviewStatus = Literal["AUTO_APPROVED", "NEEDS_REVIEW", "APPROVED", "REJECTED"]
 AssetType = Literal["AUDIO", "IMAGE", "DOCUMENT", "VIDEO"]
 LinkType = Literal["FULL_ALBUM", "TRACK", "SCAN", "REFERENCE", "PROOF"]
 ExternalSourceCode = Literal["DISCOGS", "MANIADB", "ALADIN"]
-AlbumMasterSource = Literal["AUTO", "DISCOGS", "MANIADB"]
-AlbumMasterBoundSource = Literal["DISCOGS", "MANIADB", "MANUAL"]
+AlbumMasterSource = Literal["AUTO", "DISCOGS", "MANIADB", "MUSICBRAINZ"]
+AlbumMasterBoundSource = Literal["DISCOGS", "MANIADB", "MANUAL", "MUSICBRAINZ"]
 MetadataSearchSource = Literal["AUTO", "DISCOGS", "ALADIN", "MANIADB", "MUSICBRAINZ"]
 MetadataSyncSource = Literal["ALL", "DISCOGS", "MANIADB", "ALADIN"]
-DomainCode = Literal["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"]
+DomainCode = Literal["KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD", "WORLD_OTHER", "UNKNOWN"]
 ReleaseType = Literal["ALBUM", "EP", "SINGLE"]
 ClassificationOptionGroup = Literal["SUBTYPE", "SOUNDTRACK"]
 MusicCategory = Literal["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"]
@@ -76,6 +76,7 @@ class MetadataCandidate(BaseModel):
     release_type: ReleaseType | None = None
     domain_code: DomainCode | None = None
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     styles: list[str] = Field(default_factory=list)
     disc_count: int | None = None
     speed_rpm: int | None = None
@@ -346,6 +347,8 @@ class OperatorCatalogSearchItem(BaseModel):
     master_domain_code: str | None = None      # album_master.domain_code (자동 추정값)
     override_domain_code: str | None = None    # 수동 확정 여부 (not null → 확정)
     sort_artist_name: str | None = None        # album_master.sort_artist_name (교정 UI 표시)
+    review_text: str | None = None
+    review_source: str | None = None
 
 
 class OperatorCatalogSearchResponse(BaseModel):
@@ -374,6 +377,7 @@ class ArtistContextResponse(BaseModel):
     country: str | None = None
     active_years: str | None = None
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     links: list[ArtistContextLink] = Field(default_factory=list)
 
 
@@ -430,6 +434,21 @@ class OfficeClimateResponse(BaseModel):
     temperature_low_c: float | None = None
     weather_code: int | None = None
     is_day: bool | None = None
+    updated_at: str | None = None
+
+
+
+class ClimateCompareResponse(BaseModel):
+    indoor_available: bool = False
+    indoor_temperature_c: float | None = None
+    indoor_humidity_percent: float | None = None
+    indoor_comfort_label: str | None = None
+    outdoor_available: bool = False
+    outdoor_temperature_c: float | None = None
+    outdoor_humidity_percent: float | None = None
+    outdoor_weather_desc: str | None = None
+    outdoor_temperature_high_c: float | None = None
+    outdoor_temperature_low_c: float | None = None
     updated_at: str | None = None
 
 
@@ -667,6 +686,7 @@ class AlbumMasterVariantItem(BaseModel):
     domain_code: DomainCode | None = None
     genres: list[str] = Field(default_factory=list)
     styles: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     label_name: str | None = None
     catalog_no: str | None = None
     barcode: str | None = None
@@ -816,6 +836,7 @@ class AlbumMasterImportVariantsRequest(BaseModel):
     release_type: ReleaseType | None = None
     purchase_source: str | None = None
     memory_note: str | None = None
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)
     skip_if_owned: bool = True
@@ -907,10 +928,15 @@ class AlbumMasterListItem(BaseModel):
     first_member_column_code: str | None = None
     first_member_cell_code: str | None = None
     matched_track_preview: list[str] = Field(default_factory=list)
+    genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     spotify_album_id: str | None = None
     spotify_album_uri: str | None = None
     spotify_matched_at: str | None = None
     spotify_image_url: str | None = None
+    review_text: str | None = None
+    review_source: str | None = None
+    review_url: str | None = None
     updated_at: str
 
 
@@ -944,6 +970,7 @@ class MusicDetailCreate(BaseModel):
     track_list: list[str] = Field(default_factory=list)
     media_type: str | None = None
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     styles: list[str] = Field(default_factory=list)
     cover_condition: str | None = None
     disc_condition: str | None = None
@@ -992,6 +1019,18 @@ class GoodsDetailCreate(BaseModel):
     hat_size: str | None = None
 
 
+class OwnedItemRelationItem(BaseModel):
+    relation_type: str
+    target_kind: str
+    target_ref: str
+    display_order: int | None = None
+    note: str | None = None
+
+
+class OwnedItemRelationSaveRequest(BaseModel):
+    relations: list[OwnedItemRelationItem] = Field(default_factory=list)
+
+
 class OwnedItemCreate(BaseModel):
     category: ItemCategory
     size_group: SizeGroup
@@ -1023,6 +1062,7 @@ class OwnedItemCreate(BaseModel):
     storage_slot_id: int | None = None
     thickness_mm: int | None = Field(default=None, ge=0)
     notes: str | None = None
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)
 
@@ -1079,11 +1119,13 @@ class OwnedItemListItem(BaseModel):
     goods_primary_image_url: str | None = None
     track_list: list[str] = Field(default_factory=list)
     genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     cover_condition: str | None = None
     disc_condition: str | None = None
     is_promotional_not_for_sale: bool | None = None
     has_audio: bool = False
     audio_asset_count: int = 0
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     subtype_labels: list[str] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)
@@ -1309,12 +1351,14 @@ class CollectionDashboardResponse(BaseModel):
     lost_items: int = 0
     genre_missing_items: int = 0
     media_missing_items: int = 0
+    category_size_mismatch_items: int = 0
     catalog_missing_items: int = 0
     limited_items: int = 0
     new_items: int = 0
     promo_items: int = 0
     other_condition_items: int = 0
     multi_disc_items: int = 0
+    box_set_items: int = 0
     obi_items: int = 0
     import_queue_size: int = 0
     by_artist: list[CollectionArtistCount] = Field(default_factory=list)
@@ -1454,6 +1498,8 @@ class AlbumMasterCorrectionUpdateRequest(BaseModel):
     override_note: str | None = None
     override_title: str | None = None
     override_artist_or_brand: str | None = None
+    genres: list[str] | None = None
+    styles: list[str] | None = None
 
 
 class AlbumMasterCorrectionUpdateResponse(BaseModel):
@@ -1468,6 +1514,8 @@ class AlbumMasterCorrectionUpdateResponse(BaseModel):
     override_title: str | None = None
     override_artist_or_brand: str | None = None
     has_manual_correction: bool = False
+    genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
 
 
 class OwnedItemDetailResponse(BaseModel):
@@ -1506,6 +1554,7 @@ class OwnedItemDetailResponse(BaseModel):
     goods_detail: GoodsDetailCreate | None = None
     has_audio: bool = False
     audio_asset_count: int = 0
+    local_image_items: list[dict[str, Any]] = Field(default_factory=list)
     subtype_option_ids: list[int] = Field(default_factory=list)
     subtype_labels: list[str] = Field(default_factory=list)
     soundtrack_option_ids: list[int] = Field(default_factory=list)

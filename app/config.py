@@ -12,6 +12,7 @@ class Settings:
     discogs_token: str | None
     aladin_ttb_key: str | None
     deepl_auth_key: str | None
+    deepseek_api_key: str | None
     aladin_base_url: str
     aladin_lookup_url: str
     maniadb_base_url: str
@@ -37,6 +38,7 @@ class Settings:
     spotify_client_id: str
     spotify_client_secret: str
     spotify_redirect_uri: str
+    spotify_batch_webhook_token: str | None
 
 
 def _default_db_path() -> str:
@@ -83,6 +85,7 @@ def get_settings() -> Settings:
         discogs_token=os.getenv("DISCOGS_TOKEN"),
         aladin_ttb_key=os.getenv("ALADIN_TTB_KEY"),
         deepl_auth_key=os.getenv("DEEPL_AUTH_KEY"),
+        deepseek_api_key=(os.getenv("DEEPSEEK_API_KEY") or "").strip() or None,
         aladin_base_url=os.getenv(
             "ALADIN_BASE_URL",
             "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx",
@@ -101,11 +104,11 @@ def get_settings() -> Settings:
         ),
         discogs_user_agent=os.getenv(
             "DISCOGS_USER_AGENT",
-            "hahahoho-library/0.1 (contact: your-email@example.com)",
+            "__PROJECT_SLUG__-library/0.1 (contact: your-email@example.com)",
         ),
         musicbrainz_user_agent=os.getenv(
             "MUSICBRAINZ_USER_AGENT",
-            "hahahoho-library/0.1 (contact: your-email@example.com)",
+            "__PROJECT_SLUG__-library/0.1 (contact: your-email@example.com)",
         ),
         confidence_auto_approve=float(os.getenv("MATCH_CONFIDENCE_AUTO_APPROVE", "0.90")),
         confidence_review=float(os.getenv("MATCH_CONFIDENCE_REVIEW", "0.60")),
@@ -129,15 +132,16 @@ def get_settings() -> Settings:
         auth_session_secret=(os.getenv("LIBRARY_AUTH_SESSION_SECRET") or "change-this-library-session-secret").strip(),
         auth_cookie_secure=_env_flag("LIBRARY_AUTH_COOKIE_SECURE", default=False),
         purchase_import_webhook_token=(os.getenv("LIBRARY_PURCHASE_IMPORT_TOKEN") or "").strip() or None,
-        home_assistant_base_url=(os.getenv("HOME_ASSISTANT_BASE_URL") or "https://ha.muzlife.com").strip(),
+        home_assistant_base_url=(os.getenv("HOME_ASSISTANT_BASE_URL") or "https://__HA_DOMAIN__").strip(),
         home_assistant_token=(os.getenv("HOME_ASSISTANT_TOKEN") or "").strip() or None,
         office_climate_temperature_entity_id=(
-            os.getenv("OFFICE_CLIMATE_TEMPERATURE_ENTITY_ID") or "sensor.on_seubdogye_temperature"
+            os.getenv("OFFICE_CLIMATE_TEMPERATURE_ENTITY_ID") or "__HA_TEMP_SENSOR__"
         ).strip(),
         office_climate_humidity_entity_id=(
-            os.getenv("OFFICE_CLIMATE_HUMIDITY_ENTITY_ID") or "sensor.on_seubdogye_humidity"
+            os.getenv("OFFICE_CLIMATE_HUMIDITY_ENTITY_ID") or "__HA_HUMIDITY_SENSOR__"
         ).strip(),
         spotify_client_id=(os.getenv("SPOTIFY_CLIENT_ID") or "").strip(),
         spotify_client_secret=(os.getenv("SPOTIFY_CLIENT_SECRET") or "").strip(),
         spotify_redirect_uri=(os.getenv("SPOTIFY_REDIRECT_URI") or "http://localhost:8100/spotify/callback").strip(),
+        spotify_batch_webhook_token=(os.getenv("SPOTIFY_BATCH_WEBHOOK_TOKEN") or "").strip() or None,
     )

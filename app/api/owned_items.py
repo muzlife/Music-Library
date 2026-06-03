@@ -81,6 +81,7 @@ router = APIRouter(tags=["owned-items"])
 # a silent runtime NameError inside a route handler.
 from app.main import (  # noqa: E402
     MUSIC_CATEGORIES,
+    OwnedItemRelationSaveRequest,
     RELEASE_TYPES,
     SIZE_GROUP_CODES,
     _apply_discogs_korean_artist_name_to_owned_item,
@@ -143,6 +144,8 @@ def get_owned_items(
     slot_state: str = Query(default="ANY", pattern="^(ANY|SLOTTED|UNSLOTTED)$"),
     preferred_storage_state: str = Query(default="ANY", pattern="^(ANY|MISMATCH|MATCH)$"),
     track_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
+    media_format_state: str = Query(default="ANY", pattern="^(ANY|MISSING|HAS)$"),
+    size_group_state: str = Query(default="ANY", pattern="^(ANY|MISMATCH|MATCH)$"),
     music_only: bool = Query(default=False),
     sort: str = Query(default="DISPLAY", pattern="^(DISPLAY|RECENT)$"),
     include_total: bool = Query(default=False),
@@ -170,6 +173,8 @@ def get_owned_items(
         sort=sort,
         limit=limit,
         offset=offset,
+        media_format_state=media_format_state,
+        size_group_state=size_group_state,
     )
     if include_total:
         total = db.count_owned_items(
@@ -190,6 +195,8 @@ def get_owned_items(
             preferred_storage_state=preferred_storage_state,
             track_state=track_state,
             music_only=music_only,
+            media_format_state=media_format_state,
+            size_group_state=size_group_state,
         )
         response.headers["X-Total-Count"] = str(total)
     return [_to_owned_item_list_item(row) for row in rows]
@@ -833,6 +840,460 @@ def duplicate_owned_item(
     )
 
 
+def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> None:
+    """Schedule background image download for a newly created item."""
+    import threading
+    from pathlib import Path
+    from app.services.image_store import download_images
+    from ..db import get_conn
+    source = (payload.source_code or "").strip().upper()
+    if not source or source == "MANUAL":
+        return
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    source_ext_id = str(payload.source_external_id or "").strip() or None
+    music = payload.music_detail  # image data lives under music_detail, not at payload top level
+
+    def _run():
+        try:
+            items: list[dict] = []
+
+            # 1. music_detail.image_items — Discogs 상세 로드 시 채워짐
+            if music and music.image_items:
+                items = [
+                    {"type": it.get("type") or "추가", "uri": it.get("uri") or ""}
+                    for it in music.image_items if it.get("uri")
+                ]
+
+            # 2. music_detail.cover_image_url — Discogs thumbnail, Aladin 커버
+            cover = str((music.cover_image_url if music else None) or "").strip()
+            if cover and not any(it.get("uri") == cover for it in items):
+                items.insert(0, {"type": "앞면", "uri": cover})
+
+            # 3. ManiaDB: 검색 결과에는 이미지 없음 → snapshot에서 가져오기
+            #    snapshot에도 뒷면이 없으면 URL 패턴(_b.jpg)으로 뒷면 추가 시도
+            if source == "MANIADB" and source_ext_id and not items:
+                try:
+                    from app import main as _main_mod
+                    snap = _main_mod.get_source_release_snapshot(source="MANIADB", external_id=source_ext_id)
+                    snap_images = list((snap or {}).get("image_items") or [])
+                    snap_cover = str((snap or {}).get("cover_image_url") or "").strip()
+                    if snap_images:
+                        items = [{"type": it.get("type") or "추가", "uri": it.get("uri") or ""} for it in snap_images if it.get("uri")]
+                    elif snap_cover:
+                        items = [{"type": "앞면", "uri": snap_cover}]
+                    # 뒷면이 없으면 _f.jpg → _b.jpg 패턴으로 뒷면 URL 추가 시도
+                    has_back = any("뒷면" in (it.get("type") or "") for it in items)
+                    if not has_back and items:
+                        from app.services.providers import _maniadb_variant_cover_url, _extract_maniadb_album_id
+                        import re as _re
+                        album_id = _extract_maniadb_album_id(source_ext_id)
+                        seq_match = _re.search(r":(\d+)$", source_ext_id)
+                        variant_seq = seq_match.group(1) if seq_match else "1"
+                        back_url = _maniadb_variant_cover_url(album_id or "", variant_seq, "b") if album_id else None
+                        if back_url:
+                            items.append({"type": "뒷면", "uri": back_url})
+                except Exception:
+                    pass
+
+            # 4. Aladin: 상품 상세 페이지에서 추가 이미지 스크레이핑
+            if source == "ALADIN" and source_ext_id:
+                try:
+                    from app.services.providers import _fetch_aladin_images_from_web
+                    extra = _fetch_aladin_images_from_web(source_ext_id, source_ext_id)
+                    items.extend(extra)
+                except Exception:
+                    pass
+
+            if items:
+                download_images(
+                    owned_item_id=owned_item_id,
+                    image_items=items,
+                    source=source,
+                    static_dir=static_dir,
+                    source_external_id=source_ext_id,
+                )
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+
+
+@router.post("/refresh-images")
+def refresh_images(request: Request, owned_item_id: int | None = None, limit: int = 100) -> dict[str, Any]:
+    """Refresh downloaded images for items."""
+    from pathlib import Path
+    from app.services.image_store import download_images
+    from ..db import get_conn
+    import sqlite3
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    refreshed = skipped = 0
+    if owned_item_id:
+        row = db.get_owned_item_detail(owned_item_id)
+        if not row: raise HTTPException(status_code=404, detail="not found")
+        items = [row]
+    else:
+        with get_conn() as conn:
+            conn.row_factory = sqlite3.Row
+            items = conn.execute("SELECT id,source_code,cover_image_url,source_external_id FROM owned_item WHERE cover_image_url IS NOT NULL AND cover_image_url!='' ORDER BY id DESC LIMIT ?",(limit,)).fetchall()
+    for row in items:
+        oid = int(row["id"]); src = str(row.get("source_code") or "").strip().upper()
+        url = str(row.get("cover_image_url") or "").strip()
+        ext_id = str(row.get("source_external_id") or "").strip() or None
+        if not url.startswith("http"): skipped += 1; continue
+        img_items = [{"type":"앞면","uri":url}]
+        if src == "ALADIN" and ext_id:
+            try:
+                from app.services.providers import _fetch_aladin_images_from_web
+                extra = _fetch_aladin_images_from_web(ext_id, ext_id)
+                img_items.extend(extra)
+            except Exception: pass
+        try:
+            r = download_images(owned_item_id=oid, image_items=img_items, source=src, static_dir=static_dir, source_external_id=ext_id)
+            if r:
+                import json as _json
+                with get_conn() as conn2:
+                    conn2.execute(
+                        "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
+                        (_json.dumps(r, ensure_ascii=False), oid)
+                    )
+                refreshed += 1
+            else:
+                skipped += 1
+        except Exception: skipped += 1
+    return {"refreshed": refreshed, "skipped": skipped}
+
+
+# ── Aladin 이미지 백필 워커 ────────────────────────────────────────────────
+import threading as _threading
+
+_ALADIN_BACKFILL_LOCK = _threading.Lock()
+_ALADIN_BACKFILL_STATE: dict = {
+    "running": False,
+    "total": 0,
+    "done": 0,
+    "skipped": 0,
+    "errors": 0,
+    "last_error": None,
+    "finished_at": None,
+}
+
+
+def _aladin_backfill_worker(dry_run: bool, sleep_sec: float) -> None:
+    """백그라운드 Aladin 이미지 백필 워커."""
+    import json as _json
+    import time as _time
+    from pathlib import Path
+    from app.services.image_store import download_images
+    from app.services.providers import _fetch_aladin_images_from_web, search_aladin_by_barcode
+    from ..db import get_conn
+    import sqlite3 as _sqlite3
+
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+
+    with get_conn() as conn:
+        conn.row_factory = _sqlite3.Row
+        # Case 1: ALADIN 소스 + 이미지 없는 항목
+        aladin_rows = conn.execute("""
+            SELECT oi.id, oi.source_external_id, mid.cover_image_url
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE oi.source_code = 'ALADIN'
+              AND oi.source_external_id IS NOT NULL
+              AND oi.source_external_id != ''
+              AND (mid.local_image_items_json IS NULL OR mid.local_image_items_json = '[]')
+            ORDER BY oi.id DESC
+        """).fetchall()
+        # Case 2: 880 바코드 + 2020 이후 + 비알라딘 + 이미지 없는 항목
+        cross_rows = conn.execute("""
+            SELECT oi.id, mid.barcode, mid.cover_image_url
+            FROM owned_item oi
+            JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE (oi.source_code IS NULL OR oi.source_code != 'ALADIN')
+              AND mid.barcode LIKE '880%'
+              AND mid.release_year >= 2020
+              AND (mid.local_image_items_json IS NULL OR mid.local_image_items_json = '[]')
+            ORDER BY oi.id DESC
+        """).fetchall()
+
+    all_items = [("aladin", dict(r)) for r in aladin_rows] + [("cross", dict(r)) for r in cross_rows]
+    _ALADIN_BACKFILL_STATE.update({"total": len(all_items), "done": 0, "skipped": 0, "errors": 0, "last_error": None})
+
+    import logging as _logging
+    logger = _logging.getLogger(__name__)
+
+    for kind, row in all_items:
+        if not _ALADIN_BACKFILL_STATE.get("running"):
+            break  # 외부에서 중단 요청 (/stop 호출 시)
+
+        oid = int(row["id"])
+        try:
+            img_items: list[dict] = []
+
+            if kind == "aladin":
+                ext_id = str(row.get("source_external_id") or "").strip()
+                cover = str(row.get("cover_image_url") or "").strip()
+                if cover:
+                    img_items.append({"type": "앞면", "uri": cover})
+                if ext_id:
+                    try:
+                        extra = _fetch_aladin_images_from_web(ext_id, ext_id)
+                        img_items.extend(extra)
+                    except Exception as exc:
+                        logger.warning("aladin backfill fetch error oid=%d: %s", oid, exc)
+                source = "ALADIN"
+                ext_id_for_dl = ext_id
+
+            else:  # cross
+                barcode = str(row.get("barcode") or "").strip()
+                if not barcode:
+                    _ALADIN_BACKFILL_STATE["skipped"] += 1
+                    continue
+                try:
+                    candidates = search_aladin_by_barcode(barcode, limit=1)
+                except Exception:
+                    candidates = []
+                if not candidates:
+                    _ALADIN_BACKFILL_STATE["skipped"] += 1
+                    _time.sleep(sleep_sec)
+                    continue
+                best = candidates[0]
+                aladin_id = str(best.get("external_id") or "").strip()
+                cover = str(best.get("cover_image_url") or "").strip()
+                if cover:
+                    img_items.append({"type": "앞면", "uri": cover})
+                if aladin_id:
+                    try:
+                        extra = _fetch_aladin_images_from_web(aladin_id, aladin_id)
+                        img_items.extend(extra)
+                    except Exception as exc:
+                        logger.warning("aladin cross-fetch error oid=%d: %s", oid, exc)
+                source = "ALADIN"
+                ext_id_for_dl = aladin_id
+
+            if not img_items:
+                _ALADIN_BACKFILL_STATE["skipped"] += 1
+                _time.sleep(sleep_sec * 0.5)
+                continue
+
+            if not dry_run:
+                downloaded = download_images(
+                    owned_item_id=oid,
+                    image_items=img_items,
+                    source=source,
+                    static_dir=static_dir,
+                    source_external_id=ext_id_for_dl or None,
+                )
+                if downloaded:
+                    with get_conn() as wconn:
+                        wconn.execute(
+                            "UPDATE music_item_detail SET local_image_items_json=? WHERE owned_item_id=?",
+                            (_json.dumps(downloaded, ensure_ascii=False), oid),
+                        )
+                    _ALADIN_BACKFILL_STATE["done"] += 1
+                else:
+                    _ALADIN_BACKFILL_STATE["skipped"] += 1
+            else:
+                _ALADIN_BACKFILL_STATE["done"] += 1
+
+        except Exception as exc:
+            _ALADIN_BACKFILL_STATE["errors"] += 1
+            _ALADIN_BACKFILL_STATE["last_error"] = f"oid={oid}: {exc}"
+            logger.warning("aladin backfill error oid=%d: %s", oid, exc)
+
+        _time.sleep(sleep_sec)
+
+    from datetime import datetime, timezone
+    _ALADIN_BACKFILL_STATE["running"] = False
+    _ALADIN_BACKFILL_STATE["finished_at"] = datetime.now(timezone.utc).isoformat()
+
+
+@router.get("/aladin-image-backfill/status")
+def get_aladin_image_backfill_status(request: Request) -> dict:
+    _require_admin_request(request)
+    return dict(_ALADIN_BACKFILL_STATE)
+
+
+@router.post("/aladin-image-backfill/run")
+def run_aladin_image_backfill(
+    request: Request,
+    dry_run: bool = False,
+    sleep_sec: float = 1.5,
+) -> dict:
+    _require_admin_request(request)
+    if _ALADIN_BACKFILL_STATE.get("running"):
+        raise HTTPException(status_code=409, detail="aladin image backfill already running")
+    _ALADIN_BACKFILL_STATE["running"] = True
+    t = _threading.Thread(
+        target=_aladin_backfill_worker,
+        kwargs={"dry_run": dry_run, "sleep_sec": sleep_sec},
+        name="aladin-image-backfill",
+        daemon=True,
+    )
+    t.start()
+    return {"status": "started", "dry_run": dry_run, "sleep_sec": sleep_sec}
+
+
+@router.post("/aladin-image-backfill/stop")
+def stop_aladin_image_backfill(request: Request) -> dict:
+    _require_admin_request(request)
+    _ALADIN_BACKFILL_STATE["running"] = False
+    return {"status": "stop_requested"}
+
+
+def _load_local_image_items(owned_item_id: int) -> list[dict]:
+    """music_item_detail.local_image_items_json 읽기."""
+    import json as _json
+    from ..db import get_conn
+    import sqlite3
+    with get_conn() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT local_image_items_json FROM music_item_detail WHERE owned_item_id=?",
+            (owned_item_id,),
+        ).fetchone()
+    if not row or not row["local_image_items_json"]:
+        return []
+    try:
+        items = _json.loads(row["local_image_items_json"])
+        return items if isinstance(items, list) else []
+    except Exception:
+        return []
+
+
+def _save_local_image_items(owned_item_id: int, items: list[dict]) -> None:
+    """music_item_detail.local_image_items_json 저장 (upsert)."""
+    import json as _json
+    from ..db import get_conn
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO music_item_detail (owned_item_id, local_image_items_json)
+               VALUES (?, ?)
+               ON CONFLICT(owned_item_id) DO UPDATE SET local_image_items_json=excluded.local_image_items_json""",
+            (owned_item_id, _json.dumps(items, ensure_ascii=False)),
+        )
+
+
+@router.post("/owned-items/{owned_item_id}/images/upload")
+async def upload_owned_item_image(
+    owned_item_id: int,
+    request: Request,
+    image_type: str = Query(default="추가"),
+) -> dict:
+    """관리자가 직접 이미지 파일을 업로드합니다 (multipart/form-data)."""
+    from fastapi import UploadFile
+    from pathlib import Path
+    from app.services.image_store import _filename, _image_dir
+    import hashlib
+    _require_admin_request(request)
+    row = db.get_owned_item(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    form = await request.form()
+    file = form.get("file")
+    if file is None or not hasattr(file, "read"):
+        raise HTTPException(status_code=400, detail="file field required")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty file")
+    if len(raw) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="file too large (max 20MB)")
+
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    img_dir = _image_dir(static_dir, owned_item_id)
+    url_hash = hashlib.md5(raw).hexdigest()[:12]
+    content_type = str(getattr(file, "content_type", "") or "")
+    ext = ".jpg"
+    if "png" in content_type or (getattr(file, "filename", "") or "").lower().endswith(".png"):
+        ext = ".png"
+    elif "webp" in content_type or (getattr(file, "filename", "") or "").lower().endswith(".webp"):
+        ext = ".webp"
+    elif "gif" in content_type:
+        ext = ".gif"
+
+    existing = _load_local_image_items(owned_item_id)
+    idx = len(existing)
+    fname = f"{idx:03d}_{url_hash}_upload{ext}"
+    local_file = img_dir / fname
+    local_file.write_bytes(raw)
+    local_path = f"/ui-static/images/owned/{owned_item_id}/{fname}"
+
+    item = {
+        "type": str(image_type or "추가").strip() or "추가",
+        "local_path": local_path,
+        "source_url": None,
+        "source": "MANUAL",
+    }
+    existing.append(item)
+    _save_local_image_items(owned_item_id, existing)
+    _audit(request, "owned_item", owned_item_id, "IMAGE_UPLOAD")
+    return {"local_path": local_path, "index": idx, "items": existing}
+
+
+@router.post("/owned-items/{owned_item_id}/images/add-url")
+def add_owned_item_image_url(
+    owned_item_id: int,
+    request: Request,
+    url: str = Query(...),
+    image_type: str = Query(default="추가"),
+) -> dict:
+    """URL을 입력하면 서버가 다운로드해 저장합니다."""
+    from pathlib import Path
+    from app.services.image_store import download_images
+    _require_admin_request(request)
+    row = db.get_owned_item(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="url must start with http")
+
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    source = str(row.get("source_code") or "MANUAL").strip().upper() or "MANUAL"
+    ext_id = str(row.get("source_external_id") or "").strip() or None
+    image_type_clean = str(image_type or "추가").strip() or "추가"
+
+    existing = _load_local_image_items(owned_item_id)
+    downloaded = download_images(
+        owned_item_id=owned_item_id,
+        image_items=[{"type": image_type_clean, "uri": url}],
+        source=source,
+        static_dir=static_dir,
+        source_external_id=ext_id,
+    )
+    if not downloaded:
+        raise HTTPException(status_code=400, detail="image download failed — check the URL")
+
+    new_item = downloaded[0]
+    # 중복 local_path 방지
+    if not any(it.get("local_path") == new_item.get("local_path") for it in existing):
+        existing.append(new_item)
+        _save_local_image_items(owned_item_id, existing)
+    _audit(request, "owned_item", owned_item_id, "IMAGE_URL_ADD")
+    return {"local_path": new_item.get("local_path"), "index": len(existing) - 1, "items": existing}
+
+
+@router.delete("/owned-items/{owned_item_id}/images/{index}")
+def delete_owned_item_image(
+    owned_item_id: int,
+    index: int,
+    request: Request,
+) -> dict:
+    """로컬 이미지를 목록에서 제거합니다 (파일은 보존)."""
+    _require_admin_request(request)
+    row = db.get_owned_item(owned_item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="owned_item not found")
+
+    existing = _load_local_image_items(owned_item_id)
+    if index < 0 or index >= len(existing):
+        raise HTTPException(status_code=404, detail=f"image index {index} not found")
+
+    removed = existing.pop(index)
+    _save_local_image_items(owned_item_id, existing)
+    _audit(request, "owned_item", owned_item_id, "IMAGE_DELETE")
+    return {"removed": removed, "items": existing}
+
+
 @router.post("/owned-items", response_model=OwnedItemCreateResponse)
 def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCreateResponse:
     _validate_signature(payload)
@@ -906,6 +1367,10 @@ def create_owned_item(payload: OwnedItemCreate, request: Request) -> OwnedItemCr
         notices.insert(0, f"동일 상품 복제본 {create_count}건을 개별 인스턴스로 생성했습니다. (owned_item_id: {shown_ids}{tail})")
 
     first_id = int(created_ids[0])
+
+    # Background image download for newly created items
+    _schedule_image_download(first_id, payload)
+
     return OwnedItemCreateResponse(
         owned_item_id=first_id,
         label_id=_build_label_id(payload.category, first_id),
@@ -1094,6 +1559,7 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
             "format_items": row.get("format_items") or [],
             "track_items": row.get("track_items") or [],
             "label_items": row.get("label_items") or [],
+            "local_image_items": row.get("local_image_items") or [],
             "cover_condition": row.get("cover_condition"),
             "disc_condition": row.get("disc_condition"),
         }
@@ -1113,6 +1579,8 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
                 "cup_material": cup_material,
                 "hat_size": hat_size,
             }
+
+    local_image_items = row.get("local_image_items") or []
 
     return OwnedItemDetailResponse(
         id=int(row["id"]),
@@ -1154,6 +1622,7 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
         subtype_labels=row.get("subtype_labels") or [],
         soundtrack_option_ids=row.get("soundtrack_option_ids") or [],
         soundtrack_labels=row.get("soundtrack_labels") or [],
+        local_image_items=local_image_items,
     )
 
 

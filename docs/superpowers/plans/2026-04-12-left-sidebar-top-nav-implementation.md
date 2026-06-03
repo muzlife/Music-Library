@@ -13,15 +13,15 @@
 ## File Map
 
 **Modify:**
-- `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
-- `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
+- `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_ops_shell_bootstrap.py`
 
 ---
 
 ### Task 1: Add Failing Tests for Left Sidebar Navigation
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_ops_shell_bootstrap.py`
 
 - [ ] **Step 1: Add failing tests**
 
@@ -66,7 +66,7 @@ Expected: FAIL (sidebar structure not yet present).
 ### Task 2: Implement Left Sidebar Layout + Responsive Behavior
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
 
 - [ ] **Step 1: Add structural wrapper**
 
@@ -150,8 +150,8 @@ Expected: PASS.
 - [ ] **Step 11: Commit**
 
 ```bash
-git add /Volumes/Data/Works/07.hahahoho/app/static/index.html \
-        /Volumes/Data/Works/07.hahahoho/tests/test_ops_shell_bootstrap.py
+git add /Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html \
+        /Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_ops_shell_bootstrap.py
 git commit -m "style: move primary nav to left sidebar"
 ```
 

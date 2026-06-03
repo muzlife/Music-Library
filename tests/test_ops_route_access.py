@@ -78,16 +78,16 @@ def test_system_status_uses_forwarded_qa_host_for_external_urls(admin_client):
     response = admin_client.get(
         "/system/status",
         headers={
-            "host": "qa-library.muzlife.com",
-            "x-forwarded-host": "qa-library.muzlife.com",
+            "host": "__QA_DOMAIN__",
+            "x-forwarded-host": "__QA_DOMAIN__",
             "x-forwarded-proto": "https",
         },
     )
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["external_login_url"] == "https://qa-library.muzlife.com/login"
-    assert payload["external_health_url"] == "https://qa-library.muzlife.com/health"
+    assert payload["external_login_url"] == "https://__QA_DOMAIN__/login"
+    assert payload["external_health_url"] == "https://__QA_DOMAIN__/health"
 
 
 def test_authenticated_ops_serves_index_html(operator_client):
@@ -3134,10 +3134,10 @@ def test_admin_can_read_and_save_metadata_provider_settings(admin_client, monkey
             [
                 "DISCOGS_TOKEN=existing-discogs-token",
                 "ALADIN_TTB_KEY=existing-aladin-key",
-                "DISCOGS_USER_AGENT=hahahoho-library/0.1 (contact: test@example.com)",
+                "DISCOGS_USER_AGENT=__PROJECT_SLUG__-library/0.1 (contact: test@example.com)",
                 "ALADIN_BASE_URL=https://api.example.com/aladin",
                 "MANIADB_BASE_URL=https://api.example.com/maniadb",
-                "MUSICBRAINZ_USER_AGENT=hahahoho-library/0.1 (musicbrainz-test)",
+                "MUSICBRAINZ_USER_AGENT=__PROJECT_SLUG__-library/0.1 (musicbrainz-test)",
                 "DEEPL_AUTH_KEY=existing-deepl-key",
                 "DEEPL_BASE_URL=https://api-free.deepl.com/v2/translate",
             ]
@@ -3165,10 +3165,10 @@ def test_admin_can_read_and_save_metadata_provider_settings(admin_client, monkey
     payload = res.json()
     assert payload["discogs_token_configured"] is True
     assert payload["aladin_ttb_key_configured"] is True
-    assert payload["discogs_user_agent"] == "hahahoho-library/0.1 (contact: test@example.com)"
+    assert payload["discogs_user_agent"] == "__PROJECT_SLUG__-library/0.1 (contact: test@example.com)"
     assert payload["aladin_base_url"] == "https://api.example.com/aladin"
     assert payload["maniadb_base_url"] == "https://api.example.com/maniadb"
-    assert payload["musicbrainz_user_agent"] == "hahahoho-library/0.1 (musicbrainz-test)"
+    assert payload["musicbrainz_user_agent"] == "__PROJECT_SLUG__-library/0.1 (musicbrainz-test)"
     assert payload["deepl_auth_key_configured"] is True
     assert payload["deepl_base_url"] == "https://api-free.deepl.com/v2/translate"
 
@@ -3177,10 +3177,10 @@ def test_admin_can_read_and_save_metadata_provider_settings(admin_client, monkey
         json={
             "discogs_token": "updated-discogs-token",
             "aladin_ttb_key": "updated-aladin-key",
-            "discogs_user_agent": "hahahoho-library/0.2 (contact: ops@example.com)",
+            "discogs_user_agent": "__PROJECT_SLUG__-library/0.2 (contact: ops@example.com)",
             "aladin_base_url": "https://api.example.com/aladin-v2",
             "maniadb_base_url": "https://api.example.com/maniadb-v2",
-            "musicbrainz_user_agent": "hahahoho-library/0.2 (musicbrainz-ops)",
+            "musicbrainz_user_agent": "__PROJECT_SLUG__-library/0.2 (musicbrainz-ops)",
             "deepl_auth_key": "updated-deepl-key",
             "deepl_base_url": "https://api.deepl.com/v2/translate",
         },
@@ -3190,10 +3190,10 @@ def test_admin_can_read_and_save_metadata_provider_settings(admin_client, monkey
     saved = save_res.json()
     assert saved["discogs_token_configured"] is True
     assert saved["aladin_ttb_key_configured"] is True
-    assert saved["discogs_user_agent"] == "hahahoho-library/0.2 (contact: ops@example.com)"
+    assert saved["discogs_user_agent"] == "__PROJECT_SLUG__-library/0.2 (contact: ops@example.com)"
     assert saved["aladin_base_url"] == "https://api.example.com/aladin-v2"
     assert saved["maniadb_base_url"] == "https://api.example.com/maniadb-v2"
-    assert saved["musicbrainz_user_agent"] == "hahahoho-library/0.2 (musicbrainz-ops)"
+    assert saved["musicbrainz_user_agent"] == "__PROJECT_SLUG__-library/0.2 (musicbrainz-ops)"
     assert saved["deepl_auth_key_configured"] is True
     assert saved["deepl_base_url"] == "https://api.deepl.com/v2/translate"
 
@@ -3204,10 +3204,10 @@ def test_admin_can_read_and_save_metadata_provider_settings(admin_client, monkey
     env_text = env_path.read_text(encoding="utf-8")
     assert "DISCOGS_TOKEN=updated-discogs-token" in env_text
     assert "ALADIN_TTB_KEY=updated-aladin-key" in env_text
-    assert 'DISCOGS_USER_AGENT="hahahoho-library/0.2 (contact: ops@example.com)"' in env_text
+    assert 'DISCOGS_USER_AGENT="__PROJECT_SLUG__-library/0.2 (contact: ops@example.com)"' in env_text
     assert "ALADIN_BASE_URL=https://api.example.com/aladin-v2" in env_text
     assert "MANIADB_BASE_URL=https://api.example.com/maniadb-v2" in env_text
-    assert 'MUSICBRAINZ_USER_AGENT="hahahoho-library/0.2 (musicbrainz-ops)"' in env_text
+    assert 'MUSICBRAINZ_USER_AGENT="__PROJECT_SLUG__-library/0.2 (musicbrainz-ops)"' in env_text
     assert "DEEPL_AUTH_KEY=updated-deepl-key" in env_text
     assert "DEEPL_BASE_URL=https://api.deepl.com/v2/translate" in env_text
 
@@ -3235,7 +3235,7 @@ def test_admin_can_run_deepl_provider_connection_test(admin_client, monkeypatch)
 
 
 def test_full_backup_route_returns_zip_bundle(admin_client, monkeypatch, tmp_path):
-    bundle_path = tmp_path / "hahahoho-library-full-backup.zip"
+    bundle_path = tmp_path / "__PROJECT_SLUG__-library-full-backup.zip"
     bundle_path.write_bytes(b"zip-bundle")
     captured = {}
 

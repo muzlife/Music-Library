@@ -70,7 +70,7 @@ def _external_base_url_for_request(request: Request) -> str:
     forwarded_proto = str(request.headers.get("x-forwarded-proto") or "").split(",", 1)[0].strip().lower()
     scheme = forwarded_proto or str(request.url.scheme or "").strip().lower() or "https"
     if not host or host in {"127.0.0.1", "localhost", "testserver"}:
-        return "https://library.muzlife.com"
+        return "https://__PROD_DOMAIN__"
     if scheme not in {"http", "https"}:
         scheme = "https"
     return f"{scheme}://{host}"
@@ -101,7 +101,7 @@ def system_status(request: Request) -> dict[str, Any]:
 def export_db_backup(request: Request, background_tasks: BackgroundTasks) -> FileResponse:
     _require_operator_request(request)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    tmp = tempfile.NamedTemporaryFile(prefix="hahahoho-library-", suffix=".db", delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-library-", suffix=".db", delete=False)
     tmp_path = tmp.name
     tmp.close()
     with db.get_conn() as source_conn:
@@ -114,7 +114,7 @@ def export_db_backup(request: Request, background_tasks: BackgroundTasks) -> Fil
     return FileResponse(
         tmp_path,
         media_type="application/octet-stream",
-        filename=f"hahahoho-library-backup-{timestamp}.db",
+        filename=f"__PROJECT_SLUG__-library-backup-{timestamp}.db",
     )
 
 
@@ -445,11 +445,7 @@ def _build_ops_placement_hint_payload(owned_item_id: int) -> dict[str, Any]:
         or m._clean_text(detail_row.get("master_artist_or_brand"))
     )
     _raw_item_name = m._clean_text(detail_row.get("item_name_override")) or m._clean_text(detail_row.get("master_title"))
-    item_title = (
-        f"{artist_or_brand} - {_raw_item_name}"
-        if artist_or_brand and m._clean_text(detail_row.get("item_name_override"))
-        else _raw_item_name
-    )
+    item_title = _raw_item_name
     raw_year = detail_row.get("master_release_year") if detail_row.get("master_release_year") is not None else detail_row.get("release_year")
     try:
         release_year = int(raw_year) if raw_year is not None else None

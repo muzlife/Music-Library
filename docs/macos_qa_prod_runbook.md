@@ -2,38 +2,38 @@
 
 ## 개요
 
-이 문서는 `Mac mini M4`를 `QA`, `Mac mini 2018`을 `운영`으로 완전히 분리해서 `qa-library.muzlife.com` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
+이 문서는 `__DEV_MACHINE__`를 `QA`, `__PROD_MACHINE__`을 `운영`으로 완전히 분리해서 `__QA_DOMAIN__` / `__PROD_DOMAIN__` 기준으로 운영하는 절차를 정리합니다.
 
 관련 문서
-- 운영 매뉴얼: [management_tool_manual.md](/Volumes/Data/Works/07.hahahoho/docs/management_tool_manual.md)
-- 상용화 체크리스트: [go_live_checklist.md](/Volumes/Data/Works/07.hahahoho/docs/go_live_checklist.md)
-- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
+- 운영 매뉴얼: [management_tool_manual.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/management_tool_manual.md)
+- 상용화 체크리스트: [go_live_checklist.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/go_live_checklist.md)
+- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/qa/qa_master_sheet.csv)
 
-- QA: `https://qa-library.muzlife.com/`
-- 운영: `https://library.muzlife.com/`
+- QA: `https://__QA_DOMAIN__/`
+- 운영: `https://__PROD_DOMAIN__/`
 - 외부 진입: `Cloudflare DNS + Cloudflare Tunnel`
 - 서비스 관리: macOS `launchd`
-- 앱 실행: 저장소의 [`scripts/run_api.sh`](/Volumes/Data/Works/07.hahahoho/scripts/run_api.sh)
+- 앱 실행: 저장소의 [`scripts/run_api.sh`](/Volumes/Data/Works/07.__PROJECT_SLUG__/scripts/run_api.sh)
 
 이 런북은 `Synology`를 웹 진입점, 프록시, 인증서, 스토리지 의존성에서 제외하는 것을 전제로 합니다.
 
 ## 1. 서버 역할 고정
 
-### 운영 서버: `Mac mini 2018`
+### 운영 서버: `__PROD_MACHINE__`
 
 - 서비스명: `library-prod`
-- 코드 루트 예시: `/Users/<user>/apps/hahahoho-prod`
-- 런타임 루트 예시: `/Users/<user>/apps/hahahoho-prod/runtime`
+- 코드 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod`
+- 런타임 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime`
 - 로컬 앱 포트: `127.0.0.1:8000`
-- 외부 도메인: `library.muzlife.com`
+- 외부 도메인: `__PROD_DOMAIN__`
 
-### QA 서버: `Mac mini M4`
+### QA 서버: `__DEV_MACHINE__`
 
 - 서비스명: `library-qa`
-- 코드 루트 예시: `/Users/<user>/apps/hahahoho-qa`
-- 런타임 루트 예시: `/Users/<user>/apps/hahahoho-qa/runtime`
+- 코드 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-qa`
+- 런타임 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime`
 - 로컬 앱 포트: `127.0.0.1:8100`
-- 외부 도메인: `qa-library.muzlife.com`
+- 외부 도메인: `__QA_DOMAIN__`
 
 ## 2. 디렉터리 준비
 
@@ -41,7 +41,7 @@
 
 ```text
 apps/
-  hahahoho-prod/
+  __PROJECT_SLUG__-prod/
     .venv/
     .env.local
     runtime/
@@ -50,7 +50,7 @@ apps/
       logs/
       backups/
       imports/
-  hahahoho-qa/
+  __PROJECT_SLUG__-qa/
     .venv/
     .env.local
     runtime/
@@ -64,15 +64,15 @@ apps/
 권장 명령 예시:
 
 ```bash
-mkdir -p /Users/<user>/apps/hahahoho-prod/runtime/{data,uploads,logs,backups,imports}
-mkdir -p /Users/<user>/apps/hahahoho-qa/runtime/{data,uploads,logs,backups,imports}
+mkdir -p /Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/{data,uploads,logs,backups,imports}
+mkdir -p /Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/{data,uploads,logs,backups,imports}
 ```
 
 반복 작업을 줄이려면 아래 보조 스크립트를 바로 써도 됩니다.
 
 ```bash
-./deploy/scripts/bootstrap_macos_runtime.sh prod /Users/<user>/apps/hahahoho-prod
-./deploy/scripts/bootstrap_macos_runtime.sh qa /Users/<user>/apps/hahahoho-qa
+./deploy/scripts/bootstrap_macos_runtime.sh prod /Users/<user>/apps/__PROJECT_SLUG__-prod
+./deploy/scripts/bootstrap_macos_runtime.sh qa /Users/<user>/apps/__PROJECT_SLUG__-qa
 ```
 
 ## 3. Python / 가상환경 준비
@@ -80,7 +80,7 @@ mkdir -p /Users/<user>/apps/hahahoho-qa/runtime/{data,uploads,logs,backups,impor
 각 서버에서 저장소를 별도 체크아웃한 뒤 가상환경을 만듭니다.
 
 ```bash
-cd /Users/<user>/apps/hahahoho-prod
+cd /Users/<user>/apps/__PROJECT_SLUG__-prod
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -U pip
@@ -93,8 +93,8 @@ QA도 같은 방식으로 진행합니다.
 
 템플릿 파일:
 
-- [운영 env 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.production.example)
-- [QA env 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.qa.example)
+- [운영 env 예시](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/env/.env.production.example)
+- [QA env 예시](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/env/.env.qa.example)
 
 핵심 규칙:
 
@@ -108,8 +108,8 @@ QA도 같은 방식으로 진행합니다.
 
 템플릿 파일:
 
-- [운영 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-prod.plist)
-- [QA launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-qa.plist)
+- [운영 launchd 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/launchd/com.muzlife.library-prod.plist)
+- [QA launchd 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/launchd/com.muzlife.library-qa.plist)
 
 절차:
 
@@ -133,8 +133,8 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.muzlife.library-qa.p
 보조 스크립트로 plist를 렌더링/설치하려면:
 
 ```bash
-./deploy/scripts/install_launchd_service.sh prod /Users/<user>/apps/hahahoho-prod
-./deploy/scripts/install_launchd_service.sh qa /Users/<user>/apps/hahahoho-qa
+./deploy/scripts/install_launchd_service.sh prod /Users/<user>/apps/__PROJECT_SLUG__-prod
+./deploy/scripts/install_launchd_service.sh qa /Users/<user>/apps/__PROJECT_SLUG__-qa
 ```
 
 재기동/반영:
@@ -148,13 +148,13 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 
 템플릿 파일:
 
-- [운영 tunnel 설정 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-prod-config.yml)
-- [QA tunnel 설정 예시](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-qa-config.yml)
+- [운영 tunnel 설정 예시](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/cloudflare/library-prod-config.yml)
+- [QA tunnel 설정 예시](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/cloudflare/library-qa-config.yml)
 
 권장 매핑:
 
-- `library.muzlife.com -> http://127.0.0.1:8000`
-- `qa-library.muzlife.com -> http://127.0.0.1:8100`
+- `__PROD_DOMAIN__ -> http://127.0.0.1:8000`
+- `__QA_DOMAIN__ -> http://127.0.0.1:8100`
 
 Cloudflare 절차 예시:
 
@@ -162,8 +162,8 @@ Cloudflare 절차 예시:
 cloudflared tunnel login
 cloudflared tunnel create library-prod
 cloudflared tunnel create library-qa
-cloudflared tunnel route dns <PROD_TUNNEL_ID> library.muzlife.com
-cloudflared tunnel route dns <QA_TUNNEL_ID> qa-library.muzlife.com
+cloudflared tunnel route dns <PROD_TUNNEL_ID> __PROD_DOMAIN__
+cloudflared tunnel route dns <QA_TUNNEL_ID> __QA_DOMAIN__
 ```
 
 설정 파일을 배치한 뒤 서비스 설치:
@@ -222,7 +222,7 @@ GOOGLE_DRIVE_BACKUP_DIR="/Users/<user>/Library/CloudStorage/GoogleDrive-<account
 적용 전 점검:
 
 ```bash
-./deploy/scripts/drive_backup_preflight.sh /Users/<user>/apps/hahahoho-prod
+./deploy/scripts/drive_backup_preflight.sh /Users/<user>/apps/__PROJECT_SLUG__-prod
 ```
 
 선택적 GCS 환경 변수:
@@ -235,7 +235,7 @@ GSUTIL_BIN=gsutil
 적용 전 점검:
 
 ```bash
-./deploy/scripts/gcs_backup_preflight.sh /Users/<user>/apps/hahahoho-prod
+./deploy/scripts/gcs_backup_preflight.sh /Users/<user>/apps/__PROJECT_SLUG__-prod
 ```
 
 ### 운영 2018에서 백업 생성
@@ -252,8 +252,8 @@ GSUTIL_BIN=gsutil
 예시:
 
 ```bash
-./deploy/scripts/backup_daily_db.sh /Users/<user>/apps/hahahoho-prod
-./deploy/scripts/backup_weekly_full.sh /Users/<user>/apps/hahahoho-prod
+./deploy/scripts/backup_daily_db.sh /Users/<user>/apps/__PROJECT_SLUG__-prod
+./deploy/scripts/backup_weekly_full.sh /Users/<user>/apps/__PROJECT_SLUG__-prod
 ```
 
 생성 경로:
@@ -265,14 +265,14 @@ GSUTIL_BIN=gsutil
 launchd 설치/적용:
 
 ```bash
-./deploy/scripts/install_backup_launchd_jobs.sh --mode prod /Users/<user>/apps/hahahoho-prod /Users/<user>/apps/hahahoho-qa
+./deploy/scripts/install_backup_launchd_jobs.sh --mode prod /Users/<user>/apps/__PROJECT_SLUG__-prod /Users/<user>/apps/__PROJECT_SLUG__-qa
 ./deploy/scripts/bootstrap_backup_launchd_jobs.sh --mode prod
 ```
 
 상태 확인:
 
 ```bash
-./deploy/scripts/backup_status.sh /Users/<user>/apps/hahahoho-prod /Users/<user>/apps/hahahoho-qa
+./deploy/scripts/backup_status.sh /Users/<user>/apps/__PROJECT_SLUG__-prod /Users/<user>/apps/__PROJECT_SLUG__-qa
 ```
 
 ### QA M4로 반영
@@ -280,15 +280,15 @@ launchd 설치/적용:
 QA 머신에는 운영 full backup이 미러된 로컬 디렉터리가 하나 필요합니다. 권장 예시는:
 
 ```bash
-/Users/<user>/apps/hahahoho-qa/runtime/imports/prod-weekly-full
+/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/imports/prod-weekly-full
 ```
 
 예시:
 
 ```bash
 ./deploy/scripts/sync_prod_backup_to_qa.sh \
-  /Users/<user>/apps/hahahoho-qa/runtime/imports/prod-weekly-full \
-  /Users/<user>/apps/hahahoho-qa
+  /Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/imports/prod-weekly-full \
+  /Users/<user>/apps/__PROJECT_SLUG__-qa
 ```
 
 주의:
@@ -303,9 +303,9 @@ QA 주간 sync job 설치/적용:
 ```bash
 ./deploy/scripts/install_backup_launchd_jobs.sh \
   --mode qa \
-  --prod-backup-dir /Users/<user>/apps/hahahoho-qa/runtime/imports/prod-weekly-full \
-  /Users/<user>/apps/hahahoho-prod \
-  /Users/<user>/apps/hahahoho-qa
+  --prod-backup-dir /Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/imports/prod-weekly-full \
+  /Users/<user>/apps/__PROJECT_SLUG__-prod \
+  /Users/<user>/apps/__PROJECT_SLUG__-qa
 ./deploy/scripts/bootstrap_backup_launchd_jobs.sh --mode qa
 ```
 
@@ -356,14 +356,14 @@ pytest -q tests/test_ops_shell_bootstrap.py
 필수 전제:
 
 1. QA 장비(M4)에 `self-hosted`, `macOS` 라벨의 GitHub Actions runner가 실행 중이어야 합니다.
-2. runner 사용자에게 `matia@__PROD_HOST__` SSH 접속 권한이 있어야 합니다.
+2. runner 사용자에게 `__PROD_USER__@__PROD_HOST__.local` SSH 접속 권한이 있어야 합니다.
 3. 저장소 Variables에 아래 값이 있어야 합니다.
 4. GitHub `production` environment 승인 규칙을 켜서 비개발자가 `Run workflow` 후 승인만 할 수 있게 두는 것이 좋습니다.
 
 ```text
-PROD_SSH_TARGET=matia@__PROD_HOST__
-PROD_APP_ROOT=__PROD_USER__/apps/hahahoho-prod
-PROD_SSH_KEY_PATH=/Users/jingunpark/.ssh/id_ed25519_kanu
+PROD_SSH_TARGET=__PROD_USER__@__PROD_HOST__.local
+PROD_APP_ROOT=/Users/__PROD_USER__/apps/__PROJECT_SLUG__-prod
+PROD_SSH_KEY_PATH=/Users/__DEV_USER__/.ssh/id_ed25519_kanu
 PROD_LAUNCHD_LABEL=com.muzlife.library-prod
 PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 ```
@@ -388,13 +388,13 @@ PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 
 관련 자산:
 
-- [GitHub Actions workflow](/Volumes/Data/Works/07.hahahoho/.github/workflows/deploy-production.yml)
-- [운영 배포 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/deploy_to_prod.sh)
+- [GitHub Actions workflow](/Volumes/Data/Works/07.__PROJECT_SLUG__/.github/workflows/deploy-production.yml)
+- [운영 배포 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/deploy_to_prod.sh)
 
 권장 점검 항목:
 
 - `qa_master_sheet.csv`의 `environment=prod`, `phase=Post-release` 행 실행
-- `https://library.muzlife.com/` 접속
+- `https://__PROD_DOMAIN__/` 접속
 - 로그인
 - 관리 메인 진입
 - 검색
@@ -420,7 +420,7 @@ PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 
 ## 12. 첫 구축 체크리스트
 
-1. Mac mini 2018 운영 디렉터리 생성
+1. __PROD_MACHINE__ 운영 디렉터리 생성
 2. M4 QA 디렉터리 생성
 3. 양쪽 `.venv` 설치
 4. 양쪽 `.env.local` 작성
@@ -434,25 +434,25 @@ PROD_HEALTHCHECK_URL=http://127.0.0.1:8000/health
 
 ## 13. 관련 자산
 
-- [배포 설계 스펙](/Volumes/Data/Works/07.hahahoho/docs/superpowers/specs/2026-04-13-macos-qa-production-independent-deployment-design.md)
-- [배포 구현 계획](/Volumes/Data/Works/07.hahahoho/docs/superpowers/plans/2026-04-13-macos-qa-production-independent-deployment-implementation.md)
-- [운영 env 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.production.example)
-- [QA env 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/env/.env.qa.example)
-- [운영 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-prod.plist)
-- [QA launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.library-qa.plist)
-- [운영 Cloudflare Tunnel 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-prod-config.yml)
-- [QA Cloudflare Tunnel 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/cloudflare/library-qa-config.yml)
-- [런타임 준비 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/bootstrap_macos_runtime.sh)
-- [launchd 설치 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/install_launchd_service.sh)
-- [Cloudflare 설정 렌더 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/render_cloudflare_tunnel_config.sh)
-- [백업 launchd 설치 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/install_backup_launchd_jobs.sh)
-- [백업 launchd bootstrap 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/bootstrap_backup_launchd_jobs.sh)
-- [GCS 백업 preflight 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/gcs_backup_preflight.sh)
-- [백업 상태 요약 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_status.sh)
-- [일일 DB 백업 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_daily_db.sh)
-- [주간 FULL 백업 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/backup_weekly_full.sh)
-- [GCS 업로드 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/upload_backup_to_gcs.sh)
-- [QA 주간 반영 스크립트](/Volumes/Data/Works/07.hahahoho/deploy/scripts/sync_prod_backup_to_qa.sh)
-- [일일 DB 백업 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-daily-db.plist)
-- [주간 FULL 백업 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.backup-weekly-full.plist)
-- [QA 주간 반영 launchd 템플릿](/Volumes/Data/Works/07.hahahoho/deploy/templates/launchd/com.muzlife.qa-sync-weekly.plist)
+- [배포 설계 스펙](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/superpowers/specs/2026-04-13-macos-qa-production-independent-deployment-design.md)
+- [배포 구현 계획](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/superpowers/plans/2026-04-13-macos-qa-production-independent-deployment-implementation.md)
+- [운영 env 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/env/.env.production.example)
+- [QA env 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/env/.env.qa.example)
+- [운영 launchd 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/launchd/com.muzlife.library-prod.plist)
+- [QA launchd 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/launchd/com.muzlife.library-qa.plist)
+- [운영 Cloudflare Tunnel 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/cloudflare/library-prod-config.yml)
+- [QA Cloudflare Tunnel 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/cloudflare/library-qa-config.yml)
+- [런타임 준비 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/bootstrap_macos_runtime.sh)
+- [launchd 설치 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/install_launchd_service.sh)
+- [Cloudflare 설정 렌더 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/render_cloudflare_tunnel_config.sh)
+- [백업 launchd 설치 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/install_backup_launchd_jobs.sh)
+- [백업 launchd bootstrap 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/bootstrap_backup_launchd_jobs.sh)
+- [GCS 백업 preflight 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/gcs_backup_preflight.sh)
+- [백업 상태 요약 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/backup_status.sh)
+- [일일 DB 백업 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/backup_daily_db.sh)
+- [주간 FULL 백업 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/backup_weekly_full.sh)
+- [GCS 업로드 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/upload_backup_to_gcs.sh)
+- [QA 주간 반영 스크립트](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/scripts/sync_prod_backup_to_qa.sh)
+- [일일 DB 백업 launchd 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/launchd/com.muzlife.backup-daily-db.plist)
+- [주간 FULL 백업 launchd 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/launchd/com.muzlife.backup-weekly-full.plist)
+- [QA 주간 반영 launchd 템플릿](/Volumes/Data/Works/07.__PROJECT_SLUG__/deploy/templates/launchd/com.muzlife.qa-sync-weekly.plist)

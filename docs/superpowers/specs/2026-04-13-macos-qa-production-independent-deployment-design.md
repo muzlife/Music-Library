@@ -2,8 +2,8 @@
 
 ## 목표
 
-- `Mac mini M4`를 `QA` 전용 서버로 운영한다.
-- `Mac mini 2018`을 `운영` 전용 서버로 운영한다.
+- `__DEV_MACHINE__`를 `QA` 전용 서버로 운영한다.
+- `__PROD_MACHINE__`을 `운영` 전용 서버로 운영한다.
 - `QA`는 운영 데이터를 복제해 실제 운영과 유사한 검증 환경으로 쓴다.
 - 배포는 항상 `QA 검증 -> 운영 배포` 순서로 진행한다.
 - `Synology`를 웹 진입점, 프록시, 인증서, 스토리지 의존성에서 제외한다.
@@ -11,8 +11,8 @@
 
 ## 현재 요구
 
-- `QA`: [https://qa-library.muzlife.com/](https://qa-library.muzlife.com/)
-- `운영`: [https://library.muzlife.com/](https://library.muzlife.com/)
+- `QA`: [https://__QA_DOMAIN__/](https://__QA_DOMAIN__/)
+- `운영`: [https://__PROD_DOMAIN__/](https://__PROD_DOMAIN__/)
 - 운영 데이터는 정기 또는 배포 직전 기준으로 `QA`에 복제한다.
 - `QA`에서 자동/수동 검증을 충분히 거친 뒤 같은 커밋을 `운영`에 반영한다.
 - `Synology` 없이 독립적으로 운영한다.
@@ -22,8 +22,8 @@
 ### 1. 권장안: `Cloudflare DNS + Cloudflare Tunnel + 각 맥 전용 앱 런타임`
 
 - 외부 진입점은 Cloudflare가 담당하고, 각 맥은 tunnel client를 통해 외부 도메인과 연결된다.
-- `library.muzlife.com -> Mac mini 2018`
-- `qa-library.muzlife.com -> M4`
+- `__PROD_DOMAIN__ -> __PROD_MACHINE__`
+- `__QA_DOMAIN__ -> M4`
 - 각 맥은 내부에서만 앱 포트를 연다.
 
 장점
@@ -37,7 +37,7 @@
 
 ### 2. 자가 엣지안: `라우터/소형 프록시 + 각 맥 전용 앱 런타임`
 
-- 별도 엣지 장비가 `qa-library.muzlife.com` 과 `library.muzlife.com`을 받아 Host 기준으로 `M4`, `Mac mini 2018`에 분기한다.
+- 별도 엣지 장비가 `__QA_DOMAIN__` 과 `__PROD_DOMAIN__`을 받아 Host 기준으로 `M4`, `__PROD_MACHINE__`에 분기한다.
 
 장점
 - 네트워크를 완전히 자가 통제할 수 있다.
@@ -57,7 +57,7 @@
 ## 권장 구조
 
 - `M4`: QA 전용
-- `Mac mini 2018`: 운영 전용
+- `__PROD_MACHINE__`: 운영 전용
 - 외부 도메인 분기: `Cloudflare Tunnel`
 - 앱 실행: macOS `launchd`
 - 앱 포트:
@@ -67,33 +67,33 @@
 
 ## 환경 분리 규칙
 
-### 운영 Mac mini 2018
+### 운영 __PROD_MACHINE__
 
 - 서비스명: `library-prod`
-- 도메인: `library.muzlife.com`
-- 앱 루트 예시: `/Users/<user>/apps/hahahoho-prod`
-- 런타임 루트 예시: `/Users/<user>/apps/hahahoho-prod/runtime`
+- 도메인: `__PROD_DOMAIN__`
+- 앱 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod`
+- 런타임 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime`
 
 구성 예시
-- DB: `/Users/<user>/apps/hahahoho-prod/runtime/data/library.db`
-- 업로드: `/Users/<user>/apps/hahahoho-prod/runtime/uploads`
-- 로그: `/Users/<user>/apps/hahahoho-prod/runtime/logs`
-- 백업: `/Users/<user>/apps/hahahoho-prod/runtime/backups`
-- import 임시 파일: `/Users/<user>/apps/hahahoho-prod/runtime/imports`
+- DB: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/data/library.db`
+- 업로드: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/uploads`
+- 로그: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/logs`
+- 백업: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/backups`
+- import 임시 파일: `/Users/<user>/apps/__PROJECT_SLUG__-prod/runtime/imports`
 
 ### QA M4
 
 - 서비스명: `library-qa`
-- 도메인: `qa-library.muzlife.com`
-- 앱 루트 예시: `/Users/<user>/apps/hahahoho-qa`
-- 런타임 루트 예시: `/Users/<user>/apps/hahahoho-qa/runtime`
+- 도메인: `__QA_DOMAIN__`
+- 앱 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-qa`
+- 런타임 루트 예시: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime`
 
 구성 예시
-- DB: `/Users/<user>/apps/hahahoho-qa/runtime/data/library.db`
-- 업로드: `/Users/<user>/apps/hahahoho-qa/runtime/uploads`
-- 로그: `/Users/<user>/apps/hahahoho-qa/runtime/logs`
-- 백업: `/Users/<user>/apps/hahahoho-qa/runtime/backups`
-- 운영 복제 import: `/Users/<user>/apps/hahahoho-qa/runtime/imports`
+- DB: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/data/library.db`
+- 업로드: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/uploads`
+- 로그: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/logs`
+- 백업: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/backups`
+- 운영 복제 import: `/Users/<user>/apps/__PROJECT_SLUG__-qa/runtime/imports`
 
 ### 분리 원칙
 
@@ -107,15 +107,15 @@
 
 ### DNS
 
-- `library.muzlife.com`
-- `qa-library.muzlife.com`
+- `__PROD_DOMAIN__`
+- `__QA_DOMAIN__`
 
 DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 ### 권장 연결
 
-- `library.muzlife.com -> Cloudflare Tunnel -> Mac mini 2018:127.0.0.1:8000`
-- `qa-library.muzlife.com -> Cloudflare Tunnel -> M4:127.0.0.1:8100`
+- `__PROD_DOMAIN__ -> Cloudflare Tunnel -> __PROD_MACHINE__:127.0.0.1:8000`
+- `__QA_DOMAIN__ -> Cloudflare Tunnel -> M4:127.0.0.1:8100`
 
 ### TLS
 
@@ -248,7 +248,7 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 ## 절차형 구축 순서
 
-### 단계 1. Mac mini 2018 운영 서버 구축
+### 단계 1. __PROD_MACHINE__ 운영 서버 구축
 
 1. 운영 전용 디렉터리 생성
 2. 운영 전용 `.venv` 생성
@@ -269,7 +269,7 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 ### 단계 3. DNS / 외부 연결
 
 1. DNS를 Synology 바깥에서 관리하도록 이전
-2. `library.muzlife.com`, `qa-library.muzlife.com` 생성
+2. `__PROD_DOMAIN__`, `__QA_DOMAIN__` 생성
 3. 각 서버에 Cloudflare Tunnel 연결
 4. 외부 HTTPS 접속 확인
 
@@ -292,8 +292,8 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 ## 성공 기준
 
-- `qa-library.muzlife.com` 는 항상 `M4 QA`에 연결된다.
-- `library.muzlife.com` 는 항상 `Mac mini 2018 운영`에 연결된다.
+- `__QA_DOMAIN__` 는 항상 `M4 QA`에 연결된다.
+- `__PROD_DOMAIN__` 는 항상 `__PROD_MACHINE__ 운영`에 연결된다.
 - 운영 데이터 복제가 QA에서 실제로 복원된다.
 - QA 검증 후 같은 커밋만 운영에 반영된다.
 - 운영 배포 직전 백업과 롤백 절차가 문서화되어 있다.
@@ -303,6 +303,6 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 1. `launchd plist` 템플릿 작성
 2. `Cloudflare Tunnel` 설정 절차 문서 작성
-3. `Mac mini 2018 운영 / M4 QA` 폴더 구조와 `.env.local` 예시 문서화
+3. `__PROD_MACHINE__ 운영 / M4 QA` 폴더 구조와 `.env.local` 예시 문서화
 4. 운영 백업 -> QA 복제 스크립트 작성
 5. 배포 체크리스트를 `QA`와 `운영`으로 나눠 문서화

@@ -1,7 +1,7 @@
 # 상용화 체크리스트
 
 이 문서는 `QA 검증 완료 -> 운영 반영 -> 초기 안정화`까지의 실행 체크리스트입니다.  
-세부 서버 작업은 [macos_qa_prod_runbook.md](/Volumes/Data/Works/07.hahahoho/docs/macos_qa_prod_runbook.md)를 함께 봅니다.
+세부 서버 작업은 [macos_qa_prod_runbook.md](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/macos_qa_prod_runbook.md)를 함께 봅니다.
 
 ## 1. 배포 전 기준선
 
@@ -16,9 +16,9 @@
 기록 항목
 - 배포 대상 커밋: `5409b8cdc26939826c4abd4075f616b81560f7ae` (`main`, local commit + deploy_to_prod.sh)
 - 직전 운영 커밋: `c671ff4990f8b676166fbbc09f53608266c4e2f3` (배포 직전 운영 기준 코드)
-- 직전 운영 DB 백업: `__PROD_USER__/apps/hahahoho-prod/runtime/backups/daily-db/hahahoho-library-daily-db-20260418-063130.db`
+- 직전 운영 DB 백업: `/Users/__PROD_USER__/apps/__PROJECT_SLUG__-prod/runtime/backups/daily-db/__PROJECT_SLUG__-library-daily-db-20260418-063130.db`
 - 배포 담당: `Codex`
-- 승인자: `jingunpark`
+- 승인자: `__DEV_USER__`
 
 ## 2. QA 사전 검증
 
@@ -32,7 +32,7 @@
 - [ ] QA 마스터 시트의 해당 행들에 `release_ref`, `evidence_ref`, `result`, `verified_at`, `executor`, `approver`가 반영됐다.
 
 참고 문서
-- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
+- QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.__PROJECT_SLUG__/docs/qa/qa_master_sheet.csv)
 
 ## 3. 운영 반영 직전
 
@@ -49,7 +49,7 @@
 - [ ] 필요 시 `pip install -r requirements.txt`
 - [ ] `launchctl kickstart` 또는 배포 스크립트로 앱 재기동
 - [ ] 로컬 `/health` 확인
-- [ ] 외부 `https://library.muzlife.com/health` 확인
+- [ ] 외부 `https://__PROD_DOMAIN__/health` 확인
 - [ ] 로그인 화면 노출 확인
 
 ## 5. 운영 스모크 체크

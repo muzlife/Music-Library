@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
@@ -83,6 +86,60 @@ router = APIRouter(tags=["cafe"])
 _spotify = SpotifyService()
 _local = LocalPlayer()
 
+# ── SSE now-playing state ─────────────────────────────────────────
+
+_sse_clients: set[asyncio.Queue] = set()
+_now_playing_state: dict | None = None
+
+
+def _broadcast(data: dict) -> None:
+    """Push now-playing state to all connected SSE clients."""
+    global _now_playing_state
+    _now_playing_state = data
+    for q in list(_sse_clients):
+        try:
+            q.put_nowait(data)
+        except asyncio.QueueFull:
+            pass
+
+
+async def _now_playing_worker() -> None:
+    """Single background task — owns all Spotify polling and local state checks.
+
+    Adaptive intervals:
+      local playing  → 5s  (VLC socket check, no external API)
+      Spotify playing → 30s
+      nothing playing → 60s
+    """
+    prev_state: dict | None = None
+    loop = asyncio.get_running_loop()
+
+    while True:
+        interval = 60
+        try:
+            local = _local.current_track()
+            if local and local.get("is_playing"):
+                state: dict = {"available": True, **local}
+                interval = 5
+            else:
+                pb = await loop.run_in_executor(None, _spotify.current_playback_sync)
+                if pb:
+                    state = {"available": True, "source": "spotify", **pb}
+                    interval = 30
+                else:
+                    state = {"available": False}
+                    interval = 60
+
+            if state != prev_state:
+                prev_state = state
+                _broadcast(state)
+
+        except Exception:
+            logger.exception("now-playing worker error")
+            interval = 60
+
+        await asyncio.sleep(interval)
+
 
 # ── helpers ─────────────────────────────────────────────────────
 
@@ -133,6 +190,7 @@ def cafe_tags() -> dict[str, Any]:
 def cafe_search(
     q: str = Query(min_length=1, max_length=200),
     limit: int = Query(default=10, ge=1, le=30),
+    src: str = Query(default="all"),
 ) -> dict[str, Any]:
     """Search Spotify + local tags. Public (no auth — tablet access)."""
     results: list[dict[str, Any]] = []
@@ -140,34 +198,36 @@ def cafe_search(
     # Spotify search with retry
     import logging, time
     _log = logging.getLogger(__name__)
-    spotify_results = _spotify.search_tracks_sync(q, limit=limit)
-    if not spotify_results:
-        time.sleep(0.5)
+    if src in ("spotify", "all"):
         spotify_results = _spotify.search_tracks_sync(q, limit=limit)
-    _log.info(f"cafe search q={q!r} spotify={len(spotify_results)}")
-    for item in spotify_results:
-        item["source"] = "spotify"
-    results.extend(spotify_results)
+        if not spotify_results:
+            time.sleep(0.5)
+            spotify_results = _spotify.search_tracks_sync(q, limit=limit)
+        _log.info(f"cafe search q={q!r} spotify={len(spotify_results)}")
+        for item in spotify_results:
+            item["source"] = "spotify"
+        results.extend(spotify_results)
 
     # Local file search (skip if NAS slow)
-    # local_files = _local.scan_files(q, limit=limit)
-    # results.extend(local_files)
+    if src in ("local", "all"):
+        local_files = _local.scan_files(q, limit=limit)
+        results.extend(local_files)
 
-    # Local tag search (simple text match on tag_value)
-    local_tags = db.find_tracks_by_tag(q, limit=limit)
-    for tag in local_tags:
-        if tag.get("owned_item_id"):
-            item_row = db.get_owned_item(tag["owned_item_id"])
-            if item_row:
-                results.append({
-                    "source": "local",
-                    "owned_item_id": tag["owned_item_id"],
-                    "title": item_row.get("item_title") or item_row.get("item_name_override") or "",
-                    "artist": item_row.get("artist_or_brand") or "",
-                    "album_art_url": item_row.get("cover_image_url"),
-                    "tag_type": tag.get("tag_type"),
-                    "tag_value": tag.get("tag_value"),
-                })
+        # Local tag search (simple text match on tag_value)
+        local_tags = db.find_tracks_by_tag(q, limit=limit)
+        for tag in local_tags:
+            if tag.get("owned_item_id"):
+                item_row = db.get_owned_item(tag["owned_item_id"])
+                if item_row:
+                    results.append({
+                        "source": "local",
+                        "owned_item_id": tag["owned_item_id"],
+                        "title": item_row.get("item_title") or item_row.get("item_name_override") or "",
+                        "artist": item_row.get("artist_or_brand") or "",
+                        "album_art_url": item_row.get("cover_image_url"),
+                        "tag_type": tag.get("tag_type"),
+                        "tag_value": tag.get("tag_value"),
+                    })
 
     # Always ensure at least a helpful message
     if not results:
@@ -228,24 +288,49 @@ def cafe_queue(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
 
 @router.get("/cafe/now-playing")
 def cafe_now_playing() -> dict[str, Any]:
-    """Public: current playback info (Spotify only for now)."""
-    pb = _spotify.current_playback_sync()
-    if pb:
-        return {"available": True, "source": "spotify", **pb}
-    local = _local.current_track()
-    if local and local.get("is_playing"):
-        return {"available": True, **local}
+    """Public: current playback info — served from worker-managed state."""
+    if _now_playing_state is not None:
+        return _now_playing_state
     return {"available": False}
+
+
+@router.get("/cafe/now-playing/stream")
+async def cafe_now_playing_stream(request: Request):
+    """Public: SSE stream — pushes now-playing state on every change."""
+    from fastapi.responses import StreamingResponse
+
+    async def generate():
+        queue: asyncio.Queue = asyncio.Queue(maxsize=5)
+        _sse_clients.add(queue)
+        try:
+            initial = _now_playing_state if _now_playing_state is not None else {"available": False}
+            yield f"data: {json.dumps(initial, ensure_ascii=False)}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    data = await asyncio.wait_for(queue.get(), timeout=25.0)
+                    yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+        finally:
+            _sse_clients.discard(queue)
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ── local playback ────────────────────────────────────────────────
 
 @router.post("/ops/cafe/play-local")
-def staff_play_local(request: Request) -> dict[str, Any]:
+async def staff_play_local(request: Request) -> dict[str, Any]:
     """Staff: play a local file. OPERATOR+"""
     import json as _json
     security._require_operator_request(request)
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     file_path = str(body.get("file_path") or "").strip()
     request_id = int(body.get("request_id") or 0)
 
@@ -452,24 +537,6 @@ def spotify_callback(request: Request):
         return {"error": str(e)}
 
 
-# ── Spotify OAuth callback ────────────────────────────────────────
-
-@router.get("/spotify/callback")
-def spotify_callback(request: Request):
-    """Handle Spotify OAuth redirect after user authorization."""
-    code = request.query_params.get("code")
-    if not code:
-        return {"error": "no authorization code received"}
-    try:
-        sp = _spotify._ensure_client()
-        if sp is None:
-            return {"error": "spotify not configured"}
-        token_info = sp.auth_manager.get_access_token(code, check_cache=False)
-        return {"ok": True, "message": "Spotify OAuth complete! You can close this page."}
-    except Exception as e:
-        return {"error": str(e)}
-
-
 # ── lyrics ────────────────────────────────────────────────────────
 
 @router.get("/cafe/lyrics")
@@ -545,11 +612,11 @@ def staff_playlists(request: Request) -> dict[str, Any]:
     return {"items": rows}
 
 @router.post("/ops/cafe/playlists")
-def staff_create_playlist(request: Request) -> dict[str, Any]:
+async def staff_create_playlist(request: Request) -> dict[str, Any]:
     """Staff: create a new playlist. OPERATOR+"""
     security._require_operator_request(request)
     import json as _json
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     name = str(body.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name required")
@@ -569,11 +636,11 @@ def staff_playlist_detail(playlist_id: int, request: Request) -> dict[str, Any]:
     return pl
 
 @router.post("/ops/cafe/playlists/{playlist_id}/items")
-def staff_add_playlist_item(playlist_id: int, request: Request) -> dict[str, Any]:
+async def staff_add_playlist_item(playlist_id: int, request: Request) -> dict[str, Any]:
     """Staff: add track to playlist. OPERATOR+"""
     security._require_operator_request(request)
     import json as _json
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     item_id = db.add_playlist_item(
         playlist_id=playlist_id,
         title=str(body.get("title") or ""),
@@ -600,11 +667,11 @@ def staff_delete_playlist(playlist_id: int, request: Request) -> dict[str, Any]:
     return {"ok": True}
 
 @router.post("/ops/cafe/playlists/{playlist_id}/play-next")
-def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[str, Any]:
+async def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[str, Any]:
     """Staff: play next track from playlist. OPERATOR+"""
     security._require_operator_request(request)
     import json as _json
-    body = _json.loads(request.body())
+    body = _json.loads(await request.body())
     current_idx = int(body.get("current_index", -1))
     item = db.get_next_playlist_item(playlist_id, current_idx)
     if not item:

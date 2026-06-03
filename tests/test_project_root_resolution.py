@@ -1,6 +1,6 @@
 """Pin the LIBRARY_PROJECT_ROOT abstraction.
 
-The repo used to embed `/Volumes/Data/Works/07.hahahoho` in nine PROJECT_* path
+The repo used to embed `/Volumes/Data/Works/07.__PROJECT_SLUG__` in nine PROJECT_* path
 constants in app/main.py and four ROOT constants in scripts/ + tests/. Those
 have all been replaced with `LIBRARY_PROJECT_ROOT` env override + a
 `Path(__file__).resolve().parents[1]` fallback.
@@ -45,10 +45,10 @@ def test_resolve_project_root_expands_user_paths(
 ) -> None:
     fake_home = tmp_path / "home"
     fake_home.mkdir()
-    target = fake_home / "apps" / "hahahoho-prod"
+    target = fake_home / "apps" / "__PROJECT_SLUG__-prod"
     target.mkdir(parents=True)
     monkeypatch.setenv("HOME", str(fake_home))
-    monkeypatch.setenv("LIBRARY_PROJECT_ROOT", "~/apps/hahahoho-prod")
+    monkeypatch.setenv("LIBRARY_PROJECT_ROOT", "~/apps/__PROJECT_SLUG__-prod")
     resolved = main_module._resolve_project_root()
     assert resolved == target.resolve()
 
@@ -83,7 +83,7 @@ def test_no_volumes_works_literal_remains_in_runtime_code() -> None:
     """Belt-and-suspenders: scan the runtime tree for the old absolute
     literal. We allow it inside .worktrees/ (separate git worktrees) and
     inside docs/ (manual references), but not in app/, scripts/, or tests/."""
-    forbidden = re.compile(r"/Volumes/Works/07\.hahahoho")
+    forbidden = re.compile(r"/Volumes/Works/07\.__PROJECT_SLUG__")
     targets = [
         REPO_ROOT / "app",
         REPO_ROOT / "scripts",

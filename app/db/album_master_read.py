@@ -74,6 +74,11 @@ def _build_album_master_filter_sql(
     is_new: bool | None = None,
     is_promo: bool | None = None,
     album_master_id: int | None = None,
+    genre_missing: bool = False,
+    format_missing: bool = False,
+    catalog_missing: bool = False,
+    review_missing: bool = False,
+    spotify_state: str = "ANY",
 ) -> tuple[str, list[Any]]:
     where_sql = ""
     params: list[Any] = []
@@ -405,6 +410,46 @@ def _build_album_master_filter_sql(
           )
         """
 
+
+    if genre_missing:
+        where_sql += """
+          AND (am.genres_json IS NULL OR TRIM(am.genres_json) = '' OR am.genres_json = '[]')
+        """
+
+    if format_missing:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member ammf
+            JOIN owned_item oif ON oif.id = ammf.owned_item_id
+            LEFT JOIN music_item_detail midf ON midf.owned_item_id = oif.id
+            WHERE ammf.album_master_id = am.id
+              AND oif.category IN ('LP','CD','CASSETTE','8TRACK','DIGITAL','REEL_TO_REEL')
+              AND (midf.format_name IS NULL OR TRIM(midf.format_name) = '')
+          )
+        """
+
+    if catalog_missing:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member ammc
+            JOIN owned_item oic ON oic.id = ammc.owned_item_id
+            LEFT JOIN music_item_detail midc ON midc.owned_item_id = oic.id
+            WHERE ammc.album_master_id = am.id
+              AND oic.category IN ('LP','CD','CASSETTE','8TRACK','DIGITAL','REEL_TO_REEL')
+              AND (midc.catalog_no IS NULL OR TRIM(midc.catalog_no) = '')
+          )
+        """
+
+    if review_missing:
+        where_sql += " AND (am.review_text IS NULL OR TRIM(am.review_text) = '')"
+
+    if spotify_state == "MISSING":
+        where_sql += " AND (am.spotify_album_id IS NULL OR TRIM(am.spotify_album_id) = '')"
+    elif spotify_state == "MATCHED":
+        where_sql += " AND (am.spotify_album_id IS NOT NULL AND TRIM(am.spotify_album_id) <> '')"
+
     return where_sql, params
 
 
@@ -514,6 +559,17 @@ def set_owned_item_linked_album_master(owned_item_id: int, album_master_id: int 
             "UPDATE owned_item SET linked_album_master_id = ?, updated_at = ? WHERE id = ?",
             (mid, utc_now_iso(), oid),
         )
+        # album_master_member 중복 멤버십 정리 — 마스터가 교체될 때 이전 항목 제거
+        if mid is not None:
+            conn.execute(
+                "DELETE FROM album_master_member WHERE owned_item_id = ? AND album_master_id != ?",
+                (oid, mid),
+            )
+        else:
+            conn.execute(
+                "DELETE FROM album_master_member WHERE owned_item_id = ?",
+                (oid,),
+            )
         return int(cur.rowcount or 0) > 0
 
 
@@ -549,6 +605,11 @@ def list_album_masters(
     is_new: bool | None = None,
     is_promo: bool | None = None,
     album_master_id: int | None = None,
+    genre_missing: bool = False,
+    format_missing: bool = False,
+    catalog_missing: bool = False,
+    review_missing: bool = False,
+    spotify_state: str = "ANY",
 ) -> list[dict[str, Any]]:
     filter_sql, params = _build_album_master_filter_sql(
         source_code=source_code,
@@ -570,6 +631,11 @@ def list_album_masters(
         is_new=is_new,
         is_promo=is_promo,
         album_master_id=album_master_id,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
+        review_missing=review_missing,
+        spotify_state=spotify_state,
     )
 
     query = """
@@ -587,6 +653,11 @@ def list_album_masters(
         am.spotify_album_uri,
         am.spotify_matched_at,
         am.spotify_image_url,
+        am.review_text,
+        am.review_source,
+        am.review_url,
+        am.genres_json,
+        am.styles_json,
         COUNT(amm.id) AS member_count,
         MAX(amm.owned_item_id) AS max_owned_item_id,
         (
@@ -784,6 +855,11 @@ def count_album_masters(
     is_limited: bool | None = None,
     is_new: bool | None = None,
     is_promo: bool | None = None,
+    genre_missing: bool = False,
+    format_missing: bool = False,
+    catalog_missing: bool = False,
+    review_missing: bool = False,
+    spotify_state: str = "ANY",
 ) -> int:
     filter_sql, params = _build_album_master_filter_sql(
         source_code=source_code,
@@ -804,6 +880,11 @@ def count_album_masters(
         is_limited=is_limited,
         is_new=is_new,
         is_promo=is_promo,
+        genre_missing=genre_missing,
+        format_missing=format_missing,
+        catalog_missing=catalog_missing,
+        review_missing=review_missing,
+        spotify_state=spotify_state,
     )
     query = """
       SELECT COUNT(*) AS cnt

@@ -9,8 +9,8 @@ Usage:
   ./deploy/scripts/deploy_to_prod.sh [prod_ssh_target] [prod_app_root]
 
 Environment:
-  PROD_SSH_TARGET          Remote SSH target, e.g. matia@__PROD_HOST__
-  PROD_APP_ROOT            Remote app root, e.g. __PROD_USER__/apps/hahahoho-prod
+  PROD_SSH_TARGET          Remote SSH target, e.g. USER@PROD_HOST.local
+  PROD_APP_ROOT            Remote app root, e.g. /Users/__USER__/apps/__PROJECT_SLUG__-prod
   PROD_SSH_KEY_PATH        Optional SSH private key path
   PROD_LAUNCHD_LABEL       launchd label, default: com.muzlife.library-prod
   PROD_HEALTHCHECK_URL     Remote local health URL, default: http://127.0.0.1:8000/health

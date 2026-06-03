@@ -78,7 +78,7 @@ def run_login_page_harness(
     should_submit = submit_response is not None
     script_storage = dict(local_storage or {})
     if locale is not None:
-        script_storage["hahahoho.appLocale.v1"] = locale
+        script_storage["__PROJECT_SLUG__.appLocale.v1"] = locale
     local_storage_json = json.dumps(script_storage, ensure_ascii=False)
     submit_response_json = json.dumps(submit_response or {}, ensure_ascii=False)
     username_js = json.dumps(username, ensure_ascii=False)
@@ -450,8 +450,8 @@ def test_login_page_exposes_shell_locale_and_theme_controls():
 def test_login_page_defaults_invalid_saved_locale_and_theme():
     payload = run_login_page_harness(
         local_storage={
-            "hahahoho.appLocale.v1": "bogus",
-            "hahahoho.uiTheme.v1": "bogus",
+            "__PROJECT_SLUG__.appLocale.v1": "bogus",
+            "__PROJECT_SLUG__.uiTheme.v1": "bogus",
         }
     )
     assert payload["lang"] == "ko"
@@ -462,7 +462,7 @@ def test_login_page_defaults_invalid_saved_locale_and_theme():
 def test_login_page_maps_only_exact_auth_failure_literal():
     mapped = run_login_page_harness(
         local_storage={
-            "hahahoho.appLocale.v1": "en",
+            "__PROJECT_SLUG__.appLocale.v1": "en",
         },
         submit_response={
             "ok": False,
@@ -474,7 +474,7 @@ def test_login_page_maps_only_exact_auth_failure_literal():
 
     wrong_status = run_login_page_harness(
         local_storage={
-            "hahahoho.appLocale.v1": "en",
+            "__PROJECT_SLUG__.appLocale.v1": "en",
         },
         submit_response={
             "ok": False,
@@ -486,7 +486,7 @@ def test_login_page_maps_only_exact_auth_failure_literal():
 
     passthrough = run_login_page_harness(
         local_storage={
-            "hahahoho.appLocale.v1": "en",
+            "__PROJECT_SLUG__.appLocale.v1": "en",
         },
         submit_response={
             "ok": False,
@@ -3944,7 +3944,7 @@ def test_admin_shell_compact_select_rule_excludes_shell_locale_picker():
 def test_index_theme_toggle_persists_choice_and_applies_body_theme_data_attribute():
     html = read_static_html("index.html")
     apply_locale_block = html.split("function applyLocale(locale = appLocale) {", 1)[1].split("\n    }\n\n    function mediaDisplayLabel", 1)[0]
-    assert 'const APP_THEME_STORAGE_KEY = "hahahoho.uiTheme.v1";' in html
+    assert 'const APP_THEME_STORAGE_KEY = "__PROJECT_SLUG__.uiTheme.v1";' in html
     assert "let appTheme = \"night\";" in html
     assert "function normalizeAppTheme(theme) {" in html
     assert "function loadSavedTheme() {" in html
@@ -4191,7 +4191,7 @@ def test_index_dashboard_console_switches_to_single_column_when_cabinet_detail_i
 
 def test_index_dashboard_console_persists_selected_cabinet_and_slot_across_refresh():
     html = read_static_html("index.html")
-    assert 'const DASHBOARD_CABINET_SELECTION_STORAGE_KEY = "hahahoho.dashboardCabinetSelection.v1";' in html
+    assert 'const DASHBOARD_CABINET_SELECTION_STORAGE_KEY = "__PROJECT_SLUG__.dashboardCabinetSelection.v1";' in html
     persistence_block = html.split("    function restoreDashboardCabinetSelectionMemory() {", 1)[1].split("    function renderDashboardCabinetDetail() {", 1)[0]
     load_block = html.split("    async function loadHomeDashboard(opts = {}) {", 1)[1].split("    function resetHomeSearchForm() {", 1)[0]
     render_block = html.split("    function renderDashboardCabinetDetail() {", 1)[1].split("    function summarizeStorageCabinets(rows) {", 1)[0]
@@ -4504,7 +4504,7 @@ def test_index_apply_locale_updates_data_help_key_tooltips():
     assert 'el.setAttribute("title", t(key));' in block
 
 
-def test_index_admin_utility_bar_shows_hahahoho_only_for_admin_and_places_it_last():
+def test_index_admin_utility_bar_shows___PROJECT_SLUG___only_for_admin_and_places_it_last():
     html = read_static_html("index.html")
     utility_start = '    <div id="shellUtilityBar" class="shell-utility u-hidden-initial">'
     admin_tabs_start = '\n    <div id="tabHome" class="tab-panel active">'
@@ -4531,7 +4531,7 @@ def test_index_admin_utility_bar_shows_hahahoho_only_for_admin_and_places_it_las
     assert 'setTextIfPresent("shellOpsHomeBtn", t("nav.ops_home"));' not in nav_block
     assert 'setTextIfPresent("appLogoutBtn", t("utility.logout"));' not in nav_block
     assert '$("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));' in html
-    assert "hahahoho" not in ops_block
+    assert "__PROJECT_SLUG__" not in ops_block
 
 
 def test_shell_utility_reorders_home_icons_by_shell_mode():
@@ -8346,7 +8346,7 @@ def test_dashboard_workbench_rows_apply_media_filter_then_sort():
 
 def test_dashboard_workbench_persists_filter_preferences_by_role():
     html = read_static_html("index.html")
-    assert 'const DASHBOARD_WORKBENCH_PREFS_KEY = "hahahoho.dashboardWorkbenchPrefsByRole.v1";' in html
+    assert 'const DASHBOARD_WORKBENCH_PREFS_KEY = "__PROJECT_SLUG__.dashboardWorkbenchPrefsByRole.v1";' in html
     assert "function loadDashboardWorkbenchPreferences() {" in html
     assert "function saveDashboardWorkbenchPreferences() {" in html
     assert "function applyDashboardWorkbenchPreferences() {" in html
@@ -12285,7 +12285,7 @@ def test_index_inline_script_parses_without_syntax_error():
     html = read_static_html("index.html")
     scripts = extract_inline_scripts(html)
     assert len(scripts) == 1
-    script_path = Path("/tmp/hahahoho_index_inline.js")
+    script_path = Path("/tmp/__PROJECT_SLUG___index_inline.js")
     script_path.write_text(scripts[0], encoding="utf-8")
     result = subprocess.run(
         ["node", "--check", str(script_path)],

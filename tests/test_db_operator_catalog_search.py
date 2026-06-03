@@ -559,3 +559,29 @@ def test_slot_artist_sort_ignores_leading_english_articles(isolated_operator_sea
     rows = db.list_owned_items_for_storage_slot(int(slot["id"]))
 
     assert [int(row["id"]) for row in rows[:2]] == [beatles_id, bob_id]
+
+
+def test_search_operator_catalog_includes_review_fields(isolated_operator_search_db):
+    """검색 결과 각 항목에 review_text, review_source 키가 포함되어야 한다."""
+    from app.db.operator_search import search_operator_catalog
+    from app.db import get_conn
+
+    # album_master에 review 데이터 삽입
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO album_master (id, source_code, source_master_id, title, artist_or_brand, review_text, review_source, raw_json, created_at, updated_at)
+            VALUES (1, 'MANUAL', 'test-1', 'Test Album', 'Test Artist', '좋은 앨범입니다.', '음악취향Y', '{}', '2024-01-01', '2024-01-01')
+        """)
+        conn.execute("""
+            INSERT INTO owned_item (id, category, item_name_override, linked_album_master_id,
+                status, signature_type, domain_code, size_group, created_at, updated_at)
+            VALUES (1, 'LP', 'Test LP', 1, 'IN_COLLECTION', 'NONE', 'WESTERN', 'LP', '2024-01-01', '2024-01-01')
+        """)
+
+    results = search_operator_catalog("Test", limit=5)
+    assert len(results) >= 1
+    item = results[0]
+    assert "review_text" in item
+    assert "review_source" in item
+    assert item["review_text"] == "좋은 앨범입니다."
+    assert item["review_source"] == "음악취향Y"

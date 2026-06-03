@@ -10,6 +10,7 @@ from .. import security
 from ..schemas import (
     BarcodeIngestRequest,
     BarcodeIngestResponse,
+    BarcodePlacementRecommendationItem,
     BarcodePlacementRecommendationRequest,
     BarcodePlacementRecommendationResponse,
     CsvIngestResponse,

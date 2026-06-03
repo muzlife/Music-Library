@@ -74,11 +74,9 @@ def _get_tracks_for_master(conn: Any, master_id: int) -> list[str]:
 def _is_compilation(spotify_album_name: str) -> bool:
     s = str(spotify_album_name or "").lower()
     keywords = [
-        "greatest hits", "best of", "the best", "collection",
+        "greatest hits", "best of", "the best",
         "anthology", "compilation", "various artists",
-        "tribute to", "gold", "platinum", "ultimate",
-        "definitive", "essential", "very best", "the essential",
-        "complete", "box set", "deluxe edition", "remastered",
+        "tribute to", "very best",
     ]
     for kw in keywords:
         if kw in s:
@@ -114,33 +112,42 @@ def _get_spotify_album_tracks(sp: Any, album_id: str) -> list[str]:
 def _track_sequence_match(db_tracks: list[str], sp_tracks: list[str], min_match: int = 3) -> int:
     """Count how many DB tracks appear in Spotify tracks IN SEQUENCE.
     
-    Returns number of consecutive matches starting from position 0.
-    e.g. db_tracks=[A,B,C,D], sp_tracks=[A,B,X,D] → returns 2 (A,B match, C doesn't)
+    Checks starting from offset 0, 1, or 2 in sp_tracks.
     """
     if not db_tracks or not sp_tracks:
         return 0
-    
-    matches = 0
-    for i in range(min(len(db_tracks), len(sp_tracks))):
-        db_t = _norm(db_tracks[i])
-        sp_t = _norm(sp_tracks[i])
-        # Match if one contains the other or significant word overlap
-        if not db_t or not sp_t:
+        
+    best_matches = 0
+    # Try offsets 0, 1, 2
+    for offset in (0, 1, 2):
+        if offset >= len(sp_tracks):
             continue
-        if db_t in sp_t or sp_t in db_t:
-            matches += 1
-        else:
-            db_w = set(db_t.split())
-            sp_w = set(sp_t.split())
-            if db_w and sp_w:
-                overlap = db_w & sp_w
-                if len(overlap) >= min(len(db_w), len(sp_w)) * 0.6:
-                    matches += 1
-                else:
-                    break  # sequence broken
-            else:
+        matches = 0
+        for i in range(len(db_tracks)):
+            sp_idx = i + offset
+            if sp_idx >= len(sp_tracks):
                 break
-    return matches
+            db_t = _norm(db_tracks[i])
+            sp_t = _norm(sp_tracks[sp_idx])
+            if not db_t or not sp_t:
+                continue
+            if db_t in sp_t or sp_t in db_t:
+                matches += 1
+            else:
+                db_w = set(db_t.split())
+                sp_w = set(sp_t.split())
+                if db_w and sp_w:
+                    overlap = db_w & sp_w
+                    if len(overlap) >= min(len(db_w), len(sp_w)) * 0.6:
+                        matches += 1
+                    else:
+                        break
+                else:
+                    break
+        if matches > best_matches:
+            best_matches = matches
+            
+    return best_matches
 
 
 # ── album resolution ────────────────────────────────────────────────
@@ -170,24 +177,30 @@ def _resolve_album(sp: Any, track_id: str) -> dict[str, Any]:
 def _match_by_album(sp: Any, artist: str, title: str, db_tracks: list[str]) -> dict[str, Any] | None:
     """Search Spotify for artist+title, verify with track sequence."""
     query = f"{artist} {title}" if artist else title
-    results = sp.search_tracks_sync(query, limit=2)
+    results = sp.search_albums_sync(query, limit=2)
     if not results:
         return None
 
     is_comp = _is_compilation(title) or _is_soundtrack(title)
     min_tracks = 2 if is_comp else 3  # compilations need fewer due to variant tracklists
+    num_db_tracks = len(db_tracks)
+    if num_db_tracks > 0:
+        min_tracks = min(num_db_tracks, min_tracks)
+
+    required_score = 2 if is_comp else 3
+    if num_db_tracks > 0:
+        required_score = min(num_db_tracks, required_score)
 
     best = None
     best_score = 0
 
     for r in results:
-        album_name = r.get("album_name", "")
+        album_name = r.get("name", "")
         # Skip compilations unless we have tracks to verify
         if _is_compilation(album_name) and not db_tracks:
             continue
         
-        album = _resolve_album(sp, r.get("spotify_track_id", ""))
-        aid = album.get("album_id")
+        aid = r.get("spotify_album_id")
         if not aid:
             continue
 
@@ -200,25 +213,30 @@ def _match_by_album(sp: Any, artist: str, title: str, db_tracks: list[str]) -> d
         # Title match bonus
         if _norm(title) in _norm(album_name) or _norm(album_name) in _norm(title):
             score += 1
-        # Release year bonus: if Spotify release year matches DB range, +1
-        sp_date = album.get("release_date", "")
+        # Release year bonus
+        sp_date = r.get("release_date", "")
         if sp_date and len(sp_date) >= 4:
             try:
                 sp_year = int(sp_date[:4])
-                # We don't have DB release_year here, but the caller can check
-                # This is a soft bonus for having a plausible date
                 if 1900 <= sp_year <= 2030:
-                    score += 0.5  # soft bonus for valid date
+                    score += 0.5
             except ValueError:
                 pass
 
         if score > best_score:
             best_score = score
-            best = dict(album)
-            best["match_method"] = "album_search"
-            best["track_score"] = score
+            best = {
+                "album_id": aid,
+                "album_uri": r.get("spotify_album_uri"),
+                "album_name": album_name,
+                "album_artist": r.get("artist"),
+                "release_date": sp_date,
+                "image_url": r.get("image_url"),
+                "match_method": "album_search",
+                "track_score": score,
+            }
 
-    if best and best_score >= (3 if not is_comp else 2):
+    if best and best_score >= required_score:
         return best
     return None
 
@@ -372,6 +390,84 @@ def _verify_by_barcode(sp: Any, album_id: str, db_barcode: str) -> bool:
     except Exception:
         return False
 
+def _match_by_barcode(sp: Any, barcode: str, db_tracks: list[str]) -> dict[str, Any] | None:
+    if not barcode:
+        return None
+    results = sp.search_albums_sync(f"upc:{barcode}", limit=1)
+    if not results:
+        return None
+    
+    r = results[0]
+    aid = r.get("spotify_album_id")
+    if not aid:
+        return None
+    
+    # Verify track sequence if tracks are available
+    if db_tracks:
+        sp_tracks = _get_spotify_album_tracks(sp, aid)
+        score = _track_sequence_match(db_tracks, sp_tracks, min_match=1)
+        if score > 0:
+            return {
+                "album_id": aid,
+                "album_uri": r.get("spotify_album_uri"),
+                "album_name": r.get("name"),
+                "album_artist": r.get("artist"),
+                "release_date": r.get("release_date"),
+                "image_url": r.get("image_url"),
+                "match_method": "barcode_search",
+                "track_score": score,
+            }
+    else:
+        return {
+            "album_id": aid,
+            "album_uri": r.get("spotify_album_uri"),
+            "album_name": r.get("name"),
+            "album_artist": r.get("artist"),
+            "release_date": r.get("release_date"),
+            "image_url": r.get("image_url"),
+            "match_method": "barcode_search",
+            "track_score": 0,
+        }
+    return None
+
+
+def _match_various_artists(sp: Any, title: str, db_tracks: list[str]) -> dict[str, Any] | None:
+    if not title:
+        return None
+    query = f"Various Artists {title}"
+    results = sp.search_albums_sync(query, limit=2)
+    if not results:
+        return None
+    
+    best = None
+    best_score = 0
+    for r in results:
+        aid = r.get("spotify_album_id")
+        if not aid:
+            continue
+        
+        score = 0
+        if db_tracks:
+            sp_tracks = _get_spotify_album_tracks(sp, aid)
+            score = _track_sequence_match(db_tracks, sp_tracks, min_match=2)
+        
+        if score > best_score:
+            best_score = score
+            best = {
+                "album_id": aid,
+                "album_uri": r.get("spotify_album_uri"),
+                "album_name": r.get("name"),
+                "album_artist": r.get("artist"),
+                "release_date": r.get("release_date"),
+                "image_url": r.get("image_url"),
+                "match_method": "various_artists_search",
+                "track_score": score,
+            }
+            
+    if best and best_score >= 2:
+        return best
+    return None
+
 
 def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, Any]:
     """Multi-strategy match with track sequence verification."""
@@ -390,18 +486,28 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
         return {"master_id": master_id, "matched": False, "reason": "no_title"}
 
     db_tracks = _get_tracks_for_master(conn, master_id)
+    db_barcode = _get_barcode_for_master(conn, master_id)
 
     # Strategy pipeline
     result = None
 
-    # 1. Album search (with track sequence verification)
-    result = _match_by_album(sp, artist, title, db_tracks)
+    # 1. Barcode search (highest confidence)
+    if db_barcode:
+        result = _match_by_barcode(sp, db_barcode, db_tracks)
 
-    # 2. Sequential track search
+    # 2. Various Artists search
+    if not result and artist == "Various Artists":
+        result = _match_various_artists(sp, title, db_tracks)
+
+    # 3. Album search (with track sequence verification)
+    if not result:
+        result = _match_by_album(sp, artist, title, db_tracks)
+
+    # 4. Sequential track search
     if not result and db_tracks:
         result = _match_by_tracks(sp, artist, db_tracks)
 
-    # 3. Title-only (soundtracks/compilations)
+    # 5. Title-only (soundtracks/compilations)
     if not result:
         result = _match_by_title(sp, title, db_tracks)
 
@@ -414,9 +520,10 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
         }
 
     # Barcode cross-validation
-    db_barcode = _get_barcode_for_master(conn, master_id)
     barcode_match = False
-    if db_barcode:
+    if result.get("match_method") == "barcode_search":
+        barcode_match = True
+    elif db_barcode:
         barcode_match = _verify_by_barcode(sp, result["album_id"], db_barcode)
 
     # Store
