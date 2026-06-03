@@ -1475,7 +1475,7 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
     try:
         req = urllib.request.Request(
             f"https://en.wikipedia.org/w/api.php?{params}",
-            headers={"User-Agent": "hahahoho-library/0.1 (album-review-bot)"},
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1 (album-review-bot)"},
         )
         for attempt in range(2):
             try:
@@ -1509,7 +1509,7 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
         })
         req2 = urllib.request.Request(
             f"https://en.wikipedia.org/w/api.php?{params2}",
-            headers={"User-Agent": "hahahoho-library/0.1"},
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
         )
         with urllib.request.urlopen(req2, timeout=10) as resp2:
             data2 = _json.loads(resp2.read())
@@ -1540,7 +1540,7 @@ def fetch_review_from_url(url: str) -> str | None:
         resp = httpx.get(
             url,
             timeout=15,
-            headers={"User-Agent": "hahahoho-library/0.1"},
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
             follow_redirects=True,
         )
         resp.raise_for_status()

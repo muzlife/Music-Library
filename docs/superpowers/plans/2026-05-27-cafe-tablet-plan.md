@@ -295,8 +295,8 @@ git commit -m "feat(cafe): add reaction cards with emoji presets and free text"
 - [ ] **Step 2:** Run full suite `pytest tests/ -q` → verify no new failures
 - [ ] **Step 3:** Deploy to QA and Prod
 ```bash
-rsync -av --delete ... ~/apps/hahahoho-qa/
-rsync -av --delete ... ~/apps/hahahoho-prod/
+rsync -av --delete ... ~/apps/__PROJECT_SLUG__-qa/
+rsync -av --delete ... ~/apps/__PROJECT_SLUG__-prod/
 launchctl stop com.muzlife.library-qa; launchctl start com.muzlife.library-qa
 launchctl stop com.muzlife.library-prod; launchctl start com.muzlife.library-prod
 ```

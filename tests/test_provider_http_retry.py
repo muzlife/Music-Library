@@ -207,10 +207,10 @@ def test_has_default_user_agent_placeholder_detects_example_contact(
 
     config_module.get_settings.cache_clear()
     monkeypatch.setenv(
-        "DISCOGS_USER_AGENT", "hahahoho-library/0.1 (contact: your-email@example.com)"
+        "DISCOGS_USER_AGENT", "__PROJECT_SLUG__-library/0.1 (contact: your-email@example.com)"
     )
     monkeypatch.setenv(
-        "MUSICBRAINZ_USER_AGENT", "hahahoho-library/0.1 (contact: __OPS_EMAIL__)"
+        "MUSICBRAINZ_USER_AGENT", "__PROJECT_SLUG__-library/0.1 (contact: __OPS_EMAIL__)"
     )
     try:
         assert providers_module.has_default_user_agent_placeholder() is True
@@ -225,10 +225,10 @@ def test_has_default_user_agent_placeholder_clean_when_replaced(
 
     config_module.get_settings.cache_clear()
     monkeypatch.setenv(
-        "DISCOGS_USER_AGENT", "hahahoho-library/0.1 (contact: __OPS_EMAIL__)"
+        "DISCOGS_USER_AGENT", "__PROJECT_SLUG__-library/0.1 (contact: __OPS_EMAIL__)"
     )
     monkeypatch.setenv(
-        "MUSICBRAINZ_USER_AGENT", "hahahoho-library/0.1 (contact: __OPS_EMAIL__)"
+        "MUSICBRAINZ_USER_AGENT", "__PROJECT_SLUG__-library/0.1 (contact: __OPS_EMAIL__)"
     )
     try:
         assert providers_module.has_default_user_agent_placeholder() is False

@@ -11,16 +11,16 @@
 ---
 
 ## Files to Touch
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py` (only if a selector collision appears after CSS changes)
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-density-compact/tests/test_ops_shell_bootstrap.py` (only if a selector collision appears after CSS changes)
 
 ---
 
 ### Task 1: Add failing tests for compact header/nav + media tooltip
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-density-compact/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Write failing tests**
 
@@ -96,7 +96,7 @@ git commit -m "test: cover compact admin header/nav and media help tooltip"
 ### Task 2: Implement compact header + nav card + tooltip
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-density-compact/app/static/index.html`
 
 - [ ] **Step 1: Update layout tokens and header height**
 
@@ -201,7 +201,7 @@ git commit -m "feat: compact admin header/nav and move media intro to tooltip"
 ### Task 3: Enforce accordion collapse on top-level click
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/.worktrees/admin-density-compact/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/.worktrees/admin-density-compact/app/static/index.html`
 
 - [ ] **Step 1: Add helper to collapse other sections**
 

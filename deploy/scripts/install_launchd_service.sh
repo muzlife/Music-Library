@@ -9,8 +9,8 @@ Usage:
   ./deploy/scripts/install_launchd_service.sh <prod|qa> <app_root>
 
 Examples:
-  ./deploy/scripts/install_launchd_service.sh prod /Users/me/apps/hahahoho-prod
-  ./deploy/scripts/install_launchd_service.sh qa /Users/me/apps/hahahoho-qa
+  ./deploy/scripts/install_launchd_service.sh prod /Users/me/apps/__PROJECT_SLUG__-prod
+  ./deploy/scripts/install_launchd_service.sh qa /Users/me/apps/__PROJECT_SLUG__-qa
 EOF
 }
 
@@ -29,10 +29,10 @@ require_expected_app_root_name() {
 
   case "${role}" in
     prod)
-      expected_name="hahahoho-prod"
+      expected_name="__PROJECT_SLUG__-prod"
       ;;
     qa)
-      expected_name="hahahoho-qa"
+      expected_name="__PROJECT_SLUG__-qa"
       ;;
     *)
       return 0

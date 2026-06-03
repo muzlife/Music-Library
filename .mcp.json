@@ -2,7 +2,7 @@
   "mcpServers": {
     "deepseek-coder": {
       "command": "/opt/homebrew/Caskroom/miniforge/base/bin/python3",
-      "args": ["/Volumes/Data/Works/07.hahahoho/mcp-deepseek/server.py"]
+      "args": ["/Volumes/Data/Works/07.__PROJECT_SLUG__/mcp-deepseek/server.py"]
     }
   }
 }

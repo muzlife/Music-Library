@@ -10,7 +10,7 @@ Usage:
 
 Environment:
   PROD_SSH_TARGET          Remote SSH target, e.g. USER@PROD_HOST.local
-  PROD_APP_ROOT            Remote app root, e.g. /Users/__USER__/apps/hahahoho-prod
+  PROD_APP_ROOT            Remote app root, e.g. /Users/__USER__/apps/__PROJECT_SLUG__-prod
   PROD_SSH_KEY_PATH        Optional SSH private key path
   PROD_LAUNCHD_LABEL       launchd label, default: com.muzlife.library-prod
   PROD_HEALTHCHECK_URL     Remote local health URL, default: http://127.0.0.1:8000/health

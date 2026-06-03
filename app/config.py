@@ -103,11 +103,11 @@ def get_settings() -> Settings:
         ),
         discogs_user_agent=os.getenv(
             "DISCOGS_USER_AGENT",
-            "hahahoho-library/0.1 (contact: your-email@example.com)",
+            "__PROJECT_SLUG__-library/0.1 (contact: your-email@example.com)",
         ),
         musicbrainz_user_agent=os.getenv(
             "MUSICBRAINZ_USER_AGENT",
-            "hahahoho-library/0.1 (contact: your-email@example.com)",
+            "__PROJECT_SLUG__-library/0.1 (contact: your-email@example.com)",
         ),
         confidence_auto_approve=float(os.getenv("MATCH_CONFIDENCE_AUTO_APPROVE", "0.90")),
         confidence_review=float(os.getenv("MATCH_CONFIDENCE_REVIEW", "0.60")),

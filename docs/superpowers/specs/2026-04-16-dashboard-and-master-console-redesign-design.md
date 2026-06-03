@@ -7,11 +7,11 @@
 Apply a `Nexus OS / operational console` visual language to the admin `대시보드` and `마스터 정리` screens, while preserving the current workflows and data behavior. The result should feel denser, more deliberate, and more like an operations surface than a generic back-office card UI.
 
 ## Scope
-- Admin `대시보드` screen in `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Admin `대시보드` screen in `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
   - `#tabHome`
   - `#homeDashboardCard`
   - related dashboard panels, toolbars, and selection surfaces
-- Admin `등록/수집 > 마스터 정리` screen in `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Admin `등록/수집 > 마스터 정리` screen in `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
   - `#registerMasterPanel`
   - `#registeredMasterMergeCard`
 - Shared visual tokens needed by those two screens only
@@ -222,7 +222,7 @@ The master cleanup surface should read as a command console:
 - Cover art cannot be the only identifier; title/id/source remain always visible
 
 ## Implementation Notes
-- Keep this phase inside `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Keep this phase inside `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
 - Prefer adding screen-scoped CSS hooks rather than rewriting unrelated global admin styles
 - Avoid touching backend logic for this redesign phase
 - If a shared token is introduced, scope it to dashboard/master-cleanup surfaces first

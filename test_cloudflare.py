@@ -3,7 +3,7 @@ import requests
 url_health = "https://__QA_DOMAIN__/health"
 url_ops = "https://__QA_DOMAIN__/ops/placement-hints"
 
-headers = {"Cookie": "hahahoho_session=fake_cookie_value.fake_signature"}
+headers = {"Cookie": "__PROJECT_SLUG___session=fake_cookie_value.fake_signature"}
 
 print("GET request:")
 r1 = requests.get(url_ops, headers=headers)

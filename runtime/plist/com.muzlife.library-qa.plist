@@ -7,11 +7,11 @@
   <string>com.muzlife.library-qa</string>
 
   <key>WorkingDirectory</key>
-  <string>/Users/__USER__/apps/hahahoho-qa</string>
+  <string>/Users/__USER__/apps/__PROJECT_SLUG__-qa</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/__USER__/apps/hahahoho-qa/scripts/run_api.sh</string>
+    <string>/Users/__USER__/apps/__PROJECT_SLUG__-qa/scripts/run_api.sh</string>
   </array>
 
   <key>EnvironmentVariables</key>
@@ -39,9 +39,9 @@
     <key>MANIADB_BASE_URL</key>
     <string>http://www.maniadb.com</string>
     <key>DISCOGS_USER_AGENT</key>
-    <string>hahahoho-library/0.1 (contact: __CONTACT_EMAIL__)</string>
+    <string>__PROJECT_SLUG__-library/0.1 (contact: __CONTACT_EMAIL__)</string>
     <key>MUSICBRAINZ_USER_AGENT</key>
-    <string>hahahoho-library/0.1 (contact: __CONTACT_EMAIL__)</string>
+    <string>__PROJECT_SLUG__-library/0.1 (contact: __CONTACT_EMAIL__)</string>
     <key>MATCH_CONFIDENCE_AUTO_APPROVE</key>
     <string>0.90</string>
     <key>MATCH_CONFIDENCE_REVIEW</key>
@@ -59,7 +59,7 @@
     <key>APP_PORT</key>
     <string>8100</string>
     <key>LIBRARY_DB_PATH</key>
-    <string>/Users/__USER__/apps/hahahoho-qa/runtime/data/library.db</string>
+    <string>/Users/__USER__/apps/__PROJECT_SLUG__-qa/runtime/data/library.db</string>
     <key>APP_ENV</key>
     <string>qa</string>
   </dict>
@@ -70,8 +70,8 @@
   <true/>
 
   <key>StandardOutPath</key>
-  <string>/Users/__USER__/apps/hahahoho-qa/runtime/logs/launchd.qa.stdout.log</string>
+  <string>/Users/__USER__/apps/__PROJECT_SLUG__-qa/runtime/logs/launchd.qa.stdout.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/__USER__/apps/hahahoho-qa/runtime/logs/launchd.qa.stderr.log</string>
+  <string>/Users/__USER__/apps/__PROJECT_SLUG__-qa/runtime/logs/launchd.qa.stderr.log</string>
 </dict>
 </plist>

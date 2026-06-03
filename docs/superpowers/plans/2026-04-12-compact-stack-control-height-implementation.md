@@ -13,15 +13,15 @@
 ## File Map
 
 **Modify:**
-- `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
-- `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
+- `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_admin_density_compaction.py`
 
 ---
 
 ### Task 1: Expand Existing Regression Test for Scoped Control Height Rules
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_admin_density_compaction.py`
 
 - [ ] **Step 1: Expand the existing failing test**
 
@@ -61,7 +61,7 @@ Expected: FAIL
 ### Task 2: Add Scoped Control Height CSS Rules
 
 **Files:**
-- Modify: `/Volumes/Data/Works/07.hahahoho/app/static/index.html`
+- Modify: `/Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html`
 
 - [ ] **Step 1: Add scoped token**
 
@@ -140,8 +140,8 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add /Volumes/Data/Works/07.hahahoho/app/static/index.html \
-        /Volumes/Data/Works/07.hahahoho/tests/test_admin_density_compaction.py
+git add /Volumes/Data/Works/07.__PROJECT_SLUG__/app/static/index.html \
+        /Volumes/Data/Works/07.__PROJECT_SLUG__/tests/test_admin_density_compaction.py
 git commit -m "style: align compact stack action control heights"
 ```
 

@@ -424,7 +424,7 @@ def fetch_deepl_usage(auth_key: str, base_url: str | None) -> dict[str, Any]:
         usage_url,
         headers={
             "Authorization": f"DeepL-Auth-Key {normalized_auth_key}",
-            "User-Agent": "hahahoho-library/0.1 (ops translation)",
+            "User-Agent": "__PROJECT_SLUG__-library/0.1 (ops translation)",
         },
         timeout=5.0,
     )
@@ -450,7 +450,7 @@ def translate_text_with_deepl(text: str, locale: str | None) -> str:
         _resolve_deepl_api_url(auth_key, base_url, "translate"),
         headers={
             "Authorization": f"DeepL-Auth-Key {auth_key}",
-            "User-Agent": "hahahoho-library/0.1 (ops translation)",
+            "User-Agent": "__PROJECT_SLUG__-library/0.1 (ops translation)",
         },
         json={
             "text": [content],

@@ -80,7 +80,7 @@
 - 주로 외부 입력/파일 처리 방어인 것은 이해되나, 일부는 “예외를 삼킨 뒤 None 반환”이라 디버깅 시 흔적이 사라집니다.
 - 권장: `logger.exception(...)`로 흔적이라도 남기고 운영 화면(`/system/status`)에서 최근 N건 보일 수 있게 카운터/링버퍼.
 
-### 1.12 [Low] 하드코딩된 `/Volumes/Data/Works/07.hahahoho/...` 경로
+### 1.12 [Low] 하드코딩된 `/Volumes/Data/Works/07.__PROJECT_SLUG__/...` 경로
 - `main.py` 327~335에 9개의 절대경로 상수. 운영기·QA기 양쪽에서 그대로 쓰면 충돌합니다.
 - 권장: `Path(__file__).resolve().parents[1]` 기준으로 상대경로화 + 운영기에서는 `LIBRARY_PROJECT_ROOT` ENV로 override.
 
@@ -172,6 +172,6 @@
 [ ] PRAGMA user_version 기반 마이그레이션 매니저로 _apply_migrations 정리
 [ ] main.py 라우트를 app/api/*로 분리(우선 auth, owned_items, album_masters, purchase_import)
 [ ] static/index.html → index.html + app.css + app.js 분리, JS는 ESM 모듈로 도메인별 분할
-[ ] /Volumes/Data/Works/07.hahahoho 하드코딩 경로를 LIBRARY_PROJECT_ROOT로 추상화
+[ ] /Volumes/Data/Works/07.__PROJECT_SLUG__ 하드코딩 경로를 LIBRARY_PROJECT_ROOT로 추상화
 [ ] webhook/gmail에 size limit + Content-Type + source_ref 기반 dedupe
 ```

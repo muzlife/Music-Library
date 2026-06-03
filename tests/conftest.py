@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-_TEST_DB_DIR = Path(tempfile.mkdtemp(prefix="hahahoho-tests-"))
+_TEST_DB_DIR = Path(tempfile.mkdtemp(prefix="__PROJECT_SLUG__-tests-"))
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 if str(_REPO_ROOT) not in sys.path:
