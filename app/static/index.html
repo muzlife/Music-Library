@@ -20929,7 +20929,7 @@
           <div class="mini" data-i18n="ops.exception.intro">운영 병목이 되는 예외 자산만 모아 빠르게 처리합니다. 소스 미연결은 바로 `소스 보강`, 나머지는 `미디어 > 관리` 수정 화면으로 넘깁니다.</div>
           <div class="ops-exception-summary" id="opsExceptionSummary"></div>
           <div class="ops-exception-inline-row">
-            <div class="ops-exception-inline-field ops-exception-inline-field--type">
+            <div class="ops-exception-inline-field ops-exception-inline-field--type" style="display:none;">
               <label for="opsExceptionType" data-i18n="ops.exception.field.type.label">예외 종류</label>
               <select id="opsExceptionType">
                 <option value="UNSLOTTED" selected data-i18n="ops.exception.field.type.unslotted">미배치</option>
@@ -20950,31 +20950,27 @@
               <label for="opsExceptionLimit" data-i18n="ops.exception.field.limit.label">표시 수</label>
               <input id="opsExceptionLimit" type="number" min="10" max="200" value="50" />
             </div>
-            <div id="opsExceptionDomainWrap" class="ops-exception-inline-field" style="display:none;">
-              <label for="opsExceptionDomain">도메인</label>
-              <select id="opsExceptionDomain">
-                <option value="">전체</option>
-                <option value="KOREA">가요</option>
-                <option value="JAPAN">제이팝</option>
-                <option value="GREATER_CHINA">씨팝</option>
-                <option value="WESTERN" selected>팝/웨스턴</option>
-                <option value="OTHER_ASIA">아시아 기타</option>
-                <option value="WORLD">월드 기타</option>
-                <option value="UNKNOWN">미분류</option>
-              </select>
-            </div>
             <div class="ops-exception-inline-field ops-exception-inline-field--preset">
               <label for="opsExceptionPresetSelect" data-i18n="ops.exception.field.preset.label">저장된 필터</label>
               <select id="opsExceptionPresetSelect">
                 <option value="" data-i18n="ops.exception.field.preset.empty">선택 안 함</option>
               </select>
             </div>
-            <div class="ops-exception-inline-actions">
-              <button id="opsExceptionLoadBtn" class="btn" type="button" data-i18n="ops.exception.action.load">불러오기</button>
-              <button id="opsExceptionCountBtn" class="btn ghost" type="button" data-i18n="ops.exception.action.reload_count">카운트 새로고침</button>
-            </div>
           </div>
           <div class="ops-ex-search-grid" id="opsExSearchGrid">
+            <div>
+              <label for="opsExceptionDomain">도메인</label>
+              <select id="opsExceptionDomain">
+                <option value="">전체</option>
+                <option value="KOREA">가요</option>
+                <option value="JAPAN">제이팝</option>
+                <option value="GREATER_CHINA">씨팝</option>
+                <option value="WESTERN">팝/웨스턴</option>
+                <option value="OTHER_ASIA">아시아 기타</option>
+                <option value="WORLD_OTHER">월드 기타</option>
+                <option value="UNKNOWN">미분류</option>
+              </select>
+            </div>
             <div>
               <label for="opsExArtist">아티스트명</label>
               <input id="opsExArtist" type="text" placeholder="예: Pink Floyd" />
@@ -20984,6 +20980,10 @@
               <input id="opsExTitle" type="text" placeholder="예: The Wall" />
             </div>
             <div>
+              <label for="opsExReleaseYear">발매년</label>
+              <input id="opsExReleaseYear" type="number" min="1900" max="2100" placeholder="예: 1979" />
+            </div>
+            <div>
               <label for="opsExBarcode">바코드</label>
               <input id="opsExBarcode" type="text" placeholder="예: 5099902987606" />
             </div>
@@ -20991,11 +20991,11 @@
               <label for="opsExCatalogNo">카탈로그</label>
               <input id="opsExCatalogNo" type="text" placeholder="예: SMAS-3723" />
             </div>
-            <div>
-              <label for="opsExReleaseYear">발매년</label>
-              <input id="opsExReleaseYear" type="number" min="1900" max="2100" placeholder="예: 1979" />
-            </div>
-            <div style="display:flex;align-items:flex-end;">
+            <div style="display:flex;align-items:flex-end;gap:4px;grid-column:span 2;">
+              <button id="opsExceptionLoadBtn" class="btn secondary icon-btn" type="button" title="검색 / 불러오기" aria-label="검색 / 불러오기">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+              </button>
+              <button id="opsExceptionCountBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="카운트 새로고침" aria-label="카운트 새로고침"></button>
               <button id="opsExSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="검색 필터 초기화" aria-label="검색 필터 초기화"></button>
             </div>
           </div>
@@ -44790,10 +44790,8 @@ async function loadDashboardClimate() {
       if ($("opsExceptionBulkMasterBtn")) $("opsExceptionBulkMasterBtn").disabled = !allowMaster;
       const reviewBtn = $("opsExceptionBulkReviewBtn");
       if (reviewBtn) { reviewBtn.style.display = activeType === "REVIEW_MISSING" ? "" : "none"; reviewBtn.disabled = !allowReview; }
-      const domainWrap = $("opsExceptionDomainWrap");
       const isMasterType = (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING"
                             || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING");
-      if (domainWrap) domainWrap.style.display = isMasterType ? "" : "none";
       if ($("opsExceptionSelectAllBtn")) $("opsExceptionSelectAllBtn").disabled = !(Array.isArray(opsExceptionItems) && opsExceptionItems.length);
       if ($("opsExceptionClearBtn")) $("opsExceptionClearBtn").disabled = selectedCount <= 0;
     }
@@ -44833,7 +44831,7 @@ async function loadDashboardClimate() {
             </div>
           </div>
           <div id="opsExCtxMasterItems" class="mini muted">보유 상품 조회 중...</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <div id="opsExCtxMasterActions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
             <button class="btn ghost tiny" type="button"
               onclick="openMediaSearchDetailManage(${masterId},0)">관리 화면으로</button>
             <button class="btn ghost tiny" type="button"
@@ -44841,20 +44839,26 @@ async function loadDashboardClimate() {
           </div>
         `;
         try {
-          const res = await fetchWithRetry(`/owned-items?album_master_id=${masterId}&limit=10&include_total=true`);
+          const res = await fetchWithRetry(`/album-masters/${masterId}/members`);
           const data = await safeJson(res);
           const items = Array.isArray(data) ? data : [];
-          const total = Number(res.headers.get("X-Total-Count") || items.length);
           const el = $("opsExCtxMasterItems");
           if (!el) return;
           if (!items.length) { el.textContent = "보유 상품 없음"; return; }
-          el.innerHTML = `<strong style="font-size:0.75rem;">보유 상품 ${total}건</strong><div style="margin-top:4px;display:flex;flex-direction:column;gap:2px;">${
+          const firstId = Number(items[0]?.id || 0);
+          // 관리 화면으로 버튼에 첫 상품 ID 반영
+          const actionsEl = $("opsExCtxMasterActions");
+          if (actionsEl && firstId > 0) {
+            const manageBtn = actionsEl.querySelector("button");
+            if (manageBtn) manageBtn.setAttribute("onclick", `openMediaSearchDetailManage(${masterId},${firstId})`);
+          }
+          el.innerHTML = `<strong style="font-size:0.75rem;">보유 상품 ${items.length}건</strong><div style="margin-top:4px;display:flex;flex-direction:column;gap:2px;">${
             items.slice(0,5).map(it => {
               const name = resolveOwnedAlbumName(it);
               const loc = it.slot_code || t("common.unslotted");
               return `<div style="font-size:0.72rem;">${escapeHtml(name)} — ${escapeHtml(loc)}</div>`;
             }).join("")
-          }${total > 5 ? `<div class="mini muted">외 ${total-5}건</div>` : ""}</div>`;
+          }${items.length > 5 ? `<div class="mini muted">외 ${items.length-5}건</div>` : ""}</div>`;
         } catch (_) {}
       } else {
         const ownedItemId = Number(row.id || 0);

@@ -1479,7 +1479,15 @@ class RelatedAlbumVersionsResponse(BaseModel):
     override_release_year: int | None = None
     override_domain_code: DomainCode | None = None
     override_note: str | None = None
+    override_title: str | None = None
+    override_artist_or_brand: str | None = None
     has_manual_correction: bool = False
+    spotify_album_id: str | None = None
+    review_text: str | None = None
+    review_source: str | None = None
+    review_url: str | None = None
+    genres: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     items: list[OwnedItemListItem] = Field(default_factory=list)
 
 

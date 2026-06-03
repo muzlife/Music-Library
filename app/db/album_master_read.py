@@ -294,18 +294,9 @@ def _build_album_master_filter_sql(
 
     if domain_code:
         where_sql += """
-          AND (
-            am.domain_code = ?
-            OR EXISTS (
-              SELECT 1
-              FROM album_master_member amm
-              JOIN owned_item oi ON oi.id = amm.owned_item_id
-              WHERE amm.album_master_id = am.id
-                AND oi.domain_code = ?
-            )
-          )
+          AND COALESCE(am.override_domain_code, am.domain_code) = ?
         """
-        params.extend([domain_code, domain_code])
+        params.append(domain_code)
 
     if release_type:
         where_sql += """
@@ -470,7 +461,15 @@ def get_album_master_binding_for_owned_item(owned_item_id: int) -> dict[str, Any
               am.source_domain_code,
               am.override_release_year,
               am.override_domain_code,
-              am.override_note
+              am.override_note,
+              am.override_title,
+              am.override_artist_or_brand,
+              am.spotify_album_id,
+              am.review_text,
+              am.review_source,
+              am.review_url,
+              am.genres_json,
+              am.styles_json
             FROM album_master_member amm
             JOIN album_master am ON am.id = amm.album_master_id
             WHERE amm.owned_item_id = ?

@@ -342,6 +342,16 @@ def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsR
                     preferred_master_external_id = (
                         str(supported_row.get("source_external_id") or "").strip() or preferred_master_external_id
                     )
+        import json as _json
+        def _parse_str_list(v: object) -> list[str]:
+            if not v:
+                return []
+            try:
+                parsed = _json.loads(str(v))
+                return [str(x) for x in parsed] if isinstance(parsed, list) else []
+            except Exception:
+                return []
+
         return RelatedAlbumVersionsResponse(
             owned_item_id=owned_item_id,
             relation_type="ALBUM_MASTER_BIND",
@@ -358,11 +368,19 @@ def get_owned_item_related_versions(owned_item_id: int) -> RelatedAlbumVersionsR
             override_release_year=int(bound["override_release_year"]) if bound.get("override_release_year") not in (None, "") else None,
             override_domain_code=str(bound.get("override_domain_code") or "").strip() or None,
             override_note=str(bound.get("override_note") or "").strip() or None,
+            override_title=str(bound.get("override_title") or "").strip() or None,
+            override_artist_or_brand=str(bound.get("override_artist_or_brand") or "").strip() or None,
             has_manual_correction=bool(
                 bound.get("override_release_year") not in (None, "")
                 or str(bound.get("override_domain_code") or "").strip()
                 or str(bound.get("override_note") or "").strip()
             ),
+            spotify_album_id=str(bound.get("spotify_album_id") or "").strip() or None,
+            review_text=str(bound.get("review_text") or "").strip() or None,
+            review_source=str(bound.get("review_source") or "").strip() or None,
+            review_url=str(bound.get("review_url") or "").strip() or None,
+            genres=_parse_str_list(bound.get("genres_json")),
+            styles=_parse_str_list(bound.get("styles_json")),
             items=_to_items(rows),
         )
 
