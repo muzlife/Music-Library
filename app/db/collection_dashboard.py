@@ -391,7 +391,7 @@ def get_collection_dashboard() -> dict[str, Any]:
               oi.id,
               oi.linked_album_master_id,
               oi.linked_artist_name,
-              oi.domain_code,
+              COALESCE(am_dc.override_domain_code, am_dc.domain_code, oi.domain_code) AS domain_code,
               oi.order_key,
               oi.display_rank,
               oi.size_group,
@@ -413,6 +413,8 @@ def get_collection_dashboard() -> dict[str, Any]:
             FROM owned_item oi
             LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
             LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            LEFT JOIN album_master_member amm_dc ON amm_dc.owned_item_id = oi.id
+            LEFT JOIN album_master am_dc ON am_dc.id = amm_dc.album_master_id
             WHERE oi.status = 'IN_COLLECTION'
               AND oi.storage_slot_id IS NOT NULL
             """
@@ -467,11 +469,13 @@ def get_collection_dashboard() -> dict[str, Any]:
 
         by_domain_decade = conn.execute(
             """
-            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+            SELECT COALESCE(NULLIF(COALESCE(am_dc.override_domain_code, am_dc.domain_code, oi.domain_code), ''), 'UNASSIGNED') AS domain,
                    (mid.release_year / 10) * 10 AS decade,
                    COUNT(*) AS cnt
             FROM owned_item oi
             JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master_member amm_dc ON amm_dc.owned_item_id = oi.id
+            LEFT JOIN album_master am_dc ON am_dc.id = amm_dc.album_master_id
             WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
               AND mid.release_year IS NOT NULL AND mid.release_year > 0
             GROUP BY domain, decade
@@ -481,12 +485,14 @@ def get_collection_dashboard() -> dict[str, Any]:
 
         by_genre_domain = conn.execute(
             """
-            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+            SELECT COALESCE(NULLIF(COALESCE(am_dc.override_domain_code, am_dc.domain_code, oi.domain_code), ''), 'UNASSIGNED') AS domain,
                    j.value AS genre,
                    COUNT(*) AS cnt
             FROM owned_item oi
             JOIN music_item_detail mid ON mid.owned_item_id = oi.id,
                  json_each(mid.genres_json) j
+            LEFT JOIN album_master_member amm_dc ON amm_dc.owned_item_id = oi.id
+            LEFT JOIN album_master am_dc ON am_dc.id = amm_dc.album_master_id
             WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
               AND mid.genres_json IS NOT NULL AND mid.genres_json <> '[]'
             GROUP BY domain, genre
@@ -497,9 +503,11 @@ def get_collection_dashboard() -> dict[str, Any]:
         by_format_domain = conn.execute(
             """
             SELECT oi.category AS format,
-                   COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   COALESCE(NULLIF(COALESCE(am_dc.override_domain_code, am_dc.domain_code, oi.domain_code), ''), 'UNASSIGNED') AS domain,
                    COUNT(*) AS cnt
             FROM owned_item oi
+            LEFT JOIN album_master_member amm_dc ON amm_dc.owned_item_id = oi.id
+            LEFT JOIN album_master am_dc ON am_dc.id = amm_dc.album_master_id
             WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
             GROUP BY oi.category, domain
             ORDER BY cnt DESC
@@ -509,10 +517,12 @@ def get_collection_dashboard() -> dict[str, Any]:
         by_pressing_domain = conn.execute(
             """
             SELECT mid.pressing_country,
-                   COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+                   COALESCE(NULLIF(COALESCE(am_dc.override_domain_code, am_dc.domain_code, oi.domain_code), ''), 'UNASSIGNED') AS domain,
                    COUNT(*) AS cnt
             FROM owned_item oi
             JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master_member amm_dc ON amm_dc.owned_item_id = oi.id
+            LEFT JOIN album_master am_dc ON am_dc.id = amm_dc.album_master_id
             WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
               AND mid.pressing_country IS NOT NULL AND TRIM(mid.pressing_country) <> ''
             GROUP BY mid.pressing_country, domain
@@ -579,10 +589,12 @@ def get_collection_dashboard() -> dict[str, Any]:
 
         by_sign_domain = conn.execute(
             """
-            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+            SELECT COALESCE(NULLIF(COALESCE(am_dc.override_domain_code, am_dc.domain_code, oi.domain_code), ''), 'UNASSIGNED') AS domain,
                    oi.signature_type,
                    COUNT(*) AS cnt
             FROM owned_item oi
+            LEFT JOIN album_master_member amm_dc ON amm_dc.owned_item_id = oi.id
+            LEFT JOIN album_master am_dc ON am_dc.id = amm_dc.album_master_id
             WHERE oi.signature_type IS NOT NULL AND oi.signature_type <> 'NONE'
               AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
             GROUP BY domain, oi.signature_type
@@ -610,11 +622,13 @@ def get_collection_dashboard() -> dict[str, Any]:
         # Card: Recent registration profile — domain × decade (last 30 days)
         by_recent_reg_domain_decade = conn.execute(
             """
-            SELECT COALESCE(NULLIF(oi.domain_code, ''), 'UNASSIGNED') AS domain,
+            SELECT COALESCE(NULLIF(COALESCE(am_dc.override_domain_code, am_dc.domain_code, oi.domain_code), ''), 'UNASSIGNED') AS domain,
                    (mid.release_year / 10) * 10 AS decade,
                    COUNT(*) AS cnt
             FROM owned_item oi
             LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master_member amm_dc ON amm_dc.owned_item_id = oi.id
+            LEFT JOIN album_master am_dc ON am_dc.id = amm_dc.album_master_id
             WHERE oi.created_at >= datetime('now', '-30 days')
               AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
               AND mid.release_year IS NOT NULL AND mid.release_year > 0
