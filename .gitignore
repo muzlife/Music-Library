@@ -47,3 +47,4 @@ library.db
 app.db
 library_analyze.db
 *.log
+docs/qa/
