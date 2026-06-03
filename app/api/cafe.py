@@ -247,22 +247,10 @@ def cafe_queue(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
 
 @router.get("/cafe/now-playing")
 def cafe_now_playing() -> dict[str, Any]:
-    """Public: current playback info (Spotify only for now)."""
-    now = _time.monotonic()
-    if _NOW_PLAYING_CACHE["data"] is not None and now - _NOW_PLAYING_CACHE["ts"] < _NOW_PLAYING_TTL:
-        return _NOW_PLAYING_CACHE["data"]
-    pb = _spotify.current_playback_sync()
-    if pb:
-        result: dict[str, Any] = {"available": True, "source": "spotify", **pb}
-    else:
-        local = _local.current_track()
-        if local and local.get("is_playing"):
-            result = {"available": True, **local}
-        else:
-            result = {"available": False}
-    _NOW_PLAYING_CACHE["data"] = result
-    _NOW_PLAYING_CACHE["ts"] = now
-    return result
+    """Public: current playback info — served from worker-managed state."""
+    if _now_playing_state is not None:
+        return _now_playing_state
+    return {"available": False}
 
 
 # ── local playback ────────────────────────────────────────────────
