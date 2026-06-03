@@ -17,6 +17,17 @@ def test_spotify_service_not_configured_returns_empty(monkeypatch):
     assert svc.current_playback_sync() is None
 
 
+def test_current_playback_sync_calls_api_not_returns_none(monkeypatch):
+    """current_playback_sync()가 return None 없이 실제 _ensure_client를 호출해야 한다."""
+    from app.services.spotify import SpotifyService
+    sp = SpotifyService()
+    called = []
+    monkeypatch.setattr(sp, '_ensure_client', lambda: called.append(1) or None)
+    result = sp.current_playback_sync()
+    assert result is None          # client=None 이므로 None 반환
+    assert len(called) == 1        # 하지만 _ensure_client는 호출됐어야 함
+
+
 def test_spotify_service_configured_initializes(monkeypatch):
     """When env vars are set, configured=True (spotipy init happens lazily)."""
     monkeypatch.setenv("SPOTIFY_CLIENT_ID", "test_id")

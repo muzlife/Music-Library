@@ -16,14 +16,6 @@ from ..config import get_settings
 logger = logging.getLogger(__name__)
 
 
-import time
-
-_PLAYBACK_CACHE = {
-    "timestamp": 0.0,
-    "value": None,
-}
-
-
 class SpotifyService:
     def __init__(self) -> None:
         settings = get_settings()
@@ -205,29 +197,20 @@ class SpotifyService:
             return False
 
     def current_playback_sync(self) -> dict[str, Any] | None:
-        now = time.time()
-        if now - _PLAYBACK_CACHE["timestamp"] < 5.0:
-            return _PLAYBACK_CACHE["value"]
-
         sp = self._ensure_client()
         if sp is None:
-            _PLAYBACK_CACHE["timestamp"] = now
-            _PLAYBACK_CACHE["value"] = None
             return None
         try:
             pb = sp.current_playback()
         except Exception:
-            _PLAYBACK_CACHE["timestamp"] = now
-            _PLAYBACK_CACHE["value"] = None
+            logger.exception("spotify current_playback failed")
             return None
         if not pb or not pb.get("is_playing"):
-            _PLAYBACK_CACHE["timestamp"] = now
-            _PLAYBACK_CACHE["value"] = None
             return None
         item = pb.get("item") or {}
         album = item.get("album", {})
         images = album.get("images") or []
-        val = {
+        return {
             "spotify_track_id": item.get("id"),
             "title": item.get("name"),
             "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
@@ -238,6 +221,3 @@ class SpotifyService:
             "track_uri": item.get("uri"),
             "is_playing": True,
         }
-        _PLAYBACK_CACHE["timestamp"] = now
-        _PLAYBACK_CACHE["value"] = val
-        return val
