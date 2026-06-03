@@ -953,9 +953,16 @@ def spotify_batch_match(
     request: Request,
     limit: int = Query(default=50, ge=1, le=200),
 ) -> dict[str, Any]:
-    """Batch match album_masters to Spotify. ADMIN only."""
-    from ..security import _require_admin_request
-    _require_admin_request(request)
+    """Batch match album_masters to Spotify. ADMIN or webhook token."""
+    import secrets as _secrets
+    from ..config import get_settings as _get_settings
+    _cfg = _get_settings()
+    _token = str(_cfg.spotify_batch_webhook_token or "").strip()
+    _provided = str(request.headers.get("x-spotify-batch-token") or "").strip()
+    _token_ok = bool(_token) and _secrets.compare_digest(_provided, _token)
+    if not _token_ok:
+        from ..security import _require_admin_request
+        _require_admin_request(request)
     from ..services.spotify import SpotifyService
     from ..db.album_master_spotify import batch_match_spotify
 

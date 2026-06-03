@@ -38,6 +38,7 @@ class Settings:
     spotify_client_id: str
     spotify_client_secret: str
     spotify_redirect_uri: str
+    spotify_batch_webhook_token: str | None
 
 
 def _default_db_path() -> str:
@@ -142,4 +143,5 @@ def get_settings() -> Settings:
         spotify_client_id=(os.getenv("SPOTIFY_CLIENT_ID") or "").strip(),
         spotify_client_secret=(os.getenv("SPOTIFY_CLIENT_SECRET") or "").strip(),
         spotify_redirect_uri=(os.getenv("SPOTIFY_REDIRECT_URI") or "http://localhost:8100/spotify/callback").strip(),
+        spotify_batch_webhook_token=(os.getenv("SPOTIFY_BATCH_WEBHOOK_TOKEN") or "").strip() or None,
     )
