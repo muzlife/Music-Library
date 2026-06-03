@@ -107,3 +107,29 @@ async def test_worker_prefers_local_over_spotify(monkeypatch):
     assert len(broadcast_calls) == 1
     assert broadcast_calls[0]["source"] == "local"
     assert len(spotify_calls) == 0  # Spotify 미호출
+
+
+def test_now_playing_rest_returns_worker_state(monkeypatch):
+    """GET /cafe/now-playing은 워커가 관리하는 _now_playing_state를 반환해야 한다."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.api import cafe
+
+    cafe._now_playing_state = {"available": True, "title": "Cached Song"}
+    client = TestClient(app)
+    resp = client.get("/cafe/now-playing")
+    assert resp.status_code == 200
+    assert resp.json()["title"] == "Cached Song"
+
+
+def test_now_playing_rest_returns_unavailable_when_no_state():
+    """_now_playing_state가 None이면 {"available": False}를 반환해야 한다."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.api import cafe
+
+    cafe._now_playing_state = None
+    client = TestClient(app)
+    resp = client.get("/cafe/now-playing")
+    assert resp.status_code == 200
+    assert resp.json() == {"available": False}

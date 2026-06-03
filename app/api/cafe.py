@@ -294,6 +294,35 @@ def cafe_now_playing() -> dict[str, Any]:
     return {"available": False}
 
 
+@router.get("/cafe/now-playing/stream")
+async def cafe_now_playing_stream(request: Request):
+    """Public: SSE stream — pushes now-playing state on every change."""
+    from fastapi.responses import StreamingResponse
+
+    async def generate():
+        queue: asyncio.Queue = asyncio.Queue(maxsize=5)
+        _sse_clients.add(queue)
+        try:
+            initial = _now_playing_state if _now_playing_state is not None else {"available": False}
+            yield f"data: {json.dumps(initial, ensure_ascii=False)}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    data = await asyncio.wait_for(queue.get(), timeout=25.0)
+                    yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+        finally:
+            _sse_clients.discard(queue)
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 # ── local playback ────────────────────────────────────────────────
 
 @router.post("/ops/cafe/play-local")
