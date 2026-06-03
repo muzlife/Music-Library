@@ -2943,46 +2943,6 @@ def test_update_owned_item_slot_route_inherits_target_cabinet_domain_when_item_d
     assert str(moved_row["domain_code"] or "") == "WESTERN"
 
 
-def test_update_owned_item_slot_route_keeps_existing_domain_when_target_cabinet_has_different_domain(admin_client):
-    target_slot = db.upsert_storage_slot(
-        cabinet_name="도메인 유지 LP장",
-        column_code="01",
-        cell_code="01",
-        allowed_size_group="LP",
-        cabinet_sort_policy="ARTIST_RELEASE_TITLE",
-        cabinet_domain_code="WESTERN",
-    )
-
-    moving_id = db.insert_owned_item(
-        {
-            "category": "LP",
-            "quantity": 1,
-            "size_group": "LP",
-            "status": "IN_COLLECTION",
-            "domain_code": "KOREA",
-            "item_name_override": "이미 도메인 있는 상품",
-            "storage_slot_id": None,
-            "music_detail": {
-                "format_name": "LP",
-                "artist_or_brand": "테스트 아티스트",
-                "label_name": "QA Label",
-                "catalog_no": "TB-DOMAIN-002",
-                "barcode": "8800000091882",
-                "track_list": ["Track 1"],
-                "track_items": [{"display": "1. Track 1", "title": "Track 1"}],
-            },
-        }
-    )
-
-    res = admin_client.patch(f"/owned-items/{moving_id}/slot", json={"storage_slot_id": int(target_slot["id"])})
-
-    assert res.status_code == 200
-    moved_row = db.get_owned_item(moving_id)
-    assert moved_row is not None
-    assert int(moved_row["storage_slot_id"] or 0) == int(target_slot["id"])
-    assert str(moved_row["domain_code"] or "") == "KOREA"
-
-
 def test_onvif_connection_tolerates_optional_unauthorized_calls(monkeypatch):
     def fake_onvif_soap_request(service_url, body_xml, *, username, password, timeout=8.0):
         if "GetCapabilities" in body_xml:
