@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 from email import policy as email_policy
 from email.parser import Parser as EmailParser
@@ -444,6 +445,7 @@ async def auth_guard(request: Request, call_next):
         "/cafe/request",
         "/cafe/queue",
         "/cafe/now-playing",
+        "/cafe/now-playing/stream",
         "/cafe/tablet",
         "/cafe/lyrics",
         "/cafe/tags",
