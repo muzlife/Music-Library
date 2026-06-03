@@ -49126,7 +49126,6 @@ async function loadDashboardClimate() {
         ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
         : escapeHtml(t("media.manage.related_versions.state.no_cover"));
       const releasedDate = String(row.released_date || row.release_year || "").trim() || "-";
-      const genreText = joinCommaList(row.genres || []) || "-";
       const barcodeText = String(row.barcode || "").trim();
       const labelCatText = `${row.label_name || "-"} / ${row.catalog_no || "-"}${barcodeText ? ` (${barcodeText})` : ""}`;
       const discogsLink = itemSourceLinkHtml(row.source_code, row.source_external_id);
@@ -49181,7 +49180,6 @@ async function loadDashboardClimate() {
               <span class="tag">${escapeHtml(mediaDisplayLabel(row.format_name || row.category || "-"))}</span>
               ${isMusic ? `
                 <span>${escapeHtml(t("common.meta.release_date", { value: releasedDate }))}</span>
-                <span>${escapeHtml(t("common.meta.genre"))}: ${escapeHtml(genreText)}</span>
                 <span>status: ${escapeHtml(row.status || "-")}</span>
                 <span>order: ${escapeHtml(row.order_key || "-")}</span>
                 <span data-role="label-cat">label/cat#: ${escapeHtml(labelCatText)}</span>
