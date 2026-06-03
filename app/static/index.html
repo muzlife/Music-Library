@@ -20920,8 +20920,8 @@
           <div class="manual-block-note" data-i18n="manual.ops.exception.note">예외 큐는 병목 제거용 허브입니다. 정상 상품까지 여기서 다루기보다, 문제 상품만 빠르게 쳐내는 용도로 쓰는 편이 좋습니다.</div>
         </div>
       </details>
-      <div class="layout">
-        <section class="card">
+      <div class="ops-exception-search-layout">
+        <section class="card ops-exception-main-card">
           <div class="page-help-title-row">
             <h2><span data-i18n="ops.exception.title">예외 큐</span></h2>
             <button class="page-help-trigger" type="button" data-page-help-open="ops-exception" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
@@ -20974,6 +20974,31 @@
               <button id="opsExceptionCountBtn" class="btn ghost" type="button" data-i18n="ops.exception.action.reload_count">카운트 새로고침</button>
             </div>
           </div>
+          <div class="ops-ex-search-grid" id="opsExSearchGrid">
+            <div>
+              <label for="opsExArtist">아티스트명</label>
+              <input id="opsExArtist" type="text" placeholder="예: Pink Floyd" />
+            </div>
+            <div>
+              <label for="opsExTitle">상품명</label>
+              <input id="opsExTitle" type="text" placeholder="예: The Wall" />
+            </div>
+            <div>
+              <label for="opsExBarcode">바코드</label>
+              <input id="opsExBarcode" type="text" placeholder="예: 5099902987606" />
+            </div>
+            <div>
+              <label for="opsExCatalogNo">카탈로그</label>
+              <input id="opsExCatalogNo" type="text" placeholder="예: SMAS-3723" />
+            </div>
+            <div>
+              <label for="opsExReleaseYear">발매년</label>
+              <input id="opsExReleaseYear" type="number" min="1900" max="2100" placeholder="예: 1979" />
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button id="opsExSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="검색 필터 초기화" aria-label="검색 필터 초기화"></button>
+            </div>
+          </div>
           <div class="row u-mt-6">
             <input id="opsExceptionPresetName" class="u-maxw-220" data-i18n-placeholder="ops.exception.field.preset_name.placeholder" placeholder="예: 곡정보 보강 50건" />
             <button id="opsExceptionPresetSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.exception.action.save_filter">필터 저장</button>
@@ -21000,6 +21025,14 @@
           </div>
           <div id="opsExceptionList" class="ops-exception-list"></div>
         </section>
+        <aside id="opsExceptionContextPanel">
+          <section class="card" id="opsExContextCard" style="display:none;">
+            <div id="opsExContextBody"></div>
+          </section>
+          <div id="opsExContextEmpty" class="mini muted" style="padding:12px 0;">
+            목록에서 항목을 클릭하면 상세 정보가 표시됩니다.
+          </div>
+        </aside>
       </div>
       </div>
 
