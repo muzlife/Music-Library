@@ -44791,7 +44791,9 @@ async function loadDashboardClimate() {
       const reviewBtn = $("opsExceptionBulkReviewBtn");
       if (reviewBtn) { reviewBtn.style.display = activeType === "REVIEW_MISSING" ? "" : "none"; reviewBtn.disabled = !allowReview; }
       const domainWrap = $("opsExceptionDomainWrap");
-      if (domainWrap) domainWrap.style.display = activeType === "REVIEW_MISSING" ? "" : "none";
+      const isMasterType = (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING"
+                            || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING");
+      if (domainWrap) domainWrap.style.display = isMasterType ? "" : "none";
       if ($("opsExceptionSelectAllBtn")) $("opsExceptionSelectAllBtn").disabled = !(Array.isArray(opsExceptionItems) && opsExceptionItems.length);
       if ($("opsExceptionClearBtn")) $("opsExceptionClearBtn").disabled = selectedCount <= 0;
     }
@@ -56438,6 +56440,7 @@ async function loadDashboardClimate() {
       setStatus("opsExceptionStatus", "ok", t("ops.exception.status.preset_applied", { name: String(preset?.name || t("ops.exception.field.preset.saved_name")) }));
     });
     $("opsExceptionType").addEventListener("change", () => {
+      renderOpsExceptionContextPanel(null, "");
       opsExceptionSelectedIds = new Set();
       renderOpsExceptionSummary();
       syncOpsExceptionSelectionControls();
