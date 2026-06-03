@@ -42887,8 +42887,8 @@ async function loadDashboardClimate() {
           error: syncLastError ? t("ops.system.status_line_error_suffix", { error: syncLastError }) : "",
         });
         linksEl.innerHTML = t("ops.system.links", {
-          login_link: `<a href="${escapeHtml(String(data?.external_login_url || "https://library.muzlife.com/login"))}" target="_blank" rel="noreferrer">library.muzlife.com/login</a>`,
-          health_link: `<a href="${escapeHtml(String(data?.external_health_url || "https://library.muzlife.com/health"))}" target="_blank" rel="noreferrer">library.muzlife.com/health</a>`,
+          login_link: `<a href="${escapeHtml(String(data?.external_login_url || "https://__PROD_DOMAIN__/login"))}" target="_blank" rel="noreferrer">__PROD_DOMAIN__/login</a>`,
+          health_link: `<a href="${escapeHtml(String(data?.external_health_url || "https://__PROD_DOMAIN__/health"))}" target="_blank" rel="noreferrer">__PROD_DOMAIN__/health</a>`,
         });
         pathsEl.textContent = t("ops.system.paths", {
           path: String(data?.launchd_err_log || "/Volumes/Data/Works/07.__PROJECT_SLUG__/logs/launchd/library.err.log"),
@@ -42919,8 +42919,8 @@ async function loadDashboardClimate() {
         summaryEl.textContent = t("ops.system.summary.failure");
         lineEl.textContent = errorMessageText(err, t("ops.status.load_failed"));
         linksEl.innerHTML = t("ops.system.links", {
-          login_link: `<a href="https://library.muzlife.com/login" target="_blank" rel="noreferrer">library.muzlife.com/login</a>`,
-          health_link: `<a href="https://library.muzlife.com/health" target="_blank" rel="noreferrer">library.muzlife.com/health</a>`,
+          login_link: `<a href="https://__PROD_DOMAIN__/login" target="_blank" rel="noreferrer">__PROD_DOMAIN__/login</a>`,
+          health_link: `<a href="https://__PROD_DOMAIN__/health" target="_blank" rel="noreferrer">__PROD_DOMAIN__/health</a>`,
         });
         pathsEl.textContent = t("ops.system.paths", {
           path: "/Volumes/Data/Works/07.__PROJECT_SLUG__/logs/launchd/library.err.log | /Volumes/Data/Works/07.__PROJECT_SLUG__/logs/launchd/library.out.log",
