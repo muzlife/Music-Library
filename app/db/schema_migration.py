@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -860,6 +860,51 @@ def _migration_v12_add_album_master_review_fields(conn: sqlite3.Connection) -> N
         conn.execute("ALTER TABLE album_master ADD COLUMN review_url TEXT")
 
 
+def _migration_v13_add_album_master_genres_styles(conn: sqlite3.Connection) -> None:
+    """Add genres_json and styles_json columns to album_master, then backfill from
+    the best (lowest order_key) music_item_detail record linked to each master."""
+    if not _table_exists(conn, "album_master"):
+        return
+    if not _column_exists(conn, "album_master", "genres_json"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN genres_json TEXT")
+    if not _column_exists(conn, "album_master", "styles_json"):
+        conn.execute("ALTER TABLE album_master ADD COLUMN styles_json TEXT")
+    # Backfill from best music_item_detail per master
+    conn.execute("""
+        UPDATE album_master
+        SET
+          genres_json = (
+            SELECT mid.genres_json
+            FROM album_master_member amm
+            JOIN owned_item oi ON oi.id = amm.owned_item_id
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE amm.album_master_id = album_master.id
+              AND mid.genres_json IS NOT NULL
+              AND mid.genres_json <> '[]'
+              AND TRIM(mid.genres_json) <> ''
+            ORDER BY
+              CASE WHEN oi.order_key IS NULL OR TRIM(oi.order_key) = '' THEN 1 ELSE 0 END,
+              oi.order_key ASC, oi.id ASC
+            LIMIT 1
+          ),
+          styles_json = (
+            SELECT mid.styles_json
+            FROM album_master_member amm
+            JOIN owned_item oi ON oi.id = amm.owned_item_id
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            WHERE amm.album_master_id = album_master.id
+              AND mid.styles_json IS NOT NULL
+              AND mid.styles_json <> '[]'
+              AND TRIM(mid.styles_json) <> ''
+            ORDER BY
+              CASE WHEN oi.order_key IS NULL OR TRIM(oi.order_key) = '' THEN 1 ELSE 0 END,
+              oi.order_key ASC, oi.id ASC
+            LIMIT 1
+          )
+        WHERE genres_json IS NULL OR styles_json IS NULL
+    """)
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -873,6 +918,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     10: _migration_v10_add_cafe_tablet_and_reaction_tables,
     11: _migration_v11_add_local_image_items_json,
     12: _migration_v12_add_album_master_review_fields,
+    13: _migration_v13_add_album_master_genres_styles,
 }
 
 
