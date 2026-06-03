@@ -2958,6 +2958,13 @@ def _run_metadata_sync(
                 note_append = f"[메타동기화] {release_info}업데이트: {', '.join(updated_fields)}"
 
             db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
+            linked_master_id = int(row.get("linked_album_master_id") or 0)
+            if linked_master_id > 0:
+                db.update_album_master_genres(
+                    album_master_id=linked_master_id,
+                    genres=music_detail.get("genres") or [],
+                    styles=music_detail.get("styles") or [],
+                )
             updated_count += 1
             # Queue for image download after sync completes (only if no images yet)
             if not _has_local_images(owned_item_id):
@@ -4469,6 +4476,13 @@ def _sync_one_item(owned_item_id: int) -> MetadataSyncItemResult:
     note_append = f"[메타동기화] {release_info}업데이트: {', '.join(updated_fields)}"
 
     db.upsert_music_detail(owned_item_id=owned_item_id, music_detail=music_detail, note_append=note_append)
+    linked_master_id = int(row.get("linked_album_master_id") or 0)
+    if linked_master_id > 0:
+        db.update_album_master_genres(
+            album_master_id=linked_master_id,
+            genres=music_detail.get("genres") or [],
+            styles=music_detail.get("styles") or [],
+        )
 
     # Trigger background image download for this item
     _trigger_sync_image_download(
