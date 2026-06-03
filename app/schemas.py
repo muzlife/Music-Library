@@ -1042,7 +1042,7 @@ class OwnedItemCreate(BaseModel):
     signature_type: SignatureType = "NONE"
     source_code: ExternalSourceCode | None = None
     source_external_id: str | None = None
-    domain_code: DomainCode | None = None
+    domain_code: DomainCode | None = None  # Deprecated: ignored on write; domain managed at album_master level
     release_type: ReleaseType | None = None
 
     master_item_id: int | None = None

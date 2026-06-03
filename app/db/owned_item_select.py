@@ -64,6 +64,7 @@ def _owned_item_select_query() -> str:
         am.artist_or_brand AS master_artist_or_brand,
         am.sort_artist_name AS master_sort_artist_name,
         am.release_year AS master_release_year,
+        COALESCE(am.override_domain_code, am.domain_code) AS master_domain_code,
         mid.barcode,
         mid.label_name,
         mid.catalog_no,

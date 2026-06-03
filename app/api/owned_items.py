@@ -232,7 +232,7 @@ def get_owned_item_location_recommendations(
             artist_or_brand=artist_or_brand,
             release_year=release_year,
             released_date=_clean_text(row.get("released_date")),
-            domain_code=_normalize_domain_code(row.get("domain_code") or row.get("master_domain_code")),
+            domain_code=_normalize_domain_code(row.get("master_domain_code") or row.get("domain_code")),
             item_title=item_title,
             exclude_owned_item_id=owned_item_id,
             incoming_thickness_mm=int(row["thickness_mm"]) if row.get("thickness_mm") not in (None, "") else None,

@@ -5058,6 +5058,10 @@ def _to_owned_item_list_item(row: dict[str, object]) -> OwnedItemListItem:
     row2["preferred_storage_size_group"] = str(
         row2.get("preferred_storage_size_group") or row2.get("size_group") or "STD"
     )
+    # Prioritize album_master domain over owned_item domain
+    row2["domain_code"] = _normalize_domain_code(
+        row2.get("master_domain_code") or row2.get("domain_code")
+    )
     source_code = str(row2.get("source_code") or "").strip().upper()
     source_external_id = str(row2.get("source_external_id") or "").strip()
     released_date = str(row2.get("released_date") or "").strip()
