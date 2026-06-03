@@ -101,6 +101,45 @@ def get_album_master_basic(album_master_id: int) -> dict[str, Any] | None:
     return dict(row)
 
 
+def update_album_master_genres(
+    album_master_id: int,
+    genres: list[str],
+    styles: list[str],
+) -> None:
+    """Update genres_json and/or styles_json on an album_master row.
+
+    Each list is cleaned (stripped, empty strings dropped).  If both
+    cleaned lists are empty the function is a no-op.  Columns are
+    updated independently — a non-empty genres list overwrites
+    genres_json; a non-empty styles list overwrites styles_json.
+    updated_at is refreshed whenever any write happens.
+    """
+    clean_genres = [g.strip() for g in genres if g and g.strip()]
+    clean_styles = [s.strip() for s in styles if s and s.strip()]
+
+    if not clean_genres and not clean_styles:
+        return
+
+    sets: list[str] = []
+    params: list[Any] = []
+
+    if clean_genres:
+        sets.append("genres_json = ?")
+        params.append(json.dumps(clean_genres, ensure_ascii=True))
+
+    if clean_styles:
+        sets.append("styles_json = ?")
+        params.append(json.dumps(clean_styles, ensure_ascii=True))
+
+    sets.append("updated_at = ?")
+    params.append(utc_now_iso())
+    params.append(album_master_id)
+
+    sql = f"UPDATE album_master SET {', '.join(sets)} WHERE id = ?"
+    with get_conn() as conn:
+        conn.execute(sql, params)
+
+
 def _sync_album_master_domain_code_in_conn(
     conn: sqlite3.Connection,
     album_master_id: int,
@@ -759,6 +798,7 @@ __all__ = [
     "_snapshot_member_link_records",
     "_snapshot_external_ref_records",
     "upsert_album_master",
+    "update_album_master_genres",
     "normalize_album_master_source_id",
     "promote_album_master_source",
     "merge_album_masters",
