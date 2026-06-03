@@ -36,8 +36,8 @@ def main():
             
             logger.info(f"Batch completed: matched={matched}, skipped={skipped}, errors={errors}")
             
-            # If nothing was matched or skipped, we processed everything. Exit.
-            if matched == 0 and skipped == 0:
+            # If nothing was matched or skipped or errored, we processed everything. Exit.
+            if matched == 0 and skipped == 0 and errors == 0:
                 logger.info("No more unmatched albums found. Exiting.")
                 break
                 

@@ -5,7 +5,7 @@
 #───────────────────────────────────────────────────────────
 set -euo pipefail
 
-PROD_DIR="${1:-__PROD_USER__/apps/hahahoho-prod}"
+PROD_DIR="${1:-/Users/__USER__/apps/hahahoho-prod}"
 ENV_FILE="${PROD_DIR}/.env"
 
 if [[ ! -f "${ENV_FILE}" ]]; then

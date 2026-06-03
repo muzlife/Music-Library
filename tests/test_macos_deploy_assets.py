@@ -105,7 +105,7 @@ def test_cloudflare_render_script_writes_hostname_and_tunnel(tmp_path: Path):
     )
 
     text = output_path.read_text("utf-8")
-    assert "qa-library.muzlife.com" in text
+    assert "__QA_DOMAIN__" in text
     assert "tunnel-123" in text
     assert "/Users/tester/.cloudflared/tunnel-123.json" in text
 

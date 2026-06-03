@@ -1,7 +1,7 @@
 import requests
 
-url_health = "https://qa-library.muzlife.com/health"
-url_ops = "https://qa-library.muzlife.com/ops/placement-hints"
+url_health = "https://__QA_DOMAIN__/health"
+url_ops = "https://__QA_DOMAIN__/ops/placement-hints"
 
 headers = {"Cookie": "hahahoho_session=fake_cookie_value.fake_signature"}
 

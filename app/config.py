@@ -131,13 +131,13 @@ def get_settings() -> Settings:
         auth_session_secret=(os.getenv("LIBRARY_AUTH_SESSION_SECRET") or "change-this-library-session-secret").strip(),
         auth_cookie_secure=_env_flag("LIBRARY_AUTH_COOKIE_SECURE", default=False),
         purchase_import_webhook_token=(os.getenv("LIBRARY_PURCHASE_IMPORT_TOKEN") or "").strip() or None,
-        home_assistant_base_url=(os.getenv("HOME_ASSISTANT_BASE_URL") or "https://ha.muzlife.com").strip(),
+        home_assistant_base_url=(os.getenv("HOME_ASSISTANT_BASE_URL") or "https://__HA_DOMAIN__").strip(),
         home_assistant_token=(os.getenv("HOME_ASSISTANT_TOKEN") or "").strip() or None,
         office_climate_temperature_entity_id=(
-            os.getenv("OFFICE_CLIMATE_TEMPERATURE_ENTITY_ID") or "sensor.on_seubdogye_temperature"
+            os.getenv("OFFICE_CLIMATE_TEMPERATURE_ENTITY_ID") or "__HA_TEMP_SENSOR__"
         ).strip(),
         office_climate_humidity_entity_id=(
-            os.getenv("OFFICE_CLIMATE_HUMIDITY_ENTITY_ID") or "sensor.on_seubdogye_humidity"
+            os.getenv("OFFICE_CLIMATE_HUMIDITY_ENTITY_ID") or "__HA_HUMIDITY_SENSOR__"
         ).strip(),
         spotify_client_id=(os.getenv("SPOTIFY_CLIENT_ID") or "").strip(),
         spotify_client_secret=(os.getenv("SPOTIFY_CLIENT_SECRET") or "").strip(),
