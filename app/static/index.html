@@ -37468,6 +37468,12 @@
       return {
         type: String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase(),
         limit: Math.max(10, Math.min(200, Number($("opsExceptionLimit")?.value || 50))),
+        domain:      String($("opsExceptionDomain")?.value || "").trim(),
+        artist:      String($("opsExArtist")?.value      || "").trim(),
+        title:       String($("opsExTitle")?.value        || "").trim(),
+        barcode:     String($("opsExBarcode")?.value      || "").trim(),
+        catalogNo:   String($("opsExCatalogNo")?.value    || "").trim(),
+        releaseYear: String($("opsExReleaseYear")?.value  || "").trim(),
       };
     }
 
@@ -37605,6 +37611,13 @@
       if ($("opsExceptionPresetName")) {
         $("opsExceptionPresetName").value = String(preset.name || "").trim();
       }
+      if ($("opsExceptionDomain"))    $("opsExceptionDomain").value    = String(preset.domain    || "").trim();
+      if ($("opsExArtist"))      $("opsExArtist").value      = String(preset.artist      || "").trim();
+      if ($("opsExTitle"))       $("opsExTitle").value        = String(preset.title       || "").trim();
+      if ($("opsExBarcode"))     $("opsExBarcode").value      = String(preset.barcode     || "").trim();
+      if ($("opsExCatalogNo"))   $("opsExCatalogNo").value    = String(preset.catalogNo   || "").trim();
+      if ($("opsExReleaseYear")) $("opsExReleaseYear").value  = String(preset.releaseYear || "").trim();
+      syncOpsExceptionSelectionControls();
       return true;
     }
 
@@ -56204,6 +56217,16 @@ async function loadDashboardClimate() {
     $("opsProviderDeeplTestBtn")?.addEventListener("click", testOpsProviderDeeplConnection);
     $("opsProviderResetBtn")?.addEventListener("click", loadOpsProviderSettings);
     $("opsExceptionLoadBtn").addEventListener("click", () => loadOpsExceptionItems());
+    $("opsExSearchResetBtn")?.addEventListener("click", () => {
+      ["opsExArtist","opsExTitle","opsExBarcode","opsExCatalogNo","opsExReleaseYear"].forEach(id => {
+        const el = $(id); if (el) el.value = "";
+      });
+    });
+    ["opsExArtist","opsExTitle","opsExBarcode","opsExCatalogNo","opsExReleaseYear"].forEach(id => {
+      $(id)?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); loadOpsExceptionItems(); }
+      });
+    });
     $("opsExceptionCountBtn").addEventListener("click", async () => {
       await loadOpsExceptionCounts();
       await loadOpsExceptionItems({ silent: true });
