@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
@@ -98,6 +101,44 @@ def _broadcast(data: dict) -> None:
             q.put_nowait(data)
         except asyncio.QueueFull:
             pass
+
+
+async def _now_playing_worker() -> None:
+    """Single background task — owns all Spotify polling and local state checks.
+
+    Adaptive intervals:
+      local playing  → 5s  (VLC socket check, no external API)
+      Spotify playing → 30s
+      nothing playing → 60s
+    """
+    prev_state: dict | None = None
+    loop = asyncio.get_event_loop()
+
+    while True:
+        interval = 60
+        try:
+            local = _local.current_track()
+            if local and local.get("is_playing"):
+                state: dict = {"available": True, **local}
+                interval = 5
+            else:
+                pb = await loop.run_in_executor(None, _spotify.current_playback_sync)
+                if pb:
+                    state = {"available": True, "source": "spotify", **pb}
+                    interval = 30
+                else:
+                    state = {"available": False}
+                    interval = 60
+
+            if state != prev_state:
+                prev_state = state
+                _broadcast(state)
+
+        except Exception:
+            logger.exception("now-playing worker error")
+            interval = 60
+
+        await asyncio.sleep(interval)
 
 
 # ── helpers ─────────────────────────────────────────────────────
