@@ -161,17 +161,25 @@ setInterval(function(){
   }).catch(function(){});
 }, 5000);
 
-setInterval(function(){
-  fetch('/cafe/now-playing').then(function(r){return r.json()}).then(function(d){
+(function() {
+  function _renderNowPlaying(d) {
     var np = document.getElementById('np');
-    if(d.available){
-      var lyrBtn = d.source==='local'&&d.file_path?'<button onclick="showLyrics(\''+d.file_path+'\')" style="margin-top:10px;background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:6px 16px;border-radius:20px;font-size:.78rem;cursor:pointer">📝 가사 보기</button>':'';
-np.innerHTML = '<img src="'+(d.album_art_url||'')+'" alt=""><div class="song">'+d.title+'</div><div class="artist">'+d.artist+'</div><div class="album">'+d.album_name+'</div>'+lyrBtn;
+    if (d.available) {
+      var lyrBtn = d.source==='local'&&d.file_path
+        ? '<button onclick="showLyrics(\''+d.file_path+'\')" style="margin-top:10px;background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:6px 16px;border-radius:20px;font-size:.78rem;cursor:pointer">📝 가사 보기</button>'
+        : '';
+      np.innerHTML = '<img src="'+(d.album_art_url||'')+'" alt="">'
+        +'<div class="song">'+d.title+'</div>'
+        +'<div class="artist">'+d.artist+'</div>'
+        +'<div class="album">'+d.album_name+'</div>'
+        +lyrBtn;
     } else {
       np.innerHTML = '<div class="idle">♪ 재생 중인 곡이 없습니다</div>';
     }
-  }).catch(function(){});
-}, 3000);
+  }
+  var _npEs = new EventSource('/cafe/now-playing/stream');
+  _npEs.onmessage = function(e) { _renderNowPlaying(JSON.parse(e.data)); };
+})();
 </script>
 
 <div id="overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px">
