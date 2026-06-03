@@ -48,3 +48,4 @@ app.db
 library_analyze.db
 *.log
 docs/qa/
+index.html.bak_*

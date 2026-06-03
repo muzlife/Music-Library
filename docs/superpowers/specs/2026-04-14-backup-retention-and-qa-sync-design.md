@@ -233,10 +233,10 @@
 
 추천 예시:
 
-- `gs://muzlife-library-backups/prod/db/`
-- `gs://muzlife-library-backups/prod/full/`
-- `gs://muzlife-library-backups/prod/metadata/`
-- `gs://muzlife-library-backups/qa/applied-manifests/`
+- `gs://__GCS_BUCKET__/prod/db/`
+- `gs://__GCS_BUCKET__/prod/full/`
+- `gs://__GCS_BUCKET__/prod/metadata/`
+- `gs://__GCS_BUCKET__/qa/applied-manifests/`
 
 원칙:
 
