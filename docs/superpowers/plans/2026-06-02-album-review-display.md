@@ -384,7 +384,7 @@ Expected: 새 PID로 uvicorn 프로세스 표시
 
 - [ ] **Step 2: 리뷰 없는 아이템 검색 및 클릭**
 
-qa-library.muzlife.com → 미디어>검색 → 리뷰 없는 아이템 클릭
+__QA_DOMAIN__ → 미디어>검색 → 리뷰 없는 아이템 클릭
 Expected: 우측 패널에 "앨범 리뷰" 섹션이 표시되지 않음
 
 - [ ] **Step 3: 리뷰 있는 아이템 확인**

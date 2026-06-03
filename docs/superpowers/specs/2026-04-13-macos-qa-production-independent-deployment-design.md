@@ -11,7 +11,7 @@
 
 ## 현재 요구
 
-- `QA`: [https://qa-library.muzlife.com/](https://qa-library.muzlife.com/)
+- `QA`: [https://__QA_DOMAIN__/](https://__QA_DOMAIN__/)
 - `운영`: [https://library.muzlife.com/](https://library.muzlife.com/)
 - 운영 데이터는 정기 또는 배포 직전 기준으로 `QA`에 복제한다.
 - `QA`에서 자동/수동 검증을 충분히 거친 뒤 같은 커밋을 `운영`에 반영한다.
@@ -23,7 +23,7 @@
 
 - 외부 진입점은 Cloudflare가 담당하고, 각 맥은 tunnel client를 통해 외부 도메인과 연결된다.
 - `library.muzlife.com -> __PROD_MACHINE__`
-- `qa-library.muzlife.com -> M4`
+- `__QA_DOMAIN__ -> M4`
 - 각 맥은 내부에서만 앱 포트를 연다.
 
 장점
@@ -37,7 +37,7 @@
 
 ### 2. 자가 엣지안: `라우터/소형 프록시 + 각 맥 전용 앱 런타임`
 
-- 별도 엣지 장비가 `qa-library.muzlife.com` 과 `library.muzlife.com`을 받아 Host 기준으로 `M4`, `__PROD_MACHINE__`에 분기한다.
+- 별도 엣지 장비가 `__QA_DOMAIN__` 과 `library.muzlife.com`을 받아 Host 기준으로 `M4`, `__PROD_MACHINE__`에 분기한다.
 
 장점
 - 네트워크를 완전히 자가 통제할 수 있다.
@@ -84,7 +84,7 @@
 ### QA M4
 
 - 서비스명: `library-qa`
-- 도메인: `qa-library.muzlife.com`
+- 도메인: `__QA_DOMAIN__`
 - 앱 루트 예시: `/Users/<user>/apps/hahahoho-qa`
 - 런타임 루트 예시: `/Users/<user>/apps/hahahoho-qa/runtime`
 
@@ -108,14 +108,14 @@
 ### DNS
 
 - `library.muzlife.com`
-- `qa-library.muzlife.com`
+- `__QA_DOMAIN__`
 
 DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 ### 권장 연결
 
 - `library.muzlife.com -> Cloudflare Tunnel -> __PROD_MACHINE__:127.0.0.1:8000`
-- `qa-library.muzlife.com -> Cloudflare Tunnel -> M4:127.0.0.1:8100`
+- `__QA_DOMAIN__ -> Cloudflare Tunnel -> M4:127.0.0.1:8100`
 
 ### TLS
 
@@ -269,7 +269,7 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 ### 단계 3. DNS / 외부 연결
 
 1. DNS를 Synology 바깥에서 관리하도록 이전
-2. `library.muzlife.com`, `qa-library.muzlife.com` 생성
+2. `library.muzlife.com`, `__QA_DOMAIN__` 생성
 3. 각 서버에 Cloudflare Tunnel 연결
 4. 외부 HTTPS 접속 확인
 
@@ -292,7 +292,7 @@ DNS는 `Synology`가 아니라 외부 DNS 서비스에서 직접 관리한다.
 
 ## 성공 기준
 
-- `qa-library.muzlife.com` 는 항상 `M4 QA`에 연결된다.
+- `__QA_DOMAIN__` 는 항상 `M4 QA`에 연결된다.
 - `library.muzlife.com` 는 항상 `__PROD_MACHINE__ 운영`에 연결된다.
 - 운영 데이터 복제가 QA에서 실제로 복원된다.
 - QA 검증 후 같은 커밋만 운영에 반영된다.

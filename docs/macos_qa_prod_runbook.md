@@ -2,14 +2,14 @@
 
 ## 개요
 
-이 문서는 `__DEV_MACHINE__`를 `QA`, `__PROD_MACHINE__`을 `운영`으로 완전히 분리해서 `qa-library.muzlife.com` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
+이 문서는 `__DEV_MACHINE__`를 `QA`, `__PROD_MACHINE__`을 `운영`으로 완전히 분리해서 `__QA_DOMAIN__` / `library.muzlife.com` 기준으로 운영하는 절차를 정리합니다.
 
 관련 문서
 - 운영 매뉴얼: [management_tool_manual.md](/Volumes/Data/Works/07.hahahoho/docs/management_tool_manual.md)
 - 상용화 체크리스트: [go_live_checklist.md](/Volumes/Data/Works/07.hahahoho/docs/go_live_checklist.md)
 - QA 마스터 시트: [qa_master_sheet.csv](/Volumes/Data/Works/07.hahahoho/docs/qa/qa_master_sheet.csv)
 
-- QA: `https://qa-library.muzlife.com/`
+- QA: `https://__QA_DOMAIN__/`
 - 운영: `https://library.muzlife.com/`
 - 외부 진입: `Cloudflare DNS + Cloudflare Tunnel`
 - 서비스 관리: macOS `launchd`
@@ -33,7 +33,7 @@
 - 코드 루트 예시: `/Users/<user>/apps/hahahoho-qa`
 - 런타임 루트 예시: `/Users/<user>/apps/hahahoho-qa/runtime`
 - 로컬 앱 포트: `127.0.0.1:8100`
-- 외부 도메인: `qa-library.muzlife.com`
+- 외부 도메인: `__QA_DOMAIN__`
 
 ## 2. 디렉터리 준비
 
@@ -154,7 +154,7 @@ launchctl kickstart -k gui/$(id -u)/com.muzlife.library-qa
 권장 매핑:
 
 - `library.muzlife.com -> http://127.0.0.1:8000`
-- `qa-library.muzlife.com -> http://127.0.0.1:8100`
+- `__QA_DOMAIN__ -> http://127.0.0.1:8100`
 
 Cloudflare 절차 예시:
 
@@ -163,7 +163,7 @@ cloudflared tunnel login
 cloudflared tunnel create library-prod
 cloudflared tunnel create library-qa
 cloudflared tunnel route dns <PROD_TUNNEL_ID> library.muzlife.com
-cloudflared tunnel route dns <QA_TUNNEL_ID> qa-library.muzlife.com
+cloudflared tunnel route dns <QA_TUNNEL_ID> __QA_DOMAIN__
 ```
 
 설정 파일을 배치한 뒤 서비스 설치:

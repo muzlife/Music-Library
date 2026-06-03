@@ -728,7 +728,7 @@ Expected: 모든 항목 `OK`
 
 - [ ] **Step 3: 브라우저 확인**
 
-`https://qa-library.muzlife.com/admin` 접속 후 확인:
+`https://__QA_DOMAIN__/admin` 접속 후 확인:
 - [ ] 콜렉터 가치: 이모지 없음, 숫자 컬러 표시, 균일 배경
 - [ ] 예외 알림: 숫자 색상으로 심각도 구분, 균일 배경
 - [ ] 재정 인사이트: 총액 히어로 블록, 8px 도메인 바
