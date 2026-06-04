@@ -565,6 +565,20 @@ def merge_album_masters(
     if source_id <= 0 or target_id <= 0:
         raise ValueError("source/target album_master_id must be positive")
 
+    # Source-code priority: higher rank = preferred as target (survives merge).
+    # When the caller-supplied target has lower priority than the source,
+    # swap them so the higher-priority master always survives.
+    _SOURCE_PRIORITY = {"DISCOGS": 10, "MANIADB": 5, "ALADIN": 3, "MANUAL": 1}
+
+    def _source_priority(master_id: int) -> int:
+        with get_conn() as _c:
+            _r = _c.execute("SELECT source_code FROM album_master WHERE id=?", (master_id,)).fetchone()
+        code = str((_r["source_code"] if _r else None) or "").strip().upper()
+        return _SOURCE_PRIORITY.get(code, 0)
+
+    if _source_priority(source_id) > _source_priority(target_id):
+        source_id, target_id = target_id, source_id
+
     # Album master merge fans into many UPDATEs (album_master_member,
     # owned_item.linked_album_master_id, album_master_external_ref) and a
     # final DELETE on the source row. Hold the write lock from the start so
