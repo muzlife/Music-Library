@@ -49,3 +49,7 @@ library_analyze.db
 *.log
 docs/qa/
 index.html.bak_*
+
+# QA-on-external local backups (not for git)
+runtime/db_backups/
+runtime/imports/

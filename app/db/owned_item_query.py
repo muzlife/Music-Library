@@ -77,6 +77,8 @@ def list_owned_items(
     offset: int,
     media_format_state: str = "ANY",
     size_group_state: str = "ANY",
+    catalog_missing: bool = False,
+    genre_missing: bool = False,
 ) -> list[dict[str, Any]]:
     query = _owned_item_select_query() + " WHERE 1 = 1"
     params: list[Any] = []
@@ -198,6 +200,18 @@ def list_owned_items(
          )
         """
 
+    if catalog_missing:
+        query += " AND (mid.catalog_no IS NULL OR TRIM(mid.catalog_no) = '')"
+
+    if genre_missing:
+        query += """
+          AND EXISTS (
+            SELECT 1 FROM album_master am_g
+            WHERE am_g.id = oi.linked_album_master_id
+              AND (am_g.genres_json IS NULL OR TRIM(am_g.genres_json) IN ('', '[]'))
+          )
+        """
+
     media_format_state_u = str(media_format_state or "ANY").strip().upper()
     if media_format_state_u == "MISSING":
         query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
@@ -269,6 +283,8 @@ def count_owned_items(
     music_only: bool,
     media_format_state: str = "ANY",
     size_group_state: str = "ANY",
+    catalog_missing: bool = False,
+    genre_missing: bool = False,
 ) -> int:
     query = """
       SELECT COUNT(*) AS cnt
@@ -396,6 +412,17 @@ def count_owned_items(
          )
         """
 
+    if catalog_missing:
+        query += " AND (mid.catalog_no IS NULL OR TRIM(mid.catalog_no) = '')"
+
+    if genre_missing:
+        query += """
+          AND EXISTS (
+            SELECT 1 FROM album_master am_g
+            WHERE am_g.id = oi.linked_album_master_id
+              AND (am_g.genres_json IS NULL OR TRIM(am_g.genres_json) IN ('', '[]'))
+          )
+        """
     media_format_state_u = str(media_format_state or "ANY").strip().upper()
     if media_format_state_u == "MISSING":
         query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"

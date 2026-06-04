@@ -8527,6 +8527,28 @@
       margin-top: 8px;
     }
 
+    .ops-exception-edit-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .ops-exception-inline-input {
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    .ops-exception-inline-input:focus {
+      outline: none;
+      border-color: var(--accent, #4a90d9);
+    }
+
     .ops-exception-inline-field {
       display: grid;
       gap: 2px;
@@ -20933,7 +20955,7 @@
                 <option value="CATALOG_MISSING" data-i18n="ops.exception.field.type.catalog_missing">카탈로그 없음</option>
               </select>
             </div>
-            <div class="ops-exception-inline-field ops-exception-inline-field--limit">
+            <div class="ops-exception-inline-field ops-exception-inline-field--limit" style="display:none;">
               <label for="opsExceptionLimit" data-i18n="ops.exception.field.limit.label">표시 수</label>
               <input id="opsExceptionLimit" type="number" min="10" max="200" value="50" />
             </div>
@@ -21776,6 +21798,7 @@
     let opsExceptionTotalCount = 0;
     let opsExceptionLoading = false;
     let opsExceptionSelectedIds = new Set();
+    let opsExceptionOffset = 0;
     let masterOwnedPrefilledIds = new Set();
     const OPS_EXCEPTION_PRESET_KEY = "__PROJECT_SLUG__.opsExceptionPresets.v1";
     const OPS_EXCEPTION_PRESET_DEFAULT_KEY = "__PROJECT_SLUG__.opsExceptionPresets.default.v1";
@@ -37762,31 +37785,46 @@
       return "";
     }
 
-    function buildMasterExceptionUrl(type, limit) {
-      let url = `/album-masters?include_total=true&limit=${limit}`;
-      if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
-      else if (type === "GENRE_MISSING")    url += "&genre_missing=true&media_only=true";
-      else if (type === "REVIEW_MISSING")   url += "&review_missing=true&media_only=true";
-      else                                   url += "&catalog_missing=true&media_only=true";
+    function buildMasterExceptionUrl(type, limit, offset = 0) {
+      let url;
       const artist = String($("opsExArtist")?.value || "").trim();
       const title  = String($("opsExTitle")?.value  || "").trim();
       const domain = String($("opsExceptionDomain")?.value || "").trim();
       const releaseYear = String($("opsExReleaseYear")?.value || "").trim();
-      if (artist)      url += `&artist_or_brand=${encodeURIComponent(artist)}`;
-      if (title)       url += `&q=${encodeURIComponent(title)}`;
-      if (domain)      url += `&domain_code=${encodeURIComponent(domain)}`;
-      if (releaseYear) url += `&release_year=${encodeURIComponent(releaseYear)}`;
+      if (type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
+        url = `/owned-items?music_only=true&status=IN_COLLECTION&include_total=true&limit=${limit}&offset=${offset}`;
+        if (type === "GENRE_MISSING")    url += "&genre_missing=true";
+        else                             url += "&catalog_missing=true";
+        if (artist)      url += `&artist_or_brand=${encodeURIComponent(artist)}`;
+        if (title)       url += `&q=${encodeURIComponent(title)}`;
+        if (domain)      url += `&domain_code=${encodeURIComponent(domain)}`;
+        if (releaseYear) url += `&release_year=${encodeURIComponent(releaseYear)}`;
+      } else {
+        url = `/album-masters?include_total=true&limit=${limit}&offset=${offset}`;
+        if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
+        else if (type === "REVIEW_MISSING") url += "&review_missing=true&media_only=true";
+        if (artist)      url += `&artist_or_brand=${encodeURIComponent(artist)}`;
+        if (title)       url += `&q=${encodeURIComponent(title)}`;
+        if (domain)      url += `&domain_code=${encodeURIComponent(domain)}`;
+        if (releaseYear) url += `&release_year=${encodeURIComponent(releaseYear)}`;
+      }
       return url;
     }
 
     function buildMasterExceptionCountUrl(type) {
-      let url = `/album-masters?include_total=true&limit=1`;
-      if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
-      else if (type === "GENRE_MISSING")    url += "&genre_missing=true&media_only=true";
-      else if (type === "REVIEW_MISSING")   url += "&review_missing=true&media_only=true";
-      else                                   url += "&catalog_missing=true&media_only=true";
+      let url;
       const domain = String($("opsExceptionDomain")?.value || "").trim();
-      if (domain) url += `&domain_code=${encodeURIComponent(domain)}`;
+      if (type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
+        url = `/owned-items?music_only=true&status=IN_COLLECTION&include_total=true&limit=1`;
+        if (type === "GENRE_MISSING") url += "&genre_missing=true";
+        else                          url += "&catalog_missing=true";
+        if (domain) url += `&domain_code=${encodeURIComponent(domain)}`;
+      } else {
+        url = `/album-masters?include_total=true&limit=1`;
+        if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
+        else if (type === "REVIEW_MISSING") url += "&review_missing=true&media_only=true";
+        if (domain) url += `&domain_code=${encodeURIComponent(domain)}`;
+      }
       return url;
     }
 
@@ -45079,8 +45117,7 @@ async function loadDashboardClimate() {
       card.style.display = "";
       if (empty) empty.style.display = "none";
 
-      const isMasterType = (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING"
-                            || type === "CATALOG_MISSING" || type === "REVIEW_MISSING");
+      const isMasterType = (type === "SPOTIFY_UNMATCHED" || type === "REVIEW_MISSING");
 
       if (isMasterType) {
         const masterId = Number(row.id || 0);
@@ -45108,52 +45145,6 @@ async function loadDashboardClimate() {
               data-ops-exception-review-auto="${masterId}">Wikipedia 자동수집</button>
           </div>
         `;
-        if (type === "GENRE_MISSING") {
-          const genresVal = escapeHtml((row.genres || []).join(", "));
-          const stylesVal = escapeHtml((row.styles || []).join(", "));
-          body.innerHTML += `
-            <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px;">
-              <label style="font-size:0.72rem;color:var(--muted);">장르 (쉼표 구분)</label>
-              <input id="opsExCtxGenres" type="text" value="${genresVal}" style="width:100%;font-size:0.78rem;margin-top:4px;" />
-              <label style="font-size:0.72rem;color:var(--muted);margin-top:6px;display:block;">스타일 (쉼표 구분)</label>
-              <input id="opsExCtxStyles" type="text" value="${stylesVal}" style="width:100%;font-size:0.78rem;margin-top:4px;" />
-              <div style="display:flex;gap:6px;margin-top:8px;">
-                <button id="opsExCtxGenreSaveBtn" class="btn ghost tiny" type="button">저장</button>
-              </div>
-              <div id="opsExCtxGenreStatus" class="status mini"></div>
-            </div>`;
-          $("opsExCtxGenreSaveBtn")?.addEventListener("click", async () => {
-            const btn = $("opsExCtxGenreSaveBtn");
-            const statusEl = $("opsExCtxGenreStatus");
-            if (btn) btn.disabled = true;
-            if (statusEl) statusEl.textContent = "저장 중...";
-            try {
-              const genres = String($("opsExCtxGenres")?.value || "").split(",").map(s => s.trim()).filter(Boolean);
-              const styles = String($("opsExCtxStyles")?.value || "").split(",").map(s => s.trim()).filter(Boolean);
-              const res = await fetchWithRetry(`/album-masters/${masterId}/correction`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ genres, styles }),
-              });
-              const resp = await safeJson(res);
-              if (!res.ok) throw new Error(resp.detail || "저장 실패");
-              if (statusEl) statusEl.textContent = "저장됨";
-              opsExceptionItems = opsExceptionItems.filter(r => Number(r.id) !== Number(masterId));
-              opsExceptionSelectedIds.delete(Number(masterId));
-              opsExceptionTotalCount = Math.max(0, opsExceptionTotalCount - 1);
-              if (opsExceptionCounts && opsExceptionCounts["GENRE_MISSING"] !== undefined) {
-                opsExceptionCounts["GENRE_MISSING"] = Math.max(0, opsExceptionCounts["GENRE_MISSING"] - 1);
-              }
-              renderOpsExceptionSummary();
-              renderOpsExceptionList();
-              renderOpsExceptionContextPanel(null, "");
-            } catch (err) {
-              if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
-            } finally {
-              if (btn) btn.disabled = false;
-            }
-          });
-        }
         try {
           const res = await fetchWithRetry(`/album-masters/${masterId}/members`);
           const data = await safeJson(res);
@@ -45234,32 +45225,68 @@ async function loadDashboardClimate() {
       }
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
 
-      // --- Album Master rows (SPOTIFY_UNMATCHED / GENRE_MISSING / CATALOG_MISSING / REVIEW_MISSING) ---
+      // --- Album Master rows (SPOTIFY_UNMATCHED / REVIEW_MISSING) ---
+      // --- Owned Item rows with inline edit (GENRE_MISSING / CATALOG_MISSING) ---
       if (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING" || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING") {
-        root.innerHTML = opsExceptionItems.map((master, idx) => {
-          const masterId = Number(master.id || 0);
-          const title = String(master.title || master.album_title || "-").trim();
-          const artist = String(master.artist_or_brand || master.artist_name || master.artist || "-").trim();
-          const releaseYear = master.release_year || "";
-          const displayTitle = artist !== "-" ? `${artist} - ${title}` : title;
+        root.innerHTML = opsExceptionItems.map((item, idx) => {
+          const id = Number(item.id || 0);
+          const rawTitle = String(item.title || item.master_title || item.item_name_override || "-").trim();
+          const artist = String(item.artist_or_brand || item.master_artist_or_brand || "-").trim();
+          const releaseYear = item.release_year || item.master_release_year || "";
+          const displayTitle = artist !== "-" ? `${artist} - ${rawTitle}` : rawTitle;
           const displayTitleWithYear = releaseYear ? `${displayTitle} (${releaseYear})` : displayTitle;
-          const coverUrl = normalizeRenderableCoverUrl(master.cover_image_url || master.thumbnail_url);
+          const coverUrl = normalizeRenderableCoverUrl(item.cover_image_url || item.thumbnail_url);
           const coverHtml = coverUrl
-            ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+            ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(rawTitle)}" />`
             : `<span class="ops-exception-cover-placeholder">${escapeHtml(artist.substring(0, 2).toUpperCase() || "?")}</span>`;
-          const metaBits = [
-            `master #${masterId}`,
-            opsExceptionTypeHint(activeType),
-          ].filter(Boolean);
-          const checked = opsExceptionSelectedIds.has(masterId);
+
+          if (activeType === "CATALOG_MISSING") {
+            const labelName = item.label_name || "";
+            const catalogNo = item.catalog_no || "";
+            return `
+              <div class="ops-exception-row" data-ops-ex-row-idx="${idx}">
+                <div class="ops-exception-cover">${coverHtml}</div>
+                <div class="ops-exception-main" style="flex:1;min-width:0;">
+                  <div class="ops-exception-title">${escapeHtml(displayTitleWithYear)}</div>
+                  <div class="ops-exception-meta">상품 #${id}</div>
+                  <div class="ops-exception-edit-row">
+                    <input type="text" class="ops-exception-inline-input" style="flex:1;min-width:100px;" placeholder="레이블" data-oi-id="${id}" data-field="label_name" value="${escapeHtml(labelName)}" />
+                    <input type="text" class="ops-exception-inline-input" style="flex:1;min-width:120px;" placeholder="카탈로그 넘버" data-oi-id="${id}" data-field="catalog_no" value="${escapeHtml(catalogNo)}" />
+                    <button class="btn ghost tiny" data-ops-catalog-save="${id}" style="flex-shrink:0;">저장</button>
+                    <span class="ops-catalog-save-status mini muted" data-save-status="${id}"></span>
+                  </div>
+                </div>
+              </div>`;
+          }
+
+          if (activeType === "GENRE_MISSING") {
+            const masterId = item.linked_album_master_id || 0;
+            const genresJoined = (Array.isArray(item.genres) ? item.genres : []).join(", ");
+            return `
+              <div class="ops-exception-row" data-ops-ex-row-idx="${idx}">
+                <div class="ops-exception-cover">${coverHtml}</div>
+                <div class="ops-exception-main" style="flex:1;min-width:0;">
+                  <div class="ops-exception-title">${escapeHtml(displayTitleWithYear)}</div>
+                  <div class="ops-exception-meta">상품 #${id} | master #${masterId}</div>
+                  <div class="ops-exception-edit-row">
+                    <input type="text" class="ops-exception-inline-input" style="flex:1;min-width:180px;" placeholder="장르 (쉼표 구분, 예: Rock, Pop)" data-oi-id="${id}" data-master-id="${masterId}" value="${escapeHtml(genresJoined)}" />
+                    <button class="btn ghost tiny" data-ops-genre-save="${id}" style="flex-shrink:0;">저장</button>
+                    <span class="ops-genre-save-status mini muted" data-save-status="${id}"></span>
+                  </div>
+                </div>
+              </div>`;
+          }
+
+          // SPOTIFY_UNMATCHED / REVIEW_MISSING — existing master logic
+          const masterId2 = id;
+          const metaBits = [`master #${masterId2}`, opsExceptionTypeHint(activeType)].filter(Boolean);
+          const checked = opsExceptionSelectedIds.has(masterId2);
           const checkboxHtml = activeType === "REVIEW_MISSING"
-            ? `<label class="ops-exception-check"><input type="checkbox" data-ops-exception-master-check="${masterId}" ${checked ? "checked" : ""} /></label>`
+            ? `<label class="ops-exception-check"><input type="checkbox" data-ops-exception-master-check="${masterId2}" ${checked ? "checked" : ""} /></label>`
             : "";
           const actionBtn = activeType === "REVIEW_MISSING"
-            ? `<button class="btn ghost" type="button" data-ops-exception-review-auto="${masterId}">${escapeHtml(t("media.manage.master.review.action.auto") || "Wikipedia 자동수집")}</button>`
-            : `<button class="btn ghost" type="button" data-ops-exception-spotify-match="${masterId}"
-                data-spotify-match-title="${escapeHtml(title)}" data-spotify-match-artist="${escapeHtml(artist)}"
-              >${escapeHtml(t("ops.exception.action.spotify_match"))}</button>`;
+            ? `<button class="btn ghost" type="button" data-ops-exception-review-auto="${masterId2}">${escapeHtml(t("media.manage.master.review.action.auto") || "Wikipedia 자동수집")}</button>`
+            : `<button class="btn ghost" type="button" data-ops-exception-spotify-match="${masterId2}" data-spotify-match-title="${escapeHtml(rawTitle)}" data-spotify-match-artist="${escapeHtml(artist)}">${escapeHtml(t("ops.exception.action.spotify_match"))}</button>`;
           return `
             <div class="ops-exception-row${activeType === "REVIEW_MISSING" ? " ops-exception-row--with-check" : ""} ${checked ? "is-selected" : ""}" data-ops-ex-row-idx="${idx}">
               ${checkboxHtml}
@@ -45269,22 +45296,45 @@ async function loadDashboardClimate() {
                 <div class="ops-exception-meta">${escapeHtml(metaBits.join(" | "))}</div>
               </div>
               <div class="ops-exception-actions">${actionBtn}</div>
-            </div>
-          `;
+            </div>`;
         }).join("");
-        // wire row click → context panel
+
+        // 페이징 컨트롤
+        const pageSize = 50;
+        const hasPrev = opsExceptionOffset > 0;
+        const hasNext = (opsExceptionOffset + pageSize) < opsExceptionTotalCount;
+        if (hasPrev || hasNext) {
+          const pageInfo = `${opsExceptionOffset + 1}–${Math.min(opsExceptionOffset + opsExceptionItems.length, opsExceptionTotalCount)} / ${opsExceptionTotalCount}`;
+          root.innerHTML += `
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 0;margin-top:4px;border-top:1px solid var(--line);">
+              <button class="btn ghost tiny" id="opsExPrevBtn" ${hasPrev ? "" : "disabled"}>◀ 이전</button>
+              <span class="mini muted" style="flex:1;text-align:center;">${escapeHtml(pageInfo)}</span>
+              <button class="btn ghost tiny" id="opsExNextBtn" ${hasNext ? "" : "disabled"}>다음 ▶</button>
+            </div>`;
+          root.querySelector("#opsExPrevBtn")?.addEventListener("click", () => {
+            opsExceptionOffset = Math.max(0, opsExceptionOffset - pageSize);
+            loadOpsExceptionItems({ resetOffset: false });
+          });
+          root.querySelector("#opsExNextBtn")?.addEventListener("click", () => {
+            opsExceptionOffset += pageSize;
+            loadOpsExceptionItems({ resetOffset: false });
+          });
+        }
+
+        // wire row click → context panel (SPOTIFY_UNMATCHED / REVIEW_MISSING)
         root.querySelectorAll(".ops-exception-row[data-ops-ex-row-idx]").forEach((rowEl) => {
           rowEl.style.cursor = "pointer";
           rowEl.addEventListener("click", (e) => {
             if (e.target.closest("input,button,a,label")) return;
             const idx = Number(rowEl.dataset.opsExRowIdx || -1);
-            const item = Array.isArray(opsExceptionItems) ? opsExceptionItems[idx] : null;
+            const it = Array.isArray(opsExceptionItems) ? opsExceptionItems[idx] : null;
             root.querySelectorAll(".ops-exception-row").forEach(r => r.classList.remove("is-ctx-selected"));
             rowEl.classList.add("is-ctx-selected");
-            void renderOpsExceptionContextPanel(item, activeType);
+            void renderOpsExceptionContextPanel(it, activeType);
           });
         });
-        // wire checkboxes
+
+        // wire REVIEW_MISSING checkboxes
         root.querySelectorAll("[data-ops-exception-master-check]").forEach((cb) => {
           cb.addEventListener("change", () => {
             const mid = Number(cb.getAttribute("data-ops-exception-master-check") || 0);
@@ -45292,6 +45342,63 @@ async function loadDashboardClimate() {
             renderOpsExceptionList();
           });
         });
+
+        // wire CATALOG_MISSING save buttons
+        root.querySelectorAll("[data-ops-catalog-save]").forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const oiId = btn.dataset.opsCatalogSave;
+            const rowEl = btn.closest(".ops-exception-row");
+            const labelInput = rowEl.querySelector("[data-field='label_name']");
+            const catalogInput = rowEl.querySelector("[data-field='catalog_no']");
+            const statusEl = rowEl.querySelector(`[data-save-status='${oiId}']`);
+            btn.disabled = true;
+            if (statusEl) statusEl.textContent = "저장 중...";
+            try {
+              const res = await fetchWithRetry(`/owned-items/${oiId}/catalog`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ catalog_no: catalogInput?.value || null, label_name: labelInput?.value || null }),
+              });
+              if (!res.ok) throw new Error((await safeJson(res)).detail || "저장 실패");
+              if (statusEl) statusEl.textContent = "저장됨";
+              setTimeout(() => rowEl.remove(), 600);
+            } catch (err) {
+              if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+              btn.disabled = false;
+            }
+          });
+        });
+
+        // wire GENRE_MISSING save buttons
+        root.querySelectorAll("[data-ops-genre-save]").forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const oiId = btn.dataset.opsGenreSave;
+            const rowEl = btn.closest(".ops-exception-row");
+            const input = rowEl.querySelector("[data-master-id]");
+            const masterId = input?.dataset.masterId || "";
+            const statusEl = rowEl.querySelector(`[data-save-status='${oiId}']`);
+            const genres = (input?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+            if (!genres.length) { if (statusEl) statusEl.textContent = "장르를 입력하세요"; return; }
+            btn.disabled = true;
+            if (statusEl) statusEl.textContent = "저장 중...";
+            try {
+              const res = await fetchWithRetry(`/album-masters/${masterId}/correction`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ genres }),
+              });
+              if (!res.ok) throw new Error((await safeJson(res)).detail || "저장 실패");
+              if (statusEl) statusEl.textContent = "저장됨";
+              setTimeout(() => rowEl.remove(), 600);
+            } catch (err) {
+              if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+              btn.disabled = false;
+            }
+          });
+        });
+
         syncOpsExceptionSelectionControls();
         return;
       }
@@ -45436,8 +45543,10 @@ async function loadDashboardClimate() {
 
     async function loadOpsExceptionItems(opts = {}) {
       const silent = Boolean(opts?.silent);
+      const resetOffset = Boolean(opts?.resetOffset !== false && !opts?.silent);
       const type = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
-      const limit = Math.max(10, Math.min(200, Number($("opsExceptionLimit")?.value || 50)));
+      const limit = 50;
+      if (resetOffset) opsExceptionOffset = 0;
       try {
         opsExceptionLoading = true;
         renderOpsExceptionSummary();
@@ -45445,7 +45554,7 @@ async function loadDashboardClimate() {
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.list_loading_type", { type: opsExceptionTypeLabel(type) }));
         let res, data;
         if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING") {
-          res = await fetchWithRetry(buildMasterExceptionUrl(type, limit));
+          res = await fetchWithRetry(buildMasterExceptionUrl(type, limit, opsExceptionOffset));
           data = await safeJson(res);
         } else {
           const params = buildOpsExceptionParams(type, { includeTotal: true, limit });

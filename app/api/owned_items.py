@@ -25,6 +25,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
+from pydantic import BaseModel
 
 from .. import db
 from ..schemas import (
@@ -153,6 +154,8 @@ def get_owned_items(
     include_total: bool = Query(default=False),
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    catalog_missing: bool = Query(default=False),
+    genre_missing: bool = Query(default=False),
 ) -> list[OwnedItemListItem]:
     rows = db.list_owned_items(
         category=category,
@@ -177,6 +180,8 @@ def get_owned_items(
         offset=offset,
         media_format_state=media_format_state,
         size_group_state=size_group_state,
+        catalog_missing=catalog_missing,
+        genre_missing=genre_missing,
     )
     if include_total:
         total = db.count_owned_items(
@@ -199,6 +204,8 @@ def get_owned_items(
             music_only=music_only,
             media_format_state=media_format_state,
             size_group_state=size_group_state,
+            catalog_missing=catalog_missing,
+            genre_missing=genre_missing,
         )
         response.headers["X-Total-Count"] = str(total)
     return [_to_owned_item_list_item(row) for row in rows]
@@ -1651,6 +1658,35 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
         soundtrack_labels=row.get("soundtrack_labels") or [],
         local_image_items=local_image_items,
     )
+
+
+class _CatalogPatchBody(BaseModel):
+    catalog_no: str | None = None
+    label_name: str | None = None
+
+
+@router.patch("/owned-items/{owned_item_id}/catalog")
+def update_owned_item_catalog(
+    owned_item_id: int,
+    body: _CatalogPatchBody,
+    request: Request,
+) -> dict:
+    """빠른 카탈로그 넘버·레이블 저장 (인라인 편집용). OPERATOR+"""
+    _require_operator_request(request)
+    catalog_no = str(body.catalog_no or "").strip() or None
+    label_name = str(body.label_name or "").strip() or None
+    from app.db.connection import get_conn, utc_now_iso
+    from fastapi import HTTPException
+    with get_conn() as conn:
+        if not conn.execute("SELECT id FROM owned_item WHERE id=?", (owned_item_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="owned_item not found")
+        conn.execute(
+            "UPDATE music_item_detail SET catalog_no=?, label_name=?, updated_at=? WHERE owned_item_id=?",
+            (catalog_no, label_name, utc_now_iso(), owned_item_id),
+        )
+        conn.execute("UPDATE owned_item SET updated_at=? WHERE id=?", (utc_now_iso(), owned_item_id))
+        conn.commit()
+    return {"ok": True, "owned_item_id": owned_item_id, "catalog_no": catalog_no, "label_name": label_name}
 
 
 @router.patch("/owned-items/{owned_item_id}", response_model=OwnedItemCreateResponse)
