@@ -116,13 +116,34 @@ def find_cover_path(dir_path: str) -> str | None:
 def auto_match(dry_run: bool = False, min_score: float = 0.72) -> dict[str, int]:
     """Parse NAS album dirs, fuzzy-match to album_master, store links."""
     with get_conn() as conn:
-        # distinct album directories from local index
-        dir_rows = conn.execute(
-            "SELECT DISTINCT file_path FROM local_music_index"
+        # Load all masters into memory keyed by release_year (bulk, avoids per-dir queries)
+        master_rows = conn.execute(
+            "SELECT id, title, artist_or_brand, release_year FROM album_master WHERE title IS NOT NULL"
         ).fetchall()
 
+        # already-linked dirs to skip
+        linked_dirs = {
+            r[0] for r in conn.execute("SELECT local_dir_path FROM album_master_local_link").fetchall()
+        }
+        # already-linked master ids to avoid duplicate assignment
+        linked_masters = {
+            r[0] for r in conn.execute("SELECT album_master_id FROM album_master_local_link").fetchall()
+        }
+
+        # distinct parent dirs from local index
+        file_rows = conn.execute("SELECT DISTINCT file_path FROM local_music_index").fetchall()
+
+    # build year → [master] index
+    from collections import defaultdict
+    by_year: dict[int, list[dict]] = defaultdict(list)
+    for r in master_rows:
+        yr = r["release_year"]
+        if yr:
+            by_year[int(yr)].append({"id": r["id"], "title": r["title"], "artist": r["artist_or_brand"] or ""})
+
+    # collect unique dirs
     dirs: dict[str, dict[str, Any]] = {}
-    for row in dir_rows:
+    for row in file_rows:
         parent = str(Path(row["file_path"]).parent)
         if parent not in dirs:
             parsed = parse_dir_name(Path(parent).name)
@@ -130,56 +151,46 @@ def auto_match(dry_run: bool = False, min_score: float = 0.72) -> dict[str, int]
                 dirs[parent] = parsed
 
     matched = skipped = 0
+    new_links: list[tuple] = []
+    now = utc_now_iso()
 
-    with get_conn() as conn:
-        for dir_path, parsed in dirs.items():
-            # skip already linked (manual or auto)
-            existing = conn.execute(
-                "SELECT 1 FROM album_master_local_link WHERE local_dir_path = ? LIMIT 1",
-                (dir_path,),
-            ).fetchone()
-            if existing:
-                skipped += 1
+    for dir_path, parsed in dirs.items():
+        if dir_path in linked_dirs:
+            skipped += 1
+            continue
+
+        year, artist, title = parsed["year"], parsed["artist"], parsed["title"]
+        candidates = by_year.get(year, []) + by_year.get(year - 1, []) + by_year.get(year + 1, [])
+
+        best_id, best_score = None, 0.0
+        for c in candidates:
+            if c["id"] in linked_masters:
                 continue
+            a_sim = _token_sim(artist, c["artist"])
+            t_sim = _token_sim(title, c["title"])
+            score = a_sim * 0.45 + t_sim * 0.55
+            if score > best_score:
+                best_score, best_id = score, c["id"]
 
-            year = parsed["year"]
-            artist = parsed["artist"]
-            title = parsed["title"]
+        if best_id and best_score >= min_score:
+            matched += 1
+            linked_masters.add(best_id)
+            if not dry_run:
+                new_links.append((best_id, dir_path, now))
+        else:
+            skipped += 1
 
-            # candidates: same year ±1 to allow reissue offsets
-            candidates = conn.execute(
+    if not dry_run and new_links:
+        with get_conn() as conn:
+            conn.executemany(
                 """
-                SELECT id, title, artist_or_brand
-                FROM album_master
-                WHERE release_year BETWEEN ? AND ?
-                  AND title IS NOT NULL
+                INSERT INTO album_master_local_link
+                  (album_master_id, local_dir_path, match_confidence, linked_at)
+                VALUES (?, ?, 'AUTO', ?)
+                ON CONFLICT(album_master_id) DO NOTHING
                 """,
-                (year - 1, year + 1),
-            ).fetchall()
-
-            best_id, best_score = None, 0.0
-            for c in candidates:
-                a_sim = _token_sim(artist, c["artist_or_brand"] or "")
-                t_sim = _token_sim(title, c["title"] or "")
-                score = a_sim * 0.45 + t_sim * 0.55
-                if score > best_score:
-                    best_score, best_id = score, c["id"]
-
-            if best_id and best_score >= min_score:
-                if not dry_run:
-                    now = utc_now_iso()
-                    conn.execute(
-                        """
-                        INSERT INTO album_master_local_link
-                          (album_master_id, local_dir_path, match_confidence, linked_at)
-                        VALUES (?, ?, 'AUTO', ?)
-                        ON CONFLICT(album_master_id) DO NOTHING
-                        """,
-                        (best_id, dir_path, now),
-                    )
-                matched += 1
-            else:
-                skipped += 1
+                new_links,
+            )
 
     return {"matched": matched, "skipped": skipped, "total_dirs": len(dirs)}
 
