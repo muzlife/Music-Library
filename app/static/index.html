@@ -24,6 +24,12 @@
 
     * { box-sizing: border-box; }
 
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--theme-shell-text-subtle, #a2afbe);
+      opacity: 0.38;
+    }
+
     html {
       scrollbar-gutter: stable;
     }
@@ -11247,6 +11253,7 @@
     .admin-console-shell input::placeholder,
     .admin-console-shell textarea::placeholder {
       color: var(--admin-console-text-meta);
+      opacity: 0.38;
     }
 
     .admin-console-shell :is(.chip, .badge, .operator-label-chip, .operator-status-pill, .operator-mini-card) {

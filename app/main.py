@@ -6101,7 +6101,11 @@ def _infer_owned_item_domain_code(
         label_name=label_name,
         source=str(source_code or "").strip().upper() or None,
     )
-    return _normalize_domain_code(inferred) or _master_domain_hint(normalized_payload.get("linked_album_master_id"))
+    return (
+        _normalize_domain_code(inferred)
+        or db.lookup_label_domain(label_name)
+        or _master_domain_hint(normalized_payload.get("linked_album_master_id"))
+    )
 
 
 def _infer_album_master_domain_code(
@@ -6137,7 +6141,11 @@ def _infer_album_master_domain_code(
         label_name=label_name,
         source=str(source_code or "").strip().upper() or None,
     )
-    return _normalize_domain_code(inferred) or _master_domain_hint(linked_album_master_id)
+    return (
+        _normalize_domain_code(inferred)
+        or db.lookup_label_domain(label_name)
+        or _master_domain_hint(linked_album_master_id)
+    )
 
 
 def _contains_hangul_artist_name(value: Any) -> bool:

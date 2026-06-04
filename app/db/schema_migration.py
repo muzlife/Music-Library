@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -860,6 +860,43 @@ def _migration_v12_add_album_master_review_fields(conn: sqlite3.Connection) -> N
         conn.execute("ALTER TABLE album_master ADD COLUMN review_url TEXT")
 
 
+def _migration_v14_add_label_domain_registry(conn: sqlite3.Connection) -> None:
+    """Create label_domain_registry table and seed from confirmed masters."""
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS label_domain_registry (
+          label_name_key TEXT PRIMARY KEY,
+          label_name     TEXT NOT NULL,
+          domain_code    TEXT NOT NULL,
+          confirmed_count INTEGER NOT NULL DEFAULT 1,
+          created_at     TEXT NOT NULL,
+          updated_at     TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_label_domain_registry_domain
+        ON label_domain_registry (domain_code)
+    """)
+    # Seed from masters that already have a confirmed override_domain_code
+    conn.execute("""
+        INSERT OR IGNORE INTO label_domain_registry
+          (label_name_key, label_name, domain_code, confirmed_count, created_at, updated_at)
+        SELECT
+          LOWER(TRIM(mid.label_name)),
+          mid.label_name,
+          am.override_domain_code,
+          COUNT(*),
+          datetime('now'),
+          datetime('now')
+        FROM album_master am
+        JOIN owned_item oi ON oi.linked_album_master_id = am.id
+        JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+        WHERE am.override_domain_code IS NOT NULL
+          AND mid.label_name IS NOT NULL
+          AND TRIM(mid.label_name) != ''
+        GROUP BY LOWER(TRIM(mid.label_name)), am.override_domain_code
+    """)
+
+
 def _migration_v13_add_album_master_genres_styles(conn: sqlite3.Connection) -> None:
     """Add genres_json and styles_json columns to album_master, then backfill from
     the best (lowest order_key) music_item_detail record linked to each master."""
@@ -919,6 +956,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     11: _migration_v11_add_local_image_items_json,
     12: _migration_v12_add_album_master_review_fields,
     13: _migration_v13_add_album_master_genres_styles,
+    14: _migration_v14_add_label_domain_registry,
 }
 
 

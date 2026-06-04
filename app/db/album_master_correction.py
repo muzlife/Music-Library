@@ -35,6 +35,7 @@ from typing import Any
 from app.db import (  # noqa: E402  — package surface
     _normalize_domain_code_value,
     get_conn,
+    upsert_label_domain,
     utc_now_iso,
 )
 
@@ -188,6 +189,22 @@ def update_album_master_correction(
         )
         if int(cur.rowcount or 0) <= 0:
             return None
+
+        # Propagate confirmed domain to label registry
+        if normalized_domain_code:
+            label_rows = conn.execute(
+                """
+                SELECT DISTINCT mid.label_name
+                FROM owned_item oi
+                JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+                WHERE oi.linked_album_master_id = ?
+                  AND mid.label_name IS NOT NULL
+                  AND TRIM(mid.label_name) != ''
+                """,
+                (master_id,),
+            ).fetchall()
+            for lr in label_rows:
+                upsert_label_domain(lr["label_name"], normalized_domain_code)
 
     return get_album_master_correction_state(master_id)
 

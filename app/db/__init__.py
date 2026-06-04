@@ -1865,6 +1865,10 @@ from .track_reaction import (  # noqa: E402
 # storage_slot.py imports `_log_owned_item_location_event_in_conn`
 # from the package surface at module-load time, and that helper now
 # lives in owned_item_slot.
+from .label_domain_registry import (  # noqa: E402
+    lookup_label_domain,
+    upsert_label_domain,
+)
 from .owned_item_slot import (  # noqa: E402
     _derive_location_movement_kind,
     _location_slot_snapshot_in_conn,

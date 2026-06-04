@@ -654,28 +654,15 @@ def infer_domain_code(
         return "GREATER_CHINA"
 
     # 한글·가나 문자 판별은 콘텐츠 필드(장르·스타일·아티스트·타이틀)만 사용.
-    # label_name은 배급사(유통사) 이름이므로 제외한다:
-    # 예) "소니뮤직코리아", "유니버설뮤직코리아"는 외국 앨범 국내 배급사이므로
-    #     이것만으로 가요로 분류하면 팝 국내발매반이 잘못 분류됨.
+    # label_name은 배급사(유통사) 이름이므로 제외한다.
     content_combined = " ".join(v for v in [genre_text, style_text, artist_text, title_text] if v).strip()
     if _contains_hangul(content_combined):
         return "KOREA"
     if _contains_kana(content_combined):
         return "JAPAN"
 
-    country_code = _country_domain_code(country)
-    if country_code:
-        # country="Korea"/"Japan"은 제작국(pressing country)이지 아티스트 국적이 아님.
-        # Discogs에서 한국반(country="South Korea")으로 등록된 팝 앨범이 가요로
-        # 분류되는 것을 막기 위해, 아티스트명에 해당 문자가 없으면(비어 있는 경우 포함)
-        # 항상 분류를 거부한다.
-        # ※ 가요 아티스트는 artist_or_brand에 한글이 있으므로 위의
-        #    _contains_hangul(content_combined) 체크에서 이미 "KOREA"를 반환한다.
-        if country_code == "KOREA" and not _contains_hangul(artist_text):
-            return None
-        if country_code == "JAPAN" and not _contains_kana(artist_text):
-            return None
-        return country_code
+    # country 신호는 제거: pressing/master country 모두 아티스트 국적을 보장하지 않음.
+    # (근래 LP는 체코·독일 등 제3국 프레싱이 기본. label_domain_registry 조회로 대체)
 
     source_code = str(source or "").strip().upper()
     if source_code == "MANIADB":
@@ -1464,7 +1451,7 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
     """
     import urllib.request, urllib.parse, json as _json, time as _time
     year_part = f" {year}" if year else ""
-    query = f"{title} {artist}{year_part} album"
+    query = f"{title} {artist}{year_part} 음반"
     params = urllib.parse.urlencode({
         "action": "query",
         "format": "json",
@@ -1475,7 +1462,7 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
     })
     try:
         req = urllib.request.Request(
-            f"https://en.wikipedia.org/w/api.php?{params}",
+            f"https://ko.wikipedia.org/w/api.php?{params}",
             headers={"User-Agent": "__PROJECT_SLUG__-library/0.1 (album-review-bot)"},
         )
         for attempt in range(2):
@@ -1517,7 +1504,7 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
             "redirects": "1",
         })
         req2 = urllib.request.Request(
-            f"https://en.wikipedia.org/w/api.php?{params2}",
+            f"https://ko.wikipedia.org/w/api.php?{params2}",
             headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
         )
         with urllib.request.urlopen(req2, timeout=10) as resp2:
@@ -1536,9 +1523,9 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
         if is_fallback:
             extract_head = extract[:400].lower()
             artist_lower = artist.lower()
-            music_keywords = ("album", "ep", "single", "studio album", "mixtape",
-                              "record", "hip-hop", "rap", "jazz", "classical",
-                              "musician", "singer", "band", "rapper")
+            music_keywords = ("음반", "앨범", "싱글", "ep", "스튜디오", "mixtape",
+                              "album", "record", "hip-hop", "rap", "jazz",
+                              "musician", "singer", "band", "가수", "밴드")
             artist_match = artist_lower and artist_lower in extract_head
             music_match = any(kw in extract_head for kw in music_keywords)
             if not artist_match and not music_match:
