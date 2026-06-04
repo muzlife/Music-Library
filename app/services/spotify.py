@@ -27,6 +27,8 @@ class SpotifyService:
 
     @property
     def configured(self) -> bool:
+        if str(os.getenv("SPOTIFY_ENABLED", "true")).strip().lower() in ("false", "0", "no"):
+            return False
         return bool(self.client_id and self.client_secret)
 
     def _ensure_client_cc(self) -> Any:
