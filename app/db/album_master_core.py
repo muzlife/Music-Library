@@ -91,7 +91,16 @@ def get_album_master_basic(album_master_id: int) -> dict[str, Any] | None:
                    review_source,
                    review_url,
                    genres_json,
-                   styles_json
+                   styles_json,
+                   domain_code,
+                   source_domain_code,
+                   override_domain_code,
+                   source_release_year,
+                   override_release_year,
+                   override_note,
+                   override_title,
+                   override_artist_or_brand,
+                   sort_artist_name
             FROM album_master
             WHERE id = ?
             LIMIT 1

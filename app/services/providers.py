@@ -1519,7 +1519,7 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
             data2 = _json.loads(resp2.read())
         pages_data = data2.get("query", {}).get("pages") or {}
         page_data = next(iter(pages_data.values()), {})
-        if page_data.get("pageid", -1) == -1:
+        if "missing" in page_data:
             return None
         extract = page_data.get("extract", "")
         if not extract:
