@@ -45640,8 +45640,9 @@ async function loadDashboardClimate() {
         setStatus("opsExceptionStatus", "err", t("ops.exception.status.bulk_master_required"));
         return;
       }
-      loadMasterOwnedRowsFromItems(rows, t("ops.exception.status.bulk_master_loaded", { count: countWithUnit(rows.length) }));
-      setStatus("opsExceptionStatus", "ok", t("ops.exception.status.bulk_master_loaded", { count: countWithUnit(rows.length) }));
+      const sentCount = rows.length;
+      loadMasterOwnedRowsFromItems(rows, t("ops.exception.status.bulk_master_loaded", { count: countWithUnit(sentCount) }));
+      setStatus("opsExceptionStatus", "ok", `${countWithUnit(sentCount)}이 마스터 정리 대상으로 이동됐습니다`);
     }
 
     async function alignPreferredStorageFromException(ownedItemId) {
@@ -45713,7 +45714,8 @@ async function loadDashboardClimate() {
           updated += Number(data.updated_count || 0);
         }
         opsExceptionSelectedIds = new Set();
-        setStatus("opsExceptionStatus", "ok", t("ops.exception.status.bulk_align_saved", { count: countWithUnit(updated) }));
+        const okCount = updated;
+        setStatus("opsExceptionStatus", "ok", `실물 기준 맞춤 완료 — ${countWithUnit(okCount)} 변경됨`);
         refreshOpsExceptionInBackground();
         refreshHomeSearchInBackground();
         refreshHomeDashboardInBackground();
@@ -45728,8 +45730,9 @@ async function loadDashboardClimate() {
         setStatus("opsExceptionStatus", "err", t("ops.exception.status.bulk_source_required"));
         return;
       }
-      loadSourceWorkbenchRowsFromItems(rows, t("ops.exception.status.bulk_source_loaded", { count: countWithUnit(rows.length) }));
-      setStatus("opsExceptionStatus", "ok", t("ops.exception.status.bulk_source_loaded", { count: countWithUnit(rows.length) }));
+      const sentCount = rows.length;
+      loadSourceWorkbenchRowsFromItems(rows, t("ops.exception.status.bulk_source_loaded", { count: countWithUnit(sentCount) }));
+      setStatus("opsExceptionStatus", "ok", `${countWithUnit(sentCount)}이 소스 보강 대상으로 이동됐습니다`);
     }
 
     function renderSourceWorkbenchList() {
