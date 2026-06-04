@@ -267,5 +267,5 @@ rm -P /Volumes/Data/Works/07.__PROJECT_SLUG__/.env.local.bak.*
 ```
 SEC-XXX,Security / Rotation,운영/연계,관리자,prod,Operations,,P1,Non-blocking,Manual-only,
 DISCOGS_TOKEN 회전,장비 정비 후 / steps=...,...,Verified,Pass,2026-04-29T12:00:00+09:00,
-__OPERATOR__,,...
+__OPERATOR_USERNAME__,,...
 ```

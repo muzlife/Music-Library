@@ -39,10 +39,12 @@ def run() -> int:
     operator = build_client()
     login = None
     logged_in_user = ''
-    for username, password in [
-        ('kinolifecom', 'REDACTED'),
-        ('operator', 'REDACTED'),
-    ]:
+    import os
+    candidates = [
+        (os.environ.get("QA_OPERATOR_USER", ""), os.environ.get("QA_OPERATOR_PASS", "")),
+        (os.environ.get("QA_ADMIN_USER", ""), os.environ.get("QA_ADMIN_PASS", "")),
+    ]
+    for username, password in [(u, p) for u, p in candidates if u and p]:
         for timeout in (20, 40, 60):
             try:
                 response = request_json(operator, f'{operator_base_url}/auth/login', method='POST', form={'username': username, 'password': password}, timeout=timeout)

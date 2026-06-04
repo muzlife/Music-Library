@@ -802,7 +802,7 @@ curl -s https://qa-library.muzlife.com/cafe/now-playing
 - 개발자 도구 → Network → EventStream 탭에서 `/cafe/now-playing/stream` 연결 확인
 - `setInterval` 3초 폴링이 사라지고 SSE로 대체됐는지 확인
 
-- [ ] **Step 7: 상용 서버 적용 (macmini2018)**
+- [ ] **Step 7: 상용 서버 적용 (__PROD_HOST__)**
 
 ```bash
 for f in app/services/spotify.py app/api/cafe.py app/main.py \

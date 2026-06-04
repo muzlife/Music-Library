@@ -595,7 +595,7 @@ Expected: `OK`
 - [ ] **Step 2: 상용 배포**
 
 ```bash
-PROD_SSH_TARGET="__PROD_HOST__" PROD_APP_ROOT="__PROD_USER__/apps/hahahoho-prod" \
+PROD_SSH_TARGET="__PROD_HOST__" PROD_APP_ROOT="/Users/__PROD_USER__/apps/__PROJECT_SLUG__-prod" \
   bash deploy/scripts/deploy_to_prod.sh 2>&1 | grep -E "^\[|Deploy complete|curl"
 ```
 
