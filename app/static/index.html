@@ -34242,6 +34242,7 @@
 
       const reviewText = String(master.review_text || "").trim();
       const reviewSource = String(master.review_source || "").trim();
+      const reviewUrl = String(master.review_url || "").trim();
 
       const preview = $("homeMasterReviewPreview");
       const sourceTag = $("homeMasterReviewSourceTag");
@@ -34255,7 +34256,11 @@
         preview.dataset.fullText = reviewText;
         preview.dataset.expanded = "false";
         preview.style.display = "";
-        sourceTag.textContent = reviewSource ? `출처: ${reviewSource}` : "";
+        if (reviewSource) {
+          sourceTag.innerHTML = `출처: ${reviewUrl ? `<a href="${escapeHtml(reviewUrl)}" target="_blank" rel="noopener">${escapeHtml(reviewSource)}</a>` : escapeHtml(reviewSource)}`;
+        } else {
+          sourceTag.textContent = "";
+        }
         deleteBtn.style.display = "";
         if (toggleBtn) {
           toggleBtn.style.display = needsTruncate ? "" : "none";
