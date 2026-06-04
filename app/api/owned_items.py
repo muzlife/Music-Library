@@ -34,6 +34,8 @@ from ..schemas import (
     OrderMoveResponse,
     OwnedAlbumShelfWindowResponse,
     OwnedItemAutoMasterResponse,
+    OwnedItemBulkUpdateMusicDetailRequest,
+    OwnedItemBulkUpdateMusicDetailResponse,
     OwnedItemBulkUpdateRequest,
     OwnedItemBulkUpdateResponse,
     OwnedItemCreate,
@@ -1705,8 +1707,6 @@ def bulk_replace_owned_item_sources(payload: OwnedItemSourceReplaceBulkRequest) 
 @router.post("/owned-items/bulk-update", response_model=OwnedItemBulkUpdateResponse)
 def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBulkUpdateResponse:
     owned_item_ids = [int(v) for v in payload.owned_item_ids if int(v) > 0]
-    if not owned_item_ids:
-        raise HTTPException(status_code=400, detail="owned_item_ids is required")
 
     status = str(payload.status or "").strip() or None
     domain_code = _normalize_domain_code(payload.domain_code)
@@ -1719,6 +1719,9 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBul
     preferred_storage_size_group = str(payload.preferred_storage_size_group or "").strip().upper() or None
     if preferred_storage_size_group and preferred_storage_size_group not in SIZE_GROUP_CODES:
         raise HTTPException(status_code=400, detail="invalid preferred_storage_size_group")
+    size_group = str(payload.size_group or "").strip().upper() or None
+    if size_group and size_group not in SIZE_GROUP_CODES:
+        raise HTTPException(status_code=400, detail="invalid size_group")
     if (
         status is None
         and domain_code is None
@@ -1727,8 +1730,12 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBul
         and purchase_source is None
         and append_memory_note is None
         and preferred_storage_size_group is None
+        and size_group is None
     ):
         raise HTTPException(status_code=400, detail="at least one field is required")
+
+    if not owned_item_ids:
+        return OwnedItemBulkUpdateResponse(requested_count=0, updated_count=0)
 
     _audit(request, "owned_item", 0, "UPDATE", changed_fields=list(payload.updates.keys()) if hasattr(payload, "updates") else None)
     updated_item_ids = db.bulk_update_owned_items(
@@ -1739,9 +1746,31 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBul
         purchase_source=purchase_source,
         append_memory_note=append_memory_note,
         preferred_storage_size_group=preferred_storage_size_group,
+        size_group=size_group,
     )
     return OwnedItemBulkUpdateResponse(
         requested_count=len({int(v) for v in owned_item_ids}),
+        updated_count=len(updated_item_ids),
+        updated_item_ids=updated_item_ids,
+    )
+
+
+@router.post(
+    "/owned-items/bulk-update-music-detail",
+    response_model=OwnedItemBulkUpdateMusicDetailResponse,
+)
+def bulk_update_music_detail(
+    payload: OwnedItemBulkUpdateMusicDetailRequest,
+    request: Request,
+) -> OwnedItemBulkUpdateMusicDetailResponse:
+    """Update music_item_detail.media_type for multiple owned items. ADMIN only."""
+    _require_admin_request(request)
+    updated_item_ids = db.bulk_update_music_detail(
+        payload.owned_item_ids,
+        media_type=payload.media_type,
+    )
+    return OwnedItemBulkUpdateMusicDetailResponse(
+        requested_count=len(payload.owned_item_ids),
         updated_count=len(updated_item_ids),
         updated_item_ids=updated_item_ids,
     )

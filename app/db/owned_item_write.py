@@ -345,6 +345,7 @@ def bulk_update_owned_items(
     purchase_source: str | None = None,
     append_memory_note: str | None = None,
     preferred_storage_size_group: str | None = None,
+    size_group: str | None = None,
 ) -> list[int]:
     ids = sorted({int(v) for v in owned_item_ids if int(v) > 0})
     if not ids:
@@ -359,7 +360,8 @@ def bulk_update_owned_items(
         placeholders = ",".join("?" for _ in ids)
         rows = conn.execute(
             f"""
-            SELECT id, status, release_type, is_second_hand, purchase_source, memory_note, preferred_storage_size_group
+            SELECT id, status, release_type, is_second_hand, purchase_source, memory_note,
+                   preferred_storage_size_group, size_group
             FROM owned_item
             WHERE id IN ({placeholders})
             """,
@@ -379,6 +381,7 @@ def bulk_update_owned_items(
             next_preferred_size_group = (
                 preferred_storage_size_group if preferred_storage_size_group is not None else row.get("preferred_storage_size_group")
             )
+            next_size_group = size_group if size_group is not None else row.get("size_group")
             next_memory_note = row.get("memory_note")
             if note_text:
                 existing_note = str(next_memory_note or "").strip()
@@ -389,6 +392,7 @@ def bulk_update_owned_items(
                 and next_is_second_hand == int(bool(row.get("is_second_hand")))
                 and next_purchase_source == row.get("purchase_source")
                 and next_preferred_size_group == row.get("preferred_storage_size_group")
+                and next_size_group == row.get("size_group")
                 and next_memory_note == row.get("memory_note")
             ):
                 continue
@@ -400,6 +404,7 @@ def bulk_update_owned_items(
                     next_purchase_source,
                     next_memory_note,
                     next_preferred_size_group,
+                    next_size_group,
                     now,
                     owned_item_id,
                 )
@@ -416,11 +421,57 @@ def bulk_update_owned_items(
                   purchase_source = ?,
                   memory_note = ?,
                   preferred_storage_size_group = ?,
+                  size_group = ?,
                   updated_at = ?
                 WHERE id = ?
                 """,
                 updates,
             )
+    return updated_ids
+
+
+def bulk_update_music_detail(
+    owned_item_ids: list[int],
+    *,
+    media_type: str | None = None,
+) -> list[int]:
+    """Update music_item_detail.media_type for multiple items.
+
+    size_group on owned_item is intentionally NOT touched here.
+    """
+    ids = sorted({int(v) for v in owned_item_ids if int(v) > 0})
+    if not ids or media_type is None:
+        return []
+
+    now = utc_now_iso()
+    updated_ids: list[int] = []
+
+    with get_write_conn() as conn:
+        placeholders = ",".join("?" for _ in ids)
+        existing = {
+            int(row["owned_item_id"]): dict(row)
+            for row in conn.execute(
+                f"SELECT owned_item_id, media_type FROM music_item_detail WHERE owned_item_id IN ({placeholders})",
+                ids,
+            ).fetchall()
+        }
+        for oid in ids:
+            row = existing.get(oid)
+            if row is not None:
+                if row.get("media_type") == media_type:
+                    continue
+                conn.execute(
+                    "UPDATE music_item_detail SET media_type = ?, updated_at = ? WHERE owned_item_id = ?",
+                    (media_type, now, oid),
+                )
+            else:
+                conn.execute(
+                    """INSERT INTO music_item_detail (owned_item_id, media_type, created_at, updated_at)
+                       VALUES (?, ?, ?, ?)""",
+                    (oid, media_type, now, now),
+                )
+            updated_ids.append(oid)
+
     return updated_ids
 
 

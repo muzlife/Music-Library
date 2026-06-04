@@ -4331,3 +4331,26 @@ def test_operator_can_post_owned_items_sync_metadata(operator_client, monkeypatc
     assert res.json()["status"] == "UPDATED"
 
 
+def test_bulk_update_supports_size_group(admin_client):
+    """bulk-update endpoint accepts size_group field."""
+    r = admin_client.post("/owned-items/bulk-update", json={
+        "owned_item_ids": [],
+        "size_group": "LP",
+    })
+    # 빈 ids여서 updated_count=0, 하지만 400이 아닌 200이어야 함
+    assert r.status_code == 200
+    assert r.json()["updated_count"] == 0
+
+
+def test_bulk_update_music_detail_media_type(admin_client):
+    """POST /owned-items/bulk-update-music-detail updates media_type only."""
+    r = admin_client.post("/owned-items/bulk-update-music-detail", json={
+        "owned_item_ids": [],
+        "media_type": "Vinyl",
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert data["requested_count"] == 0
+    assert data["updated_count"] == 0
+
+

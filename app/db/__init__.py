@@ -2092,6 +2092,7 @@ from .collection_dashboard import (  # noqa: E402
 # earlier in this list.
 from .owned_item_write import (  # noqa: E402
     _sync_owned_item_classifications_in_conn,
+    bulk_update_music_detail,
     bulk_update_owned_items,
     delete_owned_item,
     insert_owned_item,

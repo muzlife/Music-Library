@@ -304,9 +304,21 @@ class OwnedItemBulkUpdateRequest(BaseModel):
     purchase_source: str | None = None
     append_memory_note: str | None = None
     preferred_storage_size_group: SizeGroup | None = None
+    size_group: SizeGroup | None = None
 
 
 class OwnedItemBulkUpdateResponse(BaseModel):
+    requested_count: int
+    updated_count: int
+    updated_item_ids: list[int] = Field(default_factory=list)
+
+
+class OwnedItemBulkUpdateMusicDetailRequest(BaseModel):
+    owned_item_ids: list[int] = Field(default_factory=list)
+    media_type: str | None = None
+
+
+class OwnedItemBulkUpdateMusicDetailResponse(BaseModel):
     requested_count: int
     updated_count: int
     updated_item_ids: list[int] = Field(default_factory=list)
