@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 15
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -860,6 +860,22 @@ def _migration_v12_add_album_master_review_fields(conn: sqlite3.Connection) -> N
         conn.execute("ALTER TABLE album_master ADD COLUMN review_url TEXT")
 
 
+def _migration_v15_add_album_master_local_link(conn: sqlite3.Connection) -> None:
+    """Create album_master_local_link table for NAS directory matching."""
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS album_master_local_link (
+          album_master_id INTEGER PRIMARY KEY REFERENCES album_master(id) ON DELETE CASCADE,
+          local_dir_path  TEXT NOT NULL,
+          match_confidence TEXT NOT NULL DEFAULT 'MANUAL',
+          linked_at       TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_am_local_link_path
+        ON album_master_local_link (local_dir_path)
+    """)
+
+
 def _migration_v14_add_label_domain_registry(conn: sqlite3.Connection) -> None:
     """Create label_domain_registry table and seed from confirmed masters."""
     conn.execute("""
@@ -957,6 +973,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     12: _migration_v12_add_album_master_review_fields,
     13: _migration_v13_add_album_master_genres_styles,
     14: _migration_v14_add_label_domain_registry,
+    15: _migration_v15_add_album_master_local_link,
 }
 
 

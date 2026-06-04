@@ -2129,6 +2129,156 @@
       border-radius: 12px;
       border: none;
     }
+
+    /* ── Local Player ── */
+    .local-player {
+      background: var(--theme-dashboard-panel, #10161d);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: #e8edf2;
+      font-size: 0.8rem;
+      user-select: none;
+    }
+    .local-player-top {
+      display: flex;
+      gap: 12px;
+      padding: 14px 14px 10px;
+      align-items: flex-start;
+    }
+    .local-player-cover {
+      width: 80px;
+      height: 80px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #1e2a38;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #4a5568;
+    }
+    .local-player-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .local-player-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .local-player-now-title {
+      font-weight: 700;
+      font-size: 0.82rem;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .local-player-now-artist {
+      font-size: 0.72rem;
+      color: #8a9ab0;
+      margin-top: 2px;
+    }
+    .local-player-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .local-player-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #c8d3df;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+    .local-player-btn:hover { color: #fff; }
+    .local-player-btn.play-btn {
+      width: 32px;
+      height: 32px;
+      background: #fff;
+      color: #0a1016;
+      border-radius: 50%;
+    }
+    .local-player-btn.play-btn:hover { background: #e8edf2; }
+    .local-player-progress {
+      padding: 0 14px 6px;
+    }
+    .local-player-seek {
+      width: 100%;
+      height: 3px;
+      appearance: none;
+      background: #2a3a4d;
+      border-radius: 2px;
+      cursor: pointer;
+      outline: none;
+    }
+    .local-player-seek::-webkit-slider-thumb {
+      appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+    .local-player-time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.67rem;
+      color: #8a9ab0;
+      margin-top: 3px;
+    }
+    .local-player-tracklist {
+      max-height: 160px;
+      overflow-y: auto;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .local-player-track {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .local-player-track:hover { background: rgba(255,255,255,0.06); }
+    .local-player-track.is-active { background: rgba(255,255,255,0.1); color: #fff; }
+    .local-player-track-num {
+      width: 18px;
+      text-align: right;
+      font-size: 0.68rem;
+      color: #8a9ab0;
+      flex-shrink: 0;
+    }
+    .local-player-track.is-active .local-player-track-num { color: #7dd3fc; }
+    .local-player-track-title {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.75rem;
+    }
+    .local-player-track-dur {
+      font-size: 0.68rem;
+      color: #8a9ab0;
+      flex-shrink: 0;
+    }
+    .local-player-footer {
+      padding: 6px 14px 10px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
     #homeMasterMetaLeft {
       flex: 1;
       min-width: 0;
@@ -18241,6 +18391,7 @@
                       </details><!-- /homeMasterEditDetails -->
                       </div><!-- /homeMasterMetaLeft -->
                       <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
+                      <div id="homeMasterLocalPlayer" class="master-meta-spotify" hidden></div>
                     </div><!-- /homeMasterMetaCard -->
                   </div><!-- /homeSection1MasterInfo -->
           </div><!-- /manage-section-body -->
@@ -41623,6 +41774,160 @@
       return '<iframe src="' + src + '" width="100%" height="' + (height||352) + '" frameborder="0" ' +
         'allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>';
     }
+    // ── Local Player ─────────────────────────────────────────────────────────
+    const _lp = {
+      audio: new Audio(),
+      tracks: [],
+      idx: -1,
+      masterId: null,
+
+      _fmt(sec) {
+        if (!sec || isNaN(sec)) return "--:--";
+        const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+        return `${m}:${String(s).padStart(2, "0")}`;
+      },
+
+      _render(data) {
+        const slot = document.getElementById("homeMasterLocalPlayer");
+        if (!slot) return;
+        this.tracks = data.tracks || [];
+        const cover = data.cover_url
+          ? `<img src="${escapeHtml(data.cover_url)}" onerror="this.style.display='none'" />`
+          : `<span>🎵</span>`;
+        slot.innerHTML = `
+          <div class="local-player">
+            <div class="local-player-top">
+              <div class="local-player-cover">${cover}</div>
+              <div class="local-player-info">
+                <div class="local-player-now-title" id="lpNowTitle">—</div>
+                <div class="local-player-now-artist" id="lpNowArtist"></div>
+                <div class="local-player-controls">
+                  <button class="local-player-btn" id="lpPrevBtn" title="이전">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                  </button>
+                  <button class="local-player-btn play-btn" id="lpPlayBtn" title="재생">
+                    <svg id="lpPlayIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  </button>
+                  <button class="local-player-btn" id="lpNextBtn" title="다음">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 8.5 6V6z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="local-player-progress">
+              <input class="local-player-seek" type="range" id="lpSeek" min="0" max="100" value="0" step="0.1" />
+              <div class="local-player-time">
+                <span id="lpCurrent">0:00</span>
+                <span id="lpDuration">--:--</span>
+              </div>
+            </div>
+            <div class="local-player-tracklist" id="lpTrackList"></div>
+            <div class="local-player-footer">
+              <button class="btn ghost tiny" id="lpUnlinkBtn">연결 해제</button>
+              <span class="mini muted" style="margin-left:auto;">${escapeHtml(data.match_confidence === "AUTO" ? "자동매칭" : "수동연결")}</span>
+            </div>
+          </div>`;
+        this._renderTrackList();
+        this._wire();
+        slot.hidden = false;
+      },
+
+      _renderTrackList() {
+        const el = document.getElementById("lpTrackList");
+        if (!el) return;
+        el.innerHTML = this.tracks.map((t, i) => `
+          <div class="local-player-track${i === this.idx ? " is-active" : ""}" data-lp-track="${i}">
+            <span class="local-player-track-num">${t.track_number || i + 1}</span>
+            <span class="local-player-track-title">${escapeHtml(t.title || "—")}</span>
+            <span class="local-player-track-dur">${this._fmt(t.duration_seconds)}</span>
+          </div>`).join("");
+        el.querySelectorAll("[data-lp-track]").forEach(el => {
+          el.addEventListener("click", () => this._playIdx(Number(el.dataset.lpTrack)));
+        });
+      },
+
+      _wire() {
+        const a = this.audio;
+        document.getElementById("lpPlayBtn")?.addEventListener("click", () => {
+          if (this.idx < 0 && this.tracks.length) this._playIdx(0);
+          else a.paused ? a.play() : a.pause();
+        });
+        document.getElementById("lpPrevBtn")?.addEventListener("click", () => {
+          if (a.currentTime > 3) { a.currentTime = 0; return; }
+          this._playIdx(Math.max(0, this.idx - 1));
+        });
+        document.getElementById("lpNextBtn")?.addEventListener("click", () => {
+          this._playIdx(Math.min(this.tracks.length - 1, this.idx + 1));
+        });
+        const seek = document.getElementById("lpSeek");
+        let seeking = false;
+        seek?.addEventListener("mousedown", () => { seeking = true; });
+        seek?.addEventListener("mouseup", () => {
+          seeking = false;
+          if (a.duration) a.currentTime = (seek.value / 100) * a.duration;
+        });
+        a.addEventListener("timeupdate", () => {
+          if (seeking || !a.duration) return;
+          if (seek) seek.value = (a.currentTime / a.duration) * 100;
+          const cur = document.getElementById("lpCurrent");
+          if (cur) cur.textContent = this._fmt(a.currentTime);
+        });
+        a.addEventListener("durationchange", () => {
+          const dur = document.getElementById("lpDuration");
+          if (dur) dur.textContent = this._fmt(a.duration);
+        });
+        a.addEventListener("ended", () => {
+          if (this.idx < this.tracks.length - 1) this._playIdx(this.idx + 1);
+          else this._setPlayIcon(false);
+        });
+        a.addEventListener("play",  () => this._setPlayIcon(true));
+        a.addEventListener("pause", () => this._setPlayIcon(false));
+        document.getElementById("lpUnlinkBtn")?.addEventListener("click", async () => {
+          await fetchWithRetry(`/album-masters/${this.masterId}/local-link`, { method: "DELETE" });
+          a.pause(); a.src = "";
+          const slot = document.getElementById("homeMasterLocalPlayer");
+          if (slot) { slot.hidden = true; slot.innerHTML = ""; }
+          this.masterId = null; this.tracks = []; this.idx = -1;
+        });
+      },
+
+      _setPlayIcon(playing) {
+        const icon = document.getElementById("lpPlayIcon");
+        if (!icon) return;
+        icon.innerHTML = playing
+          ? `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`
+          : `<path d="M8 5v14l11-7z"/>`;
+      },
+
+      _playIdx(i) {
+        if (i < 0 || i >= this.tracks.length) return;
+        this.idx = i;
+        const t = this.tracks[i];
+        this.audio.src = t.stream_url;
+        this.audio.play().catch(() => {});
+        const titleEl = document.getElementById("lpNowTitle");
+        if (titleEl) titleEl.textContent = t.title || "—";
+        this._renderTrackList();
+      },
+
+      async load(masterId) {
+        this.masterId = masterId;
+        const res = await fetchWithRetry(`/album-masters/${masterId}/local-player`);
+        if (!res.ok) return;
+        const data = await safeJson(res);
+        if (!data.linked) return;
+        this._render(data);
+      },
+
+      hide() {
+        this.audio.pause();
+        this.audio.src = "";
+        this.idx = -1;
+        const slot = document.getElementById("homeMasterLocalPlayer");
+        if (slot) { slot.hidden = true; slot.innerHTML = ""; }
+      },
+    };
+
     function spotifyTogglePanel(masterId, albumId) {
       var inManage = document.getElementById('tabManage')?.classList.contains('active');
       var inSearch = document.getElementById('tabSearch')?.classList.contains('active');
@@ -48569,11 +48874,13 @@ async function loadDashboardClimate() {
 
       try {
         setStatus("homeMasterStatus", "ok", t("media.manage.master.members.status.loading"));
+        _lp.hide();
         const [res, collectiblesRes, masterRes] = await Promise.all([
           fetch(`/album-masters/${masterId}/members`),
           fetch(`/goods-items?album_master_id=${masterId}&limit=200&offset=0`),
           fetch(`/album-masters/${masterId}`),
         ]);
+        _lp.load(masterId).catch(() => {});
         const data = await safeJson(res);
         const collectiblesData = await safeJson(collectiblesRes);
         const masterData = masterRes.ok ? await safeJson(masterRes) : null;

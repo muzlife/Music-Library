@@ -7462,6 +7462,8 @@ from app.api.misc_catalog import router as misc_catalog_router
 app.include_router(misc_catalog_router)
 from app.api.discogs_integration import router as discogs_router
 app.include_router(discogs_router)
+from app.api.local_player import router as local_player_router
+app.include_router(local_player_router)
 from app.api.static_pages import router as static_pages_router
 app.include_router(static_pages_router)
 from app.api.audit_log import router as audit_log_router

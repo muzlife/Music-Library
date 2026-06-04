@@ -1869,6 +1869,14 @@ from .label_domain_registry import (  # noqa: E402
     lookup_label_domain,
     upsert_label_domain,
 )
+from .album_master_local_link import (  # noqa: E402
+    get_local_link,
+    set_local_link,
+    delete_local_link,
+    list_tracks_for_link,
+    find_cover_path,
+    auto_match as auto_match_local,
+)
 from .owned_item_slot import (  # noqa: E402
     _derive_location_movement_kind,
     _location_slot_snapshot_in_conn,
