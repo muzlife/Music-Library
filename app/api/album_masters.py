@@ -1217,11 +1217,19 @@ class _ReviewManualBody(BaseModel):
     source: str = "MANUAL"
 
 
+def _is_korean(text: str) -> bool:
+    """Return True if the text contains a meaningful portion of Korean characters."""
+    import unicodedata
+    hangul = sum(1 for ch in text if "가" <= ch <= "힣" or "ᄀ" <= ch <= "ᇿ" or "㄰" <= ch <= "㆏")
+    non_space = sum(1 for ch in text if not ch.isspace())
+    return non_space > 0 and hangul / non_space >= 0.1
+
+
 @router.post("/album-masters/{album_master_id}/review/manual")
 def save_review_manual(
     album_master_id: int, body: _ReviewManualBody, request: Request
 ) -> dict[str, Any]:
-    """Save a manually written review (no DeepSeek). ADMIN only."""
+    """Save a manually written review. Translates to Korean via DeepL if input is not Korean. ADMIN only."""
     from ..security import _require_admin_request
     _require_admin_request(request)
     from ..db.album_master_review import save_review
@@ -1239,10 +1247,21 @@ def save_review_manual(
         raise HTTPException(status_code=404, detail="Album master not found")
 
     source = (body.source or "MANUAL").strip()[:50]
+    translated = False
+
+    if not _is_korean(text):
+        try:
+            from ..services.review_pipeline import translate_to_korean_with_deepl
+            text = translate_to_korean_with_deepl(text)
+            source = f"{source}_KO"
+            translated = True
+        except Exception:
+            pass  # DeepL 미설정이거나 실패 시 원문 그대로 저장
+
     with get_conn() as conn:
         save_review(conn, album_master_id, text, source, None)
 
-    return {"ok": True, "album_master_id": album_master_id, "source": source}
+    return {"ok": True, "album_master_id": album_master_id, "source": source, "translated": translated}
 
 
 @router.delete("/album-masters/{album_master_id}/review")

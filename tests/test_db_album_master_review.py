@@ -17,6 +17,7 @@ def conn():
             id INTEGER PRIMARY KEY,
             artist_or_brand TEXT,
             title TEXT,
+            release_year INTEGER,
             review_text TEXT,
             review_source TEXT,
             review_url TEXT,
