@@ -1497,9 +1497,10 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
             if _re.search(r'\b' + _re.escape(title_lower) + r'\b', page["title"].lower()):
                 page_title = page["title"]
                 break
+        is_fallback = not page_title
         if not page_title:
-            # Fallback: fetch the page directly by album title (handles cases where
-            # search returns only artist pages, not the album page itself)
+            # Fallback: try fetching the page directly by album title only when
+            # search returned no album-titled result (e.g. only artist pages).
             page_title = title
         params2 = urllib.parse.urlencode({
             "action": "query",
@@ -1518,13 +1519,30 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
             data2 = _json.loads(resp2.read())
         pages_data = data2.get("query", {}).get("pages") or {}
         page_data = next(iter(pages_data.values()), {})
+        if page_data.get("pageid", -1) == -1:
+            return None
         extract = page_data.get("extract", "")
-        if extract:
-            return {
-                "review_text": _clean_review_text(extract),
-                "review_source": "WIKIPEDIA",
-                "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title.replace(' ', '_'), safe='()')}",
-            }
+        if not extract:
+            return None
+        # For fallback fetches, verify the page is music-related: the extract
+        # must mention the artist name OR contain an album/music keyword near
+        # the start. This prevents picking up novels, films, etc. with the
+        # same title as the album.
+        if is_fallback:
+            extract_head = extract[:400].lower()
+            artist_lower = artist.lower()
+            music_keywords = ("album", "ep", "single", "studio album", "mixtape",
+                              "record", "hip-hop", "rap", "jazz", "classical",
+                              "musician", "singer", "band", "rapper")
+            artist_match = artist_lower and artist_lower in extract_head
+            music_match = any(kw in extract_head for kw in music_keywords)
+            if not artist_match and not music_match:
+                return None
+        return {
+            "review_text": _clean_review_text(extract),
+            "review_source": "WIKIPEDIA",
+            "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title.replace(' ', '_'), safe='()')}",
+        }
     except Exception as exc:
         import logging as _logging
         _logging.getLogger(__name__).warning("fetch_wikipedia_album_review failed: %s", exc)
