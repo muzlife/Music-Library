@@ -1498,7 +1498,9 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
                 page_title = page["title"]
                 break
         if not page_title:
-            return None
+            # Fallback: fetch the page directly by album title (handles cases where
+            # search returns only artist pages, not the album page itself)
+            page_title = title
         params2 = urllib.parse.urlencode({
             "action": "query",
             "format": "json",
@@ -1506,6 +1508,7 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
             "exintro": "1",
             "explaintext": "1",
             "titles": page_title,
+            "redirects": "1",
         })
         req2 = urllib.request.Request(
             f"https://en.wikipedia.org/w/api.php?{params2}",
