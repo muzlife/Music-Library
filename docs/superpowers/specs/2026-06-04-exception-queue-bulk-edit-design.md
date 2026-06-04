@@ -87,16 +87,6 @@ if ($("opsExLimitEd").checked) params.set("is_limited", "true");
 ```
 → 기존 `POST /owned-items/bulk-update` (`size_group` 필드 추가)
 
-### GENRE_MISSING 컨트롤
-```html
-<label>장르</label>
-<input id="opsExBulkGenres" placeholder="예: Rock, Pop" />
-<label>스타일</label>
-<input id="opsExBulkStyles" placeholder="예: Indie Rock" />
-<button id="opsExBulkApplyBtn">선택 N건 일괄 적용</button>
-```
-→ `POST /album-masters/bulk-update-genres`
-
 ### 동작 원칙
 - 선택 0건: 버튼 비활성화
 - 적용 중: 버튼 disabled + 진행 상태 표시 (`적용 중... N/M`)
@@ -105,7 +95,7 @@ if ($("opsExLimitEd").checked) params.set("is_limited", "true");
 
 ### `syncOpsExceptionSelectionControls` 확장
 ```javascript
-const BULK_EDIT_TYPES = new Set(["MEDIA_MISSING", "SIZE_MISMATCH", "GENRE_MISSING"]);
+const BULK_EDIT_TYPES = new Set(["MEDIA_MISSING", "SIZE_MISMATCH"]);
 const showBulkEdit = BULK_EDIT_TYPES.has(activeType) && selectedCount > 0;
 const bulkEditRow = $("opsExBulkEditRow");
 if (bulkEditRow) {
@@ -198,18 +188,9 @@ class OwnedItemBulkUpdateMusicDetailResponse(BaseModel):
 ```
 
 동작:
-- `music_item_detail`에 `media_type` UPDATE
-- `media_type`에 따라 `owned_item.size_group` 자동 추정:
-  ```python
-  MEDIA_TYPE_TO_SIZE_GROUP = {
-      "Vinyl": "LP", "LP": "LP",
-      '10"': "LP10", '7"': "LP7",
-      "CD": "STD", "CDr": "STD", "SACD": "STD", "Digital": "STD",
-      "Cassette": "CASSETTE", "8-Track Cartridge": "8TRACK",
-      "DVD": "STD", "Blu-ray": "STD", "CD-ROM": "STD",
-  }
-  ```
-- `music_item_detail`이 없는 경우 생성 후 `media_type` 설정
+- `music_item_detail.media_type`만 UPDATE. size_group은 건드리지 않음.
+- 보관 규격과 상이한 경우는 SIZE_MISMATCH 예외 큐에서 별도 처리.
+- `music_item_detail`이 없는 경우 생성 후 `media_type` 설정.
 
 ### ② 기존 확장: `OwnedItemBulkUpdateRequest`에 `size_group` 추가
 
@@ -229,22 +210,8 @@ class OwnedItemBulkUpdateRequest(BaseModel):
 
 `bulk_update_owned_items` DB 함수도 `size_group` UPDATE 포함.
 
-### ③ 신규 엔드포인트: `POST /album-masters/bulk-update-genres`
-
-**파일:** `app/api/album_masters.py`, `app/schemas.py`
-
-```python
-class AlbumMasterBulkUpdateGenresRequest(BaseModel):
-    album_master_ids: list[int] = Field(default_factory=list)
-    genres: list[str] = Field(default_factory=list)
-    styles: list[str] = Field(default_factory=list)
-
-class AlbumMasterBulkUpdateGenresResponse(BaseModel):
-    requested_count: int
-    updated_count: int
-```
-
-기존 `update_album_master_genres(album_master_id, genres, styles)` DB 함수 반복 호출.
+~~③ 신규 엔드포인트: `POST /album-masters/bulk-update-genres`~~ — 제외  
+장르는 항목별 차이가 커 벌크 적용 부적합. 컨텍스트 패널 개별 편집으로만 제공.
 
 ---
 
@@ -269,10 +236,8 @@ class AlbumMasterBulkUpdateGenresResponse(BaseModel):
 
 | 파일 | 변경 내용 |
 |------|-----------|
-| `app/schemas.py` | `OwnedItemBulkUpdateRequest.size_group` 추가, 신규 스키마 2개 |
+| `app/schemas.py` | `OwnedItemBulkUpdateRequest.size_group` 추가, 신규 스키마 1개 (`OwnedItemBulkUpdateMusicDetailRequest/Response`) |
 | `app/api/owned_items.py` | `POST /owned-items/bulk-update-music-detail` 신규 |
-| `app/api/album_masters.py` | `POST /album-masters/bulk-update-genres` 신규 |
 | `app/db/owned_item_write.py` | `bulk_update_owned_items` size_group 지원, 신규 `bulk_update_music_detail` |
-| `app/db/album_master_core.py` | 신규 `bulk_update_album_master_genres` (반복 호출 래퍼) |
-| `app/static/index.html` | 상세 검색 조건 UI, 툴바 벌크 컨트롤, 컨텍스트 패널 편집 폼 |
+| `app/static/index.html` | 상세 검색 조건 UI, 툴바 벌크 컨트롤 (MEDIA/SIZE), 컨텍스트 패널 편집 폼 |
 | `tests/` | 신규 엔드포인트 테스트 |
