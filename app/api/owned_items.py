@@ -1447,7 +1447,7 @@ def create_owned_item_auto_master(owned_item_id: int) -> OwnedItemAutoMasterResp
             d_src_id = d_master_id or d_ext
             d_title = str(discogs_crossref.get("title") or "").strip() or str(row.get("item_name_override") or "").strip()
             d_artist = str(discogs_crossref.get("artist_or_brand") or "").strip() or str(row.get("linked_artist_name") or "").strip() or None
-            d_year = discogs_crossref.get("release_year")
+            d_year = discogs_crossref.get("master_release_year") or discogs_crossref.get("release_year")
             album_master_id = db.upsert_album_master(
                 source_code="DISCOGS",
                 source_master_id=d_src_id,

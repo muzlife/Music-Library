@@ -4564,7 +4564,7 @@ def _run_aladin_discogs_backfill(*, dry_run: bool = False, sleep_sec: float = 2.
                 d_src_id = d_master_id or d_ext
                 d_title = str(crossref.get("title") or "").strip() or f"ALADIN#{source_ext}"
                 d_artist = str(crossref.get("artist_or_brand") or "").strip() or None
-                d_year = crossref.get("release_year")
+                d_year = crossref.get("master_release_year") or crossref.get("release_year")
                 d_raw = crossref.get("raw") or {}
                 d_domain = _infer_album_master_domain_code(
                     source_code="DISCOGS", title=d_title, artist_or_brand=d_artist, raw=d_raw

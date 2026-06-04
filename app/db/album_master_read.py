@@ -646,7 +646,7 @@ def list_album_masters(
         am.artist_or_brand,
         am.sort_artist_name,
         am.domain_code,
-        am.release_year,
+        COALESCE(am.override_release_year, am.release_year) AS release_year,
         am.updated_at,
         am.spotify_album_id,
         am.spotify_album_uri,

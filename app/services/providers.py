@@ -3391,6 +3391,7 @@ def _discogs_master_row_to_variant(
         "title": str(row.get("title") or ""),
         "artist_or_brand": None,
         "release_year": _safe_year(row.get("released")),
+        "master_release_year": detail.get("master_release_year") if detail else None,
         "released_date": (detail.get("released_date") if detail else None) or _pick_first_text(row.get("released")),
         "country": row.get("country"),
         "format_name": (detail.get("format_name") if detail else None) or normalized_format or base_meta.get("format_name") or format_text or None,

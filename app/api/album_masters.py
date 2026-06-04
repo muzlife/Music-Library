@@ -359,7 +359,7 @@ def import_album_master_variants(
             d_src_id = d_master_id or d_ext
             d_title = str(discogs_crossref.get("title") or "").strip() or master_title
             d_artist = str(discogs_crossref.get("artist_or_brand") or "").strip() or master_artist or None
-            d_year = discogs_crossref.get("release_year") or master_year
+            d_year = discogs_crossref.get("master_release_year") or discogs_crossref.get("release_year") or master_year
             target_master_id = db.upsert_album_master(
                 source_code="DISCOGS",
                 source_master_id=d_src_id,
