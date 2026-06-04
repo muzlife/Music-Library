@@ -44953,6 +44953,113 @@ async function loadDashboardClimate() {
       if (!showBulkEdit && $("opsExBulkEditStatus")) $("opsExBulkEditStatus").textContent = "";
     }
 
+    function _opsExCtxEditFormHtml(type, data) {
+      if (type === "MEDIA_MISSING") {
+        const cur = data.music_detail?.media_type || "";
+        const opts = [
+          "Vinyl","CD","Cassette",'7"','10"',"DVD","Blu-ray",
+          "8-Track Cartridge","SACD","CDr","Reel-To-Reel",
+        ].map(v => `<option value="${escapeHtml(v)}"${cur===v?" selected":""}>${escapeHtml(v)}</option>`).join("");
+        return `
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:0.72rem;color:var(--muted);">미디어 타입</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="opsExCtxMediaType" style="flex:1;font-size:0.78rem;">
+                <option value="">선택</option>${opts}
+              </select>
+              <button id="opsExCtxSaveBtn" class="btn ghost tiny" type="button">저장</button>
+            </div>
+            <div id="opsExCtxEditStatus" class="status mini"></div>
+          </div>`;
+      }
+      if (type === "SIZE_MISMATCH") {
+        const cur = data.size_group || "";
+        const opts = [
+          ["LP","LP"],["STD","STD (CD)"],["LP7",'LP 7"'],["LP10",'LP 10"'],
+          ["CASSETTE","Cassette"],["8TRACK","8-Track"],["REEL_TO_REEL","Reel-to-Reel"],
+          ["BOOK","Book"],["OVERSIZE","Oversize"],
+        ].map(([v,l]) => `<option value="${v}"${cur===v?" selected":""}>${escapeHtml(l)}</option>`).join("");
+        return `
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:0.72rem;color:var(--muted);">규격 그룹</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="opsExCtxSizeGroup" style="flex:1;font-size:0.78rem;">
+                <option value="">선택</option>${opts}
+              </select>
+              <button id="opsExCtxSaveBtn" class="btn ghost tiny" type="button">저장</button>
+            </div>
+            <div id="opsExCtxEditStatus" class="status mini"></div>
+          </div>`;
+      }
+      if (type === "CATALOG_MISSING") {
+        const catalogNo = escapeHtml(data.music_detail?.catalog_no || "");
+        const labelName = escapeHtml(data.music_detail?.label_name || "");
+        return `
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:0.72rem;color:var(--muted);">카탈로그 번호</label>
+            <input id="opsExCtxCatalogNo" type="text" value="${catalogNo}" style="font-size:0.78rem;" />
+            <label style="font-size:0.72rem;color:var(--muted);">레이블</label>
+            <input id="opsExCtxLabelName" type="text" value="${labelName}" style="font-size:0.78rem;" />
+            <div style="display:flex;gap:6px;">
+              <button id="opsExCtxSaveBtn" class="btn ghost tiny" type="button">저장</button>
+            </div>
+            <div id="opsExCtxEditStatus" class="status mini"></div>
+          </div>`;
+      }
+      return "";
+    }
+
+    function _bindOpsExCtxEditForm(type, ownedItemId, data) {
+      const saveBtn = $("opsExCtxSaveBtn");
+      const statusEl = $("opsExCtxEditStatus");
+      if (!saveBtn) return;
+
+      saveBtn.addEventListener("click", async () => {
+        saveBtn.disabled = true;
+        if (statusEl) statusEl.textContent = "저장 중...";
+        try {
+          let body;
+          if (type === "MEDIA_MISSING") {
+            const v = $("opsExCtxMediaType")?.value;
+            if (!v) throw new Error("미디어 타입을 선택하세요");
+            body = { music_detail: { media_type: v } };
+          } else if (type === "SIZE_MISMATCH") {
+            const v = $("opsExCtxSizeGroup")?.value;
+            if (!v) throw new Error("규격 그룹을 선택하세요");
+            body = { size_group: v };
+          } else if (type === "CATALOG_MISSING") {
+            const catalogNo = String($("opsExCtxCatalogNo")?.value || "").trim();
+            const labelName = String($("opsExCtxLabelName")?.value || "").trim();
+            if (!catalogNo && !labelName) throw new Error("카탈로그 번호 또는 레이블을 입력하세요");
+            body = { music_detail: { catalog_no: catalogNo || null, label_name: labelName || null } };
+          } else {
+            return;
+          }
+          const res = await fetchWithRetry(`/owned-items/${ownedItemId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const resp = await safeJson(res);
+          if (!res.ok) throw new Error(resp.detail || "저장 실패");
+          if (statusEl) statusEl.textContent = "저장됨";
+          opsExceptionItems = opsExceptionItems.filter(r => Number(r.id) !== Number(ownedItemId));
+          opsExceptionSelectedIds.delete(Number(ownedItemId));
+          opsExceptionTotalCount = Math.max(0, opsExceptionTotalCount - 1);
+          if (opsExceptionCounts && opsExceptionCounts[type] !== undefined) {
+            opsExceptionCounts[type] = Math.max(0, opsExceptionCounts[type] - 1);
+          }
+          renderOpsExceptionSummary();
+          renderOpsExceptionList();
+          renderOpsExceptionContextPanel(null, "");
+        } catch (err) {
+          if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+    }
+
     async function renderOpsExceptionContextPanel(row, type) {
       const card = $("opsExContextCard");
       const body = $("opsExContextBody");
@@ -44995,6 +45102,52 @@ async function loadDashboardClimate() {
               data-ops-exception-review-auto="${masterId}">Wikipedia 자동수집</button>
           </div>
         `;
+        if (type === "GENRE_MISSING") {
+          const genresVal = escapeHtml((row.genres || []).join(", "));
+          const stylesVal = escapeHtml((row.styles || []).join(", "));
+          body.innerHTML += `
+            <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px;">
+              <label style="font-size:0.72rem;color:var(--muted);">장르 (쉼표 구분)</label>
+              <input id="opsExCtxGenres" type="text" value="${genresVal}" style="width:100%;font-size:0.78rem;margin-top:4px;" />
+              <label style="font-size:0.72rem;color:var(--muted);margin-top:6px;display:block;">스타일 (쉼표 구분)</label>
+              <input id="opsExCtxStyles" type="text" value="${stylesVal}" style="width:100%;font-size:0.78rem;margin-top:4px;" />
+              <div style="display:flex;gap:6px;margin-top:8px;">
+                <button id="opsExCtxGenreSaveBtn" class="btn ghost tiny" type="button">저장</button>
+              </div>
+              <div id="opsExCtxGenreStatus" class="status mini"></div>
+            </div>`;
+          $("opsExCtxGenreSaveBtn")?.addEventListener("click", async () => {
+            const btn = $("opsExCtxGenreSaveBtn");
+            const statusEl = $("opsExCtxGenreStatus");
+            if (btn) btn.disabled = true;
+            if (statusEl) statusEl.textContent = "저장 중...";
+            try {
+              const genres = String($("opsExCtxGenres")?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+              const styles = String($("opsExCtxStyles")?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+              const res = await fetchWithRetry(`/album-masters/${masterId}/correction`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ genres, styles }),
+              });
+              const resp = await safeJson(res);
+              if (!res.ok) throw new Error(resp.detail || "저장 실패");
+              if (statusEl) statusEl.textContent = "저장됨";
+              opsExceptionItems = opsExceptionItems.filter(r => Number(r.id) !== Number(masterId));
+              opsExceptionSelectedIds.delete(Number(masterId));
+              opsExceptionTotalCount = Math.max(0, opsExceptionTotalCount - 1);
+              if (opsExceptionCounts && opsExceptionCounts["GENRE_MISSING"] !== undefined) {
+                opsExceptionCounts["GENRE_MISSING"] = Math.max(0, opsExceptionCounts["GENRE_MISSING"] - 1);
+              }
+              renderOpsExceptionSummary();
+              renderOpsExceptionList();
+              renderOpsExceptionContextPanel(null, "");
+            } catch (err) {
+              if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+            } finally {
+              if (btn) btn.disabled = false;
+            }
+          });
+        }
         try {
           const res = await fetchWithRetry(`/album-masters/${masterId}/members`);
           const data = await safeJson(res);
@@ -45048,6 +45201,11 @@ async function loadDashboardClimate() {
                 onclick="openMediaSearchDetailManage(0,${ownedItemId})">관리 화면으로</button>
             </div>
           `;
+          const editFormHtml = _opsExCtxEditFormHtml(type, data);
+          if (editFormHtml) {
+            body.innerHTML += `<div id="opsExCtxEditSection" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px;">${editFormHtml}</div>`;
+            _bindOpsExCtxEditForm(type, ownedItemId, data);
+          }
         } catch (err) {
           body.innerHTML = `<div class="mini muted" style="color:var(--err);">오류: ${escapeHtml(String(err.message||err))}</div>`;
         }
