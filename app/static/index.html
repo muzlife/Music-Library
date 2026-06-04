@@ -37798,17 +37798,16 @@
       const title  = String($("opsExTitle")?.value  || "").trim();
       const domain = String($("opsExceptionDomain")?.value || "").trim();
       const releaseYear = String($("opsExReleaseYear")?.value || "").trim();
-      if (type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
-        url = `/owned-items?music_only=true&status=IN_COLLECTION&include_total=true&limit=${limit}&offset=${offset}`;
-        if (type === "GENRE_MISSING")    url += "&genre_missing=true";
-        else                             url += "&catalog_missing=true";
+      if (type === "CATALOG_MISSING") {
+        url = `/owned-items?music_only=true&status=IN_COLLECTION&include_total=true&limit=${limit}&offset=${offset}&catalog_missing=true`;
         if (artist)      url += `&artist_or_brand=${encodeURIComponent(artist)}`;
         if (title)       url += `&q=${encodeURIComponent(title)}`;
         if (domain)      url += `&domain_code=${encodeURIComponent(domain)}`;
         if (releaseYear) url += `&release_year=${encodeURIComponent(releaseYear)}`;
       } else {
         url = `/album-masters?include_total=true&limit=${limit}&offset=${offset}`;
-        if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
+        if (type === "GENRE_MISSING")     url += "&genre_missing=true&media_only=true";
+        else if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
         else if (type === "REVIEW_MISSING") url += "&review_missing=true&media_only=true";
         if (artist)      url += `&artist_or_brand=${encodeURIComponent(artist)}`;
         if (title)       url += `&q=${encodeURIComponent(title)}`;
@@ -37821,14 +37820,13 @@
     function buildMasterExceptionCountUrl(type) {
       let url;
       const domain = String($("opsExceptionDomain")?.value || "").trim();
-      if (type === "GENRE_MISSING" || type === "CATALOG_MISSING") {
-        url = `/owned-items?music_only=true&status=IN_COLLECTION&include_total=true&limit=1`;
-        if (type === "GENRE_MISSING") url += "&genre_missing=true";
-        else                          url += "&catalog_missing=true";
+      if (type === "CATALOG_MISSING") {
+        url = `/owned-items?music_only=true&status=IN_COLLECTION&include_total=true&limit=1&catalog_missing=true`;
         if (domain) url += `&domain_code=${encodeURIComponent(domain)}`;
       } else {
         url = `/album-masters?include_total=true&limit=1`;
-        if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
+        if (type === "GENRE_MISSING")      url += "&genre_missing=true&media_only=true";
+        else if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
         else if (type === "REVIEW_MISSING") url += "&review_missing=true&media_only=true";
         if (domain) url += `&domain_code=${encodeURIComponent(domain)}`;
       }
@@ -45267,18 +45265,26 @@ async function loadDashboardClimate() {
           }
 
           if (activeType === "GENRE_MISSING") {
-            const masterId = item.linked_album_master_id || 0;
-            const genresJoined = (Array.isArray(item.genres) ? item.genres : []).join(", ");
+            const masterId = id;
+            const genresJoined  = (Array.isArray(item.genres)  ? item.genres  : []).join(", ");
+            const stylesJoined  = (Array.isArray(item.styles)  ? item.styles  : []).join(", ");
             return `
               <div class="ops-exception-row" data-ops-ex-row-idx="${idx}">
                 <div class="ops-exception-cover">${coverHtml}</div>
                 <div class="ops-exception-main" style="flex:1;min-width:0;">
                   <div class="ops-exception-title">${escapeHtml(displayTitleWithYear)}</div>
-                  <div class="ops-exception-meta">상품 #${id} | master #${masterId}</div>
+                  <div class="ops-exception-meta">master #${masterId}</div>
                   <div class="ops-exception-edit-row">
-                    <input type="text" class="ops-exception-inline-input" style="flex:1;min-width:180px;" placeholder="장르 (쉼표 구분, 예: Rock, Pop)" data-oi-id="${id}" data-master-id="${masterId}" value="${escapeHtml(genresJoined)}" />
-                    <button class="btn ghost tiny" data-ops-genre-save="${id}" style="flex-shrink:0;">저장</button>
-                    <span class="ops-genre-save-status mini muted" data-save-status="${id}"></span>
+                    <input type="text" class="ops-exception-inline-input" style="flex:2;min-width:160px;"
+                      placeholder="장르 (쉼표 구분, 예: Rock, Pop)"
+                      data-master-id="${masterId}" data-field="genres"
+                      value="${escapeHtml(genresJoined)}" />
+                    <input type="text" class="ops-exception-inline-input" style="flex:2;min-width:160px;"
+                      placeholder="스타일 (쉼표 구분, 예: Indie Rock, Shoegaze)"
+                      data-master-id="${masterId}" data-field="styles"
+                      value="${escapeHtml(stylesJoined)}" />
+                    <button class="btn ghost tiny" data-ops-genre-save="${masterId}" style="flex-shrink:0;">저장</button>
+                    <span class="mini muted" data-save-status="${masterId}"></span>
                   </div>
                 </div>
               </div>`;
@@ -45381,12 +45387,13 @@ async function loadDashboardClimate() {
         root.querySelectorAll("[data-ops-genre-save]").forEach((btn) => {
           btn.addEventListener("click", async (e) => {
             e.stopPropagation();
-            const oiId = btn.dataset.opsGenreSave;
+            const masterId = btn.dataset.opsGenreSave;
             const rowEl = btn.closest(".ops-exception-row");
-            const input = rowEl.querySelector("[data-master-id]");
-            const masterId = input?.dataset.masterId || "";
-            const statusEl = rowEl.querySelector(`[data-save-status='${oiId}']`);
-            const genres = (input?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+            const genreInput  = rowEl.querySelector("[data-field='genres']");
+            const styleInput  = rowEl.querySelector("[data-field='styles']");
+            const statusEl    = rowEl.querySelector(`[data-save-status='${masterId}']`);
+            const genres = (genreInput?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+            const styles = (styleInput?.value  || "").split(",").map(s => s.trim()).filter(Boolean);
             if (!genres.length) { if (statusEl) statusEl.textContent = "장르를 입력하세요"; return; }
             btn.disabled = true;
             if (statusEl) statusEl.textContent = "저장 중...";
@@ -45394,7 +45401,7 @@ async function loadDashboardClimate() {
               const res = await fetchWithRetry(`/album-masters/${masterId}/correction`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ genres }),
+                body: JSON.stringify({ genres, styles }),
               });
               if (!res.ok) throw new Error((await safeJson(res)).detail || "저장 실패");
               if (statusEl) statusEl.textContent = "저장됨";
