@@ -21033,6 +21033,8 @@
               <button id="opsExceptionSelectAllBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--select-all" type="button" title="전체 선택" aria-label="전체 선택" data-i18n="ops.exception.selection.action.select_all" data-i18n-title="ops.exception.selection.action.select_all" data-i18n-aria-label="ops.exception.selection.action.select_all">전체 선택</button>
               <button id="opsExceptionClearBtn" class="btn ghost tiny icon-symbol-btn icon-symbol-btn--clear-selection" type="button" title="선택 해제" aria-label="선택 해제" data-i18n="ops.exception.selection.action.clear" data-i18n-title="ops.exception.selection.action.clear" data-i18n-aria-label="ops.exception.selection.action.clear">선택 해제</button>
             </div>
+            <div id="opsExBulkEditRow" style="display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap;"></div>
+            <div id="opsExBulkEditStatus" class="status mini" style="margin-top:4px;"></div>
           </div>
           <div class="result-head u-mt-8">
             <strong data-i18n="ops.exception.section.targets">처리 대상</strong>
@@ -44818,6 +44820,104 @@ async function loadDashboardClimate() {
         .filter((row) => opsExceptionSelectedIds.has(Number(row?.id || 0)));
     }
 
+    function renderOpsExBulkEditRow(type, selectedCount) {
+      const row = $("opsExBulkEditRow");
+      if (!row) return;
+      if (type === "MEDIA_MISSING") {
+        row.innerHTML = `
+          <label style="font-size:0.78rem;white-space:nowrap;">미디어 타입</label>
+          <select id="opsExBulkMediaType" style="font-size:0.78rem;">
+            <option value="">선택</option>
+            <option value="Vinyl">Vinyl (LP)</option>
+            <option value="CD">CD</option>
+            <option value="Cassette">Cassette</option>
+            <option value='7"'>7"</option>
+            <option value='10"'>10"</option>
+            <option value="DVD">DVD</option>
+            <option value="Blu-ray">Blu-ray</option>
+            <option value="8-Track Cartridge">8-Track</option>
+            <option value="SACD">SACD</option>
+            <option value="CDr">CDr</option>
+            <option value="Reel-To-Reel">Reel-To-Reel</option>
+          </select>
+          <button id="opsExBulkApplyBtn" class="btn ghost tiny" type="button" disabled>
+            선택 ${selectedCount}건 일괄 적용
+          </button>
+        `;
+        $("opsExBulkMediaType")?.addEventListener("change", () => {
+          if ($("opsExBulkApplyBtn")) $("opsExBulkApplyBtn").disabled = !$("opsExBulkMediaType").value;
+        });
+      } else if (type === "SIZE_MISMATCH") {
+        row.innerHTML = `
+          <label style="font-size:0.78rem;white-space:nowrap;">규격 그룹</label>
+          <select id="opsExBulkSizeGroup" style="font-size:0.78rem;">
+            <option value="">선택</option>
+            <option value="LP">LP</option>
+            <option value="STD">STD (CD)</option>
+            <option value="LP7">LP 7"</option>
+            <option value="LP10">LP 10"</option>
+            <option value="CASSETTE">Cassette</option>
+            <option value="8TRACK">8-Track</option>
+            <option value="REEL_TO_REEL">Reel-to-Reel</option>
+            <option value="BOOK">Book</option>
+            <option value="OVERSIZE">Oversize</option>
+          </select>
+          <button id="opsExBulkApplyBtn" class="btn ghost tiny" type="button" disabled>
+            선택 ${selectedCount}건 일괄 적용
+          </button>
+        `;
+        $("opsExBulkSizeGroup")?.addEventListener("change", () => {
+          if ($("opsExBulkApplyBtn")) $("opsExBulkApplyBtn").disabled = !$("opsExBulkSizeGroup").value;
+        });
+      }
+      $("opsExBulkApplyBtn")?.addEventListener("click", () => applyOpsExBulk(type));
+    }
+
+    async function applyOpsExBulk(type) {
+      const btn = $("opsExBulkApplyBtn");
+      const statusEl = $("opsExBulkEditStatus");
+      const selectedIds = Array.from(opsExceptionSelectedIds);
+      if (!selectedIds.length) return;
+
+      if (btn) btn.disabled = true;
+      if (statusEl) statusEl.textContent = `적용 중... (0/${selectedIds.length})`;
+
+      try {
+        let res;
+        if (type === "MEDIA_MISSING") {
+          const mediaType = $("opsExBulkMediaType")?.value;
+          if (!mediaType) return;
+          res = await fetchWithRetry("/owned-items/bulk-update-music-detail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ owned_item_ids: selectedIds, media_type: mediaType }),
+          });
+        } else if (type === "SIZE_MISMATCH") {
+          const sizeGroup = $("opsExBulkSizeGroup")?.value;
+          if (!sizeGroup) return;
+          res = await fetchWithRetry("/owned-items/bulk-update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ owned_item_ids: selectedIds, size_group: sizeGroup }),
+          });
+        } else {
+          return;
+        }
+
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || "적용 실패");
+        const okCount = Number(data.updated_count || 0);
+        const failCount = selectedIds.length - okCount;
+        if (statusEl) statusEl.textContent = `완료 — 성공: ${okCount}건 / 실패: ${failCount}건`;
+        (data.updated_item_ids || []).forEach(id => opsExceptionSelectedIds.delete(Number(id)));
+        setTimeout(() => loadOpsExceptionItems({ silent: true }), 1500);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
     function syncOpsExceptionSelectionControls() {
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
       const selectedRows = getSelectedOpsExceptionRows();
@@ -44843,6 +44943,14 @@ async function loadDashboardClimate() {
                             || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING");
       if ($("opsExceptionSelectAllBtn")) $("opsExceptionSelectAllBtn").disabled = !(Array.isArray(opsExceptionItems) && opsExceptionItems.length);
       if ($("opsExceptionClearBtn")) $("opsExceptionClearBtn").disabled = selectedCount <= 0;
+      const BULK_EDIT_TYPES = new Set(["MEDIA_MISSING", "SIZE_MISMATCH"]);
+      const showBulkEdit = BULK_EDIT_TYPES.has(activeType) && selectedCount > 0;
+      const bulkEditRow = $("opsExBulkEditRow");
+      if (bulkEditRow) {
+        bulkEditRow.style.display = showBulkEdit ? "flex" : "none";
+        if (showBulkEdit) renderOpsExBulkEditRow(activeType, selectedCount);
+      }
+      if (!showBulkEdit && $("opsExBulkEditStatus")) $("opsExBulkEditStatus").textContent = "";
     }
 
     async function renderOpsExceptionContextPanel(row, type) {
