@@ -1455,7 +1455,7 @@ def _clean_review_text(text: str) -> str:
     return text.strip()
 
 
-def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | None] | None:
+def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = None) -> dict[str, str | None] | None:
     """Fetch album page extract from Wikipedia API.
 
     Searches for the album page specifically — not the artist page.
@@ -1463,7 +1463,8 @@ def fetch_wikipedia_album_review(artist: str, title: str) -> dict[str, str | Non
     Retries once on 429 with a 10-second backoff.
     """
     import urllib.request, urllib.parse, json as _json, time as _time
-    query = f"{title} {artist} album"
+    year_part = f" {year}" if year else ""
+    query = f"{title} {artist}{year_part} album"
     params = urllib.parse.urlencode({
         "action": "query",
         "format": "json",

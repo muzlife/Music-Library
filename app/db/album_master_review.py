@@ -10,7 +10,7 @@ def get_masters_without_review(conn: sqlite3.Connection, limit: int) -> list[dic
     """review_text IS NULL인 album_master 행을 limit건 반환."""
     rows = conn.execute(
         """
-        SELECT id, artist_or_brand, title
+        SELECT id, artist_or_brand, title, release_year
         FROM album_master
         WHERE review_text IS NULL OR TRIM(review_text) = ''
         ORDER BY id

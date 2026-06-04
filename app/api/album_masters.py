@@ -1038,6 +1038,7 @@ def batch_review_preview(
         mid = master["id"]
         artist = str(master.get("artist_or_brand") or "").strip()
         title = str(master.get("title") or "").strip()
+        year = int(master["release_year"]) if master.get("release_year") else None
         entry: dict[str, Any] = {
             "master_id": mid,
             "artist": artist,
@@ -1051,7 +1052,7 @@ def batch_review_preview(
             entry["error"] = "missing artist or title"
             results.append(entry)
             continue
-        raw = fetch_wikipedia_album_review(artist, title)
+        raw = fetch_wikipedia_album_review(artist, title, year=year)
         if not raw:
             entry["error"] = "no Wikipedia page found"
             results.append(entry)
@@ -1089,10 +1090,11 @@ def batch_collect_reviews(
         mid = master["id"]
         artist = str(master.get("artist_or_brand") or "").strip()
         title = str(master.get("title") or "").strip()
+        year = int(master["release_year"]) if master.get("release_year") else None
         if not artist or not title:
             failed += 1
             continue
-        raw = fetch_wikipedia_album_review(artist, title)
+        raw = fetch_wikipedia_album_review(artist, title, year=year)
         if not raw:
             failed += 1
             continue
@@ -1130,16 +1132,17 @@ def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any
 
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT artist_or_brand, title FROM album_master WHERE id = ?", (album_master_id,)
+            "SELECT artist_or_brand, title, release_year FROM album_master WHERE id = ?", (album_master_id,)
         ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Album master not found")
     artist = str(row[0] or "").strip()
     title = str(row[1] or "").strip()
+    year = int(row[2]) if row[2] else None
     if not artist or not title:
         raise HTTPException(status_code=400, detail="Artist and title required")
 
-    raw = fetch_wikipedia_album_review(artist, title)
+    raw = fetch_wikipedia_album_review(artist, title, year=year)
     if not raw:
         raise HTTPException(status_code=404, detail="No Wikipedia album page found")
 
