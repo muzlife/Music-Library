@@ -558,11 +558,16 @@ def set_owned_item_linked_album_master(owned_item_id: int, album_master_id: int 
             "UPDATE owned_item SET linked_album_master_id = ?, updated_at = ? WHERE id = ?",
             (mid, utc_now_iso(), oid),
         )
-        # album_master_member 중복 멤버십 정리 — 마스터가 교체될 때 이전 항목 제거
+        # album_master_member 정리 — 이전 마스터 멤버십 제거 후 새 마스터에 보장 추가
         if mid is not None:
             conn.execute(
                 "DELETE FROM album_master_member WHERE owned_item_id = ? AND album_master_id != ?",
                 (oid, mid),
+            )
+            conn.execute(
+                "INSERT OR IGNORE INTO album_master_member (album_master_id, owned_item_id, created_at)"
+                " VALUES (?, ?, ?)",
+                (mid, oid, utc_now_iso()),
             )
         else:
             conn.execute(
