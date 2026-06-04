@@ -1494,10 +1494,14 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
         title_lower = title.lower()
         page_title = None
         import re as _re
-        for page in pages:
-            if _re.search(r'\b' + _re.escape(title_lower) + r'\b', page["title"].lower()):
-                page_title = page["title"]
-                break
+        matched_pages = [
+            page["title"] for page in pages
+            if _re.search(r'\b' + _re.escape(title_lower) + r'\b', page["title"].lower())
+        ]
+        if matched_pages:
+            # Prefer pages explicitly qualified as albums over plain artist pages
+            album_qualified = [t for t in matched_pages if _re.search(r'\(.*album.*\)', t.lower())]
+            page_title = album_qualified[0] if album_qualified else matched_pages[0]
         is_fallback = not page_title
         if not page_title:
             # Fallback: try fetching the page directly by album title only when
