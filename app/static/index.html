@@ -20986,6 +20986,34 @@
               <button id="opsExSearchResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="검색 필터 초기화" aria-label="검색 필터 초기화"></button>
             </div>
           </div>
+          <details id="opsExAdvancedDetails" class="ops-compact-extra-fields u-mt-6">
+            <summary>상세 검색 조건</summary>
+            <div class="ops-compact-extra-fields-body home-search-advanced-grid">
+              <div class="checkbox-group-container">
+                <label class="checkbox-group-title">패키징</label>
+                <div id="opsExPackagingList" class="checkbox-group-scroll"></div>
+              </div>
+              <div class="checkbox-group-container">
+                <label class="checkbox-group-title">패키지 구성</label>
+                <div id="opsExPackageContentsList" class="checkbox-group-scroll"></div>
+              </div>
+              <div class="checkbox-group-sub">
+                <label>싸인 여부</label>
+                <div style="display:flex;gap:12px;align-items:center;min-height:38px;">
+                  <label class="inline-check"><input id="opsExSigDirect" type="checkbox" /><span>직접</span></label>
+                  <label class="inline-check"><input id="opsExSigPurchase" type="checkbox" /><span>구매</span></label>
+                </div>
+              </div>
+              <div class="checkbox-group-sub">
+                <label>기타 조건</label>
+                <div style="display:flex;gap:12px;align-items:center;min-height:38px;">
+                  <label class="inline-check"><input id="opsExNewProduct" type="checkbox" /><span>새상품</span></label>
+                  <label class="inline-check"><input id="opsExPromo" type="checkbox" /><span>홍보반</span></label>
+                  <label class="inline-check"><input id="opsExLimitEd" type="checkbox" /><span>한정반</span></label>
+                </div>
+              </div>
+            </div>
+          </details>
           <div class="row u-mt-6">
             <input id="opsExceptionPresetName" class="u-maxw-220" data-i18n-placeholder="ops.exception.field.preset_name.placeholder" placeholder="예: 곡정보 보강 50건" />
             <button id="opsExceptionPresetSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.exception.action.save_filter">필터 저장</button>
@@ -37452,6 +37480,10 @@
     }
 
     function currentOpsExceptionPresetPayload() {
+      const opsExPkgChecked = [];
+      $("opsExPackagingList")?.querySelectorAll("input:checked").forEach(cb => opsExPkgChecked.push(cb.value));
+      const opsExContentsChecked = [];
+      $("opsExPackageContentsList")?.querySelectorAll("input:checked").forEach(cb => opsExContentsChecked.push(cb.value));
       return {
         type: String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase(),
         limit: Math.max(10, Math.min(200, Number($("opsExceptionLimit")?.value || 50))),
@@ -37461,6 +37493,13 @@
         barcode:     String($("opsExBarcode")?.value      || "").trim(),
         catalogNo:   String($("opsExCatalogNo")?.value    || "").trim(),
         releaseYear: String($("opsExReleaseYear")?.value  || "").trim(),
+        packaging:       opsExPkgChecked,
+        packageContents: opsExContentsChecked,
+        sigDirect:   Boolean($("opsExSigDirect")?.checked),
+        sigPurchase: Boolean($("opsExSigPurchase")?.checked),
+        isNew:       Boolean($("opsExNewProduct")?.checked),
+        isPromo:     Boolean($("opsExPromo")?.checked),
+        isLimited:   Boolean($("opsExLimitEd")?.checked),
       };
     }
 
@@ -37604,6 +37643,16 @@
       if ($("opsExBarcode"))     $("opsExBarcode").value      = String(preset.barcode     || "").trim();
       if ($("opsExCatalogNo"))   $("opsExCatalogNo").value    = String(preset.catalogNo   || "").trim();
       if ($("opsExReleaseYear")) $("opsExReleaseYear").value  = String(preset.releaseYear || "").trim();
+      // 상세 검색 조건 복원
+      const pkgValues = new Set(Array.isArray(preset.packaging) ? preset.packaging : []);
+      $("opsExPackagingList")?.querySelectorAll("input").forEach(cb => { cb.checked = pkgValues.has(cb.value); });
+      const contentsValues = new Set(Array.isArray(preset.packageContents) ? preset.packageContents : []);
+      $("opsExPackageContentsList")?.querySelectorAll("input").forEach(cb => { cb.checked = contentsValues.has(cb.value); });
+      if ($("opsExSigDirect"))  $("opsExSigDirect").checked  = Boolean(preset.sigDirect);
+      if ($("opsExSigPurchase")) $("opsExSigPurchase").checked = Boolean(preset.sigPurchase);
+      if ($("opsExNewProduct")) $("opsExNewProduct").checked = Boolean(preset.isNew);
+      if ($("opsExPromo"))      $("opsExPromo").checked      = Boolean(preset.isPromo);
+      if ($("opsExLimitEd"))    $("opsExLimitEd").checked    = Boolean(preset.isLimited);
       syncOpsExceptionSelectionControls();
       return true;
     }
@@ -37765,6 +37814,19 @@
       if (catalogNo)   params.set("catalog_no", catalogNo);
       if (releaseYear) params.set("release_year", releaseYear);
       if (domain)      params.set("domain_code", domain);
+
+      // 상세 검색 조건 (OwnedItem 예외 타입에만 적용)
+      const opsExPkgVals = [];
+      $("opsExPackagingList")?.querySelectorAll("input:checked").forEach(cb => opsExPkgVals.push(cb.value));
+      const opsExContentsVals = [];
+      $("opsExPackageContentsList")?.querySelectorAll("input:checked").forEach(cb => opsExContentsVals.push(cb.value));
+      opsExPkgVals.forEach(v => params.append("packaging", v));
+      opsExContentsVals.forEach(v => params.append("package_contents", v));
+      if ($("opsExSigDirect")?.checked) params.append("signature_types", "IN_PERSON");
+      if ($("opsExSigPurchase")?.checked) params.append("signature_types", "PURCHASE_INCLUDED");
+      if ($("opsExNewProduct")?.checked) params.set("is_new", "true");
+      if ($("opsExPromo")?.checked) params.set("is_promo", "true");
+      if ($("opsExLimitEd")?.checked) params.set("is_limited", "true");
       return params;
     }
 
@@ -47031,6 +47093,43 @@ async function loadDashboardClimate() {
         });
       }
     }
+
+    (function initOpsExAdvancedFilters() {
+      const opsExPkg = $("opsExPackagingList");
+      if (opsExPkg) {
+        const allPackaging = new Set();
+        for (const mediaType in PACKAGING_OPTIONS_BY_MEDIA) {
+          let mt = mediaType;
+          if (mt === "CDr" || mt === "SACD") mt = "CD";
+          if (mt === "All Media") mt = "VINYL";
+          (PACKAGING_OPTIONS_BY_MEDIA[mt] || []).forEach(opt => allPackaging.add(opt));
+        }
+        opsExPkg.innerHTML = Array.from(allPackaging).sort().map(opt =>
+          `<label><input type="checkbox" value="${escapeHtml(opt)}" /><span>${escapeHtml(opt)}</span></label>`
+        ).join("");
+        opsExPkg.querySelectorAll("input").forEach(cb =>
+          cb.addEventListener("change", () => loadOpsExceptionItems())
+        );
+      }
+      const opsExContents = $("opsExPackageContentsList");
+      if (opsExContents) {
+        const allContents = [
+          "Inner Sleeve","Insert","Leaflet","Booklet","Photo Book",
+          "Mini Poster / Tabloid","Postcard","Sticker","Bookmark",
+          "Lenticular / Hologram Card","Photo Card","Film Cut",
+          "CD Holder","Lyric Book","Poster","Scrapbook / Diary","Receipt",
+        ];
+        opsExContents.innerHTML = allContents.map(opt =>
+          `<label><input type="checkbox" value="${escapeHtml(opt)}" /><span>${escapeHtml(opt)}</span></label>`
+        ).join("");
+        opsExContents.querySelectorAll("input").forEach(cb =>
+          cb.addEventListener("change", () => loadOpsExceptionItems())
+        );
+      }
+      ["opsExSigDirect","opsExSigPurchase","opsExNewProduct","opsExPromo","opsExLimitEd"].forEach(id => {
+        $(id)?.addEventListener("change", () => loadOpsExceptionItems());
+      });
+    })();
 
     function resetHomeSearchForm() {
       $("homeArtist").value = "";
@@ -56329,6 +56428,11 @@ async function loadDashboardClimate() {
     $("opsExSearchResetBtn")?.addEventListener("click", () => {
       ["opsExArtist","opsExTitle","opsExBarcode","opsExCatalogNo","opsExReleaseYear"].forEach(id => {
         const el = $(id); if (el) el.value = "";
+      });
+      $("opsExPackagingList")?.querySelectorAll("input").forEach(cb => { cb.checked = false; });
+      $("opsExPackageContentsList")?.querySelectorAll("input").forEach(cb => { cb.checked = false; });
+      ["opsExSigDirect","opsExSigPurchase","opsExNewProduct","opsExPromo","opsExLimitEd"].forEach(id => {
+        const el = $(id); if (el) el.checked = false;
       });
     });
     ["opsExArtist","opsExTitle","opsExBarcode","opsExCatalogNo","opsExReleaseYear"].forEach(id => {
