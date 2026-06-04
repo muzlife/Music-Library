@@ -451,16 +451,6 @@ async def auth_guard(request: Request, call_next):
         "/cafe/tags",
         "/cafe/local-cover",
         "/random-album",
-        "/refresh-images",
-        "/owned-items/5074",
-        "/owned-items/5074/auto-master",
-        "/aladin-discogs-backfill/run",
-        "/owned-items/5074/sync-metadata",
-        "/refresh-images",
-        "/owned-items/5074",
-        "/owned-items/5074/auto-master",
-        "/aladin-discogs-backfill/run",
-        "/owned-items/5074/sync-metadata",
         "/spotify/callback",
     }
     if path in allowed_paths:

@@ -198,7 +198,7 @@ def _normalize_domain_code_sql(expr: str) -> str:
       WHEN 'GREATER_CHINA' THEN 'GREATER_CHINA'
       WHEN 'WESTERN' THEN 'WESTERN'
       WHEN 'OTHER_ASIA' THEN 'OTHER_ASIA'
-      WHEN 'WORLD_OTHER' THEN 'WORLD'
+      WHEN 'WORLD_OTHER' THEN 'WORLD_OTHER'
       WHEN 'UNKNOWN' THEN 'UNKNOWN'
       ELSE NULL
     END

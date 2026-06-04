@@ -939,7 +939,8 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
 
 @router.post("/refresh-images")
 def refresh_images(request: Request, owned_item_id: int | None = None, limit: int = 100) -> dict[str, Any]:
-    """Refresh downloaded images for items."""
+    """Refresh downloaded images for items. ADMIN only."""
+    _require_admin_request(request)
     from pathlib import Path
     from app.services.image_store import download_images
     from ..db import get_conn
@@ -953,7 +954,13 @@ def refresh_images(request: Request, owned_item_id: int | None = None, limit: in
     else:
         with get_conn() as conn:
             conn.row_factory = sqlite3.Row
-            items = conn.execute("SELECT id,source_code,cover_image_url,source_external_id FROM owned_item WHERE cover_image_url IS NOT NULL AND cover_image_url!='' ORDER BY id DESC LIMIT ?",(limit,)).fetchall()
+            items = conn.execute(
+                "SELECT oi.id, oi.source_code, oi.source_external_id, mid.cover_image_url "
+                "FROM owned_item oi JOIN music_item_detail mid ON mid.owned_item_id = oi.id "
+                "WHERE mid.cover_image_url IS NOT NULL AND mid.cover_image_url != '' "
+                "ORDER BY oi.id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
     for row in items:
         oid = int(row["id"]); src = str(row.get("source_code") or "").strip().upper()
         url = str(row.get("cover_image_url") or "").strip()
