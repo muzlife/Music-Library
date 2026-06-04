@@ -34198,6 +34198,7 @@
       const text = String(item?.review_text || "").trim();
       if (!text) return "";
       const source = String(item?.review_source || "").trim();
+      const reviewUrl = String(item?.review_url || "").trim();
       const TRUNCATE_LEN = 200;
       const needsTruncate = text.length > TRUNCATE_LEN;
       const previewText = needsTruncate ? text.slice(0, TRUNCATE_LEN) + "…" : text;
@@ -34228,7 +34229,7 @@
               >${expandLabel}</button>
             ` : ""}
           </div>
-          ${source ? `<div class="ops-artist-context-meta"><span class="ops-artist-context-pill"><strong>${escapeHtml(t("media.search.context.review_source_label") || "출처")}</strong>${escapeHtml(source)}</span></div>` : ""}
+          ${source ? `<div class="ops-artist-context-meta"><span class="ops-artist-context-pill"><strong>${escapeHtml(t("media.search.context.review_source_label") || "출처")}</strong>${reviewUrl ? `<a href="${escapeHtml(reviewUrl)}" target="_blank" rel="noopener">${escapeHtml(source)}</a>` : escapeHtml(source)}</span></div>` : ""}
         </section>
       `;
     }
@@ -34863,7 +34864,7 @@
           if (masterData?.review_text) {
             const reviewEl = document.getElementById("mediaSearchReviewSection");
             if (reviewEl) {
-              reviewEl.innerHTML = renderAlbumReviewSection({ ...item, review_text: masterData.review_text, review_source: masterData.review_source });
+              reviewEl.innerHTML = renderAlbumReviewSection({ ...item, review_text: masterData.review_text, review_source: masterData.review_source, review_url: masterData.review_url });
               reviewEl.querySelectorAll(".ops-artist-context-toggle").forEach(function(btn) {
                 btn.addEventListener("click", function() {
                   const expanded = this.getAttribute("aria-expanded") === "true";
