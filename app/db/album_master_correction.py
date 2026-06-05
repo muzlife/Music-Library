@@ -190,7 +190,8 @@ def update_album_master_correction(
         if int(cur.rowcount or 0) <= 0:
             return None
 
-        # Propagate confirmed domain to label registry
+        # Collect label names while conn is open (upsert happens after conn closes)
+        label_names: list[str] = []
         if normalized_domain_code:
             label_rows = conn.execute(
                 """
@@ -203,8 +204,11 @@ def update_album_master_correction(
                 """,
                 (master_id,),
             ).fetchall()
-            for lr in label_rows:
-                upsert_label_domain(lr["label_name"], normalized_domain_code)
+            label_names = [lr["label_name"] for lr in label_rows]
+
+    # Upsert label registry after outer conn is closed to avoid DB lock
+    for label_name in label_names:
+        upsert_label_domain(label_name, normalized_domain_code)
 
     return get_album_master_correction_state(master_id)
 
