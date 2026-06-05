@@ -15,12 +15,22 @@ _DIR_RE = re.compile(
 )
 
 
+_TRACK_NUM_RE = re.compile(r"^\d{1,3}[\.\-\s]+")
+
+
 def _norm(text: str) -> str:
-    """Lowercase, strip diacritics, collapse whitespace, drop punctuation."""
+    """NFC-normalise, lowercase, strip diacritics, drop punctuation."""
+    text = unicodedata.normalize("NFC", text)          # NFD→NFC (macOS filenames)
     text = unicodedata.normalize("NFKD", text)
     text = "".join(c for c in text if not unicodedata.combining(c))
     text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
     return re.sub(r"\s+", " ", text).strip().lower()
+
+
+def _norm_track(title: str) -> str:
+    """Strip leading track numbers then normalise: '01. 여의도 우린' → '여의도 우린'."""
+    title = _TRACK_NUM_RE.sub("", title.strip())
+    return _norm(title)
 
 
 def _token_sim(a: str, b: str) -> float:
@@ -33,8 +43,10 @@ def _token_sim(a: str, b: str) -> float:
 def _track_jaccard(local_titles: set[str], master_titles: set[str]) -> float:
     if not local_titles or not master_titles:
         return 0.0
-    nl = {_norm(t) for t in local_titles if t.strip()}
-    nm = {_norm(t) for t in master_titles if t.strip()}
+    nl = {_norm_track(t) for t in local_titles if t.strip()}
+    nm = {_norm_track(t) for t in master_titles if t.strip()}
+    nl.discard("")
+    nm.discard("")
     if not nl or not nm:
         return 0.0
     return len(nl & nm) / len(nl | nm)
@@ -143,7 +155,7 @@ def _build_local_dir_index(track_rows: list) -> dict[str, dict[str, Any]]:
             parsed = parse_dir_name(Path(dir_path).name)
             dirs[dir_path] = {"tracks": set(), "parsed": parsed}
         if row["title"]:
-            dirs[dir_path]["tracks"].add(row["title"])
+            dirs[dir_path]["tracks"].add(_norm_track(row["title"]))
     return dirs
 
 
@@ -200,10 +212,9 @@ def auto_match(dry_run: bool = False,
     for dir_path, info in local_dirs.items():
         if dir_path in linked_dirs:
             continue
-        for t in info["tracks"]:
-            nk = _norm(t)
-            if nk:
-                track_to_dirs[nk].append(dir_path)
+        for t in info["tracks"]:  # already _norm_track'd in _build_local_dir_index
+            if t:
+                track_to_dirs[t].append(dir_path)
 
     # ── Parse master data ────────────────────────────────────────────────────
     masters_with_tracks: list[dict] = []
@@ -241,7 +252,7 @@ def auto_match(dry_run: bool = False,
 
         # count how many master tracks each candidate dir matches
         dir_hits: dict[str, int] = defaultdict(int)
-        norm_master_tracks = [_norm(t) for t in m["tracks"] if _norm(t)]
+        norm_master_tracks = [_norm_track(t) for t in m["tracks"] if _norm_track(t)]
         for nt in norm_master_tracks:
             for dp in track_to_dirs.get(nt, []):
                 if dp not in linked_dirs:
