@@ -290,11 +290,14 @@ def auto_match(dry_run: bool = False,
 
     # ══ Pass 2: name-centric for masters without tracks ══════════════════════
     by_year: dict[int, list[dict]] = defaultdict(list)
+    no_year_masters: list[dict] = []
     for m in masters_no_tracks:
         if m["id"] in linked_masters:
             continue
         if m["year"]:
             by_year[m["year"]].append(m)
+        else:
+            no_year_masters.append(m)
 
     for dir_path, info in local_dirs.items():
         if dir_path in linked_dirs:
@@ -308,6 +311,7 @@ def auto_match(dry_run: bool = False,
             by_year.get(year, [])
             + by_year.get(year - 1, [])
             + by_year.get(year + 1, [])
+            + no_year_masters  # 연도 없는 마스터는 모든 디렉토리와 비교
         )
 
         best_id, best_score = None, 0.0
