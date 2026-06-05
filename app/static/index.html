@@ -18280,6 +18280,19 @@
                           <button id="homeMasterMetaSpotifyCancelBtn" type="button" class="btn ghost tiny">취소</button>
                         </div>
                         <div id="homeMasterSpotifyMatchStatus" class="status" style="font-size:0.75rem;"></div>
+                        <!-- 로컬 음원 경로 -->
+                        <div id="homeMasterLocalRow" style="display:none;align-items:center;gap:4px;">
+                          <span id="homeMasterLocalText" class="mini muted"></span>
+                          <button id="homeMasterLocalEditBtn" type="button" class="btn ghost" style="padding:0 3px;line-height:1;min-height:unset;height:16px;font-size:0.65rem;" title="로컬 경로 편집">✏️</button>
+                          <button id="homeMasterLocalUnlinkBtn" type="button" class="btn ghost" style="padding:0 3px;line-height:1;min-height:unset;height:16px;font-size:0.65rem;color:var(--err,#c00);" title="연결 해제">✕</button>
+                        </div>
+                        <div id="homeMasterLocalEditRow" style="display:none;align-items:center;gap:4px;flex-wrap:wrap;">
+                          <span style="font-size:0.72rem;white-space:nowrap;">로컬 경로:</span>
+                          <input id="homeMasterLocalPath" type="text" style="flex:1;min-width:200px;font-size:0.72rem;" placeholder="/Volumes/Music/..." />
+                          <button id="homeMasterLocalSaveBtn" type="button" class="btn ghost tiny">저장</button>
+                          <button id="homeMasterLocalCancelBtn" type="button" class="btn ghost tiny">취소</button>
+                        </div>
+                        <div id="homeMasterLocalStatus" class="status" style="font-size:0.72rem;"></div>
                         <div id="homeMasterMetaGenreRow" class="u-hidden-initial"></div>
                         <div id="homeMasterMetaLinkRow" class="u-hidden-initial"></div>
                         <div id="homeAcquisitionSourceInfo" class="u-hidden-initial" style="width:100%"></div>
@@ -50493,6 +50506,29 @@ async function loadDashboardClimate() {
         }
       }
 
+      // 로컬 경로 행
+      (function() {
+        const localRow = $("homeMasterLocalRow");
+        const localEditRow = $("homeMasterLocalEditRow");
+        const localStatus = $("homeMasterLocalStatus");
+        if (!localRow) return;
+        if (localEditRow && localEditRow.style.display !== "none") return; // 편집 중이면 갱신 안 함
+        fetchWithRetry(`/album-masters/${masterIdVal}/local-player`).then(async res => {
+          if (!res.ok) { localRow.style.display = "none"; return; }
+          const data = await safeJson(res);
+          const localText = $("homeMasterLocalText");
+          if (data.linked) {
+            const short = data.dir_path.replace(/^\/Volumes\/Music\//, "…/");
+            if (localText) localText.textContent = `♪ Local: ${short}`;
+            localRow.style.display = "flex";
+          } else {
+            if (localText) localText.textContent = "♪ Local: 미연결";
+            localRow.style.display = "flex";
+          }
+          if (localStatus) localStatus.textContent = "";
+        }).catch(() => { localRow.style.display = "none"; });
+      })();
+
       (function() {
         const firstItem = metaMusic[0] || metaItems[0] || null;
         const genres = Array.isArray(firstItem?.genres) ? firstItem.genres : [];
@@ -57560,6 +57596,78 @@ async function loadDashboardClimate() {
       await linkHomeMasterSpotify();
       const statusEl = $("homeMasterSpotifyMatchStatus");
       if (!statusEl?.classList.contains("is-error")) closeSpotifyEditMode();
+    });
+
+    // ── 로컬 경로 핸들러 ──────────────────────────────────────────────────────
+    $("homeMasterLocalEditBtn")?.addEventListener("click", () => {
+      const localRow = $("homeMasterLocalRow");
+      const localEditRow = $("homeMasterLocalEditRow");
+      const pathInput = $("homeMasterLocalPath");
+      if (localRow) localRow.style.display = "none";
+      if (localEditRow) localEditRow.style.display = "flex";
+      if (pathInput) {
+        // 현재 경로 prefill
+        const txt = $("homeMasterLocalText")?.textContent || "";
+        const match = txt.match(/♪ Local: (.+)/);
+        if (match && match[1] !== "미연결") {
+          pathInput.value = match[1].replace(/^…\//, "/Volumes/Music/");
+        } else {
+          pathInput.value = "";
+        }
+        pathInput.focus();
+      }
+    });
+    $("homeMasterLocalCancelBtn")?.addEventListener("click", () => {
+      $("homeMasterLocalRow").style.display = "flex";
+      $("homeMasterLocalEditRow").style.display = "none";
+      if ($("homeMasterLocalStatus")) $("homeMasterLocalStatus").textContent = "";
+    });
+    async function saveLocalPath() {
+      const masterIdVal = Number(homeMasterInfo?.album_master_id || 0);
+      if (!masterIdVal) return;
+      const path = ($("homeMasterLocalPath")?.value || "").trim();
+      const statusEl = $("homeMasterLocalStatus");
+      const saveBtn = $("homeMasterLocalSaveBtn");
+      if (!path) { if (statusEl) statusEl.textContent = "경로를 입력하세요"; return; }
+      if (saveBtn) saveBtn.disabled = true;
+      if (statusEl) statusEl.textContent = "저장 중...";
+      try {
+        const res = await fetchWithRetry(`/album-masters/${masterIdVal}/local-link`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dir_path: path }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || "저장 실패");
+        if (statusEl) statusEl.textContent = "저장됨";
+        _localLinkedIds.add(masterIdVal);
+        const short = path.replace(/^\/Volumes\/Music\//, "…/");
+        const localText = $("homeMasterLocalText");
+        if (localText) localText.textContent = `♪ Local: ${short}`;
+        $("homeMasterLocalRow").style.display = "flex";
+        $("homeMasterLocalEditRow").style.display = "none";
+        _lp.load(masterIdVal).catch(() => {});
+        setTimeout(() => { if (statusEl) statusEl.textContent = ""; }, 2000);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+      }
+    }
+    $("homeMasterLocalSaveBtn")?.addEventListener("click", saveLocalPath);
+    $("homeMasterLocalPath")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); saveLocalPath(); }
+    });
+    $("homeMasterLocalUnlinkBtn")?.addEventListener("click", async () => {
+      const masterIdVal = Number(homeMasterInfo?.album_master_id || 0);
+      if (!masterIdVal) return;
+      const statusEl = $("homeMasterLocalStatus");
+      await fetchWithRetry(`/album-masters/${masterIdVal}/local-link`, { method: "DELETE" });
+      _localLinkedIds.delete(masterIdVal);
+      const localText = $("homeMasterLocalText");
+      if (localText) localText.textContent = "♪ Local: 미연결";
+      if (statusEl) statusEl.textContent = "";
+      _lp.hide();
     });
     $("homeMasterSpotifyMatchId")?.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
