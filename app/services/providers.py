@@ -1431,11 +1431,20 @@ def _infer_format_from_text(format_text: str | None) -> str | None:
 # --- Wikipedia album review ---
 
 def _clean_review_text(text: str) -> str:
-    """Remove Wikipedia citation markers and tidy whitespace."""
+    """Remove Wikipedia boilerplate and tidy whitespace."""
     import re as _re
     # [ 1 ], [1], [ citation needed ], [edit], etc.
     text = _re.sub(r"\[\s*\d+\s*\]", "", text)
     text = _re.sub(r"\[\s*[a-zA-Z ]{1,30}\s*\]", "", text)
+    # Footnote lines starting with ^ (certification notes, references)
+    text = _re.sub(r"(?m)^\^[^\n]*$", "", text)
+    # Stub notices (ko/en Wikipedia)
+    text = _re.sub(
+        r"[^\n]*(?:스텁입니다|stub article|위키백과를 도와주실|you can help|이 문서는 토막글)[^\n]*",
+        "", text, flags=_re.I,
+    )
+    # Collapse multiple blank lines → single blank line
+    text = _re.sub(r"\n{3,}", "\n\n", text)
     # collapse multiple spaces / clean up spacing before punctuation
     text = _re.sub(r" {2,}", " ", text)
     text = _re.sub(r" ([.,;:!?])", r"\1", text)
