@@ -32,20 +32,24 @@ _SAFE_ROOT = str(Path(MUSIC_ROOT).resolve())
 _dir_cache: list[tuple[str, str]] | None = None  # [(dir_path, dir_name), ...]
 
 
-def _get_dir_cache() -> list[tuple[str, str]]:
+def _get_dir_cache() -> list[tuple[str, str, str]]:
+    """Returns [(dir_path, dir_name_raw, dir_name_nfc), ...]."""
     global _dir_cache
     if _dir_cache is not None:
         return _dir_cache
+    import unicodedata
     from ..db import get_conn as _gc
     with _gc() as conn:
         rows = conn.execute("SELECT file_path FROM local_music_index").fetchall()
     seen: set[str] = set()
-    cache: list[tuple[str, str]] = []
+    cache: list[tuple[str, str, str]] = []
     for row in rows:
         dp = str(Path(row["file_path"]).parent)
         if dp not in seen:
             seen.add(dp)
-            cache.append((dp, Path(dp).name))
+            raw_name = Path(dp).name
+            nfc_name = unicodedata.normalize("NFC", raw_name)
+            cache.append((dp, raw_name, nfc_name))
     _dir_cache = cache
     return _dir_cache
 
@@ -148,11 +152,12 @@ def search_dirs(q: str, limit: int = 20, request: Request = None) -> dict[str, A
     if not q_stripped:
         return {"dirs": []}
 
-    q_lower = q_stripped.lower()
+    import unicodedata
+    q_nfc = unicodedata.normalize("NFC", q_stripped).lower()
     results: list[dict[str, str]] = []
-    for dir_path, dir_name in _get_dir_cache():
-        if q_lower in dir_name.lower():
-            results.append({"dir_path": dir_path, "dir_name": dir_name})
+    for dir_path, dir_name_raw, dir_name_nfc in _get_dir_cache():
+        if q_nfc in dir_name_nfc.lower():
+            results.append({"dir_path": dir_path, "dir_name": dir_name_nfc})
             if len(results) >= limit:
                 break
 
