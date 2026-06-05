@@ -603,6 +603,7 @@ def list_album_masters(
     format_missing: bool = Query(default=False),
     catalog_missing: bool = Query(default=False),
     review_missing: bool = Query(default=False),
+    local_missing: bool = Query(default=False),
     spotify_state: str = Query(default="ANY", pattern="^(ANY|MISSING|MATCHED)$"),
 ) -> list[AlbumMasterListItem]:
     main_module = _main()
@@ -639,6 +640,7 @@ def list_album_masters(
         format_missing=format_missing,
         catalog_missing=catalog_missing,
         review_missing=review_missing,
+        local_missing=local_missing,
         spotify_state=spotify_state,
     )
     if include_total:
@@ -665,6 +667,7 @@ def list_album_masters(
         format_missing=format_missing,
         catalog_missing=catalog_missing,
         review_missing=review_missing,
+        local_missing=local_missing,
         spotify_state=spotify_state,
         )
         response.headers["X-Total-Count"] = str(total)

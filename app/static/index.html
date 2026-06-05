@@ -21149,6 +21149,7 @@
                 <option value="REVIEW_MISSING" data-i18n="ops.exception.field.type.review_missing">리뷰 미등록</option>
                 <option value="GENRE_MISSING" data-i18n="ops.exception.field.type.genre_missing">장르 없음</option>
                 <option value="CATALOG_MISSING" data-i18n="ops.exception.field.type.catalog_missing">카탈로그 없음</option>
+                <option value="LOCAL_MISSING">음원 없음</option>
               </select>
             </div>
             <div class="ops-exception-inline-field ops-exception-inline-field--limit" style="display:none;">
@@ -37989,6 +37990,7 @@
       if (code === "SIZE_MISMATCH") return t("common.exception_hint.size_mismatch");
       if (code === "GENRE_MISSING") return t("common.exception_hint.genre_missing");
       if (code === "CATALOG_MISSING") return t("common.exception_hint.catalog_missing");
+      if (code === "LOCAL_MISSING") return "로컬 음원 미연결";
       return "";
     }
 
@@ -38006,9 +38008,10 @@
         if (releaseYear) url += `&release_year=${encodeURIComponent(releaseYear)}`;
       } else {
         url = `/album-masters?include_total=true&limit=${limit}&offset=${offset}`;
-        if (type === "GENRE_MISSING")     url += "&genre_missing=true&media_only=true";
+        if (type === "GENRE_MISSING")      url += "&genre_missing=true&media_only=true";
         else if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
         else if (type === "REVIEW_MISSING") url += "&review_missing=true&media_only=true";
+        else if (type === "LOCAL_MISSING")  url += "&local_missing=true&media_only=true";
         if (artist)      url += `&artist_or_brand=${encodeURIComponent(artist)}`;
         if (title)       url += `&q=${encodeURIComponent(title)}`;
         if (domain)      url += `&domain_code=${encodeURIComponent(domain)}`;
@@ -38028,6 +38031,7 @@
         if (type === "GENRE_MISSING")      url += "&genre_missing=true&media_only=true";
         else if (type === "SPOTIFY_UNMATCHED") url += "&spotify_state=MISSING";
         else if (type === "REVIEW_MISSING") url += "&review_missing=true&media_only=true";
+        else if (type === "LOCAL_MISSING")  url += "&local_missing=true&media_only=true";
         if (domain) url += `&domain_code=${encodeURIComponent(domain)}`;
       }
       return url;
@@ -45219,7 +45223,7 @@ async function loadDashboardClimate() {
       const root = $("opsExceptionSummary");
       if (!root) return;
       const activeType = String($("opsExceptionType")?.value || "UNSLOTTED").trim().toUpperCase();
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "REVIEW_MISSING", "GENRE_MISSING", "CATALOG_MISSING"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "REVIEW_MISSING", "GENRE_MISSING", "CATALOG_MISSING", "LOCAL_MISSING"];
       root.innerHTML = types.map((type) => `
         <button
           class="ops-exception-box ${activeType === type ? "active" : ""}"
@@ -45601,7 +45605,7 @@ async function loadDashboardClimate() {
 
       // --- Album Master rows (SPOTIFY_UNMATCHED / REVIEW_MISSING) ---
       // --- Owned Item rows with inline edit (GENRE_MISSING / CATALOG_MISSING) ---
-      if (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING" || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING") {
+      if (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING" || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING" || activeType === "LOCAL_MISSING") {
         root.innerHTML = opsExceptionItems.map((item, idx) => {
           const id = Number(item.id || 0);
           const rawTitle = String(item.title || item.master_title || item.item_name_override || "-").trim();
@@ -45654,6 +45658,31 @@ async function loadDashboardClimate() {
                       value="${escapeHtml(stylesJoined)}" />
                     <button class="btn ghost tiny" data-ops-genre-save="${masterId}" style="flex-shrink:0;">저장</button>
                     <span class="mini muted" data-save-status="${masterId}"></span>
+                  </div>
+                </div>
+              </div>`;
+          }
+
+          if (activeType === "LOCAL_MISSING") {
+            const masterId = id;
+            const inputId = `opsLocalPath_${masterId}`;
+            const dropId  = `opsLocalDrop_${masterId}`;
+            return `
+              <div class="ops-exception-row" data-ops-ex-row-idx="${idx}">
+                <div class="ops-exception-cover">${coverHtml}</div>
+                <div class="ops-exception-main" style="flex:1;min-width:0;">
+                  <div class="ops-exception-title">${escapeHtml(displayTitleWithYear)}</div>
+                  <div class="ops-exception-meta">master #${masterId}</div>
+                  <div class="ops-exception-edit-row" style="flex-direction:column;align-items:stretch;">
+                    <div style="display:flex;gap:4px;align-items:center;">
+                      <input type="text" id="${escapeHtml(inputId)}"
+                        class="ops-exception-inline-input" style="flex:1;"
+                        placeholder="아티스트 또는 앨범명으로 검색…" autocomplete="off"
+                        data-ops-local-master="${masterId}" />
+                      <button class="btn ghost tiny" data-ops-local-save="${masterId}" style="flex-shrink:0;">저장</button>
+                      <span class="mini muted" data-save-status="${masterId}"></span>
+                    </div>
+                    <div id="${escapeHtml(dropId)}" style="display:none;border:1px solid var(--line);border-radius:6px;background:var(--paper);max-height:160px;overflow-y:auto;font-size:0.72rem;"></div>
                   </div>
                 </div>
               </div>`;
@@ -45774,6 +45803,78 @@ async function loadDashboardClimate() {
               });
               if (!res.ok) throw new Error((await safeJson(res)).detail || "저장 실패");
               if (statusEl) statusEl.textContent = "저장됨";
+              setTimeout(() => rowEl.remove(), 600);
+            } catch (err) {
+              if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+              btn.disabled = false;
+            }
+          });
+        });
+
+        // wire LOCAL_MISSING search + save
+        root.querySelectorAll("[data-ops-local-master]").forEach((input) => {
+          const masterId = input.dataset.opsLocalMaster;
+          const dropEl = document.getElementById(`opsLocalDrop_${masterId}`);
+          let _timer = null;
+          let _composing = false;
+          input.addEventListener("compositionstart", () => { _composing = true; });
+          input.addEventListener("compositionend", () => {
+            _composing = false;
+            input.dispatchEvent(new Event("input"));
+          });
+          input.addEventListener("input", () => {
+            if (_composing) return;
+            clearTimeout(_timer);
+            const q = input.value.trim();
+            if (q.length < 2) { if (dropEl) dropEl.style.display = "none"; return; }
+            _timer = setTimeout(async () => {
+              try {
+                const res = await fetchWithRetry(`/local-music/search-dirs?q=${encodeURIComponent(q)}&limit=15`);
+                if (!res.ok) return;
+                const data = await safeJson(res);
+                const dirs = data.dirs || [];
+                if (!dropEl) return;
+                if (!dirs.length) { dropEl.style.display = "none"; return; }
+                dropEl.innerHTML = dirs.map(d => `
+                  <div class="local-dir-result-row" data-dir-path="${escapeHtml(d.dir_path)}" style="padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--line);">
+                    <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.dir_name)}</div>
+                    <div style="color:var(--muted);font-size:0.65rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.dir_path.replace(/^\/Volumes\/Music\//, "…/"))}</div>
+                  </div>`).join("");
+                dropEl.style.display = "block";
+                dropEl.querySelectorAll(".local-dir-result-row").forEach(row => {
+                  row.addEventListener("mousedown", (e) => {
+                    e.preventDefault();
+                    input.value = row.dataset.dirPath;
+                    dropEl.style.display = "none";
+                  });
+                });
+              } catch (_) {}
+            }, 250);
+          });
+          input.addEventListener("blur", () => setTimeout(() => { if (dropEl) dropEl.style.display = "none"; }, 150));
+          input.addEventListener("keydown", (e) => { if (e.key === "Escape" && dropEl) dropEl.style.display = "none"; });
+        });
+
+        root.querySelectorAll("[data-ops-local-save]").forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const masterId = btn.dataset.opsLocalSave;
+            const rowEl = btn.closest(".ops-exception-row");
+            const input = rowEl.querySelector(`[data-ops-local-master="${masterId}"]`);
+            const statusEl = rowEl.querySelector(`[data-save-status="${masterId}"]`);
+            const path = (input?.value || "").trim();
+            if (!path) { if (statusEl) statusEl.textContent = "경로를 선택하세요"; return; }
+            btn.disabled = true;
+            if (statusEl) statusEl.textContent = "저장 중...";
+            try {
+              const res = await fetchWithRetry(`/album-masters/${masterId}/local-link`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ dir_path: path }),
+              });
+              if (!res.ok) throw new Error((await safeJson(res)).detail || "저장 실패");
+              if (statusEl) statusEl.textContent = "저장됨";
+              _localLinkedIds.add(Number(masterId));
               setTimeout(() => rowEl.remove(), 600);
             } catch (err) {
               if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
@@ -45905,7 +46006,7 @@ async function loadDashboardClimate() {
 
     async function loadOpsExceptionCounts(opts = {}) {
       const silent = Boolean(opts?.silent);
-      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "REVIEW_MISSING", "GENRE_MISSING", "CATALOG_MISSING"];
+      const types = ["UNSLOTTED", "SOURCE_MISSING", "MASTER_MISSING", "COVER_MISSING", "PREFERRED_SIZE_MISMATCH", "MEDIA_MISSING", "SIZE_MISMATCH", "TRACK_MISSING", "SPOTIFY_UNMATCHED", "REVIEW_MISSING", "GENRE_MISSING", "CATALOG_MISSING", "LOCAL_MISSING"];
       try {
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loading"));
         const results = await Promise.all(types.map(async (type) => ({
