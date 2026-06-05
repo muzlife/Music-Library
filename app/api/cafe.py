@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -121,7 +122,7 @@ async def _now_playing_worker() -> None:
             if local and local.get("is_playing"):
                 state: dict = {"available": True, **local}
                 interval = 5
-            else:
+            elif str(os.getenv("SPOTIFY_PLAYBACK_ENABLED", "false")).strip().lower() not in ("false", "0", "no"):
                 pb = await loop.run_in_executor(None, _spotify.current_playback_sync)
                 if pb:
                     state = {"available": True, "source": "spotify", **pb}
@@ -129,6 +130,9 @@ async def _now_playing_worker() -> None:
                 else:
                     state = {"available": False}
                     interval = 60
+            else:
+                state = {"available": False}
+                interval = 60
 
             if state != prev_state:
                 prev_state = state
