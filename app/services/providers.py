@@ -1451,16 +1451,23 @@ def _clean_review_text(text: str) -> str:
     return text.strip()
 
 
-def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = None) -> dict[str, str | None] | None:
+def fetch_wikipedia_album_review(
+    artist: str,
+    title: str,
+    year: int | None = None,
+    lang: str = "ko",
+) -> dict[str, str | None] | None:
     """Fetch album page extract from Wikipedia API.
 
-    Searches for the album page specifically — not the artist page.
-    Returns None if no album-titled page is found in the top 5 results.
+    lang="ko" uses Korean Wikipedia (가요/J-Pop etc.).
+    lang="en" uses English Wikipedia (Western/Other domains).
     Retries once on 429 with a 10-second backoff.
     """
     import urllib.request, urllib.parse, json as _json, time as _time
+    _base = f"https://{lang}.wikipedia.org"
     year_part = f" {year}" if year else ""
-    query = f"{title} {artist}{year_part} 음반"
+    album_keyword = "음반" if lang == "ko" else "album"
+    query = f"{title} {artist}{year_part} {album_keyword}"
     params = urllib.parse.urlencode({
         "action": "query",
         "format": "json",
@@ -1471,7 +1478,7 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
     })
     try:
         req = urllib.request.Request(
-            f"https://ko.wikipedia.org/w/api.php?{params}",
+            f"{_base}/w/api.php?{params}",
             headers={"User-Agent": "__PROJECT_SLUG__-library/0.1 (album-review-bot)"},
         )
         for attempt in range(2):
@@ -1513,7 +1520,7 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
             "redirects": "1",
         })
         req2 = urllib.request.Request(
-            f"https://ko.wikipedia.org/w/api.php?{params2}",
+            f"{_base}/w/api.php?{params2}",
             headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
         )
         with urllib.request.urlopen(req2, timeout=10) as resp2:
@@ -1532,9 +1539,13 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
         if is_fallback:
             extract_head = extract[:400].lower()
             artist_lower = artist.lower()
-            music_keywords = ("음반", "앨범", "싱글", "ep", "스튜디오", "mixtape",
-                              "album", "record", "hip-hop", "rap", "jazz",
-                              "musician", "singer", "band", "가수", "밴드")
+            if lang == "ko":
+                music_keywords = ("음반", "앨범", "싱글", "ep", "스튜디오",
+                                  "album", "가수", "밴드", "singer", "band")
+            else:
+                music_keywords = ("album", "ep", "single", "studio album",
+                                  "record", "hip-hop", "rap", "jazz",
+                                  "musician", "singer", "band", "rapper")
             artist_match = artist_lower and artist_lower in extract_head
             music_match = any(kw in extract_head for kw in music_keywords)
             if not artist_match and not music_match:
@@ -1542,7 +1553,7 @@ def fetch_wikipedia_album_review(artist: str, title: str, year: int | None = Non
         return {
             "review_text": _clean_review_text(extract),
             "review_source": "WIKIPEDIA",
-            "review_url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_title.replace(' ', '_'), safe='()')}",
+            "review_url": f"{_base}/wiki/{urllib.parse.quote(page_title.replace(' ', '_'), safe='()')}",
         }
     except Exception as exc:
         import logging as _logging

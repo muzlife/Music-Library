@@ -1039,6 +1039,7 @@ def batch_review_preview(
         artist = str(master.get("artist_or_brand") or "").strip()
         title = str(master.get("title") or "").strip()
         year = int(master["release_year"]) if master.get("release_year") else None
+        domain = str(master.get("domain_code") or "").strip().upper()
         entry: dict[str, Any] = {
             "master_id": mid,
             "artist": artist,
@@ -1052,7 +1053,8 @@ def batch_review_preview(
             entry["error"] = "missing artist or title"
             results.append(entry)
             continue
-        raw = fetch_wikipedia_album_review(artist, title, year=year)
+        wiki_lang = "ko" if domain in ("KOREA", "JAPAN", "GREATER_CHINA") else "en"
+        raw = fetch_wikipedia_album_review(artist, title, year=year, lang=wiki_lang)
         if not raw:
             entry["error"] = "no Wikipedia page found"
             results.append(entry)
@@ -1091,10 +1093,12 @@ def batch_collect_reviews(
         artist = str(master.get("artist_or_brand") or "").strip()
         title = str(master.get("title") or "").strip()
         year = int(master["release_year"]) if master.get("release_year") else None
+        domain = str(master.get("domain_code") or "").strip().upper()
         if not artist or not title:
             failed += 1
             continue
-        raw = fetch_wikipedia_album_review(artist, title, year=year)
+        wiki_lang = "ko" if domain in ("KOREA", "JAPAN", "GREATER_CHINA") else "en"
+        raw = fetch_wikipedia_album_review(artist, title, year=year, lang=wiki_lang)
         if not raw:
             failed += 1
             continue
@@ -1132,17 +1136,21 @@ def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any
 
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT artist_or_brand, title, release_year FROM album_master WHERE id = ?", (album_master_id,)
+            "SELECT artist_or_brand, title, release_year, "
+            "COALESCE(override_domain_code, domain_code) AS domain "
+            "FROM album_master WHERE id = ?", (album_master_id,)
         ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Album master not found")
     artist = str(row[0] or "").strip()
     title = str(row[1] or "").strip()
     year = int(row[2]) if row[2] else None
+    domain = str(row[3] or "").strip().upper()
     if not artist or not title:
         raise HTTPException(status_code=400, detail="Artist and title required")
 
-    raw = fetch_wikipedia_album_review(artist, title, year=year)
+    wiki_lang = "ko" if domain in ("KOREA", "JAPAN", "GREATER_CHINA") else "en"
+    raw = fetch_wikipedia_album_review(artist, title, year=year, lang=wiki_lang)
     if not raw:
         raise HTTPException(status_code=404, detail="No Wikipedia album page found")
 
