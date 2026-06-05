@@ -45362,7 +45362,8 @@ async function loadDashboardClimate() {
       const reviewBtn = $("opsExceptionBulkReviewBtn");
       if (reviewBtn) { reviewBtn.style.display = activeType === "REVIEW_MISSING" ? "" : "none"; reviewBtn.disabled = !allowReview; }
       const isMasterType = (activeType === "SPOTIFY_UNMATCHED" || activeType === "GENRE_MISSING"
-                            || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING");
+                            || activeType === "CATALOG_MISSING" || activeType === "REVIEW_MISSING"
+                            || activeType === "LOCAL_MISSING");
       if ($("opsExceptionSelectAllBtn")) $("opsExceptionSelectAllBtn").disabled = !(Array.isArray(opsExceptionItems) && opsExceptionItems.length);
       if ($("opsExceptionClearBtn")) $("opsExceptionClearBtn").disabled = selectedCount <= 0;
       const BULK_EDIT_TYPES = new Set(["MEDIA_MISSING", "SIZE_MISMATCH"]);
@@ -45990,7 +45991,7 @@ async function loadDashboardClimate() {
     }
 
     async function fetchOpsExceptionCount(type) {
-      if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING") {
+      if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING" || type === "LOCAL_MISSING") {
         const res = await fetchWithRetry(buildMasterExceptionCountUrl(type));
         if (!res.ok) throw new Error(t("ops.exception.status.count_failed", { type: opsExceptionTypeLabel(type) }));
         const headerTotal = Number(res.headers.get("X-Total-Count") || 0);
@@ -46016,7 +46017,7 @@ async function loadDashboardClimate() {
         opsExceptionCounts = results.reduce((acc, entry) => {
           acc[entry.type] = Number(entry.count || 0);
           return acc;
-        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, MEDIA_MISSING: 0, SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0, REVIEW_MISSING: 0, GENRE_MISSING: 0, CATALOG_MISSING: 0 });
+        }, { UNSLOTTED: 0, SOURCE_MISSING: 0, MASTER_MISSING: 0, COVER_MISSING: 0, PREFERRED_SIZE_MISMATCH: 0, MEDIA_MISSING: 0, SIZE_MISMATCH: 0, TRACK_MISSING: 0, SPOTIFY_UNMATCHED: 0, REVIEW_MISSING: 0, GENRE_MISSING: 0, CATALOG_MISSING: 0, LOCAL_MISSING: 0 });
         renderOpsExceptionSummary();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.count_loaded"));
       } catch (err) {
@@ -46037,7 +46038,7 @@ async function loadDashboardClimate() {
         renderOpsExceptionList();
         if (!silent) setStatus("opsExceptionStatus", "ok", t("ops.exception.status.list_loading_type", { type: opsExceptionTypeLabel(type) }));
         let res, data;
-        if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING") {
+        if (type === "SPOTIFY_UNMATCHED" || type === "GENRE_MISSING" || type === "CATALOG_MISSING" || type === "REVIEW_MISSING" || type === "LOCAL_MISSING") {
           res = await fetchWithRetry(buildMasterExceptionUrl(type, limit, opsExceptionOffset));
           data = await safeJson(res);
         } else {
