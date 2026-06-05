@@ -57693,7 +57693,14 @@ async function loadDashboardClimate() {
       });
     }
 
+    let _localDirComposing = false;
+    $("homeMasterLocalPath")?.addEventListener("compositionstart", () => { _localDirComposing = true; });
+    $("homeMasterLocalPath")?.addEventListener("compositionend", () => {
+      _localDirComposing = false;
+      $("homeMasterLocalPath")?.dispatchEvent(new Event("input"));
+    });
     $("homeMasterLocalPath")?.addEventListener("input", () => {
+      if (_localDirComposing) return;
       clearTimeout(_localDirSearchTimer);
       const q = ($("homeMasterLocalPath")?.value || "").trim();
       if (q.length < 2) { _hideLocalDirResults(); return; }

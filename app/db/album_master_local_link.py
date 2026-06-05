@@ -30,6 +30,16 @@ def _token_sim(a: str, b: str) -> float:
     return len(ta & tb) / max(len(ta), len(tb))
 
 
+def _track_jaccard(local_titles: set[str], master_titles: set[str]) -> float:
+    if not local_titles or not master_titles:
+        return 0.0
+    nl = {_norm(t) for t in local_titles if t.strip()}
+    nm = {_norm(t) for t in master_titles if t.strip()}
+    if not nl or not nm:
+        return 0.0
+    return len(nl & nm) / len(nl | nm)
+
+
 def parse_dir_name(dirname: str) -> dict[str, Any] | None:
     m = _DIR_RE.match(dirname.strip())
     if not m:
@@ -113,62 +123,124 @@ def find_cover_path(dir_path: str) -> str | None:
 
 # ── Auto-matcher ─────────────────────────────────────────────────────────────
 
-def auto_match(dry_run: bool = False, min_score: float = 0.72) -> dict[str, int]:
-    """Parse NAS album dirs, fuzzy-match to album_master, store links."""
+def _build_local_dir_index(track_rows: list) -> dict[str, dict[str, Any]]:
+    """Group local_music_index rows by parent dir → {dir_path: {tracks, parsed}}."""
+    dirs: dict[str, dict[str, Any]] = {}
+    for row in track_rows:
+        parent = str(Path(row["file_path"]).parent)
+        if parent not in dirs:
+            parsed = parse_dir_name(Path(parent).name)
+            dirs[parent] = {"tracks": set(), "parsed": parsed}
+        if row["title"]:
+            dirs[parent]["tracks"].add(row["title"])
+    return dirs
+
+
+def auto_match(dry_run: bool = False, min_score: float = 0.62) -> dict[str, int]:
+    """Match NAS album dirs to KOREA album_masters using dir-name + track-title signals."""
+    import json as _json
+    from collections import defaultdict
+
     with get_conn() as conn:
-        # Load all masters into memory keyed by release_year (bulk, avoids per-dir queries)
-        master_rows = conn.execute(
-            "SELECT id, title, artist_or_brand, release_year FROM album_master WHERE title IS NOT NULL"
+        # 1. Load all local tracks (title + path) for building dir index
+        track_rows = conn.execute(
+            "SELECT file_path, title FROM local_music_index"
         ).fetchall()
 
-        # already-linked dirs to skip
+        # 2. KOREA masters only (unmatched) + their track lists
+        master_rows = conn.execute(
+            """
+            SELECT am.id, am.title, am.artist_or_brand, am.release_year,
+                   mid.track_list_json
+            FROM album_master am
+            LEFT JOIN (
+              SELECT amm.album_master_id,
+                     mid2.track_list_json
+              FROM album_master_member amm
+              JOIN owned_item oi ON oi.id = amm.owned_item_id
+              JOIN music_item_detail mid2 ON mid2.owned_item_id = oi.id
+              WHERE mid2.track_list_json IS NOT NULL AND mid2.track_list_json != '[]'
+              GROUP BY amm.album_master_id
+            ) mid ON mid.album_master_id = am.id
+            WHERE COALESCE(am.override_domain_code, am.domain_code) = 'KOREA'
+              AND am.title IS NOT NULL
+            """
+        ).fetchall()
+
         linked_dirs = {
             r[0] for r in conn.execute("SELECT local_dir_path FROM album_master_local_link").fetchall()
         }
-        # already-linked master ids to avoid duplicate assignment
         linked_masters = {
             r[0] for r in conn.execute("SELECT album_master_id FROM album_master_local_link").fetchall()
         }
 
-        # distinct parent dirs from local index
-        file_rows = conn.execute("SELECT DISTINCT file_path FROM local_music_index").fetchall()
+    # Build local dir index: dir_path → {tracks: set, parsed: dict|None}
+    local_dirs = _build_local_dir_index(track_rows)
 
-    # build year → [master] index
-    from collections import defaultdict
+    # Build master year index + track sets
     by_year: dict[int, list[dict]] = defaultdict(list)
     for r in master_rows:
+        if r["id"] in linked_masters:
+            continue
         yr = r["release_year"]
-        if yr:
-            by_year[int(yr)].append({"id": r["id"], "title": r["title"], "artist": r["artist_or_brand"] or ""})
-
-    # collect unique dirs
-    dirs: dict[str, dict[str, Any]] = {}
-    for row in file_rows:
-        parent = str(Path(row["file_path"]).parent)
-        if parent not in dirs:
-            parsed = parse_dir_name(Path(parent).name)
-            if parsed:
-                dirs[parent] = parsed
+        if not yr:
+            continue
+        track_list = []
+        if r["track_list_json"]:
+            try:
+                track_list = _json.loads(r["track_list_json"])
+            except Exception:
+                pass
+        by_year[int(yr)].append({
+            "id": r["id"],
+            "title": r["title"] or "",
+            "artist": r["artist_or_brand"] or "",
+            "tracks": set(track_list),
+        })
 
     matched = skipped = 0
     new_links: list[tuple] = []
     now = utc_now_iso()
 
-    for dir_path, parsed in dirs.items():
+    for dir_path, info in local_dirs.items():
         if dir_path in linked_dirs:
+            continue
+
+        parsed = info["parsed"]
+        local_tracks = info["tracks"]
+
+        if not parsed:
             skipped += 1
             continue
 
-        year, artist, title = parsed["year"], parsed["artist"], parsed["title"]
-        candidates = by_year.get(year, []) + by_year.get(year - 1, []) + by_year.get(year + 1, [])
+        year = parsed["year"]
+        dir_artist = parsed["artist"]
+        dir_title = parsed["title"]
+
+        candidates = (
+            by_year.get(year, [])
+            + by_year.get(year - 1, [])
+            + by_year.get(year + 1, [])
+        )
 
         best_id, best_score = None, 0.0
         for c in candidates:
             if c["id"] in linked_masters:
                 continue
-            a_sim = _token_sim(artist, c["artist"])
-            t_sim = _token_sim(title, c["title"])
-            score = a_sim * 0.45 + t_sim * 0.55
+
+            a_sim = _token_sim(dir_artist, c["artist"])
+            t_sim = _token_sim(dir_title, c["title"])
+
+            # Track overlap: strong discriminator when both sides have tracks
+            tr_sim = _track_jaccard(local_tracks, c["tracks"])
+
+            if c["tracks"] and local_tracks:
+                # Both have tracks → weighted with track overlap
+                score = a_sim * 0.30 + t_sim * 0.40 + tr_sim * 0.30
+            else:
+                # One or both sides missing tracks → dir-name only
+                score = a_sim * 0.45 + t_sim * 0.55
+
             if score > best_score:
                 best_score, best_id = score, c["id"]
 
@@ -192,7 +264,7 @@ def auto_match(dry_run: bool = False, min_score: float = 0.72) -> dict[str, int]
                 new_links,
             )
 
-    return {"matched": matched, "skipped": skipped, "total_dirs": len(dirs)}
+    return {"matched": matched, "skipped": skipped, "total_dirs": len(local_dirs)}
 
 
 __all__ = [
