@@ -18060,6 +18060,18 @@
         </div>
         <div class="home-search-grid-bottom">
           <div>
+            <label for="homeSearchDomain">도메인</label>
+            <select id="homeSearchDomain">
+              <option value="">전체</option>
+              <option value="KOREA">가요</option>
+              <option value="JAPAN">J-Pop</option>
+              <option value="WESTERN">팝/웨스턴</option>
+              <option value="GREATER_CHINA">중화권</option>
+              <option value="OTHER_ASIA">아시아</option>
+              <option value="WORLD_OTHER">기타</option>
+            </select>
+          </div>
+          <div>
             <label for="homeBarcode" data-i18n="media.search.field.barcode.label">바코드</label>
             <input id="homeBarcode" data-i18n-placeholder="media.search.field.barcode.placeholder" placeholder="예: 8809338405141" />
           </div>
@@ -42024,6 +42036,7 @@ function _resetAllSearchFilters() {
         const el = document.getElementById(id); if (el) el.checked = false;
       });
       const osEl = document.getElementById("homeOwnershipStatus"); if (osEl) osEl.value = "";
+      const domainEl = document.getElementById("homeSearchDomain"); if (domainEl) domainEl.value = "";
       const pkgList = document.getElementById("homePackagingList");
       if (pkgList) pkgList.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
     }
@@ -49610,6 +49623,8 @@ async function loadDashboardClimate() {
       const packageContentsVals = [];
       $("homePackageContentsList").querySelectorAll('input[type="checkbox"]:checked').forEach(cb => packageContentsVals.push(cb.value));
 
+      const domainCode = String($("homeSearchDomain")?.value || "").trim().toUpperCase();
+      if (domainCode) params.set("domain_code", domainCode);
       if (artist) params.set("artist_or_brand", artist);
       if (itemName) params.set("item_name", itemName);
       if (catalogNo) params.set("catalog_no", catalogNo);
