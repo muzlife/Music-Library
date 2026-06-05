@@ -111,6 +111,18 @@ def get_cover(p: str, request: Request) -> FileResponse:
     return FileResponse(cover, media_type=media_type)
 
 
+# ── Linked IDs (for badge rendering) ─────────────────────────────────────────
+
+@router.get("/local-music/linked-ids")
+def get_linked_master_ids(request: Request) -> dict[str, list[int]]:
+    from ..security import _require_operator_request
+    _require_operator_request(request)
+    from ..db import get_conn
+    with get_conn() as conn:
+        rows = conn.execute("SELECT album_master_id FROM album_master_local_link").fetchall()
+    return {"ids": [r["album_master_id"] for r in rows]}
+
+
 # ── Link management ──────────────────────────────────────────────────────────
 
 class LocalLinkBody(BaseModel):

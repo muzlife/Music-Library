@@ -13495,6 +13495,15 @@
       font-weight: 600; margin-left: 6px;
       border: 1px solid rgba(30,215,96,0.25);
     }
+    .local-player-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 0.68rem; padding: 2px 7px; border-radius: 12px;
+      background: rgba(251,146,60,0.13); color: #fb923c;
+      font-weight: 600; margin-left: 6px;
+      border: 1px solid rgba(251,146,60,0.22);
+      cursor: pointer;
+    }
+    .local-player-badge:hover { background: rgba(251,146,60,0.22); }
 
     /* ── KPI snapshot row ── */
     .dash-snapshot-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
@@ -21866,6 +21875,17 @@
     let homeSearchPage = 1;
     let homeSearchPageSize = 30;
     let homeSelectedMasterId = null;
+    const _localLinkedIds = new Set();
+    async function _loadLocalLinkedIds() {
+      try {
+        const res = await fetch("/local-music/linked-ids");
+        if (!res.ok) return;
+        const data = await res.json();
+        _localLinkedIds.clear();
+        (data.ids || []).forEach(id => _localLinkedIds.add(Number(id)));
+      } catch (_) {}
+    }
+    _loadLocalLinkedIds();
     let homeExpandedMasterPreviewIds = new Set();
     const mediaSearchExpandedPreviewByMaster = new Map();
     const mediaSearchInlineEditorDetailCache = new Map();
@@ -41883,10 +41903,12 @@
         a.addEventListener("play",  () => this._setPlayIcon(true));
         a.addEventListener("pause", () => this._setPlayIcon(false));
         document.getElementById("lpUnlinkBtn")?.addEventListener("click", async () => {
+          const unlinkedId = this.masterId;
           await fetchWithRetry(`/album-masters/${this.masterId}/local-link`, { method: "DELETE" });
           a.pause(); a.src = "";
           const slot = document.getElementById("homeMasterLocalPlayer");
           if (slot) { slot.hidden = true; slot.innerHTML = ""; }
+          if (unlinkedId) _localLinkedIds.delete(Number(unlinkedId));
           this.masterId = null; this.tracks = []; this.idx = -1;
         });
       },
@@ -41916,6 +41938,7 @@
         if (!res.ok) return;
         const data = await safeJson(res);
         if (!data.linked) return;
+        _localLinkedIds.add(Number(masterId));
         this._render(data);
       },
 
@@ -41961,11 +41984,22 @@
     function spotifyPlayTrack(uri) { if(uri) fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:uri})}).catch(function(){}); }
     document.addEventListener('click',function(e){
       var b = e.target.closest('.spotify-badge');
-      if (!b) return;
-      e.stopPropagation();
-      var mid = b.getAttribute('data-sp-master');
-      var aid = b.getAttribute('data-sp-album');
-      if (mid && aid) spotifyTogglePanel(mid, aid);
+      if (b) {
+        e.stopPropagation();
+        var mid = b.getAttribute('data-sp-master');
+        var aid = b.getAttribute('data-sp-album');
+        if (mid && aid) spotifyTogglePanel(mid, aid);
+        return;
+      }
+      var lpb = e.target.closest('.local-player-badge');
+      if (lpb) {
+        e.stopPropagation();
+        var lpMid = Number(lpb.getAttribute('data-lp-badge') || 0);
+        if (lpMid) {
+          homeSelectedMasterId = lpMid;
+          _lp.load(lpMid).catch(() => {});
+        }
+      }
     });
 
 function _resetAllSearchFilters() {
@@ -48836,7 +48870,7 @@ async function loadDashboardClimate() {
         <div class="result-item album-result ${Number(row.id) === Number(homeSelectedMasterId) ? "pick" : ""}" data-master-id="${row.id}">
           <div class="album-result-cover">${cover}</div>
           <div class="album-result-main">
-            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge" data-sp-master="${escapeHtml(String(row.id))}" data-sp-album="${escapeHtml(row.spotify_album_id)}">Spotify</span>` : ""}${row.review_text ? `<span class="tag" style="font-size:0.65rem;opacity:0.8;">리뷰</span>` : ""}</div>${genreLine}
+            <div class="home-master-heading-line">${sourceChip}${itemSourceChip}<strong class="home-master-heading">${escapeHtml(heading)}</strong>${row.spotify_album_id ? `<span class="spotify-badge" data-sp-master="${escapeHtml(String(row.id))}" data-sp-album="${escapeHtml(row.spotify_album_id)}">Spotify</span>` : ""}${_localLinkedIds.has(Number(row.id)) ? `<span class="local-player-badge" data-lp-badge="${escapeHtml(String(row.id))}" title="로컬 음원 연결됨">♪ Local</span>` : ""}${row.review_text ? `<span class="tag" style="font-size:0.65rem;opacity:0.8;">리뷰</span>` : ""}</div>${genreLine}
             ${trackPreview.length ? `<div class="mini">${escapeHtml(t("media.manage.search.matched_tracks", { tracks: trackPreview.join(" | ") }))}</div>` : ""}
             ${memberItemsPreview.length ? `<div class="home-master-member-preview-list">
               ${memberItemsPreview.map((item) => homeMasterMemberPreviewHtml(item, { showCover: showMemberPreviewCover, masterSourceCode: sourceCode })).join("")}
