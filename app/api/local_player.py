@@ -28,6 +28,32 @@ router = APIRouter()
 
 _SAFE_ROOT = str(Path(MUSIC_ROOT).resolve())
 
+# In-memory dir cache: built on first search, stays valid until server restart
+_dir_cache: list[tuple[str, str]] | None = None  # [(dir_path, dir_name), ...]
+
+
+def _get_dir_cache() -> list[tuple[str, str]]:
+    global _dir_cache
+    if _dir_cache is not None:
+        return _dir_cache
+    from ..db import get_conn as _gc
+    with _gc() as conn:
+        rows = conn.execute("SELECT file_path FROM local_music_index").fetchall()
+    seen: set[str] = set()
+    cache: list[tuple[str, str]] = []
+    for row in rows:
+        dp = str(Path(row["file_path"]).parent)
+        if dp not in seen:
+            seen.add(dp)
+            cache.append((dp, Path(dp).name))
+    _dir_cache = cache
+    return _dir_cache
+
+
+def _invalidate_dir_cache() -> None:
+    global _dir_cache
+    _dir_cache = None
+
 
 def _encode_path(path: str) -> str:
     return base64.urlsafe_b64encode(path.encode()).decode()
@@ -111,6 +137,28 @@ def get_cover(p: str, request: Request) -> FileResponse:
     return FileResponse(cover, media_type=media_type)
 
 
+# ── Directory search ─────────────────────────────────────────────────────────
+
+@router.get("/local-music/search-dirs")
+def search_dirs(q: str, limit: int = 20, request: Request = None) -> dict[str, Any]:
+    from ..security import _require_operator_request
+    _require_operator_request(request)
+
+    q_stripped = q.strip()
+    if not q_stripped:
+        return {"dirs": []}
+
+    q_lower = q_stripped.lower()
+    results: list[dict[str, str]] = []
+    for dir_path, dir_name in _get_dir_cache():
+        if q_lower in dir_name.lower():
+            results.append({"dir_path": dir_path, "dir_name": dir_name})
+            if len(results) >= limit:
+                break
+
+    return {"dirs": results}
+
+
 # ── Linked IDs (for badge rendering) ─────────────────────────────────────────
 
 @router.get("/local-music/linked-ids")
@@ -167,4 +215,5 @@ def run_auto_match(request: Request, dry_run: bool = False) -> dict[str, Any]:
     from ..security import _require_admin_request
     _require_admin_request(request)
     result = auto_match(dry_run=dry_run)
+    _invalidate_dir_cache()
     return {"ok": True, **result}

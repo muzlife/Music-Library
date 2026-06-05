@@ -13504,6 +13504,8 @@
       cursor: pointer;
     }
     .local-player-badge:hover { background: rgba(251,146,60,0.22); }
+    .local-dir-result-row:hover { background: var(--theme-shell-surface-2, rgba(255,255,255,0.06)); }
+    .local-dir-result-row:last-child { border-bottom: none; }
 
     /* ── KPI snapshot row ── */
     .dash-snapshot-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
@@ -18286,11 +18288,13 @@
                           <button id="homeMasterLocalEditBtn" type="button" class="btn ghost" style="padding:0 3px;line-height:1;min-height:unset;height:16px;font-size:0.65rem;" title="로컬 경로 편집">✏️</button>
                           <button id="homeMasterLocalUnlinkBtn" type="button" class="btn ghost" style="padding:0 3px;line-height:1;min-height:unset;height:16px;font-size:0.65rem;color:var(--err,#c00);" title="연결 해제">✕</button>
                         </div>
-                        <div id="homeMasterLocalEditRow" style="display:none;align-items:center;gap:4px;flex-wrap:wrap;">
-                          <span style="font-size:0.72rem;white-space:nowrap;">로컬 경로:</span>
-                          <input id="homeMasterLocalPath" type="text" style="flex:1;min-width:200px;font-size:0.72rem;" placeholder="/Volumes/Music/..." />
-                          <button id="homeMasterLocalSaveBtn" type="button" class="btn ghost tiny">저장</button>
-                          <button id="homeMasterLocalCancelBtn" type="button" class="btn ghost tiny">취소</button>
+                        <div id="homeMasterLocalEditRow" style="display:none;flex-direction:column;gap:4px;">
+                          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                            <input id="homeMasterLocalPath" type="text" style="flex:1;min-width:200px;font-size:0.72rem;" placeholder="아티스트 또는 앨범명으로 검색…" autocomplete="off" />
+                            <button id="homeMasterLocalSaveBtn" type="button" class="btn ghost tiny">저장</button>
+                            <button id="homeMasterLocalCancelBtn" type="button" class="btn ghost tiny">취소</button>
+                          </div>
+                          <div id="homeMasterLocalDirResults" style="display:none;border:1px solid var(--line);border-radius:6px;background:var(--paper);max-height:180px;overflow-y:auto;font-size:0.72rem;"></div>
                         </div>
                         <div id="homeMasterLocalStatus" class="status" style="font-size:0.72rem;"></div>
                         <div id="homeMasterMetaGenreRow" class="u-hidden-initial"></div>
@@ -57657,6 +57661,54 @@ async function loadDashboardClimate() {
     $("homeMasterLocalSaveBtn")?.addEventListener("click", saveLocalPath);
     $("homeMasterLocalPath")?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); saveLocalPath(); }
+      if (e.key === "Escape") { _hideLocalDirResults(); }
+    });
+
+    // ── 디렉토리 검색 자동완성 ──────────────────────────────────────────────
+    let _localDirSearchTimer = null;
+
+    function _hideLocalDirResults() {
+      const el = $("homeMasterLocalDirResults");
+      if (el) el.style.display = "none";
+    }
+
+    function _showLocalDirResults(dirs) {
+      const el = $("homeMasterLocalDirResults");
+      if (!el) return;
+      if (!dirs.length) { el.style.display = "none"; return; }
+      el.innerHTML = dirs.map(d => `
+        <div class="local-dir-result-row" data-dir-path="${escapeHtml(d.dir_path)}" style="padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--line);">
+          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.dir_name)}</div>
+          <div style="color:var(--muted);font-size:0.65rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.dir_path.replace(/^\/Volumes\/Music\//, "…/"))}</div>
+        </div>`).join("");
+      el.style.display = "block";
+      el.querySelectorAll(".local-dir-result-row").forEach(row => {
+        row.addEventListener("mousedown", (e) => {
+          e.preventDefault(); // blur 방지
+          const path = row.dataset.dirPath;
+          const pathInput = $("homeMasterLocalPath");
+          if (pathInput) pathInput.value = path;
+          _hideLocalDirResults();
+        });
+      });
+    }
+
+    $("homeMasterLocalPath")?.addEventListener("input", () => {
+      clearTimeout(_localDirSearchTimer);
+      const q = ($("homeMasterLocalPath")?.value || "").trim();
+      if (q.length < 2) { _hideLocalDirResults(); return; }
+      _localDirSearchTimer = setTimeout(async () => {
+        try {
+          const res = await fetchWithRetry(`/local-music/search-dirs?q=${encodeURIComponent(q)}&limit=20`);
+          if (!res.ok) return;
+          const data = await safeJson(res);
+          _showLocalDirResults(data.dirs || []);
+        } catch (_) {}
+      }, 250);
+    });
+
+    $("homeMasterLocalPath")?.addEventListener("blur", () => {
+      setTimeout(_hideLocalDirResults, 150);
     });
     $("homeMasterLocalUnlinkBtn")?.addEventListener("click", async () => {
       const masterIdVal = Number(homeMasterInfo?.album_master_id || 0);
