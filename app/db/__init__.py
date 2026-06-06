@@ -1882,6 +1882,8 @@ from .owned_item_slot import (  # noqa: E402
     _location_slot_snapshot_in_conn,
     _log_owned_item_location_event_in_conn,
     inherit_owned_item_domain_from_slot_if_missing,
+    list_owned_item_location_events,
+    list_recent_location_events,
     restore_owned_item_previous_slot,
     update_owned_item_slot,
 )
@@ -2111,3 +2113,24 @@ from .owned_item_write import (  # noqa: E402
     update_owned_item,
 )
 
+
+from .error_log import (  # noqa: E402
+    insert_error_log,
+    list_error_log,
+    get_unread_error_count,
+    acknowledge_error_log,
+)
+from .account_permission import (  # noqa: E402
+    ALL_PERMISSION_KEYS,
+    _ensure_permission_tables,
+    seed_default_permissions,
+    list_permissions,
+    list_role_permissions,
+    set_role_permissions,
+    list_account_permissions,
+    set_account_permission,
+    delete_account_permission,
+    clear_account_permissions,
+    check_permission,
+    get_effective_permissions,
+)
