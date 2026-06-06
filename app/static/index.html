@@ -21919,6 +21919,32 @@
           </div>
         </div>
 
+        <!-- ④ 성능 현황 -->
+        <div class="act-section">
+          <h3>성능 현황 <span id="actPerfCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
+          <div class="act-filter-row">
+            <select id="actPerfKind">
+              <option value="">전체</option>
+              <option value="API">API</option>
+              <option value="BATCH">배치</option>
+              <option value="QUERY">DB 쿼리</option>
+            </select>
+            <select id="actPerfDays">
+              <option value="1">오늘</option>
+              <option value="7" selected>최근 7일</option>
+              <option value="30">최근 30일</option>
+            </select>
+            <label style="font-size:0.82rem"><input type="checkbox" id="actPerfSlowOnly"> 느린 항목만</label>
+            <button id="actPerfLoadBtn">조회</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>유형</th><th>이름</th><th>평균</th><th>최대</th><th>건수</th><th>느림</th></tr></thead>
+              <tbody id="actPerfTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- ① 메타 변경 이력 (audit_log) -->
         <section class="act-section">
           <h3>메타 변경 이력</h3>
@@ -58478,6 +58504,42 @@ async function loadDashboardClimate() {
     });
     $("actErrPrevBtn").addEventListener("click", () => { _actErrOffset = Math.max(0, _actErrOffset - _actErrLimit); loadErrorLog(false); });
     $("actErrNextBtn").addEventListener("click", () => { _actErrOffset += _actErrLimit; loadErrorLog(false); });
+
+    // ── Perf Log ───────────────────────────────────────────────────────
+    async function loadPerfLog() {
+      const kind = $("actPerfKind").value;
+      const days = $("actPerfDays").value;
+      const slowOnly = $("actPerfSlowOnly").checked;
+      let url = `/admin/perf-log?days=${days}&is_slow_only=${slowOnly}`;
+      if (kind) url += `&kind=${kind}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actPerfCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actPerfCount").textContent = `${data.total_count}건`;
+      const tbody = $("actPerfTbody");
+      const kindLabels = { API: "API", BATCH: "배치", QUERY: "DB" };
+      if (!data.items.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>';
+      } else {
+        tbody.innerHTML = data.items.map(r => {
+          const kindBadge = `<span style="font-size:0.72rem;background:var(--bg-dim,#f5f5f5);padding:1px 6px;border-radius:3px">${kindLabels[r.kind] || r.kind}</span>`;
+          const slowBadge = r.slow_count > 0
+            ? `<span style="background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:700">${r.slow_count}건</span>`
+            : `<span style="color:var(--text-muted);font-size:0.72rem">—</span>`;
+          const fmtMs = (ms) => ms >= 1000 ? `${(ms/1000).toFixed(1)}s` : `${ms}ms`;
+          return `<tr>
+            <td>${kindBadge}</td>
+            <td style="font-size:0.75rem;max-width:280px;word-break:break-all">${escapeHtml(r.name)}</td>
+            <td style="font-size:0.75rem">${fmtMs(r.avg_ms)}</td>
+            <td style="font-size:0.75rem;font-weight:${r.max_ms >= 300 ? '700' : '400'};color:${r.max_ms >= 300 ? '#dc2626' : 'inherit'}">${fmtMs(r.max_ms)}</td>
+            <td style="font-size:0.75rem">${r.count}</td>
+            <td>${slowBadge}</td>
+          </tr>`;
+        }).join("");
+      }
+    }
+
+    $("actPerfLoadBtn").addEventListener("click", () => loadPerfLog());
 
     // ── Activity Log ──────────────────────────────────────────────
     let _actAuditOffset = 0, _actAuditLimit = 50;
