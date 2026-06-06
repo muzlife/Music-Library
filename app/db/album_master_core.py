@@ -198,6 +198,18 @@ def upsert_album_master(
     now = utc_now_iso()
     normalized_domain_code = _normalize_domain_code_value(domain_code)
     with get_conn() as conn:
+        _existing = conn.execute(
+            """
+            SELECT id, title, artist_or_brand, domain_code, release_year
+            FROM album_master
+            WHERE source_code = ? AND source_master_id = ?
+            LIMIT 1
+            """,
+            (source_code, source_master_id),
+        ).fetchone()
+        _is_new = _existing is None
+        _before = dict(_existing) if _existing is not None else {}
+
         conn.execute(
             """
             INSERT INTO album_master
@@ -244,6 +256,27 @@ def upsert_album_master(
         release_year=release_year,
         raw=raw,
     )
+    try:
+        from app.db.audit_log import log_audit_event
+        if _is_new:
+            log_audit_event(
+                entity_type="album_master", entity_id=album_master_id,
+                action="CREATE", changed_by=None,
+                snapshot={"source_code": source_code, "title": title,
+                          "artist_or_brand": artist_or_brand, "domain_code": normalized_domain_code},
+            )
+        else:
+            _FIELDS = ("title", "artist_or_brand", "domain_code", "release_year")
+            _after_vals = {"title": title, "artist_or_brand": artist_or_brand,
+                           "domain_code": normalized_domain_code, "release_year": release_year}
+            _before_vals = {f: _before.get(f) for f in _FIELDS}
+            log_audit_event(
+                entity_type="album_master", entity_id=album_master_id,
+                action="UPDATE", changed_by=None,
+                before=_before_vals, after=_after_vals,
+            )
+    except Exception:
+        pass
     return album_master_id
 
 

@@ -54,6 +54,14 @@ from ..security import _read_auth_username
 
 router = APIRouter(tags=["album-masters"])
 
+_ALBUM_MASTER_AUDIT_FIELDS = (
+    "artist_or_brand", "title", "catalog_no", "barcode",
+    "release_year", "release_month", "label", "domain_code",
+    "genres", "styles", "country", "format_text",
+    "sort_artist_name", "override_artist_or_brand",
+    "override_title", "override_note", "description",
+)
+
 
 def _main():
     """Lazy accessor for main-module helpers (same pattern as Phase C)."""
@@ -746,14 +754,15 @@ def update_album_master_sort_artist_name(
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="album_master not found")
+    after_row = db.get_album_master_basic(album_master_id)
     from ..security import _read_auth_username
     db.log_audit_event(
         entity_type="album_master",
         entity_id=album_master_id,
         action="UPDATE",
         changed_by=_read_auth_username(request),
-        before={"sort_artist_name": (before_row or {}).get("sort_artist_name")},
-        after={"sort_artist_name": updated.get("sort_artist_name")},
+        before={f: (before_row or {}).get(f) for f in _ALBUM_MASTER_AUDIT_FIELDS},
+        after={f: (after_row or {}).get(f) for f in _ALBUM_MASTER_AUDIT_FIELDS},
     )
     return AlbumMasterSortArtistUpdateResponse(
         album_master_id=int(updated["id"]),
@@ -783,11 +792,9 @@ def update_album_master_correction(
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="album_master not found")
-    _corr_fields = ["release_year", "domain_code", "override_note", "override_title", "override_artist_or_brand", "genres", "styles"]
-    _before_corr = {f: (before or {}).get(f) for f in _corr_fields}
-    _after_corr = {f: updated.get(f) for f in ["release_year", "domain_code", "override_note", "override_title", "override_artist_or_brand"]}
-    _after_corr["genres"] = payload.genres
-    _after_corr["styles"] = payload.styles
+    after_row = db.get_album_master_basic(album_master_id)
+    _before_corr = {f: (before or {}).get(f) for f in _ALBUM_MASTER_AUDIT_FIELDS}
+    _after_corr = {f: (after_row or {}).get(f) for f in _ALBUM_MASTER_AUDIT_FIELDS}
     from ..security import _read_auth_username
     db.log_audit_event(
         entity_type="album_master",
