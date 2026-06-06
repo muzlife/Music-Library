@@ -60934,6 +60934,16 @@ async function loadDashboardClimate() {
       genres: "장르", styles: "스타일",
       spotify_album_id: "Spotify 앨범 ID", spotify_album_uri: "Spotify URI",
       album_master_id: "마스터 ID",
+      // album_master 필드
+      artist_or_brand: "아티스트명", title: "앨범명", catalog_no: "카탈로그 번호",
+      barcode: "바코드", release_month: "발매월", label: "레이블",
+      country: "국가", format_text: "포맷", description: "설명",
+      // 이미지/구매수입 스냅샷 필드
+      filename: "파일명", content_type: "파일 형식",
+      purchase_import_id: "구매수입 ID", source_email: "구매 이메일",
+      // 외부참조
+      source: "소스", source_master_id: "소스 마스터 ID",
+      before_album_master_id: "이전 마스터 ID", after_album_master_id: "신규 마스터 ID",
     };
 
     const _AUDIT_VALUE_LABELS = {
@@ -60950,6 +60960,7 @@ async function loadDashboardClimate() {
       MERGE: "마스터 병합", MEMBER_LINK: "마스터 연결", MEMBER_UNLINK: "마스터 연결 해제",
       SPOTIFY_MATCH: "Spotify 매칭", SPOTIFY_CLEAR: "Spotify 매칭 해제",
       BULK_UPDATE: "일괄 수정", IMAGE_UPLOAD: "이미지 업로드", IMAGE_DELETE: "이미지 삭제",
+      EXTERNAL_REF_UPDATE: "외부ID 변경", PURCHASE_IMPORT: "구매수입 등록",
     };
 
     const _AUDIT_ACTION_COLORS = {
@@ -60962,6 +60973,8 @@ async function loadDashboardClimate() {
       MEMBER_UNLINK: { bg: "#fee2e2", color: "#b91c1c" },
       SPOTIFY_MATCH: { bg: "#dcfce7", color: "#14532d" },
       SPOTIFY_CLEAR: { bg: "#fce7f3", color: "#831843" },
+      EXTERNAL_REF_UPDATE: { bg: "#ede9fe", color: "#7c3aed" },
+      PURCHASE_IMPORT: { bg: "#cffafe", color: "#0891b2" },
     };
 
     function _auditFieldLabel(field) {
