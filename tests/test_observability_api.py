@@ -1,32 +1,8 @@
 """에러 로그 / 성능 로그 API 엔드포인트 통합 테스트."""
-import os
-import tempfile
-
-os.environ["LIBRARY_DB_PATH"] = tempfile.mktemp(suffix=".db")
-os.environ.setdefault("LIBRARY_ADMIN_USERNAME", "admin")
-os.environ.setdefault("LIBRARY_ADMIN_PASSWORD", "admin-pw")
-os.environ.setdefault("LIBRARY_OPERATOR_USERNAME", "op")
-os.environ.setdefault("LIBRARY_OPERATOR_PASSWORD", "op-pw")
-os.environ.setdefault("LIBRARY_AUTH_SESSION_SECRET", "test-secret")
-os.environ.setdefault("LIBRARY_AUTH_COOKIE_SECURE", "0")
-os.environ.setdefault("METADATA_SYNC_INTERVAL_MINUTES", "0")
-
-from app.config import get_settings
-get_settings.cache_clear()
-
-from fastapi.testclient import TestClient
-from app.main import app
-
-client = TestClient(app, raise_server_exceptions=False)
-
-
-def _admin_login():
-    client.post("/auth/login", data={"username": "admin", "password": "admin-pw"})
 
 
 def test_exception_handler_records_error_log():
     """처리되지 않은 예외가 error_log에 기록된다."""
-    _admin_login()
     from app.db.error_log import insert_error_log, get_unread_error_count
     before = get_unread_error_count()
     insert_error_log(
@@ -38,3 +14,53 @@ def test_exception_handler_records_error_log():
         request_body=None,
     )
     assert get_unread_error_count() == before + 1
+
+
+def test_error_log_list_requires_auth(client):
+    """Unauthenticated requests to /admin/error-log are rejected."""
+    resp = client.get("/admin/error-log")
+    assert resp.status_code in (401, 403)
+
+
+def test_error_log_list_and_unread_count(admin_client):
+    """Admin can list error logs and get unread count."""
+    from app.db.error_log import insert_error_log, acknowledge_error_log
+    acknowledge_error_log(ids=None)  # 초기화
+    insert_error_log(
+        level="ERROR",
+        source="s",
+        message="msg1",
+        traceback=None,
+        request_path="/x",
+        request_body=None,
+    )
+
+    resp = admin_client.get("/admin/error-log?limit=10")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "items" in data
+    assert data["total_count"] >= 1
+
+    resp2 = admin_client.get("/admin/error-log/unread-count")
+    assert resp2.status_code == 200
+    assert resp2.json()["count"] >= 1
+
+
+def test_error_log_acknowledge(admin_client):
+    """Admin can acknowledge all error logs."""
+    from app.db.error_log import insert_error_log
+    insert_error_log(
+        level="ERROR",
+        source="s",
+        message="ack-me",
+        traceback=None,
+        request_path="/y",
+        request_body=None,
+    )
+
+    resp = admin_client.post("/admin/error-log/acknowledge")  # 전체 확인
+    assert resp.status_code == 200
+    assert resp.json()["updated"] >= 1
+
+    resp2 = admin_client.get("/admin/error-log/unread-count")
+    assert resp2.json()["count"] == 0
