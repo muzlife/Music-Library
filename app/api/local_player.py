@@ -23,6 +23,7 @@ from ..db.album_master_local_link import (
     parse_dir_name,
     set_local_link,
 )
+from ..db.local_music_index import backfill_durations
 
 router = APIRouter()
 
@@ -98,8 +99,11 @@ def get_local_player(master_id: int, request: Request) -> dict[str, Any]:
         return {"linked": False, "dir_path": None, "tracks": [], "cover_url": None}
 
     dir_path = link["local_dir_path"]
-    tracks = list_tracks_for_link(master_id)
+    tracks = backfill_durations(list_tracks_for_link(master_id))
     cover = find_cover_path(dir_path)
+
+    from ..db.album_master_core import get_album_master_basic
+    master = get_album_master_basic(master_id) or {}
 
     return {
         "linked": True,
@@ -107,6 +111,9 @@ def get_local_player(master_id: int, request: Request) -> dict[str, Any]:
         "match_confidence": link.get("match_confidence"),
         "tracks": [_track_to_json(t) for t in tracks],
         "cover_url": f"/local-music/cover?p={_encode_path(dir_path)}" if cover else None,
+        "title": master.get("title"),
+        "artist_or_brand": master.get("artist_or_brand"),
+        "release_year": master.get("release_year"),
     }
 
 

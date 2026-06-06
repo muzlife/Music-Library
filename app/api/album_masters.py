@@ -1187,7 +1187,7 @@ def collect_review_from_url(
     """Fetch review from a URL, summarize to Korean. ADMIN only."""
     from ..security import _require_admin_request
     _require_admin_request(request)
-    from ..services.providers import fetch_review_from_url
+    from ..services.providers import fetch_review_from_url, fetch_pitchfork_review
     from ..services.review_pipeline import translate_to_korean_with_deepl
     from ..db.album_master_review import save_review
     from ..db.connection import get_conn
@@ -1204,12 +1204,20 @@ def collect_review_from_url(
     if not exists:
         raise HTTPException(status_code=404, detail="Album master not found")
 
-    raw_text = fetch_review_from_url(url)
+    parsed_host = urllib.parse.urlparse(url).netloc.lower().lstrip("www.")
+    is_pitchfork = "pitchfork.com" in parsed_host
+
+    if is_pitchfork:
+        raw_text = fetch_pitchfork_review(url)
+        source_base = "PITCHFORK"
+    else:
+        raw_text = fetch_review_from_url(url)
+        domain = urllib.parse.urlparse(url).netloc or "URL"
+        source_base = domain.upper().replace("WWW.", "").replace(".", "_")[:30]
+
     if not raw_text:
         raise HTTPException(status_code=422, detail="Could not extract text from URL")
 
-    domain = urllib.parse.urlparse(url).netloc or "URL"
-    source_base = domain.upper().replace("WWW.", "").replace(".", "_")[:30]
     try:
         review_text = translate_to_korean_with_deepl(raw_text)
         source = source_base + "_KO"

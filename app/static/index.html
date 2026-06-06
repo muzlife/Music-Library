@@ -2137,7 +2137,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      color: #e8edf2;
+      color: var(--theme-admin-text, #e8edf2);
       font-size: 0.8rem;
       user-select: none;
     }
@@ -2153,12 +2153,12 @@
       border-radius: 6px;
       overflow: hidden;
       flex-shrink: 0;
-      background: #1e2a38;
+      background: var(--theme-dashboard-panel-soft, #1e2a38);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.4rem;
-      color: #4a5568;
+      color: var(--theme-admin-text-meta, #4a5568);
     }
     .local-player-cover img {
       width: 100%;
@@ -2170,18 +2170,27 @@
       flex: 1;
       min-width: 0;
     }
-    .local-player-now-title {
+    .local-player-album-title {
       font-weight: 700;
       font-size: 0.82rem;
-      line-height: 1.3;
+      line-height: 1.35;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .local-player-now-artist {
+    .local-player-album-year {
+      font-weight: 400;
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-left: 2px;
+    }
+    .local-player-album-artist {
       font-size: 0.72rem;
-      color: #8a9ab0;
+      color: var(--theme-admin-text-muted, #8a9ab0);
       margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .local-player-controls {
       display: flex;
@@ -2193,22 +2202,24 @@
       background: none;
       border: none;
       cursor: pointer;
-      color: #c8d3df;
+      color: var(--theme-admin-text-muted, #c8d3df);
       padding: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: color 0.15s;
     }
-    .local-player-btn:hover { color: #fff; }
+    .local-player-btn:hover { color: var(--theme-admin-text, #fff); }
     .local-player-btn.play-btn {
       width: 32px;
       height: 32px;
-      background: #fff;
-      color: #0a1016;
+      background: var(--theme-admin-text, #fff);
+      color: var(--theme-dashboard-panel, #0a1016);
       border-radius: 50%;
     }
-    .local-player-btn.play-btn:hover { background: #e8edf2; }
+    .local-player-btn.play-btn:hover {
+      background: color-mix(in srgb, var(--theme-admin-text, #e8edf2) 88%, transparent);
+    }
     .local-player-progress {
       padding: 0 14px 6px;
     }
@@ -2216,7 +2227,7 @@
       width: 100%;
       height: 3px;
       appearance: none;
-      background: #2a3a4d;
+      background: color-mix(in srgb, var(--theme-admin-text, #fff) 18%, var(--theme-dashboard-panel, #10161d) 82%);
       border-radius: 2px;
       cursor: pointer;
       outline: none;
@@ -2226,20 +2237,20 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #fff;
+      background: var(--theme-admin-text, #fff);
       cursor: pointer;
     }
     .local-player-time {
       display: flex;
       justify-content: space-between;
       font-size: 0.67rem;
-      color: #8a9ab0;
+      color: var(--theme-admin-text-muted, #8a9ab0);
       margin-top: 3px;
     }
     .local-player-tracklist {
       max-height: 160px;
       overflow-y: auto;
-      border-top: 1px solid rgba(255,255,255,0.07);
+      border-top: 1px solid var(--theme-admin-panel-border, rgba(255,255,255,0.07));
     }
     .local-player-track {
       display: flex;
@@ -2249,16 +2260,21 @@
       cursor: pointer;
       transition: background 0.1s;
     }
-    .local-player-track:hover { background: rgba(255,255,255,0.06); }
-    .local-player-track.is-active { background: rgba(255,255,255,0.1); color: #fff; }
+    .local-player-track:hover {
+      background: color-mix(in srgb, var(--theme-admin-text, #fff) 8%, transparent);
+    }
+    .local-player-track.is-active {
+      background: color-mix(in srgb, var(--theme-admin-text, #fff) 14%, transparent);
+      color: var(--theme-admin-text, #fff);
+    }
     .local-player-track-num {
       width: 18px;
       text-align: right;
       font-size: 0.68rem;
-      color: #8a9ab0;
+      color: var(--theme-admin-text-muted, #8a9ab0);
       flex-shrink: 0;
     }
-    .local-player-track.is-active .local-player-track-num { color: #7dd3fc; }
+    .local-player-track.is-active .local-player-track-num { color: var(--theme-admin-link, #7dd3fc); }
     .local-player-track-title {
       flex: 1;
       min-width: 0;
@@ -2269,12 +2285,12 @@
     }
     .local-player-track-dur {
       font-size: 0.68rem;
-      color: #8a9ab0;
+      color: var(--theme-admin-text-muted, #8a9ab0);
       flex-shrink: 0;
     }
     .local-player-footer {
       padding: 6px 14px 10px;
-      border-top: 1px solid rgba(255,255,255,0.07);
+      border-top: 1px solid var(--theme-admin-panel-border, rgba(255,255,255,0.07));
       display: flex;
       gap: 6px;
       align-items: center;
@@ -2291,6 +2307,19 @@
     #homeMasterMetaArtist {
       font-size: 1.1rem;
       font-weight: 700;
+    }
+    /* 부가 정보 패널 */
+    .master-meta-info-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-top: 8px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: var(--theme-dashboard-panel-soft, rgba(0,0,0,0.04));
+      border: 1px solid var(--theme-admin-panel-border, rgba(120,140,160,0.15));
+      font-size: 0.72rem;
+      color: var(--theme-admin-text-muted, #8a9ab0);
     }
     #searchSpotifyPanel {
       margin-top: 10px;
@@ -11014,6 +11043,28 @@
       background: var(--paper);
     }
 
+    .img-upload-widget {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .img-upload-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .img-upload-url-input {
+      flex: 1;
+      min-width: 160px;
+      font-size: 0.85rem;
+    }
+    .img-upload-paste {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 36px;
+    }
+
     .image-chip-list {
       border: 1px solid #dbe3eb;
       border-radius: 8px;
@@ -18281,7 +18332,7 @@
                         <span id="homeMasterMetaTitleBadge" style="display:none"></span>
                         <span id="homeMasterCountBadges" style="display:none"></span>
                       </div>
-                      <div class="mini muted" style="display:flex;flex-direction:column;gap:2px;margin-top:4px;">
+                      <div class="master-meta-info-panel">
                         <div id="homeMasterMetaIdRow" class="u-hidden-initial"></div>
                         <div id="homeMasterMetaSpotifyRow" style="display:none;align-items:center;gap:4px;">
                           <span id="homeMasterMetaSpotifyText"></span>
@@ -18291,6 +18342,7 @@
                           <span>Spotify Album Code:</span>
                           <input id="homeMasterSpotifyMatchId" type="text" style="flex:1;min-width:160px;font-size:0.75rem;" placeholder="Spotify Album ID" />
                           <button id="homeMasterMetaSpotifySaveBtn" type="button" class="btn ghost tiny">저장</button>
+                          <button id="homeMasterMetaSpotifyUnlinkBtn" type="button" class="btn ghost tiny" style="color:var(--err,#c00);">삭제</button>
                           <button id="homeMasterMetaSpotifyCancelBtn" type="button" class="btn ghost tiny">취소</button>
                         </div>
                         <div id="homeMasterSpotifyMatchStatus" class="status" style="font-size:0.75rem;"></div>
@@ -18428,8 +18480,86 @@
             </div><!-- /manage-section-body -->
                       </details><!-- /homeMasterEditDetails -->
                       </div><!-- /homeMasterMetaLeft -->
-                      <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
                       <div id="homeMasterLocalPlayer" class="master-meta-spotify" hidden></div>
+                      <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
+                      <details id="homeLinkedGoodsPanelDetails" class="manage-section-details" style="flex:0 0 100%;width:100%;margin-top:4px;">
+                        <summary class="manage-section-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
+                        <div id="homeLinkedGoodsPanel" style="margin-top:6px;">
+                          <div id="homeMasterGoodsList" class="related-list"></div>
+                          <div class="home-linked-goods-register-row u-mt-6">
+                            <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">수집품 탭에서 연계 수집품 등록</button>
+                          </div>
+                          <div id="homeLinkedGoodsMasterInfo" style="display:none"></div>
+                          <div id="homeLinkedGoodsStatus" class="status span-2"></div>
+                          <div id="homeLinkedGoodsLegacyFields" class="span-2 u-hidden-initial" hidden>
+                            <div class="grid-6">
+                              <div>
+                                <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
+                                <select id="homeLinkedGoodsCategory">
+                                  <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
+                                  <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
+                                </select>
+                              </div>
+                              <div class="span-2">
+                                <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
+                                <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
+                              </div>
+                              <div>
+                                <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
+                                <select id="homeLinkedGoodsSizeGroup">
+                                  <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div class="grid-6 u-mt-6">
+                              <div>
+                                <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
+                                <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
+                              </div>
+                              <div class="span-2">
+                                <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
+                                <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
+                              </div>
+                              <div id="homeLinkedPosterSpecWrap">
+                                <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
+                                <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
+                              </div>
+                              <div id="homeLinkedTshirtSizeWrap">
+                                <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
+                                <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
+                              </div>
+                              <div id="homeLinkedCupMaterialWrap">
+                                <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
+                                <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
+                              </div>
+                              <div id="homeLinkedHatSizeWrap">
+                                <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
+                                <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
+                              </div>
+                            </div>
+                            <div class="grid-6 u-mt-6">
+                              <div class="span-2">
+                                <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
+                                <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
+                              </div>
+                              <div class="span-2">
+                                <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
+                                <textarea
+                                  id="homeLinkedGoodsImagePaste"
+                                  class="image-paste-box"
+                                  data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
+                                  placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
+                                ></textarea>
+                              </div>
+                              <div class="span-2">
+                                <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
+                                <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
+                              </div>
+                            </div>
+                            <input id="homeLinkedGoodsImageUrls" type="hidden" />
+                          </div>
+                        </div>
+                      </details>
                     </div><!-- /homeMasterMetaCard -->
                   </div><!-- /homeSection1MasterInfo -->
           </div><!-- /manage-section-body -->
@@ -18450,87 +18580,8 @@
           </div><!-- /manage-section-body -->
         </div><!-- /manageSection5OwnedItems -->
 
-          <details id="homeLinkedGoodsPanelDetails" class="manage-section-details">
-            <summary class="manage-section-summary" data-i18n="media.manage.collectibles.panel_details_summary">마스터연계 / 수집품</summary>
-            <div id="homeLinkedGoodsPanel" style="margin-top:6px;">
-              <div id="homeMasterGoodsList" class="related-list"></div>
-              <div class="home-linked-goods-register-row u-mt-6">
-                <button id="homeLinkedGoodsCreateBtn" class="btn ghost" type="button" data-i18n="media.manage.collectibles.action.open_register">수집품 탭에서 연계 수집품 등록</button>
-              </div>
-              <div id="homeLinkedGoodsMasterInfo" style="display:none"></div>
-              <div id="homeLinkedGoodsStatus" class="status span-2"></div>
-              <div id="homeLinkedGoodsLegacyFields" class="span-2 u-hidden-initial" hidden>
-                <div class="grid-6">
-                  <div>
-                    <label for="homeLinkedGoodsCategory" data-i18n="media.manage.collectibles.legacy.field.category.label">카테고리</label>
-                    <select id="homeLinkedGoodsCategory">
-                      <option>POSTER</option><option>T_SHIRT</option><option>LIGHT_STICK</option>
-                      <option>HAT</option><option>BAG</option><option>CUP</option><option>OTHER</option>
-                    </select>
-                  </div>
-                  <div class="span-2">
-                    <label for="homeLinkedGoodsName" data-i18n="media.manage.collectibles.legacy.field.item_name.label">상품명</label>
-                    <input id="homeLinkedGoodsName" data-i18n-placeholder="media.manage.collectibles.legacy.field.item_name.placeholder" placeholder="예: 산울림 2집 포스터" />
-                  </div>
-                  <div>
-                    <label for="homeLinkedGoodsSizeGroup" data-i18n="media.manage.collectibles.legacy.field.size_group.label">보관 규격</label>
-                    <select id="homeLinkedGoodsSizeGroup">
-                      <option value="STD" data-i18n="common.size_group.std">CD</option><option value="BOOK" data-i18n="common.size_group.book">CD 확장형</option><option value="LP" data-i18n="common.size_group.lp">LP</option><option value="OVERSIZE" data-i18n="common.size_group.oversize">LP 박스셋</option><option value="GOODS" data-i18n="common.size_group.goods">수집품</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="grid-6 u-mt-6">
-                  <div>
-                    <label for="homeLinkedGoodsQuantity" data-i18n="common.quantity">수량</label>
-                    <input id="homeLinkedGoodsQuantity" type="number" min="1" value="1" />
-                  </div>
-                  <div class="span-2">
-                    <label for="homeLinkedGoodsPurchaseSource" data-i18n="media.manage.collectibles.legacy.field.purchase_source.label">구매처(선택)</label>
-                    <input id="homeLinkedGoodsPurchaseSource" data-i18n-placeholder="media.manage.collectibles.legacy.field.purchase_source.placeholder" placeholder="예: 콘서트 현장" />
-                  </div>
-                  <div id="homeLinkedPosterSpecWrap">
-                    <label for="homeLinkedPosterStorageSpec" data-i18n="media.manage.collectibles.legacy.field.poster_storage_spec.label">포스터 보관 규격</label>
-                    <input id="homeLinkedPosterStorageSpec" data-i18n-placeholder="media.manage.collectibles.legacy.field.poster_storage_spec.placeholder" placeholder="예: 엽서 / A3 / 비규격" />
-                  </div>
-                  <div id="homeLinkedTshirtSizeWrap">
-                    <label for="homeLinkedTshirtSize" data-i18n="media.manage.collectibles.legacy.field.tshirt_size.label">티셔츠 사이즈</label>
-                    <input id="homeLinkedTshirtSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.tshirt_size.placeholder" placeholder="예: KR 105 / US L" />
-                  </div>
-                  <div id="homeLinkedCupMaterialWrap">
-                    <label for="homeLinkedCupMaterial" data-i18n="media.manage.collectibles.legacy.field.cup_material.label">컵 재질</label>
-                    <input id="homeLinkedCupMaterial" data-i18n-placeholder="media.manage.collectibles.legacy.field.cup_material.placeholder" placeholder="예: 머그 / 스텐 / 유리" />
-                  </div>
-                  <div id="homeLinkedHatSizeWrap">
-                    <label for="homeLinkedHatSize" data-i18n="media.manage.collectibles.legacy.field.hat_size.label">모자 사이즈</label>
-                    <input id="homeLinkedHatSize" data-i18n-placeholder="media.manage.collectibles.legacy.field.hat_size.placeholder" placeholder="예: 58cm / Free" />
-                  </div>
-                </div>
-                <div class="grid-6 u-mt-6">
-                  <div class="span-2">
-                    <label for="homeLinkedGoodsImageFiles" data-i18n="media.manage.collectibles.legacy.field.image_files.label">사진 파일 선택 (복수)</label>
-                    <input id="homeLinkedGoodsImageFiles" type="file" accept="image/*" multiple />
-                  </div>
-                  <div class="span-2">
-                    <label for="homeLinkedGoodsImagePaste" data-i18n="media.manage.collectibles.legacy.field.image_paste.label">붙여넣기 (Ctrl+V)</label>
-                    <textarea
-                      id="homeLinkedGoodsImagePaste"
-                      class="image-paste-box"
-                      data-i18n-placeholder="media.manage.collectibles.legacy.field.image_paste.placeholder"
-                      placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
-                    ></textarea>
-                  </div>
-                  <div class="span-2">
-                    <label data-i18n="media.manage.collectibles.legacy.field.image_list.label">등록된 사진</label>
-                    <div id="homeLinkedGoodsImageList" class="image-chip-list"><span class="mini" data-i18n="common.none">없음</span></div>
-                  </div>
-                </div>
-                <input id="homeLinkedGoodsImageUrls" type="hidden" />
-              </div>
-            </div>
-          </details>
-
           <!-- ══ 장식장 / 위치 정보 (최상단) ══ -->
-        <details id="manageSection1Product" class="manage-section-details" open>
+        <details id="manageSection1Product" class="manage-section-details" open hidden>
           <summary class="manage-section-summary" data-i18n="media.manage.section.product">상품 수정</summary>
           <div class="manage-section-body">
           <div id="homeEditorStandaloneMount" class="u-mt-10"></div>
@@ -18645,6 +18696,19 @@
                           <select id="editSpeedRpm">
                             <option value="">미지정</option>
                             <option value="33">33 1/3</option>
+                            <option value="45">45</option>
+                            <option value="78">78</option>
+                          </select>
+                        </div>
+                        <div id="homeEditDiscTypeWrap" class="u-hidden-initial">
+                          <label for="editDiscType" data-i18n="media.manage.field.disc_type.label">디스크 유형</label>
+                          <select id="editDiscType">
+                            <option value="">미지정</option>
+                            <option value="Standard">Standard</option>
+                            <option value="Picture">Picture Disc</option>
+                            <option value="Shaped">Shaped Disc</option>
+                            <option value="Colored">Colored Vinyl</option>
+                            <option value="Clear">Clear Vinyl</option>
                           </select>
                         </div>
                       </div>
@@ -18693,12 +18757,12 @@
                         </div>
                       </div>
                       <!-- 보관 이미지 -->
-                      <div id="editLocalImagesSection" class="u-mt-6" style="display:none;">
-                        <label style="display:block;margin-bottom:6px;font-weight:500;">보관 이미지</label>
-                        <div id="editLocalImagesGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
-                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                      <div id="editLocalImagesSection" class="u-mt-6 img-upload-widget" style="display:none;">
+                        <label style="display:block;margin-bottom:2px;font-weight:500;">보관 이미지</label>
+                        <div id="editLocalImagesGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;"></div>
+                        <div class="img-upload-row">
                           <label class="btn ghost" style="cursor:pointer;font-size:0.8rem;padding:4px 10px;">
-                            📁 파일 업로드
+                            📁 파일 선택
                             <input id="editImageFileInput" type="file" accept="image/*" style="display:none;" onchange="handleEditImageFileUpload(this)" />
                           </label>
                           <select id="editImageTypeSelect" style="font-size:0.8rem;padding:3px 6px;">
@@ -18707,11 +18771,12 @@
                             <option value="추가" selected>추가</option>
                           </select>
                         </div>
-                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
-                          <input id="editImageUrlInput" type="text" placeholder="이미지 URL 입력 후 다운로드" style="flex:1;min-width:200px;font-size:0.85rem;" />
-                          <button class="btn ghost" style="font-size:0.8rem;padding:4px 10px;" type="button" onclick="handleEditImageUrlAdd()">⬇ 다운로드</button>
+                        <div class="img-upload-row">
+                          <input id="editImageUrlInput" class="img-upload-url-input" type="text" placeholder="이미지 URL 입력" />
+                          <button class="btn ghost" style="font-size:0.8rem;padding:4px 10px;" type="button" onclick="handleEditImageUrlAdd()">적용</button>
                         </div>
-                        <div id="editImageStatus" class="status-line" style="margin-top:4px;min-height:1em;font-size:0.8rem;"></div>
+                        <textarea id="editImagePasteInput" class="image-paste-box img-upload-paste" placeholder="이미지 파일 또는 URL 붙여넣기 (Ctrl+V)"></textarea>
+                        <div id="editImageStatus" class="status-line" style="min-height:1em;font-size:0.8rem;"></div>
                       </div>
                       <!-- editCoverImageUrl: 숨김 처리 (저장 호환성 유지) -->
                       <input id="editCoverImageUrl" type="hidden" />
@@ -18781,14 +18846,23 @@
                           </div>
                           <div id="homeEditMusicInfoRow" data-grid="home-product-grid" class="grid-12 grid-12--from-6 home-product-grid u-mt-0 u-hidden-initial">
                             <div class="span-4">
-                              <label for="homeEditCoverImagePaste" data-i18n="media.manage.product.field.cover_upload.label">커버 직접 등록 / 붙여넣기 / URL</label>
-                              <div class="u-flex-stretch-gap-6">
-                                <input id="homeEditCoverImageFile" class="u-maxw-220" type="file" accept="image/*" />
+                              <label data-i18n="media.manage.product.field.cover_upload.label">커버 직접 등록 / 붙여넣기 / URL</label>
+                              <div class="img-upload-widget u-mt-4">
+                                <div class="img-upload-row">
+                                  <label class="btn ghost" style="cursor:pointer;font-size:0.85rem;">
+                                    📁 파일 선택
+                                    <input id="homeEditCoverImageFile" type="file" accept="image/*" style="display:none;" />
+                                  </label>
+                                </div>
+                                <div class="img-upload-row">
+                                  <input id="homeEditCoverImageUrlInput" class="img-upload-url-input" type="text" placeholder="이미지 URL 입력" />
+                                  <button class="btn ghost" type="button" style="font-size:0.85rem;" onclick="handleHomeEditCoverImageUrlApply()">적용</button>
+                                </div>
                                 <textarea
                                   id="homeEditCoverImagePaste"
-                                  class="image-paste-box u-minh-38 u-flex-1"
+                                  class="image-paste-box img-upload-paste"
                                   data-i18n-placeholder="media.manage.product.field.cover_upload.placeholder"
-                                  placeholder="이미지 파일 또는 이미지 URL을 붙여넣으세요."
+                                  placeholder="이미지 파일 또는 URL 붙여넣기 (Ctrl+V)"
                                 ></textarea>
                               </div>
                             </div>
@@ -19520,10 +19594,20 @@
 
               </div>
             </div>
-            <div style="margin:8px 0;">
+            <div style="margin:8px 0;" class="img-upload-widget">
               <label>이미지 등록</label>
-              <input type="file" id="goodsRegisterImageFile" accept="image/*" multiple style="display:block;margin-top:4px;" />
-              <div id="goodsRegisterImagePreview" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;"></div>
+              <div class="img-upload-row">
+                <label class="btn ghost" style="cursor:pointer;font-size:0.85rem;">
+                  📁 파일 선택
+                  <input type="file" id="goodsRegisterImageFile" accept="image/*" multiple style="display:none;" />
+                </label>
+              </div>
+              <div class="img-upload-row">
+                <input id="goodsRegisterImageUrlInput" class="img-upload-url-input" type="text" placeholder="이미지 URL 입력" />
+                <button class="btn ghost" type="button" style="font-size:0.85rem;" onclick="applyGoodsRegisterImageUrl()">적용</button>
+              </div>
+              <textarea id="goodsRegisterImagePaste" class="image-paste-box img-upload-paste" placeholder="이미지 파일 또는 URL 붙여넣기 (Ctrl+V)"></textarea>
+              <div id="goodsRegisterImagePreview" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
               <input id="goodsRegisterImageUrls" type="hidden" />
             </div>
             <details id="goodsRegisterExtraFields" class="ops-compact-extra-fields goods-extra-fields">
@@ -19536,10 +19620,6 @@
                 <div class="span-3">
                   <label for="goodsRegisterMemoryNote" data-i18n="collectibles.register.field.memory_note.label">메모</label>
                   <textarea id="goodsRegisterMemoryNote" data-i18n-placeholder="collectibles.register.field.memory_note.placeholder" placeholder="운영 메모"></textarea>
-                </div>
-                <div class="span-3">
-                  <label for="goodsRegisterImageUrls" data-i18n="collectibles.register.field.image_urls.label">이미지 URL (줄바꿈, 복수)</label>
-                  <textarea id="goodsRegisterImageUrls" data-i18n-placeholder="collectibles.register.field.image_urls.placeholder" placeholder="https://...&#10;https://..."></textarea>
                 </div>
               </div>
             </details>
@@ -32244,6 +32324,48 @@
       }
     }
 
+    async function onEditImagePaste(e) {
+      const clipboard = e.clipboardData;
+      if (!clipboard) return;
+      const imageFiles = [];
+      for (const item of Array.from(clipboard.items || [])) {
+        if (item.kind !== "file") continue;
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+      if (imageFiles.length) {
+        e.preventDefault();
+        const ownedItemId = Number($("editOwnedId")?.value || 0);
+        if (!ownedItemId) return;
+        const imageType = $("editImageTypeSelect")?.value || "추가";
+        setStatus("editImageStatus", "ok", "업로드 중...");
+        try {
+          for (const file of imageFiles) {
+            const form = new FormData();
+            form.append("file", file);
+            const res = await fetchWithRetry(`/owned-items/${ownedItemId}/images/upload?image_type=${encodeURIComponent(imageType)}`, { method: "POST", body: form });
+            const data = await safeJson(res);
+            if (!res.ok) throw new Error(responseDetailText(data, "업로드 실패"));
+            _editLocalImages = Array.isArray(data.items) ? data.items : _editLocalImages;
+            renderEditLocalImages();
+          }
+          setStatus("editImageStatus", "ok", "업로드 완료");
+        } catch (err) {
+          setStatus("editImageStatus", "err", errorMessageText(err, "업로드 실패"));
+        }
+        if ($("editImagePasteInput")) $("editImagePasteInput").value = "";
+        return;
+      }
+      const pastedText = String(clipboard.getData("text/plain") || "").trim();
+      if (!pastedText) return;
+      const urls = extractUrlCandidates(pastedText);
+      if (!urls.length) return;
+      e.preventDefault();
+      if ($("editImageUrlInput")) $("editImageUrlInput").value = urls[0];
+      if ($("editImagePasteInput")) $("editImagePasteInput").value = "";
+      await handleEditImageUrlAdd();
+    }
+
     async function deleteEditLocalImage(index) {
       const ownedItemId = Number($("editOwnedId")?.value || 0);
       if (!ownedItemId) return;
@@ -32297,6 +32419,13 @@
       if (message) {
         setStatus("homeEditStatus", "ok", message);
       }
+    }
+
+    function handleHomeEditCoverImageUrlApply() {
+      const url = String($("homeEditCoverImageUrlInput")?.value || "").trim();
+      if (!url) return;
+      applyHomeEditCoverImageUrl(url, t("media.manage.cover.status.url_applied"));
+      if ($("homeEditCoverImageUrlInput")) $("homeEditCoverImageUrlInput").value = "";
     }
 
     async function onHomeEditCoverImageFileChange(e) {
@@ -35029,15 +35158,17 @@
       const ownedItemId = Number(item?.owned_item_id || item?.id || 0);
       const canOpenCurrent = Boolean(currentSlotCode || (currentCabinetName && currentColumnCode && currentCellCode));
 
-      // Spotify: innerHTML 렌더 전에 미리 조회
+      // 플레이어: innerHTML 렌더 전에 미리 조회
       const oid = Number(item?.owned_item_id || item?.id || 0);
       let spotifyAlbumId = null;
       let masterIdForReview = 0;
+      let hasLocalLink = false;
       for (const row of Array.isArray(homeSearchResults) ? homeSearchResults : []) {
         const members = Array.isArray(row?.member_items_preview) ? row.member_items_preview : [];
         if (members.some(m => Number(m?.owned_item_id || m?.id || 0) === oid)) {
           spotifyAlbumId = row?.spotify_album_id || null;
           masterIdForReview = Number(row?.id || 0);
+          hasLocalLink = _localLinkedIds.has(masterIdForReview);
           // Merge fresh review_text if not in cached item
           if (!item.review_text && row.review_text) item = { ...item, review_text: row.review_text, review_source: row.review_source };
           break;
@@ -35063,7 +35194,7 @@
             <button class="btn ghost tiny" type="button" data-media-search-context-clear="1">${escapeHtml(t("operator.context.action.clear"))}</button>
           </div>
         </div>
-        ${spotifyAlbumId ? `<div class="ops-ctx-spotify-wrap">${_spotifyEmbedHtml(spotifyAlbumId, 352)}</div>` : ""}
+        ${hasLocalLink ? `<div id="searchContextLocalPlayerSlot"></div>` : (spotifyAlbumId ? `<div class="ops-ctx-spotify-wrap">${_spotifyEmbedHtml(spotifyAlbumId, 352)}</div>` : "")}
         ${renderOpsPluginSection(`
           ${renderOpsArtistContextCard(item, { cardId: "mediaSearchArtistContextCard" })}
           <div id="mediaSearchReviewSection">${renderAlbumReviewSection(item)}</div>
@@ -35090,9 +35221,17 @@
         </details>
       `;
 
-      // 별도 Spotify 패널 숨김 (인라인 통합)
+      // 별도 Spotify/로컬 패널 숨김
       const searchPanel = document.getElementById('searchSpotifyPanel');
       if (searchPanel) searchPanel.hidden = true;
+      // 로컬 링크 있으면 인라인 슬롯에 로드
+      if (hasLocalLink && masterIdForReview > 0) {
+        _lp.audio.pause(); _lp.audio.src = ""; _lp.idx = -1;
+        _lp._slotId = 'searchContextLocalPlayerSlot';
+        _lp.load(masterIdForReview).catch(() => {});
+      } else {
+        if (_lp._slotId === 'searchContextLocalPlayerSlot') { _lp.audio.pause(); _lp.idx = -1; }
+      }
 
       // 캐시에 review_text가 없으면 마스터 API로 최신 데이터 가져와서 갱신
       if (!item.review_text && masterIdForReview > 0) {
@@ -41833,6 +41972,7 @@
       tracks: [],
       idx: -1,
       masterId: null,
+      _slotId: "homeMasterLocalPlayer",
 
       _fmt(sec) {
         if (!sec || isNaN(sec)) return "--:--";
@@ -41841,19 +41981,22 @@
       },
 
       _render(data) {
-        const slot = document.getElementById("homeMasterLocalPlayer");
+        const slot = document.getElementById(this._slotId || "homeMasterLocalPlayer");
         if (!slot) return;
         this.tracks = data.tracks || [];
         const cover = data.cover_url
           ? `<img src="${escapeHtml(data.cover_url)}" onerror="this.style.display='none'" />`
           : `<span>🎵</span>`;
+        const albumTitle = String(data.title || "").trim();
+        const albumYear = data.release_year ? ` (${data.release_year})` : "";
+        const albumArtist = String(data.artist_or_brand || "").trim();
         slot.innerHTML = `
           <div class="local-player">
             <div class="local-player-top">
               <div class="local-player-cover">${cover}</div>
               <div class="local-player-info">
-                <div class="local-player-now-title" id="lpNowTitle">—</div>
-                <div class="local-player-now-artist" id="lpNowArtist"></div>
+                <div class="local-player-album-title">${escapeHtml(albumTitle || "—")}${albumYear ? `<span class="local-player-album-year">${escapeHtml(albumYear)}</span>` : ""}</div>
+                <div class="local-player-album-artist">${escapeHtml(albumArtist)}</div>
                 <div class="local-player-controls">
                   <button class="local-player-btn" id="lpPrevBtn" title="이전">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
@@ -41960,8 +42103,6 @@
         const t = this.tracks[i];
         this.audio.src = t.stream_url;
         this.audio.play().catch(() => {});
-        const titleEl = document.getElementById("lpNowTitle");
-        if (titleEl) titleEl.textContent = t.title || "—";
         this._renderTrackList();
       },
 
@@ -41979,7 +42120,7 @@
         this.audio.pause();
         this.audio.src = "";
         this.idx = -1;
-        const slot = document.getElementById("homeMasterLocalPlayer");
+        const slot = document.getElementById(this._slotId || "homeMasterLocalPlayer");
         if (slot) { slot.hidden = true; slot.innerHTML = ""; }
       },
     };
@@ -42016,21 +42157,19 @@
     function spotifyPlayAlbum(id) { fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:'spotify:album:'+id})}).catch(function(){}); }
     function spotifyPlayTrack(uri) { if(uri) fetch('/spotify/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uri:uri})}).catch(function(){}); }
     document.addEventListener('click',function(e){
-      var b = e.target.closest('.spotify-badge');
-      if (b) {
-        e.stopPropagation();
-        var mid = b.getAttribute('data-sp-master');
-        var aid = b.getAttribute('data-sp-album');
-        if (mid && aid) spotifyTogglePanel(mid, aid);
-        return;
-      }
-      var lpb = e.target.closest('.local-player-badge');
-      if (lpb) {
-        e.stopPropagation();
-        var lpMid = Number(lpb.getAttribute('data-lp-badge') || 0);
-        if (lpMid) {
-          homeSelectedMasterId = lpMid;
-          _lp.load(lpMid).catch(() => {});
+      var b = e.target.closest('.spotify-badge,.local-player-badge');
+      if (!b) return;
+      e.stopPropagation();
+      // 관리탭에서 Spotify 뱃지 클릭 → Spotify 플레이어로 전환
+      if (b.classList.contains('spotify-badge')) {
+        var inManage = document.getElementById('tabManage')?.classList.contains('active');
+        if (inManage) {
+          var spId = b.dataset.spAlbum;
+          if (spId) {
+            _lp.hide();
+            var spSlot = document.getElementById('homeMasterSpotifyEmbed');
+            if (spSlot) { spSlot.innerHTML = _spotifyEmbedHtml(spId, 352); spSlot.dataset.albumId = spId; spSlot.hidden = false; }
+          }
         }
       }
     });
@@ -45270,10 +45409,8 @@ async function loadDashboardClimate() {
           if ($("opsExBulkApplyBtn")) $("opsExBulkApplyBtn").disabled = !$("opsExBulkMediaType").value;
         });
       } else if (type === "SIZE_MISMATCH") {
-        row.innerHTML = `
-          <label style="font-size:0.78rem;white-space:nowrap;">규격 그룹</label>
-          <select id="opsExBulkSizeGroup" style="font-size:0.78rem;">
-            <option value="">선택</option>
+        const sizeGroupOptions = `
+            <option value="">선택 안 함</option>
             <option value="LP">LP</option>
             <option value="STD">STD (CD)</option>
             <option value="LP7">LP 7"</option>
@@ -45282,15 +45419,22 @@ async function loadDashboardClimate() {
             <option value="8TRACK">8-Track</option>
             <option value="REEL_TO_REEL">Reel-to-Reel</option>
             <option value="BOOK">Book</option>
-            <option value="OVERSIZE">Oversize</option>
-          </select>
+            <option value="OVERSIZE">Oversize</option>`;
+        row.innerHTML = `
+          <label style="font-size:0.78rem;white-space:nowrap;">규격 그룹</label>
+          <select id="opsExBulkSizeGroup" style="font-size:0.78rem;">${sizeGroupOptions}</select>
+          <label style="font-size:0.78rem;white-space:nowrap;">보관 규격</label>
+          <select id="opsExBulkPrefSizeGroup" style="font-size:0.78rem;">${sizeGroupOptions}</select>
           <button id="opsExBulkApplyBtn" class="btn ghost tiny" type="button" disabled>
             선택 ${selectedCount}건 일괄 적용
           </button>
         `;
-        $("opsExBulkSizeGroup")?.addEventListener("change", () => {
-          if ($("opsExBulkApplyBtn")) $("opsExBulkApplyBtn").disabled = !$("opsExBulkSizeGroup").value;
-        });
+        const updateBulkSizeApplyBtn = () => {
+          const hasVal = !!$("opsExBulkSizeGroup")?.value || !!$("opsExBulkPrefSizeGroup")?.value;
+          if ($("opsExBulkApplyBtn")) $("opsExBulkApplyBtn").disabled = !hasVal;
+        };
+        $("opsExBulkSizeGroup")?.addEventListener("change", updateBulkSizeApplyBtn);
+        $("opsExBulkPrefSizeGroup")?.addEventListener("change", updateBulkSizeApplyBtn);
       }
       $("opsExBulkApplyBtn")?.addEventListener("click", () => applyOpsExBulk(type));
     }
@@ -45316,11 +45460,15 @@ async function loadDashboardClimate() {
           });
         } else if (type === "SIZE_MISMATCH") {
           const sizeGroup = $("opsExBulkSizeGroup")?.value;
-          if (!sizeGroup) return;
+          const prefSizeGroup = $("opsExBulkPrefSizeGroup")?.value;
+          if (!sizeGroup && !prefSizeGroup) return;
+          const bulkBody = { owned_item_ids: selectedIds };
+          if (sizeGroup) bulkBody.size_group = sizeGroup;
+          if (prefSizeGroup) bulkBody.preferred_storage_size_group = prefSizeGroup;
           res = await fetchWithRetry("/owned-items/bulk-update", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ owned_item_ids: selectedIds, size_group: sizeGroup }),
+            body: JSON.stringify(bulkBody),
           });
         } else {
           return;
@@ -45397,18 +45545,28 @@ async function loadDashboardClimate() {
       }
       if (type === "SIZE_MISMATCH") {
         const cur = data.size_group || "";
-        const opts = [
+        const curPref = data.preferred_storage_size_group || "";
+        const sizeOpts = [
           ["LP","LP"],["STD","STD (CD)"],["LP7",'LP 7"'],["LP10",'LP 10"'],
           ["CASSETTE","Cassette"],["8TRACK","8-Track"],["REEL_TO_REEL","Reel-to-Reel"],
           ["BOOK","Book"],["OVERSIZE","Oversize"],
         ].map(([v,l]) => `<option value="${v}"${cur===v?" selected":""}>${escapeHtml(l)}</option>`).join("");
+        const prefOpts = [
+          ["LP","LP"],["STD","STD (CD)"],["LP7",'LP 7"'],["LP10",'LP 10"'],
+          ["CASSETTE","Cassette"],["8TRACK","8-Track"],["REEL_TO_REEL","Reel-to-Reel"],
+          ["BOOK","Book"],["OVERSIZE","Oversize"],
+        ].map(([v,l]) => `<option value="${v}"${curPref===v?" selected":""}>${escapeHtml(l)}</option>`).join("");
         return `
           <div style="display:flex;flex-direction:column;gap:6px;">
             <label style="font-size:0.72rem;color:var(--muted);">규격 그룹</label>
+            <select id="opsExCtxSizeGroup" style="font-size:0.78rem;">
+              <option value="">선택 안 함</option>${sizeOpts}
+            </select>
+            <label style="font-size:0.72rem;color:var(--muted);">보관 규격</label>
+            <select id="opsExCtxPrefSizeGroup" style="font-size:0.78rem;">
+              <option value="">선택 안 함</option>${prefOpts}
+            </select>
             <div style="display:flex;gap:6px;align-items:center;">
-              <select id="opsExCtxSizeGroup" style="flex:1;font-size:0.78rem;">
-                <option value="">선택</option>${opts}
-              </select>
               <button id="opsExCtxSaveBtn" class="btn ghost tiny" type="button">저장</button>
             </div>
             <div id="opsExCtxEditStatus" class="status mini"></div>
@@ -45441,23 +45599,45 @@ async function loadDashboardClimate() {
         saveBtn.disabled = true;
         if (statusEl) statusEl.textContent = "저장 중...";
         try {
-          let body;
+          // PATCH는 OwnedItemCreate 전체 스키마를 필요로 하므로 기존 data와 병합
+          const base = {
+            category: data.category,
+            size_group: data.size_group,
+            preferred_storage_size_group: data.preferred_storage_size_group,
+            status: data.status,
+            is_second_hand: data.is_second_hand,
+            quantity: data.quantity || 1,
+            signature_type: data.signature_type,
+            source_code: data.source_code,
+            source_external_id: data.source_external_id,
+            linked_album_master_id: data.linked_album_master_id,
+            linked_artist_name: data.linked_artist_name,
+            item_name_override: data.item_name_override,
+            storage_slot_id: data.storage_slot_id,
+            notes: data.notes,
+            music_detail: data.music_detail || null,
+          };
+          let patch;
           if (type === "MEDIA_MISSING") {
             const v = $("opsExCtxMediaType")?.value;
             if (!v) throw new Error("미디어 타입을 선택하세요");
-            body = { music_detail: { media_type: v } };
+            patch = { music_detail: { ...(base.music_detail || {}), media_type: v } };
           } else if (type === "SIZE_MISMATCH") {
-            const v = $("opsExCtxSizeGroup")?.value;
-            if (!v) throw new Error("규격 그룹을 선택하세요");
-            body = { size_group: v };
+            const sg = $("opsExCtxSizeGroup")?.value;
+            const psg = $("opsExCtxPrefSizeGroup")?.value;
+            if (!sg && !psg) throw new Error("규격 그룹 또는 보관 규격을 선택하세요");
+            patch = {};
+            if (sg) patch.size_group = sg;
+            if (psg) patch.preferred_storage_size_group = psg;
           } else if (type === "CATALOG_MISSING") {
             const catalogNo = String($("opsExCtxCatalogNo")?.value || "").trim();
             const labelName = String($("opsExCtxLabelName")?.value || "").trim();
             if (!catalogNo && !labelName) throw new Error("카탈로그 번호 또는 레이블을 입력하세요");
-            body = { music_detail: { catalog_no: catalogNo || null, label_name: labelName || null } };
+            patch = { music_detail: { ...(base.music_detail || {}), catalog_no: catalogNo || null, label_name: labelName || null } };
           } else {
             return;
           }
+          const body = { ...base, ...patch };
           const res = await fetchWithRetry(`/owned-items/${ownedItemId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -45496,7 +45676,7 @@ async function loadDashboardClimate() {
       card.style.display = "";
       if (empty) empty.style.display = "none";
 
-      const isMasterType = (type === "SPOTIFY_UNMATCHED" || type === "REVIEW_MISSING");
+      const isMasterType = (type === "SPOTIFY_UNMATCHED" || type === "REVIEW_MISSING" || type === "LOCAL_MISSING");
 
       if (isMasterType) {
         const masterId = Number(row.id || 0);
@@ -47408,6 +47588,7 @@ async function loadDashboardClimate() {
     function syncHomeMasterInlineEditor() {
       const host = $("homeMasterInlineEditorHost");
       const parking = $("homeMasterInlineEditorParking");
+      const standaloneSection = $("manageSection1Product");
       if (!host || !parking) return;
       const ownedItemId = Number(homeSelectedItemId || 0);
       if (ownedItemId <= 0 || homeInlineEditorCollapsed) {
@@ -47415,6 +47596,7 @@ async function loadDashboardClimate() {
           parking.appendChild(host);
         }
         setDisplayMode(host, "none");
+        if (standaloneSection) standaloneSection.hidden = true;
         return;
       }
       const mountTarget = findHomeInlineEditorMountElement(ownedItemId);
@@ -47423,8 +47605,11 @@ async function loadDashboardClimate() {
           parking.appendChild(host);
         }
         setDisplayMode(host, "none");
+        if (standaloneSection) standaloneSection.hidden = true;
         return;
       }
+      const standaloneMount = $("homeEditorStandaloneMount");
+      if (standaloneSection) standaloneSection.hidden = (mountTarget !== standaloneMount);
       if (host.parentElement !== mountTarget) {
         mountTarget.appendChild(host);
       }
@@ -49040,13 +49225,15 @@ async function loadDashboardClimate() {
 
       try {
         setStatus("homeMasterStatus", "ok", t("media.manage.master.members.status.loading"));
+        _lp._slotId = "homeMasterLocalPlayer";
         _lp.hide();
+        const _spSlotClear = document.getElementById("homeMasterSpotifyEmbed");
+        if (_spSlotClear) { _spSlotClear.hidden = true; _spSlotClear.innerHTML = ""; delete _spSlotClear.dataset.albumId; }
         const [res, collectiblesRes, masterRes] = await Promise.all([
           fetch(`/album-masters/${masterId}/members`),
           fetch(`/goods-items?album_master_id=${masterId}&limit=200&offset=0`),
           fetch(`/album-masters/${masterId}`),
         ]);
-        _lp.load(masterId).catch(() => {});
         const data = await safeJson(res);
         const collectiblesData = await safeJson(collectiblesRes);
         const masterData = masterRes.ok ? await safeJson(masterRes) : null;
@@ -49096,6 +49283,23 @@ async function loadDashboardClimate() {
         };
         renderHomeRelatedVersions();
         setStatus("homeMasterStatus", "ok", "");
+
+        // 플레이어: 로컬 우선, Spotify 폴백
+        (function() {
+          const _spId = homeMasterInfo?.spotify_album_id || null;
+          _lp.load(masterId).then(() => {
+            const localSlot = document.getElementById("homeMasterLocalPlayer");
+            if ((!localSlot || localSlot.hidden) && _spId) {
+              const spSlot = document.getElementById("homeMasterSpotifyEmbed");
+              if (spSlot) { spSlot.innerHTML = _spotifyEmbedHtml(_spId, 352); spSlot.dataset.albumId = _spId; spSlot.hidden = false; }
+            }
+          }).catch(() => {
+            if (_spId) {
+              const spSlot = document.getElementById("homeMasterSpotifyEmbed");
+              if (spSlot) { spSlot.innerHTML = _spotifyEmbedHtml(_spId, 352); spSlot.dataset.albumId = _spId; spSlot.hidden = false; }
+            }
+          });
+        })();
 
         if (autoOpenFirst) {
           const firstOwnedItemId = Number(items[0]?.id || 0);
@@ -50640,10 +50844,10 @@ async function loadDashboardClimate() {
           const localText = $("homeMasterLocalText");
           if (data.linked) {
             const short = data.dir_path.replace(/^\/Volumes\/Music\//, "…/");
-            if (localText) localText.textContent = `♪ Local: ${short}`;
+            if (localText) { localText.textContent = `♪ Local: ${short}`; localText.style.cursor = "pointer"; }
             localRow.style.display = "flex";
           } else {
-            if (localText) localText.textContent = "♪ Local: 미연결";
+            if (localText) { localText.textContent = "♪ Local: 미연결"; localText.style.cursor = ""; }
             localRow.style.display = "flex";
           }
           if (localStatus) localStatus.textContent = "";
@@ -57160,6 +57364,55 @@ async function loadDashboardClimate() {
       item.appendChild(img); item.appendChild(rm);
       p.appendChild(item);
     }
+    function applyGoodsRegisterImageUrl() {
+      const url = String($("goodsRegisterImageUrlInput")?.value || "").trim();
+      if (!url) return;
+      _regImageUrls.push(url);
+      addRegImagePreview(url);
+      $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
+      if ($("goodsRegisterImageUrlInput")) $("goodsRegisterImageUrlInput").value = "";
+    }
+    async function onGoodsRegisterImagePaste(e) {
+      const clipboard = e.clipboardData;
+      if (!clipboard) return;
+      const imageFiles = [];
+      for (const item of Array.from(clipboard.items || [])) {
+        if (item.kind !== "file") continue;
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+      if (imageFiles.length) {
+        e.preventDefault();
+        try {
+          const uploaded = await uploadUiImageFiles(imageFiles);
+          uploaded.forEach(url => { if (url) { _regImageUrls.push(url); addRegImagePreview(url); } });
+          $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
+        } catch (err) { console.error("Image paste upload failed", err); }
+        if ($("goodsRegisterImagePaste")) $("goodsRegisterImagePaste").value = "";
+        return;
+      }
+      const pastedText = String(clipboard.getData("text/plain") || "").trim();
+      if (!pastedText) return;
+      const urls = extractUrlCandidates(pastedText);
+      if (!urls.length) return;
+      e.preventDefault();
+      urls.forEach(url => { _regImageUrls.push(url); addRegImagePreview(url); });
+      $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
+      if ($("goodsRegisterImagePaste")) $("goodsRegisterImagePaste").value = "";
+    }
+    if ($("goodsRegisterImagePaste")) {
+      $("goodsRegisterImagePaste").addEventListener("paste", onGoodsRegisterImagePaste);
+      $("goodsRegisterImagePaste").addEventListener("change", () => {
+        const urls = extractUrlCandidates($("goodsRegisterImagePaste").value);
+        if (!urls.length) return;
+        urls.forEach(url => { _regImageUrls.push(url); addRegImagePreview(url); });
+        $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
+        $("goodsRegisterImagePaste").value = "";
+      });
+    }
+    if ($("goodsRegisterImageUrlInput")) {
+      $("goodsRegisterImageUrlInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); applyGoodsRegisterImageUrl(); } });
+    }
     $("goodsRegisterSaveBtn").addEventListener("click", createGoodsRegisterItem);
     $("registerCollectTabBtn").addEventListener("click", () => switchSubTab("register", "collect"));
     $("registerPurchaseTabBtn").addEventListener("click", async () => {
@@ -57718,8 +57971,22 @@ async function loadDashboardClimate() {
       const statusEl = $("homeMasterSpotifyMatchStatus");
       if (!statusEl?.classList.contains("is-error")) closeSpotifyEditMode();
     });
+    $("homeMasterMetaSpotifyUnlinkBtn")?.addEventListener("click", async () => {
+      await unlinkHomeMasterSpotify();
+      const statusEl = $("homeMasterSpotifyMatchStatus");
+      if (!statusEl?.classList.contains("is-error")) closeSpotifyEditMode();
+    });
 
     // ── 로컬 경로 핸들러 ──────────────────────────────────────────────────────
+    $("homeMasterLocalText")?.addEventListener("click", () => {
+      const masterId = Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0);
+      if (!masterId) return;
+      const spSlot = document.getElementById("homeMasterSpotifyEmbed");
+      if (spSlot) { spSlot.hidden = true; spSlot.innerHTML = ""; delete spSlot.dataset.albumId; }
+      _lp._slotId = "homeMasterLocalPlayer";
+      _lp.hide();
+      _lp.load(masterId).catch(() => {});
+    });
     $("homeMasterLocalEditBtn")?.addEventListener("click", () => {
       const localRow = $("homeMasterLocalRow");
       const localEditRow = $("homeMasterLocalEditRow");
@@ -57764,9 +58031,10 @@ async function loadDashboardClimate() {
         _localLinkedIds.add(masterIdVal);
         const short = path.replace(/^\/Volumes\/Music\//, "…/");
         const localText = $("homeMasterLocalText");
-        if (localText) localText.textContent = `♪ Local: ${short}`;
+        if (localText) { localText.textContent = `♪ Local: ${short}`; localText.style.cursor = "pointer"; }
         $("homeMasterLocalRow").style.display = "flex";
         $("homeMasterLocalEditRow").style.display = "none";
+        _lp._slotId = "homeMasterLocalPlayer";
         _lp.load(masterIdVal).catch(() => {});
         setTimeout(() => { if (statusEl) statusEl.textContent = ""; }, 2000);
       } catch (err) {
@@ -57841,8 +58109,9 @@ async function loadDashboardClimate() {
       await fetchWithRetry(`/album-masters/${masterIdVal}/local-link`, { method: "DELETE" });
       _localLinkedIds.delete(masterIdVal);
       const localText = $("homeMasterLocalText");
-      if (localText) localText.textContent = "♪ Local: 미연결";
+      if (localText) { localText.textContent = "♪ Local: 미연결"; localText.style.cursor = ""; }
       if (statusEl) statusEl.textContent = "";
+      _lp._slotId = "homeMasterLocalPlayer";
       _lp.hide();
     });
     $("homeMasterSpotifyMatchId")?.addEventListener("keydown", (e) => {
@@ -57876,6 +58145,22 @@ async function loadDashboardClimate() {
       applyHomeEditCoverImageUrl(urls[0], t("media.manage.cover.status.url_applied"));
       $("homeEditCoverImagePaste").value = "";
     });
+    if ($("homeEditCoverImageUrlInput")) {
+      $("homeEditCoverImageUrlInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); handleHomeEditCoverImageUrlApply(); } });
+    }
+    if ($("editImagePasteInput")) {
+      $("editImagePasteInput").addEventListener("paste", onEditImagePaste);
+      $("editImagePasteInput").addEventListener("change", async () => {
+        const urls = extractUrlCandidates($("editImagePasteInput").value);
+        if (!urls.length) return;
+        $("editImagePasteInput").value = "";
+        if ($("editImageUrlInput")) $("editImageUrlInput").value = urls[0];
+        await handleEditImageUrlAdd();
+      });
+    }
+    if ($("editImageUrlInput")) {
+      $("editImageUrlInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); handleEditImageUrlAdd(); } });
+    }
     $("homeProductRelationSeriesSearchBtn").addEventListener("click", searchHomeProductRelationSeriesTargets);
     $("homeProductRelationSeriesQuery").addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;

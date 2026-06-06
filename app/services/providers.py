@@ -1591,6 +1591,50 @@ def fetch_review_from_url(url: str) -> str | None:
         return None
 
 
+def fetch_pitchfork_review(url: str) -> str | None:
+    """Fetch review body from a Pitchfork album review page.
+
+    Tries JSON-LD reviewBody first, falls back to div.body__inner-container <p> tags.
+    Returns up to 3000 chars, or None on error.
+    """
+    import httpx, json
+    from bs4 import BeautifulSoup
+    try:
+        resp = httpx.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "__PROJECT_SLUG__-library/0.1"},
+            follow_redirects=True,
+        )
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.content, "html.parser")
+
+        # 1) JSON-LD reviewBody (most complete, no scraping needed)
+        for script in soup.find_all("script", type="application/ld+json"):
+            try:
+                data = json.loads(script.get_text())
+                body = data.get("reviewBody", "")
+                if body and len(body) > 100:
+                    return _clean_review_text(body[:3000])
+            except Exception:
+                pass
+
+        # 2) Fallback: div.body__inner-container <p> tags
+        container = soup.select_one(".body__inner-container")
+        if container:
+            paragraphs = container.find_all("p")
+            text = "\n".join(p.get_text(" ", strip=True) for p in paragraphs if p.get_text(strip=True))
+            text = _clean_review_text(text)
+            if text:
+                return text
+
+        return None
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).warning("fetch_pitchfork_review(%s) failed: %s", url, exc)
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Aladin title/artist cleaning helpers
 #
@@ -3638,6 +3682,32 @@ def get_discogs_master_variants(
     return out[:limit_n]
 
 
+def _parse_maniadb_album_level_tracks(html_text: str) -> list[str]:
+    """앨범 페이지 메인 TRACKS 섹션(fieldset 외부)에서 트랙 제목을 추출한다.
+
+    fieldset 내 <td class="tracks">가 비어있는 멀티-디스크 앨범 등에서 fallback으로 사용.
+    패턴: <td class="trackno">N.</td> → (중간 HTML 생략) → <a>TITLE &nbsp; <img/></a>
+    """
+    pattern = re.compile(
+        r'<td[^>]+class="trackno"[^>]*>\d+\.</td>'
+        r'.*?'
+        r'<a[^>]*>(.*?)</a>',
+        re.DOTALL | re.IGNORECASE,
+    )
+    seen: set[str] = set()
+    tracks: list[str] = []
+    for m in pattern.finditer(html_text):
+        raw = m.group(1)
+        raw = re.sub(r"&nbsp;", " ", raw)
+        raw = re.sub(r"<img[^>]*?/?>", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"<[^>]+>", "", raw)
+        title = raw.strip()
+        if title and title not in seen:
+            seen.add(title)
+            tracks.append(title)
+    return tracks
+
+
 def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> list[dict[str, Any]]:
     settings = get_settings()
     base_url = settings.maniadb_base_url.rstrip("/")
@@ -3683,6 +3753,23 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
         out.append(parsed)
         if len(out) >= limit:
             break
+
+    # digital single 타이틀 → media_type CD 자동 추론
+    for v in out:
+        if not v.get("media_type") and "digital single" in str(v.get("title") or "").lower():
+            v["media_type"] = "CD"
+
+    # 트랙이 없는 variant → 앨범 레벨 TRACKS 섹션으로 채우기
+    if out and any(not v.get("track_list") for v in out):
+        album_tracks = _parse_maniadb_album_level_tracks(html_text)
+        if not album_tracks:
+            # 앨범 레벨 추출 실패 시 다른 variant의 트랙으로 보완
+            filled = next((v["track_list"] for v in out if v.get("track_list")), [])
+            album_tracks = filled
+        if album_tracks:
+            for v in out:
+                if not v.get("track_list"):
+                    v["track_list"] = album_tracks
 
     if out:
         return out[:limit]

@@ -1196,13 +1196,14 @@ def _load_local_image_items(owned_item_id: int) -> list[dict]:
 def _save_local_image_items(owned_item_id: int, items: list[dict]) -> None:
     """music_item_detail.local_image_items_json 저장 (upsert)."""
     import json as _json
-    from ..db import get_conn
+    from ..db import get_conn, utc_now_iso
+    now = utc_now_iso()
     with get_conn() as conn:
         conn.execute(
-            """INSERT INTO music_item_detail (owned_item_id, local_image_items_json)
-               VALUES (?, ?)
+            """INSERT INTO music_item_detail (owned_item_id, local_image_items_json, created_at, updated_at)
+               VALUES (?, ?, ?, ?)
                ON CONFLICT(owned_item_id) DO UPDATE SET local_image_items_json=excluded.local_image_items_json""",
-            (owned_item_id, _json.dumps(items, ensure_ascii=False)),
+            (owned_item_id, _json.dumps(items, ensure_ascii=False), now, now),
         )
 
 

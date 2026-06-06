@@ -102,6 +102,21 @@ def list_tracks_for_link(master_id: int) -> list[dict[str, Any]]:
     return list_tracks_in_dir(link["local_dir_path"])
 
 
+_DISC_SUB_RE = re.compile(r"^(?:CD|Disc|Disk|disc|disk)\s*(\d+)$", re.I)
+
+
+def _disc_sort_key(file_path: str, prefix: str) -> tuple[int, int, str]:
+    """Sort key: (disc_num, track_num, path). Top-level files get disc 0."""
+    relative = file_path[len(prefix):]
+    parts = relative.split("/")
+    if len(parts) > 1:
+        m = _DISC_SUB_RE.match(parts[0])
+        disc = int(m.group(1)) if m else 999
+    else:
+        disc = 0
+    return (disc, 0, file_path)  # track_number applied after fetch
+
+
 def list_tracks_in_dir(dir_path: str) -> list[dict[str, Any]]:
     prefix = dir_path.rstrip("/") + "/"
     with get_conn() as conn:
@@ -110,26 +125,61 @@ def list_tracks_in_dir(dir_path: str) -> list[dict[str, Any]]:
             SELECT file_path, title, track_number, duration_seconds
             FROM local_music_index
             WHERE file_path LIKE ?
-            ORDER BY
-              CASE WHEN CAST(track_number AS INTEGER) > 0 THEN 0 ELSE 1 END,
-              CAST(track_number AS INTEGER),
-              file_path
             """,
             (prefix + "%",),
         ).fetchall()
-    # exclude files in subdirectories
-    return [
-        dict(r) for r in rows
-        if "/" not in r["file_path"][len(prefix):]
-    ]
+    if not rows:
+        return []
+
+    def sort_key(r: Any) -> tuple[int, int, str]:
+        disc, _, path = _disc_sort_key(r["file_path"], prefix)
+        tn = r["track_number"]
+        try:
+            track = int(tn) if tn and int(tn) > 0 else 9999
+        except (TypeError, ValueError):
+            track = 9999
+        return (disc, track, path)
+
+    return [dict(r) for r in sorted(rows, key=sort_key)]
+
+
+_COVER_PRIORITY = {"cover.jpg", "cover.png", "folder.jpg", "folder.png",
+                   "front.jpg", "front.png", "artwork.jpg", "albumart.jpg"}
+_IMG_EXTS = {".jpg", ".jpeg", ".png"}
+
+
+def _scan_dir_for_cover(directory: Path) -> str | None:
+    """Case-insensitive cover search: priority names first, then any image."""
+    try:
+        entries = {f.name.lower(): f for f in directory.iterdir() if f.is_file()}
+    except OSError:
+        return None
+    # 1) 우선 이름 목록에서 케이스 무관 검색
+    for name in _COVER_PRIORITY:
+        if name in entries:
+            return str(entries[name])
+    # 2) 이외 이미지 파일 — 이름 정렬 후 첫 번째
+    for name, path in sorted(entries.items()):
+        if Path(name).suffix in _IMG_EXTS:
+            return str(path)
+    return None
 
 
 def find_cover_path(dir_path: str) -> str | None:
-    for name in ("cover.jpg", "cover.png", "folder.jpg", "folder.png",
-                 "front.jpg", "front.png", "artwork.jpg"):
-        p = Path(dir_path) / name
-        if p.is_file():
-            return str(p)
+    root = Path(dir_path)
+    # 1) 루트 디렉토리
+    found = _scan_dir_for_cover(root)
+    if found:
+        return found
+    # 2) 하위 디렉토리(디스크별) 탐색
+    try:
+        for sub in sorted(root.iterdir()):
+            if sub.is_dir():
+                found = _scan_dir_for_cover(sub)
+                if found:
+                    return found
+    except OSError:
+        pass
     return None
 
 

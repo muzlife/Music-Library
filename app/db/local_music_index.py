@@ -165,6 +165,41 @@ def get_index_stats() -> dict[str, Any]:
     }
 
 
+def backfill_durations(tracks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """For tracks with duration_seconds == 0, read from file via tinytag and update DB."""
+    missing = [t for t in tracks if not t.get("duration_seconds")]
+    if not missing:
+        return tracks
+    try:
+        from tinytag import TinyTag
+    except ImportError:
+        return tracks
+    updates: list[tuple[float, str]] = []
+    dur_map: dict[str, float] = {}
+    for t in missing:
+        fp = t.get("file_path", "")
+        if not fp or not os.path.isfile(fp):
+            continue
+        try:
+            tag = TinyTag.get(fp)
+            dur = round(tag.duration or 0.0, 1)
+        except Exception:
+            dur = 0.0
+        if dur > 0:
+            dur_map[fp] = dur
+            updates.append((dur, fp))
+    if updates:
+        with get_conn() as conn:
+            conn.executemany(
+                "UPDATE local_music_index SET duration_seconds = ? WHERE file_path = ?",
+                updates,
+            )
+    return [
+        {**t, "duration_seconds": dur_map.get(t.get("file_path", ""), t.get("duration_seconds", 0))}
+        for t in tracks
+    ]
+
+
 def get_local_track_by_path(file_path: str) -> dict[str, Any] | None:
     """Get metadata for a local track from the index. Falls back to dynamic reading if missing in DB."""
     with get_conn() as conn:
@@ -213,4 +248,4 @@ def get_local_track_by_path(file_path: str) -> dict[str, Any] | None:
 
 
 # Re-export
-__all__ = ["_ensure_index_table", "rebuild_index", "search_local_index", "get_index_stats", "get_local_track_by_path"]
+__all__ = ["_ensure_index_table", "rebuild_index", "search_local_index", "get_index_stats", "get_local_track_by_path", "backfill_durations"]

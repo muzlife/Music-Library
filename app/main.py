@@ -2438,6 +2438,41 @@ def _clean_track_list(value: Any) -> list[str]:
     return [str(v).strip() for v in value if str(v).strip()]
 
 
+def _get_master_member_track_fallback(master_id: int, exclude_owned_item_id: int | None = None) -> list[str]:
+    """마스터 멤버 중 수록곡이 있는 첫 번째 상품의 track_list를 반환한다."""
+    import json as _json
+    exclude_clause = ""
+    params: list[Any] = [master_id]
+    if exclude_owned_item_id:
+        exclude_clause = "AND amm.owned_item_id <> ?"
+        params.append(exclude_owned_item_id)
+    with db.get_conn() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT mid.track_list_json
+            FROM album_master_member amm
+            JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+            WHERE amm.album_master_id = ?
+              {exclude_clause}
+              AND mid.track_list_json IS NOT NULL
+              AND TRIM(mid.track_list_json) NOT IN ('', '[]')
+            ORDER BY amm.id ASC
+            LIMIT 1
+            """,
+            params,
+        ).fetchall()
+    for row in rows:
+        try:
+            parsed = _json.loads(str(row["track_list_json"]))
+        except Exception:
+            continue
+        if isinstance(parsed, list):
+            clean = [str(v).strip() for v in parsed if str(v).strip()]
+            if clean:
+                return clean
+    return []
+
+
 def _clean_string_list(value: Any) -> list[str]:
     if isinstance(value, list):
         values = value
@@ -2920,6 +2955,18 @@ def _run_metadata_sync(
                 snapshot=snapshot,
                 only_missing=bool(payload.only_missing),
             )
+            # 마스터 수록곡 폴백: 소스(ManiaDB 등)에 수록곡 없고, 마스터에 연결된
+            # 다른 보유 상품의 수록곡이 있으면 그것을 사용한다.
+            _fallback_master_id = int(row.get("linked_album_master_id") or 0)
+            if not music_detail.get("track_list") and _fallback_master_id > 0:
+                master_tracks = _get_master_member_track_fallback(
+                    master_id=_fallback_master_id,
+                    exclude_owned_item_id=owned_item_id,
+                )
+                if master_tracks:
+                    music_detail["track_list"] = master_tracks
+                    if "track_list" not in updated_fields:
+                        updated_fields.append("track_list")
             if not updated_fields:
                 skipped_count += 1
                 # Queue image download even if no metadata to update (only if no images yet)
