@@ -35057,8 +35057,12 @@
       const previousLocation = canOpenPrevious ? buildOperatorPreviousLocationLabel(item) : t("operator.context.state.no_history");
       const miniMapHtml = renderOpsLibraryContextMiniCabinetMap(item);
       const slotPreviewHtml = renderOpsLibraryContextSlotPreview(item);
+      const spotifyAlbumId = String(item?.spotify_album_id || "").trim() || null;
+      const hasLocalLink = Boolean(item?.has_local_link);
+      const masterIdForOps = Number(item?.linked_album_master_id || 0);
       const pluginSectionHtml = renderOpsPluginSection(`
         ${renderOpsArtistContextCard(item)}
+        <div id="opsLibraryContextReviewSection">${renderAlbumReviewSection(item)}</div>
       `);
       $("opsLibraryContextBody").innerHTML = `
         <div class="ops-library-context-head">
@@ -35068,6 +35072,7 @@
           </div>
           ${isPinnedSelection ? `<button class="btn ghost tiny" type="button" data-operator-context-clear="1">${escapeHtml(t("operator.context.action.clear"))}</button>` : ""}
         </div>
+        ${hasLocalLink ? `<div id="opsLibraryContextPlayerSlot"></div>` : (spotifyAlbumId ? `<div class="ops-ctx-spotify-wrap">${_spotifyEmbedHtml(spotifyAlbumId, 352)}</div>` : "")}
         <div class="operator-mini-list">
           <div id="opsLibraryContextCurrentLocation" class="operator-mini-line operator-mini-card">
             <strong>${escapeHtml(t("operator.context.field.current"))}</strong>
@@ -35094,6 +35099,62 @@
         ${miniMapHtml}
         ${slotPreviewHtml}
       `;
+      if (hasLocalLink && masterIdForOps > 0) {
+        _lp.audio.pause(); _lp.audio.src = ""; _lp.idx = -1;
+        _lp._slotId = 'opsLibraryContextPlayerSlot';
+        _lp.load(masterIdForOps).catch(() => {});
+      } else {
+        if (_lp._slotId === 'opsLibraryContextPlayerSlot') { _lp.audio.pause(); _lp.idx = -1; }
+      }
+      const opsCtxBody = $("opsLibraryContextBody");
+      if (opsCtxBody) {
+        opsCtxBody.querySelectorAll(".ops-album-review-card .ops-artist-context-toggle").forEach(function(btn) {
+          btn.addEventListener("click", function() {
+            const expanded = btn.dataset.expanded === "true";
+            const textEl = document.getElementById(btn.id.replace("albumReviewToggleBtn_", "albumReviewText_"));
+            if (!textEl) return;
+            if (expanded) {
+              textEl.textContent = btn.dataset.reviewPreview;
+              btn.textContent = btn.dataset.showLabel || "펼치기 ▼";
+              btn.dataset.expanded = "false";
+              btn.setAttribute("aria-expanded", "false");
+            } else {
+              textEl.textContent = btn.dataset.reviewFull;
+              btn.textContent = btn.dataset.hideLabel || "접기 ▲";
+              btn.dataset.expanded = "true";
+              btn.setAttribute("aria-expanded", "true");
+            }
+          });
+        });
+      }
+      if (!item.review_text && masterIdForOps > 0) {
+        fetchWithRetry(`/album-masters/${masterIdForOps}`).then((res) => res.json()).then((masterData) => {
+          if (masterData?.review_text) {
+            const reviewEl = document.getElementById("opsLibraryContextReviewSection");
+            if (reviewEl) {
+              reviewEl.innerHTML = renderAlbumReviewSection({ ...item, review_text: masterData.review_text, review_source: masterData.review_source, review_url: masterData.review_url });
+              reviewEl.querySelectorAll(".ops-album-review-card .ops-artist-context-toggle").forEach(function(btn) {
+                btn.addEventListener("click", function() {
+                  const expanded = btn.dataset.expanded === "true";
+                  const textEl = document.getElementById(btn.id.replace("albumReviewToggleBtn_", "albumReviewText_"));
+                  if (!textEl) return;
+                  if (expanded) {
+                    textEl.textContent = btn.dataset.reviewPreview;
+                    btn.textContent = btn.dataset.showLabel || "펼치기 ▼";
+                    btn.dataset.expanded = "false";
+                    btn.setAttribute("aria-expanded", "false");
+                  } else {
+                    textEl.textContent = btn.dataset.reviewFull;
+                    btn.textContent = btn.dataset.hideLabel || "접기 ▲";
+                    btn.dataset.expanded = "true";
+                    btn.setAttribute("aria-expanded", "true");
+                  }
+                });
+              });
+            }
+          }
+        }).catch(() => {});
+      }
       loadOpsArtistContext(item).catch(() => {});
       loadOpsLibraryContextSlotPreview(item).catch(() => {});
     }
@@ -36291,12 +36352,20 @@
         const coverHtml = coverUrl
           ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
           : escapeHtml(String(row.format_name || row.category || "-").trim() || "-");
+        const feedMasterId = Number(row.linked_album_master_id || 0);
+        const feedHasLocalLink = Boolean(row.has_local_link);
+        const feedSpotifyAlbumId = String(row.spotify_album_id || "").trim() || null;
+        const feedMediaBadges = [
+          feedHasLocalLink && feedMasterId > 0 ? `<button class="local-player-badge" data-master-id="${feedMasterId}" title="로컬 재생">♪</button>` : "",
+          feedSpotifyAlbumId ? `<button class="spotify-badge" data-sp-album="${escapeHtml(feedSpotifyAlbumId)}" title="Spotify">▶</button>` : "",
+        ].filter(Boolean).join("");
         return `
           <div class="operator-result-item" data-operator-context-source="feed" data-operator-context-index="${index}">
             <div class="operator-cover">${coverHtml}</div>
             <div class="operator-main">
               <div class="operator-title-line">
                 <strong>${escapeHtml(title)}${artist ? `<span>${escapeHtml(artist)}</span>` : ""}</strong>
+                ${feedMediaBadges}
               </div>
               <div class="operator-secondary-line">
                 <div class="operator-secondary-line-main">
@@ -36617,12 +36686,20 @@
         const domainFixBtnHtml = albumMasterId > 0
           ? `<button class="operator-domain-fix-btn" type="button" data-operator-domain-fix="${albumMasterId}" data-current-sort-artist="${escapeHtml(String(row.sort_artist_name || "").trim())}" data-current-domain="${escapeHtml(effectiveDc)}">${escapeHtml(t("operator.lookup.domain.fix_btn"))}</button>`
           : "";
+        const searchMasterId = Number(row.linked_album_master_id || 0);
+        const searchHasLocalLink = Boolean(row.has_local_link);
+        const searchSpotifyAlbumId = String(row.spotify_album_id || "").trim() || null;
+        const searchMediaBadges = [
+          searchHasLocalLink && searchMasterId > 0 ? `<button class="local-player-badge" data-master-id="${searchMasterId}" title="로컬 재생">♪</button>` : "",
+          searchSpotifyAlbumId ? `<button class="spotify-badge" data-sp-album="${escapeHtml(searchSpotifyAlbumId)}" title="Spotify">▶</button>` : "",
+        ].filter(Boolean).join("");
         return `
           <div class="operator-result-item" data-operator-context-source="search" data-operator-context-index="${index}">
             <div class="operator-cover">${coverHtml}</div>
             <div class="operator-main">
               <div class="operator-title-line">
                 <strong>${escapeHtml(title)}${artist ? `<span>${escapeHtml(artist)}</span>` : ""}</strong>
+                ${searchMediaBadges}
               </div>
               <div class="operator-secondary-line">
                 <div class="operator-secondary-line-main">
@@ -42160,6 +42237,12 @@
       var b = e.target.closest('.spotify-badge,.local-player-badge');
       if (!b) return;
       e.stopPropagation();
+      // 운영 홈 피드/검색 결과 뱃지 클릭 → 사이드바 컨텍스트 선택 및 플레이어 로드
+      var card = b.closest('[data-operator-context-source][data-operator-context-index]');
+      if (card) {
+        setOpsLibraryContextSelectionFromTarget(card, { pin: true });
+        return;
+      }
       // 관리탭에서 Spotify 뱃지 클릭 → Spotify 플레이어로 전환
       if (b.classList.contains('spotify-badge')) {
         var inManage = document.getElementById('tabManage')?.classList.contains('active');

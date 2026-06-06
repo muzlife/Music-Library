@@ -110,6 +110,11 @@ def _build_ops_home_recent_item(row: dict[str, Any]) -> dict[str, Any]:
         "previous_slot_display_name": str(row.get("previous_slot_display_name") or "").strip() or None,
         "created_at": str(row.get("created_at") or ""),
         "acquisition_date": str(row.get("acquisition_date") or "").strip() or None,
+        "spotify_album_id": str(row.get("spotify_album_id") or "").strip() or None,
+        "has_local_link": bool(row.get("has_local_link")),
+        "review_text": str(row.get("review_text") or "").strip() or None,
+        "review_source": str(row.get("review_source") or "").strip() or None,
+        "linked_album_master_id": int(row.get("linked_album_master_id") or 0) or None,
     }
 
 
@@ -197,6 +202,11 @@ def list_ops_home_recent_moved_items(limit: int = 6, offset: int = 0) -> list[di
               ss.cell_code AS current_cell_code,
               ss.allowed_size_group,
               ss.is_overflow_zone,
+              am.spotify_album_id,
+              am.review_text,
+              am.review_source,
+              oi.linked_album_master_id,
+              (SELECT 1 FROM album_master_local_link ll WHERE ll.album_master_id = am.id LIMIT 1) AS has_local_link,
               re.previous_slot_code,
               re.previous_slot_display_name,
               re.created_at
@@ -278,6 +288,11 @@ def list_ops_home_recent_registered_items(limit: int = 6, offset: int = 0) -> li
               ss.cell_code AS current_cell_code,
               ss.allowed_size_group,
               ss.is_overflow_zone,
+              am.spotify_album_id,
+              am.review_text,
+              am.review_source,
+              oi.linked_album_master_id,
+              (SELECT 1 FROM album_master_local_link ll WHERE ll.album_master_id = am.id LIMIT 1) AS has_local_link,
               oi.created_at
             FROM recent_owned oi
             LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
@@ -352,6 +367,11 @@ def list_ops_home_recent_purchased_items(limit: int = 6, offset: int = 0) -> lis
               ss.cell_code AS current_cell_code,
               ss.allowed_size_group,
               ss.is_overflow_zone,
+              am.spotify_album_id,
+              am.review_text,
+              am.review_source,
+              oi.linked_album_master_id,
+              (SELECT 1 FROM album_master_local_link ll WHERE ll.album_master_id = am.id LIMIT 1) AS has_local_link,
               oi.created_at,
               oi.acquisition_date
             FROM recent_purchased oi
@@ -428,6 +448,11 @@ def list_ops_home_recent_unslotted_items(limit: int = 6, offset: int = 0) -> lis
               NULL AS current_cell_code,
               NULL AS allowed_size_group,
               0 AS is_overflow_zone,
+              am.spotify_album_id,
+              am.review_text,
+              am.review_source,
+              oi.linked_album_master_id,
+              (SELECT 1 FROM album_master_local_link ll WHERE ll.album_master_id = am.id LIMIT 1) AS has_local_link,
               oi.created_at,
               oi.acquisition_date
             FROM recent_unslotted oi
