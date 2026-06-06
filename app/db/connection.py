@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
+import time as _time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +18,39 @@ from typing import Generator
 from ..config import get_settings
 
 SQLITE_BUSY_TIMEOUT_MS = 30_000
+
+_slow_query_recording = threading.local()
+
+
+class _TimedConnection(sqlite3.Connection):
+    """sqlite3.Connection subclass — times execute() and logs slow queries."""
+    _slow_ms: int = 200
+
+    def execute(self, sql: str, parameters=(), /):
+        if getattr(_slow_query_recording, "active", False):
+            return super().execute(sql, parameters)
+        t0 = _time.perf_counter()
+        try:
+            return super().execute(sql, parameters)
+        finally:
+            elapsed_ms = int((_time.perf_counter() - t0) * 1000)
+            if elapsed_ms >= self._slow_ms:
+                self._record_slow(sql, elapsed_ms)
+
+    def _record_slow(self, sql: str, elapsed_ms: int) -> None:
+        _slow_query_recording.active = True
+        try:
+            from app.db.perf_log import insert_perf_log
+            insert_perf_log(
+                kind="QUERY",
+                name=sql.strip()[:300],
+                duration_ms=elapsed_ms,
+                is_slow=True,
+            )
+        except Exception:
+            pass
+        finally:
+            _slow_query_recording.active = False
 
 
 def utc_now_iso() -> str:
@@ -42,9 +77,11 @@ def _ensure_app_setting_table(conn: sqlite3.Connection) -> None:
 def get_conn() -> Generator[sqlite3.Connection, None, None]:
     settings = get_settings()
     _ensure_parent_dir(settings.db_path)
+    _TimedConnection._slow_ms = settings.perf_slow_query_ms
     conn = sqlite3.connect(
         settings.db_path,
         timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
+        factory=_TimedConnection,
     )
     conn.row_factory = sqlite3.Row
     conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
@@ -78,10 +115,12 @@ def get_write_conn() -> Generator[sqlite3.Connection, None, None]:
     """
     settings = get_settings()
     _ensure_parent_dir(settings.db_path)
+    _TimedConnection._slow_ms = settings.perf_slow_query_ms
     conn = sqlite3.connect(
         settings.db_path,
         timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
         isolation_level=None,
+        factory=_TimedConnection,
     )
     conn.row_factory = sqlite3.Row
     conn.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
