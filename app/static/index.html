@@ -6092,24 +6092,25 @@
       color: #0F172A;
     }
 
-    /* Hero */
-    .admin-console-shell .operator-shell-main .ops-home-hero {
+    /* Hero — #opsHomeHero lives outside .admin-console-shell, target by ID */
+    #opsHomeHero {
       background: #FFFFFF;
       border-color: rgba(79,106,246,0.15);
       box-shadow: 0 1px 0 rgba(15,23,42,0.06);
+      color: #0F172A;
     }
-    .admin-console-shell .operator-shell-main .ops-home-hero::after { display: none; }
-    .admin-console-shell .operator-shell-main .ops-home-hero h1 {
+    #opsHomeHero::after { display: none; }
+    #opsHomeHero h1 {
       font-size: 1.36rem;
       letter-spacing: -0.03em;
       color: #0F172A;
     }
-    .admin-console-shell .operator-shell-main .ops-home-hero-kicker {
+    #opsHomeHero .ops-home-hero-kicker {
       color: #4F6AF6;
       text-shadow: none;
     }
-    .admin-console-shell .operator-shell-main .ops-home-hero-eq span { background: #4F6AF6; }
-    .admin-console-shell .operator-shell-main .ops-hero-bg-grid { opacity: 0; }
+    #opsHomeHero .ops-home-hero-eq span { background: #4F6AF6; }
+    #opsHomeHero .ops-hero-bg-grid { opacity: 0; }
 
     /* Section wrapper */
     .admin-console-shell .operator-shell-main .operator-recent-section {
@@ -6272,6 +6273,148 @@
       outline: 2px solid #4F6AF6;
       outline-offset: 2px;
     }
+
+    /* ── ops-card: redesigned card layout ──────────────────────────── */
+    .admin-console-shell .ops-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+      color: #0F172A;
+      cursor: pointer;
+      transition: border-color 0.18s cubic-bezier(0.4,0,0.2,1),
+                  box-shadow   0.18s cubic-bezier(0.4,0,0.2,1),
+                  transform    0.18s cubic-bezier(0.4,0,0.2,1);
+      animation: ops-item-in 0.22s cubic-bezier(0.4,0,0.2,1) both;
+    }
+    .admin-console-shell .ops-card:hover {
+      border-color: rgba(79,106,246,0.30);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(79,106,246,0.10);
+    }
+    .admin-console-shell .ops-card:nth-child(1) { animation-delay:  0ms; }
+    .admin-console-shell .ops-card:nth-child(2) { animation-delay:  7ms; }
+    .admin-console-shell .ops-card:nth-child(3) { animation-delay: 14ms; }
+    .admin-console-shell .ops-card:nth-child(4) { animation-delay: 21ms; }
+    .admin-console-shell .ops-card:nth-child(5) { animation-delay: 28ms; }
+    .admin-console-shell .ops-card:nth-child(6) { animation-delay: 35ms; }
+    .admin-console-shell .ops-card:nth-child(7) { animation-delay: 42ms; }
+    .admin-console-shell .ops-card:nth-child(8) { animation-delay: 49ms; }
+
+    .admin-console-shell .ops-card-cover {
+      flex-shrink: 0;
+      width: 88px;
+      height: 88px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #F1F5F9;
+      box-shadow: 0 1px 4px rgba(15,23,42,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      font-size: 0.68rem;
+      color: #94A3B8;
+      text-align: center;
+    }
+    .admin-console-shell .ops-card-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+      display: block;
+    }
+    .admin-console-shell .ops-card-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .admin-console-shell .ops-card-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #0F172A;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
+      line-height: 1.35;
+    }
+    .admin-console-shell .ops-card-artist {
+      font-size: 0.80rem;
+      color: #64748B;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
+      line-height: 1.3;
+    }
+    .admin-console-shell .ops-card-chips {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+    .admin-console-shell .ops-card-id {
+      font-size: 0.70rem;
+      font-weight: 600;
+      background: rgba(79,106,246,0.07);
+      color: #3B4FCC;
+      border: 1px solid rgba(79,106,246,0.20);
+      border-radius: 5px;
+      padding: 1px 6px;
+      letter-spacing: 0.01em;
+    }
+    .admin-console-shell .ops-card-meta {
+      font-size: 0.74rem;
+      color: #64748B;
+      line-height: 1.5;
+      margin-top: 3px;
+    }
+    .admin-console-shell .ops-card-runout {
+      font-size: 0.68rem;
+      color: #94A3B8;
+      font-family: monospace;
+      margin-top: 2px;
+    }
+    .admin-console-shell .ops-card-tracks { margin-top: 4px; }
+    .admin-console-shell .ops-card-track { font-size: 0.72rem; color: #64748B; }
+    .admin-console-shell .ops-card-track strong { color: #4F6AF6; margin-right: 4px; }
+    .admin-console-shell .ops-card-side {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      min-width: 88px;
+      padding-left: 4px;
+    }
+    .admin-console-shell .ops-card-when {
+      font-size: 0.68rem;
+      color: #94A3B8;
+      white-space: nowrap;
+    }
+    .admin-console-shell .ops-card-side .operator-title-side-location-btn {
+      font-size: 0.72rem;
+      white-space: nowrap;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .admin-console-shell .ops-card-side .operator-title-side-fallback {
+      font-size: 0.70rem;
+      color: #94A3B8;
+      white-space: nowrap;
+    }
+    .admin-console-shell .ops-card-actions { margin-top: 4px; }
     /* ── /Ops Home Clean Minimal Theme ─────────────────────────────── */
 
     .home-edit-flag-row {
@@ -17425,6 +17568,73 @@
       margin-bottom: 8px;
       color: var(--ink);
     }
+
+    /* ── Ops Home light theme (late-cascade — must win over admin-console-shell rules) ── */
+    #opsHomeLayout.admin-console-shell .operator-home-card {
+      background: #FFFFFF;
+      border-color: rgba(15,23,42,0.07);
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+      border-radius: 16px;
+    }
+    #opsHomeLayout.admin-console-shell .operator-search-shell {
+      background: #FFFFFF;
+    }
+    #opsHomeLayout.admin-console-shell .operator-weather-card {
+      background: #FFFFFF;
+      border-color: rgba(15,23,42,0.07);
+      border-radius: 12px;
+    }
+    #opsHomeLayout.admin-console-shell .operator-shell-main,
+    #opsHomeLayout.admin-console-shell .ops-library-context-panel {
+      background: #F8FAFC;
+      color: #0F172A;
+    }
+    #opsHomeLayout.admin-console-shell .ops-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+      color: #0F172A;
+      transition: border-color 0.18s cubic-bezier(0.4,0,0.2,1),
+                  box-shadow   0.18s cubic-bezier(0.4,0,0.2,1),
+                  transform    0.18s cubic-bezier(0.4,0,0.2,1);
+      animation: ops-item-in 0.22s cubic-bezier(0.4,0,0.2,1) both;
+    }
+    #opsHomeLayout.admin-console-shell .ops-card:hover {
+      border-color: rgba(79,106,246,0.30);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(79,106,246,0.10);
+    }
+    #opsHomeLayout.admin-console-shell .ops-card-id {
+      background: rgba(79,106,246,0.07);
+      color: #3B4FCC;
+      border: 1px solid rgba(79,106,246,0.20);
+      border-radius: 5px;
+    }
+    #opsHomeLayout.admin-console-shell .ops-card-title { color: #0F172A; }
+    #opsHomeLayout.admin-console-shell .ops-card-artist { color: #64748B; }
+    #opsHomeLayout.admin-console-shell .ops-card-meta { color: #64748B; }
+    #opsHomeLayout.admin-console-shell .ops-card-when { color: #94A3B8; }
+    #opsHomeLayout.admin-console-shell .ops-card-runout { color: #94A3B8; }
+    #opsHomeLayout.admin-console-shell .result-list {
+      background: transparent;
+      border: none;
+    }
+    #opsHomeLayout.admin-console-shell .operator-recent-section {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+    }
+    #opsHomeLayout.admin-console-shell #opsLibraryContextBody {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+      color: #0F172A;
+    }
+    /* ── /Ops Home light theme (late-cascade) ── */
   </style>
 </head>
 <body data-shell-mode="ops" data-shell-readonly="true" data-shell-density="compact" data-theme="night">
@@ -18673,6 +18883,10 @@
                 <div id="homeMasterSortArtistStatus" class="status"></div>
             </div><!-- /manage-section-body -->
                       </details><!-- /homeMasterEditDetails -->
+                      <details id="homeMasterHistoryDetails" class="inline-entity-history manage-section-details" data-history-type="album_master" data-history-id="" style="margin-top:6px">
+                        <summary class="manage-section-summary" style="color:var(--accent)">변경 이력</summary>
+                        <div class="inline-entity-history-body" style="padding:8px 0"></div>
+                      </details>
                       </div><!-- /homeMasterMetaLeft -->
                       <div id="homeMasterLocalPlayer" class="master-meta-spotify" hidden></div>
                       <div id="homeMasterSpotifyEmbed" class="master-meta-spotify" hidden></div>
@@ -21088,6 +21302,8 @@
         <button id="opsCameraTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.camera">카메라</button>
         <button id="opsExceptionTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.exception">예외 큐</button>
         <button id="opsAccountTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.account">계정</button>
+        <button id="opsPermissionsTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.permissions">권한 관리</button>
+        <button id="opsActivityTabBtn" class="subtab-btn" type="button">이력 &amp; 로그 <span id="errorUnreadBadge" style="display:none;background:#dc2626;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:9px;margin-left:3px;vertical-align:middle"></span></button>
         <button id="opsProviderTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.providers">연동/API 설정</button>
         <button id="opsExportTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.export">백업/내보내기</button>
         <button id="opsMetaSyncTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
@@ -21578,7 +21794,8 @@
             <div>
               <label for="opsAuthRole" data-i18n="ops.account.field.role.label">권한</label>
               <select id="opsAuthRole">
-                <option value="OPERATOR" data-i18n="ops.account.field.role.operator">현장 운영자</option>
+                <option value="OPERATOR" data-i18n="ops.account.field.role.operator">카페 매니저</option>
+                <option value="CAFE_STAFF" data-i18n="ops.account.field.role.cafe_staff">카페 운영자</option>
                 <option value="ADMIN" data-i18n="ops.account.field.role.admin">관리자</option>
               </select>
             </div>
@@ -21613,6 +21830,163 @@
           </div>
         </section>
       </div>
+      </div>
+
+      <div id="opsPermissionsPanel" class="subtab-panel admin-console-main">
+      <div class="layout">
+        <section class="card">
+          <h2>권한 관리</h2>
+          <div class="mini muted u-mb-8">역할별 기본 권한과 계정별 추가 권한을 설정합니다.</div>
+
+          <!-- 역할별 기본 권한 -->
+          <h3 class="u-mt-16" style="font-size:0.9rem;font-weight:700;margin-bottom:8px;">역할 기본 권한</h3>
+          <div class="mini muted u-mb-8">OPERATOR(카페 매니저)와 CAFE_STAFF(카페 운영자)의 기본 허용 권한을 설정합니다.</div>
+          <div id="permRoleMatrix" class="u-mt-8">
+            <div class="mini muted">로딩 중...</div>
+          </div>
+          <div class="row action-row-trailing-primary u-mt-8">
+            <button id="permSaveRoleBtn" class="btn" type="button">역할 권한 저장</button>
+          </div>
+          <div id="permRoleStatus" class="status"></div>
+
+          <!-- 계정별 추가 권한 -->
+          <h3 class="u-mt-24" style="font-size:0.9rem;font-weight:700;margin-bottom:8px;">계정별 권한 오버라이드</h3>
+          <div class="mini muted u-mb-8">계정을 선택하면 역할 기본값 대비 추가 부여/차단 권한을 설정할 수 있습니다.</div>
+          <div class="grid-6 u-mt-8">
+            <div class="span-2">
+              <label for="permAccountSelect">계정 선택</label>
+              <select id="permAccountSelect">
+                <option value="">-- 계정 선택 --</option>
+              </select>
+            </div>
+            <div class="span-4" style="display:flex;align-items:flex-end;">
+              <button id="permLoadAccountBtn" class="btn ghost" type="button">불러오기</button>
+              <button id="permClearAccountBtn" class="btn ghost" type="button" style="margin-left:6px;">오버라이드 초기화</button>
+            </div>
+          </div>
+          <div id="permAccountMatrix" class="u-mt-8">
+            <div class="mini muted">계정을 선택하고 불러오기를 클릭하세요.</div>
+          </div>
+          <div id="permAccountStatus" class="status"></div>
+        </section>
+      </div>
+      </div>
+
+      <!-- ── 이력 & 로그 패널 ─────────────────────────────── -->
+      <div id="opsActivityPanel" class="subtab-panel admin-console-main">
+        <style>
+          #opsActivityPanel .act-section { margin-bottom: 24px; }
+          #opsActivityPanel .act-section h3 { font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+          #opsActivityPanel .act-filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+          #opsActivityPanel .act-filter-row select,
+          #opsActivityPanel .act-filter-row input { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 0.82rem; }
+          #opsActivityPanel .act-filter-row button { padding: 4px 12px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; background: var(--accent); color: #fff; border: none; }
+          #opsActivityPanel .act-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+          #opsActivityPanel .act-table th { background: var(--bg-dim, #f5f5f5); padding: 5px 8px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); }
+          #opsActivityPanel .act-table td { padding: 5px 8px; border-bottom: 1px solid var(--border-light, #eee); vertical-align: top; word-break: break-word; }
+          #opsActivityPanel .act-table tr:hover td { background: var(--bg-hover, #fafafa); }
+          #opsActivityPanel .act-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
+          #opsActivityPanel .act-badge.CREATE { background: #d1fae5; color: #065f46; }
+          #opsActivityPanel .act-badge.UPDATE { background: #dbeafe; color: #1d4ed8; }
+          #opsActivityPanel .act-badge.DELETE { background: #fee2e2; color: #b91c1c; }
+          #opsActivityPanel .act-log-box { background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.76rem; padding: 12px; border-radius: 8px; max-height: 420px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+          #opsActivityPanel .act-pagination { display: flex; gap: 6px; margin-top: 8px; }
+          #opsActivityPanel .act-pagination button { padding: 3px 10px; font-size: 0.78rem; border-radius: 5px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); }
+          #opsActivityPanel .act-pagination button:disabled { opacity: 0.4; cursor: default; }
+        </style>
+
+        <!-- ③ 에러 로그 -->
+        <div class="act-section">
+          <h3>에러 로그 <span id="actErrCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
+          <div class="act-filter-row">
+            <select id="actErrIsRead">
+              <option value="">전체</option>
+              <option value="false">미확인</option>
+              <option value="true">확인 완료</option>
+            </select>
+            <button id="actErrLoadBtn">조회</button>
+            <button id="actErrAckBtn" style="background:var(--err,#dc3545)">전체 확인 처리</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>시각</th><th>경로</th><th>메시지</th><th>위치</th><th>확인</th></tr></thead>
+              <tbody id="actErrTbody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+          <div class="act-pagination">
+            <button id="actErrPrevBtn" disabled>◀ 이전</button>
+            <button id="actErrNextBtn" disabled>다음 ▶</button>
+          </div>
+        </div>
+
+        <!-- ① 메타 변경 이력 (audit_log) -->
+        <section class="act-section">
+          <h3>메타 변경 이력</h3>
+          <div class="act-filter-row">
+            <select id="actAuditEntityType">
+              <option value="">전체 엔티티</option>
+              <option value="album_master">album_master</option>
+              <option value="owned_item">owned_item</option>
+              <option value="storage_slot">storage_slot</option>
+              <option value="auth_account">auth_account</option>
+            </select>
+            <input id="actAuditEntityId" type="number" placeholder="Entity ID (선택)" style="width:130px">
+            <button id="actAuditLoadBtn">조회</button>
+            <span id="actAuditCount" style="font-size:0.8rem;color:var(--text-sub)"></span>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>시각</th><th>유형</th><th>ID</th><th>액션</th><th>처리자</th><th>변경 내역</th></tr></thead>
+              <tbody id="actAuditTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+          <div class="act-pagination">
+            <button id="actAuditPrevBtn" disabled>◀ 이전</button>
+            <button id="actAuditNextBtn" disabled>다음 ▶</button>
+          </div>
+        </section>
+
+        <!-- ② 장식장 이동 이력 (location_events) -->
+        <section class="act-section">
+          <h3>장식장 이동 이력</h3>
+          <div class="act-filter-row">
+            <select id="actLocKind">
+              <option value="">전체 유형</option>
+              <option value="ASSIGN">ASSIGN</option>
+              <option value="MOVE">MOVE</option>
+              <option value="UNASSIGN">UNASSIGN</option>
+              <option value="INITIAL_ASSIGN">INITIAL_ASSIGN</option>
+              <option value="CABINET_DELETE">CABINET_DELETE</option>
+            </select>
+            <button id="actLocLoadBtn">조회</button>
+            <span id="actLocCount" style="font-size:0.8rem;color:var(--text-sub)"></span>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>시각</th><th>상품ID</th><th>이동 유형</th><th>이전 위치</th><th>새 위치</th><th>비고</th></tr></thead>
+              <tbody id="actLocTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+          <div class="act-pagination">
+            <button id="actLocPrevBtn" disabled>◀ 이전</button>
+            <button id="actLocNextBtn" disabled>다음 ▶</button>
+          </div>
+        </section>
+
+        <!-- ③ 서버 로그 -->
+        <section class="act-section">
+          <h3>서버 로그</h3>
+          <div class="act-filter-row">
+            <select id="actLogStream">
+              <option value="stderr">stderr (오류/접근)</option>
+              <option value="stdout">stdout</option>
+            </select>
+            <input id="actLogTail" type="number" value="200" min="20" max="2000" style="width:80px">줄
+            <button id="actLogLoadBtn">불러오기</button>
+            <button id="actLogRefreshBtn">새로고침</button>
+          </div>
+          <div id="actLogBox" class="act-log-box">로그를 불러오려면 버튼을 눌러주세요.</div>
+        </section>
       </div>
 
       <div id="opsProviderPanel" class="subtab-panel admin-console-main">
@@ -33568,6 +33942,8 @@
           { id: "slot", btn: "opsSlotTabBtn", panel: "opsSlotPanel" },
           { id: "exception", btn: "opsExceptionTabBtn", panel: "opsExceptionPanel" },
           { id: "account", btn: "opsAccountTabBtn", panel: "opsAccountPanel" },
+          { id: "permissions", btn: "opsPermissionsTabBtn", panel: "opsPermissionsPanel" },
+          { id: "activity", btn: "opsActivityTabBtn", panel: "opsActivityPanel" },
           { id: "providers", btn: "opsProviderTabBtn", panel: "opsProviderPanel" },
           { id: "export", btn: "opsExportTabBtn", panel: "opsExportPanel" },
           { id: "metasync", btn: "opsMetaSyncTabBtn", panel: "opsMetaSyncPanel" },
@@ -33935,6 +34311,7 @@
       loadAlbumMasterGroups();
       loadMetadataSyncStatus();
       loadOpsSystemStatus();
+      loadErrorBadge();
     }
 
     async function loadAuthSession(initialShellMode) {
@@ -35789,6 +36166,10 @@
             <button class="btn tiny" type="button" data-media-search-inline-save="${ownedItemId}" data-media-search-inline-save-master-id="${masterId}" ${isSaving ? "disabled" : ""}>${escapeHtml(t("common.action.save"))}</button>
             <button class="btn ghost tiny" type="button" data-media-search-inline-cancel="${masterId}" ${isSaving ? "disabled" : ""}>${escapeHtml(t("common.action.cancel"))}</button>
           </div>
+          <details class="inline-entity-history" data-history-type="owned_item" data-history-id="${ownedItemId}" style="margin-top:10px;font-size:0.8rem">
+            <summary style="cursor:pointer;color:var(--accent);font-weight:600;padding:4px 0">변경 이력 / 장식장 이력</summary>
+            <div class="inline-entity-history-body" style="padding:8px 0"></div>
+          </details>
         </div>
       `;
     }
@@ -36554,23 +36935,22 @@
           feedSpotifyAlbumId ? `<button class="spotify-badge" data-sp-album="${escapeHtml(feedSpotifyAlbumId)}" title="Spotify">▶</button>` : "",
         ].filter(Boolean).join("");
         return `
-          <div class="operator-result-item" data-operator-context-source="feed" data-operator-context-index="${index}">
-            <div class="operator-cover">${coverHtml}</div>
-            <div class="operator-main">
-              <div class="operator-title-line">
-                <strong>${escapeHtml(title)}${artist ? `<span>${escapeHtml(artist)}</span>` : ""}</strong>
+          <div class="ops-card" data-operator-context-source="feed" data-operator-context-index="${index}">
+            <figure class="ops-card-cover">${coverHtml}</figure>
+            <div class="ops-card-body">
+              <p class="ops-card-title">${escapeHtml(title)}</p>
+              ${artist ? `<p class="ops-card-artist">${escapeHtml(artist)}</p>` : ""}
+              <div class="ops-card-chips">
+                <span class="ops-card-id">${escapeHtml(String(row.label_id || "").trim() || "-")}</span>
                 ${feedMediaBadges}
               </div>
-              <div class="operator-secondary-line">
-                <div class="operator-secondary-line-main">
-                  <span class="operator-label-chip">${escapeHtml(String(row.label_id || "").trim() || "-")}</span>
-                  ${whenText ? `<span class="operator-title-side-meta"><strong>${escapeHtml(whenLabel)}</strong> ${escapeHtml(whenText)}</span>` : ""}
-                </div>
-                ${currentLocationButton}
-              </div>
-              <div class="operator-meta-line">${collectorMetaHtml}</div>
-              ${runoutSample !== "-" ? `<div class="operator-meta-subline">${escapeHtml(runoutSample)}</div>` : ""}
+              <div class="ops-card-meta">${collectorMetaHtml}</div>
+              ${runoutSample !== "-" ? `<div class="ops-card-runout">${escapeHtml(runoutSample)}</div>` : ""}
               ${repairDiscogsMasterSlot}
+            </div>
+            <div class="ops-card-side">
+              ${currentLocationButton}
+              ${whenText ? `<span class="ops-card-when">${escapeHtml(whenText)}</span>` : ""}
             </div>
           </div>
         `;
@@ -36888,32 +37268,26 @@
           searchSpotifyAlbumId ? `<button class="spotify-badge" data-sp-album="${escapeHtml(searchSpotifyAlbumId)}" title="Spotify">▶</button>` : "",
         ].filter(Boolean).join("");
         return `
-          <div class="operator-result-item" data-operator-context-source="search" data-operator-context-index="${index}">
-            <div class="operator-cover">${coverHtml}</div>
-            <div class="operator-main">
-              <div class="operator-title-line">
-                <strong>${escapeHtml(title)}${artist ? `<span>${escapeHtml(artist)}</span>` : ""}</strong>
+          <div class="ops-card" data-operator-context-source="search" data-operator-context-index="${index}">
+            <figure class="ops-card-cover">${coverHtml}</figure>
+            <div class="ops-card-body">
+              <p class="ops-card-title">${escapeHtml(title)}</p>
+              ${artist ? `<p class="ops-card-artist">${escapeHtml(artist)}</p>` : ""}
+              <div class="ops-card-chips">
+                <span class="ops-card-id">${escapeHtml(String(row.label_id || "").trim() || "-")}</span>
+                ${domainBadgeHtml}
+                ${domainFixBtnHtml}
                 ${searchMediaBadges}
               </div>
-              <div class="operator-secondary-line">
-                <div class="operator-secondary-line-main">
-                  <span class="operator-label-chip">${escapeHtml(String(row.label_id || "").trim() || "-")}</span>
-                  ${domainBadgeHtml}
-                  ${domainFixBtnHtml}
-                  ${whenText ? `<span class="operator-title-side-meta"><strong>${escapeHtml(whenLabel)}</strong> ${escapeHtml(whenText)}</span>` : ""}
-                </div>
-                ${currentLocationButton}
-              </div>
-              <div class="operator-meta-line">${collectorMetaHtml}</div>
-              ${runoutSample !== "-" ? `<div class="operator-meta-subline">${escapeHtml(runoutSample)}</div>` : ""}
-              <div class="operator-track-hits">
-                ${trackHits.length
-                  ? trackHits.slice(0, 5).map((track) => `<div class="operator-track-hit"><strong>${escapeHtml(t("operator.feed.track.label"))}</strong>${escapeHtml(track)}</div>`).join("")
-                  : `<div class="mini muted">${escapeHtml(t("operator.feed.track.empty"))}</div>`
-                }
-              </div>
+              <div class="ops-card-meta">${collectorMetaHtml}</div>
+              ${runoutSample !== "-" ? `<div class="ops-card-runout">${escapeHtml(runoutSample)}</div>` : ""}
+              ${trackHits.length ? `<div class="ops-card-tracks">${trackHits.slice(0, 5).map((track) => `<div class="ops-card-track"><strong>${escapeHtml(t("operator.feed.track.label"))}</strong>${escapeHtml(track)}</div>`).join("")}</div>` : ""}
             </div>
-            ${actionsHtml ? `<div class="operator-actions">${actionsHtml}</div>` : ""}
+            <div class="ops-card-side">
+              ${currentLocationButton}
+              ${whenText ? `<span class="ops-card-when">${escapeHtml(whenText)}</span>` : ""}
+              ${actionsHtml ? `<div class="ops-card-actions">${actionsHtml}</div>` : ""}
+            </div>
           </div>
         `;
       }).join("");
@@ -46680,6 +47054,239 @@ async function loadDashboardClimate() {
       }
     }
 
+    // ── Permission management ──────────────────────────────────────────────
+    let _permData = null;
+    let _permAccountEffective = null;
+
+    const PERM_ROLE_LABELS = { OPERATOR: "카페 매니저", CAFE_STAFF: "카페 운영자" };
+    const PERM_KEY_LABELS = {
+      "ops.feed": "피드 보기", "ops.search": "카탈로그 검색",
+      "ops.location": "위치 확인", "ops.requests": "요청곡 관리",
+      "ops.playback": "음악 재생", "ops.move_item": "아이템 이동",
+      "ops.edit_item": "아이템 편집", "ops.cabinet": "장식장 관리",
+      "ops.exception_queue": "예외 큐", "hr.manage_staff": "스태프 계정 관리",
+    };
+
+    async function loadPermissionData() {
+      try {
+        setStatus("permRoleStatus", "ok", "로딩 중...");
+        const res = await fetch("/admin/permissions");
+        if (!res.ok) throw new Error("권한 데이터 로드 실패");
+        _permData = await safeJson(res);
+        renderRoleMatrix();
+        populatePermAccountSelect();
+        setStatus("permRoleStatus", "ok", "");
+      } catch (err) {
+        setStatus("permRoleStatus", "err", errorMessageText(err, "권한 데이터 로드 실패"));
+      }
+    }
+
+    function renderRoleMatrix() {
+      const el = $("permRoleMatrix");
+      if (!el || !_permData) return;
+      const perms = _permData.permissions || [];
+      const defaults = _permData.role_defaults || {};
+      const roles = ["OPERATOR", "CAFE_STAFF"];
+      el.innerHTML = `
+        <div style="overflow-x:auto;">
+          <table style="min-width:460px;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:6px 10px;font-size:0.8rem;color:#64748B;font-weight:600;">권한</th>
+                ${roles.map(r => `<th style="padding:6px 14px;font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">${escapeHtml(PERM_ROLE_LABELS[r] || r)}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${perms.map(p => `
+                <tr style="border-top:1px solid rgba(15,23,42,0.06);">
+                  <td style="padding:7px 10px;font-size:0.82rem;">
+                    <span style="color:#0F172A;font-weight:500;">${escapeHtml(PERM_KEY_LABELS[p.key] || p.key)}</span>
+                    <span class="mini muted" style="display:block;font-size:0.7rem;color:#94A3B8;">${escapeHtml(p.key)}</span>
+                  </td>
+                  ${roles.map(r => {
+                    const checked = (defaults[r] || []).includes(p.key);
+                    return `<td style="text-align:center;padding:7px 14px;">
+                      <label class="inline-check" style="justify-content:center;margin:0;">
+                        <input type="checkbox" data-perm-role="${escapeHtml(r)}" data-perm-key="${escapeHtml(p.key)}" ${checked ? "checked" : ""} />
+                        <span class="sr-only">${escapeHtml(r)} ${escapeHtml(p.key)}</span>
+                      </label>
+                    </td>`;
+                  }).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function saveRolePermissions() {
+      if (!_permData) return;
+      const roles = ["OPERATOR", "CAFE_STAFF"];
+      setStatus("permRoleStatus", "ok", "저장 중...");
+      try {
+        for (const role of roles) {
+          const keys = [...document.querySelectorAll(`#permRoleMatrix input[data-perm-role="${role}"]:checked`)]
+            .map(el => el.dataset.permKey);
+          const res = await fetch(`/admin/permissions/role/${role}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ permission_keys: keys }),
+          });
+          if (!res.ok) { const d = await safeJson(res); throw new Error(d.detail || "저장 실패"); }
+        }
+        await loadPermissionData();
+        setStatus("permRoleStatus", "ok", "저장 완료");
+      } catch (err) {
+        setStatus("permRoleStatus", "err", errorMessageText(err, "역할 권한 저장 실패"));
+      }
+    }
+
+    function populatePermAccountSelect() {
+      const sel = $("permAccountSelect");
+      if (!sel) return;
+      const accounts = Array.isArray(opsAuthItems) ? opsAuthItems : [];
+      const cur = sel.value;
+      sel.innerHTML = `<option value="">-- 계정 선택 --</option>` +
+        accounts
+          .filter(a => ["OPERATOR", "CAFE_STAFF"].includes(String(a.role || "").toUpperCase()))
+          .map(a => `<option value="${escapeHtml(a.username)}" ${a.username === cur ? "selected" : ""}>${escapeHtml(a.username)} (${escapeHtml(a.role)})</option>`)
+          .join("");
+    }
+
+    async function loadAccountPermissions() {
+      const username = $("permAccountSelect").value;
+      if (!username) { setStatus("permAccountStatus", "err", "계정을 선택하세요"); return; }
+      setStatus("permAccountStatus", "ok", "로딩 중...");
+      try {
+        const [effRes, ovrRes] = await Promise.all([
+          fetch(`/admin/permissions/account/${encodeURIComponent(username)}/effective`),
+          fetch(`/admin/permissions/account/${encodeURIComponent(username)}`),
+        ]);
+        if (!effRes.ok || !ovrRes.ok) throw new Error("계정 권한 로드 실패");
+        const eff = await safeJson(effRes);
+        const ovr = await safeJson(ovrRes);
+        _permAccountEffective = { username, effective: eff.effective || {}, role: eff.role, overrides: ovr.overrides || [] };
+        renderAccountMatrix();
+        setStatus("permAccountStatus", "ok", `${username} 권한 로드 완료`);
+      } catch (err) {
+        setStatus("permAccountStatus", "err", errorMessageText(err, "계정 권한 로드 실패"));
+      }
+    }
+
+    function renderAccountMatrix() {
+      const el = $("permAccountMatrix");
+      if (!el || !_permAccountEffective || !_permData) return;
+      const { username, effective, role, overrides } = _permAccountEffective;
+      const ovrMap = {};
+      for (const o of overrides) ovrMap[o.permission_key] = o.granted;
+      const perms = _permData.permissions || [];
+      const roleDefaults = (_permData.role_defaults || {})[role] || [];
+      el.innerHTML = `
+        <div class="mini muted u-mb-8">역할: <strong>${escapeHtml(PERM_ROLE_LABELS[role] || role)}</strong> — 체크 상태가 실질 권한입니다. 역할 기본값과 다른 항목은 오버라이드입니다.</div>
+        <div style="overflow-x:auto;">
+          <table style="min-width:480px;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:6px 10px;font-size:0.8rem;color:#64748B;font-weight:600;">권한</th>
+                <th style="padding:6px 14px;font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">역할 기본</th>
+                <th style="padding:6px 14px;font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">계정 오버라이드</th>
+                <th style="padding:6px 14px;font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">실질 권한</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${perms.map(p => {
+                const roleDef = roleDefaults.includes(p.key);
+                const hasOverride = p.key in ovrMap;
+                const ovrGranted = ovrMap[p.key];
+                const isGranted = effective[p.key] === true;
+                const overrideLabel = !hasOverride ? "—" : (ovrGranted ? "추가 부여" : "차단");
+                const overrideColor = !hasOverride ? "#94A3B8" : (ovrGranted ? "#059669" : "#DC2626");
+                return `
+                  <tr style="border-top:1px solid rgba(15,23,42,0.06);" data-perm-key="${escapeHtml(p.key)}">
+                    <td style="padding:7px 10px;font-size:0.82rem;">
+                      <span style="font-weight:500;">${escapeHtml(PERM_KEY_LABELS[p.key] || p.key)}</span>
+                      <span style="display:block;font-size:0.7rem;color:#94A3B8;">${escapeHtml(p.key)}</span>
+                    </td>
+                    <td style="text-align:center;padding:7px 14px;font-size:0.82rem;color:${roleDef ? "#059669" : "#94A3B8"};">${roleDef ? "O" : "—"}</td>
+                    <td style="text-align:center;padding:7px 14px;font-size:0.82rem;">
+                      <span style="color:${overrideColor};">${overrideLabel}</span>
+                      ${hasOverride ? `<button class="btn ghost tiny" data-perm-clear="${escapeHtml(p.key)}" style="margin-left:4px;padding:1px 6px;font-size:0.7rem;" title="오버라이드 제거">✕</button>` : ""}
+                    </td>
+                    <td style="text-align:center;padding:7px 14px;">
+                      <span style="font-size:1rem;color:${isGranted ? "#059669" : "#DC2626"};">${isGranted ? "✓" : "✗"}</span>
+                    </td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+        <div class="row u-mt-8" style="gap:8px;flex-wrap:wrap;">
+          ${perms.map(p => `
+            <button class="btn ghost tiny" data-perm-grant="${escapeHtml(p.key)}" style="font-size:0.75rem;">+${escapeHtml(PERM_KEY_LABELS[p.key] || p.key)}</button>
+          `).join("")}
+        </div>
+        <div class="mini muted u-mt-6">+버튼으로 추가 부여, ✕로 오버라이드 제거</div>
+      `;
+      // 오버라이드 제거 버튼
+      el.querySelectorAll("[data-perm-clear]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const key = btn.dataset.permClear;
+          await deletePermOverride(username, key);
+        });
+      });
+      // 추가 부여 버튼
+      el.querySelectorAll("[data-perm-grant]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const key = btn.dataset.permGrant;
+          await grantPermOverride(username, key);
+        });
+      });
+    }
+
+    async function grantPermOverride(username, key) {
+      setStatus("permAccountStatus", "ok", "저장 중...");
+      try {
+        const res = await fetch(`/admin/permissions/account/${encodeURIComponent(username)}/grant/${encodeURIComponent(key)}`, { method: "PUT" });
+        if (!res.ok) { const d = await safeJson(res); throw new Error(d.detail || "저장 실패"); }
+        await loadAccountPermissions();
+      } catch (err) {
+        setStatus("permAccountStatus", "err", errorMessageText(err, "권한 부여 실패"));
+      }
+    }
+
+    async function deletePermOverride(username, key) {
+      setStatus("permAccountStatus", "ok", "처리 중...");
+      try {
+        const res = await fetch(`/admin/permissions/account/${encodeURIComponent(username)}/${encodeURIComponent(key)}`, { method: "DELETE" });
+        if (!res.ok) { const d = await safeJson(res); throw new Error(d.detail || "삭제 실패"); }
+        await loadAccountPermissions();
+      } catch (err) {
+        setStatus("permAccountStatus", "err", errorMessageText(err, "오버라이드 제거 실패"));
+      }
+    }
+
+    async function clearAllPermOverrides() {
+      const username = $("permAccountSelect").value;
+      if (!username) return;
+      setStatus("permAccountStatus", "ok", "처리 중...");
+      try {
+        const res = await fetch(`/admin/permissions/account/${encodeURIComponent(username)}`, { method: "DELETE" });
+        const d = await safeJson(res);
+        if (!res.ok) throw new Error(d.detail || "초기화 실패");
+        await loadAccountPermissions();
+        setStatus("permAccountStatus", "ok", `${username} 오버라이드 전체 초기화 완료 (${d.deleted_count || 0}건)`);
+      } catch (err) {
+        setStatus("permAccountStatus", "err", errorMessageText(err, "초기화 실패"));
+      }
+    }
+
+    $("permSaveRoleBtn").addEventListener("click", saveRolePermissions);
+    $("permLoadAccountBtn").addEventListener("click", loadAccountPermissions);
+    $("permClearAccountBtn").addEventListener("click", clearAllPermOverrides);
+    // ── End permission management ──────────────────────────────────────────
+
     async function openSourceWorkbenchFromException(ownedItemId) {
       const targetId = Number(ownedItemId || 0);
       const row = (Array.isArray(opsExceptionItems) ? opsExceptionItems : [])
@@ -48624,6 +49231,17 @@ async function loadDashboardClimate() {
         const confirmPanel = $("homeMasterDeleteConfirm");
         if (confirmPanel) confirmPanel.style.display = "none";
         $("homeMasterDeleteCascade").checked = true;
+      }
+      const histDetails = $("homeMasterHistoryDetails");
+      if (histDetails) {
+        const newId = String(homeSelectedMasterId || "");
+        if (histDetails.dataset.historyId !== newId) {
+          histDetails.dataset.historyId = newId;
+          histDetails.open = false;
+          const body = histDetails.querySelector(".inline-entity-history-body");
+          if (body) body.innerHTML = "";
+          _inlineHistoryCache.delete(`album_master:${newId}`);
+        }
       }
     }
 
@@ -57799,6 +58417,155 @@ async function loadDashboardClimate() {
       switchSubTab("ops", "account");
       await loadOpsAuthAccounts();
     });
+    $("opsPermissionsTabBtn").addEventListener("click", async () => {
+      switchSubTab("ops", "permissions");
+      await loadPermissionData();
+    });
+    $("opsActivityTabBtn").addEventListener("click", () => switchSubTab("ops", "activity"));
+
+    // ── Error Log ──────────────────────────────────────────────────────
+    let _actErrOffset = 0, _actErrLimit = 50;
+
+    async function loadErrorBadge() {
+      try {
+        const res = await fetchWithRetry("/admin/error-log/unread-count");
+        if (!res.ok) return;
+        const { count } = await res.json();
+        const badge = $("errorUnreadBadge");
+        if (count > 0) { badge.textContent = count; badge.style.display = ""; }
+        else { badge.style.display = "none"; }
+      } catch (_) {}
+    }
+
+    async function loadErrorLog(reset) {
+      if (reset) _actErrOffset = 0;
+      const isRead = $("actErrIsRead").value;
+      let url = `/admin/error-log?limit=${_actErrLimit}&offset=${_actErrOffset}`;
+      if (isRead !== "") url += `&is_read=${isRead}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actErrCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actErrCount").textContent = `${data.total_count}건`;
+      const tbody = $("actErrTbody");
+      if (!data.items.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>';
+      } else {
+        tbody.innerHTML = data.items.map(r => {
+          const ts = (r.created_at || "").slice(0, 16).replace("T", " ");
+          const isReadBadge = r.is_read
+            ? `<span style="color:var(--text-muted);font-size:0.72rem">확인</span>`
+            : `<span style="background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:3px;font-size:0.72rem;font-weight:700">미확인</span>`;
+          const tbDetail = r.traceback
+            ? `<details style="margin-top:4px;font-size:0.72rem"><summary style="cursor:pointer;color:var(--accent)">스택 트레이스</summary><pre style="white-space:pre-wrap;margin:4px 0;font-size:0.7rem;color:var(--text-sub)">${escapeHtml(r.traceback)}</pre></details>`
+            : "";
+          return `<tr>
+            <td style="white-space:nowrap;font-size:0.75rem;vertical-align:top">${ts}</td>
+            <td style="font-size:0.74rem;vertical-align:top">${escapeHtml(r.request_path || "—")}</td>
+            <td style="vertical-align:top"><div style="font-size:0.75rem;font-weight:600">${escapeHtml(r.message || "")}</div>${tbDetail}</td>
+            <td style="font-size:0.72rem;color:var(--text-muted);vertical-align:top">${escapeHtml(r.source || "—")}</td>
+            <td style="vertical-align:top">${isReadBadge}</td>
+          </tr>`;
+        }).join("");
+      }
+      $("actErrPrevBtn").disabled = _actErrOffset === 0;
+      $("actErrNextBtn").disabled = data.items.length < _actErrLimit;
+    }
+
+    $("actErrLoadBtn").addEventListener("click", () => loadErrorLog(true));
+    $("actErrAckBtn").addEventListener("click", async () => {
+      const res = await fetchWithRetry("/admin/error-log/acknowledge", { method: "POST" });
+      if (res.ok) { await loadErrorLog(true); await loadErrorBadge(); }
+    });
+    $("actErrPrevBtn").addEventListener("click", () => { _actErrOffset = Math.max(0, _actErrOffset - _actErrLimit); loadErrorLog(false); });
+    $("actErrNextBtn").addEventListener("click", () => { _actErrOffset += _actErrLimit; loadErrorLog(false); });
+
+    // ── Activity Log ──────────────────────────────────────────────
+    let _actAuditOffset = 0, _actAuditLimit = 50;
+    let _actLocOffset = 0, _actLocLimit = 50;
+
+    function _renderGlobalAuditRow(r) {
+      const ts = (r.created_at || "").slice(0, 16).replace("T", " ");
+      const entityTypeLabel = { owned_item: "상품", album_master: "마스터" }[r.entity_type] || r.entity_type || "";
+      const diffRows = _renderAuditDiffRows(r);
+      const diffHtml = diffRows
+        ? `<details style="margin-top:4px;font-size:0.74rem"><summary style="cursor:pointer;color:var(--accent)">변경 내용 펼치기</summary><table style="border-collapse:collapse;margin-top:4px"><tbody>${diffRows}</tbody></table></details>`
+        : "";
+      return `<tr>
+        <td style="white-space:nowrap;font-size:0.75rem;vertical-align:top">${ts}</td>
+        <td style="vertical-align:top"><span style="font-size:0.72rem;background:var(--bg-dim,#f5f5f5);padding:1px 5px;border-radius:3px">${entityTypeLabel}</span></td>
+        <td style="vertical-align:top;font-size:0.75rem">${r.entity_id || ""}</td>
+        <td style="vertical-align:top">${_auditActionBadge(r.action || "")}</td>
+        <td style="vertical-align:top;font-size:0.75rem">${escapeHtml(r.changed_by || "—")}</td>
+        <td style="vertical-align:top">${diffHtml}</td>
+      </tr>`;
+    }
+
+    async function loadActivityAudit(reset) {
+      if (reset) _actAuditOffset = 0;
+      const type = $("actAuditEntityType").value;
+      const eid = $("actAuditEntityId").value.trim();
+      let url = `/admin/activity-log?limit=${_actAuditLimit}&offset=${_actAuditOffset}`;
+      if (type) url += `&entity_type=${encodeURIComponent(type)}`;
+      if (eid) url += `&entity_id=${encodeURIComponent(eid)}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actAuditCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actAuditCount").textContent = `${data.total_count}건`;
+      const tbody = $("actAuditTbody");
+      if (!data.items.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>'; }
+      else tbody.innerHTML = data.items.map(_renderGlobalAuditRow).join("");
+      $("actAuditPrevBtn").disabled = _actAuditOffset === 0;
+      $("actAuditNextBtn").disabled = data.total_count < _actAuditLimit;
+    }
+    $("actAuditLoadBtn").addEventListener("click", () => loadActivityAudit(true));
+    $("actAuditPrevBtn").addEventListener("click", () => { _actAuditOffset = Math.max(0, _actAuditOffset - _actAuditLimit); loadActivityAudit(false); });
+    $("actAuditNextBtn").addEventListener("click", () => { _actAuditOffset += _actAuditLimit; loadActivityAudit(false); });
+
+    async function loadActivityLocation(reset) {
+      if (reset) _actLocOffset = 0;
+      const kind = $("actLocKind").value;
+      let url = `/admin/activity-log/location-events?limit=${_actLocLimit}&offset=${_actLocOffset}`;
+      if (kind) url += `&movement_kind=${encodeURIComponent(kind)}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actLocCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actLocCount").textContent = `${data.total_count}건`;
+      const tbody = $("actLocTbody");
+      const _locKindLabels = { INITIAL_ASSIGN: "최초 배치", ASSIGN: "배치", MOVE: "이동", UNASSIGN: "회수", CABINET_DELETE: "장식장 삭제" };
+      if (!data.items.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>'; }
+      else tbody.innerHTML = data.items.map(r => {
+        const kindLabel = _locKindLabels[r.movement_kind] || r.movement_kind || "";
+        const from_ = escapeHtml(r.from_slot_display_name || r.from_slot_code || "—");
+        const to_ = escapeHtml(r.to_slot_display_name || r.to_slot_code || "—");
+        return `<tr>
+          <td style="white-space:nowrap;font-size:0.75rem">${(r.created_at||"").slice(0,16).replace("T"," ")}</td>
+          <td style="font-size:0.75rem">${r.owned_item_id||""}</td>
+          <td><span style="background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:4px;font-size:0.7rem;font-weight:700">${kindLabel}</span></td>
+          <td style="font-size:0.75rem;color:#dc2626">${from_}</td>
+          <td style="font-size:0.75rem;color:#059669;font-weight:600">${to_}</td>
+          <td style="font-size:0.75rem;color:var(--text-muted)">${escapeHtml(r.note||"")}</td>
+        </tr>`;
+      }).join("");
+      $("actLocPrevBtn").disabled = _actLocOffset === 0;
+      $("actLocNextBtn").disabled = data.total_count < _actLocLimit;
+    }
+    $("actLocLoadBtn").addEventListener("click", () => loadActivityLocation(true));
+    $("actLocPrevBtn").addEventListener("click", () => { _actLocOffset = Math.max(0, _actLocOffset - _actLocLimit); loadActivityLocation(false); });
+    $("actLocNextBtn").addEventListener("click", () => { _actLocOffset += _actLocLimit; loadActivityLocation(false); });
+
+    async function loadServerLog() {
+      const stream = $("actLogStream").value;
+      const tail = parseInt($("actLogTail").value) || 200;
+      const res = await fetchWithRetry(`/admin/server-logs?stream=${stream}&tail=${tail}`);
+      const box = $("actLogBox");
+      if (!res.ok) { box.textContent = "로그 조회 실패 (권한 또는 경로 미설정)"; return; }
+      const data = await res.json();
+      box.textContent = data.lines.join("\n");
+      box.scrollTop = box.scrollHeight;
+    }
+    $("actLogLoadBtn").addEventListener("click", loadServerLog);
+    $("actLogRefreshBtn").addEventListener("click", loadServerLog);
+
     $("opsMetaSyncTabBtn").addEventListener("click", () => switchSubTab("ops", "metasync"));
     $("opsCabinetSizeGroup").addEventListener("change", () => maybeAutofillOpsCabinetSlotCapacity(false));
     $("opsCabinetSlotCapacityMm").addEventListener("input", renderOpsCabinetSlotCapacityHint);
@@ -60084,6 +60851,188 @@ async function loadDashboardClimate() {
         closeImageGallery();
       }
     });
+
+    // ── Inline entity history (toggle lazy-load) ──────────────────────────
+    const _inlineHistoryCache = new Map();
+
+    // 한글 필드명 매핑
+    const _AUDIT_FIELD_LABELS = {
+      status: "상태", category: "카테고리", release_type: "발매 형태",
+      linked_album_master_id: "연결 마스터 ID", linked_artist_name: "연결 아티스트명",
+      source_code: "소스", source_external_id: "소스 ID",
+      storage_slot_id: "보관 위치 ID", condition_grade: "컨디션",
+      signature_type: "사인 유형", is_second_hand: "중고 여부",
+      memory_note: "메모", notes: "내부 메모",
+      purchase_price: "구매가", purchase_source: "구매처",
+      acquisition_date: "취득일", size_group: "사이즈 그룹", signed_by: "사인한 사람",
+      sort_artist_name: "정렬 아티스트명",
+      release_year: "발매연도", domain_code: "도메인",
+      override_note: "교정 메모", override_title: "교정 앨범명",
+      override_artist_or_brand: "교정 아티스트명",
+      genres: "장르", styles: "스타일",
+      spotify_album_id: "Spotify 앨범 ID", spotify_album_uri: "Spotify URI",
+      album_master_id: "마스터 ID",
+    };
+
+    const _AUDIT_VALUE_LABELS = {
+      status: { IN_COLLECTION: "소장 중", SOLD: "판매됨", LENT: "대여 중", MISSING: "분실", DISPOSED: "처분" },
+      category: { MUSIC: "음반", GOODS: "굿즈" },
+      release_type: { LP: "LP", CD: "CD", TAPE: "카세트", DVD: "DVD", BLURAY: "블루레이", DIGITAL: "디지털", OTHER: "기타" },
+      domain_code: { KOREA: "가요", JAPAN: "제이팝", GREATER_CHINA: "씨팝", WESTERN: "팝/웨스턴", OTHER_ASIA: "아시아 기타", WORLD: "월드 기타", UNKNOWN: "미분류" },
+      signature_type: { NONE: "없음", SIGNED: "사인", DEDICATED: "헌정 사인", PRINTED: "인쇄 사인" },
+      is_second_hand: { true: "중고", false: "새 상품", "1": "중고", "0": "새 상품" },
+    };
+
+    const _AUDIT_ACTION_LABELS = {
+      CREATE: "등록", UPDATE: "수정", DELETE: "삭제",
+      MERGE: "마스터 병합", MEMBER_LINK: "마스터 연결", MEMBER_UNLINK: "마스터 연결 해제",
+      SPOTIFY_MATCH: "Spotify 매칭", SPOTIFY_CLEAR: "Spotify 매칭 해제",
+      BULK_UPDATE: "일괄 수정", IMAGE_UPLOAD: "이미지 업로드", IMAGE_DELETE: "이미지 삭제",
+    };
+
+    const _AUDIT_ACTION_COLORS = {
+      CREATE: { bg: "#d1fae5", color: "#065f46" },
+      UPDATE: { bg: "#dbeafe", color: "#1d4ed8" },
+      BULK_UPDATE: { bg: "#e0e7ff", color: "#3730a3" },
+      DELETE: { bg: "#fee2e2", color: "#b91c1c" },
+      MERGE: { bg: "#fef3c7", color: "#92400e" },
+      MEMBER_LINK: { bg: "#d1fae5", color: "#065f46" },
+      MEMBER_UNLINK: { bg: "#fee2e2", color: "#b91c1c" },
+      SPOTIFY_MATCH: { bg: "#dcfce7", color: "#14532d" },
+      SPOTIFY_CLEAR: { bg: "#fce7f3", color: "#831843" },
+    };
+
+    function _auditFieldLabel(field) {
+      return _AUDIT_FIELD_LABELS[field] || field;
+    }
+
+    function _auditValueLabel(field, val) {
+      if (val === null || val === undefined || val === "") return "—";
+      const map = _AUDIT_VALUE_LABELS[field];
+      if (map) return map[String(val)] || String(val);
+      if (typeof val === "boolean") return val ? "예" : "아니오";
+      if (Array.isArray(val)) return val.join(", ") || "—";
+      return String(val);
+    }
+
+    function _auditActionBadge(action) {
+      const c = _AUDIT_ACTION_COLORS[action] || { bg: "#f3f4f6", color: "#374151" };
+      const label = _AUDIT_ACTION_LABELS[action] || action;
+      return `<span style="display:inline-block;padding:1px 7px;border-radius:4px;font-size:0.7rem;font-weight:700;background:${c.bg};color:${c.color}">${label}</span>`;
+    }
+
+    function _renderAuditDiffRows(record) {
+      // snapshot_json can be: {field: {b: before, a: after}} (new diff format)
+      // or {field: value} (legacy snapshot) or null
+      const snap = (() => { try { return JSON.parse(record.snapshot_json || "null"); } catch { return null; } })();
+      const fields = (() => { try { return JSON.parse(record.changed_fields || "[]"); } catch { return []; } })();
+
+      if (!snap && !fields.length) return "";
+
+      // Detect diff format: first value is an object with "b" or "a" key
+      const isDiff = snap && typeof snap === "object" && !Array.isArray(snap) &&
+        Object.values(snap).some(v => v && typeof v === "object" && ("b" in v || "a" in v));
+
+      if (isDiff) {
+        // Render before/after table
+        return Object.entries(snap).map(([field, ba]) => {
+          const bVal = _auditValueLabel(field, ba?.b);
+          const aVal = _auditValueLabel(field, ba?.a);
+          return `<tr>
+            <td style="padding:3px 8px;font-size:0.76rem;color:var(--text-sub);white-space:nowrap">${_auditFieldLabel(field)}</td>
+            <td style="padding:3px 8px;font-size:0.76rem;color:#dc2626;text-decoration:line-through">${escapeHtml(bVal)}</td>
+            <td style="padding:3px 4px;font-size:0.72rem;color:var(--text-muted)">→</td>
+            <td style="padding:3px 8px;font-size:0.76rem;color:#059669;font-weight:600">${escapeHtml(aVal)}</td>
+          </tr>`;
+        }).join("");
+      } else if (snap && typeof snap === "object") {
+        // Legacy: just show snapshot values
+        return Object.entries(snap).map(([field, val]) =>
+          `<tr>
+            <td style="padding:3px 8px;font-size:0.76rem;color:var(--text-sub)">${_auditFieldLabel(field)}</td>
+            <td colspan="3" style="padding:3px 8px;font-size:0.76rem">${escapeHtml(_auditValueLabel(field, val))}</td>
+          </tr>`
+        ).join("");
+      } else if (fields.length) {
+        return fields.map(f =>
+          `<tr><td style="padding:3px 8px;font-size:0.76rem;color:var(--text-sub)">${_auditFieldLabel(f)}</td><td colspan="3" style="padding:3px 8px;font-size:0.76rem;color:var(--text-muted)">—</td></tr>`
+        ).join("");
+      }
+      return "";
+    }
+
+    function _renderAuditItem(r) {
+      const diffRows = _renderAuditDiffRows(r);
+      const ts = (r.created_at || "").slice(0, 16).replace("T", " ");
+      return `<div style="border:1px solid var(--border-light,#e5e7eb);border-radius:8px;margin-bottom:8px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-dim,#f9fafb);border-bottom:1px solid var(--border-light,#e5e7eb)">
+          ${_auditActionBadge(r.action || "")}
+          <span style="font-size:0.75rem;color:var(--text-muted)">${ts}</span>
+          <span style="font-size:0.75rem;color:var(--text-sub);margin-left:auto">${escapeHtml(r.changed_by || "—")}</span>
+        </div>
+        ${diffRows ? `<table style="width:100%;border-collapse:collapse"><tbody>${diffRows}</tbody></table>` : ""}
+      </div>`;
+    }
+
+    function _renderLocationItem(r) {
+      const ts = (r.created_at || "").slice(0, 16).replace("T", " ");
+      const kindLabels = { INITIAL_ASSIGN: "최초 배치", ASSIGN: "배치", MOVE: "이동", UNASSIGN: "회수", CABINET_DELETE: "장식장 삭제" };
+      const kind = kindLabels[r.movement_kind] || r.movement_kind || "";
+      const from_ = r.from_slot_display_name || r.from_slot_code || "—";
+      const to_ = r.to_slot_display_name || r.to_slot_code || "—";
+      return `<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-bottom:1px solid var(--border-light,#e5e7eb);font-size:0.76rem">
+        <span style="color:var(--text-muted);white-space:nowrap;min-width:95px">${ts}</span>
+        <span style="background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:4px;font-size:0.7rem;font-weight:700">${kind}</span>
+        <span style="color:#dc2626">${escapeHtml(from_)}</span>
+        <span style="color:var(--text-muted)">→</span>
+        <span style="color:#059669;font-weight:600">${escapeHtml(to_)}</span>
+        ${r.note ? `<span style="color:var(--text-muted);margin-left:4px">${escapeHtml(r.note)}</span>` : ""}
+      </div>`;
+    }
+
+    async function _loadInlineHistory(details) {
+      const type = details.dataset.historyType;
+      const id = Number(details.dataset.historyId || 0);
+      if (!id || !type) { details.querySelector(".inline-entity-history-body").innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">ID 미설정</p>'; return; }
+      const cacheKey = `${type}:${id}`;
+      const body = details.querySelector(".inline-entity-history-body");
+      if (_inlineHistoryCache.has(cacheKey)) { body.innerHTML = _inlineHistoryCache.get(cacheKey); return; }
+      body.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">불러오는 중...</p>';
+
+      let html = "";
+      try {
+        if (type === "owned_item") {
+          const [auditRes, locRes] = await Promise.all([
+            fetchWithRetry(`/admin/activity-log?entity_type=owned_item&entity_id=${id}&limit=30`),
+            fetchWithRetry(`/owned-items/${id}/location-events?limit=30`),
+          ]);
+          const auditData = auditRes.ok ? await auditRes.json() : { items: [] };
+          const locData = locRes.ok ? await locRes.json() : { items: [] };
+          const auditHtml = (auditData.items || []).map(_renderAuditItem).join("") || '<p style="color:var(--text-muted);font-size:0.76rem;margin:4px 0">변경 이력 없음</p>';
+          const locHtml = (locData.items || []).length
+            ? `<div style="border:1px solid var(--border-light,#e5e7eb);border-radius:8px;overflow:hidden">${(locData.items || []).map(_renderLocationItem).join("")}</div>`
+            : '<p style="color:var(--text-muted);font-size:0.76rem;margin:4px 0">이동 이력 없음</p>';
+          html = `<div style="font-weight:700;font-size:0.77rem;color:var(--text-sub);margin:6px 0 4px">메타 변경 이력 (${auditData.items?.length||0}건)</div>${auditHtml}
+                  <div style="font-weight:700;font-size:0.77rem;color:var(--text-sub);margin:12px 0 4px">장식장 이동 이력 (${locData.items?.length||0}건)</div>${locHtml}`;
+        } else if (type === "album_master") {
+          const res = await fetchWithRetry(`/admin/activity-log/album-master/${id}?limit=30`);
+          const data = res.ok ? await res.json() : { items: [] };
+          html = (data.items || []).map(_renderAuditItem).join("") || '<p style="color:var(--text-muted);font-size:0.76rem;margin:4px 0">변경 이력 없음</p>';
+        }
+      } catch (err) {
+        html = `<p style="color:var(--err,#dc3545);font-size:0.76rem">${escapeHtml(err.message)}</p>`;
+      }
+      body.innerHTML = html;
+      _inlineHistoryCache.set(cacheKey, html);
+    }
+
+    document.addEventListener("toggle", (e) => {
+      const details = e.target.closest(".inline-entity-history");
+      if (!details || !details.open) return;
+      const body = details.querySelector(".inline-entity-history-body");
+      if (body && !body.innerHTML.trim()) _loadInlineHistory(details);
+      else if (body && body.innerHTML.trim() && !_inlineHistoryCache.has(`${details.dataset.historyType}:${details.dataset.historyId}`)) _loadInlineHistory(details);
+    }, true);
 
     // ── Spotify Match Modal ─────────────────────────────────────────────────
     let _spotifyMatchMasterId = 0;
