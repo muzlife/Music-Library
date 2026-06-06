@@ -2120,6 +2120,11 @@ from .error_log import (  # noqa: E402
     get_unread_error_count,
     acknowledge_error_log,
 )
+from .perf_log import (  # noqa: E402
+    insert_perf_log,
+    list_perf_log_aggregated,
+    list_perf_log_detail,
+)
 from .account_permission import (  # noqa: E402
     ALL_PERMISSION_KEYS,
     _ensure_permission_tables,
