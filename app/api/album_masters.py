@@ -208,7 +208,7 @@ def get_album_master_variants_api(
 
 
 @router.post("/album-masters/bind", response_model=AlbumMasterBindResponse)
-def bind_album_master(payload: AlbumMasterBindRequest) -> AlbumMasterBindResponse:
+def bind_album_master(payload: AlbumMasterBindRequest, request: Request) -> AlbumMasterBindResponse:
     main_module = _main()
     master_domain_code = main_module._infer_album_master_domain_code(
         source_code=payload.source,
@@ -230,9 +230,17 @@ def bind_album_master(payload: AlbumMasterBindRequest) -> AlbumMasterBindRespons
         owned_item_ids=payload.owned_item_ids,
         replace_existing=payload.replace_existing,
     )
+    from ..security import _read_auth_username
     for owned_item_id in payload.owned_item_ids:
         db.set_owned_item_linked_album_master(
             owned_item_id=owned_item_id, album_master_id=album_master_id
+        )
+        db.log_audit_event(
+            entity_type="owned_item",
+            entity_id=owned_item_id,
+            action="MEMBER_LINK",
+            changed_by=_read_auth_username(request),
+            snapshot={"album_master_id": album_master_id, "source": payload.source, "master_external_id": payload.master_external_id},
         )
     return AlbumMasterBindResponse(album_master_id=album_master_id, linked_count=linked_count)
 
@@ -729,13 +737,24 @@ def list_album_masters(
 def update_album_master_sort_artist_name(
     album_master_id: int,
     payload: AlbumMasterSortArtistUpdateRequest,
+    request: Request,
 ) -> AlbumMasterSortArtistUpdateResponse:
+    before_row = db.get_album_master_basic(album_master_id)
     updated = db.update_album_master_sort_artist_name(
         album_master_id=album_master_id,
         sort_artist_name=payload.sort_artist_name,
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="album_master not found")
+    from ..security import _read_auth_username
+    db.log_audit_event(
+        entity_type="album_master",
+        entity_id=album_master_id,
+        action="UPDATE",
+        changed_by=_read_auth_username(request),
+        before={"sort_artist_name": (before_row or {}).get("sort_artist_name")},
+        after={"sort_artist_name": updated.get("sort_artist_name")},
+    )
     return AlbumMasterSortArtistUpdateResponse(
         album_master_id=int(updated["id"]),
         sort_artist_name=str(updated.get("sort_artist_name") or "").strip() or None,
@@ -749,7 +768,9 @@ def update_album_master_sort_artist_name(
 def update_album_master_correction(
     album_master_id: int,
     payload: AlbumMasterCorrectionUpdateRequest,
+    request: Request,
 ) -> AlbumMasterCorrectionUpdateResponse:
+    before = db.get_album_master_basic(album_master_id)
     updated = db.update_album_master_correction(
         album_master_id=album_master_id,
         release_year=payload.release_year,
@@ -762,6 +783,20 @@ def update_album_master_correction(
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="album_master not found")
+    _corr_fields = ["release_year", "domain_code", "override_note", "override_title", "override_artist_or_brand", "genres", "styles"]
+    _before_corr = {f: (before or {}).get(f) for f in _corr_fields}
+    _after_corr = {f: updated.get(f) for f in ["release_year", "domain_code", "override_note", "override_title", "override_artist_or_brand"]}
+    _after_corr["genres"] = payload.genres
+    _after_corr["styles"] = payload.styles
+    from ..security import _read_auth_username
+    db.log_audit_event(
+        entity_type="album_master",
+        entity_id=album_master_id,
+        action="UPDATE",
+        changed_by=_read_auth_username(request),
+        before=_before_corr,
+        after=_after_corr,
+    )
     return AlbumMasterCorrectionUpdateResponse(
         album_master_id=int(updated["id"]),
         release_year=int(updated["release_year"])
@@ -934,6 +969,17 @@ def merge_album_master(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    db.log_audit_event(
+        entity_type="album_master",
+        entity_id=target_id,
+        action="MERGE",
+        changed_by=_read_auth_username(request),
+        snapshot={
+            "source_id": source_id,
+            "target_id": target_id,
+            "moved_member_count": result.get("moved_member_count", 0),
+        },
+    )
     return AlbumMasterMergeResponse(
         source_album_master_id=int(result.get("source_album_master_id") or source_id),
         target_album_master_id=int(result.get("target_album_master_id") or target_id),
@@ -973,8 +1019,10 @@ def spotify_batch_match(
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
     from spotipy.exceptions import SpotifyException
+    from ..services.perf_tracker import perf_track
     try:
-        result = batch_match_spotify(sp, limit=limit)
+        with perf_track("spotify_batch_match", context={"limit": limit}):
+            result = batch_match_spotify(sp, limit=limit)
     except SpotifyException as exc:
         if exc.http_status == 429:
             raise HTTPException(status_code=429, detail="Spotify API rate-limit exceeded")
@@ -1356,11 +1404,15 @@ def spotify_clear_match(
     request: Request,
 ) -> dict[str, Any]:
     """Clear Spotify match for an album master. ADMIN only."""
-    from ..security import _require_admin_request
+    from ..security import _require_admin_request, _read_auth_username
     _require_admin_request(request)
     from app.db.connection import get_conn, utc_now_iso
 
     with get_conn() as conn:
+        before_row = conn.execute(
+            "SELECT spotify_album_id, spotify_album_uri FROM album_master WHERE id = ?",
+            (album_master_id,),
+        ).fetchone()
         conn.execute(
             """UPDATE album_master
                SET spotify_album_id = NULL, spotify_album_uri = NULL,
@@ -1369,6 +1421,14 @@ def spotify_clear_match(
             (utc_now_iso(), album_master_id),
         )
         conn.commit()
+    db.log_audit_event(
+        entity_type="album_master",
+        entity_id=album_master_id,
+        action="SPOTIFY_CLEAR",
+        changed_by=_read_auth_username(request),
+        before={"spotify_album_id": (before_row or {}).get("spotify_album_id"), "spotify_album_uri": (before_row or {}).get("spotify_album_uri")},
+        after={"spotify_album_id": None, "spotify_album_uri": None},
+    )
     return {"ok": True, "album_master_id": album_master_id}
 
 
@@ -1390,7 +1450,12 @@ async def spotify_set_match(
         raise HTTPException(status_code=400, detail="spotify_album_id required")
 
     from app.db.connection import get_conn, utc_now_iso
+    from ..security import _read_auth_username
     with get_conn() as conn:
+        before_row = conn.execute(
+            "SELECT spotify_album_id, spotify_album_uri FROM album_master WHERE id = ?",
+            (album_master_id,),
+        ).fetchone()
         conn.execute(
             """UPDATE album_master
                SET spotify_album_id = ?, spotify_album_uri = ?, spotify_matched_at = ?, updated_at = ?
@@ -1398,6 +1463,14 @@ async def spotify_set_match(
             (spotify_album_id, spotify_album_uri, utc_now_iso(), utc_now_iso(), album_master_id),
         )
         conn.commit()
+    db.log_audit_event(
+        entity_type="album_master",
+        entity_id=album_master_id,
+        action="SPOTIFY_MATCH",
+        changed_by=_read_auth_username(request),
+        before={"spotify_album_id": (before_row or {}).get("spotify_album_id")},
+        after={"spotify_album_id": spotify_album_id, "spotify_album_uri": spotify_album_uri},
+    )
     return {"ok": True, "album_master_id": album_master_id, "spotify_album_id": spotify_album_id}
 
 

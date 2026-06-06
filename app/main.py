@@ -3149,6 +3149,7 @@ def _run_metadata_sync(
 
 def _metadata_sync_worker() -> None:
     global METADATA_SYNC_LAST_ERROR
+    from app.services.perf_tracker import perf_track
     settings = get_settings()
     interval = max(0, int(settings.metadata_sync_interval_minutes))
     batch_limit = max(1, int(settings.metadata_sync_batch_limit))
@@ -3157,15 +3158,16 @@ def _metadata_sync_worker() -> None:
 
     while not METADATA_SYNC_STOP_EVENT.wait(interval * 60):
         try:
-            _run_metadata_sync(
-                MetadataSyncRunRequest(
-                    source="ALL",
-                    only_missing=True,
-                    limit=batch_limit,
-                    include_item_results=False,
-                ),
-                fail_when_running=False,
-            )
+            with perf_track("metadata_sync", context={"batch_limit": batch_limit}):
+                _run_metadata_sync(
+                    MetadataSyncRunRequest(
+                        source="ALL",
+                        only_missing=True,
+                        limit=batch_limit,
+                        include_item_results=False,
+                    ),
+                    fail_when_running=False,
+                )
         except Exception as exc:
             METADATA_SYNC_LAST_ERROR = f"{_now_iso()} | {exc}"
             logger.exception("metadata sync worker failed")
@@ -3498,8 +3500,10 @@ def _maybe_run_auto_backup_once(*, now: datetime | None = None) -> str | None:
 
 
 def _auto_backup_worker() -> None:
+    from app.services.perf_tracker import perf_track
     while not AUTO_BACKUP_STOP_EVENT.wait(60):
-        _maybe_run_auto_backup_once()
+        with perf_track("auto_backup"):
+            _maybe_run_auto_backup_once()
 
 
 def _start_auto_backup_worker() -> None:
@@ -4811,8 +4815,10 @@ def _run_aladin_discogs_backfill(*, dry_run: bool = False, sleep_sec: float = 2.
 
 def _aladin_discogs_backfill_thread_worker(dry_run: bool, sleep_sec: float) -> None:
     global ALADIN_DISCOGS_BACKFILL_LAST_ERROR
+    from app.services.perf_tracker import perf_track
     try:
-        _run_aladin_discogs_backfill(dry_run=dry_run, sleep_sec=sleep_sec)
+        with perf_track("aladin_discogs_backfill", context={"dry_run": dry_run}):
+            _run_aladin_discogs_backfill(dry_run=dry_run, sleep_sec=sleep_sec)
     except HTTPException:
         pass
     except Exception as exc:
@@ -4832,9 +4838,11 @@ DISCOGS_KOREAN_BACKFILL_RESULT: dict[str, Any] | None   = None
 
 def _discogs_korean_backfill_worker(limit: int | None) -> None:
     global DISCOGS_KOREAN_BACKFILL_RESULT
+    from app.services.perf_tracker import perf_track
     try:
         with DISCOGS_KOREAN_BACKFILL_LOCK:
-            result = backfill_discogs_korean_artist_names(limit=limit)
+            with perf_track("discogs_korean_backfill", context={"limit": limit}):
+                result = backfill_discogs_korean_artist_names(limit=limit)
             DISCOGS_KOREAN_BACKFILL_RESULT = {"status": "done", **result}
     except Exception as exc:
         DISCOGS_KOREAN_BACKFILL_RESULT = {"status": "error", "detail": str(exc)}
