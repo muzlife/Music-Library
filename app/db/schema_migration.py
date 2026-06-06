@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 18
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -525,6 +525,9 @@ Version log:
       weather_code, season) and playback columns (playback_deck, played_at, returned_at).
   9 — spotify album fields (spotify_album_id, spotify_album_uri, spotify_matched_at, spotify_image_url) in album_master.
   10 — table_device and track_reaction tables for cafe operations.
+  16 — permission / role_permission / account_permission tables + CAFE_STAFF role
+       support in auth_account CHECK constraint.
+  18 — error_log and perf_log tables for observability and performance monitoring.
 """
 
 
@@ -958,6 +961,137 @@ def _migration_v13_add_album_master_genres_styles(conn: sqlite3.Connection) -> N
     """)
 
 
+def _migration_v18_add_observability_tables(conn: sqlite3.Connection) -> None:
+    """Add error_log and perf_log tables for observability."""
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS error_log (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          level        TEXT NOT NULL DEFAULT 'ERROR',
+          source       TEXT,
+          message      TEXT NOT NULL,
+          traceback    TEXT,
+          request_path TEXT,
+          request_body TEXT,
+          is_read      INTEGER NOT NULL DEFAULT 0,
+          created_at   TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_error_log_created
+          ON error_log (created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_error_log_is_read
+          ON error_log (is_read, created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS perf_log (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          kind         TEXT NOT NULL,
+          name         TEXT NOT NULL,
+          duration_ms  INTEGER NOT NULL,
+          is_slow      INTEGER NOT NULL DEFAULT 0,
+          context_json TEXT,
+          created_at   TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_perf_log_kind_created
+          ON perf_log (kind, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_perf_log_slow
+          ON perf_log (is_slow, created_at DESC);
+        """
+    )
+
+
+def _migration_v17_expand_audit_log_actions(conn: sqlite3.Connection) -> None:
+    """Recreate audit_log without the restrictive CHECK constraint on action.
+
+    The old constraint only allowed CREATE/UPDATE/DELETE.
+    We now need MERGE, MEMBER_LINK, MEMBER_UNLINK, SPOTIFY_MATCH, SPOTIFY_CLEAR, etc.
+    The table typically has very few rows so the copy is fast.
+    """
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='audit_log'"
+    ).fetchone()
+    if not row:
+        return  # table doesn't exist yet; _ensure_audit_log_table will create it without CHECK
+    if "CHECK" not in str(row[0]):
+        return  # already migrated
+    if conn.in_transaction:
+        conn.commit()
+    conn.execute("PRAGMA foreign_keys = OFF")
+    try:
+        conn.executescript(
+            """
+            BEGIN;
+            ALTER TABLE audit_log RENAME TO audit_log_old;
+            CREATE TABLE audit_log (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              entity_type TEXT NOT NULL,
+              entity_id INTEGER NOT NULL,
+              action TEXT NOT NULL,
+              changed_by TEXT,
+              changed_fields TEXT,
+              snapshot_json TEXT,
+              created_at TEXT NOT NULL
+            );
+            INSERT INTO audit_log SELECT * FROM audit_log_old;
+            DROP TABLE audit_log_old;
+            CREATE INDEX IF NOT EXISTS idx_audit_log_entity
+              ON audit_log (entity_type, entity_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_audit_log_created
+              ON audit_log (created_at DESC);
+            COMMIT;
+            """
+        )
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.execute("PRAGMA foreign_keys = ON")
+
+
+def _migration_v16_add_permission_tables(conn: sqlite3.Connection) -> None:
+    """Create permission / role_permission / account_permission tables and seed defaults.
+
+    Also migrates auth_account CHECK constraint to accept CAFE_STAFF role by
+    recreating the table if the current schema does not include CAFE_STAFF.
+    """
+    from app.db.account_permission import _ensure_permission_tables, seed_default_permissions
+    _ensure_permission_tables(conn)
+    seed_default_permissions(conn)
+
+    # Migrate auth_account CHECK constraint if CAFE_STAFF is not yet allowed
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='auth_account'"
+    ).fetchone()
+    if row and row[0] and "CAFE_STAFF" not in str(row[0]):
+        if conn.in_transaction:
+            conn.commit()
+        conn.execute("PRAGMA foreign_keys = OFF")
+        try:
+            conn.executescript(
+                """
+                BEGIN;
+                ALTER TABLE auth_account RENAME TO auth_account_old;
+                CREATE TABLE auth_account (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  username TEXT NOT NULL UNIQUE,
+                  password_hash TEXT NOT NULL,
+                  role TEXT NOT NULL CHECK (role IN ('ADMIN', 'OPERATOR', 'CAFE_STAFF', 'VIEWER')),
+                  is_active INTEGER NOT NULL DEFAULT 1,
+                  created_at TEXT NOT NULL,
+                  updated_at TEXT NOT NULL
+                );
+                INSERT INTO auth_account SELECT * FROM auth_account_old;
+                DROP TABLE auth_account_old;
+                CREATE INDEX IF NOT EXISTS idx_auth_account_role
+                  ON auth_account (role, is_active, username);
+                COMMIT;
+                """
+            )
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.execute("PRAGMA foreign_keys = ON")
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -974,6 +1108,9 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     13: _migration_v13_add_album_master_genres_styles,
     14: _migration_v14_add_label_domain_registry,
     15: _migration_v15_add_album_master_local_link,
+    16: _migration_v16_add_permission_tables,
+    17: _migration_v17_expand_audit_log_actions,
+    18: _migration_v18_add_observability_tables,
 }
 
 
