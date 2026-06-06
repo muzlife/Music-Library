@@ -18380,7 +18380,7 @@
           <div id="homeMasterReviewPreview" class="home-master-review-preview" style="display:none"></div>
           <button id="homeMasterReviewToggleBtn" type="button" class="btn ghost tiny" style="display:none;margin-top:4px;"></button>
           <div id="homeMasterReviewActions" class="row" style="gap:4px;margin-top:6px;">
-            <button id="homeMasterReviewAutoBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.auto">Wikipedia 자동수집</button>
+            <button id="homeMasterReviewAutoBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.auto">소스 자동수집</button>
             <button id="homeMasterReviewUrlBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.url">URL 입력</button>
             <button id="homeMasterReviewManualBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.manual">직접 입력</button>
           </div>
@@ -23064,7 +23064,7 @@
         "media.manage.master.sort_artist.status.saved": "정렬 아티스트명 저장 완료: {name}",
         "media.manage.master.sort_artist.status.cleared": "정렬 아티스트명을 비웠습니다.",
         "media.manage.master.review.title": "앨범 리뷰",
-        "media.manage.master.review.action.auto": "Wikipedia 자동수집",
+        "media.manage.master.review.action.auto": "소스 자동수집",
         "media.manage.master.review.action.url": "URL 입력",
         "media.manage.master.review.action.manual": "직접 입력",
         "media.manage.master.review.action.fetch": "수집",
@@ -25788,7 +25788,7 @@
         "media.manage.master.sort_artist.status.saved": "Sort artist saved: {name}",
         "media.manage.master.sort_artist.status.cleared": "Sort artist cleared.",
         "media.manage.master.review.title": "Album review",
-        "media.manage.master.review.action.auto": "Auto (Wikipedia)",
+        "media.manage.master.review.action.auto": "Auto (ManiaDB/Wikipedia)",
         "media.manage.master.review.action.url": "From URL",
         "media.manage.master.review.action.manual": "Manual entry",
         "media.manage.master.review.action.fetch": "Fetch",
@@ -28497,7 +28497,7 @@
         "media.manage.master.sort_artist.status.saved": "整列アーティスト名を保存しました: {name}",
         "media.manage.master.sort_artist.status.cleared": "整列アーティスト名を空にしました。",
         "media.manage.master.review.title": "アルバムレビュー",
-        "media.manage.master.review.action.auto": "Wikipedia自動収集",
+        "media.manage.master.review.action.auto": "ソース自動収集",
         "media.manage.master.review.action.url": "URL入力",
         "media.manage.master.review.action.manual": "手動入力",
         "media.manage.master.review.action.fetch": "収集",
@@ -45701,7 +45701,7 @@ async function loadDashboardClimate() {
             <button class="btn ghost tiny" type="button"
               onclick="openMediaSearchDetailManage(${masterId},0)">관리 화면으로</button>
             <button class="btn ghost tiny" type="button"
-              data-ops-exception-review-auto="${masterId}">Wikipedia 자동수집</button>
+              data-ops-exception-review-auto="${masterId}">소스 자동수집</button>
           </div>
         `;
         try {
@@ -57745,7 +57745,7 @@ async function loadDashboardClimate() {
       btn.disabled = true;
       let ok = 0, fail = 0;
       for (const masterId of selected) {
-        statusEl.textContent = `Wikipedia 자동수집 중... (${ok + fail + 1}/${selected.length}) 성공: ${ok} 실패: ${fail}`;
+        statusEl.textContent = `소스 자동수집 중... (${ok + fail + 1}/${selected.length}) 성공: ${ok} 실패: ${fail}`;
         try {
           const res = await fetchWithRetry(`/album-masters/${masterId}/review/auto`, { method: "POST" });
           if (res.ok) { ok++; opsExceptionSelectedIds.delete(masterId); }

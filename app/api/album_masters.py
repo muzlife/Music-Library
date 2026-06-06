@@ -1078,16 +1078,28 @@ def batch_collect_reviews(
     request: Request,
     limit: int = Query(default=50, ge=1, le=200),
 ) -> dict[str, Any]:
-    """Batch collect Wikipedia reviews with DeepL translation. ADMIN only."""
+    """Batch collect reviews: ManiaDB intro first, Wikipedia fallback. ADMIN only."""
     from ..security import _require_admin_request
     _require_admin_request(request)
-    from ..services.providers import fetch_wikipedia_album_review
+    from ..services.providers import fetch_wikipedia_album_review, fetch_maniadb_album_review
     from ..services.review_pipeline import translate_to_korean_with_deepl
     from ..db.album_master_review import get_masters_without_review, save_review, count_masters_without_review
     from ..db.connection import get_conn
 
     with get_conn() as conn:
         masters = get_masters_without_review(conn, limit=limit)
+        # ManiaDB ID 맵 일괄 조회
+        if masters:
+            ids = [str(m["id"]) for m in masters]
+            placeholders = ",".join("?" * len(ids))
+            mania_rows = conn.execute(
+                f"SELECT album_master_id, source_master_id FROM album_master_external_ref "
+                f"WHERE album_master_id IN ({placeholders}) AND source_code = 'MANIADB'",
+                ids,
+            ).fetchall()
+            maniadb_map = {r[0]: str(r[1] or "").strip() for r in mania_rows}
+        else:
+            maniadb_map = {}
 
     succeeded = 0
     failed = 0
@@ -1100,6 +1112,18 @@ def batch_collect_reviews(
         if not artist or not title:
             failed += 1
             continue
+
+        # ManiaDB 소개 텍스트 우선 시도
+        maniadb_id = maniadb_map.get(mid, "")
+        if maniadb_id:
+            raw_m = fetch_maniadb_album_review(maniadb_id)
+            if raw_m:
+                with get_conn() as conn:
+                    save_review(conn, mid, raw_m["review_text"], "MANIADB", raw_m.get("review_url"))
+                succeeded += 1
+                continue
+
+        # Wikipedia 폴백
         wiki_lang = "ko" if domain in ("KOREA", "JAPAN", "GREATER_CHINA") else "en"
         raw = fetch_wikipedia_album_review(artist, title, year=year, lang=wiki_lang)
         if not raw:
@@ -1129,10 +1153,10 @@ def batch_collect_reviews(
 
 @router.post("/album-masters/{album_master_id}/review/auto")
 def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any]:
-    """Fetch Wikipedia review for one master, summarize to Korean. ADMIN only."""
+    """Fetch review for one master: ManiaDB intro first, Wikipedia fallback. ADMIN only."""
     from ..security import _require_admin_request
     _require_admin_request(request)
-    from ..services.providers import fetch_wikipedia_album_review
+    from ..services.providers import fetch_wikipedia_album_review, fetch_maniadb_album_review
     from ..services.review_pipeline import translate_to_korean_with_deepl
     from ..db.album_master_review import save_review
     from ..db.connection import get_conn
@@ -1143,6 +1167,11 @@ def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any
             "COALESCE(override_domain_code, domain_code) AS domain "
             "FROM album_master WHERE id = ?", (album_master_id,)
         ).fetchone()
+        maniadb_row = conn.execute(
+            "SELECT source_master_id FROM album_master_external_ref "
+            "WHERE album_master_id = ? AND source_code = 'MANIADB' LIMIT 1",
+            (album_master_id,)
+        ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Album master not found")
     artist = str(row[0] or "").strip()
@@ -1152,10 +1181,27 @@ def collect_review_auto(album_master_id: int, request: Request) -> dict[str, Any
     if not artist or not title:
         raise HTTPException(status_code=400, detail="Artist and title required")
 
+    # ManiaDB 소개 텍스트 우선 시도
+    if maniadb_row:
+        maniadb_id = str(maniadb_row[0] or "").strip()
+        if maniadb_id:
+            raw_m = fetch_maniadb_album_review(maniadb_id)
+            if raw_m:
+                with get_conn() as conn:
+                    save_review(conn, album_master_id, raw_m["review_text"], "MANIADB", raw_m.get("review_url"))
+                return {
+                    "ok": True,
+                    "album_master_id": album_master_id,
+                    "source": "MANIADB",
+                    "review_text": raw_m["review_text"],
+                    "review_url": raw_m.get("review_url"),
+                }
+
+    # Wikipedia 폴백
     wiki_lang = "ko" if domain in ("KOREA", "JAPAN", "GREATER_CHINA") else "en"
     raw = fetch_wikipedia_album_review(artist, title, year=year, lang=wiki_lang)
     if not raw:
-        raise HTTPException(status_code=404, detail="No Wikipedia album page found")
+        raise HTTPException(status_code=404, detail="No review found (ManiaDB: no intro, Wikipedia: not found)")
 
     try:
         review_text = translate_to_korean_with_deepl(raw["review_text"])

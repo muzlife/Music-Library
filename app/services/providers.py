@@ -1635,6 +1635,38 @@ def fetch_pitchfork_review(url: str) -> str | None:
         return None
 
 
+def fetch_maniadb_album_review(album_id: str) -> dict[str, Any] | None:
+    """ManiaDB 앨범 페이지의 og:description에서 앨범 소개 텍스트를 가져온다."""
+    import re as _re
+    import logging as _logging
+
+    settings = get_settings()
+    base_url = settings.maniadb_base_url.rstrip("/")
+    url_str = f"{base_url}/album/{album_id}"
+    try:
+        with _make_http_client(follow_redirects=True) as client:
+            response = _get_with_retry(client, url_str, params={"o": "l", "s": 0})
+            response.raise_for_status()
+            html_text = response.text
+    except httpx.HTTPError as exc:
+        _logging.getLogger(__name__).warning("fetch_maniadb_album_review(%s) HTTP error: %s", album_id, exc)
+        return None
+
+    m = _re.search(r'<meta\s+property="og:description"\s+content="([^"]*)"', html_text)
+    if not m:
+        return None
+
+    text = m.group(1)
+    text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&") \
+               .replace("&#39;", "'").replace("&quot;", '"')
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = _clean_review_text(text)
+    if not text or len(text) < 20:
+        return None
+
+    return {"review_text": text, "review_source": "MANIADB", "review_url": url_str}
+
+
 # ---------------------------------------------------------------------------
 # Aladin title/artist cleaning helpers
 #
