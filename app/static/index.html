@@ -6080,6 +6080,184 @@
       background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 82%, var(--bg) 18%));
     }
 
+    /* ── Ops Home Clean Minimal Theme ─────────────────────────────── */
+    @keyframes ops-item-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .operator-shell-main,
+    .ops-library-context-panel {
+      background: #F8FAFC;
+    }
+
+    /* Hero */
+    .operator-shell-main .ops-home-hero {
+      background: #FFFFFF;
+      border-color: rgba(79,106,246,0.15);
+      box-shadow: 0 1px 0 rgba(15,23,42,0.06);
+    }
+    .operator-shell-main .ops-home-hero::after { display: none; }
+    .operator-shell-main .ops-home-hero h1 {
+      font-size: 1.36rem;
+      letter-spacing: -0.03em;
+    }
+    .operator-shell-main .ops-home-hero-kicker {
+      color: #4F6AF6;
+      text-shadow: none;
+    }
+    .operator-shell-main .ops-home-hero-eq span { background: #4F6AF6; }
+    .operator-shell-main .ops-hero-bg-grid { opacity: 0; }
+
+    /* Section wrapper */
+    .operator-shell-main .operator-recent-section {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+    }
+    .operator-shell-main .operator-recent-section::after { display: none; }
+
+    /* Feed & search result items */
+    .operator-shell-main .operator-result-item {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+      transition: border-color 0.18s cubic-bezier(0.4,0,0.2,1),
+                  box-shadow   0.18s cubic-bezier(0.4,0,0.2,1),
+                  transform    0.18s cubic-bezier(0.4,0,0.2,1);
+      animation: ops-item-in 0.22s cubic-bezier(0.4,0,0.2,1) both;
+    }
+    .operator-shell-main .operator-result-item:hover {
+      border-color: rgba(79,106,246,0.30);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(79,106,246,0.10);
+    }
+    .operator-shell-main .operator-result-item:nth-child(1)  { animation-delay:  0ms; }
+    .operator-shell-main .operator-result-item:nth-child(2)  { animation-delay:  7ms; }
+    .operator-shell-main .operator-result-item:nth-child(3)  { animation-delay: 14ms; }
+    .operator-shell-main .operator-result-item:nth-child(4)  { animation-delay: 21ms; }
+    .operator-shell-main .operator-result-item:nth-child(5)  { animation-delay: 28ms; }
+    .operator-shell-main .operator-result-item:nth-child(6)  { animation-delay: 35ms; }
+    .operator-shell-main .operator-result-item:nth-child(7)  { animation-delay: 42ms; }
+    .operator-shell-main .operator-result-item:nth-child(8)  { animation-delay: 49ms; }
+
+    /* Cover thumbnail */
+    .operator-shell-main .operator-cover {
+      width: 72px;
+      height: 72px;
+      border: none;
+      border-radius: 10px;
+      background: #F1F5F9;
+      box-shadow: 0 1px 4px rgba(15,23,42,0.10);
+    }
+    .operator-shell-main .operator-cover img {
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    /* Label chip */
+    .operator-shell-main .operator-label-chip {
+      border: 1px solid rgba(79,106,246,0.20);
+      background: rgba(79,106,246,0.05);
+      color: #3B4FCC;
+      font-weight: 600;
+    }
+
+    /* Meta key color */
+    .operator-shell-main .operator-meta-key { color: #4F6AF6; }
+
+    /* Domain badge: WESTERN → blue */
+    .operator-shell-main .operator-domain-badge.domain-WESTERN {
+      background: rgba(79,106,246,0.10);
+      color: #3B4FCC;
+    }
+    .operator-shell-main .operator-domain-badge {
+      transition: opacity 0.15s;
+    }
+    .operator-shell-main .operator-domain-badge:hover { opacity: 0.8; }
+
+    /* Mini card */
+    .operator-shell-main .operator-mini-card,
+    .ops-library-context-panel .operator-mini-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 12px;
+      border-left: 3px solid #4F6AF6;
+    }
+
+    /* Media play badges */
+    .operator-shell-main .local-player-badge {
+      background: rgba(79,106,246,0.09);
+      color: #4F6AF6;
+      border: 1px solid rgba(79,106,246,0.20);
+    }
+    .operator-shell-main .local-player-badge:hover {
+      background: rgba(79,106,246,0.16);
+    }
+
+    /* Sidebar context panel */
+    .ops-library-context-panel {
+      background: #F8FAFC;
+    }
+    .ops-library-context-panel #opsLibraryContextBody {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+      padding: 16px;
+    }
+    .ops-library-context-panel .ops-library-context-head h3 {
+      font-size: 1.0rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0F172A;
+    }
+    .ops-library-context-panel .ops-library-context-subtitle {
+      font-size: 0.75rem;
+      color: #64748B;
+    }
+
+    /* Player slot */
+    .ops-library-context-panel #opsLibraryContextPlayerSlot {
+      background: #F8FAFC;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    /* Plugin section */
+    .ops-library-context-panel .ops-plugin-section {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    /* Location details/summary */
+    .ops-library-context-panel .ops-ctx-location-details {
+      border: 1px solid rgba(15,23,42,0.07);
+      border-radius: 12px;
+    }
+    .ops-library-context-panel .ops-ctx-location-summary {
+      background: #F8FAFC;
+    }
+    .ops-library-context-panel .ops-ctx-location-summary::after { color: #4F6AF6; }
+    .ops-library-context-panel .ops-ctx-location-summary:hover {
+      background: rgba(79,106,246,0.04);
+    }
+
+    /* Focus visible */
+    .operator-shell-main button:focus-visible,
+    .ops-library-context-panel button:focus-visible {
+      outline: 2px solid #4F6AF6;
+      outline-offset: 2px;
+    }
+    /* ── /Ops Home Clean Minimal Theme ─────────────────────────────── */
+
     .home-edit-flag-row {
       display: flex;
       gap: 6px;
