@@ -417,6 +417,11 @@ class OpsHomeRecentItem(BaseModel):
     previous_slot_display_name: str | None = None
     created_at: str
     acquisition_date: str | None = None
+    linked_album_master_id: int | None = None
+    spotify_album_id: str | None = None
+    has_local_link: bool = False
+    review_text: str | None = None
+    review_source: str | None = None
 
 
 class OpsHomeRecentSectionsResponse(BaseModel):
