@@ -427,6 +427,64 @@ def _metadata_provider_settings_payload() -> dict[str, Any]:
     }
 
 
+@app.exception_handler(Exception)
+async def _global_exception_handler(request: Request, exc: Exception):
+    import asyncio
+    import traceback as _tb
+    from pathlib import Path as _Path
+    from fastapi import HTTPException as _HTTPEx
+    from fastapi.responses import JSONResponse
+    from fastapi.exception_handlers import http_exception_handler
+
+    if isinstance(exc, _HTTPEx):
+        return await http_exception_handler(request, exc)
+
+    tb_str = _tb.format_exc()
+    source = ""
+    tb_obj = exc.__traceback__
+    if tb_obj:
+        frames = _tb.extract_tb(tb_obj)
+        if frames:
+            last = frames[-1]
+            source = f"{last.filename.replace(str(_Path(__file__).parent.parent) + '/', '')}:{last.name}"
+
+    body_str: str | None = None
+    try:
+        body_bytes = await request.body()
+        if body_bytes:
+            body_str = body_bytes[:2048].decode("utf-8", errors="replace")
+    except Exception:
+        pass
+
+    try:
+        from app.db.error_log import insert_error_log
+        insert_error_log(
+            level="ERROR",
+            source=source or None,
+            message=str(exc)[:500],
+            traceback=tb_str[:8000],
+            request_path=f"{request.method} {request.url.path}",
+            request_body=body_str,
+        )
+    except Exception:
+        pass
+
+    try:
+        from app.services.kakao_notify import send_kakao_message
+        msg = (
+            f"[hahahoho 에러 알림]\n"
+            f"🔴 ERROR\n"
+            f"경로: {request.method} {request.url.path}\n"
+            f"내용: {str(exc)[:200]}\n"
+            f"위치: {source}"
+        )
+        asyncio.ensure_future(send_kakao_message(msg))
+    except Exception:
+        pass
+
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
 @app.middleware("http")
 async def auth_guard(request: Request, call_next):
     if not _auth_enabled():
@@ -7355,10 +7413,19 @@ def _build_owned_item_payload_for_source_replace(owned_item_id: int, candidate: 
     )
 
 
+_OWNED_ITEM_AUDIT_FIELDS = (
+    "status", "category", "release_type", "linked_album_master_id", "linked_artist_name",
+    "source_code", "source_external_id", "storage_slot_id", "condition_grade", "signature_type",
+    "is_second_hand", "memory_note", "notes", "purchase_price", "purchase_source",
+    "acquisition_date", "size_group", "signed_by",
+)
+
+
 def _save_owned_item_update(
     owned_item_id: int,
     payload: OwnedItemCreate,
     existing: dict[str, Any] | None = None,
+    request: Any = None,
 ) -> OwnedItemCreateResponse:
     save_started_at = time.perf_counter()
     existing_row = existing or db.get_owned_item(owned_item_id)
@@ -7401,6 +7468,18 @@ def _save_owned_item_update(
     if not ok:
         raise HTTPException(status_code=404, detail="owned_item not found")
     update_done_at = time.perf_counter()
+    if request is not None:
+        from app.security import _read_auth_username
+        _before = {f: existing_row.get(f) for f in _OWNED_ITEM_AUDIT_FIELDS}
+        _after = {f: normalized_payload.get(f) for f in _OWNED_ITEM_AUDIT_FIELDS}
+        db.log_audit_event(
+            entity_type="owned_item",
+            entity_id=owned_item_id,
+            action="UPDATE",
+            changed_by=_read_auth_username(request),
+            before=_before,
+            after=_after,
+        )
     previous_status = str(existing_row.get("status") or "").strip().upper()
     next_status = str(normalized_payload.get("status") or "").strip().upper()
     try:
@@ -7517,6 +7596,10 @@ from app.api.audit_log import router as audit_log_router
 app.include_router(audit_log_router)
 from app.api.cafe_admin import router as cafe_admin_router
 app.include_router(cafe_admin_router)
+from app.api.permissions import router as permissions_router
+app.include_router(permissions_router)
+from app.api.activity_log import router as activity_log_router
+app.include_router(activity_log_router)
 from app.api.cafe import router as cafe_router, _now_playing_worker as _cafe_now_playing_worker
 app.include_router(cafe_router)
 
