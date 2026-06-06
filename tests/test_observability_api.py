@@ -72,3 +72,28 @@ def test_perf_middleware_records_slow_api(admin_client):
     from app.db.perf_log import list_perf_log_aggregated
     rows = list_perf_log_aggregated(kind="API", is_slow_only=False, days=1)
     assert isinstance(rows, list)
+
+
+def test_perf_log_list(admin_client):
+    """Admin can list aggregated perf logs."""
+    from app.db.perf_log import insert_perf_log
+    insert_perf_log(kind="API", name="GET /test", duration_ms=500, is_slow=True)
+
+    resp = admin_client.get("/admin/perf-log?kind=API")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "items" in data
+    names = [r["name"] for r in data["items"]]
+    assert "GET /test" in names
+
+
+def test_perf_log_detail(admin_client):
+    """Admin can list perf log details for a specific endpoint."""
+    from app.db.perf_log import insert_perf_log
+    insert_perf_log(kind="API", name="GET /detail-test", duration_ms=500, is_slow=True)
+
+    resp = admin_client.get("/admin/perf-log/detail?name=GET+/detail-test")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "items" in data
+    assert any(r["duration_ms"] == 500 for r in data["items"])

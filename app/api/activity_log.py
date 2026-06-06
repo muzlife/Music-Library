@@ -24,6 +24,10 @@ from ..db.error_log import (
     get_unread_error_count as _get_unread_count,
     acknowledge_error_log as _acknowledge,
 )
+from ..db.perf_log import (
+    list_perf_log_aggregated as _list_perf_agg,
+    list_perf_log_detail as _list_perf_detail,
+)
 
 router = APIRouter(tags=["activity"])
 
@@ -168,3 +172,30 @@ def acknowledge_errors(
     _require_admin_request(request)
     updated = _acknowledge(ids=ids)
     return {"updated": updated}
+
+
+# ── Performance logs ───────────────────────────────────────────────────
+
+@router.get("/admin/perf-log", include_in_schema=False)
+def get_perf_log(
+    request: Request,
+    kind: str | None = Query(default=None),
+    is_slow_only: bool = Query(default=False),
+    days: int = Query(default=7, ge=1, le=90),
+) -> dict[str, Any]:
+    _require_operator_request(request)
+    items = _list_perf_agg(kind=kind, is_slow_only=is_slow_only, days=days)
+    return {"items": items, "total_count": len(items)}
+
+
+@router.get("/admin/perf-log/detail", include_in_schema=False)
+def get_perf_log_detail(
+    request: Request,
+    name: str = Query(...),
+    kind: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    _require_operator_request(request)
+    items = _list_perf_detail(name=name, kind=kind, limit=limit, offset=offset)
+    return {"items": items, "total_count": len(items)}
