@@ -111,6 +111,10 @@ def ensure_album_master_external_ref(
     now = utc_now_iso()
     raw_json = json.dumps(raw or {}, ensure_ascii=True)
     with get_conn() as conn:
+        _existing_ref = conn.execute(
+            "SELECT album_master_id FROM album_master_external_ref WHERE source_code=? AND source_master_id=?",
+            (source_u, source_master),
+        ).fetchone()
         conn.execute(
             """
             INSERT INTO album_master_external_ref
@@ -150,6 +154,21 @@ def ensure_album_master_external_ref(
         ).fetchone()
     if row is None:
         raise RuntimeError("album_master_external_ref upsert failed")
+    if _existing_ref and int(_existing_ref["album_master_id"]) != master_id:
+        try:
+            from app.db.audit_log import log_audit_event
+            log_audit_event(
+                entity_type="album_master", entity_id=master_id,
+                action="EXTERNAL_REF_UPDATE", changed_by=None,
+                snapshot={
+                    "source": source_u,
+                    "source_master_id": source_master,
+                    "before_album_master_id": int(_existing_ref["album_master_id"]),
+                    "after_album_master_id": master_id,
+                },
+            )
+        except Exception:
+            pass
     return int(row["id"])
 
 

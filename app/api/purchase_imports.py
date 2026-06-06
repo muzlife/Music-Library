@@ -320,6 +320,15 @@ def create_owned_item_from_purchase_import(
     )
     if updated is None:
         raise HTTPException(status_code=500, detail="purchase import row update failed")
+    try:
+        from app.db.audit_log import log_audit_event
+        log_audit_event(
+            entity_type="owned_item", entity_id=int(created.owned_item_id),
+            action="PURCHASE_IMPORT", changed_by=None,
+            snapshot={"purchase_import_id": queue_id},
+        )
+    except Exception:
+        pass
     return PurchaseImportCreateResponse(
         queue_item=main_module._purchase_queue_item_from_row(updated),
         owned_item_id=int(created.owned_item_id),
@@ -397,7 +406,15 @@ def create_owned_item_from_purchase_import_candidate(
     )
     if updated is None:
         raise HTTPException(status_code=500, detail="purchase import row update failed")
-
+    try:
+        from app.db.audit_log import log_audit_event
+        log_audit_event(
+            entity_type="owned_item", entity_id=int(created.owned_item_id),
+            action="PURCHASE_IMPORT", changed_by=None,
+            snapshot={"purchase_import_id": queue_id},
+        )
+    except Exception:
+        pass
     # Safely handle label_id which may be None
     label_id = str(created.label_id) if created.label_id is not None else ""
     return PurchaseImportCreateResponse(

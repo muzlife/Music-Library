@@ -1261,7 +1261,8 @@ async def upload_owned_item_image(
     }
     existing.append(item)
     _save_local_image_items(owned_item_id, existing)
-    _audit(request, "owned_item", owned_item_id, "IMAGE_UPLOAD")
+    _audit(request, "owned_item", owned_item_id, "IMAGE_UPLOAD",
+           snapshot={"filename": getattr(file, "filename", None), "content_type": content_type})
     return {"local_path": local_path, "index": idx, "items": existing}
 
 
@@ -1325,7 +1326,8 @@ def delete_owned_item_image(
 
     removed = existing.pop(index)
     _save_local_image_items(owned_item_id, existing)
-    _audit(request, "owned_item", owned_item_id, "IMAGE_DELETE")
+    _audit(request, "owned_item", owned_item_id, "IMAGE_DELETE",
+           snapshot={"filename": removed.get("local_path")})
     return {"removed": removed, "items": existing}
 
 
@@ -1691,9 +1693,9 @@ def update_owned_item_catalog(
 
 
 @router.patch("/owned-items/{owned_item_id}", response_model=OwnedItemCreateResponse)
-def update_owned_item(owned_item_id: int, payload: OwnedItemCreate) -> OwnedItemCreateResponse:
+def update_owned_item(owned_item_id: int, payload: OwnedItemCreate, request: Request) -> OwnedItemCreateResponse:
     existing = db.get_owned_item(owned_item_id)
-    return _save_owned_item_update(owned_item_id=owned_item_id, payload=payload, existing=existing)
+    return _save_owned_item_update(owned_item_id=owned_item_id, payload=payload, existing=existing, request=request)
 
 
 @router.post("/owned-items/source-replace-bulk", response_model=OwnedItemSourceReplaceBulkResponse)
@@ -1749,7 +1751,7 @@ def bulk_replace_owned_item_sources(payload: OwnedItemSourceReplaceBulkRequest) 
 
 
 @router.post("/owned-items/bulk-update", response_model=OwnedItemBulkUpdateResponse)
-def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBulkUpdateResponse:
+def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest, request: Request) -> OwnedItemBulkUpdateResponse:
     owned_item_ids = [int(v) for v in payload.owned_item_ids if int(v) > 0]
 
     status = str(payload.status or "").strip() or None
@@ -1781,7 +1783,7 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBul
     if not owned_item_ids:
         return OwnedItemBulkUpdateResponse(requested_count=0, updated_count=0)
 
-    _audit(request, "owned_item", 0, "UPDATE", changed_fields=list(payload.updates.keys()) if hasattr(payload, "updates") else None)
+    _changed_fields = [f for f, v in [("status", status), ("release_type", release_type), ("is_second_hand", is_second_hand), ("purchase_source", purchase_source), ("preferred_storage_size_group", preferred_storage_size_group), ("size_group", size_group)] if v is not None]
     updated_item_ids = db.bulk_update_owned_items(
         owned_item_ids,
         status=status,
@@ -1792,6 +1794,9 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest) -> OwnedItemBul
         preferred_storage_size_group=preferred_storage_size_group,
         size_group=size_group,
     )
+    _changed_snapshot = {f: v for f, v in [("status", status), ("release_type", release_type), ("is_second_hand", is_second_hand), ("purchase_source", purchase_source), ("preferred_storage_size_group", preferred_storage_size_group), ("size_group", size_group)] if v is not None}
+    for _uid in updated_item_ids:
+        _audit(request, "owned_item", _uid, "BULK_UPDATE", changed_fields=_changed_fields, snapshot=_changed_snapshot)
     return OwnedItemBulkUpdateResponse(
         requested_count=len({int(v) for v in owned_item_ids}),
         updated_count=len(updated_item_ids),
@@ -1821,10 +1826,14 @@ def bulk_update_music_detail(
 
 
 @router.delete("/owned-items/{owned_item_id}", response_model=OwnedItemDeleteResponse)
-def delete_owned_item(owned_item_id: int) -> OwnedItemDeleteResponse:
+def delete_owned_item(owned_item_id: int, request: Request) -> OwnedItemDeleteResponse:
+    before = db.get_owned_item(owned_item_id)
     deleted = db.delete_owned_item(owned_item_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="owned_item not found")
+    _audit(request, "owned_item", owned_item_id, "DELETE", snapshot={
+        k: before.get(k) for k in ("category", "linked_album_master_id", "linked_artist_name", "status", "storage_slot_id", "source_code", "source_external_id")
+    } if before else None)
     return OwnedItemDeleteResponse(owned_item_id=owned_item_id, deleted=True)
 
 
