@@ -39,6 +39,13 @@ class Settings:
     spotify_client_secret: str
     spotify_redirect_uri: str
     spotify_batch_webhook_token: str | None
+    server_stdout_log_path: str | None
+    server_stderr_log_path: str | None
+    kakao_rest_api_key: str | None
+    kakao_refresh_token: str | None
+    perf_slow_api_ms: int
+    perf_slow_batch_ms: int
+    perf_slow_query_ms: int
 
 
 def _default_db_path() -> str:
@@ -144,4 +151,11 @@ def get_settings() -> Settings:
         spotify_client_secret=(os.getenv("SPOTIFY_CLIENT_SECRET") or "").strip(),
         spotify_redirect_uri=(os.getenv("SPOTIFY_REDIRECT_URI") or "http://localhost:8100/spotify/callback").strip(),
         spotify_batch_webhook_token=(os.getenv("SPOTIFY_BATCH_WEBHOOK_TOKEN") or "").strip() or None,
+        server_stdout_log_path=(os.getenv("SERVER_STDOUT_LOG_PATH") or "").strip() or None,
+        server_stderr_log_path=(os.getenv("SERVER_STDERR_LOG_PATH") or "").strip() or None,
+        kakao_rest_api_key=(os.getenv("KAKAO_REST_API_KEY") or "").strip() or None,
+        kakao_refresh_token=(os.getenv("KAKAO_REFRESH_TOKEN") or "").strip() or None,
+        perf_slow_api_ms=int(os.getenv("PERF_SLOW_API_MS") or "300"),
+        perf_slow_batch_ms=int(os.getenv("PERF_SLOW_BATCH_MS") or "60000"),
+        perf_slow_query_ms=int(os.getenv("PERF_SLOW_QUERY_MS") or "200"),
     )
