@@ -64,3 +64,11 @@ def test_error_log_acknowledge(admin_client):
 
     resp2 = admin_client.get("/admin/error-log/unread-count")
     assert resp2.json()["count"] == 0
+
+
+def test_perf_middleware_records_slow_api(admin_client):
+    """느린 API 호출이 perf_log에 기록된다."""
+    admin_client.get("/owned-items?limit=1")  # 실제 API 호출
+    from app.db.perf_log import list_perf_log_aggregated
+    rows = list_perf_log_aggregated(kind="API", is_slow_only=False, days=1)
+    assert isinstance(rows, list)

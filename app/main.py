@@ -485,6 +485,41 @@ async def _global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
+_PERF_SKIP_PREFIXES = ("/static/", "/health", "/cafe/now-playing/stream", "/cafe/tablet")
+
+
+@app.middleware("http")
+async def perf_timing_middleware(request: Request, call_next):
+    path = request.url.path
+    if any(path.startswith(p) for p in _PERF_SKIP_PREFIXES):
+        return await call_next(request)
+
+    import time as _time
+    from app.config import get_settings as _gs
+    from app.db.perf_log import insert_perf_log as _insert_perf
+
+    start = _time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = int((_time.perf_counter() - start) * 1000)
+
+    settings = _gs()
+    is_slow = elapsed_ms >= settings.perf_slow_api_ms
+    if is_slow or response.status_code >= 500:
+        try:
+            name = f"{request.method} {path}"
+            _insert_perf(
+                kind="API",
+                name=name,
+                duration_ms=elapsed_ms,
+                is_slow=is_slow,
+                context={"status_code": response.status_code},
+            )
+        except Exception:
+            pass
+
+    return response
+
+
 @app.middleware("http")
 async def auth_guard(request: Request, call_next):
     if not _auth_enabled():
