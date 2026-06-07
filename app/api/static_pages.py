@@ -35,6 +35,9 @@ def _request_is_ops_domain(request: Request) -> bool:
 def root_entry(request: Request):
     if _main()._auth_enabled() and not _main()._is_authenticated(request):
         return RedirectResponse("/login", status_code=303)
+    role = _main()._read_auth_role(request)
+    if role == _main().AUTH_ROLE_OPERATOR:
+        return RedirectResponse("/ops", status_code=303)
     if _request_is_ops_domain(request):
         import hashlib
         v = request.query_params.get("v")

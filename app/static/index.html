@@ -712,13 +712,6 @@
       order: 2;
     }
 
-    .shell-utility-main--actions #shellOpsHomeBtn {
-      order: 3;
-    }
-
-    body[data-shell-mode="admin"] .shell-utility-main--actions #shellOpsHomeBtn {
-      order: 1;
-    }
 
     .shell-session-actions {
       display: inline-flex;
@@ -809,13 +802,6 @@
       flex-basis: 14px;
     }
 
-    .shell-ops-home-btn {
-      margin-left: 8px;
-      border-color: var(--theme-shell-border);
-      background: var(--theme-shell-surface-2);
-      color: var(--theme-shell-text);
-      box-shadow: none;
-    }
 
     body[data-shell-density="compact"] {
       --shell-density-tab-height: 28px;
@@ -1130,8 +1116,7 @@
       display: none !important;
     }
 
-    body[data-shell-mode="admin"] #shellAdminBtn,
-    body[data-shell-mode="ops"] #shellOpsHomeBtn {
+    body[data-shell-mode="admin"] #shellAdminBtn {
       display: none !important;
     }
 
@@ -17744,7 +17729,6 @@
           </span>
           <button id="appLogoutBtn" class="tab-btn shell-session-pill shell-session-pill--icon shell-session-logout icon-symbol-btn icon-symbol-btn--logout" type="button" title="로그아웃" aria-label="로그아웃" data-i18n-title="utility.logout" data-i18n-aria-label="utility.logout"></button>
         </div>
-        <button id="shellOpsHomeBtn" class="tab-btn icon-symbol-btn icon-symbol-btn--ops-home shell-utility-navbtn shell-ops-home-btn u-hidden-initial" type="button" title="운영 홈" aria-label="운영 홈" data-i18n-title="nav.ops_home" data-i18n-aria-label="nav.ops_home"></button>
       </div>
     </div>
 
@@ -22188,27 +22172,29 @@
     <!-- ── 이력 & 로그 탭 ─────────────────────────────────────── -->
     <div id="tabLogs" class="tab-panel admin-console-shell">
       <style>
-        .act-section { margin-bottom: 24px; }
-        .act-section h3 { font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
-        .act-filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-        .act-filter-row select,
-        .act-filter-row input[type="text"],
-        .act-filter-row input[type="number"],
-        .act-filter-row input[type="date"] { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 0.82rem; }
-        .act-filter-row button { padding: 4px 12px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; background: var(--accent); color: #fff; border: none; }
+        .act-toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 0 7px; border-bottom: 1px solid var(--border-light,#eee); margin-bottom: 0; }
+        .act-toolbar-label { font-size: 0.79rem; font-weight: 700; color: var(--accent); white-space: nowrap; letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; margin-right: 2px; }
+        .act-toolbar-label span { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); letter-spacing: 0; text-transform: none; }
+        .act-toolbar select,
+        .act-toolbar input[type="text"],
+        .act-toolbar input[type="number"] { padding: 2px 6px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text); font-size: 0.79rem; height: 24px; box-sizing: border-box; }
+        .act-toolbar input[type="date"] { padding: 2px 4px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text); font-size: 0.79rem; height: 24px; width: 116px; box-sizing: border-box; }
+        .act-toolbar button { padding: 2px 10px; border-radius: 5px; font-size: 0.79rem; cursor: pointer; height: 24px; line-height: 1; }
+        .act-toolbar label { font-size: 0.79rem; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .act-tbl-wrap { overflow-x: auto; overflow-y: auto; max-height: calc(100vh - 210px); }
         .act-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
-        .act-table th { background: var(--bg-dim, #f5f5f5); padding: 5px 8px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); }
-        .act-table td { padding: 5px 8px; border-bottom: 1px solid var(--border-light, #eee); vertical-align: top; word-break: break-word; }
-        .act-table tr:hover td { background: var(--bg-hover, #fafafa); }
+        .act-table th { background: var(--bg-dim,#f5f5f5); padding: 5px 8px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1; }
+        .act-table td { padding: 5px 8px; border-bottom: 1px solid var(--border-light,#eee); vertical-align: top; word-break: break-word; }
+        .act-table tr:hover td { background: var(--bg-hover,#fafafa); }
         .act-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
         .act-badge.CREATE { background: #d1fae5; color: #065f46; }
         .act-badge.UPDATE { background: #dbeafe; color: #1d4ed8; }
         .act-badge.DELETE { background: #fee2e2; color: #b91c1c; }
-        .act-log-box { background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.76rem; padding: 12px; border-radius: 8px; max-height: 480px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
-        .act-pagination { display: flex; gap: 6px; margin-top: 8px; }
-        .act-pagination button { padding: 3px 10px; font-size: 0.78rem; border-radius: 5px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); }
+        .act-log-box { background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.76rem; padding: 12px; border-radius: 8px; max-height: calc(100vh - 180px); overflow-y: auto; white-space: pre-wrap; word-break: break-all; margin-top: 8px; }
+        .act-pagination { display: flex; gap: 4px; margin-top: 6px; justify-content: flex-end; }
+        .act-pagination button { padding: 2px 10px; font-size: 0.78rem; border-radius: 5px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); }
         .act-pagination button:disabled { opacity: 0.4; cursor: default; }
-        #logSrvStderr.active, #logSrvStdout.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        #logSrvStderr.active, #logSrvStdout.active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
       </style>
 
       <div class="subtabs">
@@ -22221,163 +22207,160 @@
 
       <!-- ① 에러 로그 -->
       <div id="logErrPanel" class="subtab-panel active admin-console-main">
-        <div class="act-section">
-          <h3>에러 로그 <span id="actErrCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
-          <div class="act-filter-row">
-            <select id="actErrIsRead">
-              <option value="">전체</option>
-              <option value="false">미확인</option>
-              <option value="true">확인완료</option>
-            </select>
-            <select id="logErrLevel">
-              <option value="">전체 레벨</option>
-              <option value="ERROR">ERROR</option>
-              <option value="WARNING">WARNING</option>
-              <option value="INFO">INFO</option>
-            </select>
-            <input id="logErrPath" type="text" placeholder="경로 필터" style="width:160px">
-            <input id="logErrDateFrom" type="date" title="시작일">
-            <input id="logErrDateTo" type="date" title="종료일">
-            <button id="actErrLoadBtn">조회</button>
-            <button id="actErrAckBtn" style="background:var(--err,#dc3545);color:#fff;border:none">전체 확인 처리</button>
-            <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="logErrAutoRefresh"> 자동갱신</label>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>시각</th><th>레벨</th><th>경로</th><th>메시지</th><th>위치</th><th>확인</th></tr></thead>
-              <tbody id="actErrTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-          <div class="act-pagination">
-            <button id="actErrPrevBtn" disabled>◀ 이전</button>
-            <button id="actErrNextBtn" disabled>다음 ▶</button>
-          </div>
+        <div class="act-toolbar">
+          <span class="act-toolbar-label">에러 로그 <span id="actErrCount"></span></span>
+          <select id="actErrIsRead">
+            <option value="">전체</option>
+            <option value="false">미확인</option>
+            <option value="true">확인완료</option>
+          </select>
+          <select id="logErrLevel">
+            <option value="">전체 레벨</option>
+            <option value="ERROR">ERROR</option>
+            <option value="WARNING">WARNING</option>
+            <option value="INFO">INFO</option>
+          </select>
+          <input id="logErrPath" type="text" placeholder="경로 필터" style="width:130px">
+          <input id="logErrDateFrom" type="date" title="시작일">
+          <input id="logErrDateTo" type="date" title="종료일">
+          <button id="actErrLoadBtn" style="background:var(--accent);color:#fff;border:none">조회</button>
+          <button id="actErrAckBtn" style="background:var(--err,#dc3545);color:#fff;border:none">전체 확인</button>
+          <label><input type="checkbox" id="logErrAutoRefresh"> 자동갱신</label>
+        </div>
+        <div class="act-tbl-wrap">
+          <table class="act-table">
+            <thead><tr><th>시각</th><th>레벨</th><th>경로</th><th>메시지</th><th>위치</th><th>확인</th></tr></thead>
+            <tbody id="actErrTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+          </table>
+        </div>
+        <div class="act-pagination">
+          <button id="actErrPrevBtn" disabled>◀ 이전</button>
+          <button id="actErrNextBtn" disabled>다음 ▶</button>
         </div>
       </div>
 
       <!-- ② 감사 이력 -->
       <div id="logAuditPanel" class="subtab-panel admin-console-main">
-        <div class="act-section">
-          <h3>메타 변경 이력 <span id="actAuditCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
-          <div class="act-filter-row">
-            <select id="actAuditEntityType">
-              <option value="">전체 엔티티</option>
-              <option value="album_master">album_master</option>
-              <option value="owned_item">owned_item</option>
-              <option value="storage_slot">storage_slot</option>
-              <option value="auth_account">auth_account</option>
-            </select>
-            <input id="actAuditEntityId" type="number" placeholder="Entity ID" style="width:120px">
-            <select id="logAuditAction">
-              <option value="">전체 액션</option>
-              <option value="CREATE">CREATE</option>
-              <option value="UPDATE">UPDATE</option>
-              <option value="DELETE">DELETE</option>
-              <option value="MERGE">MERGE</option>
-              <option value="IMAGE_UPLOAD">IMAGE_UPLOAD</option>
-              <option value="IMAGE_DELETE">IMAGE_DELETE</option>
-              <option value="BULK_UPDATE">BULK_UPDATE</option>
-            </select>
-            <input id="logAuditChangedBy" type="text" placeholder="처리자" style="width:110px">
-            <input id="logAuditDateFrom" type="date" title="시작일">
-            <input id="logAuditDateTo" type="date" title="종료일">
-            <button id="actAuditLoadBtn">조회</button>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>시각</th><th>유형</th><th>ID</th><th>액션</th><th>처리자</th><th>변경 내역</th></tr></thead>
-              <tbody id="actAuditTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-          <div class="act-pagination">
-            <button id="actAuditPrevBtn" disabled>◀ 이전</button>
-            <button id="actAuditNextBtn" disabled>다음 ▶</button>
-          </div>
+        <div class="act-toolbar">
+          <span class="act-toolbar-label">감사 이력 <span id="actAuditCount"></span></span>
+          <select id="actAuditEntityType">
+            <option value="">전체 엔티티</option>
+            <option value="album_master">album_master</option>
+            <option value="owned_item">owned_item</option>
+            <option value="storage_slot">storage_slot</option>
+            <option value="auth_account">auth_account</option>
+          </select>
+          <input id="actAuditEntityId" type="number" placeholder="ID" style="width:70px">
+          <select id="logAuditAction">
+            <option value="">전체 액션</option>
+            <option value="CREATE">등록</option>
+            <option value="UPDATE">수정</option>
+            <option value="DELETE">삭제</option>
+            <option value="MERGE">마스터 병합</option>
+            <option value="MEMBER_LINK">마스터 연결</option>
+            <option value="MEMBER_UNLINK">마스터 연결 해제</option>
+            <option value="SPOTIFY_MATCH">Spotify 매칭</option>
+            <option value="SPOTIFY_CLEAR">Spotify 해제</option>
+            <option value="EXTERNAL_REF_UPDATE">외부ID 변경</option>
+            <option value="PURCHASE_IMPORT">구매수입 등록</option>
+            <option value="IMAGE_UPLOAD">이미지 업로드</option>
+            <option value="IMAGE_DELETE">이미지 삭제</option>
+            <option value="BULK_UPDATE">일괄 수정</option>
+          </select>
+          <input id="logAuditChangedBy" type="text" placeholder="처리자" style="width:90px">
+          <input id="logAuditDateFrom" type="date" title="시작일">
+          <input id="logAuditDateTo" type="date" title="종료일">
+          <button id="actAuditLoadBtn" style="background:var(--accent);color:#fff;border:none">조회</button>
+        </div>
+        <div class="act-tbl-wrap">
+          <table class="act-table">
+            <thead><tr><th>시각</th><th>유형</th><th>ID</th><th>액션</th><th>처리자</th><th>변경 내역</th></tr></thead>
+            <tbody id="actAuditTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+          </table>
+        </div>
+        <div class="act-pagination">
+          <button id="actAuditPrevBtn" disabled>◀ 이전</button>
+          <button id="actAuditNextBtn" disabled>다음 ▶</button>
         </div>
       </div>
 
       <!-- ③ 성능 현황 -->
       <div id="logPerfPanel" class="subtab-panel admin-console-main">
-        <div class="act-section">
-          <h3>성능 현황 <span id="actPerfCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
-          <div class="act-filter-row">
-            <select id="actPerfKind">
-              <option value="">전체</option>
-              <option value="API">API</option>
-              <option value="BATCH">BATCH</option>
-              <option value="QUERY">QUERY</option>
-            </select>
-            <select id="actPerfDays">
-              <option value="1">오늘</option>
-              <option value="7" selected>최근 7일</option>
-              <option value="30">최근 30일</option>
-            </select>
-            <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="actPerfSlowOnly"> 느린 항목만</label>
-            <button id="actPerfLoadBtn">조회</button>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>유형</th><th>이름</th><th>평균(ms)</th><th>최대(ms)</th><th>건수</th><th>느림</th><th>추이</th></tr></thead>
-              <tbody id="actPerfTbody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-          <div id="logPerfDrilldown" style="display:none;margin-top:16px">
-            <h4 id="logPerfDrillTitle" style="font-size:0.85rem;font-weight:700;margin-bottom:8px"></h4>
-            <table class="act-table">
-              <thead><tr><th>시각</th><th>소요시간(ms)</th><th>느림</th></tr></thead>
-              <tbody id="logPerfDrillTbody"><tr><td colspan="3" style="text-align:center;color:var(--text-muted,#888)">상세 없음</td></tr></tbody>
-            </table>
-          </div>
+        <div class="act-toolbar">
+          <span class="act-toolbar-label">성능 현황 <span id="actPerfCount"></span></span>
+          <select id="actPerfKind">
+            <option value="">전체</option>
+            <option value="API">API</option>
+            <option value="BATCH">BATCH</option>
+            <option value="QUERY">QUERY</option>
+          </select>
+          <select id="actPerfDays">
+            <option value="1">오늘</option>
+            <option value="7" selected>최근 7일</option>
+            <option value="30">최근 30일</option>
+          </select>
+          <label><input type="checkbox" id="actPerfSlowOnly"> 느린 항목만</label>
+          <button id="actPerfLoadBtn" style="background:var(--accent);color:#fff;border:none">조회</button>
+        </div>
+        <div class="act-tbl-wrap">
+          <table class="act-table">
+            <thead><tr><th>유형</th><th>이름</th><th>평균(ms)</th><th>최대(ms)</th><th>건수</th><th>느림</th><th>추이</th></tr></thead>
+            <tbody id="actPerfTbody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+          </table>
+        </div>
+        <div id="logPerfDrilldown" style="display:none;margin-top:12px">
+          <div style="font-size:0.82rem;font-weight:700;margin-bottom:6px" id="logPerfDrillTitle"></div>
+          <table class="act-table">
+            <thead><tr><th>시각</th><th>소요시간(ms)</th><th>느림</th></tr></thead>
+            <tbody id="logPerfDrillTbody"><tr><td colspan="3" style="text-align:center;color:var(--text-muted,#888)">상세 없음</td></tr></tbody>
+          </table>
         </div>
       </div>
 
       <!-- ④ 장식장 이동 -->
       <div id="logLocPanel" class="subtab-panel admin-console-main">
-        <div class="act-section">
-          <h3>장식장 이동 이력 <span id="actLocCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
-          <div class="act-filter-row">
-            <select id="actLocKind">
-              <option value="">전체 유형</option>
-              <option value="ASSIGN">ASSIGN</option>
-              <option value="MOVE">MOVE</option>
-              <option value="UNASSIGN">UNASSIGN</option>
-              <option value="INITIAL_ASSIGN">INITIAL_ASSIGN</option>
-              <option value="CABINET_DELETE">CABINET_DELETE</option>
-            </select>
-            <input id="logLocDateFrom" type="date" title="시작일">
-            <input id="logLocDateTo" type="date" title="종료일">
-            <button id="actLocLoadBtn">조회</button>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>시각</th><th>상품ID</th><th>이동 유형</th><th>이전 위치</th><th>새 위치</th><th>비고</th></tr></thead>
-              <tbody id="actLocTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-          <div class="act-pagination">
-            <button id="actLocPrevBtn" disabled>◀ 이전</button>
-            <button id="actLocNextBtn" disabled>다음 ▶</button>
-          </div>
+        <div class="act-toolbar">
+          <span class="act-toolbar-label">장식장 이동 <span id="actLocCount"></span></span>
+          <select id="actLocKind">
+            <option value="">전체 유형</option>
+            <option value="ASSIGN">ASSIGN</option>
+            <option value="MOVE">MOVE</option>
+            <option value="UNASSIGN">UNASSIGN</option>
+            <option value="INITIAL_ASSIGN">INITIAL_ASSIGN</option>
+            <option value="CABINET_DELETE">CABINET_DELETE</option>
+          </select>
+          <input id="logLocDateFrom" type="date" title="시작일">
+          <input id="logLocDateTo" type="date" title="종료일">
+          <button id="actLocLoadBtn" style="background:var(--accent);color:#fff;border:none">조회</button>
+        </div>
+        <div class="act-tbl-wrap">
+          <table class="act-table">
+            <thead><tr><th>시각</th><th>상품ID</th><th>이동 유형</th><th>이전 위치</th><th>새 위치</th><th>비고</th></tr></thead>
+            <tbody id="actLocTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+          </table>
+        </div>
+        <div class="act-pagination">
+          <button id="actLocPrevBtn" disabled>◀ 이전</button>
+          <button id="actLocNextBtn" disabled>다음 ▶</button>
         </div>
       </div>
 
       <!-- ⑤ 서버 로그 -->
       <div id="logSrvPanel" class="subtab-panel admin-console-main">
-        <div class="act-section">
-          <h3>서버 로그</h3>
-          <div class="act-filter-row">
-            <button id="logSrvStderr" class="active" type="button" style="border-radius:6px;padding:4px 10px;font-size:0.82rem;cursor:pointer;border:2px solid var(--accent);background:var(--accent);color:#fff">stderr</button>
-            <button id="logSrvStdout" type="button" style="border-radius:6px;padding:4px 10px;font-size:0.82rem;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text)">stdout</button>
-            <input id="actLogTail" type="number" value="200" min="20" max="2000" style="width:70px"> 줄
-            <input id="logSrvSearch" type="text" placeholder="검색어 하이라이트" style="width:160px">
-            <button id="actLogLoadBtn">불러오기</button>
-            <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="logSrvAutoRefresh"> 자동갱신</label>
-            <!-- JS 호환 숨김 요소 -->
-            <select id="actLogStream" style="display:none"><option value="stderr">stderr</option><option value="stdout">stdout</option></select>
-            <button id="actLogRefreshBtn" style="display:none">새로고침</button>
-          </div>
-          <div id="actLogBox" class="act-log-box">로그를 불러오려면 버튼을 눌러주세요.</div>
+        <div class="act-toolbar">
+          <span class="act-toolbar-label">서버 로그</span>
+          <button id="logSrvStderr" type="button" style="border:2px solid var(--accent);background:var(--accent);color:#fff">stderr</button>
+          <button id="logSrvStdout" type="button" style="border:1px solid var(--border);background:var(--bg);color:var(--text)">stdout</button>
+          <input id="actLogTail" type="number" value="200" min="20" max="2000" style="width:60px">
+          <span style="font-size:0.79rem;color:var(--text-muted)">줄</span>
+          <input id="logSrvSearch" type="text" placeholder="검색어 하이라이트" style="width:150px">
+          <button id="actLogLoadBtn" style="background:var(--accent);color:#fff;border:none">불러오기</button>
+          <label><input type="checkbox" id="logSrvAutoRefresh"> 자동갱신</label>
+          <!-- JS 호환 숨김 요소 -->
+          <select id="actLogStream" style="display:none"><option value="stderr">stderr</option><option value="stdout">stdout</option></select>
+          <button id="actLogRefreshBtn" style="display:none">새로고침</button>
         </div>
+        <div id="actLogBox" class="act-log-box">로그를 불러오려면 버튼을 눌러주세요.</div>
       </div>
 
     </div>
@@ -33564,7 +33547,8 @@
     function shellModeFromPath() {
       const path = currentAppPath();
       if (path === "/ops/cabinets") return "cabinets";
-      return "ops";
+      if (path === "/ops") return "ops";
+      return "admin";
     }
 
     function normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode) {
@@ -33796,23 +33780,12 @@
     }
 
     function syncShellUtilityRowSizing() {
-      const utilityRowSelectors = ["shellOpsHomeBtn", "appSessionRoleTag", "appLogoutBtn"];
+      const utilityRowSelectors = ["appSessionRoleTag", "appLogoutBtn"];
       if (document.body?.dataset?.shellDensity === "compact") return;
       utilityRowSelectors.forEach((id) => {
         const el = $(id);
         if (!el) return;
-        const iconOnlyUtilityButton = id === "shellOpsHomeBtn";
         const iconOnlySessionPill = id === "appSessionRoleTag" || id === "appLogoutBtn";
-        if (iconOnlyUtilityButton) {
-          el.style.width = "28px";
-          el.style.minWidth = "28px";
-          el.style.height = "28px";
-          el.style.minHeight = "28px";
-          el.style.padding = "0";
-          el.style.fontSize = "0";
-          el.style.lineHeight = "0";
-          return;
-        }
         if (iconOnlySessionPill) {
           el.style.width = "26px";
           el.style.minWidth = "26px";
@@ -33880,7 +33853,6 @@
       setDisplayIfPresent("opsUtilityMainMount", authenticated && mode !== "admin" ? "flex" : "none");
       setDisplayIfPresent("tabSimpleBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
-      setDisplayIfPresent("shellOpsHomeBtn", authenticated && mode !== "ops" ? "inline-flex" : "none");
       setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       syncShellButtons();
       syncShellDensityClasses();
@@ -42418,8 +42390,13 @@
     }
 
     function dashboardSlotHoverHintText(slotRow, group = null) {
-      const firstItemHint = dashboardSlotFirstItemHintText(slotRow);
-      return [dashboardCabinetMapCellLabel(slotRow, group), firstItemHint].filter(Boolean).join(" · ");
+      const displayLabel = dashboardCabinetMapCellLabel(slotRow, group);
+      const summary = slotRow?.stored_items_summary || "";
+      const count = Number(slotRow?.count || 0);
+      if (summary) {
+        return `${displayLabel} (${count}개 상품 진열됨)\n----------------------------------------\n${summary}`;
+      }
+      return `${displayLabel} · 빈 슬롯`;
     }
 
     function buildDashboardSlotGroupPages(groups) {
@@ -58186,7 +58163,6 @@ async function loadDashboardClimate() {
     $("tabMediaBtn").addEventListener("click", () => openAdminConsole("media"));
     $("tabCollectiblesBtn").addEventListener("click", () => openAdminConsole("collectibles"));
     $("shellCabinetsBtn").addEventListener("click", () => switchShellMode("cabinets"));
-    $("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabOpsBtn").addEventListener("click", () => openAdminConsole("ops"));
     $("tabLogsBtn").addEventListener("click", () => {
       switchMainTab("logs");
@@ -58722,17 +58698,51 @@ async function loadDashboardClimate() {
 
     function _renderGlobalAuditRow(r) {
       const ts = (r.created_at || "").slice(0, 16).replace("T", " ");
-      const entityTypeLabel = { owned_item: "상품", album_master: "마스터" }[r.entity_type] || r.entity_type || "";
-      const diffRows = _renderAuditDiffRows(r);
-      const diffHtml = diffRows
-        ? `<details style="margin-top:4px;font-size:0.74rem"><summary style="cursor:pointer;color:var(--accent)">변경 내용 펼치기</summary><table style="border-collapse:collapse;margin-top:4px"><tbody>${diffRows}</tbody></table></details>`
-        : "";
+      const entityTypeLabel = { owned_item: "상품", album_master: "마스터", storage_slot: "슬롯", auth_account: "계정" }[r.entity_type] || r.entity_type || "";
+
+      const snap = (() => { try { return JSON.parse(r.snapshot_json || "null"); } catch { return null; } })();
+      const fields = (() => { try { return JSON.parse(r.changed_fields || "[]"); } catch { return []; } })();
+      const isDiff = snap && typeof snap === "object" && !Array.isArray(snap) &&
+        Object.values(snap).some(v => v && typeof v === "object" && ("b" in v || "a" in v));
+
+      const SHOW_LIMIT = 3;
+      let diffHtml = "";
+
+      if (isDiff) {
+        const entries = Object.entries(snap);
+        const renderEntry = ([field, ba]) => {
+          const bVal = escapeHtml(_auditValueLabel(field, ba?.b));
+          const aVal = escapeHtml(_auditValueLabel(field, ba?.a));
+          return `<div style="display:flex;gap:4px;align-items:baseline;flex-wrap:wrap;font-size:0.73rem;line-height:1.6">
+            <span style="color:var(--text-sub);font-weight:600;flex-shrink:0">${escapeHtml(_auditFieldLabel(field))}</span>
+            <span style="color:#dc2626;text-decoration:line-through;flex-shrink:0">${bVal}</span>
+            <span style="color:var(--text-muted);flex-shrink:0">→</span>
+            <span style="color:#059669;font-weight:600;flex-shrink:0">${aVal}</span>
+          </div>`;
+        };
+        const shown = entries.slice(0, SHOW_LIMIT).map(renderEntry).join("");
+        const rest = entries.slice(SHOW_LIMIT);
+        diffHtml = shown + (rest.length
+          ? `<details style="margin-top:1px"><summary style="font-size:0.72rem;cursor:pointer;color:var(--accent);user-select:none">+${rest.length}개 더 보기</summary>${rest.map(renderEntry).join("")}</details>`
+          : "");
+      } else if (snap && typeof snap === "object") {
+        diffHtml = Object.entries(snap).slice(0, SHOW_LIMIT).map(([field, val]) =>
+          `<div style="font-size:0.73rem;line-height:1.6">
+            <span style="color:var(--text-sub);font-weight:600">${escapeHtml(_auditFieldLabel(field))}</span>
+            <span style="color:var(--text-muted)">: </span>
+            <span>${escapeHtml(_auditValueLabel(field, val))}</span>
+          </div>`
+        ).join("");
+      } else if (fields.length) {
+        diffHtml = `<span style="font-size:0.73rem;color:var(--text-muted)">${fields.map(f => escapeHtml(_auditFieldLabel(f))).join(" · ")}</span>`;
+      }
+
       return `<tr>
-        <td style="white-space:nowrap;font-size:0.75rem;vertical-align:top">${ts}</td>
-        <td style="vertical-align:top"><span style="font-size:0.72rem;background:var(--bg-dim,#f5f5f5);padding:1px 5px;border-radius:3px">${entityTypeLabel}</span></td>
-        <td style="vertical-align:top;font-size:0.75rem">${r.entity_id || ""}</td>
-        <td style="vertical-align:top">${_auditActionBadge(r.action || "")}</td>
-        <td style="vertical-align:top;font-size:0.75rem">${escapeHtml(r.changed_by || "—")}</td>
+        <td style="white-space:nowrap;font-size:0.75rem;vertical-align:top;padding-top:6px">${ts}</td>
+        <td style="vertical-align:top;padding-top:6px"><span style="font-size:0.72rem;background:var(--bg-dim,#f5f5f5);padding:1px 5px;border-radius:3px">${entityTypeLabel}</span></td>
+        <td style="vertical-align:top;font-size:0.75rem;padding-top:6px">${r.entity_id || ""}</td>
+        <td style="vertical-align:top;padding-top:6px">${_auditActionBadge(r.action || "")}</td>
+        <td style="vertical-align:top;font-size:0.75rem;padding-top:6px">${escapeHtml(r.changed_by || "—")}</td>
         <td style="vertical-align:top">${diffHtml}</td>
       </tr>`;
     }
