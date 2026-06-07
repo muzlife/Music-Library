@@ -986,6 +986,7 @@
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: payload.toString(),
+          credentials: "include",
         });
         const text = await res.text();
         let data = {};
@@ -1003,7 +1004,27 @@
           }
           throw new Error(parseLoginErrorDetail(res.status, detail));
         }
-        window.location.replace(data.role === "ADMIN" ? "/admin" : "/ops");
+        const _opsHost = window.location.hostname.replace(/^(qa-)?library\./, "$1ops.");
+        const _isOpsDomain = /^(qa-)?ops\./.test(window.location.hostname);
+        if (_isOpsDomain) {
+          window.location.replace("/");
+        } else if (data.role === "ADMIN") {
+          window.location.replace("/");
+        } else {
+          // 운영자 계정 → 안내 팝업 후 ops 도메인으로 이동
+          const _opsUrl = `https://${_opsHost}/`;
+          const _overlay = document.createElement("div");
+          _overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:9999;";
+          _overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:32px 36px;max-width:360px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+            <div style="font-size:1.8rem;margin-bottom:12px;">🎵</div>
+            <p style="font-size:1rem;font-weight:700;color:#0F172A;margin:0 0 8px;">운영자 계정으로 로그인했습니다.</p>
+            <p style="font-size:0.85rem;color:#64748B;margin:0 0 20px;"><strong style="color:#4F6AF6;">${_opsHost}</strong>으로 이동합니다.</p>
+            <div id="_opsRedirectBar" style="height:4px;background:#E2E8F0;border-radius:2px;overflow:hidden;"><div id="_opsRedirectFill" style="height:100%;width:0%;background:#4F6AF6;transition:width 2.8s linear;"></div></div>
+          </div>`;
+          document.body.appendChild(_overlay);
+          requestAnimationFrame(() => { document.getElementById("_opsRedirectFill").style.width = "100%"; });
+          setTimeout(() => window.location.replace(_opsUrl), 3000);
+        }
       } catch (error) {
         if (loginStatusCopyKind === "loading") {
           loginStatusCopyKind = "passthrough";

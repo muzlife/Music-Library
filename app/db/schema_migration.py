@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -528,6 +528,7 @@ Version log:
   16 — permission / role_permission / account_permission tables + CAFE_STAFF role
        support in auth_account CHECK constraint.
   18 — error_log and perf_log tables for observability and performance monitoring.
+  19 — auth_account.display_name TEXT, auth_account.description TEXT 컬럼 추가 (사용자 이름/설명 필드).
 """
 
 
@@ -1092,6 +1093,15 @@ def _migration_v16_add_permission_tables(conn: sqlite3.Connection) -> None:
             conn.execute("PRAGMA foreign_keys = ON")
 
 
+def _migration_v19_auth_account_profile(conn: sqlite3.Connection) -> None:
+    """auth_account 테이블에 display_name, description 컬럼 추가."""
+    if not _column_exists(conn, "auth_account", "display_name"):
+        conn.execute("ALTER TABLE auth_account ADD COLUMN display_name TEXT")
+    if not _column_exists(conn, "auth_account", "description"):
+        conn.execute("ALTER TABLE auth_account ADD COLUMN description TEXT")
+    conn.commit()
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -1111,6 +1121,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     16: _migration_v16_add_permission_tables,
     17: _migration_v17_expand_audit_log_actions,
     18: _migration_v18_add_observability_tables,
+    19: _migration_v19_auth_account_profile,
 }
 
 

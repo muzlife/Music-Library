@@ -53,12 +53,21 @@ def get_activity_log(
     request: Request,
     entity_type: str | None = Query(default=None),
     entity_id: int | None = Query(default=None),
+    action: str | None = Query(default=None),
+    changed_by: str | None = Query(default=None),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
     _require_admin_request(request)
-    rows = db.list_audit_log(entity_type=entity_type, entity_id=entity_id, limit=limit, offset=offset)
-    return {"total_count": len(rows), "offset": offset, "items": rows}
+    result = db.list_audit_log(
+        entity_type=entity_type, entity_id=entity_id,
+        action=action, changed_by=changed_by,
+        date_from=date_from, date_to=date_to,
+        limit=limit, offset=offset,
+    )
+    return {"total_count": result["total_count"], "offset": offset, "items": result["items"]}
 
 
 @router.get("/admin/activity-log/album-master/{album_master_id}", include_in_schema=False)
@@ -69,8 +78,8 @@ def get_album_master_audit(
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
     _require_admin_request(request)
-    rows = db.list_audit_log(entity_type="album_master", entity_id=album_master_id, limit=limit, offset=offset)
-    return {"album_master_id": album_master_id, "total_count": len(rows), "items": rows}
+    result = db.list_audit_log(entity_type="album_master", entity_id=album_master_id, limit=limit, offset=offset)
+    return {"album_master_id": album_master_id, "total_count": result["total_count"], "items": result["items"]}
 
 
 @router.get("/admin/activity-log/owned-item/{owned_item_id}", include_in_schema=False)
@@ -81,11 +90,11 @@ def get_owned_item_activity(
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
     _require_admin_request(request)
-    audit_rows = db.list_audit_log(entity_type="owned_item", entity_id=owned_item_id, limit=limit, offset=offset)
+    audit = db.list_audit_log(entity_type="owned_item", entity_id=owned_item_id, limit=limit, offset=offset)
     location_rows = db.list_owned_item_location_events(owned_item_id=owned_item_id, limit=limit, offset=offset)
     return {
         "owned_item_id": owned_item_id,
-        "audit": {"total_count": len(audit_rows), "items": audit_rows},
+        "audit": {"total_count": audit["total_count"], "items": audit["items"]},
         "location_events": {"total_count": len(location_rows), "items": location_rows},
     }
 
@@ -108,11 +117,17 @@ def get_owned_item_location_events(
 def get_all_location_events(
     request: Request,
     movement_kind: str | None = Query(default=None),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
     _require_admin_request(request)
-    rows = db.list_recent_location_events(limit=limit, offset=offset, movement_kind=movement_kind)
+    rows = db.list_recent_location_events(
+        limit=limit, offset=offset,
+        movement_kind=movement_kind,
+        date_from=date_from, date_to=date_to,
+    )
     return {"total_count": len(rows), "offset": offset, "items": rows}
 
 
@@ -172,6 +187,13 @@ def acknowledge_errors(
     _require_admin_request(request)
     updated = _acknowledge(ids=ids)
     return {"updated": updated}
+
+
+@router.patch("/admin/error-log/{error_id}/acknowledge", include_in_schema=False)
+def acknowledge_single_error(error_id: int, request: Request) -> dict[str, Any]:
+    _require_admin_request(request)
+    updated = _acknowledge(ids=[error_id])
+    return {"updated": updated, "id": error_id}
 
 
 # ── Performance logs ───────────────────────────────────────────────────

@@ -226,6 +226,53 @@ def restore_owned_item_previous_slot(owned_item_id: int) -> dict[str, Any] | Non
     return {"owned_item_id": int(owned_item_id), "storage_slot_id": next_slot_id, "restored": True}
 
 
+def list_owned_item_location_events(
+    owned_item_id: int,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT * FROM owned_item_location_event
+               WHERE owned_item_id = ?
+               ORDER BY created_at DESC, id DESC
+               LIMIT ? OFFSET ?""",
+            (owned_item_id, limit, offset),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def list_recent_location_events(
+    limit: int = 100,
+    offset: int = 0,
+    movement_kind: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[dict]:
+    with get_conn() as conn:
+        where = "WHERE 1=1"
+        params: list = []
+        if movement_kind:
+            where += " AND e.movement_kind = ?"
+            params.append(movement_kind)
+        if date_from:
+            where += " AND e.created_at >= ?"
+            params.append(date_from)
+        if date_to:
+            where += " AND e.created_at <= ?"
+            params.append(date_to)
+        rows = conn.execute(
+            f"""SELECT e.*, oi.category, oi.item_name_override, oi.linked_artist_name
+               FROM owned_item_location_event e
+               LEFT JOIN owned_item oi ON oi.id = e.owned_item_id
+               {where}
+               ORDER BY e.created_at DESC, e.id DESC
+               LIMIT ? OFFSET ?""",
+            [*params, limit, offset],
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 __all__ = [
     "_location_slot_snapshot_in_conn",
     "_derive_location_movement_kind",
@@ -233,4 +280,6 @@ __all__ = [
     "update_owned_item_slot",
     "inherit_owned_item_domain_from_slot_if_missing",
     "restore_owned_item_previous_slot",
+    "list_owned_item_location_events",
+    "list_recent_location_events",
 ]

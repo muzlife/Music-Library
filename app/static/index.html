@@ -17663,9 +17663,9 @@
             <button id="tabMediaBtn" class="tab-btn" type="button" data-i18n="nav.media">미디어</button>
             <button id="tabCollectiblesBtn" class="tab-btn" type="button" data-i18n="nav.collectibles">수집품</button>
             <button id="tabOpsBtn" class="tab-btn same-as-home" type="button" data-i18n="nav.ops">운영/연계</button>
+            <button id="tabLogsBtn" class="tab-btn" type="button">이력 &amp; 로그 <span id="errorUnreadBadge" style="display:none;background:#dc2626;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:9px;margin-left:3px;vertical-align:middle"></span></button>
           </div>
           <div class="admin-shell-row-actions">
-            <button id="tabCameraBtn" class="tab-btn" type="button" data-i18n="nav.camera">카메라</button>
             <div id="adminUtilityMainMount" class="utility-main-mount"></div>
           </div>
         </div>
@@ -17737,7 +17737,6 @@
         </button>
       </div>
       <div id="shellUtilityMainRow" class="shell-utility-main shell-utility-main--actions">
-        <button id="shellAdminBtn" class="tab-btn icon-symbol-btn icon-symbol-btn--admin-home shell-utility-navbtn u-hidden-initial" type="button" title="관리" aria-label="관리" data-i18n-title="utility.admin" data-i18n-aria-label="utility.admin"></button>
         <div class="shell-session-actions">
           <span id="appSessionInfo" class="shell-session-info u-hidden-initial">
             <span id="appSessionUser" class="shell-session-user"></span>
@@ -21302,8 +21301,8 @@
         <button id="opsCameraTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.camera">카메라</button>
         <button id="opsExceptionTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.exception">예외 큐</button>
         <button id="opsAccountTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.account">계정</button>
-        <button id="opsPermissionsTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.permissions">권한 관리</button>
-        <button id="opsActivityTabBtn" class="subtab-btn" type="button">이력 &amp; 로그 <span id="errorUnreadBadge" style="display:none;background:#dc2626;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:9px;margin-left:3px;vertical-align:middle"></span></button>
+        <button id="opsPermissionsTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.permissions" style="display:none;">권한 관리</button>
+        <button id="opsActivityTabBtn" class="subtab-btn" type="button" style="display:none;">이력 &amp; 로그</button>
         <button id="opsProviderTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.providers">연동/API 설정</button>
         <button id="opsExportTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.export">백업/내보내기</button>
         <button id="opsMetaSyncTabBtn" class="subtab-btn" type="button" data-i18n="ops.subtab.meta_sync">메타 동기화</button>
@@ -21775,14 +21774,26 @@
           <div class="manual-block-note" data-i18n="manual.ops.account.note">권한은 필요한 만큼만 주는 편이 안전합니다. 특히 현장 운영 계정은 조회/로그 중심으로 두는 것이 좋습니다.</div>
         </div>
       </details>
-      <div class="layout">
+
+      <!-- 계정 내부 서브탭 -->
+      <div style="display:flex;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:0;">
+        <button id="acctTabUsersBtn" class="subtab-btn active" type="button">사용자</button>
+        <button id="acctTabGroupsBtn" class="subtab-btn" type="button">그룹</button>
+      </div>
+
+      <!-- ── 사용자 서브패널 ── -->
+      <div id="acctUsersPanel" class="layout" style="margin-top:16px;">
         <section class="card">
           <div class="page-help-title-row">
-            <h2><span data-i18n="ops.account.title">관리자 / 현장 운영자 계정</span></h2>
+            <h2><span>사용자 관리</span></h2>
             <button class="page-help-trigger" type="button" data-page-help-open="ops-account" data-i18n="page_help.trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls="pageHelpDrawer">도움말</button>
           </div>
-          <div class="mini" data-i18n="ops.account.intro">기본 계정은 읽기 전용입니다. 여기서 만드는 관리 계정은 로그인 후 바로 사용 가능합니다.</div>
+          <div class="mini">그룹을 선택하면 그룹의 기본 권한을 상속받습니다. 개인 권한 오버라이드는 계정 선택 후 아래에서 설정할 수 있습니다.</div>
           <div class="grid-6 u-mt-8">
+            <div>
+              <label for="opsAuthDisplayName">이름</label>
+              <input id="opsAuthDisplayName" placeholder="예: 홍길동" />
+            </div>
             <div>
               <label for="opsAuthUsername" data-i18n="ops.account.field.username.label">아이디</label>
               <input id="opsAuthUsername" data-i18n-placeholder="ops.account.field.username.placeholder" placeholder="예: operator01" />
@@ -21792,10 +21803,14 @@
               <input id="opsAuthPassword" type="password" data-i18n-placeholder="ops.account.field.password.placeholder" placeholder="새 비밀번호 또는 초기 비밀번호" />
             </div>
             <div>
-              <label for="opsAuthRole" data-i18n="ops.account.field.role.label">권한</label>
+              <label for="opsAuthDescription">설명</label>
+              <input id="opsAuthDescription" placeholder="업무 범위, 담당 지점 등" />
+            </div>
+            <div>
+              <label for="opsAuthRole" data-i18n="ops.account.field.role.label">그룹</label>
               <select id="opsAuthRole">
-                <option value="OPERATOR" data-i18n="ops.account.field.role.operator">카페 매니저</option>
-                <option value="CAFE_STAFF" data-i18n="ops.account.field.role.cafe_staff">카페 운영자</option>
+                <option value="OPERATOR" data-i18n="ops.account.field.role.operator">운영자 (카페 매니저)</option>
+                <option value="CAFE_STAFF" data-i18n="ops.account.field.role.cafe_staff">스텝 (카페 운영자)</option>
                 <option value="ADMIN" data-i18n="ops.account.field.role.admin">관리자</option>
               </select>
             </div>
@@ -21817,203 +21832,60 @@
             <table>
               <thead>
                 <tr>
+                  <th>이름</th>
                   <th data-i18n="ops.account.table.header.username">아이디</th>
-                  <th data-i18n="ops.account.table.header.role">권한</th>
-                  <th data-i18n="ops.account.table.header.source">출처</th>
+                  <th>그룹</th>
                   <th data-i18n="ops.account.table.header.status">상태</th>
-                  <th data-i18n="ops.account.table.header.edit">계정 편집</th>
+                  <th data-i18n="ops.account.table.header.edit">편집</th>
                   <th data-i18n="ops.account.table.header.updated_at">업데이트</th>
                 </tr>
               </thead>
               <tbody id="opsAuthTableBody"></tbody>
             </table>
           </div>
+
+          <!-- 개인 권한 오버라이드 인라인 패널 -->
+          <div id="acctUserPermPanel" style="display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
+            <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:6px;">개인 권한 오버라이드</h3>
+            <div class="mini muted u-mb-8">그룹 기본값 대비 추가 부여/차단 권한을 설정할 수 있습니다. 실질 권한이 실제 접근 가능 기능입니다.</div>
+            <div id="permAccountMatrix" class="u-mt-8">
+              <div class="mini muted">계정을 선택하면 자동으로 로드됩니다.</div>
+            </div>
+            <div id="permAccountStatus" class="status"></div>
+            <!-- hidden elements for JS compat -->
+            <select id="permAccountSelect" style="display:none;"><option value="">--</option></select>
+            <button id="permLoadAccountBtn" type="button" style="display:none;"></button>
+            <button id="permClearAccountBtn" type="button" style="display:none;"></button>
+          </div>
         </section>
       </div>
-      </div>
 
-      <div id="opsPermissionsPanel" class="subtab-panel admin-console-main">
-      <div class="layout">
+      <!-- ── 그룹 서브패널 ── -->
+      <div id="acctGroupsPanel" class="layout" style="display:none;margin-top:16px;">
         <section class="card">
-          <h2>권한 관리</h2>
-          <div class="mini muted u-mb-8">역할별 기본 권한과 계정별 추가 권한을 설정합니다.</div>
-
-          <!-- 역할별 기본 권한 -->
-          <h3 class="u-mt-16" style="font-size:0.9rem;font-weight:700;margin-bottom:8px;">역할 기본 권한</h3>
-          <div class="mini muted u-mb-8">OPERATOR(카페 매니저)와 CAFE_STAFF(카페 운영자)의 기본 허용 권한을 설정합니다.</div>
+          <h2>그룹 권한 설정</h2>
+          <div class="mini muted u-mb-16">각 그룹의 기본 허용 권한을 설정합니다. 사용자는 소속 그룹의 권한을 자동 상속받습니다.</div>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px;background:var(--bg-dim,#f8fafc);">
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px;">관리자 (ADMIN)</div>
+            <div class="mini muted">모든 기능에 접근할 수 있습니다. 권한 제한 없음 — 별도 설정 불필요.</div>
+          </div>
+          <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:6px;">역할별 기본 권한</h3>
+          <div class="mini muted u-mb-8">운영자(카페 매니저)와 스텝(카페 운영자)의 기본 허용 권한을 설정합니다.</div>
           <div id="permRoleMatrix" class="u-mt-8">
             <div class="mini muted">로딩 중...</div>
           </div>
           <div class="row action-row-trailing-primary u-mt-8">
-            <button id="permSaveRoleBtn" class="btn" type="button">역할 권한 저장</button>
+            <button id="permSaveRoleBtn" class="btn" type="button">그룹 권한 저장</button>
           </div>
           <div id="permRoleStatus" class="status"></div>
-
-          <!-- 계정별 추가 권한 -->
-          <h3 class="u-mt-24" style="font-size:0.9rem;font-weight:700;margin-bottom:8px;">계정별 권한 오버라이드</h3>
-          <div class="mini muted u-mb-8">계정을 선택하면 역할 기본값 대비 추가 부여/차단 권한을 설정할 수 있습니다.</div>
-          <div class="grid-6 u-mt-8">
-            <div class="span-2">
-              <label for="permAccountSelect">계정 선택</label>
-              <select id="permAccountSelect">
-                <option value="">-- 계정 선택 --</option>
-              </select>
-            </div>
-            <div class="span-4" style="display:flex;align-items:flex-end;">
-              <button id="permLoadAccountBtn" class="btn ghost" type="button">불러오기</button>
-              <button id="permClearAccountBtn" class="btn ghost" type="button" style="margin-left:6px;">오버라이드 초기화</button>
-            </div>
-          </div>
-          <div id="permAccountMatrix" class="u-mt-8">
-            <div class="mini muted">계정을 선택하고 불러오기를 클릭하세요.</div>
-          </div>
-          <div id="permAccountStatus" class="status"></div>
         </section>
       </div>
       </div>
 
-      <!-- ── 이력 & 로그 패널 ─────────────────────────────── -->
-      <div id="opsActivityPanel" class="subtab-panel admin-console-main">
-        <style>
-          #opsActivityPanel .act-section { margin-bottom: 24px; }
-          #opsActivityPanel .act-section h3 { font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
-          #opsActivityPanel .act-filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-          #opsActivityPanel .act-filter-row select,
-          #opsActivityPanel .act-filter-row input { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 0.82rem; }
-          #opsActivityPanel .act-filter-row button { padding: 4px 12px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; background: var(--accent); color: #fff; border: none; }
-          #opsActivityPanel .act-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
-          #opsActivityPanel .act-table th { background: var(--bg-dim, #f5f5f5); padding: 5px 8px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); }
-          #opsActivityPanel .act-table td { padding: 5px 8px; border-bottom: 1px solid var(--border-light, #eee); vertical-align: top; word-break: break-word; }
-          #opsActivityPanel .act-table tr:hover td { background: var(--bg-hover, #fafafa); }
-          #opsActivityPanel .act-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
-          #opsActivityPanel .act-badge.CREATE { background: #d1fae5; color: #065f46; }
-          #opsActivityPanel .act-badge.UPDATE { background: #dbeafe; color: #1d4ed8; }
-          #opsActivityPanel .act-badge.DELETE { background: #fee2e2; color: #b91c1c; }
-          #opsActivityPanel .act-log-box { background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.76rem; padding: 12px; border-radius: 8px; max-height: 420px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
-          #opsActivityPanel .act-pagination { display: flex; gap: 6px; margin-top: 8px; }
-          #opsActivityPanel .act-pagination button { padding: 3px 10px; font-size: 0.78rem; border-radius: 5px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); }
-          #opsActivityPanel .act-pagination button:disabled { opacity: 0.4; cursor: default; }
-        </style>
+      <div id="opsPermissionsPanel" class="subtab-panel admin-console-main" style="display:none!important;"></div>
 
-        <!-- ③ 에러 로그 -->
-        <div class="act-section">
-          <h3>에러 로그 <span id="actErrCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
-          <div class="act-filter-row">
-            <select id="actErrIsRead">
-              <option value="">전체</option>
-              <option value="false">미확인</option>
-              <option value="true">확인 완료</option>
-            </select>
-            <button id="actErrLoadBtn">조회</button>
-            <button id="actErrAckBtn" style="background:var(--err,#dc3545)">전체 확인 처리</button>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>시각</th><th>경로</th><th>메시지</th><th>위치</th><th>확인</th></tr></thead>
-              <tbody id="actErrTbody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-          <div class="act-pagination">
-            <button id="actErrPrevBtn" disabled>◀ 이전</button>
-            <button id="actErrNextBtn" disabled>다음 ▶</button>
-          </div>
-        </div>
-
-        <!-- ④ 성능 현황 -->
-        <div class="act-section">
-          <h3>성능 현황 <span id="actPerfCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
-          <div class="act-filter-row">
-            <select id="actPerfKind">
-              <option value="">전체</option>
-              <option value="API">API</option>
-              <option value="BATCH">배치</option>
-              <option value="QUERY">DB 쿼리</option>
-            </select>
-            <select id="actPerfDays">
-              <option value="1">오늘</option>
-              <option value="7" selected>최근 7일</option>
-              <option value="30">최근 30일</option>
-            </select>
-            <label style="font-size:0.82rem"><input type="checkbox" id="actPerfSlowOnly"> 느린 항목만</label>
-            <button id="actPerfLoadBtn">조회</button>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>유형</th><th>이름</th><th>평균</th><th>최대</th><th>건수</th><th>느림</th></tr></thead>
-              <tbody id="actPerfTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ① 메타 변경 이력 (audit_log) -->
-        <section class="act-section">
-          <h3>메타 변경 이력</h3>
-          <div class="act-filter-row">
-            <select id="actAuditEntityType">
-              <option value="">전체 엔티티</option>
-              <option value="album_master">album_master</option>
-              <option value="owned_item">owned_item</option>
-              <option value="storage_slot">storage_slot</option>
-              <option value="auth_account">auth_account</option>
-            </select>
-            <input id="actAuditEntityId" type="number" placeholder="Entity ID (선택)" style="width:130px">
-            <button id="actAuditLoadBtn">조회</button>
-            <span id="actAuditCount" style="font-size:0.8rem;color:var(--text-sub)"></span>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>시각</th><th>유형</th><th>ID</th><th>액션</th><th>처리자</th><th>변경 내역</th></tr></thead>
-              <tbody id="actAuditTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-          <div class="act-pagination">
-            <button id="actAuditPrevBtn" disabled>◀ 이전</button>
-            <button id="actAuditNextBtn" disabled>다음 ▶</button>
-          </div>
-        </section>
-
-        <!-- ② 장식장 이동 이력 (location_events) -->
-        <section class="act-section">
-          <h3>장식장 이동 이력</h3>
-          <div class="act-filter-row">
-            <select id="actLocKind">
-              <option value="">전체 유형</option>
-              <option value="ASSIGN">ASSIGN</option>
-              <option value="MOVE">MOVE</option>
-              <option value="UNASSIGN">UNASSIGN</option>
-              <option value="INITIAL_ASSIGN">INITIAL_ASSIGN</option>
-              <option value="CABINET_DELETE">CABINET_DELETE</option>
-            </select>
-            <button id="actLocLoadBtn">조회</button>
-            <span id="actLocCount" style="font-size:0.8rem;color:var(--text-sub)"></span>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="act-table">
-              <thead><tr><th>시각</th><th>상품ID</th><th>이동 유형</th><th>이전 위치</th><th>새 위치</th><th>비고</th></tr></thead>
-              <tbody id="actLocTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">조회 버튼을 눌러주세요</td></tr></tbody>
-            </table>
-          </div>
-          <div class="act-pagination">
-            <button id="actLocPrevBtn" disabled>◀ 이전</button>
-            <button id="actLocNextBtn" disabled>다음 ▶</button>
-          </div>
-        </section>
-
-        <!-- ③ 서버 로그 -->
-        <section class="act-section">
-          <h3>서버 로그</h3>
-          <div class="act-filter-row">
-            <select id="actLogStream">
-              <option value="stderr">stderr (오류/접근)</option>
-              <option value="stdout">stdout</option>
-            </select>
-            <input id="actLogTail" type="number" value="200" min="20" max="2000" style="width:80px">줄
-            <button id="actLogLoadBtn">불러오기</button>
-            <button id="actLogRefreshBtn">새로고침</button>
-          </div>
-          <div id="actLogBox" class="act-log-box">로그를 불러오려면 버튼을 눌러주세요.</div>
-        </section>
-      </div>
+      <!-- ── 이력 & 로그 (tabLogs로 이동됨) ── -->
+      <div id="opsActivityPanel" class="subtab-panel admin-console-main" style="display:none!important;"></div>
 
       <div id="opsProviderPanel" class="subtab-panel admin-console-main">
       <details class="manual-block page-help-source" data-page-help-source="ops-provider-settings" hidden>
@@ -22312,6 +22184,204 @@
       </div>
       </div>
     </div>
+
+    <!-- ── 이력 & 로그 탭 ─────────────────────────────────────── -->
+    <div id="tabLogs" class="tab-panel admin-console-shell">
+      <style>
+        .act-section { margin-bottom: 24px; }
+        .act-section h3 { font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+        .act-filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+        .act-filter-row select,
+        .act-filter-row input[type="text"],
+        .act-filter-row input[type="number"],
+        .act-filter-row input[type="date"] { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 0.82rem; }
+        .act-filter-row button { padding: 4px 12px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; background: var(--accent); color: #fff; border: none; }
+        .act-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+        .act-table th { background: var(--bg-dim, #f5f5f5); padding: 5px 8px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); }
+        .act-table td { padding: 5px 8px; border-bottom: 1px solid var(--border-light, #eee); vertical-align: top; word-break: break-word; }
+        .act-table tr:hover td { background: var(--bg-hover, #fafafa); }
+        .act-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
+        .act-badge.CREATE { background: #d1fae5; color: #065f46; }
+        .act-badge.UPDATE { background: #dbeafe; color: #1d4ed8; }
+        .act-badge.DELETE { background: #fee2e2; color: #b91c1c; }
+        .act-log-box { background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.76rem; padding: 12px; border-radius: 8px; max-height: 480px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+        .act-pagination { display: flex; gap: 6px; margin-top: 8px; }
+        .act-pagination button { padding: 3px 10px; font-size: 0.78rem; border-radius: 5px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); }
+        .act-pagination button:disabled { opacity: 0.4; cursor: default; }
+        #logSrvStderr.active, #logSrvStdout.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+      </style>
+
+      <div class="subtabs">
+        <button id="logErrTabBtn" class="subtab-btn active" type="button">에러 로그</button>
+        <button id="logAuditTabBtn" class="subtab-btn" type="button">감사 이력</button>
+        <button id="logPerfTabBtn" class="subtab-btn" type="button">성능 현황</button>
+        <button id="logLocTabBtn" class="subtab-btn" type="button">장식장 이동</button>
+        <button id="logSrvTabBtn" class="subtab-btn" type="button">서버 로그</button>
+      </div>
+
+      <!-- ① 에러 로그 -->
+      <div id="logErrPanel" class="subtab-panel active admin-console-main">
+        <div class="act-section">
+          <h3>에러 로그 <span id="actErrCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
+          <div class="act-filter-row">
+            <select id="actErrIsRead">
+              <option value="">전체</option>
+              <option value="false">미확인</option>
+              <option value="true">확인완료</option>
+            </select>
+            <select id="logErrLevel">
+              <option value="">전체 레벨</option>
+              <option value="ERROR">ERROR</option>
+              <option value="WARNING">WARNING</option>
+              <option value="INFO">INFO</option>
+            </select>
+            <input id="logErrPath" type="text" placeholder="경로 필터" style="width:160px">
+            <input id="logErrDateFrom" type="date" title="시작일">
+            <input id="logErrDateTo" type="date" title="종료일">
+            <button id="actErrLoadBtn">조회</button>
+            <button id="actErrAckBtn" style="background:var(--err,#dc3545);color:#fff;border:none">전체 확인 처리</button>
+            <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="logErrAutoRefresh"> 자동갱신</label>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>시각</th><th>레벨</th><th>경로</th><th>메시지</th><th>위치</th><th>확인</th></tr></thead>
+              <tbody id="actErrTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+          <div class="act-pagination">
+            <button id="actErrPrevBtn" disabled>◀ 이전</button>
+            <button id="actErrNextBtn" disabled>다음 ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ② 감사 이력 -->
+      <div id="logAuditPanel" class="subtab-panel admin-console-main">
+        <div class="act-section">
+          <h3>메타 변경 이력 <span id="actAuditCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
+          <div class="act-filter-row">
+            <select id="actAuditEntityType">
+              <option value="">전체 엔티티</option>
+              <option value="album_master">album_master</option>
+              <option value="owned_item">owned_item</option>
+              <option value="storage_slot">storage_slot</option>
+              <option value="auth_account">auth_account</option>
+            </select>
+            <input id="actAuditEntityId" type="number" placeholder="Entity ID" style="width:120px">
+            <select id="logAuditAction">
+              <option value="">전체 액션</option>
+              <option value="CREATE">CREATE</option>
+              <option value="UPDATE">UPDATE</option>
+              <option value="DELETE">DELETE</option>
+              <option value="MERGE">MERGE</option>
+              <option value="IMAGE_UPLOAD">IMAGE_UPLOAD</option>
+              <option value="IMAGE_DELETE">IMAGE_DELETE</option>
+              <option value="BULK_UPDATE">BULK_UPDATE</option>
+            </select>
+            <input id="logAuditChangedBy" type="text" placeholder="처리자" style="width:110px">
+            <input id="logAuditDateFrom" type="date" title="시작일">
+            <input id="logAuditDateTo" type="date" title="종료일">
+            <button id="actAuditLoadBtn">조회</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>시각</th><th>유형</th><th>ID</th><th>액션</th><th>처리자</th><th>변경 내역</th></tr></thead>
+              <tbody id="actAuditTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+          <div class="act-pagination">
+            <button id="actAuditPrevBtn" disabled>◀ 이전</button>
+            <button id="actAuditNextBtn" disabled>다음 ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ 성능 현황 -->
+      <div id="logPerfPanel" class="subtab-panel admin-console-main">
+        <div class="act-section">
+          <h3>성능 현황 <span id="actPerfCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
+          <div class="act-filter-row">
+            <select id="actPerfKind">
+              <option value="">전체</option>
+              <option value="API">API</option>
+              <option value="BATCH">BATCH</option>
+              <option value="QUERY">QUERY</option>
+            </select>
+            <select id="actPerfDays">
+              <option value="1">오늘</option>
+              <option value="7" selected>최근 7일</option>
+              <option value="30">최근 30일</option>
+            </select>
+            <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="actPerfSlowOnly"> 느린 항목만</label>
+            <button id="actPerfLoadBtn">조회</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>유형</th><th>이름</th><th>평균(ms)</th><th>최대(ms)</th><th>건수</th><th>느림</th><th>추이</th></tr></thead>
+              <tbody id="actPerfTbody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+          <div id="logPerfDrilldown" style="display:none;margin-top:16px">
+            <h4 id="logPerfDrillTitle" style="font-size:0.85rem;font-weight:700;margin-bottom:8px"></h4>
+            <table class="act-table">
+              <thead><tr><th>시각</th><th>소요시간(ms)</th><th>느림</th></tr></thead>
+              <tbody id="logPerfDrillTbody"><tr><td colspan="3" style="text-align:center;color:var(--text-muted,#888)">상세 없음</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ④ 장식장 이동 -->
+      <div id="logLocPanel" class="subtab-panel admin-console-main">
+        <div class="act-section">
+          <h3>장식장 이동 이력 <span id="actLocCount" style="font-weight:400;font-size:0.8rem;color:var(--text-muted)"></span></h3>
+          <div class="act-filter-row">
+            <select id="actLocKind">
+              <option value="">전체 유형</option>
+              <option value="ASSIGN">ASSIGN</option>
+              <option value="MOVE">MOVE</option>
+              <option value="UNASSIGN">UNASSIGN</option>
+              <option value="INITIAL_ASSIGN">INITIAL_ASSIGN</option>
+              <option value="CABINET_DELETE">CABINET_DELETE</option>
+            </select>
+            <input id="logLocDateFrom" type="date" title="시작일">
+            <input id="logLocDateTo" type="date" title="종료일">
+            <button id="actLocLoadBtn">조회</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="act-table">
+              <thead><tr><th>시각</th><th>상품ID</th><th>이동 유형</th><th>이전 위치</th><th>새 위치</th><th>비고</th></tr></thead>
+              <tbody id="actLocTbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">조회 버튼을 눌러주세요</td></tr></tbody>
+            </table>
+          </div>
+          <div class="act-pagination">
+            <button id="actLocPrevBtn" disabled>◀ 이전</button>
+            <button id="actLocNextBtn" disabled>다음 ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑤ 서버 로그 -->
+      <div id="logSrvPanel" class="subtab-panel admin-console-main">
+        <div class="act-section">
+          <h3>서버 로그</h3>
+          <div class="act-filter-row">
+            <button id="logSrvStderr" class="active" type="button" style="border-radius:6px;padding:4px 10px;font-size:0.82rem;cursor:pointer;border:2px solid var(--accent);background:var(--accent);color:#fff">stderr</button>
+            <button id="logSrvStdout" type="button" style="border-radius:6px;padding:4px 10px;font-size:0.82rem;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text)">stdout</button>
+            <input id="actLogTail" type="number" value="200" min="20" max="2000" style="width:70px"> 줄
+            <input id="logSrvSearch" type="text" placeholder="검색어 하이라이트" style="width:160px">
+            <button id="actLogLoadBtn">불러오기</button>
+            <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="logSrvAutoRefresh"> 자동갱신</label>
+            <!-- JS 호환 숨김 요소 -->
+            <select id="actLogStream" style="display:none"><option value="stderr">stderr</option><option value="stdout">stdout</option></select>
+            <button id="actLogRefreshBtn" style="display:none">새로고침</button>
+          </div>
+          <div id="actLogBox" class="act-log-box">로그를 불러오려면 버튼을 눌러주세요.</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── /이력 & 로그 탭 ──────────────────────────────────────── -->
 
     <div id="tabViewer" class="tab-panel">
       <section class="card">
@@ -33493,7 +33563,6 @@
 
     function shellModeFromPath() {
       const path = currentAppPath();
-      if (path === "/admin") return "admin";
       if (path === "/ops/cabinets") return "cabinets";
       return "ops";
     }
@@ -33589,7 +33658,6 @@
       const mode = currentShellMode();
       $("tabSimpleBtn")?.classList.toggle("active", mode === "ops");
       $("shellCabinetsBtn")?.classList.toggle("active", mode === "cabinets");
-      $("shellAdminBtn")?.classList.toggle("active", mode === "admin");
     }
 
     function syncShellDensityClasses() {
@@ -33728,12 +33796,12 @@
     }
 
     function syncShellUtilityRowSizing() {
-      const utilityRowSelectors = ["shellAdminBtn", "shellOpsHomeBtn", "appSessionRoleTag", "appLogoutBtn"];
+      const utilityRowSelectors = ["shellOpsHomeBtn", "appSessionRoleTag", "appLogoutBtn"];
       if (document.body?.dataset?.shellDensity === "compact") return;
       utilityRowSelectors.forEach((id) => {
         const el = $(id);
         if (!el) return;
-        const iconOnlyUtilityButton = id === "shellAdminBtn" || id === "shellOpsHomeBtn";
+        const iconOnlyUtilityButton = id === "shellOpsHomeBtn";
         const iconOnlySessionPill = id === "appSessionRoleTag" || id === "appLogoutBtn";
         if (iconOnlyUtilityButton) {
           el.style.width = "28px";
@@ -33812,7 +33880,6 @@
       setDisplayIfPresent("opsUtilityMainMount", authenticated && mode !== "admin" ? "flex" : "none");
       setDisplayIfPresent("tabSimpleBtn", authenticated ? "inline-flex" : "none");
       setDisplayIfPresent("shellCabinetsBtn", authenticated ? "inline-flex" : "none");
-      setDisplayIfPresent("shellAdminBtn", authenticated && isAdmin && mode !== "admin" ? "inline-flex" : "none");
       setDisplayIfPresent("shellOpsHomeBtn", authenticated && mode !== "ops" ? "inline-flex" : "none");
       setDisplayIfPresent("adminTabs", authenticated && isAdmin && mode === "admin" ? "flex" : "none");
       syncShellButtons();
@@ -33832,7 +33899,7 @@
         nextMediaMode = requestedTab;
       } else if (requestedTab === "goods") {
         nextTab = "collectibles";
-      } else if (["home", "camera", "media", "collectibles", "ops", "cabinet"].includes(requestedTab)) {
+      } else if (["home", "media", "collectibles", "ops", "cabinet", "logs"].includes(requestedTab)) {
         nextTab = requestedTab;
       }
       if (nextTab === "media" && ["search", "manage", "register", "source"].includes(requestedMediaMode)) {
@@ -33899,7 +33966,7 @@
     function switchMainTab(tab, options = {}) {
       const remember = options.remember !== false;
       const requestedTab = String(tab || "").trim();
-      const adminParentTabs = ["home", "camera", "cabinet", "media", "collectibles", "ops"];
+      const adminParentTabs = ["home", "cabinet", "media", "collectibles", "ops", "logs"];
       let nextTab = requestedTab;
       let nextMediaMode = null;
       if (["search", "manage", "register", "source"].includes(requestedTab)) {
@@ -33912,10 +33979,10 @@
         { id: "home", btn: "tabHomeBtn", panel: "tabHome" },
         { id: "simple", btn: "tabSimpleBtn", panel: "tabSimple" },
         { id: "cabinet", btn: "tabCabinetBtn", panel: "tabCabinet" },
-        { id: "camera", btn: "tabCameraBtn", panel: "tabCamera" },
         { id: "media", btn: "tabMediaBtn", panel: "tabMedia" },
         { id: "collectibles", btn: "tabCollectiblesBtn", panel: "tabCollectibles" },
-        { id: "ops", btn: "tabOpsBtn", panel: "tabOps" }
+        { id: "ops", btn: "tabOpsBtn", panel: "tabOps" },
+        { id: "logs", btn: "tabLogsBtn", panel: "tabLogs" }
       ];
       for (const t of tabs) {
         const active = t.id === nextTab;
@@ -33973,6 +34040,13 @@
           { id: "providers", btn: "opsProviderTabBtn", panel: "opsProviderPanel" },
           { id: "export", btn: "opsExportTabBtn", panel: "opsExportPanel" },
           { id: "metasync", btn: "opsMetaSyncTabBtn", panel: "opsMetaSyncPanel" },
+        ],
+        logs: [
+          { id: "err", btn: "logErrTabBtn", panel: "logErrPanel" },
+          { id: "audit", btn: "logAuditTabBtn", panel: "logAuditPanel" },
+          { id: "perf", btn: "logPerfTabBtn", panel: "logPerfPanel" },
+          { id: "loc", btn: "logLocTabBtn", panel: "logLocPanel" },
+          { id: "srv", btn: "logSrvTabBtn", panel: "logSrvPanel" },
         ],
       };
       const tabs = groups[group];
@@ -46931,8 +47005,10 @@ async function loadDashboardClimate() {
 
     function resetOpsAuthForm() {
       opsAuthSelectedUsername = "";
+      $("opsAuthDisplayName").value = "";
       $("opsAuthUsername").value = "";
       $("opsAuthPassword").value = "";
+      $("opsAuthDescription").value = "";
       $("opsAuthRole").value = "OPERATOR";
       $("opsAuthIsActive").checked = true;
       $("opsAuthUsername").disabled = false;
@@ -46941,13 +47017,17 @@ async function loadDashboardClimate() {
       $("opsAuthPassword").disabled = false;
       $("opsAuthSaveBtn").disabled = false;
       $("opsAuthDeleteBtn").disabled = true;
+      $("acctUserPermPanel").style.display = "none";
+      $("permAccountSelect").value = "";
       setStatus("opsAuthStatus", "ok", "");
     }
 
     function fillOpsAuthForm(row) {
       opsAuthSelectedUsername = String(row?.username || "").trim();
+      $("opsAuthDisplayName").value = String(row?.display_name || "").trim();
       $("opsAuthUsername").value = opsAuthSelectedUsername;
       $("opsAuthPassword").value = "";
+      $("opsAuthDescription").value = String(row?.description || "").trim();
       $("opsAuthRole").value = String(row?.role || "OPERATOR").trim().toUpperCase() || "OPERATOR";
       $("opsAuthIsActive").checked = row?.is_active !== false;
       const editable = row?.editable !== false;
@@ -46958,19 +47038,32 @@ async function loadDashboardClimate() {
       $("opsAuthSaveBtn").disabled = !editable;
       $("opsAuthDeleteBtn").disabled = !editable || String(row?.source || "").trim().toUpperCase() !== "MANAGED";
       setStatus("opsAuthStatus", "ok", t("ops.account.state.selected", { username: opsAuthSelectedUsername }));
+      const role = String(row?.role || "").toUpperCase();
+      if (["OPERATOR", "CAFE_STAFF"].includes(role)) {
+        $("acctUserPermPanel").style.display = "";
+        $("permAccountSelect").value = opsAuthSelectedUsername;
+        if (!_permData) loadPermissionData().then(() => loadAccountPermissions(opsAuthSelectedUsername));
+        else loadAccountPermissions(opsAuthSelectedUsername);
+      } else {
+        $("acctUserPermPanel").style.display = "none";
+        $("permAccountSelect").value = "";
+      }
     }
 
     function renderOpsAuthTable() {
       const body = $("opsAuthTableBody");
       if (!body) return;
+      const ROLE_LABELS = { ADMIN: "관리자", OPERATOR: "운영자", CAFE_STAFF: "스텝" };
       body.innerHTML = (Array.isArray(opsAuthItems) ? opsAuthItems : []).map((row) => {
         const username = String(row.username || "").trim();
         const selected = username && username === opsAuthSelectedUsername;
+        const displayName = String(row.display_name || "").trim() || "—";
+        const roleLabel = ROLE_LABELS[String(row.role || "").trim().toUpperCase()] || String(row.role || "-").trim();
         return `
           <tr data-ops-auth-username="${escapeHtml(username)}" class="${selected ? "pick" : ""}">
+            <td>${escapeHtml(displayName)}</td>
             <td>${escapeHtml(username)}</td>
-            <td>${escapeHtml(String(row.role || "-").trim() || "-")}</td>
-            <td>${escapeHtml(String(row.source || "-").trim() || "-")}</td>
+            <td>${escapeHtml(roleLabel)}</td>
             <td>${escapeHtml(row.is_active === false ? t("common.state.inactive") : t("common.state.active"))}</td>
             <td>${escapeHtml(row.editable ? t("common.answer.yes") : t("common.state.read_only"))}</td>
             <td>${escapeHtml(formatDateTimeCompact(row.updated_at || row.created_at || ""))}</td>
@@ -47003,6 +47096,8 @@ async function loadDashboardClimate() {
       const password = $("opsAuthPassword").value;
       const role = $("opsAuthRole").value;
       const isActive = $("opsAuthIsActive").checked;
+      const displayName = $("opsAuthDisplayName").value.trim() || null;
+      const description = $("opsAuthDescription").value.trim() || null;
       if (!username) {
         setStatus("opsAuthStatus", "err", t("ops.account.status.username_required"));
         return;
@@ -47026,12 +47121,16 @@ async function loadDashboardClimate() {
           ? {
               role,
               is_active: isActive,
+              display_name: displayName,
+              description: description,
               ...(password.trim() ? { password } : {}),
             }
           : {
               username,
               password,
               role,
+              display_name: displayName,
+              description: description,
             };
         const res = await fetch(url, {
           method,
@@ -47132,10 +47231,7 @@ async function loadDashboardClimate() {
                   ${roles.map(r => {
                     const checked = (defaults[r] || []).includes(p.key);
                     return `<td style="text-align:center;padding:7px 14px;">
-                      <label class="inline-check" style="justify-content:center;margin:0;">
-                        <input type="checkbox" data-perm-role="${escapeHtml(r)}" data-perm-key="${escapeHtml(p.key)}" ${checked ? "checked" : ""} />
-                        <span class="sr-only">${escapeHtml(r)} ${escapeHtml(p.key)}</span>
-                      </label>
+                      <input type="checkbox" data-perm-role="${escapeHtml(r)}" data-perm-key="${escapeHtml(p.key)}" ${checked ? "checked" : ""} style="width:16px;height:16px;cursor:pointer;" />
                     </td>`;
                   }).join("")}
                 </tr>
@@ -47180,8 +47276,8 @@ async function loadDashboardClimate() {
           .join("");
     }
 
-    async function loadAccountPermissions() {
-      const username = $("permAccountSelect").value;
+    async function loadAccountPermissions(usernameOverride) {
+      const username = usernameOverride || $("permAccountSelect").value;
       if (!username) { setStatus("permAccountStatus", "err", "계정을 선택하세요"); return; }
       setStatus("permAccountStatus", "ok", "로딩 중...");
       try {
@@ -47276,7 +47372,7 @@ async function loadDashboardClimate() {
       try {
         const res = await fetch(`/admin/permissions/account/${encodeURIComponent(username)}/grant/${encodeURIComponent(key)}`, { method: "PUT" });
         if (!res.ok) { const d = await safeJson(res); throw new Error(d.detail || "저장 실패"); }
-        await loadAccountPermissions();
+        await loadAccountPermissions(username);
       } catch (err) {
         setStatus("permAccountStatus", "err", errorMessageText(err, "권한 부여 실패"));
       }
@@ -47287,14 +47383,14 @@ async function loadDashboardClimate() {
       try {
         const res = await fetch(`/admin/permissions/account/${encodeURIComponent(username)}/${encodeURIComponent(key)}`, { method: "DELETE" });
         if (!res.ok) { const d = await safeJson(res); throw new Error(d.detail || "삭제 실패"); }
-        await loadAccountPermissions();
+        await loadAccountPermissions(username);
       } catch (err) {
         setStatus("permAccountStatus", "err", errorMessageText(err, "오버라이드 제거 실패"));
       }
     }
 
     async function clearAllPermOverrides() {
-      const username = $("permAccountSelect").value;
+      const username = $("permAccountSelect").value || opsAuthSelectedUsername;
       if (!username) return;
       setStatus("permAccountStatus", "ok", "처리 중...");
       try {
@@ -58086,14 +58182,18 @@ async function loadDashboardClimate() {
 
     $("tabHomeBtn").addEventListener("click", () => openAdminConsole("home"));
     $("tabCabinetBtn").addEventListener("click", () => openAdminConsole("cabinet"));
-    $("tabCameraBtn").addEventListener("click", () => openAdminConsole("camera"));
     $("tabSimpleBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabMediaBtn").addEventListener("click", () => openAdminConsole("media"));
     $("tabCollectiblesBtn").addEventListener("click", () => openAdminConsole("collectibles"));
     $("shellCabinetsBtn").addEventListener("click", () => switchShellMode("cabinets"));
-    $("shellAdminBtn").addEventListener("click", () => switchShellMode("admin"));
     $("shellOpsHomeBtn").addEventListener("click", () => switchShellMode("ops"));
     $("tabOpsBtn").addEventListener("click", () => openAdminConsole("ops"));
+    $("tabLogsBtn").addEventListener("click", () => {
+      switchMainTab("logs");
+      switchSubTab("logs", "err");
+      loadErrorLog(true);
+      loadErrorBadge();
+    });
     $("opsSystemStatusReloadBtn")?.addEventListener("click", loadOpsSystemStatus);
     $("opsAutoBackupSaveBtn")?.addEventListener("click", saveOpsBackupSettings);
     $("opsRestoreDbBtn")?.addEventListener("click", restoreOpsDatabase);
@@ -58447,7 +58547,39 @@ async function loadDashboardClimate() {
       switchSubTab("ops", "permissions");
       await loadPermissionData();
     });
+    $("acctTabUsersBtn").addEventListener("click", () => {
+      $("acctTabUsersBtn").classList.add("active");
+      $("acctTabGroupsBtn").classList.remove("active");
+      $("acctUsersPanel").style.display = "";
+      $("acctGroupsPanel").style.display = "none";
+    });
+    $("acctTabGroupsBtn").addEventListener("click", async () => {
+      $("acctTabUsersBtn").classList.remove("active");
+      $("acctTabGroupsBtn").classList.add("active");
+      $("acctUsersPanel").style.display = "none";
+      $("acctGroupsPanel").style.display = "";
+      await loadPermissionData();
+    });
     $("opsActivityTabBtn").addEventListener("click", () => switchSubTab("ops", "activity"));
+
+    // ── 이력 & 로그 subtab buttons ─────────────────────────────────────
+    $("logErrTabBtn").addEventListener("click", () => { switchSubTab("logs", "err"); loadErrorLog(true); loadErrorBadge(); });
+    $("logAuditTabBtn").addEventListener("click", () => { switchSubTab("logs", "audit"); loadActivityAudit(true); });
+    $("logPerfTabBtn").addEventListener("click", () => { switchSubTab("logs", "perf"); loadPerfLog(); });
+    $("logLocTabBtn").addEventListener("click", () => { switchSubTab("logs", "loc"); loadActivityLocation(true); });
+    $("logSrvTabBtn").addEventListener("click", () => { switchSubTab("logs", "srv"); });
+
+    // stderr/stdout toggle
+    $("logSrvStderr").addEventListener("click", () => {
+      $("actLogStream").value = "stderr";
+      $("logSrvStderr").classList.add("active");
+      $("logSrvStdout").classList.remove("active");
+    });
+    $("logSrvStdout").addEventListener("click", () => {
+      $("actLogStream").value = "stdout";
+      $("logSrvStdout").classList.add("active");
+      $("logSrvStderr").classList.remove("active");
+    });
 
     // ── Error Log ──────────────────────────────────────────────────────
     let _actErrOffset = 0, _actErrLimit = 50;
@@ -58463,6 +58595,7 @@ async function loadDashboardClimate() {
       } catch (_) {}
     }
 
+    let _errAutoRefreshTimer = null;
     async function loadErrorLog(reset) {
       if (reset) _actErrOffset = 0;
       const isRead = $("actErrIsRead").value;
@@ -58474,18 +58607,24 @@ async function loadDashboardClimate() {
       $("actErrCount").textContent = `${data.total_count}건`;
       const tbody = $("actErrTbody");
       if (!data.items.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>';
       } else {
         tbody.innerHTML = data.items.map(r => {
           const ts = (r.created_at || "").slice(0, 16).replace("T", " ");
+          const levelBadge = r.level === "ERROR"
+            ? `<span style="background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:700">ERR</span>`
+            : r.level === "WARNING"
+            ? `<span style="background:#fef9c3;color:#92400e;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:700">WARN</span>`
+            : `<span style="font-size:0.7rem;color:var(--text-muted)">${escapeHtml(r.level||"")}</span>`;
           const isReadBadge = r.is_read
             ? `<span style="color:var(--text-muted);font-size:0.72rem">확인</span>`
-            : `<span style="background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:3px;font-size:0.72rem;font-weight:700">미확인</span>`;
+            : `<button data-ack-id="${r.id}" style="font-size:0.7rem;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid #dc2626;background:#fee2e2;color:#b91c1c">확인처리</button>`;
           const tbDetail = r.traceback
             ? `<details style="margin-top:4px;font-size:0.72rem"><summary style="cursor:pointer;color:var(--accent)">스택 트레이스</summary><pre style="white-space:pre-wrap;margin:4px 0;font-size:0.7rem;color:var(--text-sub)">${escapeHtml(r.traceback)}</pre></details>`
             : "";
           return `<tr>
             <td style="white-space:nowrap;font-size:0.75rem;vertical-align:top">${ts}</td>
+            <td style="vertical-align:top">${levelBadge}</td>
             <td style="font-size:0.74rem;vertical-align:top">${escapeHtml(r.request_path || "—")}</td>
             <td style="vertical-align:top"><div style="font-size:0.75rem;font-weight:600">${escapeHtml(r.message || "")}</div>${tbDetail}</td>
             <td style="font-size:0.72rem;color:var(--text-muted);vertical-align:top">${escapeHtml(r.source || "—")}</td>
@@ -58502,8 +58641,19 @@ async function loadDashboardClimate() {
       const res = await fetchWithRetry("/admin/error-log/acknowledge", { method: "POST" });
       if (res.ok) { await loadErrorLog(true); await loadErrorBadge(); }
     });
+    $("actErrTbody").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-ack-id]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-ack-id");
+      const res = await fetchWithRetry(`/admin/error-log/${id}/acknowledge`, { method: "PATCH" });
+      if (res.ok) { await loadErrorLog(false); await loadErrorBadge(); }
+    });
     $("actErrPrevBtn").addEventListener("click", () => { _actErrOffset = Math.max(0, _actErrOffset - _actErrLimit); loadErrorLog(false); });
     $("actErrNextBtn").addEventListener("click", () => { _actErrOffset += _actErrLimit; loadErrorLog(false); });
+    $("logErrAutoRefresh").addEventListener("change", function() {
+      clearInterval(_errAutoRefreshTimer);
+      if (this.checked) { _errAutoRefreshTimer = setInterval(() => loadErrorLog(false), 30000); }
+    });
 
     // ── Perf Log ───────────────────────────────────────────────────────
     async function loadPerfLog() {
@@ -58521,25 +58671,50 @@ async function loadDashboardClimate() {
       if (!data.items.length) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>';
       } else {
-        tbody.innerHTML = data.items.map(r => {
+        tbody.innerHTML = data.items.map((r, i) => {
           const kindBadge = `<span style="font-size:0.72rem;background:var(--bg-dim,#f5f5f5);padding:1px 6px;border-radius:3px">${kindLabels[r.kind] || r.kind}</span>`;
           const slowBadge = r.slow_count > 0
             ? `<span style="background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:700">${r.slow_count}건</span>`
             : `<span style="color:var(--text-muted);font-size:0.72rem">—</span>`;
           const fmtMs = (ms) => ms >= 1000 ? `${(ms/1000).toFixed(1)}s` : `${ms}ms`;
-          return `<tr>
+          const barW = Math.min(100, Math.round((r.avg_ms / 2000) * 100));
+          const barColor = r.avg_ms >= 500 ? "#dc2626" : r.avg_ms >= 200 ? "#f59e0b" : "#22c55e";
+          const bar = `<div style="width:60px;height:8px;background:var(--bg-dim,#eee);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle"><div style="width:${barW}%;height:100%;background:${barColor}"></div></div>`;
+          return `<tr data-perf-name="${escapeHtml(r.name)}" data-perf-kind="${escapeHtml(r.kind||"")}" style="cursor:pointer">
             <td>${kindBadge}</td>
             <td style="font-size:0.75rem;max-width:280px;word-break:break-all">${escapeHtml(r.name)}</td>
             <td style="font-size:0.75rem">${fmtMs(r.avg_ms)}</td>
             <td style="font-size:0.75rem;font-weight:${r.max_ms >= 300 ? '700' : '400'};color:${r.max_ms >= 300 ? '#dc2626' : 'inherit'}">${fmtMs(r.max_ms)}</td>
             <td style="font-size:0.75rem">${r.count}</td>
             <td>${slowBadge}</td>
+            <td>${bar}</td>
           </tr>`;
         }).join("");
       }
     }
 
     $("actPerfLoadBtn").addEventListener("click", () => loadPerfLog());
+    $("actPerfTbody").addEventListener("click", async (e) => {
+      const row = e.target.closest("tr[data-perf-name]");
+      if (!row) return;
+      const name = row.getAttribute("data-perf-name");
+      const kind = row.getAttribute("data-perf-kind") || "";
+      let url = `/admin/perf-log/detail?name=${encodeURIComponent(name)}&limit=50`;
+      if (kind) url += `&kind=${encodeURIComponent(kind)}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      $("logPerfDrillTitle").textContent = `${name} — 최근 ${data.items.length}건`;
+      const fmtMs = (ms) => ms >= 1000 ? `${(ms/1000).toFixed(1)}s` : `${ms}ms`;
+      $("logPerfDrillTbody").innerHTML = data.items.length
+        ? data.items.map(r => `<tr>
+            <td style="font-size:0.74rem;white-space:nowrap">${(r.created_at||"").slice(0,16).replace("T"," ")}</td>
+            <td style="font-size:0.74rem;font-weight:${r.is_slow?700:400};color:${r.is_slow?"#dc2626":"inherit"}">${fmtMs(r.duration_ms)}</td>
+            <td>${r.is_slow ? '<span style="background:#fee2e2;color:#b91c1c;font-size:0.7rem;padding:1px 5px;border-radius:3px">느림</span>' : '<span style="color:var(--text-muted);font-size:0.7rem">—</span>'}</td>
+          </tr>`).join("")
+        : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">없음</td></tr>';
+      $("logPerfDrilldown").style.display = "";
+    });
 
     // ── Activity Log ──────────────────────────────────────────────
     let _actAuditOffset = 0, _actAuditLimit = 50;
@@ -58565,10 +58740,18 @@ async function loadDashboardClimate() {
     async function loadActivityAudit(reset) {
       if (reset) _actAuditOffset = 0;
       const type = $("actAuditEntityType").value;
-      const eid = $("actAuditEntityId").value.trim();
+      const eid = ($("actAuditEntityId").value || "").trim();
+      const action = $("logAuditAction")?.value || "";
+      const changedBy = ($("logAuditChangedBy")?.value || "").trim();
+      const dateFrom = $("logAuditDateFrom")?.value || "";
+      const dateTo = $("logAuditDateTo")?.value || "";
       let url = `/admin/activity-log?limit=${_actAuditLimit}&offset=${_actAuditOffset}`;
       if (type) url += `&entity_type=${encodeURIComponent(type)}`;
       if (eid) url += `&entity_id=${encodeURIComponent(eid)}`;
+      if (action) url += `&action=${encodeURIComponent(action)}`;
+      if (changedBy) url += `&changed_by=${encodeURIComponent(changedBy)}`;
+      if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
+      if (dateTo) url += `&date_to=${encodeURIComponent(dateTo + "T23:59:59")}`;
       const res = await fetchWithRetry(url);
       if (!res.ok) { $("actAuditCount").textContent = "조회 실패"; return; }
       const data = await res.json();
@@ -58586,8 +58769,12 @@ async function loadDashboardClimate() {
     async function loadActivityLocation(reset) {
       if (reset) _actLocOffset = 0;
       const kind = $("actLocKind").value;
+      const dateFrom = $("logLocDateFrom")?.value || "";
+      const dateTo = $("logLocDateTo")?.value || "";
       let url = `/admin/activity-log/location-events?limit=${_actLocLimit}&offset=${_actLocOffset}`;
       if (kind) url += `&movement_kind=${encodeURIComponent(kind)}`;
+      if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
+      if (dateTo) url += `&date_to=${encodeURIComponent(dateTo + "T23:59:59")}`;
       const res = await fetchWithRetry(url);
       if (!res.ok) { $("actLocCount").textContent = "조회 실패"; return; }
       const data = await res.json();
@@ -58615,18 +58802,33 @@ async function loadDashboardClimate() {
     $("actLocPrevBtn").addEventListener("click", () => { _actLocOffset = Math.max(0, _actLocOffset - _actLocLimit); loadActivityLocation(false); });
     $("actLocNextBtn").addEventListener("click", () => { _actLocOffset += _actLocLimit; loadActivityLocation(false); });
 
+    let _srvAutoRefreshTimer = null;
     async function loadServerLog() {
       const stream = $("actLogStream").value;
       const tail = parseInt($("actLogTail").value) || 200;
+      const searchTerm = ($("logSrvSearch")?.value || "").trim();
       const res = await fetchWithRetry(`/admin/server-logs?stream=${stream}&tail=${tail}`);
       const box = $("actLogBox");
       if (!res.ok) { box.textContent = "로그 조회 실패 (권한 또는 경로 미설정)"; return; }
       const data = await res.json();
-      box.textContent = data.lines.join("\n");
+      if (searchTerm) {
+        const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`(${escaped})`, "gi");
+        box.innerHTML = escapeHtml(data.lines.join("\n")).replace(
+          new RegExp(`(${escapeHtml(searchTerm).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
+          `<mark style="background:#fef08a;color:#000;border-radius:2px">$1</mark>`
+        );
+      } else {
+        box.textContent = data.lines.join("\n");
+      }
       box.scrollTop = box.scrollHeight;
     }
     $("actLogLoadBtn").addEventListener("click", loadServerLog);
     $("actLogRefreshBtn").addEventListener("click", loadServerLog);
+    $("logSrvAutoRefresh").addEventListener("change", function() {
+      clearInterval(_srvAutoRefreshTimer);
+      if (this.checked) { _srvAutoRefreshTimer = setInterval(loadServerLog, 15000); }
+    });
 
     $("opsMetaSyncTabBtn").addEventListener("click", () => switchSubTab("ops", "metasync"));
     $("opsCabinetSizeGroup").addEventListener("change", () => maybeAutofillOpsCabinetSlotCapacity(false));

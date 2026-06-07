@@ -37,7 +37,7 @@ ReleaseType = Literal["ALBUM", "EP", "SINGLE"]
 ClassificationOptionGroup = Literal["SUBTYPE", "SOUNDTRACK"]
 MusicCategory = Literal["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"]
 SourceLinkState = Literal["ANY", "MISSING", "LINKED"]
-AuthRole = Literal["ADMIN", "OPERATOR", "VIEWER"]
+AuthRole = Literal["ADMIN", "OPERATOR", "CAFE_STAFF", "VIEWER"]
 CustomerTrackRequestStatus = Literal["REQUESTED", "PLAYING", "RETURNED", "CANCELLED"]
 PurchaseImportVendor = Literal["SAILMUSIC", "AMAZON", "EBAY", "ALADIN", "YES24", "OTHER"]
 PurchaseImportSourceType = Literal["EMAIL_HTML", "EMAIL_TEXT", "FILE_UPLOAD", "MANUAL"]
@@ -536,6 +536,8 @@ class AuthAccountItem(BaseModel):
     source: Literal["SYSTEM", "MANAGED"]
     is_active: bool = True
     editable: bool = False
+    display_name: str | None = None
+    description: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -544,12 +546,16 @@ class AuthAccountCreateRequest(BaseModel):
     username: str = Field(min_length=3, max_length=80)
     password: str = Field(min_length=4, max_length=200)
     role: AuthRole = "OPERATOR"
+    display_name: str | None = Field(default=None, max_length=80)
+    description: str | None = Field(default=None, max_length=300)
 
 
 class AuthAccountUpdateRequest(BaseModel):
     password: str | None = Field(default=None, min_length=4, max_length=200)
     role: AuthRole | None = None
     is_active: bool | None = None
+    display_name: str | None = Field(default=None, max_length=80)
+    description: str | None = Field(default=None, max_length=300)
 
 
 class AuthAccountListResponse(BaseModel):

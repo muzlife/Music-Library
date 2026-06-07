@@ -41,7 +41,10 @@ AUTH_COOKIE_NAME = "__PROJECT_SLUG___session"
 AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 14  # 14 days
 AUTH_ROLE_ADMIN = "ADMIN"
 AUTH_ROLE_OPERATOR = "OPERATOR"
+AUTH_ROLE_CAFE_STAFF = "CAFE_STAFF"
 AUTH_ROLE_VIEWER = "VIEWER"
+
+_ALL_ROLES = {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_CAFE_STAFF, AUTH_ROLE_VIEWER}
 
 
 # --- Password hashing ---------------------------------------------------- #
@@ -103,7 +106,7 @@ def _db_auth_accounts() -> list[dict[str, str]]:
         username = str(row.get("username") or "").strip()
         password_hash = str(row.get("password_hash") or "").strip()
         role = str(row.get("role") or "").strip().upper()
-        if username and password_hash and role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER}:
+        if username and password_hash and role in _ALL_ROLES:
             out.append({"username": username, "password_hash": password_hash, "role": role})
     return out
 
@@ -245,10 +248,10 @@ def _read_auth_session_data(request: Request) -> dict[str, str] | None:
         return None
     if int(time.time()) - issued_at > AUTH_COOKIE_MAX_AGE:
         return None
-    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER}:
+    if role not in _ALL_ROLES:
         matched = _auth_accounts().get(username)
         role = str((matched or {}).get("role") or "").strip().upper()
-    if role not in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER}:
+    if role not in _ALL_ROLES:
         return None
     return {"username": username, "role": role}
 
@@ -265,7 +268,7 @@ def _read_auth_role(request: Request) -> str | None:
     if session is None:
         return None
     role = str(session.get("role") or "").strip().upper()
-    return role if role in {AUTH_ROLE_ADMIN, AUTH_ROLE_OPERATOR, AUTH_ROLE_VIEWER} else None
+    return role if role in _ALL_ROLES else None
 
 
 def _is_authenticated(request: Request) -> bool:
@@ -280,8 +283,27 @@ def _is_operator_role(role: str | None) -> bool:
     return str(role or "").strip().upper() == AUTH_ROLE_OPERATOR
 
 
+def _is_cafe_staff_role(role: str | None) -> bool:
+    return str(role or "").strip().upper() == AUTH_ROLE_CAFE_STAFF
+
+
 def _is_operator_or_admin_role(role: str | None) -> bool:
     return _is_admin_role(role) or _is_operator_role(role)
+
+
+def _has_permission(request: Request, permission_key: str) -> bool:
+    session = _read_auth_session_data(request)
+    if session is None:
+        return False
+    role = str(session.get("role") or "").strip().upper()
+    if role == AUTH_ROLE_ADMIN:
+        return True
+    username = str(session.get("username") or "").strip()
+    try:
+        from .db.account_permission import check_permission
+        return check_permission(username, role, permission_key)
+    except Exception:
+        return False
 
 
 def _require_admin_request(request: Request) -> None:
@@ -312,7 +334,9 @@ __all__ = [
     "AUTH_COOKIE_MAX_AGE",
     "AUTH_ROLE_ADMIN",
     "AUTH_ROLE_OPERATOR",
+    "AUTH_ROLE_CAFE_STAFF",
     "AUTH_ROLE_VIEWER",
+    "_ALL_ROLES",
     "_auth_accounts",
     "_auth_cookie_signature",
     "_auth_cookie_value",
@@ -321,8 +345,10 @@ __all__ = [
     "_env_seed_account_candidates",
     "_extra_operator_accounts",
     "_hash_auth_password",
+    "_has_permission",
     "_is_admin_role",
     "_is_authenticated",
+    "_is_cafe_staff_role",
     "_is_html_request",
     "_is_operator_role",
     "_is_operator_or_admin_role",

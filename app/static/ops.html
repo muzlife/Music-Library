@@ -1,0 +1,2759 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MUZLIFE — Operations Shell</title>
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* -------------------------------------------------------------
+       1. MODERN DESIGN SYSTEM & VARIABLE TOKENS
+       ------------------------------------------------------------- */
+    @layer reset, base, theme, layout, components, utilities;
+
+    @layer theme {
+      :root {
+        /* ── Warm Record Shop Palette ── */
+        /* Deep backgrounds: espresso, aged paper shadow */
+        --bg-main:              oklch(0.10 0.020 50);   /* near-black warm brown */
+        --bg-gradient:          radial-gradient(
+          ellipse 140% 80% at 60% 0%,
+          oklch(0.14 0.030 45),   /* warm mahogany highlight */
+          oklch(0.07 0.012 40)    /* deep espresso shadow */
+        );
+
+        /* Surface layers */
+        --surface-glass:        rgba(28, 18, 10, 0.65);
+        --surface-glass-active: rgba(42, 28, 16, 0.80);
+        --surface-border:       rgba(210, 180, 140, 0.10);
+        --surface-border-active:rgba(210, 180, 140, 0.25);
+
+        /* Text */
+        --text-primary:         oklch(0.95 0.018 75);   /* warm cream */
+        --text-secondary:       oklch(0.75 0.022 70);   /* aged parchment */
+        --text-muted:           oklch(0.50 0.020 60);   /* dusty sepia */
+
+        /* Accents */
+        --accent-amber:         oklch(0.72 0.16  65);   /* vinyl label orange-amber */
+        --accent-amber-glow:    rgba(210, 140, 40, 0.22);
+        --accent-rust:          oklch(0.58 0.18  38);   /* warm rust-red */
+        --accent-rust-glow:     rgba(185, 90, 45, 0.22);
+        --accent-gold:          oklch(0.82 0.14  85);   /* muted gold */
+        --accent-gold-glow:     rgba(210, 180, 80, 0.18);
+        --accent-sage:          oklch(0.62 0.09 145);   /* muted sage green */
+
+        /* Semantic */
+        --success:              oklch(0.68 0.12 140);
+        --success-glow:         rgba(100, 180, 100, 0.18);
+        --warning:              oklch(0.78 0.14  65);
+        --warning-glow:         rgba(210, 160, 40, 0.18);
+        --danger:               oklch(0.60 0.18  28);
+        --danger-glow:          rgba(200, 70, 50, 0.18);
+
+        /* Dimensions */
+        --radius-lg: 16px;
+        --radius-md: 10px;
+        --radius-sm: 6px;
+        --transition-std:    all 0.28s cubic-bezier(0.25, 0.8, 0.25, 1);
+        --transition-spring: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+
+        /* Fonts */
+        --font-display: 'Playfair Display', Georgia, serif;
+        --font-body:    'DM Sans', system-ui, sans-serif;
+        --font-mono:    'IBM Plex Mono', monospace;
+      }
+    }
+
+    /* -------------------------------------------------------------
+       2. BASE STYLING & RESET
+       ------------------------------------------------------------- */
+    @layer base {
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html, body {
+        width: 100%;
+        min-height: 100vh;
+        background: var(--bg-main);
+        background-image: var(--bg-gradient);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 15px;
+        line-height: 1.5;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button, input, select, textarea {
+        font-family: inherit;
+        color: inherit;
+        background: transparent;
+        border: none;
+        outline: none;
+      }
+
+      a {
+        color: var(--accent-amber);
+        text-decoration: none;
+        transition: var(--transition-std);
+      }
+      a:hover {
+        color: var(--text-primary);
+        text-shadow: 0 0 8px var(--accent-amber-glow);
+      }
+
+      /* Custom scrollbars */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+    }
+
+    /* -------------------------------------------------------------
+       3. LAYOUT & WIREFRAME
+       ------------------------------------------------------------- */
+    @layer layout {
+      .app-container {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        min-height: 100vh;
+      }
+
+      /* Sticky glassmorphic header */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 14, 24, 0.45);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-lg);
+        padding: 16px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        transition: var(--transition-std);
+      }
+
+      .logo-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo-icon {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, var(--accent-rust), var(--accent-amber));
+        border-radius: var(--radius-md);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 0 18px var(--accent-rust-glow);
+      }
+
+      .logo-title {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 700;
+        font-style: italic;
+        letter-spacing: 0.01em;
+        color: var(--text-primary);
+      }
+
+      .logo-tag {
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        background: rgba(210, 140, 40, 0.10);
+        border: 1px solid rgba(210, 140, 40, 0.20);
+        padding: 2px 7px;
+        border-radius: 4px;
+        color: var(--accent-amber);
+        text-transform: uppercase;
+        font-family: var(--font-mono);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .user-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--surface-border);
+        padding: 6px 14px;
+        border-radius: var(--radius-md);
+      }
+
+      .user-role-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 10px currentColor;
+      }
+      .role-admin    { color: var(--accent-rust); }
+      .role-operator { color: var(--accent-amber); }
+      .role-viewer   { color: var(--text-muted); }
+
+      .btn-logout {
+        padding: 8px 16px;
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        color: oklch(0.75 0.15 25);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: var(--transition-std);
+      }
+      .btn-logout:hover {
+        background: rgba(239, 68, 68, 0.15);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+        transform: translateY(-1px);
+      }
+
+      /* Stats quick banner */
+      .stats-banner {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+      }
+
+      /* Modern glassmorphic cards */
+      .card {
+        background: var(--surface-glass);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        transition: var(--transition-std);
+      }
+      .card:hover {
+        border-color: var(--surface-border-active);
+      }
+
+      .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card::before {
+        content: '';
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle, var(--accent-color-glow, rgba(210, 140, 40, 0.06)) 0%, transparent 70%);
+        top: -40px;
+        right: -40px;
+        pointer-events: none;
+      }
+
+      .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: var(--radius-md);
+        background: rgba(210, 140, 40, 0.06);
+        border: 1px solid rgba(210, 140, 40, 0.14);
+        display: grid;
+        place-items: center;
+        color: var(--accent-color, var(--accent-amber));
+      }
+
+      .stat-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+      }
+
+      .stat-value {
+        font-family: var(--font-display);
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      /* 3-Column main layout grid */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 420px 1fr 380px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      @media (max-width: 1400px) {
+        .main-grid {
+          grid-template-columns: 380px 1fr;
+        }
+        .col-right {
+          grid-column: span 2;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+        .col-right {
+          grid-column: span 1;
+          grid-template-columns: 1fr;
+        }
+      }
+    }
+
+    /* -------------------------------------------------------------
+       4. COMPONENT STYLING (GLASS COMPONENTS, BUTTONS, CARDS)
+       ------------------------------------------------------------- */
+    @layer components {
+      /* Card Headers */
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--surface-border);
+        padding-bottom: 14px;
+      }
+
+      .card-title {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card-title svg {
+        color: var(--accent-amber);
+      }
+
+      /* Controls & Input elements */
+      .search-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .input-box-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .input-box {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-md);
+        padding: 12px 16px 12px 46px;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        transition: var(--transition-std);
+      }
+
+      .input-box:focus {
+        border-color: var(--accent-amber);
+        box-shadow: 0 0 12px var(--accent-amber-glow);
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .input-icon {
+        position: absolute;
+        left: 16px;
+        color: var(--text-muted);
+        pointer-events: none;
+        transition: var(--transition-std);
+      }
+
+      .input-box:focus + .input-icon {
+        color: var(--accent-amber);
+      }
+
+      /* Filter options chips */
+      .filter-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .filter-chip {
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-sm);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition-std);
+      }
+      .filter-chip:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .filter-chip.active {
+        background: rgba(210, 140, 40, 0.12);
+        border-color: var(--accent-amber);
+        color: var(--accent-amber);
+        box-shadow: 0 0 8px var(--accent-amber-glow);
+      }
+
+      /* Results List (Modern Catalog Items) */
+      .scroll-container {
+        max-height: 600px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-right: 4px;
+      }
+
+      .result-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-md);
+        padding: 14px;
+        display: grid;
+        grid-template-columns: 60px 1fr;
+        gap: 16px;
+        cursor: pointer;
+        transition: var(--transition-spring);
+        position: relative;
+      }
+      .result-card:hover {
+        transform: translateY(-2px);
+        background: var(--surface-glass-active);
+        border-color: var(--surface-border-active);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      }
+      .result-card.selected {
+        border-color: var(--accent-amber);
+        background: rgba(210, 140, 40, 0.07);
+        box-shadow: 0 0 14px var(--accent-amber-glow);
+      }
+
+      .album-cover-wrap {
+        width: 60px;
+        height: 60px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--surface-border);
+        background: rgba(0, 0, 0, 0.3);
+        display: grid;
+        place-items: center;
+      }
+
+      .album-cover {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .album-cover-placeholder {
+        color: var(--text-muted);
+      }
+
+      .result-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .result-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .result-artist {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .result-meta-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+      }
+
+      .badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+      }
+
+      .badge-category {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--surface-border);
+        color: var(--text-secondary);
+      }
+
+      .slot-badge {
+        background: rgba(210, 140, 40, 0.10);
+        border-color: rgba(210, 140, 40, 0.22);
+        color: var(--accent-amber);
+        font-family: var(--font-mono);
+      }
+      .slot-badge.unslotted {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.2);
+        color: oklch(0.75 0.15 25);
+      }
+
+      /* Customer Requests Queue */
+      .request-item {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: var(--transition-std);
+      }
+      .request-item:hover {
+        border-color: var(--surface-border-active);
+      }
+      .request-item.playing {
+        border-color: var(--accent-amber);
+        background: rgba(210, 140, 40, 0.04);
+        box-shadow: 0 0 18px var(--accent-amber-glow);
+        position: relative;
+      }
+
+      .request-item.playing::after {
+        content: '';
+        position: absolute;
+        left: -1px;
+        top: 20%;
+        bottom: 20%;
+        width: 3px;
+        background: var(--accent-amber);
+        border-radius: 0 3px 3px 0;
+        box-shadow: 0 0 8px var(--accent-amber);
+      }
+
+      .request-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .request-song-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        word-break: break-all;
+      }
+
+      .request-meta {
+        display: flex;
+        gap: 10px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        align-items: center;
+      }
+
+      .request-user {
+        color: var(--accent-amber);
+        font-weight: 600;
+      }
+
+      .status-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .status-requested {
+        background: rgba(234, 179, 8, 0.1);
+        border-color: rgba(234, 179, 8, 0.2);
+        color: var(--warning);
+      }
+      
+      .status-playing {
+        background: rgba(210, 140, 40, 0.10);
+        border-color: rgba(210, 140, 40, 0.22);
+        color: var(--accent-amber);
+        animation: pulse-border 2s infinite ease-in-out;
+      }
+      
+      .status-returned {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.2);
+        color: var(--success);
+      }
+
+      .status-cancelled {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+
+      @keyframes pulse-border {
+        0%, 100% { border-color: rgba(210, 140, 40, 0.22); }
+        50%        { border-color: rgba(210, 140, 40, 0.55); }
+      }
+
+      .request-note {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        background: rgba(0, 0, 0, 0.15);
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        border-left: 3px solid var(--surface-border-active);
+      }
+
+      .request-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .btn-action {
+        flex: 1;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid var(--surface-border);
+        transition: var(--transition-std);
+      }
+
+      .btn-play-roon {
+        background: rgba(210, 140, 40, 0.10);
+        border-color: rgba(210, 140, 40, 0.22);
+        color: var(--accent-amber);
+      }
+      .btn-play-roon:hover:not(:disabled) {
+        background: rgba(210, 140, 40, 0.20);
+        box-shadow: 0 0 12px var(--accent-amber-glow);
+      }
+
+      .btn-return {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.2);
+        color: var(--success);
+      }
+      .btn-return:hover:not(:disabled) {
+        background: rgba(34, 197, 94, 0.2);
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
+      }
+
+      .btn-cancel {
+        background: transparent;
+        color: var(--text-muted);
+      }
+      .btn-cancel:hover:not(:disabled) {
+        color: var(--danger);
+        background: rgba(239, 68, 68, 0.08);
+        border-color: rgba(239, 68, 68, 0.15);
+      }
+
+      .btn-action:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Climate gauges */
+      .climate-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .climate-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .climate-item {
+        background: rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        position: relative;
+      }
+
+      .climate-title-mini {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+      }
+
+      .climate-val {
+        font-family: var(--font-display);
+        font-size: 1.8rem;
+        font-weight: 800;
+      }
+
+      .climate-status-text {
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .climate-safety-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+      }
+
+      .safety-optimal { background: var(--success); box-shadow: 0 0 8px var(--success-glow); }
+      .safety-warning { background: var(--warning); box-shadow: 0 0 8px var(--warning-glow); }
+      .safety-danger { background: var(--danger); box-shadow: 0 0 8px var(--danger-glow); }
+
+      /* Tab Panels */
+      .tab-header {
+        display: flex;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-md);
+        padding: 4px;
+        margin-bottom: 16px;
+      }
+
+      .tab-btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: var(--transition-std);
+      }
+      .tab-btn:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .tab-btn.active {
+        background: var(--surface-glass-active);
+        color: var(--text-primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Context & Details Overlay Drawer */
+      .details-panel {
+        background: rgba(15, 21, 35, 0.85);
+        border-left: 1px solid var(--surface-border);
+        box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 460px;
+        z-index: 1000;
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        transform: translateX(100%);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow-y: auto;
+      }
+      
+      .details-panel.open {
+        transform: translateX(0);
+      }
+
+      .details-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--surface-border);
+        padding-bottom: 14px;
+      }
+
+      .btn-close-details {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        transition: var(--transition-std);
+      }
+      .btn-close-details:hover {
+        background: rgba(255, 255, 255, 0.10);
+        color: var(--accent-amber);
+      }
+
+      .details-cover-large {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 1px solid var(--surface-border);
+        background: rgba(0, 0, 0, 0.35);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(210,180,140,0.06);
+      }
+
+      .details-meta-block {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .meta-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        padding-bottom: 8px;
+      }
+
+      .meta-field-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+      }
+
+      .meta-field-val {
+        font-size: 0.92rem;
+        color: var(--text-primary);
+      }
+
+      .artist-bio-section {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .artist-bio-text {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .track-list-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .track-item-mini {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.15);
+      }
+      
+      .track-num {
+        color: var(--accent-amber);
+        font-family: var(--font-mono);
+        font-weight: 500;
+        margin-right: 8px;
+      }
+
+      /* Shelf Window — horizontal strip */
+      .shelf-window-section {
+        border-top: 1px solid var(--surface-border);
+        padding-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .shelf-strip {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+      }
+      .shelf-strip::-webkit-scrollbar { height: 3px; }
+      .shelf-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .shelf-item {
+        flex: 0 0 70px;
+        scroll-snap-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+      .shelf-item:hover { opacity: 0.9; }
+      .shelf-item.center-item {
+        opacity: 1;
+        transform: scale(1.08);
+      }
+      .shelf-thumb {
+        width: 60px;
+        height: 60px;
+        border-radius: 6px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--surface-border);
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .shelf-item.center-item .shelf-thumb {
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 12px rgba(6,182,212,0.3);
+      }
+      .shelf-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .shelf-item-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 68px;
+      }
+      .shelf-item.center-item .shelf-item-label {
+        color: var(--accent-cyan);
+        font-weight: 600;
+      }
+      .shelf-position-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+      }
+      .shelf-pos-num {
+        font-family: var(--font-mono);
+        color: var(--accent-indigo);
+        font-weight: 700;
+      }
+
+      /* Modal Overlay & Card styling */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .modal-card {
+        background: rgba(18, 24, 38, 0.95);
+        border: 1px solid var(--surface-border-active);
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 480px;
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        transform: scale(0.9);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .modal-overlay.open .modal-card {
+        transform: scale(1);
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--surface-border);
+        padding-bottom: 12px;
+      }
+      .modal-header h3 {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 700;
+      }
+      .btn-close-modal {
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: var(--transition-std);
+      }
+      .btn-close-modal:hover {
+        color: var(--accent-cyan);
+      }
+      
+      /* Slot list item styles */
+      .slot-item {
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+        transition: var(--transition-std);
+        margin-bottom: 8px;
+      }
+      .slot-item:hover {
+        background: rgba(6, 182, 212, 0.08);
+        border-color: var(--accent-cyan);
+      }
+      .slot-item-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .slot-item-cabinet {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+      .slot-item-code {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        color: var(--accent-cyan);
+      }
+
+      /* Toast notifications */
+      .toast-container {
+        position: fixed;
+        bottom: 24px;
+        left: 24px;
+        z-index: 3000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .toast {
+        background: rgba(18, 24, 38, 0.9);
+        border: 1px solid var(--surface-border);
+        padding: 12px 20px;
+        border-radius: var(--radius-md);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 250px;
+        max-width: 400px;
+        animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .toast.success {
+        border-left: 4px solid var(--success);
+      }
+      .toast.danger {
+        border-left: 4px solid var(--danger);
+      }
+      .toast.warning {
+        border-left: 4px solid var(--warning);
+      }
+      @keyframes slide-in {
+        from { transform: translateX(-100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes fade-out {
+        to { opacity: 0; transform: translateY(10px); }
+      }
+    }
+
+    /* -------------------------------------------------------------
+       5. UTILITY CLASS DEFINITIONS
+       ------------------------------------------------------------- */
+    @layer utilities {
+      .pulse-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent-cyan);
+        box-shadow: 0 0 10px var(--accent-cyan);
+        animation: pulse-glow 1.5s infinite;
+      }
+
+      @keyframes pulse-glow {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 15px var(--accent-cyan); }
+      }
+
+      .soundwave-indicator {
+        display: inline-flex;
+        gap: 3px;
+        align-items: flex-end;
+        height: 14px;
+        margin-left: 10px;
+      }
+
+      .soundwave-bar {
+        width: 3px;
+        height: 4px;
+        background-color: var(--accent-cyan);
+        border-radius: 1px;
+        animation: wave 1s ease-in-out infinite alternate;
+      }
+      .soundwave-bar:nth-child(2) { animation-delay: 0.2s; }
+      .soundwave-bar:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes wave {
+        0% { height: 4px; }
+        100% { height: 14px; }
+      }
+
+      .u-center-flex {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(255, 255, 255, 0.05);
+        border-top-color: var(--accent-amber);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .status-text {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 12px;
+      }
+
+      /* ── Language Picker ── */
+      .locale-picker {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .locale-btn {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        font-family: var(--font-mono);
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-muted);
+        transition: var(--transition-std);
+      }
+      .locale-btn:hover {
+        color: var(--text-secondary);
+        background: rgba(210, 180, 140, 0.06);
+      }
+      .locale-btn.active {
+        color: var(--accent-amber);
+        background: rgba(210, 140, 40, 0.10);
+        border-color: rgba(210, 140, 40, 0.22);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- -------------------------------------------------------------
+         HEADER SECTION
+         ------------------------------------------------------------- -->
+    <header>
+      <div class="logo-section">
+        <div class="logo-icon">
+          <!-- Premium Compact Disc / Vinyl SVG Icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+        <h1 class="logo-title">MUZLIFE</h1>
+        <span class="logo-tag">Console</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Language picker -->
+        <div class="locale-picker" id="localePicker">
+          <button class="locale-btn" data-locale="ko">KO</button>
+          <button class="locale-btn" data-locale="en">EN</button>
+          <button class="locale-btn" data-locale="ja">JA</button>
+        </div>
+        <!-- User authentication and status metrics -->
+        <div class="user-badge" id="sessionTag">
+          <span class="user-role-dot role-viewer"></span>
+          <span id="sessionUser" style="font-weight:600;">Loading...</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn" type="button" data-i18n="ui.logout">Logout</button>
+      </div>
+    </header>
+
+    <!-- -------------------------------------------------------------
+         STATS QUICK TICKER
+         ------------------------------------------------------------- -->
+    <section class="stats-banner" id="statsBanner">
+      <div class="card stat-card" style="--accent-color: oklch(0.70 0.18 190); --accent-color-glow: rgba(6, 182, 212, 0.06);">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Location slots</span>
+          <span class="stat-value" id="statLocations">-</span>
+        </div>
+      </div>
+
+      <div class="card stat-card" style="--accent-color: oklch(0.60 0.22 265); --accent-color-glow: rgba(99, 102, 241, 0.06);">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Moved (24h)</span>
+          <span class="stat-value" id="statMoved">-</span>
+        </div>
+      </div>
+
+      <div class="card stat-card" style="--accent-color: oklch(0.72 0.15 140); --accent-color-glow: rgba(34, 197, 94, 0.06);">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Registered (24h)</span>
+          <span class="stat-value" id="statRegistered">-</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------------
+         MAIN LAYOUT GRID
+         ------------------------------------------------------------- -->
+    <main class="main-grid">
+      
+      <!-- COLUMN 1: CATALOG SEARCH & RETRIEVAL -->
+      <section class="card col-left">
+        <div class="card-header">
+          <h2 class="card-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span data-i18n="ui.catalog.title">음반 조회 &amp; 위치 검색</span>
+          </h2>
+        </div>
+
+        <div class="search-wrapper">
+          <div class="input-box-wrap">
+            <input type="text" class="input-box" id="catalogSearchInput" data-i18n-placeholder="ui.search.placeholder" placeholder="바코드 스캔 또는 앨범명, 가수 입력..." autocomplete="off">
+            <div class="input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              </svg>
+            </div>
+          </div>
+
+
+          
+          <div style="display:flex; justify-content: space-between; align-items:center; margin-top: -6px;">
+            <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600;" data-i18n="ui.sort.label">정렬 순서</label>
+            <select id="catalogSortSelect" style="background:rgba(0,0,0,0.3); border:1px solid var(--surface-border); border-radius:4px; font-size:0.8rem; padding:4px 8px; cursor:pointer;">
+              <option value="CREATED_DESC">최신 등록순</option>
+              <option value="MOVED_DESC">최근 이동순</option>
+              <option value="LOCATION_ASC">장식장 위치순</option>
+              <option value="UNSLOTTED_FIRST">미배치 우선</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="scroll-container" id="searchResultsContainer">
+          <div class="status-text" data-i18n="ui.search.hint">검색어를 입력하여 조회를 시작하세요.</div>
+        </div>
+      </section>
+
+      <!-- COLUMN 2: CUSTOMER SONG REQUESTS QUEUE -->
+      <section class="card col-middle">
+        <div class="card-header">
+          <h2 class="card-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M9 18V5l12-2v13"></path>
+              <circle cx="6" cy="18" r="3"></circle>
+              <circle cx="18" cy="16" r="3"></circle>
+            </svg>
+            <span data-i18n="ui.requests.title">실시간 고객 요청곡 접수</span>
+          </h2>
+          <div class="pulse-indicator"></div>
+        </div>
+
+        <div class="scroll-container" id="requestsQueueContainer" style="max-height: 720px; gap: 16px;">
+          <div class="status-text">요청곡 목록을 불러오고 있습니다...</div>
+        </div>
+      </section>
+
+      <!-- COLUMN 3: ENVIRONMENT CLIMATE & LIVE FEEDS -->
+      <div class="col-right">
+        
+        <!-- Environment Climate Preservation Monitor -->
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              라이브러리 보존 환경
+            </h2>
+          </div>
+          
+          <div class="climate-container" id="climateWidget">
+            <div class="climate-row">
+              <div class="climate-item">
+                <span class="climate-title-mini">실내 온도</span>
+                <span class="climate-val" id="indoorTemp">--°C</span>
+                <span class="climate-status-text" id="indoorTempStatus">측정 중</span>
+                <div class="climate-safety-bar" id="indoorTempBar"></div>
+              </div>
+              <div class="climate-item">
+                <span class="climate-title-mini">실내 습도</span>
+                <span class="climate-val" id="indoorHumidity">--%</span>
+                <span class="climate-status-text" id="indoorHumidityStatus">측정 중</span>
+                <div class="climate-safety-bar" id="indoorHumidityBar"></div>
+              </div>
+            </div>
+            
+            <div class="climate-row">
+              <div class="climate-item">
+                <span class="climate-title-mini">실외 온도</span>
+                <span class="climate-val" id="outdoorTemp">--°C</span>
+                <span class="climate-status-text" id="outdoorTempStatus">측정 중</span>
+                <div class="climate-safety-bar" id="outdoorTempBar"></div>
+              </div>
+              <div class="climate-item">
+                <span class="climate-title-mini">실외 습도</span>
+                <span class="climate-val" id="outdoorHumidity">--%</span>
+                <span class="climate-status-text" id="outdoorHumidityStatus">측정 중</span>
+                <div class="climate-safety-bar" id="outdoorHumidityBar"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Live Operations Feed Timeline -->
+        <section class="card" style="margin-top: 24px;">
+          <div class="tab-header">
+            <div class="tab-btn active" data-feed-kind="registered" data-i18n="ui.feed.registered">신규등록</div>
+            <div class="tab-btn" data-feed-kind="moved" data-i18n="ui.feed.moved">이동로그</div>
+            <div class="tab-btn" data-feed-kind="unslotted" data-i18n="ui.feed.unslotted">미배치</div>
+          </div>
+
+          <div class="scroll-container" id="feedContainer" style="max-height: 350px;">
+            <div class="status-text">피드 데이터를 불러오는 중...</div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- -------------------------------------------------------------
+       CONTEXT DETAILS DRAWER (OVERLAY SLIDE-OUT)
+       ------------------------------------------------------------- -->
+  <aside class="details-panel" id="detailsPanel">
+    <div class="details-header">
+      <h2 style="font-family: var(--font-display); font-weight:700; font-size:1.2rem;" data-i18n="ui.details.title">상세 정보</h2>
+      <div class="btn-close-details" id="closeDetailsBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Thumbnail Cover -->
+    <div class="details-cover-large" id="detailsCover">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"></circle>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </div>
+
+    <!-- Metadata Details -->
+    <div class="details-meta-block">
+      <div class="meta-field">
+        <span class="meta-field-label" data-i18n="ui.details.album">앨범명</span>
+        <span class="meta-field-val" id="detailsTitle" style="font-weight:700;">-</span>
+      </div>
+      <div class="meta-field">
+        <span class="meta-field-label" data-i18n="ui.details.artist">아티스트</span>
+        <span class="meta-field-val" id="detailsArtist">-</span>
+      </div>
+      <div class="meta-field">
+        <span class="meta-field-label" data-i18n="ui.details.location">현재 보관 위치</span>
+        <span class="meta-field-val" id="detailsLocation" style="font-weight:600; color:var(--accent-cyan);">-</span>
+      </div>
+      <div class="meta-field">
+        <span class="meta-field-label" data-i18n="ui.details.identifiers">바코드 / 카탈로그</span>
+        <span class="meta-field-val" id="detailsIdentifiers" style="font-family:var(--font-mono); font-size:0.85rem;">-</span>
+      </div>
+      <div class="meta-field">
+        <span class="meta-field-label" data-i18n="ui.details.label_date">레이블 / 출시일</span>
+        <span class="meta-field-val" id="detailsLabelAndDate">-</span>
+      </div>
+    </div>
+
+    <!-- Location Management & Corrections -->
+    <div style="display:flex; flex-direction:column; gap:10px; border-bottom: 1px solid var(--surface-border); padding-bottom: 16px;">
+      <div style="display:flex; gap:8px;">
+        <button class="btn-action btn-play-roon" id="btnChangeSlot" style="flex:1; padding:8px 12px; font-size:0.8rem;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span data-i18n="ui.details.move">위치 이동</span>
+        </button>
+        <button class="btn-action btn-return" id="btnRestoreSlot" style="flex:1; padding:8px 12px; font-size:0.8rem; display:none;" data-i18n="ui.details.restore">이전 위치 복구</button>
+      </div>
+      <button class="btn-action btn-cancel" id="btnSuggestCorrection" style="width:100%; padding:8px 12px; font-size:0.8rem; border-color:rgba(234, 179, 8, 0.25); color:var(--warning);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px; vertical-align: middle;">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path>
+        </svg>
+        <span data-i18n="ui.details.suggest">메타데이터 오류 제안</span>
+      </button>
+    </div>
+
+    <!-- AI Artist Bio Context -->
+    <div class="artist-bio-section" id="detailsBioSection" style="display:none;">
+      <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.artist_ctx">아티스트 컨텍스트 (AI)</h3>
+      <div class="artist-bio-text" id="detailsBioText">불러오는 중...</div>
+    </div>
+
+    <!-- Track List -->
+    <div class="track-list-section">
+      <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.tracks">수록곡 목록</h3>
+      <div id="detailsTrackList" style="display:flex; flex-direction:column; gap:6px;">
+        <span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>
+      </div>
+    </div>
+
+    <!-- Shelf Window View -->
+    <div class="shelf-window-section" id="shelfWindowSection" style="display:none;">
+      <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+        같은 선반 컨텍스트
+        <span class="shelf-position-badge" id="shelfPositionBadge" style="margin-left:auto;"></span>
+      </h3>
+      <div class="shelf-strip" id="shelfStripContainer"></div>
+    </div>
+  </aside>
+
+  <!-- -------------------------------------------------------------
+       6. CORE CLIENT-SIDE JAVASCRIPT ENGINE
+       ------------------------------------------------------------- -->
+  <script>
+    // ─────────────────────────────────────────────────────────────
+    // i18n ENGINE  (shares localStorage key with admin tool)
+    // ─────────────────────────────────────────────────────────────
+    const OPS_LOCALE_KEY = '__PROJECT_SLUG__.appLocale.v1';
+    const OPS_SUPPORTED  = ['ko', 'en', 'ja'];
+
+    const OPS_I18N = {
+      ko: {
+        'ui.logout':              '로그아웃',
+        'ui.loading':             '불러오는 중...',
+        'ui.search.placeholder':  '바코드 스캔 또는 앨범명, 가수 입력...',
+        'ui.search.hint':         '검색어를 입력하여 조회를 시작하세요.',
+        'ui.sort.label':          '정렬 순서',
+        'ui.sort.created_desc':   '최신 등록순',
+        'ui.sort.moved_desc':     '최근 이동순',
+        'ui.sort.location_asc':   '장식장 위치순',
+        'ui.sort.unslotted_first':'미배치 우선',
+        'ui.requests.title':      '요청곡 큐',
+        'ui.requests.empty':      '대기 중인 요청이 없습니다.',
+        'ui.requests.play':       'Roon 재생',
+        'ui.requests.done':       '완료',
+        'ui.requests.cancel':     '취소',
+        'ui.feed.registered':     '신규등록',
+        'ui.feed.moved':          '이동로그',
+        'ui.feed.unslotted':      '미배치',
+        'ui.climate.title':       '보관환경',
+        'ui.climate.indoor':      '실내',
+        'ui.climate.outdoor':     '실외',
+        'ui.details.title':       '상세 정보',
+        'ui.details.album':       '앨범명',
+        'ui.details.artist':      '아티스트',
+        'ui.details.location':    '현재 보관 위치',
+        'ui.details.identifiers': '바코드 / 카탈로그',
+        'ui.details.label_date':  '레이블 / 출시일',
+        'ui.details.move':        '위치 이동',
+        'ui.details.restore':     '이전 위치 복구',
+        'ui.details.suggest':     '메타데이터 오류 제안',
+        'ui.details.artist_ctx':  '아티스트 컨텍스트 (AI)',
+        'ui.details.tracks':      '수록곡 목록',
+        'ui.details.tracks_empty':'수록곡 정보가 없습니다.',
+        'ui.details.shelf':       '같은 선반 컨텍스트',
+        'ui.catalog.title':       '카탈로그 검색',
+        'ui.stat.locations':      '장식장 슬롯',
+        'ui.stat.moved':          '이동 (24h)',
+        'ui.stat.unslotted':      '미배치',
+        'ui.stat.total':          '총 보유',
+        'ui.slot.unassigned':     '미배치',
+        'ui.suggest.field':       '오류 필드',
+        'ui.suggest.current':     '현재 값',
+        'ui.suggest.proposed':    '제안 값',
+        'ui.suggest.reason':      '사유',
+        'ui.suggest.submit':      '제안 제출',
+        'ui.suggest.cancel':      '취소',
+        'ui.slot.select':         '이동할 슬롯 선택',
+        'ui.slot.confirm':        '이동 확인',
+      },
+      en: {
+        'ui.logout':              'Logout',
+        'ui.loading':             'Loading...',
+        'ui.search.placeholder':  'Scan barcode or type album / artist...',
+        'ui.search.hint':         'Enter a search query to start.',
+        'ui.sort.label':          'Sort by',
+        'ui.sort.created_desc':   'Recently added',
+        'ui.sort.moved_desc':     'Recently moved',
+        'ui.sort.location_asc':   'Cabinet position',
+        'ui.sort.unslotted_first':'Unslotted first',
+        'ui.requests.title':      'Request Queue',
+        'ui.requests.empty':      'No pending requests.',
+        'ui.requests.play':       'Play on Roon',
+        'ui.requests.done':       'Done',
+        'ui.requests.cancel':     'Cancel',
+        'ui.feed.registered':     'New Arrivals',
+        'ui.feed.moved':          'Move Log',
+        'ui.feed.unslotted':      'Unslotted',
+        'ui.climate.title':       'Environment',
+        'ui.climate.indoor':      'Indoor',
+        'ui.climate.outdoor':     'Outdoor',
+        'ui.details.title':       'Item Details',
+        'ui.details.album':       'Album',
+        'ui.details.artist':      'Artist',
+        'ui.details.location':    'Current Location',
+        'ui.details.identifiers': 'Barcode / Catalog',
+        'ui.details.label_date':  'Label / Release Date',
+        'ui.details.move':        'Move Location',
+        'ui.details.restore':     'Restore Previous Slot',
+        'ui.details.suggest':     'Report Metadata Error',
+        'ui.details.artist_ctx':  'Artist Context (AI)',
+        'ui.details.tracks':      'Track List',
+        'ui.details.tracks_empty':'No track information.',
+        'ui.details.shelf':       'Same Shelf Context',
+        'ui.catalog.title':       'Catalog Search',
+        'ui.stat.locations':      'Storage Slots',
+        'ui.stat.moved':          'Moved (24h)',
+        'ui.stat.unslotted':      'Unslotted',
+        'ui.stat.total':          'Total Items',
+        'ui.slot.unassigned':     'Unassigned',
+        'ui.suggest.field':       'Field',
+        'ui.suggest.current':     'Current Value',
+        'ui.suggest.proposed':    'Proposed Value',
+        'ui.suggest.reason':      'Reason',
+        'ui.suggest.submit':      'Submit',
+        'ui.suggest.cancel':      'Cancel',
+        'ui.slot.select':         'Select destination slot',
+        'ui.slot.confirm':        'Confirm Move',
+      },
+      ja: {
+        'ui.logout':              'ログアウト',
+        'ui.loading':             '読み込み中...',
+        'ui.search.placeholder':  'バーコードスキャン またはアルバム名・アーティスト名を入力...',
+        'ui.search.hint':         'キーワードを入力して検索を開始してください。',
+        'ui.sort.label':          '並び順',
+        'ui.sort.created_desc':   '新着順',
+        'ui.sort.moved_desc':     '最近移動順',
+        'ui.sort.location_asc':   '棚位置順',
+        'ui.sort.unslotted_first':'未配置優先',
+        'ui.requests.title':      'リクエストキュー',
+        'ui.requests.empty':      '待機中のリクエストはありません。',
+        'ui.requests.play':       'Roonで再生',
+        'ui.requests.done':       '完了',
+        'ui.requests.cancel':     'キャンセル',
+        'ui.feed.registered':     '新着登録',
+        'ui.feed.moved':          '移動ログ',
+        'ui.feed.unslotted':      '未配置',
+        'ui.climate.title':       '保管環境',
+        'ui.climate.indoor':      '室内',
+        'ui.climate.outdoor':     '室外',
+        'ui.details.title':       '詳細情報',
+        'ui.details.album':       'アルバム名',
+        'ui.details.artist':      'アーティスト',
+        'ui.details.location':    '現在の保管場所',
+        'ui.details.identifiers': 'バーコード / カタログ',
+        'ui.details.label_date':  'レーベル / 発売日',
+        'ui.details.move':        '場所を移動',
+        'ui.details.restore':     '前の場所に戻す',
+        'ui.details.suggest':     'メタデータの誤り報告',
+        'ui.details.artist_ctx':  'アーティストコンテキスト (AI)',
+        'ui.details.tracks':      'トラックリスト',
+        'ui.details.tracks_empty':'トラック情報がありません。',
+        'ui.details.shelf':       '同じ棚のコンテキスト',
+        'ui.catalog.title':       'カタログ検索',
+        'ui.stat.locations':      '保管スロット',
+        'ui.stat.moved':          '移動 (24h)',
+        'ui.stat.unslotted':      '未配置',
+        'ui.stat.total':          '総保有数',
+        'ui.slot.unassigned':     '未配置',
+        'ui.suggest.field':       'フィールド',
+        'ui.suggest.current':     '現在の値',
+        'ui.suggest.proposed':    '提案値',
+        'ui.suggest.reason':      '理由',
+        'ui.suggest.submit':      '提案を送信',
+        'ui.suggest.cancel':      'キャンセル',
+        'ui.slot.select':         '移動先スロットを選択',
+        'ui.slot.confirm':        '移動を確認',
+      },
+    };
+
+    let opsLocale = 'ko';
+
+    function opsT(key) {
+      return (OPS_I18N[opsLocale] || OPS_I18N.ko)[key] || (OPS_I18N.ko)[key] || key;
+    }
+
+    function opsSaveLocale(locale) {
+      opsLocale = OPS_SUPPORTED.includes(locale) ? locale : 'ko';
+      try { localStorage.setItem(OPS_LOCALE_KEY, opsLocale); } catch(_) {}
+    }
+
+    function opsLoadLocale() {
+      try {
+        const saved = localStorage.getItem(OPS_LOCALE_KEY);
+        return OPS_SUPPORTED.includes(saved) ? saved : 'ko';
+      } catch(_) { return 'ko'; }
+    }
+
+    function opsApplyLocale(locale) {
+      opsSaveLocale(locale);
+      document.documentElement.lang = opsLocale;
+
+      // Update data-i18n elements
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = opsT(key);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = opsT(el.getAttribute('data-i18n-placeholder'));
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        el.title = opsT(el.getAttribute('data-i18n-title'));
+      });
+
+      // Sync locale picker active state
+      document.querySelectorAll('[data-locale]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-locale') === opsLocale);
+      });
+
+      // Update sort options text (they're <option> elements)
+      const sortSel = document.getElementById('catalogSortSelect');
+      if (sortSel) {
+        const map = {
+          'CREATED_DESC':   'ui.sort.created_desc',
+          'MOVED_DESC':     'ui.sort.moved_desc',
+          'LOCATION_ASC':   'ui.sort.location_asc',
+          'UNSLOTTED_FIRST':'ui.sort.unslotted_first',
+        };
+        Array.from(sortSel.options).forEach(opt => {
+          if (map[opt.value]) opt.textContent = opsT(map[opt.value]);
+        });
+      }
+
+      // Update feed tab labels
+      const feedTabMap = {
+        'registered': 'ui.feed.registered',
+        'moved':      'ui.feed.moved',
+        'unslotted':  'ui.feed.unslotted',
+      };
+      document.querySelectorAll('[data-feed-kind]').forEach(btn => {
+        const key = feedTabMap[btn.getAttribute('data-feed-kind')];
+        if (key) btn.textContent = opsT(key);
+      });
+    }
+    // ─────────────────────────────────────────────────────────────
+
+    // --- Global State ---
+    let currentUser = null;
+    let selectedItemId = null;
+    let currentItem = null;
+    let currentFeedKind = 'registered';
+
+    let requestsInterval = null;
+    let climateInterval = null;
+
+    // Helper: secure fetch with credentials
+    async function apiFetch(url, options = {}) {
+      const defaultHeaders = {
+        'Content-Type': 'application/json'
+      };
+      const mergedOptions = {
+        credentials: 'include',
+        headers: { ...defaultHeaders, ...options.headers },
+        ...options
+      };
+      
+      const response = await fetch(url, mergedOptions);
+      if (response.status === 403) {
+        // Redirect to login if unauthenticated
+        window.location.href = '/login';
+        return null;
+      }
+      return response;
+    }
+
+    // Initialize Auth Session
+    async function initSession() {
+      try {
+        const res = await apiFetch('/auth/session');
+        if (!res) return;
+        const data = await res.json();
+        
+        if (!data.authenticated) {
+          window.location.href = '/login';
+          return;
+        }
+
+        currentUser = data;
+        const sessionUser = document.getElementById('sessionUser');
+        const sessionTag = document.getElementById('sessionTag');
+        
+        sessionUser.textContent = `${data.username || 'Operator'}`;
+        
+        // Setup role color coding
+        const dot = sessionTag.querySelector('.user-role-dot');
+        dot.className = 'user-role-dot'; // Reset
+        if (data.role === 'ADMIN') {
+          dot.classList.add('role-admin');
+        } else if (data.role === 'OPERATOR') {
+          dot.classList.add('role-operator');
+        } else {
+          dot.classList.add('role-viewer');
+        }
+      } catch (err) {
+        console.error('Session init failed', err);
+        window.location.href = '/login';
+      }
+    }
+
+    // Load Overview Stats
+    async function loadStats() {
+      try {
+        const res = await apiFetch('/operator/home/recent');
+        if (!res) return;
+        const data = await res.json();
+        
+        document.getElementById('statLocations').textContent = Number(data.recent_moved_total_count + data.recent_registered_total_count).toLocaleString();
+        document.getElementById('statMoved').textContent = Number(data.recent_moved_total_count).toLocaleString();
+        document.getElementById('statRegistered').textContent = Number(data.recent_registered_total_count).toLocaleString();
+      } catch (err) {
+        console.error('Stats loading failed', err);
+      }
+    }
+
+    // Escape HTML Helper
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Render Search Results Card
+    function renderCatalogItem(item) {
+      const coverUrl = item.cover_image_url;
+      const slotCode = item.current_slot_code || '';
+      const displaySlot = item.current_slot_display_name || '미배치';
+      const isUnslotted = !slotCode;
+
+      const card = document.createElement('div');
+      card.className = `result-card ${selectedItemId === item.owned_item_id ? 'selected' : ''}`;
+      card.onclick = () => selectItem(item);
+
+      card.innerHTML = `
+        <div class="album-cover-wrap">
+          ${coverUrl ? `<img src="${escapeHtml(coverUrl)}" class="album-cover" alt="Cover" loading="lazy">` : `
+            <div class="album-cover-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </div>
+          `}
+        </div>
+        <div class="result-details">
+          <div class="result-title">${escapeHtml(item.item_title || 'Unknown Title')}</div>
+          <div class="result-artist">${escapeHtml(item.artist_or_brand || 'Unknown Artist')}</div>
+          <div class="result-meta-row">
+            <span class="badge badge-category">${escapeHtml(item.category || 'Format')}</span>
+            <span class="badge slot-badge ${isUnslotted ? 'unslotted' : ''}">${escapeHtml(displaySlot)}</span>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    // Catalog Search Fetcher
+    let activeQuery = '';
+    async function doSearch() {
+      const query = document.getElementById('catalogSearchInput').value.trim();
+      const sortMode = document.getElementById('catalogSortSelect').value;
+      const resultsContainer = document.getElementById('searchResultsContainer');
+
+      if (!query) {
+        resultsContainer.innerHTML = '<div class="status-text">검색어를 입력하여 조회를 시작하세요.</div>';
+        return;
+      }
+
+      resultsContainer.innerHTML = '<div class="u-center-flex" style="padding:40px;"><div class="loading-spinner"></div></div>';
+
+      try {
+        const params = new URLSearchParams({
+          q: query,
+          limit: 30,
+          sort_mode: sortMode
+        });
+
+
+        const res = await apiFetch(`/operator/catalog-search?${params.toString()}`);
+        if (!res) return;
+        const data = await res.json();
+        
+        resultsContainer.innerHTML = '';
+        if (!data.items || data.items.length === 0) {
+          resultsContainer.innerHTML = '<div class="status-text">일치하는 음반이 없습니다.</div>';
+          return;
+        }
+
+        data.items.forEach(item => {
+          resultsContainer.appendChild(renderCatalogItem(item));
+        });
+      } catch (err) {
+        console.error('Search failed', err);
+        resultsContainer.innerHTML = '<div class="status-text" style="color:var(--danger)">검색 중 오류가 발생했습니다.</div>';
+      }
+    }
+
+    // Load AI Artist Bio Context
+    async function loadArtistContext(artistName, category) {
+      const bioSection = document.getElementById('detailsBioSection');
+      const bioText = document.getElementById('detailsBioText');
+
+      if (!artistName) {
+        bioSection.style.display = 'none';
+        return;
+      }
+
+      bioSection.style.display = 'block';
+      bioText.textContent = '아티스트 메타데이터를 검색하는 중...';
+
+      try {
+        const res = await apiFetch('/ops/artist-context', {
+          method: 'POST',
+          body: JSON.stringify({
+            artist_name: artistName,
+            category: category
+          })
+        });
+        if (!res) return;
+        const data = await res.json();
+
+        if (data && data.available && data.summary) {
+          bioText.innerHTML = escapeHtml(data.summary).replace(/\n/g, '<br>');
+        } else {
+          bioText.textContent = '등록된 아티스트 컨텍스트 정보가 없습니다.';
+        }
+      } catch (err) {
+        console.error('Bio fetch failed', err);
+        bioText.textContent = '컨텍스트를 가져오는데 실패했습니다.';
+      }
+    }
+
+    // Detail Panel Selection
+    async function selectItem(item) {
+      currentItem = item; // Store globally
+      selectedItemId = item.owned_item_id;
+      
+      // Highlight selection in results list
+      document.querySelectorAll('.result-card').forEach(el => {
+        el.classList.remove('selected');
+      });
+      // Re-render highlight if currently visible
+      doSearch(); 
+
+      // Fill Drawer details
+      const panel = document.getElementById('detailsPanel');
+      const cover = document.getElementById('detailsCover');
+      const title = document.getElementById('detailsTitle');
+      const artist = document.getElementById('detailsArtist');
+      const location = document.getElementById('detailsLocation');
+      const identifiers = document.getElementById('detailsIdentifiers');
+      const labelAndDate = document.getElementById('detailsLabelAndDate');
+      const trackList = document.getElementById('detailsTrackList');
+
+      panel.classList.add('open');
+
+      title.textContent = item.item_title || 'Unknown Title';
+      artist.textContent = item.artist_or_brand || 'Unknown Artist';
+      
+      const currentLoc = item.current_slot_display_name || '미배치 (위치 설정 필요)';
+      location.textContent = currentLoc;
+      
+      const barcodeText = item.barcode || 'N/A';
+      const catalogText = item.catalog_no || 'N/A';
+      identifiers.textContent = `Barcode: ${barcodeText} / Catalog: ${catalogText}`;
+      
+      const labelText = item.label_name || 'Unknown Label';
+      const dateText = item.released_date || 'Unknown Date';
+      labelAndDate.textContent = `${labelText} (${dateText})`;
+
+      // Configure restore position button
+      const btnRestoreSlot = document.getElementById('btnRestoreSlot');
+      if (item.previous_slot_code) {
+        btnRestoreSlot.style.display = 'block';
+        btnRestoreSlot.textContent = `복구: ${item.previous_slot_display_name || item.previous_slot_code}`;
+      } else {
+        btnRestoreSlot.style.display = 'none';
+      }
+
+      // Render cover
+      if (item.cover_image_url) {
+        cover.innerHTML = `<img src="${escapeHtml(item.cover_image_url)}" class="album-cover" style="width:100%; height:100%; object-fit:cover;" alt="Cover">`;
+      } else {
+        cover.innerHTML = `
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        `;
+      }
+
+      // Render tracks
+      trackList.innerHTML = '';
+      if (item.track_list && item.track_list.length > 0) {
+        item.track_list.forEach((track, index) => {
+          const div = document.createElement('div');
+          div.className = 'track-item-mini';
+          div.innerHTML = `<span class="track-name"><span class="track-num">${index + 1}</span>${escapeHtml(track)}</span>`;
+          trackList.appendChild(div);
+        });
+      } else {
+        trackList.innerHTML = '<span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>';
+      }
+
+      // Trigger AI Artist context asynchronously
+      loadArtistContext(item.artist_or_brand, item.category);
+
+      // Trigger Shelf Window asynchronously
+      loadShelfWindow(item.owned_item_id, item.current_slot_code);
+    }
+
+    // Customer Requests Handlers
+    async function loadRequests() {
+      const container = document.getElementById('requestsQueueContainer');
+      try {
+        const res = await apiFetch('/operator/customer-requests?limit=20');
+        if (!res) return;
+        const data = await res.json();
+
+        container.innerHTML = '';
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<div class="status-text">대기 중인 고객 요청곡이 없습니다.</div>';
+          return;
+        }
+
+        data.items.forEach(req => {
+          const card = document.createElement('div');
+          const isPlaying = req.status === 'PLAYING';
+          card.className = `request-item ${isPlaying ? 'playing' : ''}`;
+
+          // Format Date
+          let dateStr = '';
+          try {
+            const date = new Date(req.created_at);
+            dateStr = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          } catch(e) {
+            dateStr = req.created_at;
+          }
+
+          let statusClass = 'status-requested';
+          let statusText = '접수대기';
+          if (req.status === 'PLAYING') {
+            statusClass = 'status-playing';
+            statusText = '재생 중';
+          } else if (req.status === 'RETURNED') {
+            statusClass = 'status-returned';
+            statusText = '완료';
+          } else if (req.status === 'CANCELLED') {
+            statusClass = 'status-cancelled';
+            statusText = '취소됨';
+          }
+
+          card.innerHTML = `
+            <div class="request-header">
+              <div>
+                <div class="request-song-title">${escapeHtml(req.requested_track)}</div>
+                <div class="request-meta" style="margin-top:4px;">
+                  <span class="request-user">@${escapeHtml(req.requested_by || 'Guest')}</span>
+                  <span>•</span>
+                  <span>${dateStr}</span>
+                  ${isPlaying ? `
+                    <div class="soundwave-indicator">
+                      <div class="soundwave-bar"></div>
+                      <div class="soundwave-bar"></div>
+                      <div class="soundwave-bar"></div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+              <span class="status-pill ${statusClass}">${statusText}</span>
+            </div>
+            
+            ${req.customer_note ? `<div class="request-note">${escapeHtml(req.customer_note)}</div>` : ''}
+            
+            ${req.item_title ? `
+              <div style="font-size:0.8rem; background:rgba(255,255,255,0.01); border:1px dashed var(--surface-border); border-radius:6px; padding:8px 12px; display:flex; gap:10px; align-items:center;">
+                <span style="font-weight:700; color:var(--accent-cyan); font-family:var(--font-mono);">${escapeHtml(req.current_live_slot_code || '미배치')}</span>
+                <span style="color:var(--text-secondary);">${escapeHtml(req.artist_or_brand)} - ${escapeHtml(req.item_title)}</span>
+              </div>
+            ` : ''}
+
+            ${req.status === 'REQUESTED' || isPlaying ? `
+              <div class="request-actions">
+                ${req.status === 'REQUESTED' ? `
+                  <button class="btn-action btn-play-roon" onclick="handlePlayRequest(${req.id})">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Roon 재생
+                  </button>
+                ` : ''}
+                <button class="btn-action btn-return" onclick="handleCompleteRequest(${req.id})">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  반납완료
+                </button>
+                <button class="btn-action btn-cancel" onclick="handleCancelRequest(${req.id})">취소</button>
+              </div>
+            ` : ''}
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Requests load failed', err);
+        container.innerHTML = '<div class="status-text" style="color:var(--danger)">요청곡 리스트를 불러오는데 실패했습니다.</div>';
+      }
+    }
+
+    async function handlePlayRequest(id) {
+      try {
+        const res = await apiFetch(`/operator/roon/play/${id}`, { method: 'POST' });
+        if (res && res.ok) {
+          loadRequests();
+        }
+      } catch (err) {
+        console.error('Play request failed', err);
+      }
+    }
+
+    async function handleCompleteRequest(id) {
+      try {
+        const res = await apiFetch(`/operator/customer-requests/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'RETURNED' })
+        });
+        if (res && res.ok) {
+          loadRequests();
+          loadStats();
+        }
+      } catch (err) {
+        console.error('Complete request failed', err);
+      }
+    }
+
+    async function handleCancelRequest(id) {
+      if (!confirm('요청을 취소하시겠습니까?')) return;
+      try {
+        const res = await apiFetch(`/operator/customer-requests/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'CANCELLED' })
+        });
+        if (res && res.ok) {
+          loadRequests();
+          loadStats();
+        }
+      } catch (err) {
+        console.error('Cancel request failed', err);
+      }
+    }
+
+    // Preservation Climate Widget Loader
+    async function loadClimate() {
+      try {
+        const res = await apiFetch('/operator/climate-compare');
+        if (!res) return;
+        const data = await res.json();
+
+        // Indoor elements
+        const inTemp = document.getElementById('indoorTemp');
+        const inHum = document.getElementById('indoorHumidity');
+        const inTempStatus = document.getElementById('indoorTempStatus');
+        const inHumStatus = document.getElementById('indoorHumidityStatus');
+        const inTempBar = document.getElementById('indoorTempBar');
+        const inHumBar = document.getElementById('indoorHumidityBar');
+
+        if (data.indoor_available) {
+          inTemp.textContent = `${data.indoor_temperature_c?.toFixed(1) ?? '--'}°C`;
+          inHum.textContent = `${data.indoor_humidity_percent?.toFixed(0) ?? '--'}%`;
+
+          // Preservation Humidity evaluation (Ideal is 35%-50% for LPs)
+          const hum = data.indoor_humidity_percent;
+          inHumBar.className = 'climate-safety-bar'; // Reset
+          if (hum >= 35 && hum <= 50) {
+            inHumStatus.textContent = '적정 (최적보관)';
+            inHumStatus.style.color = 'var(--success)';
+            inHumBar.classList.add('safety-optimal');
+          } else if (hum >= 30 && hum <= 55) {
+            inHumStatus.textContent = '주의 (습도관리)';
+            inHumStatus.style.color = 'var(--warning)';
+            inHumBar.classList.add('safety-warning');
+          } else {
+            inHumStatus.textContent = '위험 (손상우려)';
+            inHumStatus.style.color = 'var(--danger)';
+            inHumBar.classList.add('safety-danger');
+          }
+
+          // Preservation Temp evaluation (Ideal is 15-22°C)
+          const temp = data.indoor_temperature_c;
+          inTempBar.className = 'climate-safety-bar';
+          if (temp >= 15 && temp <= 22) {
+            inTempStatus.textContent = '쾌적 (안정)';
+            inTempStatus.style.color = 'var(--success)';
+            inTempBar.classList.add('safety-optimal');
+          } else if (temp >= 10 && temp <= 26) {
+            inTempStatus.textContent = '경고 (온도주의)';
+            inTempStatus.style.color = 'var(--warning)';
+            inTempBar.classList.add('safety-warning');
+          } else {
+            inTempStatus.textContent = '위험 (변형우려)';
+            inTempStatus.style.color = 'var(--danger)';
+            inTempBar.classList.add('safety-danger');
+          }
+        } else {
+          inTempStatus.textContent = '센서 오프라인';
+          inHumStatus.textContent = '센서 오프라인';
+        }
+
+        // Outdoor elements
+        const outTemp = document.getElementById('outdoorTemp');
+        const outHum = document.getElementById('outdoorHumidity');
+        const outTempStatus = document.getElementById('outdoorTempStatus');
+        const outHumStatus = document.getElementById('outdoorHumidityStatus');
+
+        if (data.outdoor_available) {
+          outTemp.textContent = `${data.outdoor_temperature_c?.toFixed(1) ?? '--'}°C`;
+          outHum.textContent = `${data.outdoor_humidity_percent?.toFixed(0) ?? '--'}%`;
+          outTempStatus.textContent = data.outdoor_weather_desc || '날씨 양호';
+          outHumStatus.textContent = '실외 환경';
+        } else {
+          outTempStatus.textContent = '관측불가';
+          outHumStatus.textContent = '관측불가';
+        }
+      } catch (err) {
+        console.error('Climate load failed', err);
+      }
+    }
+
+    // Live Feed Timeline Loader
+    async function loadFeed() {
+      const container = document.getElementById('feedContainer');
+      container.innerHTML = '<div class="u-center-flex" style="padding:20px;"><div class="loading-spinner" style="width:20px; height:20px;"></div></div>';
+
+      try {
+        const res = await apiFetch(`/operator/home/feed?kind=${currentFeedKind}&page=1&limit=20`);
+        if (!res) return;
+        const data = await res.json();
+
+        container.innerHTML = '';
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<div class="status-text">이벤트 기록이 없습니다.</div>';
+          return;
+        }
+
+        data.items.forEach(item => {
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:10px 12px; background:rgba(255,255,255,0.01); border:1px solid var(--surface-border); border-radius:6px; font-size:0.82rem; line-height:1.4; display:flex; flex-direction:column; gap:4px; transition:var(--transition-std); cursor:pointer;';
+          row.onclick = () => {
+            // Mapping format from feed response to operator catalog search schema
+            selectItem({
+              owned_item_id: item.owned_item_id,
+              item_title: item.item_title,
+              artist_or_brand: item.artist_or_brand,
+              current_slot_display_name: item.current_slot_display_name,
+              barcode: item.barcode,
+              catalog_no: item.catalog_no,
+              label_name: item.label_name,
+              released_date: item.released_date,
+              cover_image_url: item.cover_image_url,
+              category: item.category,
+              track_list: []
+            });
+          };
+
+          let timeStr = '';
+          try {
+            const date = new Date(item.created_at);
+            timeStr = date.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) + ' ' + date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          } catch(e) {
+            timeStr = item.created_at;
+          }
+
+          row.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%;">${escapeHtml(item.item_title)}</span>
+              <span style="font-size:0.7rem; color:var(--text-muted);">${timeStr}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-secondary);">
+              <span>${escapeHtml(item.artist_or_brand)}</span>
+              <span style="color:var(--accent-cyan); font-family:var(--font-mono); font-weight:600;">${escapeHtml(item.current_slot_code || '미배치')}</span>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+      } catch (err) {
+        console.error('Feed load failed', err);
+        container.innerHTML = '<div class="status-text" style="color:var(--danger)">피드 로딩 실패.</div>';
+      }
+    }
+
+    // Keyboard Global Barcode Scanner listener
+    let barcodeBuffer = '';
+    let lastKeyTime = Date.now();
+    window.addEventListener('keydown', (e) => {
+      // Ignore if user is currently typing in an input element
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+        return;
+      }
+
+      const currentTime = Date.now();
+      if (currentTime - lastKeyTime > 200) {
+        barcodeBuffer = ''; // Reset buffer if typing is slow
+      }
+      lastKeyTime = currentTime;
+
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length >= 3) {
+          // Process barcode search
+          const searchInput = document.getElementById('catalogSearchInput');
+          searchInput.value = barcodeBuffer;
+          doSearch();
+          barcodeBuffer = '';
+        }
+      } else if (e.key.length === 1) {
+        barcodeBuffer += e.key;
+      }
+    });
+
+    // --- Toast Notification ---
+    function showNotification(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fade-out 0.4s ease forwards';
+        setTimeout(() => toast.remove(), 400);
+      }, 3500);
+    }
+
+    // --- Location Management JavaScript ---
+    let storageSlotsCache = null;
+
+    async function loadStorageSlots() {
+      if (storageSlotsCache) return storageSlotsCache;
+      try {
+        const res = await apiFetch('/storage-slots');
+        if (!res) return [];
+        storageSlotsCache = await res.json();
+        return storageSlotsCache;
+      } catch (err) {
+        console.error('Failed to load storage slots', err);
+        return [];
+      }
+    }
+
+    async function openSlotModal() {
+      if (!currentItem) return;
+      const modal = document.getElementById('slotModal');
+      modal.classList.add('open');
+      modal.style.display = 'flex';
+      
+      const slots = await loadStorageSlots();
+      renderSlots(slots);
+    }
+
+    function closeSlotModal() {
+      const modal = document.getElementById('slotModal');
+      modal.classList.remove('open');
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+      document.getElementById('slotSearchInput').value = '';
+    }
+
+    function renderSlots(slots) {
+      const container = document.getElementById('slotListContainer');
+      container.innerHTML = '';
+      
+      if (slots.length === 0) {
+        container.innerHTML = '<div class="status-text">사용 가능한 슬롯이 없습니다.</div>';
+        return;
+      }
+
+      slots.forEach(slot => {
+        const div = document.createElement('div');
+        div.className = 'slot-item';
+        div.onclick = () => selectSlotForItem(slot.id, slot.display_name || slot.slot_code);
+        
+        div.innerHTML = `
+          <div class="slot-item-info">
+            <span class="slot-item-code">${escapeHtml(slot.display_name || slot.slot_code)}</span>
+            <span class="slot-item-cabinet">${escapeHtml(slot.cabinet_name || 'Cabinet')}</span>
+          </div>
+          <span class="badge badge-category">${escapeHtml(slot.allowed_size_group)}</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function selectSlotForItem(slotId, slotName) {
+      if (!currentItem) return;
+      try {
+        const res = await apiFetch(`/owned-items/${currentItem.owned_item_id}/slot`, {
+          method: 'PATCH',
+          body: JSON.stringify({ storage_slot_id: slotId })
+        });
+        if (res && res.ok) {
+          closeSlotModal();
+          // Update the UI locally
+          currentItem.current_slot_code = slotId ? 'SLOT' : '';
+          currentItem.current_slot_display_name = slotName;
+          document.getElementById('detailsLocation').textContent = slotName;
+          
+          // Refresh search, stats, and feeds
+          doSearch();
+          loadStats();
+          loadFeed();
+          
+          showNotification('위치가 성공적으로 변경되었습니다.', 'success');
+        } else {
+          const errData = await res.json();
+          showNotification(errData.detail || '위치 변경에 실패했습니다.', 'danger');
+        }
+      } catch (err) {
+        console.error('Failed to change slot', err);
+        showNotification('네트워크 오류가 발생했습니다.', 'danger');
+      }
+    }
+
+    async function restorePreviousSlot() {
+      if (!currentItem || !currentItem.previous_slot_code) return;
+      if (!confirm(`이전 위치(${currentItem.previous_slot_display_name || currentItem.previous_slot_code})로 복구하시겠습니까?`)) return;
+      
+      try {
+        const res = await apiFetch(`/owned-items/${currentItem.owned_item_id}/restore-previous-slot`, {
+          method: 'POST'
+        });
+        if (res && res.ok) {
+          const data = await res.json();
+          
+          // Update local details
+          currentItem.current_slot_code = data.storage_slot_id ? 'SLOT' : '';
+          currentItem.current_slot_display_name = data.slot_code || '배치됨';
+          document.getElementById('detailsLocation').textContent = data.slot_code || '배치됨';
+          
+          // Hide restore button now
+          document.getElementById('btnRestoreSlot').style.display = 'none';
+          
+          // Refresh search, stats, and feeds
+          doSearch();
+          loadStats();
+          loadFeed();
+          
+          showNotification('이전 위치로 성공적으로 복구되었습니다.', 'success');
+        } else {
+          const errData = await res.json();
+          showNotification(errData.detail || '위치 복구에 실패했습니다.', 'danger');
+        }
+      } catch (err) {
+        console.error('Failed to restore slot', err);
+        showNotification('네트워크 오류가 발생했습니다.', 'danger');
+      }
+    }
+
+    // --- Metadata Correction suggestion JavaScript ---
+    function openCorrectionModal() {
+      if (!currentItem) return;
+      const modal = document.getElementById('correctionModal');
+      modal.classList.add('open');
+      modal.style.display = 'flex';
+      
+      // Populate fields from currentItem
+      document.getElementById('corrTitle').value = currentItem.item_title || '';
+      document.getElementById('corrArtist').value = currentItem.artist_or_brand || '';
+      document.getElementById('corrBarcode').value = currentItem.barcode || '';
+      document.getElementById('corrCatalogNo').value = currentItem.catalog_no || '';
+      document.getElementById('corrLabel').value = currentItem.label_name || '';
+      document.getElementById('corrReleased').value = currentItem.released_date || '';
+      document.getElementById('corrTracks').value = (currentItem.track_list || []).join('\n');
+      document.getElementById('corrReason').value = '';
+    }
+
+    function closeCorrectionModal() {
+      const modal = document.getElementById('correctionModal');
+      modal.classList.remove('open');
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+    }
+
+    async function submitCorrection() {
+      if (!currentItem) return;
+      
+      const title = document.getElementById('corrTitle').value.trim();
+      const artist = document.getElementById('corrArtist').value.trim();
+      const barcode = document.getElementById('corrBarcode').value.trim();
+      const catalogNo = document.getElementById('corrCatalogNo').value.trim();
+      const label = document.getElementById('corrLabel').value.trim();
+      const released = document.getElementById('corrReleased').value.trim();
+      const tracksText = document.getElementById('corrTracks').value;
+      const reason = document.getElementById('corrReason').value.trim();
+      
+      if (!reason) {
+        alert('제안 사유를 작성해주세요.');
+        return;
+      }
+      
+      const tracks = tracksText.split('\n')
+        .map(t => t.trim())
+        .filter(Boolean);
+        
+      const payload = {
+        item_title: title || null,
+        artist_or_brand: artist || null,
+        barcode: barcode || null,
+        catalog_no: catalogNo || null,
+        label_name: label || null,
+        released_date: released || null,
+        track_list: tracks.length > 0 ? tracks : null,
+        reason: reason
+      };
+
+      try {
+        const res = await apiFetch(`/operator/suggest-correction/${currentItem.owned_item_id}`, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        if (res && res.ok) {
+          closeCorrectionModal();
+          showNotification('수정 제안이 제출되었습니다. (관리자 검토 예정)', 'success');
+        } else {
+          const errData = await res.json();
+          showNotification(errData.detail || '제출에 실패했습니다.', 'danger');
+        }
+      } catch (err) {
+        console.error('Failed to submit correction', err);
+        showNotification('네트워크 오류가 발생했습니다.', 'danger');
+      }
+    }
+
+    // --- DOM Event Bindings ---
+    document.addEventListener('DOMContentLoaded', async () => {
+      // ── i18n: load saved locale and apply ──────────────────────
+      opsApplyLocale(opsLoadLocale());
+      document.querySelectorAll('[data-locale]').forEach(btn => {
+        btn.addEventListener('click', () => opsApplyLocale(btn.getAttribute('data-locale')));
+      });
+      // ────────────────────────────────────────────────────────────
+
+      // Initialize layout
+      await initSession();
+      loadStats();
+      loadRequests();
+      loadClimate();
+      loadFeed();
+
+      // Bind Search events
+      const searchInput = document.getElementById('catalogSearchInput');
+      searchInput.addEventListener('input', () => {
+        // Simple debounce for search queries
+        clearTimeout(window.searchTimeout);
+        window.searchTimeout = setTimeout(doSearch, 300);
+      });
+      document.getElementById('catalogSortSelect').addEventListener('change', doSearch);
+
+
+
+      // Timeline feed tabs binding
+      document.querySelectorAll('[data-feed-kind]').forEach(btn => {
+        btn.onclick = (e) => {
+          document.querySelectorAll('[data-feed-kind]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          currentFeedKind = e.target.getAttribute('data-feed-kind');
+          loadFeed();
+        };
+      });
+
+      // Drawer close binding
+      document.getElementById('closeDetailsBtn').onclick = () => {
+        document.getElementById('detailsPanel').classList.remove('open');
+      };
+
+      // Location & suggestion bindings
+      document.getElementById('btnChangeSlot').onclick = openSlotModal;
+      document.getElementById('btnRestoreSlot').onclick = restorePreviousSlot;
+      document.getElementById('btnSuggestCorrection').onclick = openCorrectionModal;
+      
+      document.getElementById('btnCloseSlotModal').onclick = closeSlotModal;
+      document.getElementById('btnUnassignSlotBtn').onclick = () => selectSlotForItem(null, '미배치');
+      
+      document.getElementById('btnCloseCorrectionModal').onclick = closeCorrectionModal;
+      document.getElementById('btnCancelCorrection').onclick = closeCorrectionModal;
+      document.getElementById('btnSubmitCorrection').onclick = submitCorrection;
+
+      document.getElementById('slotSearchInput').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const filtered = (storageSlotsCache || []).filter(slot => {
+          const code = (slot.display_name || slot.slot_code || '').toLowerCase();
+          const cab = (slot.cabinet_name || '').toLowerCase();
+          return code.includes(query) || cab.includes(query);
+        });
+        renderSlots(filtered);
+      });
+
+      // Logout binding
+      document.getElementById('logoutBtn').onclick = async () => {
+        try {
+          const res = await apiFetch('/auth/logout', { method: 'POST' });
+          if (res && res.ok) {
+            window.location.href = '/login';
+          }
+        } catch(err) {
+          console.error('Logout failed', err);
+        }
+      };
+
+      // Set Intervals for real-time loops
+      requestsInterval = setInterval(loadRequests, 8000); // Poll requests every 8s
+      climateInterval = setInterval(loadClimate, 30000); // Poll climate every 30s
+    });
+
+    // Handle unload to clear intervals
+    window.addEventListener('beforeunload', () => {
+      clearInterval(requestsInterval);
+      clearInterval(climateInterval);
+    });
+  </script>
+  <!-- Slot Selector Modal -->
+  <div class="modal-overlay" id="slotModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>보관 위치 변경</h3>
+        <button class="btn-close-modal" id="btnCloseSlotModal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="input-box-wrap" style="margin-bottom: 16px;">
+          <input type="text" class="input-box" id="slotSearchInput" placeholder="슬롯 코드, 장식장 이름 검색..." style="padding-left: 16px;">
+        </div>
+        <div class="scroll-container" id="slotListContainer" style="max-height: 300px; gap: 8px;">
+          <!-- Slots rendered dynamically -->
+        </div>
+        <div style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px;">
+          <button class="btn-action btn-cancel" id="btnUnassignSlotBtn" style="flex: none; padding: 8px 16px;">미배치로 설정</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correction Modal -->
+  <div class="modal-overlay" id="correctionModal" style="display: none;">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3>메타데이터 수정 제안</h3>
+        <button class="btn-close-modal" id="btnCloseCorrectionModal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; padding-right: 4px;">
+        <div style="font-size: 0.8rem; color: var(--text-muted); background: rgba(234, 179, 8, 0.05); border: 1px solid rgba(234, 179, 8, 0.15); border-radius: var(--radius-sm); padding: 10px 14px; line-height: 1.4;">
+          💡 제안된 변경사항은 관리자 승인 후 즉시 반영됩니다.
+        </div>
+        
+        <div class="meta-field" style="border: none; padding: 0;">
+          <label class="meta-field-label" for="corrTitle">앨범명</label>
+          <input type="text" class="input-box" id="corrTitle" style="padding-left: 12px; margin-top: 4px;">
+        </div>
+        
+        <div class="meta-field" style="border: none; padding: 0;">
+          <label class="meta-field-label" for="corrArtist">아티스트</label>
+          <input type="text" class="input-box" id="corrArtist" style="padding-left: 12px; margin-top: 4px;">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="meta-field" style="border: none; padding: 0;">
+            <label class="meta-field-label" for="corrBarcode">바코드</label>
+            <input type="text" class="input-box" id="corrBarcode" style="padding-left: 12px; margin-top: 4px;">
+          </div>
+          <div class="meta-field" style="border: none; padding: 0;">
+            <label class="meta-field-label" for="corrCatalogNo">카탈로그 번호</label>
+            <input type="text" class="input-box" id="corrCatalogNo" style="padding-left: 12px; margin-top: 4px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="meta-field" style="border: none; padding: 0;">
+            <label class="meta-field-label" for="corrLabel">레이블</label>
+            <input type="text" class="input-box" id="corrLabel" style="padding-left: 12px; margin-top: 4px;">
+          </div>
+          <div class="meta-field" style="border: none; padding: 0;">
+            <label class="meta-field-label" for="corrReleased">발매일</label>
+            <input type="text" class="input-box" id="corrReleased" style="padding-left: 12px; margin-top: 4px;">
+          </div>
+        </div>
+
+        <div class="meta-field" style="border: none; padding: 0;">
+          <label class="meta-field-label" for="corrTracks">수록곡 목록 (줄바꿈으로 구분)</label>
+          <textarea class="input-box" id="corrTracks" rows="4" style="padding: 12px; height: auto; margin-top: 4px; resize: vertical; font-family: var(--font-mono); font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div class="meta-field" style="border: none; padding: 0;">
+          <label class="meta-field-label" for="corrReason">제안 사유 (필수)</label>
+          <textarea class="input-box" id="corrReason" rows="2" style="padding: 12px; height: auto; margin-top: 4px; resize: vertical;" placeholder="예: 바코드 오류 수정, 수록곡 누락 보강 등"></textarea>
+        </div>
+        
+        <div style="margin-top: 8px; display: flex; gap: 12px;">
+          <button class="btn-action btn-cancel" id="btnCancelCorrection" style="flex: 1;">취소</button>
+          <button class="btn-action btn-play-roon" id="btnSubmitCorrection" style="flex: 2;">수정 제안 제출</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+</body>
+</html>

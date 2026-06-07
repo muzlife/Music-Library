@@ -17,7 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 
@@ -56,12 +56,22 @@ router = APIRouter(tags=["auth"])
 
 
 @router.get("/login", include_in_schema=False)
-def login_page(request: Request):
+def login_page(request: Request, site: str | None = Query(default=None)):
     if not _auth_enabled():
         return RedirectResponse(url="/", status_code=303)
     if _is_authenticated(request):
         return RedirectResponse(url="/", status_code=303)
-    content = _LOGIN_PAGE_PATH.read_text(encoding="utf-8")
+        
+    host = request.headers.get("host", "").lower()
+    referer = request.headers.get("referer", "").lower()
+    is_ops_domain = "ops." in host or "ops." in referer or site == "ops"
+    
+    if is_ops_domain:
+        ops_login_path = _STATIC_DIR / "ops_login.html"
+        content = ops_login_path.read_text(encoding="utf-8")
+    else:
+        content = _LOGIN_PAGE_PATH.read_text(encoding="utf-8")
+        
     return HTMLResponse(content=content, headers=_HTML_NO_CACHE_HEADERS)
 
 

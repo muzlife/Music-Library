@@ -19,8 +19,8 @@ def get_audit_log(
     limit: int = Query(default=100, ge=1, le=500),
 ) -> dict[str, Any]:
     security._require_authenticated_request(request)
-    rows = db.list_audit_log(entity_type=entity_type, limit=limit)
-    return {"total_count": len(rows), "items": rows}
+    result = db.list_audit_log(entity_type=entity_type, limit=limit)
+    return {"total_count": result["total_count"], "items": result["items"]}
 
 
 @router.get("/ops/audit-log/shell", include_in_schema=False)

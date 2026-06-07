@@ -78,6 +78,8 @@ def list_auth_accounts(request: Request) -> AuthAccountListResponse:
             source="MANAGED",
             editable=True,
             is_active=bool(row.get("is_active")),
+            display_name=str(row.get("display_name") or "").strip() or None,
+            description=str(row.get("description") or "").strip() or None,
             created_at=str(row.get("created_at") or "").strip() or None,
             updated_at=str(row.get("updated_at") or "").strip() or None,
         )
@@ -104,6 +106,8 @@ def create_auth_account(payload: AuthAccountCreateRequest, request: Request) -> 
         password_hash=_hash_auth_password(payload.password),
         role=str(payload.role or "OPERATOR").strip().upper(),
         is_active=True,
+        display_name=str(payload.display_name or "").strip() or None,
+        description=str(payload.description or "").strip() or None,
     )
     if row is None:
         raise HTTPException(status_code=500, detail="계정 저장에 실패했습니다.")
@@ -114,6 +118,8 @@ def create_auth_account(payload: AuthAccountCreateRequest, request: Request) -> 
         source="MANAGED",
         editable=True,
         is_active=bool(row.get("is_active")),
+        display_name=str(row.get("display_name") or "").strip() or None,
+        description=str(row.get("description") or "").strip() or None,
         created_at=str(row.get("created_at") or "").strip() or None,
         updated_at=str(row.get("updated_at") or "").strip() or None,
     )
@@ -141,11 +147,19 @@ def update_auth_account(
     next_active = bool(existing.get("is_active")) if existing is not None else True
     if payload.is_active is not None:
         next_active = bool(payload.is_active)
+    next_display_name = str(existing.get("display_name") or "").strip() or None if existing else None
+    if payload.display_name is not None:
+        next_display_name = str(payload.display_name).strip() or None
+    next_description = str(existing.get("description") or "").strip() or None if existing else None
+    if payload.description is not None:
+        next_description = str(payload.description).strip() or None
     row = db.upsert_auth_account(
         username=username,
         password_hash=next_hash,
         role=next_role,
         is_active=next_active,
+        display_name=next_display_name,
+        description=next_description,
     )
     if row is None:
         raise HTTPException(status_code=500, detail="계정 수정에 실패했습니다.")
@@ -156,6 +170,8 @@ def update_auth_account(
         source="MANAGED",
         editable=True,
         is_active=bool(row.get("is_active")),
+        display_name=str(row.get("display_name") or "").strip() or None,
+        description=str(row.get("description") or "").strip() or None,
         created_at=str(row.get("created_at") or "").strip() or None,
         updated_at=str(row.get("updated_at") or "").strip() or None,
     )
