@@ -19,6 +19,13 @@ def _assert_index_shell_response(response):
     assert "Hahahoho Library Management Console" in response.text
 
 
+def _assert_ops_shell_response(response):
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "<!doctype html>" in response.text.lower()
+    assert "Hahahoho — Operations Shell" in response.text
+
+
 def test_unauthenticated_root_redirects_to_login(client):
     res = client.get("/", follow_redirects=False, headers={"accept": "text/html"})
     assert res.status_code == 303
@@ -28,13 +35,13 @@ def test_unauthenticated_root_redirects_to_login(client):
 def test_unauthenticated_ops_redirects_to_login(client):
     res = client.get("/ops", follow_redirects=False, headers={"accept": "text/html"})
     assert res.status_code == 303
-    assert res.headers["location"] == "/login"
+    assert res.headers["location"] == "/login?next=/ops"
 
 
 def test_unauthenticated_ops_cabinets_redirects_to_login(client):
     res = client.get("/ops/cabinets", follow_redirects=False, headers={"accept": "text/html"})
     assert res.status_code == 303
-    assert res.headers["location"] == "/login"
+    assert res.headers["location"] == "/login?next=/ops/cabinets"
 
 
 def test_login_route_serves_login_page_with_locale_and_theme_controls(client):
@@ -49,8 +56,8 @@ def test_login_route_serves_login_page_with_locale_and_theme_controls(client):
 
 def test_operator_cannot_open_admin_route(operator_client):
     res = operator_client.get("/admin", follow_redirects=False, headers={"accept": "text/html"})
-    assert res.status_code == 303
-    assert res.headers["location"] == "/ops"
+    assert res.status_code == 301
+    assert res.headers["location"] == "/"
 
 
 def test_operator_can_post_barcode_recommend_location(operator_client):
@@ -68,8 +75,13 @@ def test_operator_can_post_barcode_recommend_location(operator_client):
     assert res.status_code != 403
 
 
-def test_admin_root_redirects_to_ops(admin_client):
-    res = admin_client.get("/", follow_redirects=False, headers={"accept": "text/html"})
+def test_admin_root_serves_admin_shell(admin_client):
+    res = admin_client.get("/", follow_redirects=True, headers={"accept": "text/html"})
+    _assert_index_shell_response(res)
+
+
+def test_operator_root_redirects_to_ops(operator_client):
+    res = operator_client.get("/", follow_redirects=False, headers={"accept": "text/html"})
     assert res.status_code == 303
     assert res.headers["location"] == "/ops"
 
@@ -92,7 +104,7 @@ def test_system_status_uses_forwarded_qa_host_for_external_urls(admin_client):
 
 def test_authenticated_ops_serves_index_html(operator_client):
     res = operator_client.get("/ops", headers={"accept": "text/html"})
-    _assert_index_shell_response(res)
+    _assert_ops_shell_response(res)
 
 
 def test_authenticated_ops_cabinets_serves_index_html(operator_client):
@@ -2044,8 +2056,8 @@ def test_parse_maniadb_release_legend_falls_back_to_album_page_cover_when_varian
     )
 
     assert parsed is not None
-    assert parsed["cover_image_url"] == "https://i.maniadb.com/images/album/133/133577_f.jpg"
-    assert parsed["image_items"][0]["uri"] == "https://i.maniadb.com/images/album/133/133577_f.jpg"
+    assert parsed["cover_image_url"] == "https://i.maniadb.com/images/album/133/133577_2_f.jpg"
+    assert parsed["image_items"][0]["uri"] == "https://i.maniadb.com/images/album/133/133577_2_f.jpg"
 
 
 def test_discogs_variation_fallback_skips_artist_only_false_positives_until_title_match(monkeypatch):

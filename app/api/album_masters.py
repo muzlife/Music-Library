@@ -1433,7 +1433,7 @@ def spotify_clear_match(
         entity_id=album_master_id,
         action="SPOTIFY_CLEAR",
         changed_by=_read_auth_username(request),
-        before={"spotify_album_id": (before_row or {}).get("spotify_album_id"), "spotify_album_uri": (before_row or {}).get("spotify_album_uri")},
+        before={"spotify_album_id": before_row["spotify_album_id"] if before_row else None, "spotify_album_uri": before_row["spotify_album_uri"] if before_row else None},
         after={"spotify_album_id": None, "spotify_album_uri": None},
     )
     return {"ok": True, "album_master_id": album_master_id}
@@ -1444,12 +1444,15 @@ async def spotify_set_match(
     album_master_id: int,
     request: Request,
 ) -> dict[str, Any]:
-    """Manually set Spotify album ID for a master. ADMIN only."""
-    from ..security import _require_admin_request
-    _require_admin_request(request)
+    """Manually set Spotify album ID for a master. OPERATOR+."""
+    from ..security import _require_operator_request
+    _require_operator_request(request)
     import json as _json
 
-    body = _json.loads(await request.body())
+    try:
+        body = _json.loads(await request.body())
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid JSON body")
     spotify_album_id = str(body.get("spotify_album_id") or "").strip()
     spotify_album_uri = str(body.get("spotify_album_uri") or f"spotify:album:{spotify_album_id}").strip()
 
@@ -1475,7 +1478,7 @@ async def spotify_set_match(
         entity_id=album_master_id,
         action="SPOTIFY_MATCH",
         changed_by=_read_auth_username(request),
-        before={"spotify_album_id": (before_row or {}).get("spotify_album_id")},
+        before={"spotify_album_id": before_row["spotify_album_id"] if before_row else None},
         after={"spotify_album_id": spotify_album_id, "spotify_album_uri": spotify_album_uri},
     )
     return {"ok": True, "album_master_id": album_master_id, "spotify_album_id": spotify_album_id}

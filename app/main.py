@@ -559,6 +559,11 @@ async def auth_guard(request: Request, call_next):
         return await call_next(request)
 
     if request.method == "GET" and _is_html_request(request):
+        path_str = request.url.path
+        if path_str and path_str != "/":
+            import urllib.parse
+            encoded_path = urllib.parse.quote(path_str)
+            return RedirectResponse(url=f"/login?next={encoded_path}", status_code=303)
         return RedirectResponse(url="/login", status_code=303)
     return JSONResponse(status_code=401, content={"detail": "authentication required"})
 

@@ -30,6 +30,7 @@ def test_current_playback_sync_calls_api_not_returns_none(monkeypatch):
 
 def test_spotify_service_configured_initializes(monkeypatch):
     """When env vars are set, configured=True (spotipy init happens lazily)."""
+    monkeypatch.setenv("SPOTIFY_ENABLED", "true")
     monkeypatch.setenv("SPOTIFY_CLIENT_ID", "test_id")
     monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "test_secret")
     monkeypatch.setenv("SPOTIFY_REDIRECT_URI", "http://localhost:8100/callback")

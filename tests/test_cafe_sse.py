@@ -7,6 +7,8 @@ import pytest
 def _cleanup_cafe_global_state():
     """각 테스트 전후 cafe 모듈 전역 상태를 초기화한다."""
     from app.api import cafe
+    from app import db
+    db.ensure_startup_db_ready()
     cafe._sse_clients.clear()
     cafe._now_playing_state = None
     yield
@@ -48,6 +50,7 @@ async def test_worker_broadcasts_spotify_state(monkeypatch):
     from app.api import cafe
 
     broadcast_calls = []
+    monkeypatch.setenv("SPOTIFY_PLAYBACK_ENABLED", "true")
     monkeypatch.setattr(cafe, '_broadcast', lambda d: broadcast_calls.append(d))
     monkeypatch.setattr(cafe._local, 'current_track', lambda: None)
 

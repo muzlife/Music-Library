@@ -174,10 +174,15 @@ def _resolve_album(sp: Any, track_id: str) -> dict[str, Any]:
 
 # ── strategy 1: album search ────────────────────────────────────────
 
-def _match_by_album(sp: Any, artist: str, title: str, db_tracks: list[str]) -> dict[str, Any] | None:
+def _match_by_album(sp: Any, artist: str, title: str, db_tracks: list[str], release_year: int | None = None) -> dict[str, Any] | None:
     """Search Spotify for artist+title, verify with track sequence."""
     query = f"{artist} {title}" if artist else title
-    results = sp.search_albums_sync(query, limit=2)
+    if release_year and 1900 <= release_year <= 2030:
+        query = f"{query} year:{release_year}"
+    results = sp.search_albums_sync(query, limit=3)
+    if not results and release_year:
+        query_no_year = f"{artist} {title}" if artist else title
+        results = sp.search_albums_sync(query_no_year, limit=3)
     if not results:
         return None
 
@@ -472,7 +477,7 @@ def _match_various_artists(sp: Any, title: str, db_tracks: list[str]) -> dict[st
 def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, Any]:
     """Multi-strategy match with track sequence verification."""
     row = conn.execute(
-        "SELECT id, title, artist_or_brand FROM album_master WHERE id = ?",
+        "SELECT id, title, artist_or_brand, release_year FROM album_master WHERE id = ?",
         (master_id,),
     ).fetchone()
 
@@ -481,6 +486,7 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
 
     title = str(row["title"] or "").strip()
     artist = str(row["artist_or_brand"] or "").strip()
+    release_year = int(row["release_year"]) if row["release_year"] else None
 
     if not title:
         return {"master_id": master_id, "matched": False, "reason": "no_title"}
@@ -499,9 +505,9 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
     if not result and artist == "Various Artists":
         result = _match_various_artists(sp, title, db_tracks)
 
-    # 3. Album search (with track sequence verification)
+    # 3. Album search (with track sequence verification + release year)
     if not result:
-        result = _match_by_album(sp, artist, title, db_tracks)
+        result = _match_by_album(sp, artist, title, db_tracks, release_year=release_year)
 
     # 4. Sequential track search
     if not result and db_tracks:
@@ -528,6 +534,10 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
 
     # Store
     now = utc_now_iso()
+    before_row = conn.execute(
+        "SELECT spotify_album_id, spotify_album_uri FROM album_master WHERE id = ?",
+        (master_id,),
+    ).fetchone()
     conn.execute(
         """UPDATE album_master
            SET spotify_album_id = ?, spotify_album_uri = ?, spotify_image_url = ?, spotify_matched_at = ?, updated_at = ?
@@ -536,6 +546,23 @@ def match_spotify_for_master(conn: Any, master_id: int, sp: Any) -> dict[str, An
          result.get("image_url"), now, now, master_id),
     )
     conn.commit()
+
+    try:
+        from app.db.audit_log import log_audit_event
+        log_audit_event(
+            entity_type="album_master",
+            entity_id=master_id,
+            action="SPOTIFY_MATCH",
+            changed_by="batch",
+            before={"spotify_album_id": before_row["spotify_album_id"] if before_row else None},
+            after={
+                "spotify_album_id": result["album_id"],
+                "spotify_album_uri": result["album_uri"],
+                "match_method": result.get("match_method", "unknown"),
+            },
+        )
+    except Exception:
+        logger.debug("audit log failed for master %s", master_id)
 
     return {
         "master_id": master_id,
@@ -556,6 +583,8 @@ def batch_match_spotify(
     sp: Any,
     limit: int = 50,
     only_unmatched: bool = True,
+    domain_code: str | None = None,
+    sleep_per_item: float = 2.0,
 ) -> dict[str, int]:
     """Batch match album_masters to Spotify."""
     matched = 0
@@ -563,21 +592,33 @@ def batch_match_spotify(
     errors = 0
 
     with get_conn() as conn:
+        domain_clause = " AND domain_code = ?" if domain_code else ""
+        domain_params = [domain_code] if domain_code else []
+        track_clause = """AND EXISTS (
+                       SELECT 1 FROM album_master_member amm
+                       JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+                       WHERE amm.album_master_id = album_master.id
+                         AND mid.track_list_json IS NOT NULL AND mid.track_list_json <> '[]'
+                   )"""
         if only_unmatched:
             rows = conn.execute(
-                """SELECT id FROM album_master
+                f"""SELECT id FROM album_master
                    WHERE (spotify_album_id IS NULL OR TRIM(spotify_album_id) = '')
                      AND title IS NOT NULL AND TRIM(title) <> ''
+                     {domain_clause}
+                     {track_clause}
                    ORDER BY updated_at ASC
                    LIMIT ?""",
-                (limit,),
+                (*domain_params, limit),
             ).fetchall()
         else:
             rows = conn.execute(
-                """SELECT id FROM album_master
+                f"""SELECT id FROM album_master
                    WHERE title IS NOT NULL AND TRIM(title) <> ''
+                     {domain_clause}
+                     {track_clause}
                    ORDER BY updated_at ASC LIMIT ?""",
-                (limit,),
+                (*domain_params, limit),
             ).fetchall()
 
         for row in rows:
@@ -587,7 +628,7 @@ def batch_match_spotify(
                     matched += 1
                 else:
                     skipped += 1
-                time.sleep(2.0)
+                time.sleep(sleep_per_item)
             except Exception:
                 logger.exception("Spotify match failed for master %s", row["id"])
                 errors += 1

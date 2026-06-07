@@ -370,3 +370,63 @@ def ops_cafe_shell(request: Request):
         return _Resp(status_code=302, headers=redirect_headers)
     serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
     return FileResponse(STATIC_DIR / "ops_cafe.html", headers=serve_headers)
+
+
+class MetadataCorrectionSuggestion(BaseModel):
+    item_title: str | None = None
+    artist_or_brand: str | None = None
+    barcode: str | None = None
+    catalog_no: str | None = None
+    label_name: str | None = None
+    released_date: str | None = None
+    track_list: list[str] | None = None
+    reason: str | None = None
+
+
+@router.post("/operator/suggest-correction/{owned_item_id}")
+def suggest_metadata_correction(
+    owned_item_id: int,
+    payload: MetadataCorrectionSuggestion,
+    request: Request,
+):
+    security._require_operator_request(request)
+    row = db.get_owned_item_detail(owned_item_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Owned item not found")
+
+    username = security._read_auth_username(request) or "operator"
+    
+    batch_id = db.insert_batch(
+        ingest_source="OPERATOR_CORRECTION",
+        created_by=username,
+        notes=f"Correction suggestion for Item #{owned_item_id} ({row.get('item_title')})",
+    )
+    
+    import json
+    payload_data = {
+        "owned_item_id": owned_item_id,
+        "suggested_changes": {
+            k: v for k, v in payload.model_dump().items() if v is not None
+        },
+        "original_data": {
+            "item_title": row.get("item_title") or row.get("item_name_override"),
+            "artist_or_brand": row.get("artist_or_brand"),
+            "barcode": row.get("barcode"),
+            "catalog_no": row.get("catalog_no"),
+            "label_name": row.get("label_name"),
+            "released_date": row.get("released_date"),
+            "track_list": row.get("track_list") or [],
+        }
+    }
+    
+    db.insert_review_queue(
+        batch_id=batch_id,
+        row_no=1,
+        category=row.get("category"),
+        payload_json=json.dumps(payload_data, ensure_ascii=False),
+        candidate_json=None,
+        confidence_score=0.5,
+        review_status="NEEDS_REVIEW",
+        review_note=payload.reason or "Operator requested metadata correction",
+    )
+    return {"ok": True, "batch_id": batch_id}

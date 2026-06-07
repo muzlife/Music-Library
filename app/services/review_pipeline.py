@@ -93,7 +93,9 @@ def summarize_to_korean(text: str) -> str:
             system=_SUMMARIZE_SYSTEM,
         )
         return result.strip()[:_MAX_RESULT * 2] or text[:_MAX_RESULT]
-    except RuntimeError:
-        raise
+    except RuntimeError as e:
+        if "not configured" in str(e):
+            raise
+        return text[:_MAX_RESULT]
     except Exception:
         return text[:_MAX_RESULT]

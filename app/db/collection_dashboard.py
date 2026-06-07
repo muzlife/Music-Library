@@ -125,10 +125,30 @@ def _build_collection_dashboard_first_item_hints(
             or str(first_row.get("master_title") or "").strip()
             or None
         )
+        summary_bits = []
+        for r in ordered_rows[:5]:
+            r_artist = (
+                str(r.get("artist_or_brand") or "").strip()
+                or str(r.get("linked_artist_name") or "").strip()
+                or str(r.get("master_artist_or_brand") or "").strip()
+            )
+            r_title = (
+                str(r.get("item_name_override") or "").strip()
+                or str(r.get("master_title") or "").strip()
+            )
+            if r_artist and r_title:
+                summary_bits.append(f"• {r_artist} - {r_title}")
+            elif r_title:
+                summary_bits.append(f"• {r_title}")
+        if len(ordered_rows) > 5:
+            summary_bits.append(f"...외 {len(ordered_rows) - 5}개 더 있음")
+        stored_items_summary = "\n".join(summary_bits) if summary_bits else None
+
         hints[int(slot_id)] = {
             "first_item_artist_or_brand": artist,
             "first_item_title": title,
             "first_item_release_year": _extract_collection_dashboard_release_year(first_row),
+            "stored_items_summary": stored_items_summary,
         }
     return hints
 

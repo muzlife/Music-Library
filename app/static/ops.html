@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MUZLIFE — Operations Shell</title>
+  <title>Hahahoho — Operations Shell</title>
   
   <!-- Premium Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,54 +18,146 @@
 
     @layer theme {
       :root {
-        /* ── Warm Record Shop Palette ── */
-        /* Deep backgrounds: espresso, aged paper shadow */
-        --bg-main:              oklch(0.10 0.020 50);   /* near-black warm brown */
-        --bg-gradient:          radial-gradient(
-          ellipse 140% 80% at 60% 0%,
-          oklch(0.14 0.030 45),   /* warm mahogany highlight */
-          oklch(0.07 0.012 40)    /* deep espresso shadow */
-        );
+        /* ── Clean Professional Palette ── */
+        /* Deep flat backgrounds */
+        --bg-main:              #0f172b; /* Slate 900 */
+        --bg-gradient:          none;
 
         /* Surface layers */
-        --surface-glass:        rgba(28, 18, 10, 0.65);
-        --surface-glass-active: rgba(42, 28, 16, 0.80);
-        --surface-border:       rgba(210, 180, 140, 0.10);
-        --surface-border-active:rgba(210, 180, 140, 0.25);
+        --surface-glass:        #1e293b; /* Slate 800 */
+        --surface-glass-active: #334155; /* Slate 700 */
+        --surface-border:       rgba(255, 255, 255, 0.08);
+        --surface-border-active:rgba(255, 255, 255, 0.16);
 
         /* Text */
-        --text-primary:         oklch(0.95 0.018 75);   /* warm cream */
-        --text-secondary:       oklch(0.75 0.022 70);   /* aged parchment */
-        --text-muted:           oklch(0.50 0.020 60);   /* dusty sepia */
+        --text-primary:         #f8fafc; /* Slate 50 */
+        --text-secondary:       #cbd5e1; /* Slate 300 */
+        --text-muted:           #64748b; /* Slate 500 */
 
-        /* Accents */
-        --accent-amber:         oklch(0.72 0.16  65);   /* vinyl label orange-amber */
-        --accent-amber-glow:    rgba(210, 140, 40, 0.22);
-        --accent-rust:          oklch(0.58 0.18  38);   /* warm rust-red */
-        --accent-rust-glow:     rgba(185, 90, 45, 0.22);
-        --accent-gold:          oklch(0.82 0.14  85);   /* muted gold */
-        --accent-gold-glow:     rgba(210, 180, 80, 0.18);
-        --accent-sage:          oklch(0.62 0.09 145);   /* muted sage green */
+        /* Accents (Solid and elegant) */
+        --accent-amber:         #f59e0b; /* Amber 500 */
+        --accent-amber-glow:    transparent;
+        --accent-rust:          #ef4444; /* Red 500 */
+        --accent-rust-glow:     transparent;
+        --accent-gold:          #eab308; /* Yellow 500 */
+        --accent-gold-glow:     transparent;
+        --accent-sage:          #10b981; /* Emerald 500 */
 
         /* Semantic */
-        --success:              oklch(0.68 0.12 140);
-        --success-glow:         rgba(100, 180, 100, 0.18);
-        --warning:              oklch(0.78 0.14  65);
-        --warning-glow:         rgba(210, 160, 40, 0.18);
-        --danger:               oklch(0.60 0.18  28);
-        --danger-glow:          rgba(200, 70, 50, 0.18);
+        --success:              #10b981;
+        --success-glow:         transparent;
+        --warning:              #f59e0b;
+        --warning-glow:         transparent;
+        --danger:               #ef4444;
+        --danger-glow:          transparent;
 
-        /* Dimensions */
-        --radius-lg: 16px;
-        --radius-md: 10px;
-        --radius-sm: 6px;
-        --transition-std:    all 0.28s cubic-bezier(0.25, 0.8, 0.25, 1);
-        --transition-spring: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+        /* Dimensions (Sharp & Clean) */
+        --radius-lg: 8px;
+        --radius-md: 6px;
+        --radius-sm: 4px;
+        --transition-std:    all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-spring: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
         /* Fonts */
-        --font-display: 'Playfair Display', Georgia, serif;
-        --font-body:    'DM Sans', system-ui, sans-serif;
+        --font-display: 'Inter', system-ui, sans-serif;
+        --font-body:    'Inter', system-ui, sans-serif;
         --font-mono:    'IBM Plex Mono', monospace;
+      }
+
+      /* ── Theme Overrides ── */
+      body[data-theme="light"] {
+        --bg-main:              #f8fafc; /* Slate 50 */
+        --bg-gradient:          none;
+        --surface-glass:        #ffffff;
+        --surface-glass-active: #f1f5f9; /* Slate 100 */
+        --surface-border:       rgba(15, 23, 42, 0.08);
+        --surface-border-active:rgba(15, 23, 42, 0.16);
+        --text-primary:         #0f172a; /* Slate 900 */
+        --text-secondary:       #334155; /* Slate 700 */
+        --text-muted:           #64748b; /* Slate 500 */
+        --accent-amber:         #d97706; /* Amber 600 */
+        --accent-amber-glow:    transparent;
+        --accent-rust:          #dc2626; /* Red 600 */
+        --accent-rust-glow:     transparent;
+        --accent-gold:          #ca8a04; /* Yellow 600 */
+        --accent-gold-glow:     transparent;
+        --accent-sage:          #059669; /* Emerald 600 */
+      }
+
+      body[data-theme="paper"] {
+        --bg-main:              #f6f6f1;
+        --bg-gradient:          none;
+        --surface-glass:        rgba(255, 254, 249, 0.82);
+        --surface-glass-active: rgba(245, 245, 238, 0.92);
+        --surface-border:       rgba(107, 114, 128, 0.16);
+        --surface-border-active:rgba(107, 114, 128, 0.30);
+        --text-primary:         #1f2a37;
+        --text-secondary:       #5a6270;
+        --text-muted:           #838995;
+        --accent-amber:         #0d6660;
+        --accent-amber-glow:    transparent;
+        --accent-rust:          #9b2c2c;
+        --accent-rust-glow:     transparent;
+        --accent-gold:          #b7791f;
+        --accent-gold-glow:     transparent;
+        --accent-sage:          #2f855a;
+      }
+
+      body[data-theme="slate"] {
+        --bg-main:              #9daab7;
+        --bg-gradient:          none;
+        --surface-glass:        rgba(198, 207, 216, 0.75);
+        --surface-glass-active: rgba(189, 199, 209, 0.90);
+        --surface-border:       rgba(90, 108, 128, 0.22);
+        --surface-border-active:rgba(90, 108, 128, 0.40);
+        --text-primary:         #15202b;
+        --text-secondary:       #2d3a4d;
+        --text-muted:           #506275;
+        --accent-amber:         #c86516;
+        --accent-amber-glow:    transparent;
+        --accent-rust:          #a52626;
+        --accent-rust-glow:     transparent;
+        --accent-gold:          #9b8026;
+        --accent-gold-glow:     transparent;
+        --accent-sage:          #268560;
+      }
+
+      body[data-theme="ink"] {
+        --bg-main:              #0d1117;
+        --bg-gradient:          none;
+        --surface-glass:        rgba(13, 17, 23, 0.80);
+        --surface-glass-active: rgba(22, 28, 36, 0.92);
+        --surface-border:       rgba(110, 118, 129, 0.24);
+        --surface-border-active:rgba(110, 118, 129, 0.40);
+        --text-primary:         #e6edf3;
+        --text-secondary:       #8b949e;
+        --text-muted:           #6e7681;
+        --accent-amber:         #d2991d;
+        --accent-amber-glow:    transparent;
+        --accent-rust:          #f85149;
+        --accent-rust-glow:     transparent;
+        --accent-gold:          #c69026;
+        --accent-gold-glow:     transparent;
+        --accent-sage:          #3fb950;
+      }
+
+      body[data-theme="moss"] {
+        --bg-main:              #0f1714;
+        --bg-gradient:          none;
+        --surface-glass:        rgba(15, 23, 20, 0.80);
+        --surface-glass-active: rgba(22, 32, 28, 0.92);
+        --surface-border:       rgba(110, 140, 125, 0.22);
+        --surface-border-active:rgba(110, 140, 125, 0.40);
+        --text-primary:         #dfede4;
+        --text-secondary:       #8da398;
+        --text-muted:           #6e8276;
+        --accent-amber:         #6ba87a;
+        --accent-amber-glow:    rgba(107, 168, 122, 0.12);
+        --accent-rust:          #e57373;
+        --accent-rust-glow:     rgba(229, 115, 115, 0.12);
+        --accent-gold:          #c5a86b;
+        --accent-gold-glow:     rgba(197, 168, 107, 0.12);
+        --accent-sage:          #4db6ac;
       }
     }
 
@@ -217,7 +309,6 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        box-shadow: 0 0 10px currentColor;
       }
       .role-admin    { color: var(--accent-rust); }
       .role-operator { color: var(--accent-amber); }
@@ -235,7 +326,6 @@
       }
       .btn-logout:hover {
         background: rgba(239, 68, 68, 0.15);
-        box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
         transform: translateY(-1px);
       }
 
@@ -246,13 +336,13 @@
         gap: 20px;
       }
 
-      /* Modern glassmorphic cards */
+      /* Modern flat cards */
       .card {
         background: var(--surface-glass);
         border: 1px solid var(--surface-border);
         border-radius: var(--radius-lg);
         padding: 24px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         transition: var(--transition-std);
@@ -311,32 +401,16 @@
         color: var(--text-primary);
       }
 
-      /* 3-Column main layout grid */
+      /* 2-Column main layout grid */
       .main-grid {
         display: grid;
-        grid-template-columns: 420px 1fr 380px;
+        grid-template-columns: 1.15fr 0.85fr;
         gap: 24px;
         align-items: start;
       }
 
-      @media (max-width: 1400px) {
+      @media (max-width: 1200px) {
         .main-grid {
-          grid-template-columns: 380px 1fr;
-        }
-        .col-right {
-          grid-column: span 2;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 24px;
-        }
-      }
-
-      @media (max-width: 1024px) {
-        .main-grid {
-          grid-template-columns: 1fr;
-        }
-        .col-right {
-          grid-column: span 1;
           grid-template-columns: 1fr;
         }
       }
@@ -396,7 +470,6 @@
 
       .input-box:focus {
         border-color: var(--accent-amber);
-        box-shadow: 0 0 12px var(--accent-amber-glow);
         background: rgba(0, 0, 0, 0.3);
       }
 
@@ -436,7 +509,6 @@
         background: rgba(210, 140, 40, 0.12);
         border-color: var(--accent-amber);
         color: var(--accent-amber);
-        box-shadow: 0 0 8px var(--accent-amber-glow);
       }
 
       /* Results List (Modern Catalog Items) */
@@ -470,7 +542,6 @@
       .result-card.selected {
         border-color: var(--accent-amber);
         background: rgba(210, 140, 40, 0.07);
-        box-shadow: 0 0 14px var(--accent-amber-glow);
       }
 
       .album-cover-wrap {
@@ -569,7 +640,6 @@
       .request-item.playing {
         border-color: var(--accent-amber);
         background: rgba(210, 140, 40, 0.04);
-        box-shadow: 0 0 18px var(--accent-amber-glow);
         position: relative;
       }
 
@@ -582,7 +652,6 @@
         width: 3px;
         background: var(--accent-amber);
         border-radius: 0 3px 3px 0;
-        box-shadow: 0 0 8px var(--accent-amber);
       }
 
       .request-header {
@@ -692,7 +761,6 @@
       }
       .btn-play-roon:hover:not(:disabled) {
         background: rgba(210, 140, 40, 0.20);
-        box-shadow: 0 0 12px var(--accent-amber-glow);
       }
 
       .btn-return {
@@ -702,7 +770,6 @@
       }
       .btn-return:hover:not(:disabled) {
         background: rgba(34, 197, 94, 0.2);
-        box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
       }
 
       .btn-cancel {
@@ -774,9 +841,9 @@
         border-radius: 0 0 var(--radius-md) var(--radius-md);
       }
 
-      .safety-optimal { background: var(--success); box-shadow: 0 0 8px var(--success-glow); }
-      .safety-warning { background: var(--warning); box-shadow: 0 0 8px var(--warning-glow); }
-      .safety-danger { background: var(--danger); box-shadow: 0 0 8px var(--danger-glow); }
+      .safety-optimal { background: var(--success); }
+      .safety-warning { background: var(--warning); }
+      .safety-danger { background: var(--danger); }
 
       /* Tab Panels */
       .tab-header {
@@ -804,14 +871,13 @@
       .tab-btn.active {
         background: var(--surface-glass-active);
         color: var(--text-primary);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
 
       /* Context & Details Overlay Drawer */
       .details-panel {
-        background: rgba(15, 21, 35, 0.85);
+        background: var(--surface-glass);
         border-left: 1px solid var(--surface-border);
-        box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
         position: fixed;
         top: 0;
         right: 0;
@@ -865,7 +931,7 @@
         background: rgba(0, 0, 0, 0.35);
         display: grid;
         place-items: center;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(210,180,140,0.06);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       }
 
       .details-meta-block {
@@ -982,7 +1048,6 @@
       }
       .shelf-item.center-item .shelf-thumb {
         border-color: var(--accent-cyan);
-        box-shadow: 0 0 12px rgba(6,182,212,0.3);
       }
       .shelf-thumb img {
         width: 100%;
@@ -1163,13 +1228,12 @@
         height: 8px;
         border-radius: 50%;
         background: var(--accent-cyan);
-        box-shadow: 0 0 10px var(--accent-cyan);
         animation: pulse-glow 1.5s infinite;
       }
 
       @keyframes pulse-glow {
         0%, 100% { transform: scale(1); opacity: 0.8; }
-        50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 15px var(--accent-cyan); }
+        50% { transform: scale(1.3); opacity: 1; }
       }
 
       .soundwave-indicator {
@@ -1260,18 +1324,15 @@
          ------------------------------------------------------------- -->
     <header>
       <div class="logo-section">
-        <div class="logo-icon">
-          <!-- Premium Compact Disc / Vinyl SVG Icon -->
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </div>
-        <h1 class="logo-title">MUZLIFE</h1>
+        <img id="logoImg" src="/ui-static/images/logo-hahahoho.png" alt="hahahoho" style="height: 38px; width: auto; object-fit: contain; vertical-align: middle;" />
         <span class="logo-tag">Console</span>
       </div>
 
       <div class="header-actions">
+        <!-- Theme picker -->
+        <button class="locale-btn" id="themeToggleBtn" type="button" style="margin-right: 8px;">
+          Theme: <span id="themeToggleText">Night</span>
+        </button>
         <!-- Language picker -->
         <div class="locale-picker" id="localePicker">
           <button class="locale-btn" data-locale="ko">KO</button>
@@ -1375,81 +1436,17 @@
         </div>
       </section>
 
-      <!-- COLUMN 2: CUSTOMER SONG REQUESTS QUEUE -->
-      <section class="card col-middle">
-        <div class="card-header">
-          <h2 class="card-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M9 18V5l12-2v13"></path>
-              <circle cx="6" cy="18" r="3"></circle>
-              <circle cx="18" cy="16" r="3"></circle>
-            </svg>
-            <span data-i18n="ui.requests.title">실시간 고객 요청곡 접수</span>
-          </h2>
-          <div class="pulse-indicator"></div>
-        </div>
-
-        <div class="scroll-container" id="requestsQueueContainer" style="max-height: 720px; gap: 16px;">
-          <div class="status-text">요청곡 목록을 불러오고 있습니다...</div>
-        </div>
-      </section>
-
-      <!-- COLUMN 3: ENVIRONMENT CLIMATE & LIVE FEEDS -->
+      <!-- COLUMN 2: LIVE FEEDS -->
       <div class="col-right">
-        
-        <!-- Environment Climate Preservation Monitor -->
-        <section class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-              </svg>
-              라이브러리 보존 환경
-            </h2>
-          </div>
-          
-          <div class="climate-container" id="climateWidget">
-            <div class="climate-row">
-              <div class="climate-item">
-                <span class="climate-title-mini">실내 온도</span>
-                <span class="climate-val" id="indoorTemp">--°C</span>
-                <span class="climate-status-text" id="indoorTempStatus">측정 중</span>
-                <div class="climate-safety-bar" id="indoorTempBar"></div>
-              </div>
-              <div class="climate-item">
-                <span class="climate-title-mini">실내 습도</span>
-                <span class="climate-val" id="indoorHumidity">--%</span>
-                <span class="climate-status-text" id="indoorHumidityStatus">측정 중</span>
-                <div class="climate-safety-bar" id="indoorHumidityBar"></div>
-              </div>
-            </div>
-            
-            <div class="climate-row">
-              <div class="climate-item">
-                <span class="climate-title-mini">실외 온도</span>
-                <span class="climate-val" id="outdoorTemp">--°C</span>
-                <span class="climate-status-text" id="outdoorTempStatus">측정 중</span>
-                <div class="climate-safety-bar" id="outdoorTempBar"></div>
-              </div>
-              <div class="climate-item">
-                <span class="climate-title-mini">실외 습도</span>
-                <span class="climate-val" id="outdoorHumidity">--%</span>
-                <span class="climate-status-text" id="outdoorHumidityStatus">측정 중</span>
-                <div class="climate-safety-bar" id="outdoorHumidityBar"></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <!-- Live Operations Feed Timeline -->
-        <section class="card" style="margin-top: 24px;">
+        <section class="card">
           <div class="tab-header">
             <div class="tab-btn active" data-feed-kind="registered" data-i18n="ui.feed.registered">신규등록</div>
             <div class="tab-btn" data-feed-kind="moved" data-i18n="ui.feed.moved">이동로그</div>
             <div class="tab-btn" data-feed-kind="unslotted" data-i18n="ui.feed.unslotted">미배치</div>
           </div>
 
-          <div class="scroll-container" id="feedContainer" style="max-height: 350px;">
+          <div class="scroll-container" id="feedContainer" style="max-height: 680px;">
             <div class="status-text">피드 데이터를 불러오는 중...</div>
           </div>
         </section>
@@ -1718,6 +1715,45 @@
 
     function opsT(key) {
       return (OPS_I18N[opsLocale] || OPS_I18N.ko)[key] || (OPS_I18N.ko)[key] || key;
+    }
+
+    const APP_THEME_STORAGE_KEY = '__PROJECT_SLUG__.uiTheme.v1';
+    let opsTheme = 'night';
+    const THEMES_SUPPORTED = ['night', 'light', 'paper', 'slate', 'ink', 'moss'];
+
+    function normalizeOpsTheme(theme) {
+      const normalized = String(theme || "").trim().toLowerCase();
+      if (normalized === "day") return "light";
+      return THEMES_SUPPORTED.includes(normalized) ? normalized : "night";
+    }
+
+    function opsSaveTheme(theme) {
+      opsTheme = normalizeOpsTheme(theme);
+      try { localStorage.setItem(APP_THEME_STORAGE_KEY, opsTheme); } catch(_) {}
+    }
+
+    function opsLoadTheme() {
+      try {
+        const saved = localStorage.getItem(APP_THEME_STORAGE_KEY);
+        return normalizeOpsTheme(saved);
+      } catch(_) { return 'night'; }
+    }
+
+    function opsApplyTheme(theme) {
+      opsSaveTheme(theme);
+      document.body.setAttribute('data-theme', opsTheme);
+      const toggleText = document.getElementById('themeToggleText');
+      if (toggleText) {
+        const label = {
+          "night": "Night",
+          "light": "Light",
+          "paper": "Paper",
+          "slate": "Slate",
+          "ink": "Ink",
+          "moss": "Moss"
+        }[opsTheme] || opsTheme;
+        toggleText.textContent = label;
+      }
     }
 
     function opsSaveLocale(locale) {
@@ -2424,12 +2460,22 @@
         div.className = 'slot-item';
         div.onclick = () => selectSlotForItem(slot.id, slot.display_name || slot.slot_code);
         
+        // Build inline occupant summary
+        const count = Number(slot.item_count || 0);
+        const summary = slot.stored_items_summary || '';
+        const summaryHtml = summary 
+          ? `<div class="slot-item-summary" style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; white-space:pre-line;">${escapeHtml(summary)}</div>`
+          : `<div class="slot-item-summary" style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; font-style:italic;">빈 슬롯</div>`;
+
         div.innerHTML = `
-          <div class="slot-item-info">
-            <span class="slot-item-code">${escapeHtml(slot.display_name || slot.slot_code)}</span>
-            <span class="slot-item-cabinet">${escapeHtml(slot.cabinet_name || 'Cabinet')}</span>
+          <div style="flex:1; padding-right:12px;">
+            <div class="slot-item-info" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <span class="slot-item-code" style="font-weight:700;">${escapeHtml(slot.display_name || slot.slot_code)} (${count}개 진열)</span>
+              <span class="slot-item-cabinet" style="font-size:0.75rem; opacity:0.8;">${escapeHtml(slot.cabinet_name || 'Cabinet')}</span>
+            </div>
+            ${summaryHtml}
           </div>
-          <span class="badge badge-category">${escapeHtml(slot.allowed_size_group)}</span>
+          <span class="badge badge-category" style="align-self:center; flex-shrink:0;">${escapeHtml(slot.allowed_size_group)}</span>
         `;
         container.appendChild(div);
       });
@@ -2576,6 +2622,15 @@
 
     // --- DOM Event Bindings ---
     document.addEventListener('DOMContentLoaded', async () => {
+      // ── Theme: load saved theme and apply ──────────────────────
+      opsApplyTheme(opsLoadTheme());
+      document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
+        const idx = THEMES_SUPPORTED.indexOf(opsTheme);
+        const nextTheme = THEMES_SUPPORTED[(idx + 1) % THEMES_SUPPORTED.length];
+        opsApplyTheme(nextTheme);
+      });
+      // ────────────────────────────────────────────────────────────
+
       // ── i18n: load saved locale and apply ──────────────────────
       opsApplyLocale(opsLoadLocale());
       document.querySelectorAll('[data-locale]').forEach(btn => {
@@ -2586,8 +2641,8 @@
       // Initialize layout
       await initSession();
       loadStats();
-      loadRequests();
-      loadClimate();
+      // loadRequests();
+      // loadClimate();
       loadFeed();
 
       // Bind Search events
@@ -2651,8 +2706,8 @@
       };
 
       // Set Intervals for real-time loops
-      requestsInterval = setInterval(loadRequests, 8000); // Poll requests every 8s
-      climateInterval = setInterval(loadClimate, 30000); // Poll climate every 30s
+      // requestsInterval = setInterval(loadRequests, 8000); // Poll requests every 8s
+      // climateInterval = setInterval(loadClimate, 30000); // Poll climate every 30s
     });
 
     // Handle unload to clear intervals

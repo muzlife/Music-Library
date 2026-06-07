@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MUZLIFE — Operations Login</title>
+  <title>Hahahoho — Operations Login</title>
   
   <!-- Premium Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -235,13 +235,7 @@
 
   <div class="login-container">
     <div class="login-header">
-      <div class="logo-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="12" cy="12" r="10"></circle>
-          <circle cx="12" cy="12" r="3"></circle>
-        </svg>
-      </div>
-      <h1 class="logo-title">MUZLIFE</h1>
+      <img src="/ui-static/images/logo-hahahoho.png" alt="hahahoho" style="height: 48px; width: auto; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto;" />
       <p class="login-subtitle">Operations Shell — 현장 전용 운영 시스템</p>
     </div>
 
@@ -330,7 +324,13 @@
           statusMessage.className = 'status-message status-loading';
           
           setTimeout(() => {
-            window.location.replace('/');
+            const urlParams = new URLSearchParams(window.location.search);
+            const nextParam = urlParams.get('next');
+            if (nextParam && nextParam.startsWith('/')) {
+              window.location.replace(nextParam);
+            } else {
+              window.location.replace('/ops');
+            }
           }, 600);
 
         } catch (err) {

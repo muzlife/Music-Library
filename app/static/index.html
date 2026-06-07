@@ -108,6 +108,7 @@
       --accent-soft: #f6e3d8;
       --danger: #b91c1c;
       --ok: #0a7f43;
+      --info: #1d4ed8;
       --shadow: 0 2px 8px rgba(0,0,0,0.04);
       --app-body-background: #f6f6f1;
       --theme-shell-surface: rgba(255, 254, 249, 0.98);
@@ -163,6 +164,7 @@
       --accent-soft: #e6f7f5;
       --danger: #dc2626;
       --ok: #16a34a;
+      --info: #2563eb;
       --shadow: 0 1px 3px rgba(0,0,0,0.04);
       --app-body-background: #f3f4f6;
       --theme-shell-surface: #ffffff;
@@ -217,6 +219,7 @@
       --accent-soft: rgba(200, 101, 22, 0.10);
       --danger: #dc2626;
       --ok: #16a34a;
+      --info: #2563eb;
       --shadow: 0 2px 10px rgba(0,0,0,0.06);
       --app-body-background: linear-gradient(180deg, #94a2ae 0%, #9daab7 48%, #909daa 100%);
       --theme-shell-surface: rgba(198, 207, 216, 0.95);
@@ -271,6 +274,7 @@
       --accent-soft: rgba(210, 153, 29, 0.10);
       --danger: #f85149;
       --ok: #3fb950;
+      --info: #3b82f6;
       --shadow: 0 4px 16px rgba(0,0,0,0.4);
       --app-body-background: #0d1117;
       --theme-shell-surface: rgba(13, 17, 23, 0.98);
@@ -325,6 +329,7 @@
       --accent-soft: rgba(107, 168, 122, 0.10);
       --danger: #e0554a;
       --ok: #6ba87a;
+      --info: #60a5fa;
       --shadow: 0 4px 16px rgba(0,0,0,0.4);
       --app-body-background: #0f1714;
       --theme-shell-surface: rgba(15, 23, 20, 0.98);
@@ -3780,6 +3785,41 @@
       color: #94a3b8;
       border-color: #dbe3ec;
       background: #f8fafc;
+    }
+
+    .btn.danger {
+      background: var(--err, #dc2626);
+      color: #fff;
+    }
+    .btn.ghost.danger {
+      border-color: var(--err, #dc2626);
+      color: var(--err, #dc2626);
+    }
+    .btn.ghost.danger:hover {
+      filter: none;
+      background: var(--err, #dc2626);
+      color: #fff;
+      border-color: var(--err, #dc2626);
+    }
+    .btn.ghost.save {
+      border-color: var(--ok, #16a34a);
+      color: var(--ok, #16a34a);
+    }
+    .btn.ghost.save:hover {
+      filter: none;
+      background: var(--ok, #16a34a);
+      color: #fff;
+      border-color: var(--ok, #16a34a);
+    }
+    .btn.ghost.search {
+      border-color: var(--info, #2563eb);
+      color: var(--info, #2563eb);
+    }
+    .btn.ghost.search:hover {
+      filter: none;
+      background: var(--info, #2563eb);
+      color: #fff;
+      border-color: var(--info, #2563eb);
     }
 
     .inline-check .help-dot {
@@ -11810,6 +11850,43 @@
       background: var(--theme-dashboard-panel-soft);
     }
 
+    .admin-console-shell .btn.ghost.danger {
+      border-color: var(--err, #dc2626);
+      color: var(--err, #dc2626);
+      background: transparent;
+    }
+    .admin-console-shell .btn.ghost.danger:hover,
+    .admin-console-shell .btn.ghost.danger:focus-visible {
+      background: var(--err, #dc2626);
+      border-color: var(--err, #dc2626);
+      color: #fff;
+      filter: none;
+    }
+    .admin-console-shell .btn.ghost.save {
+      border-color: var(--ok, #16a34a);
+      color: var(--ok, #16a34a);
+      background: transparent;
+    }
+    .admin-console-shell .btn.ghost.save:hover,
+    .admin-console-shell .btn.ghost.save:focus-visible {
+      background: var(--ok, #16a34a);
+      border-color: var(--ok, #16a34a);
+      color: #fff;
+      filter: none;
+    }
+    .admin-console-shell .btn.ghost.search {
+      border-color: var(--info, #2563eb);
+      color: var(--info, #2563eb);
+      background: transparent;
+    }
+    .admin-console-shell .btn.ghost.search:hover,
+    .admin-console-shell .btn.ghost.search:focus-visible {
+      background: var(--info, #2563eb);
+      border-color: var(--info, #2563eb);
+      color: #fff;
+      filter: none;
+    }
+
     .admin-console-shell :is(button:not(.page-help-trigger), .btn, .icon-btn, .icon-symbol-btn):hover,
     .admin-console-shell :is(button:not(.page-help-trigger), .btn, .icon-btn, .icon-symbol-btn):focus-visible {
       border-color: rgba(232, 98, 10, 0.28);
@@ -14681,7 +14758,46 @@
       color: var(--console-text);
     }
 
-
+    .dashboard-console-shell .btn.ghost.danger,
+    #registeredMasterMergeCard.registered-master-merge-console .btn.ghost.danger {
+      border-color: var(--err, #dc2626);
+      color: var(--err, #dc2626);
+      background: transparent;
+    }
+    .dashboard-console-shell .btn.ghost.danger:hover,
+    .dashboard-console-shell .btn.ghost.danger:focus-visible,
+    #registeredMasterMergeCard.registered-master-merge-console .btn.ghost.danger:hover {
+      background: var(--err, #dc2626);
+      border-color: var(--err, #dc2626);
+      color: #fff;
+      filter: none;
+    }
+    .dashboard-console-shell .btn.ghost.save,
+    #registeredMasterMergeCard.registered-master-merge-console .btn.ghost.save {
+      border-color: var(--ok, #16a34a);
+      color: var(--ok, #16a34a);
+      background: transparent;
+    }
+    .dashboard-console-shell .btn.ghost.save:hover,
+    .dashboard-console-shell .btn.ghost.save:focus-visible,
+    #registeredMasterMergeCard.registered-master-merge-console .btn.ghost.save:hover {
+      background: var(--ok, #16a34a);
+      border-color: var(--ok, #16a34a);
+      color: #fff;
+      filter: none;
+    }
+    .dashboard-console-shell .btn.ghost.search {
+      border-color: var(--info, #2563eb);
+      color: var(--info, #2563eb);
+      background: transparent;
+    }
+    .dashboard-console-shell .btn.ghost.search:hover,
+    .dashboard-console-shell .btn.ghost.search:focus-visible {
+      background: var(--info, #2563eb);
+      border-color: var(--info, #2563eb);
+      color: #fff;
+      filter: none;
+    }
 
     .dashboard-console-shell :is(.dashboard-cabinet-head-sub, .dashboard-cabinet-total, .dashboard-cabinet-map-floorcode) {
       color: var(--console-text-muted);
@@ -17892,7 +18008,7 @@
         <div class="page-help-drawer-copy">
           <strong id="pageHelpTitle"></strong>
         </div>
-        <button id="pageHelpCloseBtn" class="btn ghost tiny page-help-close icon-symbol-btn icon-symbol-btn--close" type="button" data-page-help-close data-i18n="common.close">닫기</button>
+        <button id="pageHelpCloseBtn" class="btn ghost tiny page-help-close icon-symbol-btn icon-symbol-btn--close" type="button" data-page-help-close aria-label="닫기" title="닫기"></button>
       </div>
       <div id="pageHelpBody" class="page-help-drawer-body">
         <div class="mini muted" data-i18n="page_help.empty">이 페이지 도움말을 찾지 못했습니다.</div>
@@ -18198,7 +18314,7 @@
                   <div id="homeDashSelectedSortArtistRow" class="dashboard-selected-sort-artist-row">
                     <label class="dashboard-selected-sort-artist-label mini" for="homeDashSelectedSortArtistName" data-i18n="dashboard.selection.sort_artist.label">정렬 아티스트명 (마스터)</label>
                     <input id="homeDashSelectedSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-                    <button id="homeDashSelectedSortArtistSaveBtn" class="btn ghost tiny dashboard-slot-actionbtn dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+                    <button id="homeDashSelectedSortArtistSaveBtn" class="btn ghost tiny save dashboard-slot-actionbtn dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
                     <div id="homeDashSelectedSortArtistDisplay" class="dashboard-selected-sort-artist-display mini muted"></div>
                     <div class="dashboard-selected-sort-artist-note mini muted" data-i18n="dashboard.selection.sort_artist.note">같은 마스터 상품 전체의 가나다순에 적용됩니다.</div>
                   </div>
@@ -18326,7 +18442,7 @@
                             <label for="homeDashBulkMemoryNote" data-i18n="dashboard.bulk.field.memory_note.label">메모 추가</label>
                             <input id="homeDashBulkMemoryNote" data-i18n-placeholder="dashboard.bulk.field.memory_note.placeholder" placeholder="선택한 상품 메모에 같은 문구를 덧붙입니다." />
                           </div>
-                          <button id="homeDashBulkApplyBtn" class="btn ghost" type="button" data-i18n="dashboard.bulk.action.apply">선택 수정</button>
+                          <button id="homeDashBulkApplyBtn" class="btn ghost save" type="button" data-i18n="dashboard.bulk.action.apply">선택 수정</button>
                           <button id="homeDashBulkResetBtn" class="btn ghost" type="button" data-i18n="dashboard.bulk.action.reset">비우기</button>
                           <div class="mini muted" data-i18n="dashboard.bulk.note">현재 칸 또는 우측 미배치/검색 결과 작업대에서 체크한 선택 집합에 적용됩니다. 장식장 배치 전 공통 등록값도 여기서 함께 반영할 수 있습니다.</div>
                         </div>
@@ -18399,7 +18515,7 @@
                 <input id="homeDashSearchTitle" data-i18n-placeholder="dashboard.workbench.field.title.placeholder" placeholder="상품명" autocomplete="off" />
                 <input id="homeDashSearchCatalogNo" class="dashboard-workbench-search-input--catalog" data-i18n-placeholder="dashboard.workbench.field.catalog.placeholder" placeholder="카탈로그" autocomplete="off" />
                 <input id="homeDashSearchBarcode" class="dashboard-workbench-search-input--barcode" data-i18n-placeholder="dashboard.workbench.field.barcode.placeholder" placeholder="바코드" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
-                <button id="homeDashSearchRunBtn" class="btn ghost icon-btn" type="button" data-i18n-title="operator.lookup.action.run" data-i18n-aria-label="operator.lookup.action.run" title="조회" aria-label="조회">
+                <button id="homeDashSearchRunBtn" class="btn ghost search icon-btn" type="button" data-i18n-title="operator.lookup.action.run" data-i18n-aria-label="operator.lookup.action.run" title="조회" aria-label="조회">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>
                 </button>
               </div>
@@ -18439,7 +18555,7 @@
                 <div id="homeDashWorkbenchSortArtistRow" class="dashboard-selected-sort-artist-row u-hidden-initial">
                   <label class="dashboard-selected-sort-artist-label mini" for="homeDashWorkbenchSortArtistName" data-i18n="dashboard.selection.sort_artist.label">정렬 아티스트명 (마스터)</label>
                   <input id="homeDashWorkbenchSortArtistName" class="dashboard-selected-sort-artist-input" type="text" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-                  <button id="homeDashWorkbenchSortArtistSaveBtn" class="btn ghost tiny dashboard-slot-actionbtn dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+                  <button id="homeDashWorkbenchSortArtistSaveBtn" class="btn ghost tiny save dashboard-slot-actionbtn dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
                   <div id="homeDashWorkbenchSortArtistDisplay" class="dashboard-selected-sort-artist-display mini muted"></div>
                   <div class="dashboard-selected-sort-artist-note mini muted" data-i18n="dashboard.selection.sort_artist.note">같은 마스터 상품 전체의 가나다순에 적용됩니다.</div>
                 </div>
@@ -18882,8 +18998,8 @@
                         <div id="homeMasterMetaSpotifyEditRow" style="display:none;align-items:center;gap:4px;flex-wrap:wrap;">
                           <span>Spotify Album Code:</span>
                           <input id="homeMasterSpotifyMatchId" type="text" style="flex:1;min-width:160px;font-size:0.75rem;" placeholder="Spotify Album ID" />
-                          <button id="homeMasterMetaSpotifySaveBtn" type="button" class="btn ghost tiny">저장</button>
-                          <button id="homeMasterMetaSpotifyUnlinkBtn" type="button" class="btn ghost tiny" style="color:var(--err,#c00);">삭제</button>
+                          <button id="homeMasterMetaSpotifySaveBtn" type="button" class="btn ghost tiny save">저장</button>
+                          <button id="homeMasterMetaSpotifyUnlinkBtn" type="button" class="btn ghost tiny danger">삭제</button>
                           <button id="homeMasterMetaSpotifyCancelBtn" type="button" class="btn ghost tiny">취소</button>
                         </div>
                         <div id="homeMasterSpotifyMatchStatus" class="status" style="font-size:0.75rem;"></div>
@@ -18891,12 +19007,12 @@
                         <div id="homeMasterLocalRow" style="display:none;align-items:center;gap:4px;">
                           <span id="homeMasterLocalText" class="mini muted"></span>
                           <button id="homeMasterLocalEditBtn" type="button" class="btn ghost" style="padding:0 3px;line-height:1;min-height:unset;height:16px;font-size:0.65rem;" title="로컬 경로 편집">✏️</button>
-                          <button id="homeMasterLocalUnlinkBtn" type="button" class="btn ghost" style="padding:0 3px;line-height:1;min-height:unset;height:16px;font-size:0.65rem;color:var(--err,#c00);" title="연결 해제">✕</button>
+                          <button id="homeMasterLocalUnlinkBtn" type="button" class="btn ghost danger" style="padding:0 3px;line-height:1;min-height:unset;height:16px;font-size:0.65rem;" title="연결 해제">✕</button>
                         </div>
                         <div id="homeMasterLocalEditRow" style="display:none;flex-direction:column;gap:4px;">
                           <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
                             <input id="homeMasterLocalPath" type="text" style="flex:1;min-width:200px;font-size:0.72rem;" placeholder="아티스트 또는 앨범명으로 검색…" autocomplete="off" />
-                            <button id="homeMasterLocalSaveBtn" type="button" class="btn ghost tiny">저장</button>
+                            <button id="homeMasterLocalSaveBtn" type="button" class="btn ghost tiny save">저장</button>
                             <button id="homeMasterLocalCancelBtn" type="button" class="btn ghost tiny">취소</button>
                           </div>
                           <div id="homeMasterLocalDirResults" style="display:none;border:1px solid var(--line);border-radius:6px;background:var(--paper);max-height:180px;overflow-y:auto;font-size:0.72rem;"></div>
@@ -18916,12 +19032,12 @@
           <div class="home-master-review-section-head">
             <strong data-i18n="media.manage.master.review.title">앨범 리뷰</strong>
             <span id="homeMasterReviewSourceTag" class="home-master-review-source-tag"></span>
-            <button id="homeMasterReviewDeleteBtn" class="btn ghost tiny danger" type="button" style="display:none" data-i18n="media.manage.master.review.action.delete">삭제</button>
+            <button id="homeMasterReviewDeleteBtn" class="btn ghost tiny danger" type="button" style="display:none;" data-i18n="media.manage.master.review.action.delete">삭제</button>
           </div>
           <div id="homeMasterReviewPreview" class="home-master-review-preview" style="display:none"></div>
           <button id="homeMasterReviewToggleBtn" type="button" class="btn ghost tiny" style="display:none;margin-top:4px;"></button>
           <div id="homeMasterReviewActions" class="row" style="gap:4px;margin-top:6px;">
-            <button id="homeMasterReviewAutoBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.auto">소스 자동수집</button>
+            <button id="homeMasterReviewAutoBtn" class="btn ghost tiny search" type="button" data-i18n="media.manage.master.review.action.auto">소스 자동수집</button>
             <button id="homeMasterReviewUrlBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.url">URL 입력</button>
             <button id="homeMasterReviewManualBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.master.review.action.manual">직접 입력</button>
           </div>
@@ -18929,7 +19045,7 @@
           <div id="homeMasterReviewUrlForm" style="display:none;margin-top:6px">
             <input id="homeMasterReviewUrlInput" type="url" class="home-master-review-url-input" placeholder="https://..." />
             <div class="row" style="gap:4px;margin-top:4px">
-              <button id="homeMasterReviewUrlSubmitBtn" class="btn tiny" type="button" data-i18n="media.manage.master.review.action.fetch">수집</button>
+              <button id="homeMasterReviewUrlSubmitBtn" class="btn ghost tiny save" type="button" data-i18n="media.manage.master.review.action.fetch">수집</button>
               <button id="homeMasterReviewUrlCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
             </div>
           </div>
@@ -18938,7 +19054,7 @@
             <input id="homeMasterReviewManualSource" type="text" style="width:160px;margin-bottom:4px" placeholder="출처명 (예: ISM)" />
             <textarea id="homeMasterReviewManualText" class="home-master-review-manual-textarea" placeholder="리뷰 텍스트를 입력하세요"></textarea>
             <div class="row" style="gap:4px;margin-top:4px">
-              <button id="homeMasterReviewManualSubmitBtn" class="btn tiny" type="button" data-i18n="common.action.save">저장</button>
+              <button id="homeMasterReviewManualSubmitBtn" class="btn ghost tiny save" type="button" data-i18n="common.action.save">저장</button>
               <button id="homeMasterReviewManualCancelBtn" class="btn ghost tiny" type="button" data-i18n="common.action.cancel">취소</button>
             </div>
           </div>
@@ -19003,7 +19119,7 @@
                       </div>
                       <input id="homeMasterCorrectionStyles" type="text" placeholder="예: Indie Rock, K-Rock" />
                     </div>
-                    <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny" type="button" style="flex-shrink:0;align-self:flex-end;" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
+                    <button id="homeMasterCorrectionSaveBtn" class="btn ghost tiny save" type="button" style="flex-shrink:0;align-self:flex-end;" data-i18n="media.manage.master.correction.action.save">교정 저장</button>
                   </div>
                 </div>
                 <div id="homeMasterCorrectionSourceHint" class="mini u-mt-4" style="color:var(--text-muted);" data-i18n="media.manage.master.correction.source_hint_pending">현재 소스 기준을 확인 중입니다.</div>
@@ -19014,7 +19130,7 @@
                   </label>
                   <div class="row" style="gap:8px;">
                     <input id="homeMasterSortArtistName" class="dashboard-selected-sort-artist-input" type="text" style="width:220px;" data-i18n-placeholder="media.manage.master.sort_artist.placeholder" placeholder="예: 산울림 / 山下達郎 / 周杰倫" />
-                    <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
+                    <button id="homeMasterSortArtistSaveBtn" class="btn ghost tiny save dashboard-selected-sort-artist-save" type="button" data-i18n="media.manage.master.sort_artist.action.save">정렬명 저장</button>
                   </div>
                 </div>
                 <div id="homeMasterSortArtistStatus" class="status"></div>
@@ -19318,7 +19434,7 @@
                         </div>
                         <div class="img-upload-row">
                           <input id="editImageUrlInput" class="img-upload-url-input" type="text" placeholder="이미지 URL 입력" />
-                          <button class="btn ghost" style="font-size:0.8rem;padding:4px 10px;" type="button" onclick="handleEditImageUrlAdd()">적용</button>
+                          <button class="btn ghost save" style="font-size:0.8rem;padding:4px 10px;" type="button" onclick="handleEditImageUrlAdd()">적용</button>
                         </div>
                         <textarea id="editImagePasteInput" class="image-paste-box img-upload-paste" placeholder="이미지 파일 또는 URL 붙여넣기 (Ctrl+V)"></textarea>
                         <div id="editImageStatus" class="status-line" style="min-height:1em;font-size:0.8rem;"></div>
@@ -19401,7 +19517,7 @@
                                 </div>
                                 <div class="img-upload-row">
                                   <input id="homeEditCoverImageUrlInput" class="img-upload-url-input" type="text" placeholder="이미지 URL 입력" />
-                                  <button class="btn ghost" type="button" style="font-size:0.85rem;" onclick="handleHomeEditCoverImageUrlApply()">적용</button>
+                                  <button class="btn ghost save" type="button" style="font-size:0.85rem;" onclick="handleHomeEditCoverImageUrlApply()">적용</button>
                                 </div>
                                 <textarea
                                   id="homeEditCoverImagePaste"
@@ -19474,7 +19590,7 @@
                 <label for="editTrackList" data-i18n="media.manage.field.track_list.label">곡 리스트 (한 줄에 1곡)</label>
                 <textarea id="editTrackList"></textarea>
                 <div class="row home-manage-actions-right u-mt-4">
-                  <button id="homeEditTrackSaveBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product.field.track_list.save">곡 리스트 저장</button>
+                  <button id="homeEditTrackSaveBtn" class="btn ghost tiny save" type="button" data-i18n="media.manage.product.field.track_list.save">곡 리스트 저장</button>
                 </div>
               </div>
               <div class="section-divider">
@@ -19517,7 +19633,7 @@
             <div id="homeEditorActionBlock">
                     <div id="homeEditorActionRow" class="row home-manage-actions-right u-mt-12">
                       <button id="homeEditSaveBtn" class="btn" data-i18n="media.manage.product.action.save">수정 저장</button>
-                      <button id="homeEditDeleteBtn" class="btn ghost" type="button" data-i18n="media.manage.product.action.delete">삭제</button>
+                      <button id="homeEditDeleteBtn" class="btn ghost danger" type="button" data-i18n="media.manage.product.action.delete">삭제</button>
                     </div>
                     <div id="homeEditStatus" class="status"></div>
                     <div id="homeCollectorCreditsInfo" class="compact-line u-mt-6">credits: -</div>
@@ -19550,7 +19666,7 @@
                           </div>
                         </div>
                         <div class="compact-stack-actions">
-                          <button id="homeProductRelationSeriesSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
+                          <button id="homeProductRelationSeriesSearchBtn" class="btn ghost tiny search" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
                           <button id="homeProductRelationCreateGroupBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.create_series">시리즈 생성</button>
                         </div>
                         <div id="homeProductRelationSeriesResults" class="goods-target-results span-2"></div>
@@ -19579,7 +19695,7 @@
                           </div>
                         </div>
                         <div class="compact-stack-actions">
-                          <button id="homeProductRelationSearchBtn" class="btn ghost tiny" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
+                          <button id="homeProductRelationSearchBtn" class="btn ghost tiny search" type="button" data-i18n="media.manage.product_relation.action.search">조회</button>
                         </div>
                         <div id="homeProductRelationReleaseResults" class="goods-target-results span-2"></div>
                       </div>
@@ -19596,7 +19712,7 @@
                       <div class="compact-stack u-mt-6">
                         <div id="homeProductRelationStatus" class="status span-2"></div>
                         <div class="compact-stack-actions span-2">
-                          <button id="homeProductRelationSaveBtn" class="btn ghost" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
+                          <button id="homeProductRelationSaveBtn" class="btn ghost save" type="button" data-i18n="media.manage.product_relation.action.save">상품 관계 저장</button>
                         </div>
                       </div>
                     </details>
@@ -19634,7 +19750,7 @@
                 <input id="homeMasterAddBarcode" type="hidden" />
                 <button id="homeMasterAddResetBtn" type="button" hidden aria-hidden="true"></button>
                 <div id="homeMasterAddActionRow" class="row home-manage-actions-right">
-                  <button id="homeMasterAddLoadBtn" class="btn ghost" type="button" data-i18n="media.manage.master.lookup.action.load">조회</button>
+                  <button id="homeMasterAddLoadBtn" class="btn ghost search" type="button" data-i18n="media.manage.master.lookup.action.load">조회</button>
                 </div>
                 <div id="homeMasterAddStatus" class="status"></div>
                 <details id="homeMasterLookupResultsDetails" class="home-manage-secondary-block u-mt-8 u-hidden-initial">
@@ -19685,7 +19801,7 @@
                           <label for="homeMetaBarcode" data-i18n="media.manage.master.fetch.barcode.field.label">바코드</label>
                           <input id="homeMetaBarcode" data-i18n-placeholder="media.manage.master.fetch.barcode.field.placeholder" placeholder="예: 8809338405141" />
                         </div>
-                        <button id="homeMetaBarcodeBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.barcode.action.lookup">바코드 조회</button>
+                        <button id="homeMetaBarcodeBtn" class="btn ghost search" type="button" data-i18n="media.manage.master.fetch.barcode.action.lookup">바코드 조회</button>
                       </div>
                     </div>
                     <div class="meta-search-box">
@@ -19698,7 +19814,7 @@
                           <label for="homeMetaQuery" data-i18n="media.manage.master.fetch.query.field.label">조회어</label>
                           <input id="homeMetaQuery" data-i18n-placeholder="media.manage.master.fetch.query.field.placeholder" placeholder="예: 산울림 13집 MVKL-1113" />
                         </div>
-                        <button id="homeMetaQueryBtn" class="btn ghost" type="button" data-i18n="media.manage.master.fetch.query.action.lookup">무바코드 조회</button>
+                        <button id="homeMetaQueryBtn" class="btn ghost search" type="button" data-i18n="media.manage.master.fetch.query.action.lookup">무바코드 조회</button>
                       </div>
                     </div>
                   </div>
@@ -19988,7 +20104,7 @@
             <section id="goodsManageActionsSection" class="goods-map-section">
               <div class="ops-compact-form-actions">
                 <button id="goodsManageSaveBtn" class="btn" type="button" data-i18n="collectibles.manage.save">수집품 저장</button>
-                <button id="goodsManageDeleteBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.delete">수집품 삭제</button>
+                <button id="goodsManageDeleteBtn" class="btn ghost danger" type="button" data-i18n="collectibles.manage.delete">수집품 삭제</button>
               </div>
             </section>
               <div id="goodsManageStatusLine" class="status"></div>
@@ -20003,13 +20119,13 @@
               <div id="goodsManageAlbumMasterControls" class="compact-stack u-mt-8">
                 <input id="goodsManageAlbumMasterQuery" data-i18n-placeholder="collectibles.manage.map.album_master.query.placeholder" placeholder="앨범명 / 아티스트명 검색" />
                 <div class="compact-stack-actions">
-                  <button id="goodsManageAlbumMasterSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.album_master.action.search">조회</button>
+                  <button id="goodsManageAlbumMasterSearchBtn" class="btn ghost tiny search" type="button" data-i18n="collectibles.manage.map.album_master.action.search">조회</button>
                 </div>
               </div>
               <div id="goodsManageAlbumMasterResults" class="goods-target-results"></div>
 
             <div class="row">
-              <button id="goodsManageSaveMappingsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.action.save_album_master_mappings">마스터 매핑 저장</button>
+              <button id="goodsManageSaveMappingsBtn" class="btn ghost save" type="button" data-i18n="collectibles.manage.action.save_album_master_mappings">마스터 매핑 저장</button>
             </div>
             <div id="goodsManageMappingStatus" class="status"></div>
             </section>
@@ -20023,7 +20139,7 @@
               <div id="goodsManageCollectibleLookupControls" class="compact-stack u-mt-8">
                 <input id="goodsManageCollectibleQuery" data-i18n-placeholder="collectibles.manage.map.collectible.query.placeholder" placeholder="연결할 수집품 검색" />
                 <div class="compact-stack-actions">
-                  <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny" type="button" data-i18n="collectibles.manage.map.collectible.action.search">조회</button>
+                  <button id="goodsManageCollectibleSearchBtn" class="btn ghost tiny search" type="button" data-i18n="collectibles.manage.map.collectible.action.search">조회</button>
                 </div>
               </div>
               <div id="goodsManageCollectibleResults" class="goods-target-results"></div>
@@ -20045,7 +20161,7 @@
                   </div>
                 </div>
                 <div class="compact-stack-actions">
-                  <button id="goodsManageSaveRelationsBtn" class="btn ghost" type="button" data-i18n="collectibles.manage.map.collectible.action.save">수집품 연계 저장</button>
+                  <button id="goodsManageSaveRelationsBtn" class="btn ghost save" type="button" data-i18n="collectibles.manage.map.collectible.action.save">수집품 연계 저장</button>
                 </div>
               </div>
               <div id="goodsManageRelationStatus" class="status"></div>
@@ -20149,7 +20265,7 @@
               </div>
               <div class="img-upload-row">
                 <input id="goodsRegisterImageUrlInput" class="img-upload-url-input" type="text" placeholder="이미지 URL 입력" />
-                <button class="btn ghost" type="button" style="font-size:0.85rem;" onclick="applyGoodsRegisterImageUrl()">적용</button>
+                <button class="btn ghost save" type="button" style="font-size:0.85rem;" onclick="applyGoodsRegisterImageUrl()">적용</button>
               </div>
               <textarea id="goodsRegisterImagePaste" class="image-paste-box img-upload-paste" placeholder="이미지 파일 또는 URL 붙여넣기 (Ctrl+V)"></textarea>
               <div id="goodsRegisterImagePreview" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
@@ -20225,9 +20341,9 @@
             <input id="sourceWorkbenchCandidateLimit" type="number" min="1" max="10" value="5" />
           </div>
           <div class="source-workbench-actions">
-            <button id="sourceWorkbenchLoadBtn" class="btn ghost" type="button" data-i18n="media.source.action.load">대상 불러오기</button>
-            <button id="sourceWorkbenchFetchAllBtn" class="btn ghost" type="button" data-i18n="media.source.action.fetch_all">전체 후보 조회</button>
-            <button id="sourceWorkbenchAutoApplyBtn" class="btn ghost" type="button" data-i18n="media.source.action.auto_apply">자동 교체 대기 실행</button>
+            <button id="sourceWorkbenchLoadBtn" class="btn ghost search" type="button" data-i18n="media.source.action.load">대상 불러오기</button>
+            <button id="sourceWorkbenchFetchAllBtn" class="btn ghost search" type="button" data-i18n="media.source.action.fetch_all">전체 후보 조회</button>
+            <button id="sourceWorkbenchAutoApplyBtn" class="btn ghost save" type="button" data-i18n="media.source.action.auto_apply">자동 교체 대기 실행</button>
             <button id="sourceWorkbenchApplyBtn" class="btn" type="button" data-i18n="media.source.action.apply_selected">선택 후보 일괄 교체</button>
           </div>
         </div>
@@ -20419,7 +20535,7 @@
               <input id="querySourceRef" tabindex="4" data-i18n-placeholder="media.register.api_lookup.field.source_ref.placeholder" placeholder="예: release:36614953" />
             </div>
             <div class="admin-barcode-intake-search-action ops-compact-inline-field-actions">
-              <button id="registerLookupSearchBtn" class="btn ghost" type="button" data-i18n="media.register.api_lookup.action.lookup">조회</button>
+              <button id="registerLookupSearchBtn" class="btn ghost search" type="button" data-i18n="media.register.api_lookup.action.lookup">조회</button>
             </div>
           </div>
         </div>
@@ -20850,10 +20966,10 @@
             <input id="purchaseImportCandidateLimit" type="number" min="1" max="20" value="5" />
           </div>
           <div class="u-flex-end">
-            <button id="purchaseImportQueueLoadBtn" class="btn ghost" type="button" data-i18n="media.register.purchase.queue.action.load">큐 불러오기</button>
+            <button id="purchaseImportQueueLoadBtn" class="btn ghost search" type="button" data-i18n="media.register.purchase.queue.action.load">큐 불러오기</button>
           </div>
           <div class="u-flex-end">
-            <button id="purchaseImportQueueFetchAllCandidatesBtn" class="btn ghost" type="button" data-i18n="media.register.purchase.queue.action.fetch_all_candidates">후보 일괄 조회</button>
+            <button id="purchaseImportQueueFetchAllCandidatesBtn" class="btn ghost search" type="button" data-i18n="media.register.purchase.queue.action.fetch_all_candidates">후보 일괄 조회</button>
           </div>
         </div>
         <div id="purchaseImportQueueStatus" class="status"></div>
@@ -21111,7 +21227,7 @@
       </div>
       <div class="row u-mt-10">
         <button id="masterSearchBtn" class="btn secondary" data-i18n="media.register.master.action.search">마스터 검색</button>
-        <button id="masterGroupLoadBtn" class="btn ghost" type="button" data-i18n="media.register.master.action.load_groups">저장된 마스터 묶음 보기</button>
+        <button id="masterGroupLoadBtn" class="btn ghost search" type="button" data-i18n="media.register.master.action.load_groups">저장된 마스터 묶음 보기</button>
       </div>
       <div id="masterSearchStatus" class="status"></div>
 
@@ -21123,7 +21239,7 @@
       <div id="masterSelected" class="mini u-mt-8" data-i18n="media.register.master.state.none_selected">선택된 마스터 없음</div>
 
       <div class="row u-mt-10">
-        <button id="masterVariantsBtn" class="btn ghost" type="button" data-i18n="media.register.master.action.load_variants">선택 마스터 버전 불러오기</button>
+        <button id="masterVariantsBtn" class="btn ghost search" type="button" data-i18n="media.register.master.action.load_variants">선택 마스터 버전 불러오기</button>
       </div>
       <div class="grid-3 u-mt-8">
         <div>
@@ -21220,7 +21336,7 @@
           <input id="masterMergeQuery" data-i18n-placeholder="media.register.master.merge.field.query.placeholder" placeholder="예: album_master_id / 앨범명 / 아티스트명" />
         </div>
         <div class="u-flex-end-gap-8">
-          <button id="masterMergeSearchBtn" class="btn ghost" type="button" data-i18n="media.register.master.merge.action.search">내부 마스터 검색</button>
+          <button id="masterMergeSearchBtn" class="btn ghost search" type="button" data-i18n="media.register.master.merge.action.search">내부 마스터 검색</button>
           <button id="masterMergeClearBtn" class="btn ghost" type="button" data-i18n="media.register.master.merge.action.clear">검색 초기화</button>
         </div>
       </div>
@@ -21410,7 +21526,7 @@
         </div>
       </div>
       <div class="row u-mt-10">
-        <button id="trackMapLoadBtn" class="btn ghost" type="button" data-i18n="media.register.track_map.action.load">트랙 목록 불러오기</button>
+        <button id="trackMapLoadBtn" class="btn ghost search" type="button" data-i18n="media.register.track_map.action.load">트랙 목록 불러오기</button>
         <button id="trackMapSaveBtn" class="btn" data-i18n="media.register.track_map.action.save">트랙 매핑 저장</button>
       </div>
       <div id="trackMapStatus" class="status"></div>
@@ -21532,7 +21648,7 @@
             </div>
           </div>
           <div class="row action-row-trailing-primary u-mt-8">
-            <button id="opsCabinetDeleteBtn" class="btn ghost" type="button" data-i18n="ops.cabinet.action.delete">장식장 삭제</button>
+            <button id="opsCabinetDeleteBtn" class="btn ghost danger" type="button" data-i18n="ops.cabinet.action.delete">장식장 삭제</button>
             <button id="opsCabinetResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.cabinet.action.reset" data-i18n-aria-label="ops.cabinet.action.reset"></button>
             <button id="opsCabinetSaveBtn" class="btn" type="button" data-i18n="ops.cabinet.action.save">장식장 생성</button>
           </div>
@@ -21624,8 +21740,8 @@
                 </div>
               </div>
               <div class="row u-mt-8">
-                <button id="opsCameraDiscoverBtn" class="btn ghost" type="button" data-i18n="ops.camera.action.discover">ONVIF 장치 검색</button>
-                <button id="opsCameraTestBtn" class="btn ghost" type="button" data-i18n="ops.camera.action.test">연결 테스트/자동 채움</button>
+                <button id="opsCameraDiscoverBtn" class="btn ghost search" type="button" data-i18n="ops.camera.action.discover">ONVIF 장치 검색</button>
+                <button id="opsCameraTestBtn" class="btn ghost search" type="button" data-i18n="ops.camera.action.test">연결 테스트/자동 채움</button>
               </div>
               <div class="mini u-mt-6" data-i18n="ops.camera.discover.note">같은 네트워크 대역의 ONVIF 카메라를 찾습니다. 검색 결과에서 `등록폼 채우기`를 누르면 장치 URL과 카메라명이 입력됩니다.</div>
               <div class="table-wrap u-mt-8 u-maxh-220-scroll">
@@ -21643,7 +21759,7 @@
             </div>
           </details>
           <div class="row action-row-trailing-primary u-mt-8">
-            <button id="opsCameraDeleteBtn" class="btn ghost" type="button" data-i18n="ops.camera.action.delete">카메라 삭제</button>
+            <button id="opsCameraDeleteBtn" class="btn ghost danger" type="button" data-i18n="ops.camera.action.delete">카메라 삭제</button>
             <button id="opsCameraResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.camera.action.reset" data-i18n-aria-label="ops.camera.action.reset"></button>
             <button id="opsCameraSaveBtn" class="btn" type="button" data-i18n="ops.camera.action.save">카메라 저장</button>
           </div>
@@ -21862,10 +21978,10 @@
           </details>
           <div class="row u-mt-6">
             <input id="opsExceptionPresetName" class="u-maxw-220" data-i18n-placeholder="ops.exception.field.preset_name.placeholder" placeholder="예: 곡정보 보강 50건" />
-            <button id="opsExceptionPresetSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.exception.action.save_filter">필터 저장</button>
-            <button id="opsExceptionPresetApplyBtn" class="btn ghost tiny" type="button" data-i18n="ops.exception.action.apply_loaded_filter">불러온 필터 적용</button>
+            <button id="opsExceptionPresetSaveBtn" class="btn ghost tiny save" type="button" data-i18n="ops.exception.action.save_filter">필터 저장</button>
+            <button id="opsExceptionPresetApplyBtn" class="btn ghost tiny save" type="button" data-i18n="ops.exception.action.apply_loaded_filter">불러온 필터 적용</button>
             <button id="opsExceptionPresetDefaultBtn" class="btn ghost tiny" type="button" data-i18n="ops.exception.action.set_default">기본 사용</button>
-            <button id="opsExceptionPresetDeleteBtn" class="btn ghost tiny" type="button" data-i18n="ops.exception.action.delete_filter">삭제</button>
+            <button id="opsExceptionPresetDeleteBtn" class="btn ghost tiny danger" type="button" data-i18n="ops.exception.action.delete_filter">삭제</button>
           </div>
           <div id="opsExceptionPresetChips" class="dashboard-chip-grid u-mt-6"></div>
           <div id="opsExceptionStatus" class="status"></div>
@@ -21960,7 +22076,7 @@
             </div>
           </div>
           <div class="row action-row-trailing-primary u-mt-8">
-            <button id="opsAuthDeleteBtn" class="btn ghost" type="button" data-i18n="ops.account.action.delete">계정 삭제</button>
+            <button id="opsAuthDeleteBtn" class="btn ghost danger" type="button" data-i18n="ops.account.action.delete">계정 삭제</button>
             <button id="opsAuthResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="입력 초기화" aria-label="입력 초기화" data-i18n-title="ops.account.action.reset" data-i18n-aria-label="ops.account.action.reset"></button>
             <button id="opsAuthReloadBtn" class="btn ghost" type="button" data-i18n="ops.account.action.reload">목록 새로고침</button>
             <button id="opsAuthSaveBtn" class="btn" type="button" data-i18n="ops.account.action.save">계정 저장</button>
@@ -22060,7 +22176,7 @@
                 </div>
               </div>
               <div class="ops-provider-group-actions">
-                <button id="opsProviderDiscogsSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.providers.action.save_item">저장</button>
+                <button id="opsProviderDiscogsSaveBtn" class="btn ghost tiny save" type="button" data-i18n="ops.providers.action.save_item">저장</button>
               </div>
             </section>
             <section class="ops-provider-group ops-provider-group--pair">
@@ -22076,7 +22192,7 @@
                 </div>
               </div>
               <div class="ops-provider-group-actions">
-                <button id="opsProviderAladinSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.providers.action.save_item">저장</button>
+                <button id="opsProviderAladinSaveBtn" class="btn ghost tiny save" type="button" data-i18n="ops.providers.action.save_item">저장</button>
               </div>
             </section>
             <section class="ops-provider-group ops-provider-group--single">
@@ -22087,7 +22203,7 @@
                 </div>
               </div>
               <div class="ops-provider-group-actions">
-                <button id="opsProviderManiadbSaveBtn" class="btn ghost tiny" type="button" data-i18n="ops.providers.action.save_item">저장</button>
+                <button id="opsProviderManiadbSaveBtn" class="btn ghost tiny save" type="button" data-i18n="ops.providers.action.save_item">저장</button>
               </div>
             </section>
             <section class="ops-provider-group ops-provider-group--pair">
@@ -22181,7 +22297,7 @@
             <span data-i18n="ops.restore.field.include_env.label">전체(zip) 자동 백업에 설정 파일(.env.local) 포함</span>
           </label>
           <div class="row u-mt-8 u-gap-8-wrap">
-            <button id="opsAutoBackupSaveBtn" class="btn ghost" type="button" data-i18n="ops.restore.action.save_auto_backup">자동 백업 설정 저장</button>
+            <button id="opsAutoBackupSaveBtn" class="btn ghost save" type="button" data-i18n="ops.restore.action.save_auto_backup">자동 백업 설정 저장</button>
           </div>
           <div class="row u-mt-8 u-gap-8-wrap">
             <span class="mini muted" data-i18n="ops.restore.field.applied_schedule.label">적용 스케줄</span>
@@ -22652,7 +22768,7 @@
           <strong id="imageGalleryTitle" data-i18n="image_gallery.title">상품 이미지</strong>
           <div id="imageGallerySourceText" class="mini" data-i18n="image_gallery.subtitle">버전 비교용 이미지</div>
         </div>
-        <button id="imageGalleryCloseBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--close" type="button" data-i18n="common.close">닫기</button>
+        <button id="imageGalleryCloseBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--close" type="button" aria-label="닫기" title="닫기"></button>
       </div>
       <div class="image-gallery-body">
         <div class="image-gallery-preview">
@@ -22680,7 +22796,7 @@
           <strong id="spotifyMatchModalTitle" data-i18n="ops.spotify_match.modal.title">Spotify 앨범 연결</strong>
           <div id="spotifyMatchModalSubtitle" class="mini muted"></div>
         </div>
-        <button id="spotifyMatchCloseBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--close" type="button" data-i18n="common.close">닫기</button>
+        <button id="spotifyMatchCloseBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--close" type="button" aria-label="닫기" title="닫기"></button>
       </div>
       <div class="image-gallery-body" style="flex-direction:column;gap:12px;">
         <!-- Direct ID input -->
@@ -33873,7 +33989,6 @@
       const body = source?.querySelector(".manual-block-body");
       titleEl.textContent = title;
       if (closeBtn) {
-        closeBtn.textContent = t("common.close");
         closeBtn.setAttribute("aria-label", t("common.close"));
         closeBtn.setAttribute("title", t("common.close"));
       }
@@ -42912,7 +43027,7 @@
             </div>
             <div class="local-player-tracklist" id="lpTrackList"></div>
             <div class="local-player-footer">
-              <button class="btn ghost tiny" id="lpUnlinkBtn">연결 해제</button>
+              <button class="btn ghost tiny danger" id="lpUnlinkBtn">연결 해제</button>
               <span class="mini muted" style="margin-left:auto;">${escapeHtml(data.match_confidence === "AUTO" ? "자동매칭" : "수동연결")}</span>
             </div>
           </div>`;
@@ -46437,7 +46552,7 @@ async function loadDashboardClimate() {
               <select id="opsExCtxMediaType" style="flex:1;font-size:0.78rem;">
                 <option value="">선택</option>${opts}
               </select>
-              <button id="opsExCtxSaveBtn" class="btn ghost tiny" type="button">저장</button>
+              <button id="opsExCtxSaveBtn" class="btn ghost tiny save" type="button">저장</button>
             </div>
             <div id="opsExCtxEditStatus" class="status mini"></div>
           </div>`;
@@ -46466,7 +46581,7 @@ async function loadDashboardClimate() {
               <option value="">선택 안 함</option>${prefOpts}
             </select>
             <div style="display:flex;gap:6px;align-items:center;">
-              <button id="opsExCtxSaveBtn" class="btn ghost tiny" type="button">저장</button>
+              <button id="opsExCtxSaveBtn" class="btn ghost tiny save" type="button">저장</button>
             </div>
             <div id="opsExCtxEditStatus" class="status mini"></div>
           </div>`;
@@ -46481,7 +46596,7 @@ async function loadDashboardClimate() {
             <label style="font-size:0.72rem;color:var(--muted);">레이블</label>
             <input id="opsExCtxLabelName" type="text" value="${labelName}" style="font-size:0.78rem;" />
             <div style="display:flex;gap:6px;">
-              <button id="opsExCtxSaveBtn" class="btn ghost tiny" type="button">저장</button>
+              <button id="opsExCtxSaveBtn" class="btn ghost tiny save" type="button">저장</button>
             </div>
             <div id="opsExCtxEditStatus" class="status mini"></div>
           </div>`;
@@ -46599,7 +46714,7 @@ async function loadDashboardClimate() {
           <div id="opsExCtxMasterActions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
             <button class="btn ghost tiny" type="button"
               onclick="openMediaSearchDetailManage(${masterId},0)">관리 화면으로</button>
-            <button class="btn ghost tiny" type="button"
+            <button class="btn ghost tiny search" type="button"
               data-ops-exception-review-auto="${masterId}">소스 자동수집</button>
           </div>
         `;
@@ -46710,7 +46825,7 @@ async function loadDashboardClimate() {
                   <div class="ops-exception-edit-row">
                     <input type="text" class="ops-exception-inline-input" style="flex:1;min-width:100px;" placeholder="레이블" data-oi-id="${id}" data-field="label_name" value="${escapeHtml(labelName)}" />
                     <input type="text" class="ops-exception-inline-input" style="flex:1;min-width:120px;" placeholder="카탈로그 넘버" data-oi-id="${id}" data-field="catalog_no" value="${escapeHtml(catalogNo)}" />
-                    <button class="btn ghost tiny" data-ops-catalog-save="${id}" style="flex-shrink:0;">저장</button>
+                    <button class="btn ghost tiny save" data-ops-catalog-save="${id}" style="flex-shrink:0;">저장</button>
                     <span class="ops-catalog-save-status mini muted" data-save-status="${id}"></span>
                   </div>
                 </div>
@@ -46736,7 +46851,7 @@ async function loadDashboardClimate() {
                       placeholder="스타일 (쉼표 구분, 예: Indie Rock, Shoegaze)"
                       data-master-id="${masterId}" data-field="styles"
                       value="${escapeHtml(stylesJoined)}" />
-                    <button class="btn ghost tiny" data-ops-genre-save="${masterId}" style="flex-shrink:0;">저장</button>
+                    <button class="btn ghost tiny save" data-ops-genre-save="${masterId}" style="flex-shrink:0;">저장</button>
                     <span class="mini muted" data-save-status="${masterId}"></span>
                   </div>
                 </div>
@@ -46759,7 +46874,7 @@ async function loadDashboardClimate() {
                         class="ops-exception-inline-input" style="flex:1;"
                         placeholder="아티스트 또는 앨범명으로 검색…" autocomplete="off"
                         data-ops-local-master="${masterId}" />
-                      <button class="btn ghost tiny" data-ops-local-save="${masterId}" style="flex-shrink:0;">저장</button>
+                      <button class="btn ghost tiny save" data-ops-local-save="${masterId}" style="flex-shrink:0;">저장</button>
                       <span class="mini muted" data-save-status="${masterId}"></span>
                     </div>
                     <div id="${escapeHtml(dropId)}" style="display:none;border:1px solid var(--line);border-radius:6px;background:var(--paper);max-height:160px;overflow-y:auto;font-size:0.72rem;"></div>

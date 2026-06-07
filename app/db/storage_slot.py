@@ -239,8 +239,21 @@ def list_storage_slots() -> list[dict[str, Any]]:
     with get_conn() as conn:
         rows = conn.execute(
         """
-        SELECT id, slot_code, cabinet_name, cabinet_domain_code, cabinet_group_name, cabinet_group_order, column_code, cell_code, allowed_size_group, cabinet_sort_policy, max_thickness_mm, is_overflow_zone
-        FROM storage_slot
+        SELECT 
+          s.id, s.slot_code, s.cabinet_name, s.cabinet_domain_code, s.cabinet_group_name, s.cabinet_group_order, s.column_code, s.cell_code, s.allowed_size_group, s.cabinet_sort_policy, s.max_thickness_mm, s.is_overflow_zone,
+          (SELECT COUNT(*) FROM owned_item oi WHERE oi.storage_slot_id = s.id AND oi.status = 'IN_COLLECTION') AS item_count,
+          (
+            SELECT GROUP_CONCAT(COALESCE(NULLIF(oi.item_name_override,''), am.title, '') || ' (' || COALESCE(oi.linked_artist_name, am.artist_or_brand, '') || ')')
+            FROM (
+              SELECT oi2.item_name_override, oi2.linked_artist_name, oi2.linked_album_master_id
+              FROM owned_item oi2
+              WHERE oi2.storage_slot_id = s.id AND oi2.status = 'IN_COLLECTION'
+              ORDER BY oi2.display_rank ASC, oi2.id ASC
+              LIMIT 3
+            ) oi
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+          ) AS stored_items_summary
+        FROM storage_slot s
         """
         ).fetchall()
     items = [dict(row) for row in rows]

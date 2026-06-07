@@ -56,15 +56,28 @@ router = APIRouter(tags=["auth"])
 
 
 @router.get("/login", include_in_schema=False)
-def login_page(request: Request, site: str | None = Query(default=None)):
+def login_page(
+    request: Request,
+    site: str | None = Query(default=None),
+    next: str | None = Query(default=None),
+):
     if not _auth_enabled():
         return RedirectResponse(url="/", status_code=303)
     if _is_authenticated(request):
+        session_data = _read_auth_session_data(request) or {}
+        role = session_data.get("role", "").strip().upper()
+        if role == AUTH_ROLE_OPERATOR:
+            return RedirectResponse(url="/ops", status_code=303)
         return RedirectResponse(url="/", status_code=303)
         
     host = request.headers.get("host", "").lower()
     referer = request.headers.get("referer", "").lower()
-    is_ops_domain = "ops." in host or "ops." in referer or site == "ops"
+    is_ops_domain = (
+        "ops." in host
+        or "ops." in referer
+        or site == "ops"
+        or (next is not None and next.startswith("/ops"))
+    )
     
     if is_ops_domain:
         ops_login_path = _STATIC_DIR / "ops_login.html"

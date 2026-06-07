@@ -1196,6 +1196,7 @@ class CollectionSlotCount(BaseModel):
     first_item_artist_or_brand: str | None = None
     first_item_title: str | None = None
     first_item_release_year: int | None = None
+    stored_items_summary: str | None = None
 
 
 class CollectionMovementItem(BaseModel):
@@ -1964,6 +1965,8 @@ class StorageSlotItem(BaseModel):
     cabinet_sort_policy: CabinetSortPolicy = "ARTIST_RELEASE_TITLE"
     max_thickness_mm: int | None = Field(default=None, ge=0)
     is_overflow_zone: bool
+    item_count: int = 0
+    stored_items_summary: str | None = None
 
 
 class CabinetCameraItem(BaseModel):

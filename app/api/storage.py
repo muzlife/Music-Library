@@ -57,6 +57,8 @@ def get_storage_slots() -> list[StorageSlotItem]:
             cabinet_sort_policy=str(row.get("cabinet_sort_policy") or "ARTIST_RELEASE_TITLE"),
             max_thickness_mm=row.get("max_thickness_mm"),
             is_overflow_zone=bool(row["is_overflow_zone"]),
+            item_count=int(row.get("item_count") or 0),
+            stored_items_summary=row.get("stored_items_summary"),
         )
         for row in rows
     ]

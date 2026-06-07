@@ -663,11 +663,7 @@
     <!-- ── Left: Library identity panel ── -->
     <aside class="login-side">
       <div class="login-wordmark">
-        <div class="login-wordmark-glyph" aria-hidden="true">
-          <span></span><span></span>
-          <span></span><span></span>
-        </div>
-        <span class="login-wordmark-name">Muzlife Library</span>
+        <img src="/ui-static/images/logo-hahahoho.png" alt="hahahoho" style="height: 38px; width: auto; object-fit: contain;" />
       </div>
 
       <div class="login-display">
@@ -1004,12 +1000,23 @@
           }
           throw new Error(parseLoginErrorDetail(res.status, detail));
         }
+        const urlParams = new URLSearchParams(window.location.search);
+        const nextParam = urlParams.get("next");
+        if (nextParam && nextParam.startsWith("/")) {
+          window.location.replace(nextParam);
+          return;
+        }
+
         const _opsHost = window.location.hostname.replace(/^(qa-)?library\./, "$1ops.");
         const _isOpsDomain = /^(qa-)?ops\./.test(window.location.hostname);
+        const isDevOrLocal = window.location.port !== "" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
         if (_isOpsDomain) {
           window.location.replace("/");
         } else if (data.role === "ADMIN") {
           window.location.replace("/");
+        } else if (isDevOrLocal) {
+          window.location.replace("/ops");
         } else {
           // 운영자 계정 → 안내 팝업 후 ops 도메인으로 이동
           const _opsUrl = `https://${_opsHost}/`;

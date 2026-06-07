@@ -68,16 +68,16 @@ def test_registered_master_merge_console_uses_hard_edge_high_contrast_surface_to
     panel_block = html.split(".registered-master-merge-commandbar,\n    .registered-master-merge-results-panel,\n    .registered-master-merge-workspace-panel,\n    .registered-master-merge-log-panel {", 1)[1].split("}", 1)[0]
     chip_block = html.split(".registered-master-merge-commandbar-chip {", 1)[1].split("}", 1)[0]
     card_block = html.split(".registered-master-merge-card {", 1)[1].split("}", 1)[0]
-    text_token_block = html.split("#homeDashboardCard.dashboard-console-shell,\n    #registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
+    text_token_block = html.split(".dashboard-console-shell,\n    #registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
     assert "border-radius: 0;" in root_block
-    assert "background: linear-gradient(180deg, rgba(13, 17, 23, 0.98), rgba(13, 17, 23, 0.98));" in root_block
+    assert "background: linear-gradient(180deg, var(--theme-admin-panel-bg), var(--theme-admin-panel-bg));" in root_block
     assert "box-shadow: none;" in root_block
     assert "border-radius: 0;" in panel_block
-    assert "background: rgba(18, 23, 29, 0.98);" in panel_block
+    assert "background: var(--theme-admin-panel-bg-2);" in panel_block
     assert "border-radius: 0;" in chip_block
-    assert "background: rgba(18, 23, 29, 0.98);" in chip_block
+    assert "background: var(--theme-admin-panel-bg-2);" in chip_block
     assert "border-radius: 0;" in card_block
-    assert "background: rgba(23, 29, 36, 0.98);" in card_block
+    assert "background: var(--theme-dashboard-panel-soft);" in card_block
     assert "--console-text: var(--theme-dashboard-text);" in text_token_block
     assert "--console-text-dim: var(--theme-dashboard-text-dim);" in text_token_block
     assert "--console-text-muted: var(--theme-dashboard-text-muted);" in text_token_block

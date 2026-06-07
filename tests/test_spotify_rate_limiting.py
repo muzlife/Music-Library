@@ -10,6 +10,7 @@ from app.config import get_settings
 def test_spotify_album_tracks_http_exceptions(operator_client: TestClient, monkeypatch):
     """Test that spotipy exceptions in spotify_album_tracks are mapped to correct status codes."""
     # Ensure service is configured
+    monkeypatch.setenv("SPOTIFY_ENABLED", "true")
     monkeypatch.setenv("SPOTIFY_CLIENT_ID", "dummy_id")
     monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "dummy_secret")
     get_settings.cache_clear()
@@ -51,6 +52,7 @@ def test_spotify_album_tracks_http_exceptions(operator_client: TestClient, monke
 
 def test_spotify_album_tracks_caching(operator_client: TestClient, monkeypatch):
     """Test that static album track lists are cached on the server."""
+    monkeypatch.setenv("SPOTIFY_ENABLED", "true")
     monkeypatch.setenv("SPOTIFY_CLIENT_ID", "dummy_id")
     monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "dummy_secret")
     get_settings.cache_clear()
@@ -129,6 +131,7 @@ def test_dynamic_matching_threshold_for_singles_eps():
 
 def test_batch_match_spotify_aborts_immediately_on_429(admin_client: TestClient, monkeypatch):
     """Verify that batch_match_spotify halts immediately and propagates 429 to the API endpoint."""
+    monkeypatch.setenv("SPOTIFY_ENABLED", "true")
     monkeypatch.setenv("SPOTIFY_CLIENT_ID", "dummy_id")
     monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "dummy_secret")
     get_settings.cache_clear()
@@ -149,6 +152,7 @@ def test_batch_match_spotify_aborts_immediately_on_429(admin_client: TestClient,
 
 def test_spotify_manual_match_endpoints(admin_client: TestClient, monkeypatch):
     """Test that manual spotify match/clear endpoints work correctly with JSON parsing."""
+    monkeypatch.setenv("SPOTIFY_ENABLED", "true")
     monkeypatch.setenv("SPOTIFY_CLIENT_ID", "dummy_id")
     monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "dummy_secret")
     get_settings.cache_clear()

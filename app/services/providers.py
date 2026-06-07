@@ -3251,6 +3251,12 @@ def _parse_maniadb_release_legend(
 
     date_token = chunks[0]
     label_token = chunks[1] if len(chunks) >= 2 else ""
+
+    # If the first chunk is a format icon text (e.g. CD, LP) rather than the date, shift tokens.
+    if len(chunks) >= 2 and _maniadb_release_year_from_token(chunks[0]) is None:
+        if _maniadb_release_year_from_token(chunks[1]) is not None:
+            date_token = chunks[1]
+            label_token = chunks[2] if len(chunks) >= 3 else ""
     year = _maniadb_release_year_from_token(date_token)
     released_date = date_token if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_token or "") else None
 
