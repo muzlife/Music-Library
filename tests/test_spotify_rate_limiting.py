@@ -200,8 +200,9 @@ def test_match_spotify_barcode_strategy():
 
     mock_conn = MagicMock()
     mock_conn.execute().fetchone.side_effect = [
-        {"id": 1, "title": "Test Album", "artist_or_brand": "Test Artist"},  # master query
+        {"id": 1, "title": "Test Album", "artist_or_brand": "Test Artist", "release_year": None},  # master query
         {"barcode": "8809632123456"},  # barcode query
+        {"spotify_album_id": None, "spotify_album_uri": None},  # audit log before_row query
     ]
 
     mock_sp = MagicMock()
@@ -237,8 +238,9 @@ def test_match_spotify_various_artists_strategy():
     mock_conn = MagicMock()
     # Master is Various Artists
     mock_conn.execute().fetchone.side_effect = [
-        {"id": 2, "title": "Test Compilation", "artist_or_brand": "Various Artists"},  # master query
+        {"id": 2, "title": "Test Compilation", "artist_or_brand": "Various Artists", "release_year": None},  # master query
         None,  # barcode query (no barcode)
+        {"spotify_album_id": None, "spotify_album_uri": None},  # audit log before_row query
     ]
 
     mock_sp = MagicMock()

@@ -47,6 +47,103 @@ def _require_auth(request: Request) -> None:
     security._require_operator_request(request)
 
 
+def apply_music_detail_fallbacks(
+    detail: dict[str, Any],
+    owned_item_id: int,
+    album_master_id: int | None,
+    source_code: str | None,
+    source_external_id: str | None
+) -> dict[str, Any]:
+    snapshot = None
+    if source_code and source_external_id:
+        try:
+            from app.services.providers import get_source_release_snapshot
+            snapshot = get_source_release_snapshot(source_code, source_external_id)
+        except Exception:
+            pass
+
+    if snapshot:
+        if not detail.get("barcode"):
+            detail["barcode"] = snapshot.get("barcode")
+        if not detail.get("catalog_no"):
+            from app.main import _discogs_catalog_no
+            detail["catalog_no"] = _discogs_catalog_no(snapshot.get("catalog_no"))
+        if not detail.get("label_name"):
+            detail["label_name"] = snapshot.get("label_name")
+        if not detail.get("released_date"):
+            detail["released_date"] = snapshot.get("released_date")
+        if not detail.get("pressing_country"):
+            detail["pressing_country"] = snapshot.get("pressing_country")
+        if not detail.get("cover_image_url"):
+            detail["cover_image_url"] = snapshot.get("cover_image_url")
+        if not detail.get("track_list"):
+            detail["track_list"] = snapshot.get("track_list") or []
+        if not detail.get("track_items"):
+            detail["track_items"] = snapshot.get("track_items") or []
+
+    if not detail.get("track_list") and album_master_id:
+        try:
+            from app.db import get_sibling_tracklist
+            sibling = get_sibling_tracklist(album_master_id, owned_item_id)
+            if sibling:
+                import json
+                track_list = []
+                if sibling.get("track_list_json"):
+                    try:
+                        t_list = json.loads(sibling["track_list_json"])
+                        if isinstance(t_list, list):
+                            track_list = t_list
+                    except Exception:
+                        pass
+                track_items = []
+                if sibling.get("track_items_json"):
+                    try:
+                        t_items = json.loads(sibling["track_items_json"])
+                        if isinstance(t_items, list):
+                            track_items = t_items
+                    except Exception:
+                        pass
+                detail["track_list"] = track_list
+                detail["track_items"] = track_items
+        except Exception:
+            pass
+
+    return detail
+
+
+def _map_ops_home_recent_item(row: dict[str, Any]) -> OpsHomeRecentItem:
+    category_code = str(row.get("category") or "")
+    owned_item_id = int(row.get("owned_item_id") or row.get("id") or 0)
+    
+    if category_code in ("LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"):
+        m_detail = {
+            "barcode": row.get("barcode"),
+            "catalog_no": row.get("catalog_no"),
+            "label_name": row.get("label_name"),
+            "released_date": row.get("released_date"),
+            "pressing_country": row.get("pressing_country"),
+            "cover_image_url": row.get("cover_image_url"),
+            "track_list": row.get("track_list") or [],
+            "track_items": row.get("track_items") or [],
+        }
+        m_detail = apply_music_detail_fallbacks(
+            detail=m_detail,
+            owned_item_id=owned_item_id,
+            album_master_id=row.get("linked_album_master_id"),
+            source_code=row.get("source_code"),
+            source_external_id=row.get("source_external_id"),
+        )
+        row["barcode"] = m_detail["barcode"]
+        row["catalog_no"] = m_detail["catalog_no"]
+        row["label_name"] = m_detail["label_name"]
+        row["released_date"] = m_detail["released_date"]
+        row["pressing_country"] = m_detail["pressing_country"]
+        row["cover_image_url"] = m_detail["cover_image_url"]
+        row["track_list"] = m_detail["track_list"]
+        row["track_items"] = m_detail["track_items"]
+        
+    return OpsHomeRecentItem(**row)
+
 
 @router.get("/operator/catalog-search", response_model=OperatorCatalogSearchResponse)
 def operator_catalog_search(
@@ -58,52 +155,84 @@ def operator_catalog_search(
     rows = db.search_operator_catalog(query_text=q, limit=limit)
     items: list[OperatorCatalogSearchItem] = []
     for row in rows:
-        category_code = str(row.get("category") or "")
-        owned_item_id = int(row.get("id") or 0)
-        runout_values = [str(v or "").strip() for v in row.get("runout_matrix") or [] if str(v or "").strip()]
-        _item_dc = str(row.get("item_domain_code") or "").strip() or None
-        _master_dc = str(row.get("master_domain_code") or "").strip() or None
-        _override_dc = str(row.get("override_domain_code") or "").strip() or None
+        row_dict = dict(row)
+        category_code = str(row_dict.get("category") or "")
+        owned_item_id = int(row_dict.get("id") or 0)
+        
+        if category_code in ("LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"):
+            m_detail = {
+                "barcode": row_dict.get("barcode"),
+                "catalog_no": row_dict.get("catalog_no"),
+                "label_name": row_dict.get("label_name"),
+                "released_date": row_dict.get("released_date"),
+                "pressing_country": row_dict.get("pressing_country"),
+                "cover_image_url": row_dict.get("cover_image_url"),
+                "track_list": row_dict.get("track_list") or [],
+                "track_items": row_dict.get("track_items") or [],
+            }
+            m_detail = apply_music_detail_fallbacks(
+                detail=m_detail,
+                owned_item_id=owned_item_id,
+                album_master_id=row_dict.get("linked_album_master_id"),
+                source_code=row_dict.get("source_code"),
+                source_external_id=row_dict.get("source_external_id"),
+            )
+            row_dict["barcode"] = m_detail["barcode"]
+            row_dict["catalog_no"] = m_detail["catalog_no"]
+            row_dict["label_name"] = m_detail["label_name"]
+            row_dict["released_date"] = m_detail["released_date"]
+            row_dict["pressing_country"] = m_detail["pressing_country"]
+            row_dict["cover_image_url"] = m_detail["cover_image_url"]
+            row_dict["track_list"] = m_detail["track_list"]
+            row_dict["track_items"] = m_detail["track_items"]
+
+        runout_values = [str(v or "").strip() for v in row_dict.get("runout_matrix") or [] if str(v or "").strip()]
+        _item_dc = str(row_dict.get("item_domain_code") or "").strip() or None
+        _master_dc = str(row_dict.get("master_domain_code") or "").strip() or None
+        _override_dc = str(row_dict.get("override_domain_code") or "").strip() or None
         _effective_dc = _item_dc or _master_dc or None
-        _am_id = int(row.get("linked_album_master_id") or 0) or None
-        _sort_artist = str(row.get("master_sort_artist_name") or "").strip() or None
+        _am_id = int(row_dict.get("linked_album_master_id") or 0) or None
+        _sort_artist = str(row_dict.get("master_sort_artist_name") or "").strip() or None
         items.append(
             OperatorCatalogSearchItem(
                 owned_item_id=owned_item_id,
                 label_id=_main()._build_label_id(category_code, owned_item_id),
                 category=category_code,
-                format_name=row.get("format_name"),
-                item_title=row.get("item_title") or row.get("item_name_override"),
-                artist_or_brand=row.get("artist_or_brand"),
-                released_date=row.get("released_date"),
-                pressing_country=row.get("pressing_country"),
-                label_name=row.get("label_name"),
-                catalog_no=_main()._discogs_catalog_no(row.get("catalog_no")),
-                barcode=row.get("barcode"),
-                format_items=row.get("format_items") or [],
+                format_name=row_dict.get("format_name"),
+                item_title=row_dict.get("item_title") or row_dict.get("item_name_override"),
+                product_title=row_dict.get("product_title"),
+                artist_or_brand=row_dict.get("artist_or_brand"),
+                released_date=row_dict.get("released_date"),
+                pressing_country=row_dict.get("pressing_country"),
+                label_name=row_dict.get("label_name"),
+                catalog_no=_main()._discogs_catalog_no(row_dict.get("catalog_no")),
+                barcode=row_dict.get("barcode"),
+                format_items=row_dict.get("format_items") or [],
                 runout_sample=" | ".join(runout_values[:2]) if runout_values else None,
-                cover_image_url=row.get("cover_image_url"),
-                signature_type=str(row.get("signature_type") or "NONE"),
-                status=str(row.get("status") or "IN_COLLECTION"),
-                current_slot_code=row.get("current_slot_code"),
-                current_slot_display_name=row.get("current_slot_display_name"),
-                current_cabinet_name=row.get("current_cabinet_name"),
-                current_column_code=row.get("current_column_code"),
-                current_cell_code=row.get("current_cell_code"),
-                previous_slot_code=row.get("previous_slot_code"),
-                previous_slot_display_name=row.get("previous_slot_display_name"),
-                created_at=str(row.get("created_at") or "").strip() or None,
-                track_matches=row.get("track_matches") or [],
-                matched_track_count=int(row.get("matched_track_count") or 0),
-                track_items=row.get("track_items") or [],
-                track_list=row.get("track_list") or [],
+                cover_image_url=row_dict.get("cover_image_url"),
+                signature_type=str(row_dict.get("signature_type") or "NONE"),
+                status=str(row_dict.get("status") or "IN_COLLECTION"),
+                current_slot_code=row_dict.get("current_slot_code"),
+                current_slot_display_name=row_dict.get("current_slot_display_name"),
+                current_cabinet_name=row_dict.get("current_cabinet_name"),
+                current_column_code=row_dict.get("current_column_code"),
+                current_cell_code=row_dict.get("current_cell_code"),
+                previous_slot_code=row_dict.get("previous_slot_code"),
+                previous_slot_display_name=row_dict.get("previous_slot_display_name"),
+                created_at=str(row_dict.get("created_at") or "").strip() or None,
+                track_matches=row_dict.get("track_matches") or [],
+                matched_track_count=int(row_dict.get("matched_track_count") or 0),
+                track_items=row_dict.get("track_items") or [],
+                track_list=row_dict.get("track_list") or [],
                 album_master_id=_am_id,
                 effective_domain_code=_effective_dc,
                 master_domain_code=_master_dc,
                 override_domain_code=_override_dc,
                 sort_artist_name=_sort_artist,
-                review_text=str(row.get("review_text") or "").strip() or None,
-                review_source=str(row.get("review_source") or "").strip() or None,
+                review_text=str(row_dict.get("review_text") or "").strip() or None,
+                review_source=str(row_dict.get("review_source") or "").strip() or None,
+                spotify_album_id=str(row_dict.get("spotify_album_id") or "").strip() or None,
+                has_local_link=bool(row_dict.get("has_local_link")),
             )
         )
     return OperatorCatalogSearchResponse(query=q, total_count=len(items), items=items)
@@ -114,8 +243,8 @@ def operator_home_recent_sections(request: Request) -> OpsHomeRecentSectionsResp
     security._require_authenticated_request(request)
     data = db.get_ops_home_recent_sections()
     return OpsHomeRecentSectionsResponse(
-        recent_moved_items=[OpsHomeRecentItem(**row) for row in data.get("recent_moved_items") or []],
-        recent_registered_items=[OpsHomeRecentItem(**row) for row in data.get("recent_registered_items") or []],
+        recent_moved_items=[_map_ops_home_recent_item(dict(row)) for row in data.get("recent_moved_items") or []],
+        recent_registered_items=[_map_ops_home_recent_item(dict(row)) for row in data.get("recent_registered_items") or []],
         recent_moved_total_count=int(data.get("recent_moved_total_count") or 0),
         recent_registered_total_count=int(data.get("recent_registered_total_count") or 0),
     )
@@ -135,7 +264,7 @@ def operator_home_feed(
         page=int(data.get("page") or page),
         limit=int(data.get("limit") or limit),
         total_count=int(data.get("total_count") or 0),
-        items=[OpsHomeRecentItem(**row) for row in data.get("items") or []],
+        items=[_map_ops_home_recent_item(dict(row)) for row in data.get("items") or []],
     )
 
 

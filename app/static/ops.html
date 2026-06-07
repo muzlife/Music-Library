@@ -28,6 +28,8 @@
         --surface-glass-active: #334155; /* Slate 700 */
         --surface-border:       rgba(255, 255, 255, 0.08);
         --surface-border-active:rgba(255, 255, 255, 0.16);
+        --header-bg:            rgba(15, 23, 42, 0.65);
+        --header-shadow:        0 10px 30px rgba(0, 0, 0, 0.25);
 
         /* Text */
         --text-primary:         #f8fafc; /* Slate 50 */
@@ -72,6 +74,8 @@
         --surface-glass-active: #f1f5f9; /* Slate 100 */
         --surface-border:       rgba(15, 23, 42, 0.08);
         --surface-border-active:rgba(15, 23, 42, 0.16);
+        --header-bg:            rgba(255, 255, 255, 0.65);
+        --header-shadow:        0 10px 30px rgba(15, 23, 42, 0.05);
         --text-primary:         #0f172a; /* Slate 900 */
         --text-secondary:       #334155; /* Slate 700 */
         --text-muted:           #64748b; /* Slate 500 */
@@ -91,6 +95,8 @@
         --surface-glass-active: rgba(245, 245, 238, 0.92);
         --surface-border:       rgba(107, 114, 128, 0.16);
         --surface-border-active:rgba(107, 114, 128, 0.30);
+        --header-bg:            rgba(255, 254, 249, 0.65);
+        --header-shadow:        0 10px 30px rgba(0, 0, 0, 0.03);
         --text-primary:         #1f2a37;
         --text-secondary:       #5a6270;
         --text-muted:           #838995;
@@ -110,6 +116,8 @@
         --surface-glass-active: rgba(189, 199, 209, 0.90);
         --surface-border:       rgba(90, 108, 128, 0.22);
         --surface-border-active:rgba(90, 108, 128, 0.40);
+        --header-bg:            rgba(198, 207, 216, 0.60);
+        --header-shadow:        0 10px 30px rgba(0, 0, 0, 0.08);
         --text-primary:         #15202b;
         --text-secondary:       #2d3a4d;
         --text-muted:           #506275;
@@ -129,6 +137,8 @@
         --surface-glass-active: rgba(22, 28, 36, 0.92);
         --surface-border:       rgba(110, 118, 129, 0.24);
         --surface-border-active:rgba(110, 118, 129, 0.40);
+        --header-bg:            rgba(13, 17, 23, 0.65);
+        --header-shadow:        0 10px 30px rgba(0, 0, 0, 0.30);
         --text-primary:         #e6edf3;
         --text-secondary:       #8b949e;
         --text-muted:           #6e7681;
@@ -148,6 +158,8 @@
         --surface-glass-active: rgba(22, 32, 28, 0.92);
         --surface-border:       rgba(110, 140, 125, 0.22);
         --surface-border-active:rgba(110, 140, 125, 0.40);
+        --header-bg:            rgba(15, 23, 20, 0.65);
+        --header-shadow:        0 10px 30px rgba(0, 0, 0, 0.25);
         --text-primary:         #dfede4;
         --text-secondary:       #8da398;
         --text-muted:           #6e8276;
@@ -238,7 +250,7 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        background: rgba(10, 14, 24, 0.45);
+        background: var(--header-bg);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid var(--surface-border);
@@ -247,7 +259,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--header-shadow);
         transition: var(--transition-std);
       }
 
@@ -527,7 +539,7 @@
         border-radius: var(--radius-md);
         padding: 14px;
         display: grid;
-        grid-template-columns: 60px 1fr;
+        grid-template-columns: 80px 1fr;
         gap: 16px;
         cursor: pointer;
         transition: var(--transition-spring);
@@ -545,8 +557,8 @@
       }
 
       .album-cover-wrap {
-        width: 60px;
-        height: 60px;
+        width: 80px;
+        height: 80px;
         border-radius: var(--radius-sm);
         overflow: hidden;
         border: 1px solid var(--surface-border);
@@ -591,7 +603,7 @@
 
       .result-meta-row {
         display: flex;
-        justify-content: space-between;
+        gap: 6px;
         align-items: center;
         margin-top: 4px;
       }
@@ -603,6 +615,8 @@
         border-radius: 4px;
         text-transform: uppercase;
         border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
       }
 
       .badge-category {
@@ -611,16 +625,30 @@
         color: var(--text-secondary);
       }
 
+      .badge-spotify {
+        background: rgba(29, 185, 84, 0.15);
+        color: #1ed760;
+        border-color: rgba(29, 185, 84, 0.3);
+      }
+
+      .badge-local {
+        background: rgba(99, 102, 241, 0.15);
+        color: #818cf8;
+        border-color: rgba(99, 102, 241, 0.3);
+      }
+
       .slot-badge {
         background: rgba(210, 140, 40, 0.10);
         border-color: rgba(210, 140, 40, 0.22);
         color: var(--accent-amber);
         font-family: var(--font-mono);
+        margin-left: auto;
       }
       .slot-badge.unslotted {
         background: rgba(239, 68, 68, 0.1);
         border-color: rgba(239, 68, 68, 0.2);
         color: oklch(0.75 0.15 25);
+        margin-left: auto;
       }
 
       /* Customer Requests Queue */
@@ -1324,7 +1352,7 @@
          ------------------------------------------------------------- -->
     <header>
       <div class="logo-section">
-        <img id="logoImg" src="/ui-static/images/logo-hahahoho.png" alt="hahahoho" style="height: 38px; width: auto; object-fit: contain; vertical-align: middle;" />
+        <img id="logoImg" src="/ui-static/images/logo-hahahoho.png?v=2" alt="hahahoho" style="height: 52px; width: auto; object-fit: contain; vertical-align: middle;" />
         <span class="logo-tag">Console</span>
       </div>
 
@@ -1526,6 +1554,10 @@
     <div class="artist-bio-section" id="detailsBioSection" style="display:none;">
       <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.artist_ctx">아티스트 컨텍스트 (AI)</h3>
       <div class="artist-bio-text" id="detailsBioText">불러오는 중...</div>
+      <div id="detailsReviewSection" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--surface-border);">
+        <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">앨범 리뷰 (Wikipedia)</h3>
+        <div class="artist-bio-text" id="detailsReviewText" style="font-size:0.82rem; line-height:1.5;"></div>
+      </div>
     </div>
 
     <!-- Track List -->
@@ -1932,6 +1964,8 @@
           <div class="result-artist">${escapeHtml(item.artist_or_brand || 'Unknown Artist')}</div>
           <div class="result-meta-row">
             <span class="badge badge-category">${escapeHtml(item.category || 'Format')}</span>
+            ${item.spotify_album_id ? `<span class="badge badge-spotify"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="margin-right:3px; vertical-align:middle;"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.377-1.454-5.37-1.783-8.893-.982-.336.076-.67-.135-.746-.47-.077-.337.135-.67.472-.747 3.852-.88 7.15-.51 9.816 1.127.294.18.387.563.208.858zm1.226-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.082-1.182-.413.125-.847-.107-.972-.52-.125-.413.107-.847.52-.972 3.676-1.116 8.243-.57 11.348 1.34.367.227.487.708.26 1.074zm.106-2.833C14.385 8.784 8.568 8.592 5.2 9.613c-.54.164-1.11-.144-1.274-.684-.165-.54.143-1.11.684-1.275 3.87-1.173 10.3-1.02 14.37 1.4 1.143.68 1.5 2.164.815 3.013a1.002 1.002 0 0 1-1.393.303z"/></svg>Spotify</span>` : ''}
+            ${item.has_local_link ? `<span class="badge badge-local"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:3px; vertical-align:middle;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>Local</span>` : ''}
             <span class="badge slot-badge ${isUnslotted ? 'unslotted' : ''}">${escapeHtml(displaySlot)}</span>
           </div>
         </div>
@@ -2016,6 +2050,7 @@
     }
 
     // Detail Panel Selection
+    // Detail Panel Selection
     async function selectItem(item) {
       currentItem = item; // Store globally
       selectedItemId = item.owned_item_id;
@@ -2039,7 +2074,7 @@
 
       panel.classList.add('open');
 
-      title.textContent = item.item_title || 'Unknown Title';
+      title.textContent = item.product_title || item.item_title || 'Unknown Title';
       artist.textContent = item.artist_or_brand || 'Unknown Artist';
       
       const currentLoc = item.current_slot_display_name || '미배치 (위치 설정 필요)';
@@ -2074,17 +2109,83 @@
         `;
       }
 
-      // Render tracks
-      trackList.innerHTML = '';
-      if (item.track_list && item.track_list.length > 0) {
-        item.track_list.forEach((track, index) => {
-          const div = document.createElement('div');
-          div.className = 'track-item-mini';
-          div.innerHTML = `<span class="track-name"><span class="track-num">${index + 1}</span>${escapeHtml(track)}</span>`;
-          trackList.appendChild(div);
-        });
+      // Render tracks (temporary/loading)
+      trackList.innerHTML = '<span class="status-text" style="padding:0;">불러오는 중...</span>';
+
+      // Load full details from backend (which has full fallbacks and sibling tracks resolved)
+      try {
+        const res = await apiFetch(`/owned-items/${item.owned_item_id}`);
+        if (res && res.ok) {
+          const detailData = await res.json();
+          // Update currentItem reference
+          currentItem = {
+            ...currentItem,
+            ...detailData,
+            ...detailData.music_detail
+          };
+          
+          // Re-populate details using the full fetched object
+          const detail = detailData.music_detail || {};
+          title.textContent = currentItem.item_name_override || currentItem.master_title || title.textContent;
+          artist.textContent = detail.artist_or_brand || currentItem.linked_artist_name || artist.textContent;
+          
+          const freshBarcode = detail.barcode || 'N/A';
+          const freshCatalog = detail.catalog_no || 'N/A';
+          identifiers.textContent = `Barcode: ${freshBarcode} / Catalog: ${freshCatalog}`;
+          
+          const freshLabel = detail.label_name || 'Unknown Label';
+          const freshDate = detail.released_date || 'Unknown Date';
+          labelAndDate.textContent = `${freshLabel} (${freshDate})`;
+          
+          if (detail.cover_image_url) {
+            cover.innerHTML = `<img src="${escapeHtml(detail.cover_image_url)}" class="album-cover" style="width:100%; height:100%; object-fit:cover;" alt="Cover">`;
+          }
+
+          // Render tracks
+          trackList.innerHTML = '';
+          const tList = detail.track_list || [];
+          if (tList.length > 0) {
+            tList.forEach((track, index) => {
+              const div = document.createElement('div');
+              div.className = 'track-item-mini';
+              div.innerHTML = `<span class="track-name"><span class="track-num">${index + 1}</span>${escapeHtml(track)}</span>`;
+              trackList.appendChild(div);
+            });
+          } else {
+            trackList.innerHTML = '<span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load full item details', err);
+        // If fetch fails, show whatever tracklist we originally passed
+        trackList.innerHTML = '';
+        if (item.track_list && item.track_list.length > 0) {
+          item.track_list.forEach((track, index) => {
+            const div = document.createElement('div');
+            div.className = 'track-item-mini';
+            div.innerHTML = `<span class="track-name"><span class="track-num">${index + 1}</span>${escapeHtml(track)}</span>`;
+            trackList.appendChild(div);
+          });
+        } else {
+          trackList.innerHTML = '<span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>';
+        }
+      }
+
+      // Render Album Review
+      const reviewSection = document.getElementById('detailsReviewSection');
+      const reviewText = document.getElementById('detailsReviewText');
+      if (item.review_text) {
+        reviewSection.style.display = 'block';
+        reviewText.innerHTML = escapeHtml(item.review_text).replace(/\n/g, '<br>');
+        if (item.review_source) {
+          const sourceSpan = document.createElement('div');
+          sourceSpan.style.cssText = 'font-size:0.75rem; color:var(--text-muted); margin-top:6px; text-align:right;';
+          sourceSpan.textContent = `출처: ${item.review_source}`;
+          reviewText.appendChild(sourceSpan);
+        }
       } else {
-        trackList.innerHTML = '<span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>';
+        reviewSection.style.display = 'none';
+        reviewText.innerHTML = '';
       }
 
       // Trigger AI Artist context asynchronously

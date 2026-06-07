@@ -115,6 +115,9 @@ def _build_ops_home_recent_item(row: dict[str, Any]) -> dict[str, Any]:
         "review_text": str(row.get("review_text") or "").strip() or None,
         "review_source": str(row.get("review_source") or "").strip() or None,
         "linked_album_master_id": int(row.get("linked_album_master_id") or 0) or None,
+        "product_title": str(row.get("product_title") or "").strip() or None,
+        "source_code": str(row.get("source_code") or "").strip() or None,
+        "source_external_id": str(row.get("source_external_id") or "").strip() or None,
     }
 
 
@@ -180,6 +183,9 @@ def list_ops_home_recent_moved_items(limit: int = 6, offset: int = 0) -> list[di
               re.event_id,
               oi.id AS owned_item_id,
               oi.category,
+              oi.source_code,
+              oi.source_external_id,
+              COALESCE(oi.item_name_override, am.title) AS product_title,
               mid.format_name,
               CASE
                 WHEN oi.item_name_override IS NOT NULL
@@ -256,6 +262,8 @@ def list_ops_home_recent_registered_items(limit: int = 6, offset: int = 0) -> li
                 oi.linked_album_master_id,
                 oi.linked_artist_name,
                 oi.storage_slot_id,
+                oi.source_code,
+                oi.source_external_id,
                 oi.created_at
               FROM owned_item oi
               WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
@@ -266,6 +274,9 @@ def list_ops_home_recent_registered_items(limit: int = 6, offset: int = 0) -> li
             SELECT
               oi.id AS owned_item_id,
               oi.category,
+              oi.source_code,
+              oi.source_external_id,
+              COALESCE(oi.item_name_override, am.title) AS product_title,
               mid.format_name,
               CASE
                 WHEN oi.item_name_override IS NOT NULL
@@ -332,6 +343,8 @@ def list_ops_home_recent_purchased_items(limit: int = 6, offset: int = 0) -> lis
                 oi.linked_album_master_id,
                 oi.linked_artist_name,
                 oi.storage_slot_id,
+                oi.source_code,
+                oi.source_external_id,
                 oi.created_at,
                 oi.acquisition_date
               FROM owned_item oi
@@ -345,6 +358,9 @@ def list_ops_home_recent_purchased_items(limit: int = 6, offset: int = 0) -> lis
             SELECT
               oi.id AS owned_item_id,
               oi.category,
+              oi.source_code,
+              oi.source_external_id,
+              COALESCE(oi.item_name_override, am.title) AS product_title,
               mid.format_name,
               CASE
                 WHEN oi.item_name_override IS NOT NULL
@@ -412,6 +428,8 @@ def list_ops_home_recent_unslotted_items(limit: int = 6, offset: int = 0) -> lis
                 oi.linked_album_master_id,
                 oi.linked_artist_name,
                 oi.storage_slot_id,
+                oi.source_code,
+                oi.source_external_id,
                 oi.created_at,
                 oi.acquisition_date
               FROM owned_item oi
@@ -425,6 +443,9 @@ def list_ops_home_recent_unslotted_items(limit: int = 6, offset: int = 0) -> lis
             SELECT
               oi.id AS owned_item_id,
               oi.category,
+              oi.source_code,
+              oi.source_external_id,
+              COALESCE(oi.item_name_override, am.title) AS product_title,
               mid.format_name,
               CASE
                 WHEN oi.item_name_override IS NOT NULL

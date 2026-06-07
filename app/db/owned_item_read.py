@@ -56,7 +56,26 @@ def get_owned_item_detail(owned_item_id: int) -> dict[str, Any] | None:
     return _normalize_owned_item_row(dict(row))
 
 
+def get_sibling_tracklist(album_master_id: int, exclude_owned_item_id: int) -> dict[str, Any] | None:
+    query = """
+        SELECT mid.track_list_json, mid.track_items_json
+        FROM owned_item oi
+        JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+        WHERE oi.linked_album_master_id = ?
+          AND oi.id <> ?
+          AND (mid.track_list_json IS NOT NULL OR mid.track_items_json IS NOT NULL)
+        LIMIT 1
+    """
+    with get_conn() as conn:
+        row = conn.execute(query, (album_master_id, exclude_owned_item_id)).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+
 __all__ = [
     "get_owned_item",
     "get_owned_item_detail",
+    "get_sibling_tracklist",
 ]
+

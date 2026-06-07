@@ -1600,6 +1600,14 @@ def get_owned_item_detail(owned_item_id: int) -> OwnedItemDetailResponse:
             "cover_condition": row.get("cover_condition"),
             "disc_condition": row.get("disc_condition"),
         }
+        from app.api.operator_home import apply_music_detail_fallbacks
+        music_detail = apply_music_detail_fallbacks(
+            detail=music_detail,
+            owned_item_id=owned_item_id,
+            album_master_id=row.get("linked_album_master_id"),
+            source_code=row.get("source_code"),
+            source_external_id=row.get("source_external_id"),
+        )
     else:
         goods_image_urls = row.get("goods_image_urls") or []
         goods_primary_image_url = row.get("goods_primary_image_url")

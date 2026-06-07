@@ -365,6 +365,9 @@ class OperatorCatalogSearchItem(BaseModel):
     sort_artist_name: str | None = None        # album_master.sort_artist_name (교정 UI 표시)
     review_text: str | None = None
     review_source: str | None = None
+    product_title: str | None = None
+    spotify_album_id: str | None = None
+    has_local_link: bool = False
 
 
 class OperatorCatalogSearchResponse(BaseModel):
@@ -426,6 +429,7 @@ class OpsHomeRecentItem(BaseModel):
     has_local_link: bool = False
     review_text: str | None = None
     review_source: str | None = None
+    product_title: str | None = None
 
 
 class OpsHomeRecentSectionsResponse(BaseModel):
