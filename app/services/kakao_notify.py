@@ -21,16 +21,24 @@ def _get_settings():
     return get_settings()
 
 
-async def _get_access_token(client: httpx.AsyncClient, refresh_token: str, rest_api_key: str) -> str | None:
+async def _get_access_token(
+    client: httpx.AsyncClient,
+    refresh_token: str,
+    rest_api_key: str,
+    client_secret: str | None = None,
+) -> str | None:
     """refresh_token으로 access_token을 발급받는다."""
     try:
+        data: dict[str, str] = {
+            "grant_type": "refresh_token",
+            "client_id": rest_api_key,
+            "refresh_token": refresh_token,
+        }
+        if client_secret:
+            data["client_secret"] = client_secret
         resp = await client.post(
             _KAKAO_TOKEN_URL,
-            data={
-                "grant_type": "refresh_token",
-                "client_id": rest_api_key,
-                "refresh_token": refresh_token,
-            },
+            data=data,
             timeout=10.0,
         )
         if resp.status_code != 200:
@@ -51,7 +59,8 @@ async def send_kakao_message(text: str) -> None:
     try:
         async with httpx.AsyncClient() as client:
             access_token = await _get_access_token(
-                client, settings.kakao_refresh_token, settings.kakao_rest_api_key
+                client, settings.kakao_refresh_token, settings.kakao_rest_api_key,
+                client_secret=settings.kakao_client_secret,
             )
             if not access_token:
                 return
