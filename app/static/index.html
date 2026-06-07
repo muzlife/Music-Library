@@ -4709,9 +4709,9 @@
     .ops-library-mini-map-cell {
       position: relative;
       overflow: hidden;
-      min-height: 46px;
-      padding: 6px 6px 5px;
-      border-radius: 0;
+      min-height: 60px;
+      padding: 6px 6px 8px;
+      border-radius: 4px;
       border: 1px solid var(--tile-border, var(--theme-admin-panel-border));
       background: var(--theme-shell-surface);
       color: var(--tile-fg, var(--theme-dashboard-text, #f3f6fb));
@@ -4723,6 +4723,20 @@
       cursor: pointer;
       box-shadow: none;
     }
+    .ops-library-mini-map-cell::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: var(--cell-fill, 0%);
+      max-width: 100%;
+      height: 3px;
+      background: var(--tile-count-fg, currentColor);
+      opacity: 0.45;
+      border-radius: 0 2px 0 0;
+    }
+    .ops-library-mini-map-cell.tone-empty::after { opacity: 0.2; }
+    .ops-library-mini-map-cell.tone-over::after  { opacity: 0.65; }
 
     .ops-library-mini-map-cell.tone-empty,
     .dashboard-cabinet-map-cell.tone-empty {
@@ -15213,32 +15227,42 @@
 
     .dashboard-cabinet-map {
       display: grid;
-      gap: 7px;
+      gap: 10px;
       min-width: 0;
       max-width: 100%;
       overflow-x: auto;
-      padding: 8px;
-      border-radius: 0;
+      padding: 10px;
+      border-radius: 8px;
       background: var(--theme-admin-panel-bg);
       border: 1px solid var(--theme-admin-panel-border);
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.06);
     }
 
     .dashboard-cabinet-map-floor {
-      display: grid;
-      grid-template-columns: 42px minmax(0, 1fr);
-      align-items: start;
-      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
       min-width: 0;
     }
 
     .dashboard-cabinet-map-floorcode {
-      font-size: 0.74rem;
+      font-size: 0.64rem;
       font-weight: 800;
       color: #475569;
-      line-height: 1.1;
-      padding-top: 8px;
+      line-height: 1;
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 2px;
+    }
+    .dashboard-cabinet-map-floorcode::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--theme-admin-panel-border);
+      opacity: 0.8;
     }
 
     .dashboard-cabinet-map-cells {
@@ -15256,11 +15280,11 @@
       position: relative;
       overflow: hidden;
       border: 1px solid var(--tile-border, var(--theme-admin-panel-border));
-      border-radius: 0;
+      border-radius: 4px;
       background: var(--theme-shell-surface);
       color: var(--tile-fg, var(--theme-dashboard-text, #f3f6fb));
-      min-height: 46px;
-      padding: 6px 6px 5px;
+      min-height: 60px;
+      padding: 6px 6px 8px;
       display: grid;
       align-content: start;
       gap: 3px;
@@ -15269,6 +15293,22 @@
       transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
       box-shadow: none;
     }
+
+    .dashboard-cabinet-map-cell::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: var(--cell-fill, 0%);
+      max-width: 100%;
+      height: 3px;
+      background: var(--tile-count-fg, currentColor);
+      opacity: 0.45;
+      border-radius: 0 2px 0 0;
+    }
+    .dashboard-cabinet-map-cell.tone-empty::after { opacity: 0.2; }
+    .dashboard-cabinet-map-cell.tone-over::after  { opacity: 0.65; }
+    .dashboard-cabinet-map-cell.active::after     { background: var(--selected-accent-strong); opacity: 0.7; }
 
     .dashboard-cabinet-map-cell::before {
       content: "";
@@ -15421,7 +15461,7 @@
       background: transparent;
       color: var(--tile-count-fg, currentColor);
       box-shadow: none;
-      font-size: 0.82rem;
+      font-size: 0.92rem;
       font-weight: 900;
       line-height: 1;
       letter-spacing: 0.04em;
@@ -15453,6 +15493,25 @@
       white-space: normal;
       word-break: keep-all;
     }
+
+    /* ── Cabinet fillbar (header occupancy indicator) ── */
+    .dashboard-cabinet-fillbar-wrap {
+      height: 4px;
+      background: rgba(0, 0, 0, 0.07);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .dashboard-cabinet-fillbar {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+      background: #94a3b8;
+    }
+    .dashboard-cabinet-fillbar.tone-filled { background: #22c55e; }
+    .dashboard-cabinet-fillbar.tone-high   { background: #f97316; }
+    .dashboard-cabinet-fillbar.tone-over   { background: #ef4444; }
+    .dashboard-cabinet-fillbar.tone-empty  { background: transparent; }
 
     .dashboard-cabinet-preview {
       display: flex;
@@ -36563,6 +36622,7 @@
                       const active = String(row?.slot_code || "").trim() === slotCode;
                       const occupancy = dashboardCabinetOccupancyLabel(row);
                       const hoverTitle = dashboardSlotHoverHintText(row);
+                      const _opsCellFillPct = Math.min(200, Math.round(dashboardCabinetOccupancyRatio(row) * 100));
                       return `
                         <div
                           class="ops-library-mini-map-cell ${toneClass} ${active ? "active" : ""}"
@@ -36570,6 +36630,7 @@
                           title="${escapeHtml(hoverTitle)}"
                           data-operator-context-open-cabinet="${Number(item?.owned_item_id || item?.id || 0)}"
                           data-operator-slot-code="${escapeHtml(String(row?.slot_code || "").trim())}"
+                          style="--cell-fill:${_opsCellFillPct}%"
                         >
                           <span class="ops-library-mini-map-cellcode">${escapeHtml(dashboardCabinetMapCellLabel(row))}</span>
                           <strong class="ops-library-mini-map-cellcount">${escapeHtml(occupancy.percentText)}</strong>
@@ -42531,6 +42592,14 @@
           group.isOverflow ? "overflow" : "",
           group.isUnassigned ? "unassigned" : "",
         ].filter(Boolean).join(" ");
+        const _groupAvgRatio = (group.isOverflow || group.isUnassigned || !group.rows.length)
+          ? 0
+          : group.rows.reduce((s, r) => s + dashboardCabinetOccupancyRatio(r), 0) / group.rows.length;
+        const _groupFillPct = Math.min(100, Math.round(_groupAvgRatio * 100));
+        const _groupFillTone = _groupAvgRatio >= 1 ? "tone-over" : _groupAvgRatio >= 0.7 ? "tone-high" : _groupAvgRatio > 0 ? "tone-filled" : "tone-empty";
+        const fillBarHtml = (group.isOverflow || group.isUnassigned)
+          ? ""
+          : `<div class="dashboard-cabinet-fillbar-wrap"><div class="dashboard-cabinet-fillbar ${_groupFillTone}" style="width:${_groupFillPct}%"></div></div>`;
         const metaHtml = group.isOverflow
           ? [
               `<span>${escapeHtml(t("dashboard.cabinet.meta.slots", { count: formatCount(group.slotCount) }))}</span>`,
@@ -42564,6 +42633,8 @@
                         const occupancyMetaText = occupancy.usedText
                           ? `(${occupancy.usedText})`
                           : "";
+                        const _cellRatio = dashboardCabinetOccupancyRatio(row);
+                        const _cellFillPct = Math.min(200, Math.round(_cellRatio * 100));
                         return `
                           <button
                             class="dashboard-cabinet-map-cell ${toneClass} ${active ? "active" : ""} ${sizeClass}"
@@ -42571,6 +42642,7 @@
                             data-dashboard-map-slot-code="${escapeHtml(slotCode)}"
                             aria-label="${escapeHtml(`${dashboardCabinetMapCellLabel(row, group)} ${occupancy.percentText} / ${occupancy.usedText || ""}`)}"
                             title="${escapeHtml(hoverTitle)}"
+                            style="--cell-fill:${_cellFillPct}%"
                           >
                             <span class="dashboard-cabinet-map-celltype ${sizeClass}">${escapeHtml(typeStamp)}</span>
                             <span class="dashboard-cabinet-map-cellcode">${escapeHtml(dashboardCabinetMapCellLabel(row, group))}</span>
@@ -42607,6 +42679,7 @@
                   </div>
                 </div>
                 <div class="dashboard-cabinet-summary-meta">${metaHtml}</div>
+                ${fillBarHtml}
               </button>
               <button
                 class="btn ghost tiny dashboard-slot-actionbtn dashboard-cabinet-refreshbtn"
