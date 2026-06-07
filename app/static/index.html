@@ -8476,6 +8476,22 @@
       color: #475569;
       letter-spacing: -0.01em;
     }
+    .admin-barcode-placement-anchor {
+      margin-top: 4px;
+      color: #0f766e;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .admin-barcode-placement-anchor::before {
+      content: "→";
+      font-size: 0.7rem;
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
 
     .admin-barcode-placement-badges {
       display: flex;
@@ -25532,6 +25548,9 @@
         "media.register.api_lookup.placement.badge.active": "현재 선택",
         "media.register.api_lookup.placement.rank": "{rank}순위",
         "media.register.api_lookup.placement.detail": "여유 {free}mm · {occupancy}%",
+        "media.register.api_lookup.placement.anchor_after": "뒤에 꽂으세요",
+        "media.register.api_lookup.placement.anchor_before": "앞에 꽂으세요",
+        "media.register.api_lookup.placement.anchor_tail": "마지막에 꽂으세요",
         "media.register.api_lookup.confirm.ready": "같은 바코드를 다시 스캔하거나 Enter를 누르면 1순위 칸으로 저장합니다.",
         "media.register.api_lookup.confirm.saved": "저장 완료 · 다음 스캔 준비",
         "media.register.api_lookup.duplicate.slot": "\n저장 칸: {slot}",
@@ -28255,6 +28274,9 @@
         "media.register.api_lookup.placement.badge.active": "Current",
         "media.register.api_lookup.placement.rank": "Rank {rank}",
         "media.register.api_lookup.placement.detail": "Free {free}mm · {occupancy}%",
+        "media.register.api_lookup.placement.anchor_after": "insert after",
+        "media.register.api_lookup.placement.anchor_before": "insert before",
+        "media.register.api_lookup.placement.anchor_tail": "insert at end",
         "media.register.api_lookup.confirm.ready": "Scan the same barcode again or press Enter to save to the top-ranked slot.",
         "media.register.api_lookup.confirm.saved": "Saved · Ready for next scan",
         "media.register.api_lookup.duplicate.slot": "\nSave slot: {slot}",
@@ -32776,6 +32798,15 @@
         const badgeGroup = autoBadge || activeBadge
           ? `<div class="admin-barcode-placement-badges">${autoBadge}${activeBadge}</div>`
           : "";
+        const anchorDisplay = String(item.anchor_display || "").trim();
+        const anchorPosition = String(item.anchor_position || "").trim();
+        let anchorLine = "";
+        if (anchorDisplay) {
+          const posKey = anchorPosition === "BEFORE"
+            ? "media.register.api_lookup.placement.anchor_before"
+            : "media.register.api_lookup.placement.anchor_after";
+          anchorLine = `<div class="mini admin-barcode-placement-anchor">${escapeHtml(anchorDisplay)} <span style="opacity:0.75;font-weight:400">${escapeHtml(t(posKey))}</span></div>`;
+        }
         return `
           <div
             class="admin-barcode-placement-item${rank === 1 ? " rank-1" : ""}${isActive ? " active" : ""}"
@@ -32786,6 +32817,7 @@
             <strong>${escapeHtml(slotName)}</strong>
             ${badgeGroup}
             <div class="mini admin-barcode-placement-detail">${escapeHtml(t("media.register.api_lookup.placement.detail", { free: formatCount(freeMm), occupancy: formatCount(occupancy) }))}</div>
+            ${anchorLine}
           </div>
         `;
       }).join("")}`;

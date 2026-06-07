@@ -131,6 +131,10 @@ class BarcodePlacementRecommendationItem(BaseModel):
     used_thickness_mm: int = Field(ge=0)
     capacity_mm: int = Field(ge=0)
     occupancy_percent: int = Field(ge=0)
+    anchor_owned_item_id: int | None = None
+    anchor_position: Literal["BEFORE", "AFTER"] | None = None
+    anchor_display: str | None = None
+    reason: str | None = None
 
 
 class BarcodePlacementRecommendationResponse(BaseModel):

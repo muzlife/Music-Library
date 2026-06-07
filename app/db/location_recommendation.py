@@ -585,6 +585,77 @@ def recommend_owned_item_location(
     }
 
 
+def _fetch_anchor_display(conn: sqlite3.Connection, owned_item_id: int | None) -> str | None:
+    """Return 'Artist - Title (Year)' for the anchor item, or None."""
+    if not owned_item_id:
+        return None
+    row = conn.execute(
+        """
+        SELECT
+          COALESCE(oi.item_name_override, am.title, '') AS item_title,
+          COALESCE(mid.artist_or_brand, am.artist_or_brand, oi.linked_artist_name, '') AS artist,
+          COALESCE(am.release_year, mid.release_year) AS release_year
+        FROM owned_item oi
+        LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+        LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+        WHERE oi.id = ?
+        """,
+        (owned_item_id,),
+    ).fetchone()
+    if not row:
+        return None
+    item_title = str(row["item_title"] or "").strip()
+    if not item_title:
+        return None
+    artist = str(row["artist"] or "").strip()
+    try:
+        year = int(row["release_year"]) if row["release_year"] is not None else None
+    except (TypeError, ValueError):
+        year = None
+    display = f"{artist} - {item_title}" if artist else item_title
+    if year and year > 0:
+        display = f"{display} ({year})"
+    return display
+
+
+def _fetch_slot_anchor(
+    conn: sqlite3.Connection,
+    slot_id: int,
+    artist_norm: str | None,
+) -> tuple[int | None, str | None]:
+    """Return (owned_item_id, 'AFTER') for the tail item in a slot.
+    Prefers an artist-matched tail; falls back to the absolute last item."""
+    if artist_norm:
+        row = conn.execute(
+            f"""
+            SELECT oi.id FROM owned_item oi
+            LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = oi.linked_album_master_id
+            WHERE oi.status = 'IN_COLLECTION'
+              AND oi.storage_slot_id = ?
+              AND {_compact_search_sql_expr("COALESCE(am.sort_artist_name, oi.linked_artist_name, mid.artist_or_brand, am.artist_or_brand, '')")} = ?
+            ORDER BY oi.order_key DESC, oi.id DESC
+            LIMIT 1
+            """,
+            [slot_id, artist_norm],
+        ).fetchone()
+        if row:
+            return int(row["id"]), "AFTER"
+    row = conn.execute(
+        """
+        SELECT oi.id FROM owned_item oi
+        WHERE oi.status = 'IN_COLLECTION'
+          AND oi.storage_slot_id = ?
+        ORDER BY oi.order_key DESC, oi.id DESC
+        LIMIT 1
+        """,
+        [slot_id],
+    ).fetchone()
+    if row:
+        return int(row["id"]), "AFTER"
+    return None, None
+
+
 def recommend_barcode_candidate_locations(
     *,
     category: str,
@@ -719,6 +790,26 @@ def recommend_barcode_candidate_locations(
         if len(result) >= safe_limit:
             break
 
+    artist_norm = _normalize_recommendation_text(artist_or_brand)
+    anchor_map: dict[int, dict[str, Any]] = {}
+    with get_conn() as conn:
+        for row in result[:safe_limit]:
+            slot_id = int(row["storage_slot_id"])
+            if slot_id == preferred_slot_id:
+                a_id = suggestion.get("anchor_owned_item_id")
+                a_pos = suggestion.get("anchor_position")
+                a_reason = suggestion.get("reason")
+            else:
+                a_id, a_pos = _fetch_slot_anchor(conn, slot_id, artist_norm)
+                a_reason = None
+            a_display = _fetch_anchor_display(conn, a_id)
+            anchor_map[slot_id] = {
+                "anchor_owned_item_id": int(a_id) if a_id else None,
+                "anchor_position": a_pos,
+                "anchor_display": a_display,
+                "reason": a_reason,
+            }
+
     return [
         {
             "rank": index,
@@ -732,6 +823,12 @@ def recommend_barcode_candidate_locations(
             "used_thickness_mm": int(row["used_thickness_mm"]),
             "capacity_mm": int(row["capacity_mm"]),
             "occupancy_percent": int(row["occupancy_percent"]),
+            **anchor_map.get(int(row["storage_slot_id"]), {
+                "anchor_owned_item_id": None,
+                "anchor_position": None,
+                "anchor_display": None,
+                "reason": None,
+            }),
         }
         for index, row in enumerate(result[:safe_limit], start=1)
     ]
