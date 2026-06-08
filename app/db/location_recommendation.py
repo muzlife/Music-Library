@@ -578,6 +578,7 @@ def recommend_owned_item_location(
         "anchor_owned_item_id": int(anchor_row["id"]) if anchor_row is not None else None,
         "anchor_position": anchor_position,
         "recommended_storage_slot_id": recommended_slot_id,
+        "anchor_storage_slot_id": preferred_slot_id if preferred_slot_id > 0 else None,
         "slot_code": recommended_slot_code,
         "candidate_slots": candidate_slots,
         "reason": f"{anchor_reason}/{slot_reason}",
@@ -737,56 +738,61 @@ def recommend_barcode_candidate_locations(
             continue
         slot_item_map.setdefault(storage_slot_id, []).append(dict(row))
 
-    ranked_slots: list[dict[str, Any]] = []
     requested_domain_code = _normalize_domain_code_value(domain_code)
+
+    # 모든 슬롯 occupancy 정보 구성 (용량 필터 없이)
+    all_slot_data: dict[int, dict[str, Any]] = {}
     for row in slot_rows:
         item = dict(row)
         slot_id = int(item.get("id") or 0)
         if slot_id <= 0:
             continue
         summary = build_storage_slot_occupancy_summary(item, slot_item_map.get(slot_id, []))
-        if int(summary.get("free_thickness_mm") or 0) < required_thickness_mm:
-            continue
-        ranked_slots.append(
-            {
-                "storage_slot_id": slot_id,
-                "slot_code": str(item.get("slot_code") or "").strip(),
-                "cabinet_name": str(item.get("cabinet_name") or "").strip() or None,
-                "column_code": str(item.get("column_code") or "").strip() or None,
-                "cell_code": str(item.get("cell_code") or "").strip() or None,
-                "slot_display_name": _storage_slot_display_name(item),
-                "free_thickness_mm": int(summary.get("free_thickness_mm") or 0),
-                "used_thickness_mm": int(summary.get("used_thickness_mm") or 0),
-                "capacity_mm": int(summary.get("capacity_mm") or 0),
-                "occupancy_percent": int(summary.get("occupancy_percent") or 0),
-                "is_overflow_zone": bool(item.get("is_overflow_zone")),
-                "cabinet_domain_code": _normalize_domain_code_value(item.get("cabinet_domain_code")),
-                "_sort_key": (
-                    0 if _normalize_domain_code_value(item.get("cabinet_domain_code")) == requested_domain_code else 1 if not _normalize_domain_code_value(item.get("cabinet_domain_code")) else 2,
-                    max(int(summary.get("free_thickness_mm") or 0) - required_thickness_mm, 0),
-                    _storage_slot_sort_key(item),
-                ),
-            }
-        )
+        all_slot_data[slot_id] = {
+            "storage_slot_id": slot_id,
+            "slot_code": str(item.get("slot_code") or "").strip(),
+            "cabinet_name": str(item.get("cabinet_name") or "").strip() or None,
+            "column_code": str(item.get("column_code") or "").strip() or None,
+            "cell_code": str(item.get("cell_code") or "").strip() or None,
+            "slot_display_name": _storage_slot_display_name(item),
+            "free_thickness_mm": int(summary.get("free_thickness_mm") or 0),
+            "used_thickness_mm": int(summary.get("used_thickness_mm") or 0),
+            "capacity_mm": int(summary.get("capacity_mm") or 0),
+            "occupancy_percent": int(summary.get("occupancy_percent") or 0),
+            "is_overflow_zone": bool(item.get("is_overflow_zone")),
+            "cabinet_domain_code": _normalize_domain_code_value(item.get("cabinet_domain_code")),
+            "_sort_key": _storage_slot_sort_key(item),
+        }
 
-    ranked_slots.sort(key=lambda row: (bool(row.get("is_overflow_zone")), *row["_sort_key"]))
+    # 물리적 순서 인덱스 맵: anchor와의 거리 계산에 사용
+    sorted_all_slots = sorted(all_slot_data.values(), key=lambda s: s["_sort_key"])
+    slot_physical_index: dict[int, int] = {s["storage_slot_id"]: i for i, s in enumerate(sorted_all_slots)}
 
-    preferred_slot_id = int(suggestion.get("recommended_storage_slot_id") or 0)
+    # 1순위: anchor 아이템이 있는 칸 (용량 여부와 무관)
+    top_slot_id = int(suggestion.get("anchor_storage_slot_id") or suggestion.get("recommended_storage_slot_id") or 0)
+    anchor_physical_index = slot_physical_index.get(top_slot_id, 0)
+
+    # 2순위 이후: 여유 있고 overflow 아닌 칸, anchor와 물리적 거리 가까운 순
+    available_slots = [
+        s for s in all_slot_data.values()
+        if int(s["free_thickness_mm"]) >= required_thickness_mm
+        and not s["is_overflow_zone"]
+    ]
+    available_slots.sort(key=lambda s: abs(slot_physical_index.get(s["storage_slot_id"], 9999) - anchor_physical_index))
+
     result: list[dict[str, Any]] = []
     seen_slot_ids: set[int] = set()
 
-    if preferred_slot_id > 0:
-        preferred_row = next((row for row in ranked_slots if int(row["storage_slot_id"]) == preferred_slot_id), None)
-        if preferred_row is not None:
-            seen_slot_ids.add(preferred_slot_id)
-            result.append(preferred_row)
+    if top_slot_id > 0 and top_slot_id in all_slot_data:
+        result.append(all_slot_data[top_slot_id])
+        seen_slot_ids.add(top_slot_id)
 
-    for row in ranked_slots:
-        slot_id = int(row["storage_slot_id"])
+    for s in available_slots:
+        slot_id = int(s["storage_slot_id"])
         if slot_id in seen_slot_ids:
             continue
         seen_slot_ids.add(slot_id)
-        result.append(row)
+        result.append(s)
         if len(result) >= safe_limit:
             break
 
@@ -795,7 +801,7 @@ def recommend_barcode_candidate_locations(
     with get_conn() as conn:
         for row in result[:safe_limit]:
             slot_id = int(row["storage_slot_id"])
-            if slot_id == preferred_slot_id:
+            if slot_id == top_slot_id:
                 a_id = suggestion.get("anchor_owned_item_id")
                 a_pos = suggestion.get("anchor_position")
                 a_reason = suggestion.get("reason")
