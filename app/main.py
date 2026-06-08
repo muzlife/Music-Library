@@ -148,6 +148,7 @@ from .services.providers import (
     has_default_user_agent_placeholder,
     infer_domain_code,
     get_source_release_snapshot,
+    get_discogs_release_year_from_cache,
     get_discogs_snapshot_from_master_id,
     get_album_master_variants,
     get_album_master_variants_page,
@@ -5603,6 +5604,13 @@ def _album_master_member_context(album_master_id: int, preview_limit: int = 8) -
             snapshot_key = (source_code, source_external_id)
             if snapshot_key not in source_snapshot_cache:
                 source_snapshot_cache[snapshot_key] = get_source_release_snapshot(source_code, source_external_id)
+            snapshot = source_snapshot_cache.get(snapshot_key) or {}
+            released_date = str(snapshot.get("released_date") or "").strip() or None
+        if not released_date and source_code == "DISCOGS" and source_external_id:
+            snapshot_key = (source_code, source_external_id)
+            if snapshot_key not in source_snapshot_cache:
+                year = get_discogs_release_year_from_cache(source_external_id)
+                source_snapshot_cache[snapshot_key] = {"released_date": str(year)} if year else None
             snapshot = source_snapshot_cache.get(snapshot_key) or {}
             released_date = str(snapshot.get("released_date") or "").strip() or None
         previews.append(

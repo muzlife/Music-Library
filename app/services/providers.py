@@ -1908,6 +1908,12 @@ def _clean_html_text(s: str | None) -> str:
     return re.sub(r"\s+", " ", html_lib.unescape(_strip_html(s or ""))).strip()
 
 
+_VA_PAT = re.compile(
+    r"^(?:v\.?a\.?|various\s*artists?|various|옴니버스|여러\s*아티스트)$",
+    re.IGNORECASE,
+)
+
+
 def _parse_maniadb_release_text(text: str) -> tuple[str | None, str, int | None, str | None]:
     clean = _clean_html_text(text)
     label_name: str | None = None
@@ -1920,13 +1926,29 @@ def _parse_maniadb_release_text(text: str) -> tuple[str | None, str, int | None,
         clean = clean[: tail.start()].strip()
 
     artist = None
-    title = clean
     if " - " in clean:
         left, right = clean.split(" - ", 1)
         artist = re.sub(r"\s+\d+\s*집$", "", left.strip()) or None
         title = right.strip() or clean
+    else:
+        title = clean
+
+    title = re.sub(r"\s*\[[^\]]*\]", "", title).strip() or title
+
+    if artist and _VA_PAT.match(artist.strip()):
+        artist = "Various Artists"
 
     return artist, title, year, label_name
+
+
+_MANIADB_HIGHSLIDE_PAT = re.compile(
+    r'<a class="highslide"[^>]+href="(http://i\.maniadb\.com/images/album/[^"]+)">',
+    re.IGNORECASE,
+)
+_TRIBUTE_COMPILATION_PAT = re.compile(
+    r"^(?:tribute|various|옴니버스|compilation|soundtrack|o\.s\.t\.?|ost)\b",
+    re.IGNORECASE,
+)
 
 
 def _parse_maniadb_album_candidates(
@@ -1938,7 +1960,7 @@ def _parse_maniadb_album_candidates(
     out: list[Candidate] = []
     seen: set[str] = set()
     pattern = re.compile(
-        r'<div class="artist">\s*<a href="/album/(\d+)"[^>]*?(?:alt="([^"]*)")?[^>]*>(.*?)</a>',
+        r'<div class="artist">\s*<a href="/album/(\d+)"[^>]*?(?:\s+alt="([^"]*)")?[^>]*>(.*?)</a>',
         re.IGNORECASE | re.DOTALL,
     )
 
@@ -1952,6 +1974,13 @@ def _parse_maniadb_album_candidates(
         artist, title, year, label_name = _parse_maniadb_release_text(raw_title)
         if not title:
             continue
+
+        if artist is None and _TRIBUTE_COMPILATION_PAT.match(title):
+            artist = "Various Artists"
+
+        preceding = html_text[max(0, match.start() - 500) : match.start()]
+        cover_matches = list(_MANIADB_HIGHSLIDE_PAT.finditer(preceding))
+        cover_image_url = cover_matches[-1].group(1) if cover_matches else None
 
         sim = _token_similarity(query, f"{artist or ''} {title}".strip())
         confidence = min(max(0.62 + (0.30 * sim), 0.0), 0.95)
@@ -1968,7 +1997,7 @@ def _parse_maniadb_album_candidates(
                 barcode=None,
                 catalog_no=None,
                 label_name=label_name,
-                cover_image_url=None,
+                cover_image_url=cover_image_url,
                 track_list=[],
                 confidence=confidence,
                 raw={
@@ -2274,11 +2303,16 @@ def _fetch_discogs_release_detail(
     if not release_id:
         return None
 
-    try:
-        response = _get_with_retry(client, f"https://api.discogs.com/releases/{release_id}", headers=headers)
-        response.raise_for_status()
-        data = response.json()
-    except httpx.HTTPError:
+    data = cached_fetch_json(
+        source_code="DISCOGS",
+        kind="release",
+        identifier=release_id,
+        fetcher=lambda: _get_with_retry(
+            client, f"https://api.discogs.com/releases/{release_id}", headers=headers
+        ),
+        ttl_seconds=86400 * 14,
+    )
+    if not data:
         return None
 
     labels = data.get("labels")
@@ -3088,15 +3122,25 @@ def _clean_master_candidate_barcode(value: Any) -> str | None:
     return normalized
 
 
+_MANIADB_KW_SUFFIX_PAT = re.compile(
+    r",\s*(?:대중음악DB|음악DB|가요DB|음악아카이브|music,).*$",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
 def _parse_maniadb_album_header(html_text: str) -> tuple[str | None, str | None]:
     meta = re.search(r'<meta\s+name="keyword"\s+content="([^"]+)"', html_text, re.IGNORECASE)
     if not meta:
         return None, None
     keyword = _clean_html_text(meta.group(1))
-    first_chunk = keyword.split(",", 1)[0].strip()
-    if not first_chunk:
+    # Strip ManiaDB boilerplate suffix (e.g. ", 대중음악DB, 음악DB, ...") before splitting,
+    # so that commas inside bracket annotations like "[tribute, live]" are preserved.
+    album_info = _MANIADB_KW_SUFFIX_PAT.sub("", keyword).strip()
+    if not album_info:
+        album_info = keyword.split(",", 1)[0].strip()
+    if not album_info:
         return None, None
-    artist, title, _, _ = _parse_maniadb_release_text(first_chunk)
+    artist, title, _, _ = _parse_maniadb_release_text(album_info)
     return artist, title
 
 
@@ -4775,6 +4819,23 @@ def get_discogs_snapshot_from_master_id(master_id: str) -> dict[str, Any] | None
         "track_items": detail.get("track_items") or [],
         "label_items": detail.get("label_items") or [],
     }
+
+
+def get_discogs_release_year_from_cache(release_id: str) -> int | None:
+    """Return the release year for a Discogs release from DB cache only — no API call."""
+    from .. import db as _db_module
+    if not release_id:
+        return None
+    cache_key = build_external_cache_key("DISCOGS", "release", release_id)
+    cached_row = _db_module.get_cached_external_response(cache_key)
+    if cached_row is None or not _cache_entry_is_fresh(cached_row):
+        return None
+    try:
+        body = _cache_json.loads(cached_row["body_json"])
+        year = _safe_year(body.get("year"))
+        return year if year and year > 0 else None
+    except (TypeError, ValueError):
+        return None
 
 
 def get_source_release_snapshot(source: str, external_id: str) -> dict[str, Any] | None:
