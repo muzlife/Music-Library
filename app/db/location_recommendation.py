@@ -428,6 +428,34 @@ def recommend_owned_item_location(
                 anchor_position = "AFTER"
                 anchor_reason = "SAME_ARTIST_TAIL"
 
+        if anchor_row is None and artist_norm:
+            _artist_compact_expr = _compact_search_sql_expr(
+                "COALESCE(am.sort_artist_name, am.artist_or_brand, oi.linked_artist_name, '')"
+            )
+            predecessor_row = conn.execute(
+                f"""
+                SELECT oi.id, oi.order_key, oi.storage_slot_id
+                FROM owned_item oi
+                JOIN album_master_member amm ON amm.owned_item_id = oi.id
+                JOIN album_master am ON am.id = amm.album_master_id
+                JOIN storage_slot ss ON ss.id = oi.storage_slot_id
+                WHERE oi.status = 'IN_COLLECTION'
+                  AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+                  AND ss.allowed_size_group = ?
+                  AND ss.cabinet_sort_policy = 'ARTIST_RELEASE_TITLE'
+                  {exclude_sql}
+                  AND {_artist_compact_expr} <= ?
+                  AND {_artist_compact_expr} != ''
+                ORDER BY {_artist_compact_expr} DESC, oi.order_key DESC, oi.id DESC
+                LIMIT 1
+                """,
+                [size, *exclude_params, artist_norm],
+            ).fetchone()
+            if predecessor_row is not None and predecessor_row["storage_slot_id"] is not None:
+                anchor_row = predecessor_row
+                anchor_position = "AFTER"
+                anchor_reason = "ALPHABETICAL_PREDECESSOR"
+
         if anchor_row is None:
             fallback_row = conn.execute(
                 f"""
