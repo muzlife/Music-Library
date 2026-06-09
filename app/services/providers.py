@@ -1192,7 +1192,7 @@ def _maniadb_release_type_from_album_type(album_type_text: str | None) -> str | 
         return "SINGLE"
     if any(token in text for token in ["ep", "미니", "mini"]):
         return "EP"
-    if any(token in text for token in ["정규", "studio", "스튜디오", "full"]):
+    if any(token in text for token in ["정규", "album", "studio", "스튜디오", "full"]):
         return "ALBUM"
     return None
 
