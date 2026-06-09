@@ -335,10 +335,14 @@ def get_collection_dashboard() -> dict[str, Any]:
 
         by_release_type_rows = conn.execute(
             """
-            SELECT COALESCE(NULLIF(release_type, ''), 'UNASSIGNED') AS value, COUNT(*) AS cnt
-            FROM owned_item
-            WHERE category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
-            GROUP BY COALESCE(NULLIF(release_type, ''), 'UNASSIGNED')
+            SELECT COALESCE(NULLIF(COALESCE(am.release_type, oi.release_type), ''), 'UNASSIGNED') AS value,
+                   COUNT(*) AS cnt
+            FROM owned_item oi
+            LEFT JOIN album_master_member amm ON amm.owned_item_id = oi.id
+            LEFT JOIN album_master am ON am.id = amm.album_master_id
+            WHERE oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')
+              AND oi.status = 'IN_COLLECTION'
+            GROUP BY value
             ORDER BY cnt DESC, value ASC
             """
         ).fetchall()

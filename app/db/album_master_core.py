@@ -194,6 +194,7 @@ def upsert_album_master(
     domain_code: str | None,
     release_year: int | None,
     raw: dict[str, Any],
+    release_type: str | None = None,
 ) -> int:
     now = utc_now_iso()
     normalized_domain_code = _normalize_domain_code_value(domain_code)
@@ -210,17 +211,22 @@ def upsert_album_master(
         _is_new = _existing is None
         _before = dict(_existing) if _existing is not None else {}
 
+        _valid_release_types = ("ALBUM", "EP", "SINGLE")
+        normalized_release_type = str(release_type or "").strip().upper() or None
+        if normalized_release_type not in _valid_release_types:
+            normalized_release_type = None
         conn.execute(
             """
             INSERT INTO album_master
-              (source_code, source_master_id, title, artist_or_brand, domain_code, release_year, raw_json, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              (source_code, source_master_id, title, artist_or_brand, domain_code, release_year, raw_json, release_type, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(source_code, source_master_id) DO UPDATE SET
               title = excluded.title,
               artist_or_brand = excluded.artist_or_brand,
               domain_code = COALESCE(excluded.domain_code, album_master.domain_code),
               release_year = excluded.release_year,
               raw_json = excluded.raw_json,
+              release_type = COALESCE(excluded.release_type, album_master.release_type),
               updated_at = excluded.updated_at
             """,
             (
@@ -231,6 +237,7 @@ def upsert_album_master(
                 normalized_domain_code,
                 release_year,
                 json.dumps(raw, ensure_ascii=True),
+                normalized_release_type,
                 now,
                 now,
             ),

@@ -59,7 +59,8 @@ def get_album_master_correction_state(album_master_id: int) -> dict[str, Any] | 
               override_title,
               override_artist_or_brand,
               genres_json,
-              styles_json
+              styles_json,
+              release_type
             FROM album_master
             WHERE id = ?
             LIMIT 1
@@ -106,6 +107,7 @@ def update_album_master_correction(
     override_artist_or_brand: str | None = None,
     genres: list[str] | None = None,
     styles: list[str] | None = None,
+    release_type: str | None = None,
 ) -> dict[str, Any] | None:
     master_id = int(album_master_id or 0)
     if master_id <= 0:
@@ -115,6 +117,10 @@ def update_album_master_correction(
     normalized_title = str(override_title or "").strip() or None
     normalized_artist = str(override_artist_or_brand or "").strip() or None
     release_year_value = int(release_year) if release_year is not None else None
+    _valid_release_types = ("ALBUM", "EP", "SINGLE")
+    normalized_release_type = str(release_type or "").strip().upper() or None
+    if normalized_release_type not in _valid_release_types:
+        normalized_release_type = None
     clean_genres = [str(v).strip() for v in genres if str(v).strip()] if genres is not None else None
     clean_styles = [str(v).strip() for v in styles if str(v).strip()] if styles is not None else None
     now = utc_now_iso()
@@ -164,6 +170,7 @@ def update_album_master_correction(
                 artist_or_brand = COALESCE(?, artist_or_brand),
                 genres_json = CASE WHEN ? IS NOT NULL THEN ? ELSE genres_json END,
                 styles_json = CASE WHEN ? IS NOT NULL THEN ? ELSE styles_json END,
+                release_type = CASE WHEN ? IS NOT NULL THEN ? ELSE release_type END,
                 updated_at = ?
             WHERE id = ?
             """,
@@ -183,6 +190,8 @@ def update_album_master_correction(
                 json.dumps(clean_genres, ensure_ascii=True) if clean_genres is not None else None,
                 json.dumps(clean_styles, ensure_ascii=True) if clean_styles is not None else None,
                 json.dumps(clean_styles, ensure_ascii=True) if clean_styles is not None else None,
+                normalized_release_type,
+                normalized_release_type,
                 now,
                 master_id,
             ),

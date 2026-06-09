@@ -1540,6 +1540,7 @@ class AlbumMasterCorrectionUpdateRequest(BaseModel):
     override_artist_or_brand: str | None = None
     genres: list[str] | None = None
     styles: list[str] | None = None
+    release_type: ReleaseType | None = None
 
 
 class AlbumMasterCorrectionUpdateResponse(BaseModel):
@@ -1556,6 +1557,7 @@ class AlbumMasterCorrectionUpdateResponse(BaseModel):
     has_manual_correction: bool = False
     genres: list[str] = Field(default_factory=list)
     styles: list[str] = Field(default_factory=list)
+    release_type: ReleaseType | None = None
 
 
 class OwnedItemDetailResponse(BaseModel):

@@ -1184,6 +1184,19 @@ def _discogs_release_type_from_text(format_text: str | None) -> str | None:
     return None
 
 
+def _maniadb_release_type_from_album_type(album_type_text: str | None) -> str | None:
+    text = str(album_type_text or "").strip().lower()
+    if not text:
+        return None
+    if any(token in text for token in ["싱글", "single"]):
+        return "SINGLE"
+    if any(token in text for token in ["ep", "미니", "mini"]):
+        return "EP"
+    if any(token in text for token in ["정규", "studio", "스튜디오", "full"]):
+        return "ALBUM"
+    return None
+
+
 def _discogs_domain_code(genres: list[str], styles: list[str], country: Any, artist_or_brand: Any = None, title: Any = None, label_name: Any = None) -> str | None:
     return infer_domain_code(
         genres=genres,
@@ -3814,6 +3827,13 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
     if genre_match:
         album_genres = [g.strip() for g in re.findall(r'<aa[^>]*>([^<]+)</a>', genre_match.group(1)) if g.strip()]
 
+    # Extract ALBUM TYPE for release_type inference
+    album_type_match = re.search(r'ALBUM TYPE:\s*</td>\s*<td[^>]*>(.*?)</td>', html_text, re.DOTALL | re.IGNORECASE)
+    album_release_type: str | None = None
+    if album_type_match:
+        album_type_text = _clean_html_text(album_type_match.group(1))
+        album_release_type = _maniadb_release_type_from_album_type(album_type_text)
+
     block_pattern = re.compile(r"<fieldset[^>]*>(.*?)</fieldset>", re.IGNORECASE | re.DOTALL)
     out: list[dict[str, Any]] = []
     for block in block_pattern.finditer(html_text):
@@ -3840,6 +3860,12 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
     for v in out:
         if not v.get("media_type") and "digital single" in str(v.get("title") or "").lower():
             v["media_type"] = "CD"
+
+    # album_release_type을 모든 variant에 적용 (각 variant에 release_type 없을 때)
+    if album_release_type:
+        for v in out:
+            if not v.get("release_type"):
+                v["release_type"] = album_release_type
 
     # 트랙이 없는 variant → 앨범 레벨 TRACKS 섹션으로 채우기
     if out and any(not v.get("track_list") for v in out):
@@ -3871,6 +3897,7 @@ def get_maniadb_master_variants(master_external_id: str, limit: int = 30) -> lis
             "barcode": None,
             "cover_image_url": album_cover_image_url,
             "track_list": [],
+            "release_type": album_release_type,
             "raw": {"album_id": album_id},
         }
     ]

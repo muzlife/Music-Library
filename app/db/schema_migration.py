@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 20
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -1102,6 +1102,23 @@ def _migration_v19_auth_account_profile(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migration_v20_album_master_release_type(conn: sqlite3.Connection) -> None:
+    """album_master 테이블에 release_type 컬럼 추가 및 owned_item에서 backfill."""
+    if not _column_exists(conn, "album_master", "release_type"):
+        conn.execute(
+            "ALTER TABLE album_master ADD COLUMN release_type TEXT "
+            "CHECK (release_type IN ('ALBUM', 'EP', 'SINGLE'))"
+        )
+    conn.execute(
+        "UPDATE album_master SET release_type = ("
+        "SELECT oi.release_type FROM owned_item oi "
+        "WHERE oi.linked_album_master_id = album_master.id "
+        "AND oi.release_type IS NOT NULL LIMIT 1"
+        ") WHERE release_type IS NULL"
+    )
+    conn.commit()
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -1122,6 +1139,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     17: _migration_v17_expand_audit_log_actions,
     18: _migration_v18_add_observability_tables,
     19: _migration_v19_auth_account_profile,
+    20: _migration_v20_album_master_release_type,
 }
 
 

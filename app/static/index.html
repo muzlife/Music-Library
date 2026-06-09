@@ -19115,6 +19115,17 @@
                         <option value="UNKNOWN" data-i18n="common.domain.unknown">미분류</option>
                       </select>
                     </div>
+                    <div style="display:flex; flex-direction:column; gap:2px; width:70px; flex-shrink:0;">
+                      <div class="dashboard-selected-sort-artist-label mini" style="margin:0;">
+                        <span>타입</span>
+                      </div>
+                      <select id="homeMasterCorrectionReleaseType">
+                        <option value="">미지정</option>
+                        <option value="ALBUM">ALBUM</option>
+                        <option value="EP">EP</option>
+                        <option value="SINGLE">SINGLE</option>
+                      </select>
+                    </div>
                   </div>
                   <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end;">
                     <div style="display:flex; flex-direction:column; gap:2px; flex:2; min-width:120px;">
@@ -49046,6 +49057,8 @@ async function loadDashboardClimate() {
         const stylesInput = $("homeMasterCorrectionStyles");
         if (genresInput) genresInput.value = "";
         if (stylesInput) stylesInput.value = "";
+        const releaseTypeInput = $("homeMasterCorrectionReleaseType");
+        if (releaseTypeInput) releaseTypeInput.value = "";
         saveBtn.disabled = true;
         sourceHint.textContent = t("media.manage.master.correction.source_hint_pending");
         setStatus("homeMasterCorrectionStatus", "ok", "");
@@ -49074,6 +49087,8 @@ async function loadDashboardClimate() {
       const stylesInput = $("homeMasterCorrectionStyles");
       if (genresInput) genresInput.value = joinCommaList(homeMasterInfo?.genres || []);
       if (stylesInput) stylesInput.value = joinCommaList(homeMasterInfo?.styles || []);
+      const releaseTypeInput = $("homeMasterCorrectionReleaseType");
+      if (releaseTypeInput) releaseTypeInput.value = String(homeMasterInfo?.release_type || "").trim().toUpperCase();
       const spMatchId = $("homeMasterSpotifyMatchId");
       if (spMatchId) spMatchId.value = String(homeMasterInfo?.spotify_album_id || "").trim();
       setStatus("homeMasterSpotifyMatchStatus", "ok", "");
@@ -52284,6 +52299,7 @@ async function loadDashboardClimate() {
       const overrideArtistValue = $("homeMasterCorrectionArtist")?.value.trim() || null;
       const genresValue = splitCommaList($("homeMasterCorrectionGenres")?.value || "");
       const stylesValue = splitCommaList($("homeMasterCorrectionStyles")?.value || "");
+      const releaseTypeValue = String($("homeMasterCorrectionReleaseType")?.value || "").trim().toUpperCase() || null;
       try {
         setStatus("homeMasterCorrectionStatus", "ok", t("media.manage.master.correction.status.saving"));
         const res = await fetch(`/album-masters/${masterId}/correction`, {
@@ -52297,6 +52313,7 @@ async function loadDashboardClimate() {
             override_artist_or_brand: overrideArtistValue,
             genres: genresValue,
             styles: stylesValue,
+            release_type: releaseTypeValue,
           }),
         });
         const data = await safeJson(res);
@@ -52311,6 +52328,7 @@ async function loadDashboardClimate() {
           homeMasterInfo.override_note = data.override_note || null;
           homeMasterInfo.override_title = data.override_title || null;
           homeMasterInfo.override_artist_or_brand = data.override_artist_or_brand || null;
+          homeMasterInfo.release_type = data.release_type || null;
           if (data.override_title) homeMasterInfo.title = data.override_title;
           if (data.override_artist_or_brand) homeMasterInfo.artist_or_brand = data.override_artist_or_brand;
           homeMasterInfo.has_manual_correction = Boolean(data.has_manual_correction);
