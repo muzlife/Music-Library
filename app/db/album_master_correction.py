@@ -213,7 +213,49 @@ def update_album_master_correction(
     return get_album_master_correction_state(master_id)
 
 
+def bulk_update_album_master_domain(
+    owned_item_ids: list[int],
+    domain_code: str,
+) -> list[int]:
+    """owned_item_ids에 연결된 album_master들의 override_domain_code를 일괄 업데이트한다."""
+    normalized_domain_code = _normalize_domain_code_value(domain_code)
+    if not normalized_domain_code or not owned_item_ids:
+        return []
+    ids = sorted({int(v) for v in owned_item_ids if int(v) > 0})
+    if not ids:
+        return []
+    now = utc_now_iso()
+    with get_conn() as conn:
+        placeholders = ",".join("?" for _ in ids)
+        master_rows = conn.execute(
+            f"""
+            SELECT DISTINCT linked_album_master_id
+            FROM owned_item
+            WHERE id IN ({placeholders})
+              AND linked_album_master_id IS NOT NULL
+              AND linked_album_master_id > 0
+            """,
+            ids,
+        ).fetchall()
+        master_ids = sorted({int(row[0]) for row in master_rows})
+        if not master_ids:
+            return []
+        master_placeholders = ",".join("?" for _ in master_ids)
+        conn.execute(
+            f"""
+            UPDATE album_master
+            SET override_domain_code = ?,
+                domain_code = ?,
+                updated_at = ?
+            WHERE id IN ({master_placeholders})
+            """,
+            [normalized_domain_code, normalized_domain_code, now, *master_ids],
+        )
+        return master_ids
+
+
 __all__ = [
     "get_album_master_correction_state",
     "update_album_master_correction",
+    "bulk_update_album_master_domain",
 ]

@@ -1802,7 +1802,15 @@ def bulk_update_owned_items(payload: OwnedItemBulkUpdateRequest, request: Reques
         preferred_storage_size_group=preferred_storage_size_group,
         size_group=size_group,
     )
-    _changed_snapshot = {f: v for f, v in [("status", status), ("release_type", release_type), ("is_second_hand", is_second_hand), ("purchase_source", purchase_source), ("preferred_storage_size_group", preferred_storage_size_group), ("size_group", size_group)] if v is not None}
+    if domain_code:
+        updated_master_ids = db.bulk_update_album_master_domain(owned_item_ids, domain_code)
+        for _mid in updated_master_ids:
+            _audit(request, "album_master", _mid, "BULK_UPDATE", changed_fields=["domain_code"], snapshot={"domain_code": domain_code})
+        if updated_master_ids and not updated_item_ids:
+            updated_item_ids = owned_item_ids
+    _changed_snapshot = {f: v for f, v in [("status", status), ("domain_code", domain_code), ("release_type", release_type), ("is_second_hand", is_second_hand), ("purchase_source", purchase_source), ("preferred_storage_size_group", preferred_storage_size_group), ("size_group", size_group)] if v is not None}
+    if domain_code and "domain_code" not in _changed_fields:
+        _changed_fields = [*_changed_fields, "domain_code"]
     for _uid in updated_item_ids:
         _audit(request, "owned_item", _uid, "BULK_UPDATE", changed_fields=_changed_fields, snapshot=_changed_snapshot)
     return OwnedItemBulkUpdateResponse(

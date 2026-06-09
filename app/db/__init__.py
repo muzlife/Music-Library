@@ -1997,6 +1997,7 @@ from .album_master_external_ref import (  # noqa: E402
     list_album_master_external_refs,
 )
 from .album_master_correction import (  # noqa: E402
+    bulk_update_album_master_domain,
     get_album_master_correction_state,
     update_album_master_correction,
 )
