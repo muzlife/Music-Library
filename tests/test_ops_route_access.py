@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
 import app.main as main_module
+import app.api.discogs_integration as discogs_integration_module
 import app.services.home_env as _home_env_module
 import app.services.camera as _camera_module
 import app.services.backup as _backup_module
@@ -417,10 +418,10 @@ def test_discogs_release_collector_info_uses_plain_int_default_compare_limit(mon
             "track_list": [],
         }
 
-    monkeypatch.setattr(main_module, "get_source_release_snapshot", fake_snapshot)
-    monkeypatch.setattr(main_module, "_discogs_compare_variants", lambda **kwargs: [])
+    monkeypatch.setattr(discogs_integration_module, "get_source_release_snapshot", fake_snapshot)
+    monkeypatch.setattr(discogs_integration_module, "_discogs_compare_variants", lambda **kwargs: [])
 
-    payload = main_module.get_discogs_release_collector_info("9876543")
+    payload = discogs_integration_module.get_discogs_release_collector_info("9876543")
 
     assert payload["title"] == "Example Album"
     assert payload["artist_or_brand"] == "Example Artist"
@@ -4056,7 +4057,7 @@ def test_admin_can_fetch_discogs_cover_preview(admin_client, monkeypatch, tmp_pa
         return cover_path, "image/jpeg"
 
     monkeypatch.setattr(
-        main_module,
+        discogs_integration_module,
         "_ensure_discogs_cover_preview",
         fake_ensure_discogs_cover_preview,
     )

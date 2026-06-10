@@ -1,21 +1,44 @@
 """Discogs integration routes — 12th slice.
 """
 from __future__ import annotations
+import threading
 from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from .. import db
 from .. import security
 from ..schemas import DiscogsIdentityResponse, DiscogsOwnedSyncResponse
+from ..services.discogs_mapper import (
+    _discogs_artist_value,
+    _discogs_catalog_no,
+    _discogs_company_items,
+    _discogs_companies,
+    _discogs_compare_variants,
+    _discogs_credit_items,
+    _discogs_credits,
+    _discogs_format_items,
+    _discogs_format_values,
+    _discogs_identifiers,
+    _discogs_image_items,
+    _discogs_label_items,
+    _discogs_labels,
+    _discogs_primary_format,
+    _discogs_release_year,
+    _discogs_string_list,
+    _discogs_text,
+    _discogs_track_items,
+    _ensure_discogs_cover_preview,
+)
+from ..services.providers import get_source_release_snapshot
 
 router = APIRouter()
-import threading
 ALADIN_DISCOGS_BACKFILL_LOCK = threading.Lock()
 ALADIN_DISCOGS_BACKFILL_THREAD = None
 
 def _main():
     from app import main as main_module
     return main_module
+
 def _require_admin(request: Request) -> None:
     security._require_operator_request(request)
 
@@ -126,7 +149,7 @@ def get_discogs_release_cover_preview(
     request: Request,
 ) -> FileResponse:
     _require_admin(request)
-    cover_path, media_type = _main()._ensure_discogs_cover_preview(release_id)
+    cover_path, media_type = _ensure_discogs_cover_preview(release_id)
     return FileResponse(
         cover_path,
         media_type=media_type,
@@ -139,45 +162,45 @@ def get_discogs_release_collector_info(
     release_id: str,
     compare_limit: int = 12,
 ) -> dict[str, Any]:
-    snapshot = _main().get_source_release_snapshot(source="DISCOGS", external_id=release_id)
+    snapshot = get_source_release_snapshot(source="DISCOGS", external_id=release_id)
     if snapshot is None:
         raise HTTPException(status_code=404, detail="discogs release snapshot not found")
 
     raw = snapshot.get("raw")
     raw_detail = raw if isinstance(raw, dict) else {}
 
-    runout_matrix, other_identifiers, barcode_from_ident, identifier_items = _main()._discogs_identifiers(raw_detail)
-    image_items = _main()._discogs_image_items(raw_detail)
+    runout_matrix, other_identifiers, barcode_from_ident, identifier_items = _discogs_identifiers(raw_detail)
+    image_items = _discogs_image_items(raw_detail)
     images = [str(item.get("uri") or "") for item in image_items if str(item.get("uri") or "").strip()]
-    label_items = _main()._discogs_label_items(raw_detail)
-    labels = _main()._discogs_labels(raw_detail)
-    credit_items = _main()._discogs_credit_items(raw_detail)
-    credits = _main()._discogs_credits(raw_detail)
-    company_items = _main()._discogs_company_items(raw_detail)
-    companies = _main()._discogs_companies(raw_detail)
-    formats = _main()._discogs_format_values(raw_detail)
-    format_items = _main()._discogs_format_items(raw_detail)
-    track_items = _main()._discogs_track_items(raw_detail)
+    label_items = _discogs_label_items(raw_detail)
+    labels = _discogs_labels(raw_detail)
+    credit_items = _discogs_credit_items(raw_detail)
+    credits = _discogs_credits(raw_detail)
+    company_items = _discogs_company_items(raw_detail)
+    companies = _discogs_companies(raw_detail)
+    formats = _discogs_format_values(raw_detail)
+    format_items = _discogs_format_items(raw_detail)
+    track_items = _discogs_track_items(raw_detail)
     track_list_snapshot = snapshot.get("track_list")
     track_list = track_list_snapshot if isinstance(track_list_snapshot, list) else []
     if not track_list and track_items:
         track_list = [str(item.get("display") or "").strip() for item in track_items]
         track_list = [v for v in track_list if v]
-    genres = _main()._discogs_string_list(raw_detail.get("genres"))
-    styles = _main()._discogs_string_list(raw_detail.get("styles"))
+    genres = _discogs_string_list(raw_detail.get("genres"))
+    styles = _discogs_string_list(raw_detail.get("styles"))
     series: list[str] = []
     series_rows = raw_detail.get("series")
     if isinstance(series_rows, list):
         for row in series_rows:
             if not isinstance(row, dict):
                 continue
-            name = _main()._discogs_text(row.get("name"))
-            catno = _main()._discogs_catalog_no(row.get("catno"))
+            name = _discogs_text(row.get("name"))
+            catno = _discogs_catalog_no(row.get("catno"))
             if name and catno:
                 series.append(f"{name} / {catno}")
             elif name:
                 series.append(name)
-    master_id = _main()._discogs_text(raw_detail.get("master_id"))
+    master_id = _discogs_text(raw_detail.get("master_id"))
     disc_count_raw = snapshot.get("disc_count")
     speed_rpm_raw = snapshot.get("speed_rpm")
     has_obi_raw = snapshot.get("has_obi")
@@ -190,21 +213,21 @@ def get_discogs_release_collector_info(
     except (TypeError, ValueError):
         speed_rpm = None
     has_obi = bool(has_obi_raw) if has_obi_raw is not None else None
-    released_date = _main()._discogs_text(snapshot.get("released_date")) or _main()._discogs_text(raw_detail.get("released")) or _main()._discogs_text(raw_detail.get("released_formatted"))
-    pressing_country = _main()._discogs_text(snapshot.get("pressing_country")) or _main()._discogs_text(raw_detail.get("country"))
+    released_date = _discogs_text(snapshot.get("released_date")) or _discogs_text(raw_detail.get("released")) or _discogs_text(raw_detail.get("released_formatted"))
+    pressing_country = _discogs_text(snapshot.get("pressing_country")) or _discogs_text(raw_detail.get("country"))
 
     runout_sample = " | ".join(runout_matrix[:2]) if runout_matrix else None
     selected = {
-        "format_name": _main()._discogs_primary_format(raw_detail),
-        "label_name": _main()._discogs_text(snapshot.get("label_name")) or (labels[0] if labels else None),
-        "catalog_no": _main()._discogs_catalog_no(snapshot.get("catalog_no")),
-        "barcode": _main()._discogs_text(snapshot.get("barcode")) or barcode_from_ident,
-        "country": _main()._discogs_text(raw_detail.get("country")),
-        "release_year": _main()._discogs_release_year(raw_detail),
+        "format_name": _discogs_primary_format(raw_detail),
+        "label_name": _discogs_text(snapshot.get("label_name")) or (labels[0] if labels else None),
+        "catalog_no": _discogs_catalog_no(snapshot.get("catalog_no")),
+        "barcode": _discogs_text(snapshot.get("barcode")) or barcode_from_ident,
+        "country": _discogs_text(raw_detail.get("country")),
+        "release_year": _discogs_release_year(raw_detail),
         "track_count": len(track_list),
         "runout_sample": runout_sample,
     }
-    other_versions = _main()._discogs_compare_variants(
+    other_versions = _discogs_compare_variants(
         release_id=release_id,
         master_id=master_id,
         selected=selected,
@@ -214,18 +237,18 @@ def get_discogs_release_collector_info(
     return {
         "release_id": str(release_id).strip(),
         "master_id": master_id,
-        "title": _main()._discogs_text(raw_detail.get("title")),
-        "artist_or_brand": _main()._discogs_artist_value(raw_detail),
-        "release_year": _main()._discogs_release_year(raw_detail),
+        "title": _discogs_text(raw_detail.get("title")),
+        "artist_or_brand": _discogs_artist_value(raw_detail),
+        "release_year": _discogs_release_year(raw_detail),
         "released_date": released_date,
-        "country": _main()._discogs_text(raw_detail.get("country")),
+        "country": _discogs_text(raw_detail.get("country")),
         "pressing_country": pressing_country,
         "formats": formats,
         "format_items": format_items,
         "labels": labels,
         "label_items": label_items,
-        "catalog_no": _main()._discogs_catalog_no(snapshot.get("catalog_no")),
-        "barcode": _main()._discogs_text(snapshot.get("barcode")) or barcode_from_ident,
+        "catalog_no": _discogs_catalog_no(snapshot.get("catalog_no")),
+        "barcode": _discogs_text(snapshot.get("barcode")) or barcode_from_ident,
         "disc_count": disc_count,
         "speed_rpm": speed_rpm,
         "has_obi": has_obi,
@@ -238,12 +261,12 @@ def get_discogs_release_collector_info(
         "identifier_items": identifier_items,
         "images": images,
         "image_items": image_items,
-        "notes": _main()._discogs_text(raw_detail.get("notes")),
+        "notes": _discogs_text(raw_detail.get("notes")),
         "companies": companies,
         "company_items": company_items,
         "genres": genres,
         "styles": styles,
-        "released": _main()._discogs_text(raw_detail.get("released")) or _main()._discogs_text(raw_detail.get("released_formatted")),
+        "released": _discogs_text(raw_detail.get("released")) or _discogs_text(raw_detail.get("released_formatted")),
         "series": series,
         "other_versions": other_versions,
     }
