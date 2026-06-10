@@ -5550,3 +5550,281 @@ async function loadDashboardClimate() {
         }
       } catch (_) {}
     }
+
+
+    function clearDashboardSlotAttention() {
+      $("homeDashCabinetFloors")
+        ?.querySelectorAll(".dashboard-floor-cell.attention")
+        .forEach((node) => node.classList.remove("attention"));
+      if (homeDashboardSlotAttentionTimer) {
+        clearTimeout(homeDashboardSlotAttentionTimer);
+        homeDashboardSlotAttentionTimer = null;
+      }
+    }
+
+    function focusDashboardTargetSlot(slotCode, opts = {}) {
+      const targetSlotCode = String(slotCode || "").trim();
+      if (!targetSlotCode) return;
+      const floorsRoot = $("homeDashCabinetFloors");
+      const detailRoot = $("homeDashCabinetDetail");
+      const slotItemsRoot = $("homeDashSlotItems");
+      const smooth = opts.smooth !== false;
+      const block = String(opts.block || "start");
+      const targetRoot = slotItemsRoot || detailRoot;
+      const focusTarget = () => {
+        if (!targetRoot || typeof targetRoot.focus !== "function") return;
+        if (!targetRoot.hasAttribute("tabindex")) targetRoot.setAttribute("tabindex", "-1");
+        try {
+          targetRoot.focus({ preventScroll: true });
+        } catch {
+          try { targetRoot.focus(); } catch {}
+        }
+      };
+      const scrollTarget = () => {
+        if (!targetRoot) return;
+        if (block === "center") {
+          const targetRect = targetRoot.getBoundingClientRect();
+          const targetTop = window.scrollY + targetRect.top;
+          const viewportOffset = Math.max((window.innerHeight - targetRect.height) / 2, 32);
+          window.scrollTo({ top: Math.max(targetTop - viewportOffset, 0), behavior: smooth ? "smooth" : "auto" });
+          return;
+        }
+        targetRoot.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block });
+      };
+      if (!floorsRoot) {
+        scrollTarget();
+        focusTarget();
+        return;
+      }
+      const cell = Array.from(floorsRoot.querySelectorAll("[data-dashboard-slot-code]"))
+        .find((node) => String(node.getAttribute("data-dashboard-slot-code") || "").trim() === targetSlotCode) || null;
+      if (!cell) {
+        scrollTarget();
+        focusTarget();
+        return;
+      }
+      clearDashboardSlotAttention();
+      scrollTarget();
+      focusTarget();
+      cell.classList.add("attention");
+      homeDashboardSlotAttentionTimer = window.setTimeout(() => {
+        cell.classList.remove("attention");
+        homeDashboardSlotAttentionTimer = null;
+      }, 2200);
+    }
+
+    async function openDashboardForResolvedSlot(slotRow, opts = {}) {
+      if (!slotRow) return;
+      homeDashboardSlotGridFollowSelection = true;
+      homeDashboardSelectedCabinetKey = dashboardCabinetKey(slotRow);
+      homeDashboardSelectedSlotCode = String(slotRow.slot_code || "").trim();
+      syncDashboardCabinetSelectionMemory();
+      homeDashboardSlotItems = [];
+      homeDashboardSlotItemsSlotCode = null;
+      resetDashboardSlotPage();
+      resetDashboardSlotSelection();
+      renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
+      await loadDashboardSlotItems(slotRow, { silent: true });
+      focusDashboardTargetSlot(slotRow.slot_code, { block: "end" });
+      const slotLabel = storageSlotDisplayLabel(slotRow);
+      const selectedWorkbenchRows = getDashboardSelectedWorkbenchRows();
+      const cabinetMode = currentShellMode() === "cabinets";
+      if (cabinetMode) {
+        updateShellRoute("cabinets", {
+          replaceHistory: true,
+          cabinetSelection: normalizeCabinetRouteSelection(
+            slotRow.cabinet_name,
+            slotRow.column_code,
+            slotRow.cell_code,
+          ),
+        });
+      }
+      const guideMessage = cabinetMode
+        ? (opts.message || t("media.manage.location.status.opened_read_only", { slot: slotLabel }))
+        : (
+            selectedWorkbenchRows.length
+              ? t("media.manage.location.status.opened_move_ready", { slot: slotLabel, count: formatCount(selectedWorkbenchRows.length) })
+              : (opts.message || t("media.manage.location.status.opened_check_first", { slot: slotLabel }))
+          );
+      setStatus("homeDashboardStatus", "ok", guideMessage);
+    }
+
+    function findDashboardSlotByTriplet(cabinetName, columnCode, cellCode) {
+      const selection = normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode);
+      if (!selection) return null;
+      return homeDashboardBySlot.find((row) =>
+        String(row?.cabinet_name || "").trim() === selection.cabinet_name
+        && String(row?.column_code || "").trim() === selection.column_code
+        && String(row?.cell_code || "").trim() === selection.cell_code
+      ) || null;
+    }
+
+    async function applyPendingOpsCabinetSelection(opts = {}) {
+      if (currentShellMode() !== "cabinets") return false;
+      const selection = resolveCabinetRouteSelection(opts.selection) || pendingOpsCabinetSelection;
+      if (!selection) return false;
+      const slotRow = findDashboardSlotByTriplet(
+        selection.cabinet_name,
+        selection.column_code,
+        selection.cell_code,
+      );
+      if (!slotRow) {
+        pendingOpsCabinetSelection = null;
+        homeDashboardSelectedCabinetKey = null;
+        homeDashboardSelectedSlotCode = null;
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        homeDashboardSlotItemsLoading = false;
+        resetDashboardSlotPage();
+        resetDashboardSlotSelection();
+        renderDashboardCabinetDetail();
+        if (!opts.silent) {
+          setStatus("homeDashboardStatus", "err", t("media.manage.location.status.selection_not_found"));
+        }
+        return false;
+      }
+      pendingOpsCabinetSelection = null;
+      await openDashboardForResolvedSlot(slotRow, {
+        message: t("media.manage.location.status.opened_read_only", { slot: storageSlotDisplayLabel(slotRow) }),
+      });
+      return true;
+    }
+
+    async function openOpsCabinetView(cabinetName, columnCode, cellCode, options = {}) {
+      const selection = normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode);
+      pendingOpsCabinetSelection = selection;
+      switchShellMode("cabinets", {
+        remember: false,
+        pushHistory: options.pushHistory !== false,
+        replaceHistory: options.replaceHistory === true,
+        cabinetSelection: selection,
+      });
+      if (!homeDashboardBySlot.length) {
+        await loadHomeDashboard({ silent: true });
+      }
+      if (!selection) {
+        $("homeDashboardCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      await applyPendingOpsCabinetSelection({ selection, silent: options.silent === true });
+    }
+
+    function findCabinetSelectionFromSlot(slotId, slotCode) {
+      const directRow = getStorageSlotById(slotId)
+        || getDashboardSlotRow(slotCode)
+        || homeDashboardBySlot.find((item) => Number(item?.id || 0) === Number(slotId || 0))
+        || null;
+      if (!directRow) return null;
+      return normalizeCabinetRouteSelection(
+        directRow.cabinet_name,
+        directRow.column_code,
+        directRow.cell_code,
+      );
+    }
+
+    async function openCabinetLocationAction(slotId, slotCode, cabinetName, columnCode, cellCode) {
+      if (isAdminSession() && currentShellMode() === "admin") {
+        await openDashboardForSlotLocation(slotId, slotCode);
+        return;
+      }
+      const hasSlotRef = Number(slotId || 0) > 0 || Boolean(String(slotCode || "").trim());
+      if (hasSlotRef && !homeDashboardBySlot.length) {
+        await loadHomeDashboard({ silent: true });
+      }
+      const directRow = hasSlotRef ? (
+        (Number(slotId || 0) > 0 ? homeDashboardBySlot.find((item) => Number(item?.id || 0) === Number(slotId || 0)) : null)
+        || (String(slotCode || "").trim() ? homeDashboardBySlot.find((item) => String(item?.slot_code || "").trim() === String(slotCode || "").trim()) : null)
+        || null
+      ) : null;
+      const directSelection = findCabinetSelectionFromSlot(slotId, slotCode);
+      let selection = directSelection || normalizeCabinetRouteSelection(cabinetName, columnCode, cellCode);
+      if (directRow) {
+        switchShellMode("cabinets", { remember: false, pushHistory: true, replaceHistory: false });
+        await openDashboardForResolvedSlot(directRow, {
+          message: t("media.manage.location.status.opened_read_only", { slot: storageSlotDisplayLabel(directRow) }),
+        });
+        return;
+      }
+      await openOpsCabinetView(selection?.cabinet_name, selection?.column_code, selection?.cell_code);
+      if (!selection && (Number(slotId || 0) > 0 || String(slotCode || "").trim())) {
+        setStatus("homeDashboardStatus", "err", t("media.manage.location.status.slot_detail_missing"));
+      }
+    }
+
+    async function openDashboardForCurrentLocation() {
+      switchMainTab("home");
+      if (!homeDashboardBySlot.length) {
+        await loadHomeDashboard({ silent: true });
+      }
+      const slotId = Number($("editSlotId")?.value || 0);
+      if (slotId <= 0) {
+        setStatus("homeDashboardStatus", "ok", t("media.manage.location.status.current_unslotted"));
+        $("homeDashboardCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      const slotRow = homeDashboardBySlot.find((item) => Number(item?.id || 0) === slotId) || null;
+      if (!slotRow) {
+        setStatus("homeDashboardStatus", "err", t("media.manage.location.status.current_slot_missing"));
+        return;
+      }
+      await openDashboardForResolvedSlot(slotRow, {
+        message: t("media.manage.location.status.current_opened")
+      });
+    }
+
+    async function openDashboardForSlotLocation(slotId, slotCode) {
+      switchMainTab("cabinet");
+      if (!homeDashboardBySlot.length) {
+        await loadHomeDashboard({ silent: true });
+      }
+      const nextSlotId = Number(slotId || 0);
+      const nextSlotCode = String(slotCode || "").trim();
+      const slotRow = (
+        (nextSlotId > 0 ? homeDashboardBySlot.find((item) => Number(item?.id || 0) === nextSlotId) : null)
+        || (nextSlotCode ? homeDashboardBySlot.find((item) => String(item?.slot_code || "").trim() === nextSlotCode) : null)
+        || null
+      );
+      if (!slotRow) {
+        setStatus("homeDashboardStatus", "err", t("media.manage.location.status.dashboard_slot_missing"));
+        return;
+      }
+      await openDashboardForResolvedSlot(slotRow);
+    }
+
+    async function loadDashboardWorkbenchRecommendations() {
+      const rows = getDashboardWorkbenchRows();
+      if (!rows.length) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.workbench.status.no_recommend_items"));
+        return;
+      }
+      const selectedIds = Array.from(getDashboardWorkbenchSelectedIds()).map((v) => Number(v || 0)).filter((v) => v > 0);
+      const ownedItemIds = (selectedIds.length ? selectedIds : rows.map((row) => Number(row?.id || 0)))
+        .filter((v) => v > 0);
+      if (!ownedItemIds.length) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.workbench.status.no_recommend_items"));
+        return;
+      }
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.workbench.status.recommend_loading", { count: countWithUnit(ownedItemIds.length) }));
+        const res = await fetch("/owned-items/location-recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ owned_item_ids: ownedItemIds }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.workbench.status.recommend_failed"));
+        const map = {};
+        for (const item of Array.isArray(data) ? data : []) {
+          const ownedItemId = Number(item?.owned_item_id || 0);
+          if (ownedItemId > 0) map[ownedItemId] = item;
+        }
+        homeDashboardWorkbenchRecommendations = {
+          ...homeDashboardWorkbenchRecommendations,
+          ...map,
+        };
+        renderDashboardWorkbench();
+        setStatus("homeDashboardStatus", "ok", t("dashboard.workbench.status.recommend_done", { count: countWithUnit(Object.keys(map).length) }));
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", err.message);
+      }
+    }

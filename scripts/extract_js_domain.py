@@ -63,8 +63,9 @@ def find_declaration(lines, name):
     return None
 
 
-def extract_functions(domain_filename, func_names):
-    src = APP_JS.read_text(encoding="utf-8")
+def extract_functions(domain_filename, func_names, source_path=None):
+    src_path = Path(source_path) if source_path else APP_JS
+    src = src_path.read_text(encoding="utf-8")
     lines = src.splitlines(keepends=True)
     original_count = len(lines)
 
@@ -120,20 +121,25 @@ def extract_functions(domain_filename, func_names):
     else:
         out_path.write_text("".join(domain_content_parts), encoding="utf-8")
 
-    # Write updated app.js
-    APP_JS.write_text("".join(lines), encoding="utf-8")
+    # Write updated source file
+    src_path.write_text("".join(lines), encoding="utf-8")
 
     new_count = len(lines)
     extracted_total = sum(end - start + 1 for start, end, _ in extracted_blocks)
-    print(f"\napp.js: {original_count} → {new_count} lines (removed {extracted_total})")
+    print(f"\n{src_path.name}: {original_count} → {new_count} lines (removed {extracted_total})")
     print(f"{domain_filename}: {len(out_path.read_text().splitlines())} lines")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python3 scripts/extract_js_domain.py <domain_file> <func1> [func2 ...]")
-        sys.exit(1)
-    domain_file = sys.argv[1]
-    names = sys.argv[2:]
-    print(f"Extracting {len(names)} declarations → {domain_file}")
-    extract_functions(domain_file, names)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("domain_file")
+    parser.add_argument("func_names", nargs="+")
+    parser.add_argument("--from", dest="source_file", default=None,
+                        help="Source JS file to extract from (default: app/static/js/app.js)")
+    args = parser.parse_args()
+    if args.source_file:
+        APP_JS = Path(args.source_file)
+    src = args.source_file or str(APP_JS)
+    print(f"Extracting {len(args.func_names)} declarations from {src} → {args.domain_file}")
+    extract_functions(args.domain_file, args.func_names, source_path=src)

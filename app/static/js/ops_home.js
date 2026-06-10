@@ -2146,3 +2146,587 @@
         setStatus("operatorRequestStatus", "err", errorMessageText(err, t("operator.request.error.update_failed")));
       }
     }
+
+
+    function renderAlbumSearchResults(items) {
+      const root = $("albumSearchResults");
+      root.innerHTML = "";
+      $("albumSearchCount").textContent = countWithUnit(items.length);
+
+      if (!items.length) {
+        root.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.search.results_empty"))}</div>`;
+        return;
+      }
+
+      for (const row of items) {
+        const box = document.createElement("div");
+        box.className = "result-item album-result";
+        box.setAttribute("data-owned-id", String(row.id));
+        if (Number(row.id) === Number(shelfSelectedId)) {
+          box.classList.add("pick");
+        }
+        const title = resolveOwnedAlbumName(row);
+        const tracks = Array.isArray(row.track_list) ? row.track_list.length : 0;
+        const coverUrl = resolveOwnedItemCoverUrl(row);
+        const coverHtml = coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+          : escapeHtml(t("common.no_cover"));
+        const metaBits = [
+          `format: ${mediaDisplayLabel(row.format_name || row.category || "-")}`,
+          `order_key: ${row.order_key || "-"}`,
+          `slot: ${row.slot_code || "-"}`,
+          `label/cat#: ${row.label_name || "-"}/${row.catalog_no || "-"}`,
+          t("media.manage.search.meta.track_count", { count: formatCount(tracks) })
+        ];
+        box.innerHTML = `
+          <div class="album-result-cover">${coverHtml}</div>
+          <div class="album-result-main">
+            <strong>${escapeHtml(title)}</strong>
+            <div class="result-meta">
+              <span class="tag">${escapeHtml(mediaDisplayLabel(row.category || "-"))}</span>
+              <span>${escapeHtml(metaBits.join(" | "))}</span>
+            </div>
+            <div class="mini">owned_item_id: ${row.id} / label_id: ${escapeHtml(row.label_id || "-")}</div>
+          </div>
+        `;
+        root.appendChild(box);
+      }
+    }
+
+    function renderShelfTrack() {
+      const root = $("shelfTrack");
+      root.innerHTML = "";
+
+      if (!shelfItems.length) {
+        root.innerHTML = `<div class='shelf-empty'>${escapeHtml(t("media.manage.shelf.state.empty_albums"))}</div>`;
+        $("shelfCenterText").textContent = t("media.manage.shelf.state.select_prompt");
+        return;
+      }
+
+      const selectedIdx = shelfItems.findIndex((row) => Number(row.id) === Number(shelfSelectedId));
+      for (let i = 0; i < shelfItems.length; i += 1) {
+        const row = shelfItems[i];
+        const distance = selectedIdx >= 0 ? i - selectedIdx : 0;
+        const tilt = Math.max(-8, Math.min(8, distance * 1.7));
+        const raise = Math.min(16, Math.abs(distance) * 2);
+        const title = resolveOwnedAlbumName(row);
+
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "shelf-item";
+        card.style.setProperty("--tilt", `${tilt}deg`);
+        card.style.setProperty("--raise", `${raise}px`);
+        card.style.zIndex = String(10 + i);
+        if (row.cover_image_url) {
+          const safeCoverUrl = String(row.cover_image_url)
+            .replaceAll("\\", "\\\\")
+            .replaceAll("'", "%27")
+            .replaceAll("\"", "%22");
+          card.style.backgroundImage =
+            `linear-gradient(165deg, rgba(0,0,0,0.08), rgba(0,0,0,0.62)), url('${safeCoverUrl}')`;
+        }
+        if (Number(row.id) === Number(shelfSelectedId)) {
+          card.classList.add("selected");
+          card.style.zIndex = "70";
+        }
+        card.innerHTML = `
+          <span class="fmt">${escapeHtml(mediaDisplayLabel(row.format_name || row.category || "-"))}</span>
+          <p class="cap">${escapeHtml(title)}</p>
+        `;
+        card.addEventListener("click", () => {
+          openShelfWindow(Number(row.id));
+        });
+        root.appendChild(card);
+      }
+
+      const centerItem = shelfItems.find((row) => Number(row.id) === Number(shelfSelectedId)) || shelfItems[0];
+      $("shelfCenterText").textContent = t("media.manage.shelf.center.selected", {
+        title: resolveOwnedAlbumName(centerItem),
+        id: centerItem.id,
+        order_key: centerItem.order_key || "-",
+      });
+    }
+
+    function renderShelfDetail() {
+      const root = $("shelfDetail");
+      const row = shelfItems.find((v) => Number(v.id) === Number(shelfSelectedId));
+      if (!row) {
+        root.innerHTML = `
+          <div class="shelf-cover">${escapeHtml(t("media.manage.shelf.detail.state.none"))}</div>
+          <div class="shelf-meta muted">${escapeHtml(t("media.manage.shelf.detail.state.prompt"))}</div>
+        `;
+        return;
+      }
+
+      const title = resolveOwnedAlbumName(row);
+      const coverUrl = resolveOwnedItemCoverUrl(row);
+      const cover = coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+        : escapeHtml(t("common.no_cover"));
+      const tracks = Array.isArray(row.track_list) ? row.track_list.length : 0;
+      const cond = row.format_name ? `${row.cover_condition ?? "-"} / ${row.disc_condition ?? "-"}` : "-";
+      const source = row.source_code && row.source_external_id
+        ? `${row.source_code}#${row.source_external_id}`
+        : "-";
+      const discogsLink = discogsReleaseLinkHtml(row.source_code, row.source_external_id, t("media.manage.master.fetch.candidate.link.discogs"));
+
+      root.innerHTML = `
+        <div class="shelf-cover">${cover}</div>
+        <div class="shelf-meta">
+          <strong>${escapeHtml(title)}</strong>
+          <div>owned_item_id: ${row.id} / label_id: ${escapeHtml(row.label_id || "-")}</div>
+          <div>${escapeHtml(t("media.manage.shelf.detail.meta.format_status", {
+            format: mediaDisplayLabel(row.format_name || row.category || "-"),
+            status: row.status || "-",
+          }))}</div>
+          <div>${escapeHtml(t("media.manage.shelf.detail.meta.order", {
+            order_key: row.order_key || "-",
+            display_rank: row.display_rank ?? "-",
+          }))}</div>
+          <div>${escapeHtml(t("media.manage.shelf.detail.meta.slot", {
+            slot: row.slot_code || "-",
+            source,
+          }))}</div>
+          ${discogsLink ? `<div>${discogsLink}</div>` : ""}
+          <div>${escapeHtml(t("media.manage.shelf.detail.meta.label_catalog", {
+            label: row.label_name || "-",
+            catalog: row.catalog_no || "-",
+          }))}</div>
+          <div>${escapeHtml(t("media.manage.shelf.detail.meta.condition_tracks", {
+            condition: cond,
+            track_count: formatCount(tracks),
+          }))}</div>
+          <div>${escapeHtml(t("media.manage.shelf.detail.meta.purchase_source", { purchase_source: row.purchase_source || "-" }))}</div>
+          <div class="u-pre-wrap">${escapeHtml(t("media.manage.shelf.detail.meta.memo", { memo: row.memory_note || "-" }))}</div>
+        </div>
+      `;
+    }
+
+    function relatedVersionItemHtml(row) {
+      const title = resolveOwnedAlbumName(row);
+      const coverUrl = resolveOwnedItemCoverUrl(row);
+      const cover = coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+        : escapeHtml(t("common.no_cover"));
+      const discogsLink = discogsReleaseLinkHtml(row.source_code, row.source_external_id, "Discogs");
+      return `
+        <div class="result-item album-result ${Number(row.id) === Number(shelfSelectedId) ? "pick" : ""}" data-owned-id="${row.id}">
+          <div class="album-result-cover">${cover}</div>
+          <div class="album-result-main">
+            <strong>${escapeHtml(title)}</strong>
+            <div class="result-meta">
+              <span class="tag">${escapeHtml(mediaDisplayLabel(row.format_name || row.category || "-"))}</span>
+              <span>status: ${escapeHtml(row.status || "-")}</span>
+              <span>order: ${escapeHtml(row.order_key || "-")}</span>
+              <span>label/cat#: ${escapeHtml(row.label_name || "-")} / ${escapeHtml(row.catalog_no || "-")}</span>
+              ${discogsLink ? `<span>${discogsLink}</span>` : ""}
+            </div>
+            <div class="mini">owned_item_id: ${row.id}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderShelfRelatedVersions() {
+      const root = $("shelfRelatedList");
+      if (!shelfRelatedInfo) {
+        root.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.related_versions.empty"))}</div>`;
+        return;
+      }
+
+      const items = Array.isArray(shelfRelatedInfo.items) ? shelfRelatedInfo.items : [];
+      const title = shelfRelatedInfo.title ? escapeHtml(shelfRelatedInfo.title) : "-";
+      const artist = shelfRelatedInfo.artist_or_brand ? escapeHtml(shelfRelatedInfo.artist_or_brand) : "-";
+      const source = shelfRelatedInfo.source ? `${shelfRelatedInfo.source}#${shelfRelatedInfo.master_external_id || "-"}` : "-";
+      const relationText = {
+        ALBUM_MASTER_BIND: t("media.manage.related_versions.relation.album_master_bind"),
+        SOURCE_MASTER: t("media.manage.related_versions.relation.source_master"),
+        NONE: t("media.manage.related_versions.relation.none")
+      }[shelfRelatedInfo.relation_type || "NONE"] || t("media.manage.related_versions.relation.none");
+
+      const head = `
+        <div class="mini">
+          ${escapeHtml(t("media.manage.related_versions.summary", {
+            relation: relationText,
+            source,
+            title,
+            artist,
+            sort_artist: "",
+            music_count: countWithUnit(items.length),
+            collectible_count: countWithUnit(0),
+          }))}
+        </div>
+      `;
+      const body = items.length
+        ? items.map(relatedVersionItemHtml).join("")
+        : `<div class='muted'>${escapeHtml(t("media.manage.related_versions.state.empty_versions"))}</div>`;
+      root.innerHTML = `${head}${body}`;
+    }
+
+    function syncShelfNavButtons() {
+      $("shelfPrevBtn").disabled = !shelfPrevId;
+      $("shelfNextBtn").disabled = !shelfNextId;
+      $("shelfMoveLeftBtn").disabled = !shelfPrevId || !shelfSelectedId;
+      $("shelfMoveRightBtn").disabled = !shelfNextId || !shelfSelectedId;
+    }
+
+    async function loadShelfRelatedVersions(ownedItemId) {
+      if (!ownedItemId) {
+        shelfRelatedInfo = null;
+        renderShelfRelatedVersions();
+        setStatus("shelfRelatedStatus", "ok", "");
+        return;
+      }
+
+      try {
+        setStatus("shelfRelatedStatus", "ok", t("media.manage.shelf.related.status.loading"));
+        const res = await fetch(`/owned-items/${ownedItemId}/related-versions`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.shelf.related.status.load_failed"));
+        shelfRelatedInfo = data;
+        renderShelfRelatedVersions();
+        const relatedCount = Array.isArray(data.items) ? data.items.length : 0;
+        setStatus("shelfRelatedStatus", "ok", t("media.manage.shelf.related.status.loaded", { count: countWithUnit(relatedCount) }));
+      } catch (err) {
+        shelfRelatedInfo = null;
+        renderShelfRelatedVersions();
+        setStatus("shelfRelatedStatus", "err", err.message);
+      }
+    }
+
+    async function openShelfWindow(ownedItemId) {
+      if (!ownedItemId) return;
+      try {
+        setStatus("shelfStatus", "ok", t("media.manage.shelf.status.loading_item", { owned_item_id: ownedItemId }));
+        const res = await fetch(`/owned-items/${ownedItemId}/shelf-window?window=6`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.shelf.status.load_failed"));
+
+        shelfItems = data.items || [];
+        shelfSelectedId = Number(data.center_owned_item_id || ownedItemId);
+        shelfPrevId = data.previous_owned_item_id ? Number(data.previous_owned_item_id) : null;
+        shelfNextId = data.next_owned_item_id ? Number(data.next_owned_item_id) : null;
+
+        renderAlbumSearchResults(albumSearchResults);
+        renderShelfTrack();
+        renderShelfDetail();
+        syncShelfNavButtons();
+        await loadShelfRelatedVersions(shelfSelectedId);
+        setStatus("shelfStatus", "ok", t("media.manage.shelf.status.load_done", { count: countWithUnit(shelfItems.length) }));
+      } catch (err) {
+        shelfItems = [];
+        shelfSelectedId = null;
+        shelfPrevId = null;
+        shelfNextId = null;
+        shelfRelatedInfo = null;
+        renderShelfTrack();
+        renderShelfDetail();
+        renderShelfRelatedVersions();
+        syncShelfNavButtons();
+        setStatus("shelfRelatedStatus", "ok", "");
+        setStatus("shelfStatus", "err", err.message);
+      }
+    }
+
+    async function moveShelf(direction) {
+      if (direction < 0 && shelfPrevId) {
+        await openShelfWindow(shelfPrevId);
+        return;
+      }
+      if (direction > 0 && shelfNextId) {
+        await openShelfWindow(shelfNextId);
+        return;
+      }
+      setStatus("shelfStatus", "err", t("media.manage.shelf.status.no_adjacent_album"));
+    }
+
+    async function moveShelfPosition(direction) {
+      if (!shelfSelectedId) {
+        setStatus("shelfStatus", "err", t("media.manage.shelf.status.move_required"));
+        return;
+      }
+      const targetOwnedItemId = direction < 0 ? shelfPrevId : shelfNextId;
+      if (!targetOwnedItemId) {
+        setStatus("shelfStatus", "err", t("media.manage.shelf.status.move_missing_target"));
+        return;
+      }
+
+      const position = direction < 0 ? "BEFORE" : "AFTER";
+      try {
+        setStatus(
+          "shelfStatus",
+          "ok",
+          t("media.manage.shelf.status.moving", {
+            source: shelfSelectedId,
+            target: targetOwnedItemId,
+            position,
+          })
+        );
+        const res = await fetch(`/owned-items/${shelfSelectedId}/order`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target_owned_item_id: targetOwnedItemId,
+            position
+          })
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.shelf.status.move_failed"));
+        setStatus(
+          "shelfStatus",
+          "ok",
+          t("media.manage.shelf.status.moved", {
+            owned_item_id: data.owned_item_id,
+            order_key: data.order_key,
+          })
+        );
+        await openShelfWindow(shelfSelectedId);
+        await loadOwnedItems();
+      } catch (err) {
+        setStatus("shelfStatus", "err", err.message);
+      }
+    }
+
+    async function searchOwnedAlbums() {
+      const q = $("albumSearchQuery").value.trim();
+      const limit = Math.max(1, Math.min(500, Number($("albumSearchLimit").value || 120)));
+      const params = new URLSearchParams({
+        status: "IN_COLLECTION",
+        limit: String(limit)
+      });
+      if (q) params.set("q", q);
+
+      try {
+        setStatus("albumSearchStatus", "ok", t("media.manage.search.status.loading"));
+        const res = await fetch(`/owned-items?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.search.status.load_failed"));
+
+        albumSearchResults = (data || []).filter((row) => MUSIC_CATEGORIES.has(row.category));
+        renderAlbumSearchResults(albumSearchResults);
+        setStatus("albumSearchStatus", "ok", t("media.manage.search.status.loaded", { count: countWithUnit(albumSearchResults.length) }));
+
+        if (albumSearchResults.length) {
+          await openShelfWindow(Number(albumSearchResults[0].id));
+        } else {
+          shelfItems = [];
+          shelfSelectedId = null;
+          shelfPrevId = null;
+          shelfNextId = null;
+          shelfRelatedInfo = null;
+          renderShelfTrack();
+          renderShelfDetail();
+          renderShelfRelatedVersions();
+          syncShelfNavButtons();
+          setStatus("shelfRelatedStatus", "ok", "");
+        }
+      } catch (err) {
+        albumSearchResults = [];
+        renderAlbumSearchResults(albumSearchResults);
+        shelfRelatedInfo = null;
+        renderShelfRelatedVersions();
+        setStatus("shelfRelatedStatus", "ok", "");
+        setStatus("albumSearchStatus", "err", err.message);
+      }
+    }
+
+
+    function renderHomeLocationInfo(row) {
+      const openBtn = $("homeOpenDashboardSlotBtn");
+      const restoreBtn = $("homeRestorePreviousSlotBtn");
+      if (!row) {
+        $("homeLocationInfo").textContent = t("media.manage.location.empty");
+        if (openBtn) openBtn.disabled = !homeSelectedItemId;
+        if (openBtn) {
+          const openLabel = t("media.manage.location.action.open_dashboard");
+          openBtn.textContent = openLabel;
+          openBtn.title = openLabel;
+          openBtn.setAttribute("aria-label", openLabel);
+        }
+        if (restoreBtn) restoreBtn.disabled = true;
+        return;
+      }
+
+      const slotId = Number(row.storage_slot_id || 0);
+      const slotRow = slotId > 0
+        ? (
+          homeDashboardBySlot.find((item) => Number(item?.id || 0) === slotId)
+          || storageSlotCache.find((item) => Number(item.id) === slotId)
+          || null
+        )
+        : null;
+      const slotLabel = slotRow
+        ? storageSlotDisplayLabel(slotRow)
+        : (row.slot_code || t("common.unslotted"));
+      const bits = [
+        t("media.manage.location.meta.position", { slot: slotLabel }),
+        slotId > 0 ? t("media.manage.location.meta.slot_id", { value: row.storage_slot_id ?? "-" }) : null,
+        t("media.manage.location.meta.order_key", { value: row.order_key || "-" }),
+        t("media.manage.location.meta.display_rank", { value: row.display_rank ?? "-" }),
+        slotId > 0 ? t("media.manage.location.summary.current") : t("media.manage.location.summary.unslotted")
+      ].filter(Boolean);
+      $("homeLocationInfo").textContent = bits.join(" | ");
+      if (openBtn) {
+        openBtn.disabled = !homeSelectedItemId;
+        const openLabel = slotId > 0
+          ? t("media.manage.location.action.open_dashboard_current")
+          : t("media.manage.location.action.open_dashboard");
+        openBtn.textContent = openLabel;
+        openBtn.title = openLabel;
+        openBtn.setAttribute("aria-label", openLabel);
+      }
+      if (restoreBtn) {
+        const hasPrevious = Boolean(String(row.previous_slot_code || row.previous_slot_display_name || "").trim());
+        restoreBtn.disabled = !homeSelectedItemId || !hasPrevious;
+      }
+    }
+
+    async function restoreHomePreviousLocation() {
+      const ownedItemId = Number(homeSelectedItemId || 0);
+      if (ownedItemId <= 0) {
+        setStatus("homeLocationSlotStatus", "err", t("media.manage.location.status.select_item_first"));
+        return;
+      }
+      try {
+        setStatus("homeLocationSlotStatus", "ok", t("media.manage.location.status.restoring"));
+        const res = await fetch(`/owned-items/${ownedItemId}/restore-previous-slot`, { method: "POST" });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.location.status.restore_failed"));
+        setStatus("homeLocationSlotStatus", "ok", t("media.manage.location.status.restore_done"));
+        await refreshHomeManageContext(ownedItemId, {
+          keepMasterContext: Boolean(homeSelectedMasterId),
+          masterId: homeSelectedMasterId,
+          reloadMaster: Boolean(homeSelectedMasterId),
+        });
+        loadHomeDashboard({ silent: true }).catch(() => {});
+      } catch (err) {
+        setStatus("homeLocationSlotStatus", "err", err.message);
+      }
+    }
+
+    function homeLocationSlotItemHtml(row, index) {
+      const title = resolveOwnedAlbumName(row);
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const signatureBadge = signatureCoverBadgeHtml(row?.signature_type, "media-search-cover-signature-badge");
+      const cover = coverUrl
+        ? `${signatureBadge}<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+        : `${signatureBadge}${escapeHtml(t("common.no_cover"))}`;
+      const barcodeText = String(row.barcode || "").trim();
+      const labelCatText = `${row.label_name || "-"} / ${row.catalog_no || "-"}${barcodeText ? ` (${barcodeText})` : ""}`;
+      const isCurrent = Number(row.id) === Number(homeSelectedItemId || 0);
+      const actions = isCurrent
+        ? `<span class="tag">${escapeHtml(t("media.manage.location.item.current"))}</span>`
+        : `
+            <div class="home-location-slot-actions">
+              <button class="btn ghost tiny home-location-open-btn" type="button" data-owned-id="${row.id}">${escapeHtml(t("common.action.open"))}</button>
+              <button class="btn ghost tiny home-location-before-btn" type="button" data-target-id="${row.id}">${escapeHtml(t("media.manage.location.action.before"))}</button>
+              <button class="btn ghost tiny home-location-after-btn" type="button" data-target-id="${row.id}">${escapeHtml(t("media.manage.location.action.after"))}</button>
+            </div>
+          `;
+      return `
+        <div
+          class="result-item album-result home-location-slot-item ${isCurrent ? "pick" : ""}"
+          data-slot-owned-id="${row.id}"
+        >
+          <div class="album-result-cover">${cover}</div>
+          <div class="album-result-main">
+            <div class="home-location-slot-head">
+              <strong>${escapeHtml(`${index + 1}. ${title}`)}</strong>
+              ${actions}
+            </div>
+            <div class="result-meta">
+              <span class="tag">${escapeHtml(mediaDisplayLabel(row.format_name || row.category || "-"))}</span>
+              <span>status: ${escapeHtml(row.status || "-")}</span>
+              <span>order: ${escapeHtml(row.order_key || "-")}</span>
+              <span>display: ${escapeHtml(row.display_rank ?? "-")}</span>
+              <span>label/cat#: ${escapeHtml(labelCatText)}</span>
+            </div>
+            <div class="mini">owned_item_id: ${row.id} | label_id: ${escapeHtml(row.label_id || "-")}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderHomeLocationSlotList() {
+      const root = $("homeLocationSlotList");
+      if (!root) return;
+      root.innerHTML = "";
+    }
+
+    async function loadHomeLocationSlotItems(storageSlotId, opts = {}) {
+      const slotId = Number(storageSlotId || 0);
+      const seed = opts.seed || null;
+      const silent = Boolean(opts.silent);
+      homeLocationSlotId = slotId > 0 ? slotId : null;
+      if (slotId <= 0) {
+        homeLocationSlotItems = [];
+        homeLocationSlotLoading = false;
+        renderHomeLocationInfo(seed);
+        renderHomeLocationSlotList();
+        setStatus("homeLocationSlotStatus", "ok", "");
+        return;
+      }
+
+      try {
+        homeLocationSlotLoading = true;
+        renderHomeLocationInfo(seed);
+        renderHomeLocationSlotList();
+        if (!silent) setStatus("homeLocationSlotStatus", "ok", t("media.manage.location.status.slot_items_loading"));
+        const res = await fetch(`/storage-slots/${slotId}/owned-items?limit=300`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.location.status.slot_items_failed"));
+        if (Number(homeLocationSlotId || 0) !== slotId) return;
+        homeLocationSlotItems = Array.isArray(data) ? data : [];
+        renderHomeLocationInfo(seed || homeLocationSlotItems.find((row) => Number(row.id) === Number(homeSelectedItemId || 0)) || null);
+        renderHomeLocationSlotList();
+        syncHomeMasterInlineEditor();
+        if (!silent) setStatus("homeLocationSlotStatus", "ok", t("media.manage.location.status.slot_items_done", { count: countWithUnit(homeLocationSlotItems.length) }));
+      } catch (err) {
+        homeLocationSlotItems = [];
+        renderHomeLocationInfo(seed);
+        renderHomeLocationSlotList();
+        syncHomeMasterInlineEditor();
+        setStatus("homeLocationSlotStatus", "err", err.message);
+      } finally {
+        homeLocationSlotLoading = false;
+        renderHomeLocationInfo(seed || homeLocationSlotItems.find((row) => Number(row.id) === Number(homeSelectedItemId || 0)) || null);
+        renderHomeLocationSlotList();
+        syncHomeMasterInlineEditor();
+      }
+    }
+
+    async function moveHomeLocationCurrentItem(targetOwnedItemId, position) {
+      const ownedItemId = Number(homeSelectedItemId || $("editOwnedId").value || 0);
+      const targetId = Number(targetOwnedItemId || 0);
+      if (!ownedItemId || !targetId) {
+        setStatus("homeLocationSlotStatus", "err", t("dashboard.order.need_item_and_target"));
+        return;
+      }
+      if (ownedItemId === targetId) {
+        setStatus("homeLocationSlotStatus", "err", t("media.manage.location.reorder.same_item"));
+        return;
+      }
+      try {
+        setStatus("homeLocationSlotStatus", "ok", t("dashboard.order.progress", { source: ownedItemId, target: targetId, position }));
+        const res = await fetch(`/owned-items/${ownedItemId}/order`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target_owned_item_id: targetId,
+            position,
+          })
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.order.failed"));
+        setStatus("homeLocationSlotStatus", "ok", t("media.manage.location.reorder.done", { order_key: data.order_key }));
+        await refreshHomeManageContext(ownedItemId, {
+          keepMasterContext: Boolean(homeSelectedMasterId),
+          masterId: homeSelectedMasterId,
+          reloadMaster: Boolean(homeSelectedMasterId),
+        });
+        refreshHomeDashboardInBackground();
+        refreshHomeSearchInBackground();
+      } catch (err) {
+        setStatus("homeLocationSlotStatus", "err", err.message);
+      }
+    }
