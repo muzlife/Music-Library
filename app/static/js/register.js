@@ -2497,3 +2497,317 @@
       $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
       if ($("goodsRegisterImagePaste")) $("goodsRegisterImagePaste").value = "";
     }
+
+
+    function cloneRegisterLookupCandidate(candidate) {
+      if (!candidate || typeof candidate !== "object") return null;
+      try {
+        return JSON.parse(JSON.stringify(candidate));
+      } catch (_err) {
+        return { ...candidate };
+      }
+    }
+
+    function renderAdminBarcodePlacementSummary(state = null) {
+      const root = $("adminBarcodePlacementSummary");
+      if (!root) return;
+      const candidateKey = selectedCandidate ? registerLookupCandidateKey(selectedCandidate) : "";
+      const picked = candidateKey ? adminBarcodePlacementSelectionByCandidateKey.get(candidateKey) : null;
+      if (!state || state.loading) {
+        root.innerHTML = `
+          <div class="admin-barcode-placement-item rank-1">
+            <div class="admin-barcode-placement-rank">${escapeHtml(t("media.register.api_lookup.placement.rank_first"))}</div>
+            <strong>${escapeHtml(state?.loading ? t("media.register.api_lookup.placement.loading_title") : t("media.register.api_lookup.placement.empty_title"))}</strong>
+            <div class="mini">${escapeHtml(state?.loading ? t("media.register.api_lookup.placement.loading_body") : t("media.register.api_lookup.placement.empty_body"))}</div>
+          </div>
+        `;
+        return;
+      }
+      if (!Array.isArray(state.recommendations) || !state.recommendations.length) {
+        root.innerHTML = `
+          <div class="admin-barcode-placement-item">
+            <div class="admin-barcode-placement-rank">${escapeHtml(t("media.register.api_lookup.placement.waiting_title"))}</div>
+            <strong>${escapeHtml(String(state.fallback_message || t("media.register.api_lookup.placement.empty_title")))}</strong>
+            <div class="mini">${escapeHtml(t("media.register.api_lookup.placement.waiting_body"))}</div>
+          </div>
+        `;
+        return;
+      }
+      const pickedSlot = picked ? getStorageSlotById(Number(picked.storage_slot_id || 0)) : null;
+      const pickedSlotLabel = pickedSlot ? (storageSlotDisplayLabel(pickedSlot) || String(pickedSlot.slot_code || "").trim()) : "";
+      const isManualSelection = Boolean(picked && Number(picked.rank || 0) > 1);
+      const pickedSummary = pickedSlotLabel ? `
+        <div class="admin-barcode-placement-picked">
+          <span class="admin-barcode-placement-picked-label">${escapeHtml(t("media.register.api_lookup.placement.picked_label"))}</span>
+          <span class="admin-barcode-placement-picked-chip">${escapeHtml(pickedSlotLabel)}</span>
+          <span class="mini admin-barcode-placement-picked-copy">${escapeHtml(t("media.register.api_lookup.placement.picked_copy"))}</span>
+        </div>
+      ` : "";
+      const manualSelectionCopy = isManualSelection
+        ? `<div class="mini admin-barcode-placement-manual-copy">${escapeHtml(t("media.register.api_lookup.placement.manual_copy"))}</div>`
+        : "";
+      const manualSelectionNote = isManualSelection
+        ? `<div class="mini admin-barcode-placement-manual-note">${escapeHtml(t("media.register.api_lookup.placement.manual_note"))}</div>`
+        : "";
+      root.innerHTML = `${pickedSummary}${manualSelectionCopy}${manualSelectionNote}${state.recommendations.map((item) => {
+        const rank = Number(item.rank || 0);
+        const slotName = String(item.slot_display_name || item.slot_code || "").trim() || t("media.register.api_lookup.placement.slot_fallback");
+        const freeMm = Number(item.free_thickness_mm || 0);
+        const occupancy = Number(item.occupancy_percent || 0);
+        const slotId = Number(item.storage_slot_id || 0);
+        const isActive = picked
+          ? Number(picked.storage_slot_id || 0) === slotId
+          : rank === 1;
+        const autoBadge = rank === 1 ? `<span class="admin-barcode-placement-auto-badge">${escapeHtml(t("media.register.api_lookup.placement.badge.auto"))}</span>` : "";
+        const activeBadge = isActive ? `<span class="admin-barcode-placement-active-badge">${escapeHtml(t("media.register.api_lookup.placement.badge.active"))}</span>` : "";
+        const badgeGroup = autoBadge || activeBadge
+          ? `<div class="admin-barcode-placement-badges">${autoBadge}${activeBadge}</div>`
+          : "";
+        const anchorDisplay = String(item.anchor_display || "").trim();
+        const anchorPosition = String(item.anchor_position || "").trim();
+        let anchorLine = "";
+        if (anchorDisplay) {
+          const posKey = anchorPosition === "BEFORE"
+            ? "media.register.api_lookup.placement.anchor_before"
+            : "media.register.api_lookup.placement.anchor_after";
+          anchorLine = `<div class="mini admin-barcode-placement-anchor">${escapeHtml(anchorDisplay)} <span style="opacity:0.75;font-weight:400">${escapeHtml(t(posKey))}</span></div>`;
+        }
+        return `
+          <div
+            class="admin-barcode-placement-item${rank === 1 ? " rank-1" : ""}${isActive ? " active" : ""}"
+            data-admin-barcode-placement-slot-id="${Number(item.storage_slot_id || 0)}"
+            data-admin-barcode-placement-rank="${rank}"
+          >
+            <div class="admin-barcode-placement-rank">${escapeHtml(rank === 1 ? t("media.register.api_lookup.placement.rank_first") : t("media.register.api_lookup.placement.rank", { rank }))}</div>
+            <strong>${escapeHtml(slotName)}</strong>
+            ${badgeGroup}
+            <div class="mini admin-barcode-placement-detail">${escapeHtml(t("media.register.api_lookup.placement.detail", { free: formatCount(freeMm), occupancy: formatCount(occupancy) }))}</div>
+            ${anchorLine}
+          </div>
+        `;
+      }).join("")}`;
+    }
+
+    function buildAdminBarcodeRecommendationPayload(candidate) {
+      if (!candidate || typeof candidate !== "object") return null;
+      const category = inferMusicCategoryFromMetadata(candidate);
+      const sizeGroup = inferSizeGroupFromMetadata(category, candidate);
+      const mappedDomain = pickMappedDomain(candidate.domain_code);
+      return {
+        category,
+        size_group: sizeGroup,
+        format_name: category,
+        artist_or_brand: String(candidate.artist_or_brand || "").trim() || null,
+        title: String(candidate.title || "").trim() || null,
+        domain_code: mappedDomain || null,
+        release_year: normalizePositiveIntOrNull(candidate.release_year),
+        barcode: String(candidate.barcode || "").trim() || null,
+        source: String(candidate.source || "").trim().toUpperCase() || null,
+      };
+    }
+
+    function clearAdminBarcodeConfirmation(opts = {}) {
+      adminBarcodeConfirmToken = "";
+      adminBarcodeConfirmCandidateKey = "";
+      syncAdminBarcodeInputReadyState("idle");
+      if (opts.keepInput) return;
+      const input = $("barcodeInput");
+      if (input) input.value = "";
+    }
+
+    function resetAdminBarcodeIntakeWorkspace(opts = {}) {
+      selectedCandidate = null;
+      registerLookupLocationState = {};
+      adminBarcodePlacementToken += 1;
+      if (!opts.preserveStatus) {
+        setStatus("barcodeStatus", "ok", "");
+      }
+      renderRegisterLookupProviderStatusBadges([]);
+      renderBarcodeResults([]);
+    }
+
+    function armAdminBarcodeConfirmation(barcodeToken, candidate = null) {
+      adminBarcodeConfirmToken = String(barcodeToken || "").trim();
+      adminBarcodeConfirmCandidateKey = candidate ? registerLookupCandidateKey(candidate) : "";
+      syncAdminBarcodeInputReadyState("confirm");
+      const input = $("barcodeInput");
+      if (!input) return;
+      input.focus();
+      if (typeof input.select === "function") input.select();
+    }
+
+    function shouldConfirmAdminBarcodeIntake(barcodeToken) {
+      const normalized = String(barcodeToken || "").trim();
+      if (!normalized || !adminBarcodeConfirmToken) return false;
+      if (normalized !== adminBarcodeConfirmToken) return false;
+      return findRegisterLookupCandidateIndexByKey(adminBarcodeConfirmCandidateKey) >= 0;
+    }
+
+    function setAdminBarcodeIntakeHint(mode = "confirm") {
+      const el = $("adminBarcodeIntakeConfirm");
+      if (!el) return;
+      el.classList.toggle("ready", mode === "saved");
+      if (mode === "saved") {
+        syncAdminBarcodeInputReadyState("ready");
+        el.textContent = t("media.register.api_lookup.confirm.saved");
+        return;
+      }
+      syncAdminBarcodeInputReadyState(adminBarcodeConfirmToken ? "confirm" : "idle");
+      el.textContent = t("media.register.api_lookup.confirm.ready");
+    }
+
+    function confirmAdminBarcodeDuplicateSave(candidate) {
+      if (!candidate?.is_owned) return true;
+      const artist = String(candidate.artist_or_brand || "").trim() || t("common.unknown");
+      const title = String(candidate.title || "").trim() || t("common.no_title");
+      const ownedCount = Math.max(1, Number(candidate.owned_count || 0));
+      const slotId = resolveAdminBarcodeRecommendedSlotId(candidate);
+      const slot = slotId ? getStorageSlotById(slotId) : null;
+      const slotText = slot
+        ? t("media.register.api_lookup.duplicate.slot", { slot: storageSlotDisplayLabel(slot) })
+        : "";
+      const confirmText = t("media.register.api_lookup.duplicate.confirm", {
+        artist,
+        title,
+        slot: slotText,
+        count: formatCount(ownedCount),
+      });
+      return window.confirm(confirmText);
+    }
+
+    function syncAdminBarcodePlacementSelection(candidate, storageSlotId, rank = 0) {
+      const slotId = Number(storageSlotId || 0);
+      if (!candidate || slotId <= 0) return;
+      const candidateKey = registerLookupCandidateKey(candidate);
+      if (!candidateKey) return;
+      adminBarcodePlacementSelectionByCandidateKey.set(candidateKey, {
+        storage_slot_id: slotId,
+        rank: Number(rank || 0),
+      });
+      const selectedIndex = findRegisterLookupCandidateIndexByKey(candidateKey);
+      const slot = getStorageSlotById(slotId);
+      if (slot && selectedIndex >= 0) {
+        registerLookupLocationState[String(selectedIndex)] = {
+          cabinet_name: String(slot.cabinet_name || "").trim(),
+          column_code: String(slot.column_code || "").trim(),
+          cell_code: String(slot.cell_code || "").trim(),
+        };
+      }
+      $("slotId").value = String(slotId);
+      renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
+      const cached = adminBarcodePlacementCache.get(candidateKey) || null;
+      renderAdminBarcodePlacementSummary(cached);
+    }
+
+    function resolveAdminBarcodeRecommendedSlotId(candidate) {
+      if (!candidate) return null;
+      const candidateKey = registerLookupCandidateKey(candidate);
+      const picked = adminBarcodePlacementSelectionByCandidateKey.get(candidateKey);
+      if (picked) {
+        const pickedSlotId = Number(picked.storage_slot_id || 0);
+        if (pickedSlotId > 0) return pickedSlotId;
+      }
+      const cached = adminBarcodePlacementCache.get(candidateKey);
+      if (!cached || !Array.isArray(cached.recommendations) || !cached.recommendations.length) return null;
+      const slotId = Number(cached.recommendations[0]?.storage_slot_id || 0);
+      return slotId > 0 ? slotId : null;
+    }
+
+    async function fetchAdminBarcodePlacementSummary(candidate = null) {
+      if (!candidate) return null;
+      const candidateKey = registerLookupCandidateKey(candidate);
+      const cached = adminBarcodePlacementCache.get(candidateKey);
+      if (cached) return cached;
+      if (adminBarcodePlacementPending.has(candidateKey)) {
+        return adminBarcodePlacementPending.get(candidateKey);
+      }
+      const payload = buildAdminBarcodeRecommendationPayload(candidate);
+      if (!payload) return null;
+      const request = (async () => {
+        const res = await fetchWithRetry("/ingest/barcode/recommend-location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }, {
+          retries: 2,
+          retryDelayMs: 250,
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.api_lookup.status.recommendation_failed")));
+        adminBarcodePlacementCache.set(candidateKey, data);
+        return data;
+      })();
+      adminBarcodePlacementPending.set(candidateKey, request);
+      try {
+        return await request;
+      } finally {
+        adminBarcodePlacementPending.delete(candidateKey);
+      }
+    }
+
+    async function loadAdminBarcodePlacementSummary(candidate = null) {
+      if (!candidate) {
+        renderAdminBarcodePlacementSummary(null);
+        return;
+      }
+      const candidateKey = registerLookupCandidateKey(candidate);
+      const cached = adminBarcodePlacementCache.get(candidateKey);
+      if (cached) {
+        renderAdminBarcodePlacementSummary(cached);
+        return;
+      }
+      const token = ++adminBarcodePlacementToken;
+      renderAdminBarcodePlacementSummary({ loading: true });
+      try {
+        const data = await fetchAdminBarcodePlacementSummary(candidate);
+        if (token !== adminBarcodePlacementToken) return;
+        renderAdminBarcodePlacementSummary(data);
+      } catch (err) {
+        if (token !== adminBarcodePlacementToken) return;
+        renderAdminBarcodePlacementSummary({
+          available: false,
+          recommendations: [],
+          fallback_message: errorMessageText(err, t("media.register.api_lookup.status.recommendation_failed")),
+        });
+      }
+    }
+
+    function syncAdminBarcodeIntakePanels() {
+      void loadAdminBarcodePlacementSummary(selectedCandidate);
+    }
+
+    async function submitAdminBarcodeIntake() {
+      const barcode = $("barcodeInput").value.trim();
+      setAdminBarcodeIntakeHint("confirm");
+      if (!barcode) {
+        setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.enter_barcode"));
+        return;
+      }
+      const barcodeToken = normalizeBarcodeLookupToken(barcode);
+      if (!barcodeToken) {
+        setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.invalid_barcode"));
+        return;
+      }
+      if (shouldConfirmAdminBarcodeIntake(barcodeToken)) {
+        const selectedIndex = findRegisterLookupCandidateIndexByKey(adminBarcodeConfirmCandidateKey);
+        if (selectedIndex < 0) {
+          clearAdminBarcodeConfirmation({ keepInput: true });
+          setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.candidate_missing"));
+          return;
+        }
+        const candidate = registerLookupCandidates[selectedIndex] || null;
+        if (candidate && !resolveAdminBarcodeRecommendedSlotId(candidate)) {
+          try {
+            const data = await fetchAdminBarcodePlacementSummary(candidate);
+            renderAdminBarcodePlacementSummary(data);
+          } catch (err) {
+            setStatus("barcodeStatus", "err", errorMessageText(err, t("media.register.api_lookup.status.recommendation_required")));
+            return;
+          }
+        }
+        setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.confirm_detected"));
+        queueRegisterLookupCandidate(selectedIndex);
+        return;
+      }
+      await barcodeSearch();
+    }

@@ -1214,3 +1214,935 @@
         `;
       }).join("");
     }
+
+
+    function clearOperatorRequestForm() {
+      $("operatorRequestTrack").value = "";
+      $("operatorRequestOwnedItemId").value = "";
+      $("operatorRequestMatchedTrack").value = "";
+      $("operatorRequestMatchedTrackNo").value = "";
+      $("operatorRequestCustomerNote").value = "";
+      $("operatorRequestItemText").value = "";
+    }
+
+    function fillOperatorRequestForm(row, trackTitle = "", trackNo = "") {
+      $("operatorRequestOwnedItemId").value = Number(row?.owned_item_id || row?.id || 0) || "";
+      $("operatorRequestTrack").value = String(trackTitle || row?.requested_track || "").trim();
+      $("operatorRequestMatchedTrack").value = String(trackTitle || row?.matched_track_title || "").trim();
+      $("operatorRequestMatchedTrackNo").value = trackNo ? String(trackNo) : (row?.matched_track_no ? String(row.matched_track_no) : "");
+      const itemTitle = String(row?.item_title || row?.item_name_override || "-").trim() || "-";
+      const artist = String(row?.artist_or_brand || "").trim();
+      $("operatorRequestItemText").value = `${itemTitle}${artist ? ` / ${artist}` : ""}`;
+    }
+
+    function buildOperatorCabinetTripletLabel(cabinetName, columnCode, cellCode) {
+      const safeCabinetName = String(cabinetName || "").trim();
+      const safeColumnCode = String(columnCode || "").trim();
+      const safeCellCode = String(cellCode || "").trim();
+      if (!(safeCabinetName && safeColumnCode && safeCellCode)) return "";
+      return `${safeCabinetName} / ${dashboardColumnCodeLabel(safeColumnCode)} / ${dashboardCellCodeLabel(safeCellCode)}`;
+    }
+
+    function localizeOperatorSlotDisplayName(displayName) {
+      const text = String(displayName || "").trim();
+      if (!text || isOperatorUnslottedLabel(text)) return "";
+      const parts = text.split("/").map((part) => String(part || "").trim()).filter(Boolean);
+      if (parts.length === 3 && /열$/.test(parts[1]) && /칸$/.test(parts[2])) {
+        const localized = buildOperatorCabinetTripletLabel(
+          parts[0],
+          parts[1].replace(/열$/, "").trim(),
+          parts[2].replace(/칸$/, "").trim()
+        );
+        if (localized) return localized;
+      }
+      return text;
+    }
+
+    function buildOperatorSlotDisplayLabel(displayName, slotCode, cabinetName, columnCode, cellCode) {
+      const localizedTriplet = buildOperatorCabinetTripletLabel(cabinetName, columnCode, cellCode);
+      if (localizedTriplet) return localizedTriplet;
+      const localizedDisplayName = localizeOperatorSlotDisplayName(displayName);
+      if (localizedDisplayName) return localizedDisplayName;
+      const safeSlotCode = String(slotCode || "").trim();
+      if (safeSlotCode) return safeSlotCode;
+      return t("operator.feed.state.unslotted");
+    }
+
+    function buildOperatorPreviousLocationLabel(row) {
+      const previousDisplayName = String(row?.previous_slot_display_name || "").trim();
+      const previousSlotCode = String(row?.previous_slot_code || "").trim();
+      if (!previousDisplayName && !previousSlotCode) return "-";
+      if (isOperatorUnslottedLabel(previousDisplayName || previousSlotCode)) return t("operator.feed.state.unslotted");
+      return buildOperatorSlotDisplayLabel(previousDisplayName, previousSlotCode, "", "", "") || "-";
+    }
+
+    function hasOperatorCurrentLocation(row) {
+      const currentSlotCode = String(row?.current_slot_code || "").trim();
+      const currentDisplayName = String(row?.current_slot_display_name || "").trim();
+      const currentCabinetName = String(row?.current_cabinet_name || "").trim();
+      const currentColumnCode = String(row?.current_column_code || "").trim();
+      const currentCellCode = String(row?.current_cell_code || "").trim();
+      return Boolean(
+        currentSlotCode
+        || (currentDisplayName && !isOperatorUnslottedLabel(currentDisplayName))
+        || (currentCabinetName && currentColumnCode && currentCellCode)
+      );
+    }
+
+    function buildOperatorLocationLabel(row) {
+      const currentDisplayName = String(row?.current_slot_display_name || "").trim();
+      const currentCabinetName = String(row?.current_cabinet_name || "").trim();
+      const currentColumnCode = String(row?.current_column_code || "").trim();
+      const currentCellCode = String(row?.current_cell_code || "").trim();
+      const currentSlotCode = String(row?.current_slot_code || "").trim();
+      return buildOperatorSlotDisplayLabel(
+        currentDisplayName,
+        currentSlotCode,
+        currentCabinetName,
+        currentColumnCode,
+        currentCellCode
+      );
+    }
+
+    function buildOperatorDisplayTitleParts(row) {
+      let title = String(row?.item_title || row?.item_name_override || "-").trim() || "-";
+      const artist = String(row?.artist_or_brand || "").trim();
+      if (!artist) return { title, artist: "" };
+      const artistPrefix = `${artist} - `.toLowerCase();
+      if (title.toLowerCase().startsWith(artistPrefix)) {
+        title = title.slice(artistPrefix.length).trim() || title;
+      }
+      if (title.toLowerCase().endsWith(artist.toLowerCase())) {
+        title = title.slice(0, title.length - artist.length).replace(/[\s/|·-]+$/, "").trim() || title;
+      }
+      return { title, artist };
+    }
+
+    function exactTitleArtistMatch(row, normalizedQuery) {
+      const comparableQuery = normalizeOpsLookupComparable(normalizedQuery);
+      if (!comparableQuery) return false;
+      const title = String(row?.item_title || row?.item_name_override || "").trim();
+      const artist = String(row?.artist_or_brand || "").trim();
+      return [
+        title,
+        artist,
+        [title, artist].filter(Boolean).join(" "),
+        [artist, title].filter(Boolean).join(" "),
+      ].some((candidate) => normalizeOpsLookupComparable(candidate) === comparableQuery);
+    }
+
+    function emptyOperatorLookupSummary(normalizedQuery = "", status = "idle") {
+      return {
+        normalizedQuery,
+        topCandidate: null,
+        locationSummary: null,
+        status,
+        matchReason: "",
+      };
+    }
+
+    function summarizeOperatorResults(results, normalizedQuery) {
+      const list = Array.isArray(results) ? results : [];
+      const normalizedDigits = normalizeDigits(normalizedQuery);
+      const exactBarcode = normalizedDigits
+        ? list.find((row) => normalizeDigits(row?.barcode) === normalizedDigits)
+        : null;
+      const exactLabel = list.find((row) => normalizeOpsLookupComparable(row?.label_id) === normalizeOpsLookupComparable(normalizedQuery));
+      const exactTitleArtist = list.find((row) => exactTitleArtistMatch(row, normalizedQuery));
+      const assigned = list.find((row) => hasOperatorCurrentLocation(row));
+      const topCandidate = exactBarcode || exactLabel || exactTitleArtist || assigned || list[0] || null;
+      const matchReason = exactBarcode
+        ? "barcode"
+        : exactLabel
+          ? "label"
+          : exactTitleArtist
+            ? "titleArtist"
+            : assigned
+              ? "assigned"
+              : topCandidate
+                ? "first"
+                : "";
+      return {
+        normalizedQuery,
+        topCandidate,
+        locationSummary: topCandidate ? buildOperatorLocationLabel(topCandidate) : null,
+        status: topCandidate ? "match" : "empty",
+        matchReason,
+      };
+    }
+
+    function buildOperatorLookupSummary(results, normalizedQuery, status = "") {
+      const normalized = normalizeOpsLookupQuery(normalizedQuery);
+      if (!normalized) return emptyOperatorLookupSummary();
+      if (status === "error") return emptyOperatorLookupSummary(normalized, "error");
+      if (!Array.isArray(results) || !results.length) return emptyOperatorLookupSummary(normalized, "empty");
+      return summarizeOperatorResults(results, normalized);
+    }
+
+    function setOperatorLookupResults(results, normalizedQuery, status = "") {
+      operatorLookupResults = Array.isArray(results) ? results : [];
+      operatorLookupSummary = buildOperatorLookupSummary(operatorLookupResults, normalizedQuery, status);
+      homeSelectedContextItem = null;
+      homePreviewContextItem = null;
+      renderOperatorLookupResults();
+      renderOpsLibraryContextDefault();
+    }
+
+    async function loadOperatorOfficeClimate() {
+      const res = await fetch("/operator/office-climate");
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(responseDetailText(data, t("operator.weather.status.office_load_failed")));
+      if (!data || !data.available) return null;
+      return data;
+    }
+
+    function renderAlbumReviewSection(item) {
+      const text = String(item?.review_text || "").trim();
+      if (!text) return "";
+      const source = String(item?.review_source || "").trim();
+      const reviewUrl = String(item?.review_url || "").trim();
+      const TRUNCATE_LEN = 200;
+      const needsTruncate = text.length > TRUNCATE_LEN;
+      const previewText = needsTruncate ? text.slice(0, TRUNCATE_LEN) + "…" : text;
+      const cardId = "albumReviewCard_" + String(item?.owned_item_id || item?.id || 0);
+      const textId = "albumReviewText_" + String(item?.owned_item_id || item?.id || 0);
+      const btnId = "albumReviewToggleBtn_" + String(item?.owned_item_id || item?.id || 0);
+      const expandLabel = escapeHtml(t("media.search.context.review_expand") || "펼치기 ▼");
+      const collapseLabel = escapeHtml(t("media.search.context.review_collapse") || "접기 ▲");
+
+      return `
+        <section id="${escapeHtml(cardId)}" class="operator-mini-card ops-album-review-card">
+          <div class="ops-artist-context-head">
+            <strong>${escapeHtml(t("media.search.context.review_label") || "앨범 리뷰")}</strong>
+          </div>
+          <div class="ops-artist-context-summary-wrap">
+            <p class="ops-artist-context-summary" id="${escapeHtml(textId)}">${escapeHtml(previewText)}</p>
+            ${needsTruncate ? `
+              <button
+                type="button"
+                class="ops-artist-context-toggle"
+                id="${escapeHtml(btnId)}"
+                data-review-full="${escapeHtml(text)}"
+                data-review-preview="${escapeHtml(previewText)}"
+                data-show-label="${expandLabel}"
+                data-hide-label="${collapseLabel}"
+                data-expanded="false"
+                aria-expanded="false"
+              >${expandLabel}</button>
+            ` : ""}
+          </div>
+          ${source ? `<div class="ops-artist-context-meta"><span class="ops-artist-context-pill"><strong>${escapeHtml(t("media.search.context.review_source_label") || "출처")}</strong>${reviewUrl ? `<a href="${escapeHtml(reviewUrl)}" target="_blank" rel="noopener">${escapeHtml(source)}</a>` : escapeHtml(source)}</span></div>` : ""}
+        </section>
+      `;
+    }
+
+    function currentHomeMasterId() {
+      return Number(homeMasterInfo?.album_master_id || homeSelectedMasterId || 0) || null;
+    }
+
+    async function refreshCurrentMasterReview(masterId) {
+      const res = await fetchWithRetry(`/album-masters/${masterId}`);
+      const data = await res.json();
+      renderHomeMasterReviewSection(data);
+    }
+
+    function normalizedOpsArtistContextCacheKey(value) {
+      if (typeof value === "string") {
+        return [String(value || "").trim().replace(/\s+/g, " ").toLowerCase(), appLocale].filter(Boolean).join("::");
+      }
+      const artistName = String(value?.artist_or_brand || value?.artist_name || "").trim().replace(/\s+/g, " ").toLowerCase();
+      const category = String(value?.format_name || value?.category || "").trim().replace(/\s+/g, " ").toLowerCase();
+      return [artistName, category, appLocale].filter(Boolean).join("::");
+    }
+
+    function normalizeOpsArtistContextPayload(payload, item = null) {
+      const artistName = String(payload?.artist_name || item?.artist_or_brand || "").trim();
+      const imageUrl = String(payload?.image_url || "").trim();
+      return {
+        available: Boolean(payload?.available),
+        artist_name: artistName,
+        summary: payload?.summary == null ? null : String(payload.summary),
+        summary_original: payload?.summary_original == null ? null : String(payload.summary_original),
+        image_url: /^https?:\/\//i.test(imageUrl) ? imageUrl : null,
+        country: payload?.country == null ? null : String(payload.country).trim(),
+        active_years: payload?.active_years == null ? null : String(payload.active_years).trim(),
+        genres: Array.isArray(payload?.genres)
+          ? payload.genres.map((value) => String(value || "").trim()).filter(Boolean)
+          : [],
+        links: Array.isArray(payload?.links)
+          ? payload.links
+            .map((link) => ({
+              label: String(link?.label || "").trim(),
+              url: String(link?.url || "").trim(),
+            }))
+            .filter((link) => link.label && /^https?:\/\//i.test(link.url))
+          : [],
+      };
+    }
+
+    async function loadOpsArtistContext(item, options = {}) {
+      const cardId = String(options.cardId || "opsArtistContextCard");
+      const getActiveItem = typeof options.getActiveItem === "function"
+        ? options.getActiveItem
+        : (() => homeSelectedContextItem || homePreviewContextItem || null);
+      const cacheKey = normalizedOpsArtistContextCacheKey(item);
+      const activeItem = getActiveItem();
+      if (!cacheKey) {
+        const emptyRoot = $(cardId);
+        if (emptyRoot && activeItem === item) emptyRoot.outerHTML = renderOpsArtistContextUnavailable(item, null, { cardId });
+        return;
+      }
+      if (opsArtistContextCache.has(cacheKey)) {
+        const cachedPayload = opsArtistContextCache.get(cacheKey);
+        const cachedRoot = $(cardId);
+        if (cachedRoot && normalizedOpsArtistContextCacheKey(activeItem) === cacheKey) {
+          cachedRoot.outerHTML = cachedPayload?.available
+            ? renderOpsArtistContextReady(cachedPayload, { cardId })
+            : renderOpsArtistContextUnavailable(item, cachedPayload, { cardId });
+        }
+        return;
+      }
+      const requestSeq = ++opsArtistContextRequestSeq;
+      opsArtistContextLoadingKey = cacheKey;
+      try {
+        const res = await fetch("/ops/artist-context", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            artist_name: String(item?.artist_or_brand || "").trim(),
+            category: String(item?.format_name || item?.category || "").trim() || null,
+            locale: appLocale,
+          }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error("artist_context_unavailable");
+        const payload = normalizeOpsArtistContextPayload(data, item);
+        if (payload.available) opsArtistContextCache.set(cacheKey, payload);
+        const nextActiveItem = getActiveItem();
+        if (requestSeq !== opsArtistContextRequestSeq) return;
+        if (normalizedOpsArtistContextCacheKey(nextActiveItem) !== cacheKey) return;
+        const nextRoot = $(cardId);
+        if (nextRoot) {
+          nextRoot.outerHTML = payload.available
+            ? renderOpsArtistContextReady(payload, { cardId })
+            : renderOpsArtistContextUnavailable(item, payload, { cardId });
+        }
+      } catch (_) {
+        const payload = normalizeOpsArtistContextPayload({ available: false }, item);
+        const nextActiveItem = getActiveItem();
+        if (requestSeq !== opsArtistContextRequestSeq) return;
+        if (normalizedOpsArtistContextCacheKey(nextActiveItem) !== cacheKey) return;
+        const nextRoot = $(cardId);
+        if (nextRoot) nextRoot.outerHTML = renderOpsArtistContextUnavailable(item, payload, { cardId });
+      } finally {
+        if (opsArtistContextLoadingKey === cacheKey) {
+          opsArtistContextLoadingKey = "";
+        }
+      }
+    }
+
+    function getOpsPlacementHintOwnedItemId(item) {
+      return Number(item?.owned_item_id || item?.id || 0);
+    }
+
+    function getOpsPlacementHintRows(payload) {
+      if (!payload || typeof payload !== "object") return [];
+      if (Array.isArray(payload.recommendations)) return payload.recommendations.filter((row) => row && typeof row === "object");
+      if (Array.isArray(payload.rows)) return payload.rows.filter((row) => row && typeof row === "object");
+      if (Array.isArray(payload.items)) return payload.items.filter((row) => row && typeof row === "object");
+      if (Array.isArray(payload.placements)) return payload.placements.filter((row) => row && typeof row === "object");
+      if (Array.isArray(payload.hints)) return payload.hints.filter((row) => row && typeof row === "object");
+      return [];
+    }
+
+    function isOpsPlacementHintUnslottedItem(item) {
+      const slotCode = String(item?.current_slot_code || "").trim().toUpperCase();
+      return !slotCode || slotCode === "UNASSIGNED";
+    }
+
+    function findOpsLibraryContextCabinet(item) {
+      if (!item || !homeDashboardBySlot.length) return null;
+      const slotCode = String(item?.current_slot_code || "").trim();
+      const cabinetName = String(item?.current_cabinet_name || "").trim();
+      if (cabinetName) {
+        const rows = homeDashboardBySlot.filter((row) => String(row?.cabinet_name || "").trim() === cabinetName);
+        if (rows.length) {
+          const floorCodes = Array.from(new Set(rows.map((row) => String(row?.column_code || "").trim()).filter(Boolean)));
+          return {
+            title: cabinetName,
+            rows,
+            floorCodes,
+            floorCount: floorCodes.length,
+            slotCount: rows.length,
+          };
+        }
+      }
+      if (!slotCode) return null;
+      const row = homeDashboardBySlot.find((entry) => String(entry?.slot_code || "").trim() === slotCode);
+      if (!row) return null;
+      const fallbackCabinetName = String(row?.cabinet_name || "").trim();
+      if (!fallbackCabinetName) return null;
+      const rows = homeDashboardBySlot.filter((entry) => String(entry?.cabinet_name || "").trim() === fallbackCabinetName);
+      const floorCodes = Array.from(new Set(rows.map((entry) => String(entry?.column_code || "").trim()).filter(Boolean)));
+      return {
+        title: fallbackCabinetName,
+        rows,
+        floorCodes,
+        floorCount: floorCodes.length,
+        slotCount: rows.length,
+      };
+    }
+
+    function findOpsLibraryContextCabinetGroup(item) {
+      return findOpsLibraryContextCabinet(item);
+    }
+
+    function getOpsLibraryContextSlotPreviewRows(slotCode) {
+      const normalizedSlotCode = String(slotCode || "").trim();
+      if (!normalizedSlotCode || normalizedSlotCode === "UNASSIGNED") return null;
+      if (homeDashboardSlotItemsSlotCode === normalizedSlotCode && !homeDashboardSlotItemsLoading) {
+        return Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems.slice(0, 6) : [];
+      }
+      if (opsLibraryContextSlotPreviewCache.has(normalizedSlotCode)) {
+        return Array.isArray(opsLibraryContextSlotPreviewCache.get(normalizedSlotCode))
+          ? opsLibraryContextSlotPreviewCache.get(normalizedSlotCode)
+          : [];
+      }
+      return null;
+    }
+
+    async function loadOpsLibraryContextSlotPreview(item, options = {}) {
+      const rootId = String(options.rootId || "opsLibraryContextSlotPreview");
+      const getActiveItem = typeof options.getActiveItem === "function"
+        ? options.getActiveItem
+        : (() => homeSelectedContextItem || homePreviewContextItem || null);
+      const slotCode = String(item?.current_slot_code || "").trim();
+      const previewRoot = $(rootId);
+      if (!previewRoot || !slotCode || slotCode === "UNASSIGNED") return;
+      const existingRows = getOpsLibraryContextSlotPreviewRows(slotCode);
+      if (existingRows !== null) {
+        previewRoot.innerHTML = renderOpsLibraryContextSlotPreviewContent(item, existingRows);
+        return;
+      }
+      const slotRow = getDashboardSlotRow(slotCode);
+      const slotId = resolveDashboardStorageSlotId(slotRow);
+      if (!slotId) {
+        previewRoot.innerHTML = renderOpsLibraryContextSlotPreviewContent(item, [], { errorText: t("operator.context.preview.error.no_slot") });
+        return;
+      }
+      const requestSeq = ++opsLibraryContextSlotPreviewRequestSeq;
+      opsLibraryContextSlotPreviewLoadingSlotCode = slotCode;
+      previewRoot.innerHTML = renderOpsLibraryContextSlotPreviewContent(item, null, { loading: true });
+      try {
+        const res = await fetch(`/storage-slots/${slotId}/owned-items?limit=6`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.context.preview.error.load_failed")));
+        const rows = Array.isArray(data) ? data : [];
+        opsLibraryContextSlotPreviewCache.set(slotCode, rows);
+        const activeItem = getActiveItem();
+        if (requestSeq !== opsLibraryContextSlotPreviewRequestSeq) return;
+        if (String(activeItem?.current_slot_code || "").trim() !== slotCode) return;
+        const nextRoot = $(rootId);
+        if (nextRoot) nextRoot.innerHTML = renderOpsLibraryContextSlotPreviewContent(item, rows);
+      } catch (err) {
+        const activeItem = getActiveItem();
+        if (requestSeq !== opsLibraryContextSlotPreviewRequestSeq) return;
+        if (String(activeItem?.current_slot_code || "").trim() !== slotCode) return;
+        const nextRoot = $(rootId);
+        if (nextRoot) {
+          nextRoot.innerHTML = renderOpsLibraryContextSlotPreviewContent(item, [], {
+            errorText: errorMessageText(err, t("operator.context.preview.error.load_failed")),
+          });
+        }
+      } finally {
+        if (opsLibraryContextSlotPreviewLoadingSlotCode === slotCode) {
+          opsLibraryContextSlotPreviewLoadingSlotCode = "";
+        }
+      }
+    }
+
+    async function loadOpsPlacementHints(item, options = {}) {
+      const cardId = String(options.cardId || "opsLibraryPlacementHintCard");
+      const getActiveItem = typeof options.getActiveItem === "function"
+        ? options.getActiveItem
+        : (() => homeSelectedContextItem || homePreviewContextItem || null);
+      const ownedItemId = getOpsPlacementHintOwnedItemId(item);
+      const placementRoot = $(cardId);
+      if (!placementRoot) return;
+      if (ownedItemId <= 0) {
+        placementRoot.innerHTML = renderOpsPlacementHintIdle(null, { cardId });
+        return;
+      }
+      const cached = opsPlacementHintCache.get(ownedItemId) || null;
+      if (cached) {
+        placementRoot.innerHTML = cached.available === false
+          ? renderOpsPlacementHintUnavailable(item, cached.message || cached.detail || "", { cardId })
+          : renderOpsPlacementHintReady(item, cached, { cardId });
+        return;
+      }
+      if (opsPlacementHintLoadingOwnedItemId === ownedItemId) {
+        placementRoot.innerHTML = renderOpsPlacementHintLoading(item, { cardId });
+        return;
+      }
+      const requestSeq = ++opsPlacementHintRequestSeq;
+      opsPlacementHintLoadingOwnedItemId = ownedItemId;
+      placementRoot.innerHTML = renderOpsPlacementHintLoading(item, { cardId });
+      try {
+        const res = await fetch("/ops/placement-hints", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ owned_item_id: ownedItemId }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.placement.state.unavailable")));
+        const payload = data && typeof data === "object" ? data : {};
+        opsPlacementHintCache.set(ownedItemId, payload);
+        const activeItem = getActiveItem();
+        if (requestSeq !== opsPlacementHintRequestSeq) return;
+        if (getOpsPlacementHintOwnedItemId(activeItem) !== ownedItemId) return;
+        const nextRoot = $(cardId);
+        if (nextRoot) {
+          nextRoot.innerHTML = payload.available === false
+            ? renderOpsPlacementHintUnavailable(item, payload.message || payload.detail || "", { cardId })
+            : renderOpsPlacementHintReady(item, payload, { cardId });
+        }
+      } catch (err) {
+        const activeItem = getActiveItem();
+        if (requestSeq !== opsPlacementHintRequestSeq) return;
+        if (getOpsPlacementHintOwnedItemId(activeItem) !== ownedItemId) return;
+        const nextRoot = $(cardId);
+        if (nextRoot) {
+          nextRoot.innerHTML = renderOpsPlacementHintUnavailable(item, errorMessageText(err, t("operator.placement.state.unavailable")), { cardId });
+        }
+      } finally {
+        if (opsPlacementHintLoadingOwnedItemId === ownedItemId) {
+          opsPlacementHintLoadingOwnedItemId = 0;
+        }
+      }
+    }
+
+    function clearOpsLibraryContextPreview() {
+      if (!homePreviewContextItem) return;
+      homePreviewContextItem = null;
+      renderOpsLibraryContextDefault();
+    }
+
+    function setOpsLibraryContextSelectionFromTarget(target, options = {}) {
+      const card = target?.closest?.("[data-operator-context-source][data-operator-context-index]");
+      if (!card) return false;
+      const source = String(card.getAttribute("data-operator-context-source") || "").trim();
+      const index = Number(card.getAttribute("data-operator-context-index") || -1);
+      const list = source === "feed" ? operatorFeedItems : operatorLookupResults;
+      if (!Array.isArray(list) || !Number.isInteger(index) || index < 0 || index >= list.length) return false;
+      const nextItem = list[index] || null;
+      if (!nextItem) return false;
+      if (options.pin) {
+        homeSelectedContextItem = nextItem;
+        homePreviewContextItem = null;
+      } else {
+        if (homeSelectedContextItem) return false;
+        homePreviewContextItem = nextItem;
+      }
+      renderOpsLibraryContextDefault();
+      return true;
+    }
+
+    async function loadOperatorWeather(force = false) {
+      if (!appAuthSession?.authenticated) {
+        renderOperatorWeatherEmpty();
+        renderOpsLibraryContextDefault();
+        setStatus("operatorWeatherStatus", "", "");
+        return;
+      }
+      if (operatorWeatherState.loading) return;
+      if (!force && operatorWeatherState.loadedAt && Date.now() - operatorWeatherState.loadedAt < 15 * 60 * 1000) {
+        return;
+      }
+      operatorWeatherState.loading = true;
+      setStatus("operatorWeatherStatus", "ok", t("operator.weather.status.loading"));
+      renderOpsLibraryContextDefault();
+      try {
+        const officeClimate = await loadOperatorOfficeClimate();
+        if (!officeClimate?.available) {
+          throw new Error(t("operator.weather.status.load_failed"));
+        }
+        if (String(officeClimate.source || "").trim() === "seoul_weather") {
+          renderOperatorSeoulWeather(officeClimate);
+          setStatus("operatorWeatherStatus", "ok", t("operator.weather.status.seoul"));
+        } else {
+          renderOperatorOfficeClimate(officeClimate);
+          setStatus("operatorWeatherStatus", "ok", t("operator.weather.status.office"));
+        }
+        renderOpsLibraryContextDefault();
+        operatorWeatherState.loadedAt = Date.now();
+      } catch (err) {
+        renderOperatorWeatherEmpty();
+        renderOpsLibraryContextDefault();
+        setStatus("operatorWeatherStatus", "err", errorMessageText(err, t("operator.weather.status.load_failed")));
+      } finally {
+        operatorWeatherState.loading = false;
+      }
+    }
+
+    function buildOperatorFeedPagerTokens(currentPage, totalPages) {
+      if (totalPages <= 1) return [];
+      const pages = new Set([1, totalPages]);
+      const start = Math.max(1, currentPage - 2);
+      const end = Math.min(totalPages, currentPage + 2);
+      for (let page = start; page <= end; page += 1) {
+        pages.add(page);
+      }
+      if (currentPage <= 3) {
+        for (let page = 1; page <= Math.min(totalPages, 5); page += 1) {
+          pages.add(page);
+        }
+      }
+      if (currentPage >= totalPages - 2) {
+        for (let page = Math.max(1, totalPages - 4); page <= totalPages; page += 1) {
+          pages.add(page);
+        }
+      }
+      const ordered = Array.from(pages).sort((a, b) => a - b);
+      const tokens = [];
+      ordered.forEach((page, index) => {
+        if (index > 0 && page - ordered[index - 1] > 1) tokens.push("gap");
+        tokens.push(page);
+      });
+      return tokens;
+    }
+
+    async function loadOperatorHomeRecentSections() {
+      if (!appAuthSession?.authenticated) {
+        recentMovedItems = [];
+        recentRegisteredItems = [];
+        renderOpsHomeHeroStats({ locationCount: 0, recentMoveCount: 0, recentRegistrationCount: 0, moveWindowDays: 1 });
+        renderOperatorHomeRecentSections();
+        return;
+      }
+      try {
+        const res = await fetch("/operator/home/recent");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.lookup.status.feed_failed")));
+        recentMovedItems = Array.isArray(data.recent_moved_items) ? data.recent_moved_items : [];
+        recentRegisteredItems = Array.isArray(data.recent_registered_items) ? data.recent_registered_items : [];
+        opsHomeHeroStats.recentMoveCount = Math.max(0, Number(data.recent_moved_total_count ?? recentMovedItems.length ?? 0));
+        opsHomeHeroStats.recentRegistrationCount = Math.max(0, Number(data.recent_registered_total_count ?? recentRegisteredItems.length ?? 0));
+      } catch (_) {
+        recentMovedItems = [];
+        recentRegisteredItems = [];
+        opsHomeHeroStats.recentMoveCount = 0;
+        opsHomeHeroStats.recentRegistrationCount = 0;
+      }
+      renderOpsHomeHeroStats({
+        recentMoveCount: opsHomeHeroStats.recentMoveCount,
+        recentRegistrationCount: opsHomeHeroStats.recentRegistrationCount,
+        moveWindowDays: 1,
+      });
+      renderOperatorHomeRecentSections();
+    }
+
+    async function loadOperatorHomeFeed(options = {}) {
+      const kind = String(options.kind || operatorFeedKind || "registered").trim() === "moved" ? "moved" : "registered";
+      const page = Math.max(1, Number(options.page || operatorFeedPage || 1));
+      const pinnedOwnedItemId = Number(homeSelectedContextItem?.owned_item_id || homeSelectedContextItem?.id || 0);
+      operatorLookupMode = "FEED";
+      operatorFeedKind = kind;
+      operatorFeedPage = page;
+      operatorLookupResults = [];
+      homePreviewContextItem = null;
+      operatorLookupSummary = emptyOperatorLookupSummary();
+      updateOperatorFeedControls();
+      if (!appAuthSession?.authenticated) {
+        operatorFeedItems = [];
+        operatorFeedTotalCount = 0;
+        homeSelectedContextItem = null;
+        renderOperatorLookupResults();
+        renderOpsLibraryContextDefault();
+        return;
+      }
+      try {
+        const params = new URLSearchParams({
+          kind,
+          page: String(page),
+          limit: String(operatorFeedPageSize),
+        });
+        const res = await fetch(`/operator/home/feed?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.lookup.status.feed_failed")));
+        operatorFeedItems = Array.isArray(data.items) ? data.items : [];
+        operatorFeedTotalCount = Math.max(0, Number(data.total_count ?? operatorFeedItems.length ?? 0));
+        operatorFeedPage = Math.max(1, Number(data.page || page));
+        if (pinnedOwnedItemId > 0) {
+          homeSelectedContextItem =
+            operatorFeedItems.find((row) => Number(row?.owned_item_id || row?.id || 0) === pinnedOwnedItemId)
+            || homeSelectedContextItem;
+        }
+        updateOperatorFeedControls();
+        renderOperatorLookupResults();
+        renderOpsLibraryContextDefault();
+      } catch (err) {
+        operatorFeedItems = [];
+        operatorFeedTotalCount = 0;
+        updateOperatorFeedControls();
+        renderOperatorLookupResults();
+        renderOpsLibraryContextDefault();
+        setStatus("operatorLookupStatus", "err", errorMessageText(err, t("operator.lookup.status.feed_failed")));
+      }
+    }
+
+    async function loadOperatorLookupResults() {
+      const normalizedQuery = normalizeOpsLookupQuery($("operatorLookupQuery").value);
+      const signatureMode = String($("operatorLookupSignatureMode").value || "ANY").trim().toUpperCase() || "ANY";
+      const sortMode = String($("operatorLookupSortMode").value || "CREATED_DESC").trim().toUpperCase() || "CREATED_DESC";
+      const requestSeq = ++operatorLookupRequestSeq;
+      const loadingStatusText = t("operator.lookup.status.loading");
+      $("operatorLookupQuery").value = normalizedQuery;
+      if (!normalizedQuery) {
+        await loadOperatorHomeFeed({ kind: operatorFeedKindFromSortMode(sortMode), page: 1 });
+        setStatus("operatorLookupStatus", "", "");
+        return;
+      }
+      operatorLookupMode = "SEARCH";
+      updateOperatorFeedControls();
+      setStatus("operatorLookupStatus", "", loadingStatusText);
+      try {
+        const params = new URLSearchParams({ q: normalizedQuery, limit: "30" });
+        if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);
+        if (sortMode !== "CREATED_DESC") params.set("sort_mode", sortMode);
+        const res = await fetchWithRetry(`/operator/catalog-search?${params.toString()}`, {}, {
+          retries: 2,
+          retryDelayMs: 250,
+          onRetry: (attempt, total) => {
+            if (requestSeq !== operatorLookupRequestSeq) return;
+            setStatus("operatorLookupStatus", "", retryingStatusText(loadingStatusText, attempt, total));
+          },
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.lookup.status.search_failed")));
+        if (requestSeq !== operatorLookupRequestSeq) return;
+        setOperatorLookupResults(Array.isArray(data.items) ? data.items : [], normalizedQuery);
+        setStatus("operatorLookupStatus", "ok", t("operator.lookup.status.complete", { count: formatCount(operatorLookupResults.length) }));
+      } catch (err) {
+        if (requestSeq !== operatorLookupRequestSeq) return;
+        setOperatorLookupResults([], normalizedQuery, "error");
+        setStatus("operatorLookupStatus", "err", errorMessageText(err, t("operator.lookup.status.search_failed")));
+      }
+    }
+
+    function firstOperatorFormatLine(formatItems, fallbackFormatName = "") {
+      const firstRow = cleanDictList(formatItems)[0] || null;
+      if (firstRow) return formatOpsCollectorFormatItem(firstRow);
+      return String(fallbackFormatName || "").trim() || "-";
+    }
+
+    async function openOperatorCabinetLocationFromButton(button) {
+      if (!button) return;
+      const activeItem = homeSelectedContextItem || homePreviewContextItem || null;
+      const slotCode = String(button.getAttribute("data-operator-slot-code") || activeItem?.current_slot_code || "").trim();
+      const cabinetName = String(button.getAttribute("data-cabinet-name") || activeItem?.current_cabinet_name || "").trim();
+      const columnCode = String(button.getAttribute("data-column-code") || activeItem?.current_column_code || "").trim();
+      const cellCode = String(button.getAttribute("data-cell-code") || activeItem?.current_cell_code || "").trim();
+      if (!slotCode && !(cabinetName && columnCode && cellCode)) return;
+      await openCabinetLocationAction(0, slotCode, cabinetName, columnCode, cellCode);
+    }
+
+    async function handleOperatorLookupAction(e) {
+      const clearBtn = e.target.closest("[data-operator-context-clear]");
+      if (clearBtn) {
+        homeSelectedContextItem = null;
+        homePreviewContextItem = null;
+        renderOpsLibraryContextDefault();
+        return;
+      }
+      const repairDiscogsMasterBtn = e.target.closest("[data-operator-repair-discogs-master]");
+      if (repairDiscogsMasterBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const ownedItemId = Number(repairDiscogsMasterBtn.getAttribute("data-operator-repair-discogs-master") || 0);
+        if (ownedItemId > 0) {
+          const progressStatusText = t("operator.lookup.status.repair_discogs_master.progress");
+          try {
+            setStatus("operatorLookupStatus", "ok", progressStatusText);
+            const res = await fetchWithRetry(`/owned-items/${ownedItemId}/repair-discogs-master-link`, { method: "POST" }, {
+              retries: 2,
+              retryDelayMs: 250,
+              onRetry: (attempt, total) => setStatus("operatorLookupStatus", "ok", retryingStatusText(progressStatusText, attempt, total)),
+            });
+            const data = await safeJson(res);
+            if (!res.ok) throw new Error(data.detail || t("operator.lookup.status.repair_discogs_master.failed"));
+            discogsRepairEligibilityCache.delete(ownedItemId);
+            await loadOperatorHomeRecentSections();
+            if (operatorLookupMode === "FEED") await loadOperatorHomeFeed({ kind: operatorFeedKind, page: operatorFeedPage });
+            else await loadOperatorLookupResults();
+            const notices = Array.isArray(data?.notices) ? data.notices.map((value) => String(value || "").trim()).filter((value) => value) : [];
+            setStatus("operatorLookupStatus", "ok", notices[0] || t("operator.lookup.status.repair_discogs_master.done"));
+          } catch (err) {
+            setStatus("operatorLookupStatus", "err", err.message || t("operator.lookup.status.repair_discogs_master.failed"));
+          }
+        }
+        return;
+      }
+      // 도메인 수정 버튼
+      const domainFixBtn = e.target.closest("[data-operator-domain-fix]");
+      if (domainFixBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const masterId = Number(domainFixBtn.getAttribute("data-operator-domain-fix") || 0);
+        if (masterId <= 0) {
+          setStatus("operatorLookupStatus", "err", t("operator.lookup.domain.no_master"));
+          return;
+        }
+        // 이미 폼이 열려 있으면 닫기
+        const existingForm = domainFixBtn.parentElement.querySelector(".operator-domain-fix-form");
+        if (existingForm) { existingForm.remove(); return; }
+        // 다른 열린 폼 닫기
+        document.querySelectorAll(".operator-domain-fix-form").forEach((f) => f.remove());
+        const currentDc = String(domainFixBtn.getAttribute("data-current-domain") || "").trim();
+        const currentSortArtist = String(domainFixBtn.getAttribute("data-current-sort-artist") || "").trim();
+        const DOMAIN_OPTIONS = ["KOREA","JAPAN","GREATER_CHINA","WESTERN","OTHER_ASIA","WORLD","UNKNOWN"];
+        const optionsHtml = DOMAIN_OPTIONS.map((dc) =>
+          `<option value="${dc}"${dc === currentDc ? " selected" : ""}>${escapeHtml(dashboardDomainLabel(dc))}</option>`
+        ).join("");
+        const form = document.createElement("div");
+        form.className = "operator-domain-fix-form";
+        form.innerHTML = `
+          <select class="domain-fix-select">${optionsHtml}</select>
+          <input type="text" class="domain-fix-sort" placeholder="${escapeHtml(t("operator.lookup.domain.fix_sort_artist_placeholder"))}" value="${escapeHtml(currentSortArtist)}" />
+          <button class="btn ghost tiny domain-fix-save-btn" type="button">${escapeHtml(t("operator.lookup.domain.fix_save"))}</button>
+          <button class="btn ghost tiny domain-fix-cancel-btn" type="button">${escapeHtml(t("operator.lookup.domain.fix_cancel"))}</button>
+        `;
+        domainFixBtn.parentElement.appendChild(form);
+        form.querySelector(".domain-fix-cancel-btn").addEventListener("click", () => form.remove());
+        form.querySelector(".domain-fix-save-btn").addEventListener("click", async () => {
+          const newDc = String(form.querySelector(".domain-fix-select").value || "").trim().toUpperCase() || null;
+          const newSort = String(form.querySelector(".domain-fix-sort").value || "").trim() || null;
+          try {
+            setStatus("operatorLookupStatus", "ok", t("operator.lookup.domain.status.saving"));
+            const corrRes = await fetch(`/album-masters/${masterId}/correction`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ domain_code: newDc }),
+            });
+            const corrData = await safeJson(corrRes);
+            if (!corrRes.ok) throw new Error(corrData.detail || t("operator.lookup.domain.status.failed"));
+            if (newSort) {
+              const sortRes = await fetch(`/album-masters/${masterId}/sort-artist-name`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sort_artist_name: newSort }),
+              });
+              const sortData = await safeJson(sortRes);
+              if (!sortRes.ok) throw new Error(sortData.detail || t("operator.lookup.domain.status.failed"));
+            }
+            form.remove();
+            await loadOperatorLookupResults();
+            setStatus("operatorLookupStatus", "ok", t("operator.lookup.domain.status.done"));
+          } catch (err) {
+            setStatus("operatorLookupStatus", "err", err.message || t("operator.lookup.domain.status.failed"));
+          }
+        });
+        return;
+      }
+      setOpsLibraryContextSelectionFromTarget(e.target, { pin: true });
+      const cabinetBtn = e.target.closest("[data-operator-open-cabinet]");
+      if (cabinetBtn) {
+        await openOperatorCabinetLocationFromButton(cabinetBtn);
+        return;
+      }
+      const contextCabinetBtn = e.target.closest("[data-operator-context-open-cabinet]");
+      if (contextCabinetBtn) {
+        if (contextCabinetBtn.classList.contains("ops-library-mini-map-cell")) {
+          contextCabinetBtn.classList.remove("is-opening");
+          contextCabinetBtn.offsetWidth;
+          contextCabinetBtn.classList.add("is-opening");
+        }
+        await openOperatorCabinetLocationFromButton(contextCabinetBtn);
+        return;
+      }
+      const manageBtn = e.target.closest("[data-operator-open-manage]");
+      if (manageBtn) {
+        const ownedItemId = Number(manageBtn.getAttribute("data-operator-open-manage") || 0);
+        if (ownedItemId > 0) {
+          const targetItem = homeSelectedContextItem || null;
+          const masterId = Number(targetItem?.linked_album_master_id || targetItem?.album_master_id || 0);
+          openAdminConsole("media", { remember: false, mediaMode: "manage" });
+          await openMediaSearchDetailManage(masterId, ownedItemId);
+        }
+      }
+    }
+
+    async function loadOperatorRequestList() {
+      const status = $("operatorRequestFilterStatus").value.trim();
+      try {
+        const params = new URLSearchParams({ limit: "60" });
+        if (status) params.set("status", status);
+        const res = await fetch(`/operator/customer-requests?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.request.error.list_failed")));
+        operatorRequestItems = Array.isArray(data.items) ? data.items : [];
+        renderOperatorRequestList();
+      } catch (err) {
+        operatorRequestItems = [];
+        renderOperatorRequestList();
+        setStatus("operatorRequestStatus", "err", errorMessageText(err, t("operator.request.error.list_failed")));
+      }
+    }
+
+    async function createOperatorRequest() {
+      if (isShellReadOnly()) {
+        setStatus("operatorRequestStatus", "err", t("operator.feed.state.read_only"));
+        return;
+      }
+      const requestedTrack = $("operatorRequestTrack").value.trim();
+      const ownedItemId = Number($("operatorRequestOwnedItemId").value || 0);
+      const matchedTrackTitle = $("operatorRequestMatchedTrack").value.trim();
+      const matchedTrackNoRaw = Number($("operatorRequestMatchedTrackNo").value || 0);
+      const customerNote = $("operatorRequestCustomerNote").value.trim();
+      if (!requestedTrack) {
+        setStatus("operatorRequestStatus", "err", t("operator.request.field.required"));
+        return;
+      }
+      setStatus("operatorRequestStatus", "", t("operator.request.status.creating"));
+      try {
+        const res = await fetch("/operator/customer-requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requested_track: requestedTrack,
+            owned_item_id: ownedItemId > 0 ? ownedItemId : null,
+            matched_track_title: matchedTrackTitle || null,
+            matched_track_no: matchedTrackNoRaw > 0 ? matchedTrackNoRaw : null,
+            customer_note: customerNote || null,
+          }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.request.error.create_failed")));
+        clearOperatorRequestForm();
+        setStatus("operatorRequestStatus", "ok", t("operator.request.status.created"));
+        await loadOperatorRequestList();
+      } catch (err) {
+        setStatus("operatorRequestStatus", "err", errorMessageText(err, t("operator.request.error.create_failed")));
+      }
+    }
+
+    async function updateOperatorRequestStatus(requestId, status) {
+      if (isShellReadOnly()) {
+        setStatus("operatorRequestStatus", "err", t("operator.feed.state.read_only"));
+        return;
+      }
+      const requestIdNum = Number(requestId || 0);
+      if (!requestIdNum || !status) return;
+      try {
+        const res = await fetch(`/operator/customer-requests/${requestIdNum}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("operator.request.error.update_failed")));
+        setStatus("operatorRequestStatus", "ok", t("operator.request.status.updated", { status: operatorStatusLabel(status) }));
+        await loadOperatorRequestList();
+      } catch (err) {
+        setStatus("operatorRequestStatus", "err", errorMessageText(err, t("operator.request.error.update_failed")));
+      }
+    }

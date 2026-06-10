@@ -5289,3 +5289,164 @@
       applyVisibility();
       applyOrder();
     }
+
+    
+    function _resetAllSearchFilters() {
+      ["homeNewProduct","homePromo","homeLimitEd","homeSigDirect","homeSigPurchase"].forEach(id => {
+        const el = document.getElementById(id); if (el) el.checked = false;
+      });
+      const osEl = document.getElementById("homeOwnershipStatus"); if (osEl) osEl.value = "";
+      const domainEl = document.getElementById("homeSearchDomain"); if (domainEl) domainEl.value = "";
+      const pkgList = document.getElementById("homePackagingList");
+      if (pkgList) pkgList.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+    }
+
+    function initDashboardDrilldown() {
+      // 소스보강 탭으로 이동하고 미연결 대상 로드
+      function _goSource() {
+        openAdminConsole("source");
+        setTimeout(() => {
+          const stateEl = document.getElementById("sourceWorkbenchSourceState");
+          if (stateEl) stateEl.value = "MISSING";
+          if (typeof loadSourceWorkbenchTargets === "function") loadSourceWorkbenchTargets();
+        }, 200);
+      }
+      // 예외큐 탭으로 이동하고 특정 타입 로드
+      function _goException(type) {
+        openAdminConsole("ops");
+        setTimeout(async () => {
+          if (typeof switchSubTab === "function") switchSubTab("ops", "exception");
+          const typeEl = document.getElementById("opsExceptionType");
+          if (typeEl) typeEl.value = type;
+          if (typeof loadOpsExceptionItems === "function") await loadOpsExceptionItems();
+        }, 200);
+      }
+      // 검색 탭으로 이동하고 메타 결핍 체크박스 활성화
+      function _goSearch(checkboxId) {
+        openAdminConsole("search");
+        setTimeout(() => {
+          // 기존 메타 필터 체크박스 모두 초기화
+
+          const target = document.getElementById(checkboxId);
+          if (target) {
+            target.checked = true;
+            const details = document.getElementById("homeSearchAdvancedDetails");
+            if (details) details.open = true;
+          }
+          if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
+        }, 200);
+      }
+      function _goSearchProductFlag(checkboxId) {
+        openAdminConsole("search");
+        setTimeout(() => {
+          ["homeNewProduct","homePromo","homeLimitEd"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = false;
+          });
+          const osEl = document.getElementById("homeOwnershipStatus");
+          if (osEl) osEl.value = "";
+          const target = document.getElementById(checkboxId);
+          if (target) {
+            target.checked = true;
+            const details = document.getElementById("homeSearchAdvancedDetails");
+            if (details) details.open = true;
+          }
+          if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
+        }, 200);
+      }
+      function _goSearchOwnership(status) {
+        openAdminConsole("search");
+        setTimeout(() => {
+          ["homeNewProduct","homePromo","homeLimitEd"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = false;
+          });
+          const osEl = document.getElementById("homeOwnershipStatus");
+          if (osEl) osEl.value = status;
+          const details = document.getElementById("homeSearchAdvancedDetails");
+          if (details) details.open = true;
+          if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
+        }, 200);
+      }
+      const filterMap = {
+        source_unlinked:         () => _goSource(),
+        master_unlinked:         () => _goException("MASTER_MISSING"),
+        cover_missing:           () => _goException("COVER_MISSING"),
+        genre_missing:           () => { openAdminConsole("ops"); setTimeout(() => { const tabs=document.querySelectorAll(".subtab-btn"); tabs.forEach(b=>{if(b.textContent.includes("예외"))b.click();}); setTimeout(()=>{ const sel=document.getElementById("opsExceptionType"); if(sel){sel.value="GENRE_MISSING";sel.dispatchEvent(new Event("change"));} document.getElementById("opsExceptionLoadBtn")?.click(); },300); },200); },
+        media_missing:           () => { openAdminConsole("ops"); setTimeout(() => { const tabs=document.querySelectorAll(".subtab-btn"); tabs.forEach(b=>{if(b.textContent.includes("예외"))b.click();}); setTimeout(()=>{ const sel=document.getElementById("opsExceptionType"); if(sel){sel.value="MEDIA_MISSING";sel.dispatchEvent(new Event("change"));} document.getElementById("opsExceptionLoadBtn")?.click(); },300); },200); },
+        catalog_missing:         () => { openAdminConsole("ops"); setTimeout(() => { const tabs=document.querySelectorAll(".subtab-btn"); tabs.forEach(b=>{if(b.textContent.includes("예외"))b.click();}); setTimeout(()=>{ const sel=document.getElementById("opsExceptionType"); if(sel){sel.value="CATALOG_MISSING";sel.dispatchEvent(new Event("change"));} document.getElementById("opsExceptionLoadBtn")?.click(); },300); },200); },
+        new_items:               () => _goSearchProductFlag("homeNewProduct"),
+        promo_items:             () => { openAdminConsole("search"); setTimeout(() => { _resetAllSearchFilters(); const el=document.getElementById("homePromo");if(el)el.checked=true; const d=document.getElementById("homeSearchAdvancedDetails");if(d)d.open=true; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
+        other_items:             () => { openAdminConsole("search"); setTimeout(() => { ["homeNewProduct","homePromo","homeLimitEd"].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false;}); const o=document.getElementById("homeOwnershipStatus");if(o)o.value=""; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
+        ownership_in_collection: () => _goSearchOwnership("IN_COLLECTION"),
+        ownership_loaned:        () => _goSearchOwnership("LOANED"),
+        ownership_sold:          () => _goSearchOwnership("SOLD"),
+        ownership_lost:          () => _goSearchOwnership("LOST"),
+        limited_edition:         () => { openAdminConsole("search"); setTimeout(() => { _resetAllSearchFilters(); const el=document.getElementById("homeLimitEd");if(el)el.checked=true; const d=document.getElementById("homeSearchAdvancedDetails");if(d)d.open=true; if(typeof homeSearchOwnedItems==="function") homeSearchOwnedItems({resetPage:true,suppressEmptyCta:true}); },200); },
+        sig_direct:              () => {
+          openAdminConsole("search");
+          setTimeout(() => {
+            _resetAllSearchFilters();
+            const sigD = document.getElementById("homeSigDirect");
+            if (sigD) sigD.checked = true;
+            const sigP = document.getElementById("homeSigPurchase");
+            if (sigP) sigP.checked = true;
+            const details = document.getElementById("homeSearchAdvancedDetails");
+            if (details) details.open = true;
+            if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
+          }, 200);
+        },
+        box_set:                 () => {
+          openAdminConsole("search");
+          setTimeout(() => {
+            _resetAllSearchFilters();
+            const pkgList = document.getElementById("homePackagingList");
+            if (pkgList) pkgList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+              if (cb.value === "Box Set") cb.checked = true;
+            });
+            const details = document.getElementById("homeSearchAdvancedDetails");
+            if (details) details.open = true;
+            if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
+          }, 200);
+        },
+        sig_purchase:            () => {
+          openAdminConsole("search");
+          setTimeout(() => {
+            ["homeNewProduct","homePromo","homeLimitEd"].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.checked = false;
+            });
+            const osEl = document.getElementById("homeOwnershipStatus");
+            if (osEl) osEl.value = "";
+            const sigD = document.getElementById("homeSigDirect");
+            if (sigD) sigD.checked = false;
+            const sigP = document.getElementById("homeSigPurchase");
+            if (sigP) sigP.checked = true;
+            const details = document.getElementById("homeSearchAdvancedDetails");
+            if (details) details.open = true;
+            if (typeof homeSearchOwnedItems === "function") homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true });
+          }, 200);
+        },
+        unslotted:               () => {
+          openAdminConsole("cabinet");
+          setTimeout(() => {
+            const unassignedBtn = document.getElementById("homeDashModeUnassignedBtn");
+            if (unassignedBtn) unassignedBtn.click();
+          }, 200);
+        }
+      };
+
+      document.querySelectorAll("[data-dash-drilldown]").forEach(el => {
+        el.onclick = null;
+        el.addEventListener("click", () => {
+          const key = el.dataset.dashDrilldown;
+          if (filterMap[key]) { try { filterMap[key](); } catch(_) {} }
+        });
+      });
+    }
+      function humClass(h) {
+        if (h == null) return "";
+        if (h > 70 || h < 35) return "hum-alert";
+        if (h >= 60 || h < 43) return "hum-warn";
+        return "hum-ideal";
+      }
