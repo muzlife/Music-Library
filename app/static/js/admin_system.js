@@ -4082,3 +4082,551 @@
         setStatus("createStatus", "err", err.message);
       }
     }
+
+
+    function renderOpsProviderSettings(snapshot) {
+      opsProviderSettingsSnapshot = snapshot ? { ...snapshot } : null;
+      const data = opsProviderSettingsSnapshot || {};
+      $("opsProviderDiscogsToken").value = "";
+      $("opsProviderAladinTtbKey").value = "";
+      $("opsProviderDeeplAuthKey").value = "";
+      $("opsProviderDiscogsToken").setAttribute(
+        "placeholder",
+        t(data.discogs_token_configured ? "ops.providers.field.secret.placeholder_configured" : "ops.providers.field.secret.placeholder_missing")
+      );
+      $("opsProviderAladinTtbKey").setAttribute(
+        "placeholder",
+        t(data.aladin_ttb_key_configured ? "ops.providers.field.secret.placeholder_configured" : "ops.providers.field.secret.placeholder_missing")
+      );
+      $("opsProviderDeeplAuthKey").setAttribute(
+        "placeholder",
+        t(data.deepl_auth_key_configured ? "ops.providers.field.secret.placeholder_configured" : "ops.providers.field.secret.placeholder_missing")
+      );
+      setTextIfPresent(
+        "opsProviderDiscogsTokenState",
+        t(data.discogs_token_configured ? "ops.providers.field.secret.configured" : "ops.providers.field.secret.missing")
+      );
+      setTextIfPresent(
+        "opsProviderAladinTtbKeyState",
+        t(data.aladin_ttb_key_configured ? "ops.providers.field.secret.configured" : "ops.providers.field.secret.missing")
+      );
+      setTextIfPresent(
+        "opsProviderDeeplAuthKeyState",
+        t(data.deepl_auth_key_configured ? "ops.providers.field.secret.configured" : "ops.providers.field.secret.missing")
+      );
+      const _discogs_ua = String(data.discogs_user_agent || "");
+      const _emailMatch = _discogs_ua.match(/contact:\s*([^\s)]+)/);
+      $("opsProviderDiscogsContactEmail").value = _emailMatch ? _emailMatch[1] : "";
+      const _uaPreview = $("opsProviderDiscogsUaPreview");
+      if (_uaPreview) _uaPreview.textContent = _discogs_ua ? `User-Agent: ${_discogs_ua}` : "";
+      $("opsProviderAladinBaseUrl").value = String(data.aladin_base_url || "");
+      $("opsProviderManiadbBaseUrl").value = String(data.maniadb_base_url || "");
+      $("opsProviderDeeplBaseUrl").value = String(data.deepl_base_url || "");
+    }
+
+    async function loadOpsProviderSettings() {
+      try {
+        setStatus("opsProviderStatus", "ok", t("ops.providers.status.loading"));
+        const res = await fetch("/ops/provider-settings");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("ops.providers.status.load_failed"));
+        renderOpsProviderSettings(data);
+        setStatus("opsProviderStatus", "ok", t("ops.providers.status.loaded"));
+      } catch (err) {
+        setStatus("opsProviderStatus", "err", errorMessageText(err, t("ops.providers.status.load_failed")));
+      }
+    }
+
+    async function saveOpsProviderSettings() {
+      return saveOpsProviderSettingsFields([
+        "discogs_token",
+        "aladin_ttb_key",
+        "deepl_auth_key",
+        "discogs_user_agent",
+        "aladin_base_url",
+        "maniadb_base_url",
+        "deepl_base_url",
+      ]);
+    }
+
+    async function saveOpsProviderSettingsFields(fields, statusKey = "ops.providers.status.saved") {
+      const allowedFields = new Set(Array.isArray(fields) ? fields : []);
+      const sourcePayload = {
+        discogs_token: $("opsProviderDiscogsToken").value.trim() || null,
+        aladin_ttb_key: $("opsProviderAladinTtbKey").value.trim() || null,
+        deepl_auth_key: $("opsProviderDeeplAuthKey").value.trim() || null,
+        discogs_user_agent: (() => {
+          const _email = $("opsProviderDiscogsContactEmail")?.value.trim();
+          return _email ? `__PROJECT_SLUG__-library/0.1 (contact: ${_email})` : null;
+        })(),
+        aladin_base_url: $("opsProviderAladinBaseUrl").value.trim() || null,
+        maniadb_base_url: $("opsProviderManiadbBaseUrl").value.trim() || null,
+        deepl_base_url: $("opsProviderDeeplBaseUrl").value.trim() || null,
+      };
+      const payload = Object.fromEntries(
+        Object.entries(sourcePayload).filter(([key]) => allowedFields.has(key))
+      );
+      try {
+        setStatus("opsProviderStatus", "ok", t("ops.providers.status.saving"));
+        const res = await fetch("/ops/provider-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("ops.providers.status.save_failed"));
+        renderOpsProviderSettings(data);
+        setStatus("opsProviderStatus", "ok", t(statusKey));
+      } catch (err) {
+        setStatus("opsProviderStatus", "err", errorMessageText(err, t("ops.providers.status.save_failed")));
+      }
+    }
+
+    async function testOpsProviderDeeplConnection() {
+      try {
+        setStatus("opsProviderStatus", "ok", t("ops.providers.status.testing_deepl"));
+        const res = await fetch("/ops/provider-settings/deepl-test", {
+          method: "POST",
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("ops.providers.status.deepl_test_failed"));
+        if (!data || !data.ok) {
+          throw new Error(String(data?.detail || t("ops.providers.status.deepl_test_failed")).trim());
+        }
+        const translatedText = String(data.translated_text || "").trim();
+        setStatus(
+          "opsProviderStatus",
+          "ok",
+          translatedText
+            ? `${t("ops.providers.status.deepl_test_ok")}: ${translatedText}`
+            : t("ops.providers.status.deepl_test_ok")
+        );
+      } catch (err) {
+        setStatus("opsProviderStatus", "err", errorMessageText(err, t("ops.providers.status.deepl_test_failed")));
+      }
+    }
+
+    async function loadOpsBackupSettings() {
+      try {
+        const res = await fetch("/ops/export/backup-settings");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("ops.restore.status.load_failed"));
+        $("opsAutoBackupEnabled").checked = Boolean(data.enabled);
+        $("opsAutoBackupIntervalDays").value = String(autoBackupIntervalDaysFromMinutes(data.interval_minutes || 0));
+        $("opsAutoBackupDir").value = String(data.backup_dir || "");
+        $("opsAutoBackupScope").value = String(data.backup_scope || "DB").toUpperCase() === "FULL" ? "FULL" : "DB";
+        $("opsAutoBackupIncludeEnvFile").checked = Boolean(data.include_env_file);
+        renderOpsBackupScheduleDetails(data);
+        const summaryBits = [
+          data.enabled ? t("ops.restore.summary.auto_on", { days: formatCount(autoBackupIntervalDaysFromMinutes(data.interval_minutes || 0)) }) : t("ops.restore.summary.auto_off"),
+          String(data.backup_scope || "DB").toUpperCase() === "FULL" ? t("ops.restore.summary.scope_full") : t("ops.restore.summary.scope_db"),
+          data.include_env_file ? t("ops.restore.summary.include_env") : t("ops.restore.summary.exclude_env"),
+          String(data.daily_schedule || "").trim() ? t("ops.restore.summary.daily_schedule", { value: String(data.daily_schedule || "").trim() }) : "",
+          String(data.weekly_schedule || "").trim() ? t("ops.restore.summary.weekly_schedule", { value: String(data.weekly_schedule || "").trim() }) : "",
+          String(data.backup_dir || "").trim() ? t("ops.restore.summary.path", { path: String(data.backup_dir || "").trim() }) : "",
+          String(data.last_backup_at || "").trim() ? t("ops.restore.summary.last_at", { value: String(data.last_backup_at || "").trim() }) : "",
+          String(data.last_backup_path || "").trim() ? t("ops.restore.summary.last_path", { value: String(data.last_backup_path || "").trim() }) : "",
+        ].filter(Boolean);
+        $("opsAutoBackupSummary").textContent = summaryBits.join(" · ") || t("ops.restore.summary.empty");
+        setStatus("opsAutoBackupStatus", data.last_error ? "err" : "ok", data.last_error || t("ops.restore.status.load_complete"));
+      } catch (err) {
+        setStatus("opsAutoBackupStatus", "err", errorMessageText(err, t("ops.restore.status.load_failed")));
+      }
+    }
+
+    async function saveOpsBackupSettings() {
+      const payload = {
+        enabled: $("opsAutoBackupEnabled").checked,
+        interval_minutes: autoBackupIntervalMinutesFromDays($("opsAutoBackupIntervalDays").value),
+        backup_dir: $("opsAutoBackupDir").value.trim(),
+        backup_scope: $("opsAutoBackupScope").value === "FULL" ? "FULL" : "DB",
+        include_env_file: $("opsAutoBackupIncludeEnvFile").checked,
+      };
+      if (!payload.backup_dir) {
+        setStatus("opsAutoBackupStatus", "err", t("ops.restore.status.dir_required"));
+        return;
+      }
+      try {
+        setStatus("opsAutoBackupStatus", "ok", t("ops.restore.status.save_loading"));
+        const res = await fetch("/ops/export/backup-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("ops.restore.status.save_failed"));
+        $("opsAutoBackupEnabled").checked = Boolean(data.enabled);
+        $("opsAutoBackupIntervalDays").value = String(autoBackupIntervalDaysFromMinutes(data.interval_minutes || 0));
+        $("opsAutoBackupDir").value = String(data.backup_dir || "");
+        $("opsAutoBackupScope").value = String(data.backup_scope || "DB").toUpperCase() === "FULL" ? "FULL" : "DB";
+        $("opsAutoBackupIncludeEnvFile").checked = Boolean(data.include_env_file);
+        renderOpsBackupScheduleDetails(data);
+        $("opsAutoBackupSummary").textContent = [
+          data.enabled ? t("ops.restore.summary.auto_on", { days: formatCount(autoBackupIntervalDaysFromMinutes(data.interval_minutes || 0)) }) : t("ops.restore.summary.auto_off"),
+          String(data.backup_scope || "DB").toUpperCase() === "FULL" ? t("ops.restore.summary.scope_full") : t("ops.restore.summary.scope_db"),
+          data.include_env_file ? t("ops.restore.summary.include_env") : t("ops.restore.summary.exclude_env"),
+          String(data.daily_schedule || "").trim() ? t("ops.restore.summary.daily_schedule", { value: String(data.daily_schedule || "").trim() }) : "",
+          String(data.weekly_schedule || "").trim() ? t("ops.restore.summary.weekly_schedule", { value: String(data.weekly_schedule || "").trim() }) : "",
+          t("ops.restore.summary.path", { path: String(data.backup_dir || "").trim() }),
+        ].filter(Boolean).join(" · ");
+        setStatus("opsAutoBackupStatus", "ok", t("ops.restore.status.save_complete"));
+      } catch (err) {
+        setStatus("opsAutoBackupStatus", "err", errorMessageText(err, t("ops.restore.status.save_failed")));
+      }
+    }
+
+    async function downloadOpsFullBackup() {
+      try {
+        setStatus("opsExportStatus", "ok", t("ops.export.status.full_prepare"));
+        const includeEnvFile = $("opsExportFullIncludeEnvFile").checked ? "true" : "false";
+        const filename = await triggerBrowserDownload(
+          `/ops/export/full-backup?include_env_file=${encodeURIComponent(includeEnvFile)}`,
+          "__PROJECT_SLUG__-library-full-backup.zip"
+        );
+        setStatus("opsExportStatus", "ok", t("ops.export.status.full_started", { filename }));
+      } catch (err) {
+        setStatus("opsExportStatus", "err", errorMessageText(err, t("ops.export.status.full_failed")));
+      }
+    }
+
+    async function restoreOpsDatabase() {
+      const fileInput = $("opsRestoreDbFile");
+      const file = fileInput?.files?.[0] || null;
+      if (!file) {
+        setStatus("opsAutoBackupStatus", "err", t("ops.restore.status.db_file_required"));
+        return;
+      }
+      const ok = window.confirm(t("ops.restore.confirm.db"));
+      if (!ok) {
+        setStatus("opsAutoBackupStatus", "ok", t("ops.restore.status.db_cancelled"));
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        setStatus("opsAutoBackupStatus", "ok", t("ops.restore.status.db_uploading"));
+        const res = await fetch("/ops/export/db-restore", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("ops.restore.status.db_failed"));
+        setStatus(
+          "opsAutoBackupStatus",
+          "ok",
+          t("ops.restore.status.db_complete", {
+            filename: String(data.restored_filename || file.name || "-"),
+            backup: String(data.backup_path || "-")
+          })
+        );
+        window.setTimeout(() => window.location.reload(), 600);
+      } catch (err) {
+        setStatus("opsAutoBackupStatus", "err", errorMessageText(err, t("ops.restore.status.db_failed")));
+      }
+    }
+
+    async function restoreOpsBundle() {
+      const fileInput = $("opsRestoreBundleFile");
+      const file = fileInput?.files?.[0] || null;
+      if (!file) {
+        setStatus("opsAutoBackupStatus", "err", t("ops.restore.status.bundle_file_required"));
+        return;
+      }
+      const ok = window.confirm(t("ops.restore.confirm.bundle"));
+      if (!ok) {
+        setStatus("opsAutoBackupStatus", "ok", t("ops.restore.status.bundle_cancelled"));
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        setStatus("opsAutoBackupStatus", "ok", t("ops.restore.status.bundle_uploading"));
+        const res = await fetch("/ops/export/full-restore", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("ops.restore.status.bundle_failed"));
+        setStatus(
+          "opsAutoBackupStatus",
+          "ok",
+          t("ops.restore.status.bundle_complete", {
+            filename: String(data.restored_filename || file.name || "-"),
+            backup: String(data.backup_path || "-")
+          })
+        );
+        window.setTimeout(() => window.location.reload(), 600);
+      } catch (err) {
+        setStatus("opsAutoBackupStatus", "err", errorMessageText(err, t("ops.restore.status.bundle_failed")));
+      }
+    }
+
+    async function downloadOpsDbBackup() {
+      try {
+        setStatus("opsExportStatus", "ok", t("ops.export.status.db_prepare"));
+        const filename = await triggerBrowserDownload("/ops/export/db-backup", "__PROJECT_SLUG__-library-backup.db");
+        setStatus("opsExportStatus", "ok", t("ops.export.status.db_started", { filename }));
+      } catch (err) {
+        setStatus("opsExportStatus", "err", errorMessageText(err, t("ops.export.status.db_failed")));
+      }
+    }
+
+    async function downloadOpsOwnedCsv() {
+      try {
+        setStatus("opsExportStatus", "ok", t("ops.export.status.owned_csv_prepare"));
+        const filename = await triggerBrowserDownload("/ops/export/owned-items.csv", "owned-items-export.csv");
+        setStatus("opsExportStatus", "ok", t("ops.export.status.owned_csv_started", { filename }));
+      } catch (err) {
+        setStatus("opsExportStatus", "err", errorMessageText(err, t("ops.export.status.owned_csv_failed")));
+      }
+    }
+
+    async function downloadOpsMasterCsv() {
+      try {
+        setStatus("opsExportStatus", "ok", t("ops.export.status.master_csv_prepare"));
+        const filename = await triggerBrowserDownload("/ops/export/album-masters.csv", "album-masters-export.csv");
+        setStatus("opsExportStatus", "ok", t("ops.export.status.master_csv_started", { filename }));
+      } catch (err) {
+        setStatus("opsExportStatus", "err", errorMessageText(err, t("ops.export.status.master_csv_failed")));
+      }
+    }
+
+    async function loadErrorBadge() {
+      try {
+        const res = await fetchWithRetry("/admin/error-log/unread-count");
+        if (!res.ok) return;
+        const { count } = await res.json();
+        const badge = $("errorUnreadBadge");
+        if (count > 0) { badge.textContent = count; badge.style.display = ""; }
+        else { badge.style.display = "none"; }
+      } catch (_) {}
+    }
+    async function loadErrorLog(reset) {
+      if (reset) _actErrOffset = 0;
+      const isRead = $("actErrIsRead").value;
+      let url = `/admin/error-log?limit=${_actErrLimit}&offset=${_actErrOffset}`;
+      if (isRead !== "") url += `&is_read=${isRead}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actErrCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actErrCount").textContent = `${data.total_count}건`;
+      const tbody = $("actErrTbody");
+      if (!data.items.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>';
+      } else {
+        tbody.innerHTML = data.items.map(r => {
+          const ts = (r.created_at || "").slice(0, 16).replace("T", " ");
+          const levelBadge = r.level === "ERROR"
+            ? `<span style="background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:700">ERR</span>`
+            : r.level === "WARNING"
+            ? `<span style="background:#fef9c3;color:#92400e;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:700">WARN</span>`
+            : `<span style="font-size:0.7rem;color:var(--text-muted)">${escapeHtml(r.level||"")}</span>`;
+          const isReadBadge = r.is_read
+            ? `<span style="color:var(--text-muted);font-size:0.72rem">확인</span>`
+            : `<button data-ack-id="${r.id}" style="font-size:0.7rem;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid #dc2626;background:#fee2e2;color:#b91c1c">확인처리</button>`;
+          const tbDetail = r.traceback
+            ? `<details style="margin-top:4px;font-size:0.72rem"><summary style="cursor:pointer;color:var(--accent)">스택 트레이스</summary><pre style="white-space:pre-wrap;margin:4px 0;font-size:0.7rem;color:var(--text-sub)">${escapeHtml(r.traceback)}</pre></details>`
+            : "";
+          return `<tr>
+            <td style="white-space:nowrap;font-size:0.75rem;vertical-align:top">${ts}</td>
+            <td style="vertical-align:top">${levelBadge}</td>
+            <td style="font-size:0.74rem;vertical-align:top">${escapeHtml(r.request_path || "—")}</td>
+            <td style="vertical-align:top"><div style="font-size:0.75rem;font-weight:600">${escapeHtml(r.message || "")}</div>${tbDetail}</td>
+            <td style="font-size:0.72rem;color:var(--text-muted);vertical-align:top">${escapeHtml(r.source || "—")}</td>
+            <td style="vertical-align:top">${isReadBadge}</td>
+          </tr>`;
+        }).join("");
+      }
+      $("actErrPrevBtn").disabled = _actErrOffset === 0;
+      $("actErrNextBtn").disabled = data.items.length < _actErrLimit;
+    }
+    async function loadPerfLog() {
+      const kind = $("actPerfKind").value;
+      const days = $("actPerfDays").value;
+      const slowOnly = $("actPerfSlowOnly").checked;
+      let url = `/admin/perf-log?days=${days}&is_slow_only=${slowOnly}`;
+      if (kind) url += `&kind=${kind}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actPerfCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actPerfCount").textContent = `${data.total_count}건`;
+      const tbody = $("actPerfTbody");
+      const kindLabels = { API: "API", BATCH: "배치", QUERY: "DB" };
+      if (!data.items.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>';
+      } else {
+        tbody.innerHTML = data.items.map((r, i) => {
+          const kindBadge = `<span style="font-size:0.72rem;background:var(--bg-dim,#f5f5f5);padding:1px 6px;border-radius:3px">${kindLabels[r.kind] || r.kind}</span>`;
+          const slowBadge = r.slow_count > 0
+            ? `<span style="background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:700">${r.slow_count}건</span>`
+            : `<span style="color:var(--text-muted);font-size:0.72rem">—</span>`;
+          const fmtMs = (ms) => ms >= 1000 ? `${(ms/1000).toFixed(1)}s` : `${ms}ms`;
+          const barW = Math.min(100, Math.round((r.avg_ms / 2000) * 100));
+          const barColor = r.avg_ms >= 500 ? "#dc2626" : r.avg_ms >= 200 ? "#f59e0b" : "#22c55e";
+          const bar = `<div style="width:60px;height:8px;background:var(--bg-dim,#eee);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle"><div style="width:${barW}%;height:100%;background:${barColor}"></div></div>`;
+          return `<tr data-perf-name="${escapeHtml(r.name)}" data-perf-kind="${escapeHtml(r.kind||"")}" style="cursor:pointer">
+            <td>${kindBadge}</td>
+            <td style="font-size:0.75rem;max-width:280px;word-break:break-all">${escapeHtml(r.name)}</td>
+            <td style="font-size:0.75rem">${fmtMs(r.avg_ms)}</td>
+            <td style="font-size:0.75rem;font-weight:${r.max_ms >= 300 ? '700' : '400'};color:${r.max_ms >= 300 ? '#dc2626' : 'inherit'}">${fmtMs(r.max_ms)}</td>
+            <td style="font-size:0.75rem">${r.count}</td>
+            <td>${slowBadge}</td>
+            <td>${bar}</td>
+          </tr>`;
+        }).join("");
+      }
+    }
+
+    async function loadActivityAudit(reset) {
+      if (reset) _actAuditOffset = 0;
+      const type = $("actAuditEntityType").value;
+      const eid = ($("actAuditEntityId").value || "").trim();
+      const action = $("logAuditAction")?.value || "";
+      const changedBy = ($("logAuditChangedBy")?.value || "").trim();
+      const dateFrom = $("logAuditDateFrom")?.value || "";
+      const dateTo = $("logAuditDateTo")?.value || "";
+      let url = `/admin/activity-log?limit=${_actAuditLimit}&offset=${_actAuditOffset}`;
+      if (type) url += `&entity_type=${encodeURIComponent(type)}`;
+      if (eid) url += `&entity_id=${encodeURIComponent(eid)}`;
+      if (action) url += `&action=${encodeURIComponent(action)}`;
+      if (changedBy) url += `&changed_by=${encodeURIComponent(changedBy)}`;
+      if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
+      if (dateTo) url += `&date_to=${encodeURIComponent(dateTo + "T23:59:59")}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actAuditCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actAuditCount").textContent = `${data.total_count}건`;
+      const tbody = $("actAuditTbody");
+      if (!data.items.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>'; }
+      else tbody.innerHTML = data.items.map(_renderGlobalAuditRow).join("");
+      $("actAuditPrevBtn").disabled = _actAuditOffset === 0;
+      $("actAuditNextBtn").disabled = data.total_count < _actAuditLimit;
+    }
+
+    async function loadActivityLocation(reset) {
+      if (reset) _actLocOffset = 0;
+      const kind = $("actLocKind").value;
+      const dateFrom = $("logLocDateFrom")?.value || "";
+      const dateTo = $("logLocDateTo")?.value || "";
+      let url = `/admin/activity-log/location-events?limit=${_actLocLimit}&offset=${_actLocOffset}`;
+      if (kind) url += `&movement_kind=${encodeURIComponent(kind)}`;
+      if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
+      if (dateTo) url += `&date_to=${encodeURIComponent(dateTo + "T23:59:59")}`;
+      const res = await fetchWithRetry(url);
+      if (!res.ok) { $("actLocCount").textContent = "조회 실패"; return; }
+      const data = await res.json();
+      $("actLocCount").textContent = `${data.total_count}건`;
+      const tbody = $("actLocTbody");
+      const _locKindLabels = { INITIAL_ASSIGN: "최초 배치", ASSIGN: "배치", MOVE: "이동", UNASSIGN: "회수", CABINET_DELETE: "장식장 삭제" };
+      if (!data.items.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">결과 없음</td></tr>'; }
+      else tbody.innerHTML = data.items.map(r => {
+        const kindLabel = _locKindLabels[r.movement_kind] || r.movement_kind || "";
+        const from_ = escapeHtml(r.from_slot_display_name || r.from_slot_code || "—");
+        const to_ = escapeHtml(r.to_slot_display_name || r.to_slot_code || "—");
+        return `<tr>
+          <td style="white-space:nowrap;font-size:0.75rem">${(r.created_at||"").slice(0,16).replace("T"," ")}</td>
+          <td style="font-size:0.75rem">${r.owned_item_id||""}</td>
+          <td><span style="background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:4px;font-size:0.7rem;font-weight:700">${kindLabel}</span></td>
+          <td style="font-size:0.75rem;color:#dc2626">${from_}</td>
+          <td style="font-size:0.75rem;color:#059669;font-weight:600">${to_}</td>
+          <td style="font-size:0.75rem;color:var(--text-muted)">${escapeHtml(r.note||"")}</td>
+        </tr>`;
+      }).join("");
+      $("actLocPrevBtn").disabled = _actLocOffset === 0;
+      $("actLocNextBtn").disabled = data.total_count < _actLocLimit;
+    }
+    async function loadServerLog() {
+      const stream = $("actLogStream").value;
+      const tail = parseInt($("actLogTail").value) || 200;
+      const searchTerm = ($("logSrvSearch")?.value || "").trim();
+      const res = await fetchWithRetry(`/admin/server-logs?stream=${stream}&tail=${tail}`);
+      const box = $("actLogBox");
+      if (!res.ok) { box.textContent = "로그 조회 실패 (권한 또는 경로 미설정)"; return; }
+      const data = await res.json();
+      if (searchTerm) {
+        const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`(${escaped})`, "gi");
+        box.innerHTML = escapeHtml(data.lines.join("\n")).replace(
+          new RegExp(`(${escapeHtml(searchTerm).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
+          `<mark style="background:#fef08a;color:#000;border-radius:2px">$1</mark>`
+        );
+      } else {
+        box.textContent = data.lines.join("\n");
+      }
+      box.scrollTop = box.scrollHeight;
+    }
+
+
+    async function loadTrackMappings() {
+      const ownedItemId = Number($("trackOwnedItemId").value || 0);
+      if (!ownedItemId) {
+        setStatus("trackMapStatus", "err", t("media.manage.track_map.track.status.owned_item_required"));
+        return;
+      }
+
+      try {
+        setStatus("trackMapStatus", "ok", t("media.manage.track_map.track.status.loading"));
+        const res = await fetch(`/owned-items/${ownedItemId}/track-mappings`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.track_map.track.status.failed"));
+
+        renderTrackMapBody("trackMapBody", data.mappings || []);
+        setStatus("trackMapStatus", "ok", t("media.manage.track_map.track.status.loaded", {
+          count: countWithUnit(Number(data.track_count || 0)),
+        }));
+      } catch (err) {
+        renderTrackMapBody("trackMapBody", []);
+        setStatus("trackMapStatus", "err", err.message);
+      }
+    }
+
+    async function saveTrackMapping() {
+      const ownedItemId = Number($("trackOwnedItemId").value || 0);
+      const trackNo = Number($("trackMapNo").value || 0);
+      const filePath = $("trackMapPath").value.trim();
+      const durationRaw = $("trackMapDuration").value.trim();
+      const note = $("trackMapNote").value.trim();
+
+      if (!ownedItemId) {
+        setStatus("trackMapStatus", "err", t("media.manage.track_map.track.status.owned_item_required"));
+        return;
+      }
+      if (!trackNo) {
+        setStatus("trackMapStatus", "err", t("media.manage.track_map.track.status.track_no_required"));
+        return;
+      }
+      if (!filePath) {
+        setStatus("trackMapStatus", "err", t("media.manage.track_map.track.status.file_path_required"));
+        return;
+      }
+
+      const payload = {
+        track_no: trackNo,
+        file_path: filePath,
+        duration_sec: durationRaw ? Number(durationRaw) : null,
+        note: note || null
+      };
+
+      try {
+        setStatus("trackMapStatus", "ok", t("media.manage.track_map.track.status.saving"));
+        const res = await fetch(`/owned-items/${ownedItemId}/track-mappings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.track_map.track.status.failed"));
+
+        setStatus(
+          "trackMapStatus",
+          "ok",
+          t("media.manage.track_map.track.status.saved", {
+            track_no: data.track_no,
+            link_id: data.link_id,
+          })
+        );
+        await loadTrackMappings();
+      } catch (err) {
+        setStatus("trackMapStatus", "err", err.message);
+      }
+    }

@@ -6756,3 +6756,342 @@
       }
       renderHomeMasterAddPager();
     }
+
+
+    function refreshOpsExceptionInBackground() {
+      loadOpsExceptionCounts({ silent: true }).catch(() => {});
+      const opsActive = $("tabOps")?.classList.contains("active");
+      const exceptionActive = $("opsExceptionPanel")?.classList.contains("active");
+      if (opsActive && exceptionActive) {
+        loadOpsExceptionItems({ silent: true }).catch(() => {});
+      }
+    }
+
+    function refreshHomeDashboardInBackground() {
+      loadHomeDashboard({ silent: true }).catch(() => {});
+    }
+
+    function refreshHomeSearchInBackground() {
+      homeSearchOwnedItems({ allowPageAdjust: false, suppressEmptyCta: true }).catch(() => {});
+    }
+
+    function trackMapRowHtml(row) {
+      const assets = Array.isArray(row.assets) ? row.assets : [];
+      const fileList = assets.length
+        ? assets.map((a) => `${a.file_path}${a.duration_sec ? ` (${a.duration_sec}s)` : ""}`).join("\n")
+        : "-";
+      return `
+        <tr>
+          <td>${row.track_no}</td>
+          <td>${escapeHtml(row.track_entry || "-")}</td>
+          <td>${assets.length}</td>
+          <td class="u-pre-wrap">${escapeHtml(fileList)}</td>
+        </tr>
+      `;
+    }
+
+    function renderTrackMapBody(bodyId, mappings) {
+      $(bodyId).innerHTML = (mappings || []).map(trackMapRowHtml).join("") ||
+        `<tr><td colspan='4' class='muted'>${escapeHtml(t("media.manage.track_map.track.table.empty"))}</td></tr>`;
+    }
+
+    function renderHomeTrackMapBody(mappings) {
+      const rows = Array.isArray(mappings) ? mappings : [];
+      homeAudioDirectoryMappings = rows;
+      const info = $("homeTrackMapMappedInfo");
+      if (!info) return;
+      if (!rows.length) {
+        info.textContent = t("media.manage.track_map.directory.state.none");
+        return;
+      }
+      const top = rows[0] || {};
+      const topPath = String(top.directory_path || "-").trim() || "-";
+      info.textContent = t("media.manage.track_map.directory.meta.summary", {
+        path: topPath,
+        shown: formatCount(rows.length),
+        total: formatCount(rows.length),
+        recursive: "",
+        truncated: "",
+      });
+    }
+
+    function homeTrackFileRowHtml(row) {
+      const relPath = String(row?.relative_path || row?.file_path || "-");
+      const fullPath = String(row?.file_path || relPath);
+      const sizeText = row?.file_size_bytes == null
+        ? "-"
+        : Number(row.file_size_bytes).toLocaleString();
+      return `
+        <tr>
+          <td title="${escapeHtml(fullPath)}">${escapeHtml(relPath)}</td>
+          <td>${escapeHtml(String(sizeText))}</td>
+        </tr>
+      `;
+    }
+
+    function renderHomeTrackFileList(files, meta = null) {
+      const rows = Array.isArray(files) ? files : [];
+      homeAudioDirectoryFiles = rows;
+      $("homeTrackFileListBody").innerHTML = rows.map(homeTrackFileRowHtml).join("") ||
+        `<tr><td colspan='2' class='muted'>${escapeHtml(t("media.manage.track_map.directory.table.empty_files"))}</td></tr>`;
+
+      const metaEl = $("homeTrackFileListMeta");
+      if (!meta) {
+        metaEl.textContent = "";
+        return;
+      }
+      const dir = String(meta.directory_path || "").trim() || "-";
+      const total = Number(meta.file_count || rows.length || 0);
+      const shown = Number(meta.returned_count || rows.length || 0);
+      const recursiveText = meta.recursive ? t("media.manage.track_map.directory.meta.recursive") : "";
+      const truncatedText = meta.truncated ? t("media.manage.track_map.directory.meta.truncated") : "";
+      metaEl.textContent = t("media.manage.track_map.directory.meta.summary", {
+        path: dir,
+        shown: formatCount(shown),
+        total: formatCount(total),
+        recursive: recursiveText,
+        truncated: truncatedText,
+      });
+    }
+
+    async function loadHomeAudioDirectoryFiles() {
+      const ownedItemId = Number($("editOwnedId").value || 0);
+      const directoryPath = $("homeTrackMapDir").value.trim();
+      if (!ownedItemId) {
+        renderHomeTrackFileList([], null);
+        return;
+      }
+      if (!MUSIC_CATEGORIES.has($("editCategory").value)) {
+        renderHomeTrackFileList([], null);
+        return;
+      }
+      if (!directoryPath) {
+        renderHomeTrackFileList([], null);
+        return;
+      }
+
+      try {
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.files_loading"));
+        const query = new URLSearchParams({
+          directory_path: directoryPath,
+          recursive: "true",
+          limit: "300",
+        });
+        const res = await fetch(`/owned-items/${ownedItemId}/audio-directory-files?${query.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.track_map.directory.status.files_failed"));
+
+        renderHomeTrackFileList(data.files || [], data);
+        if (!$("homeTrackMapDir").value.trim() && data.directory_path) {
+          $("homeTrackMapDir").value = String(data.directory_path);
+        }
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.files_loaded", {
+          shown: formatCount(Number(data.returned_count || 0)),
+          total: formatCount(Number(data.file_count || 0)),
+        }));
+      } catch (err) {
+        renderHomeTrackFileList([], null);
+        setStatus("homeTrackMapStatus", "err", err.message);
+      }
+    }
+
+    async function loadHomeTrackMappings() {
+      const ownedItemId = Number($("editOwnedId").value || 0);
+      if (!ownedItemId) {
+        setStatus("homeTrackMapStatus", "err", t("media.manage.track_map.directory.status.item_required"));
+        renderHomeTrackMapBody([]);
+        renderHomeTrackFileList([], null);
+        return;
+      }
+      if (!MUSIC_CATEGORIES.has($("editCategory").value)) {
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.media_only"));
+        renderHomeTrackMapBody([]);
+        renderHomeTrackFileList([], null);
+        return;
+      }
+
+      try {
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.mappings_loading"));
+        const res = await fetch(`/owned-items/${ownedItemId}/audio-directory-mappings`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.track_map.directory.status.mappings_failed"));
+
+        const mappings = Array.isArray(data.mappings) ? data.mappings : [];
+        renderHomeTrackMapBody(mappings);
+        if (!$("homeTrackMapDir").value.trim() && mappings.length) {
+          $("homeTrackMapDir").value = String(mappings[0].directory_path || "");
+        }
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.mappings_loaded", {
+          count: countWithUnit(mappings.length),
+        }));
+        if ($("homeTrackMapDir").value.trim()) {
+          await loadHomeAudioDirectoryFiles();
+        } else {
+          renderHomeTrackFileList([], null);
+        }
+      } catch (err) {
+        renderHomeTrackMapBody([]);
+        renderHomeTrackFileList([], null);
+        setStatus("homeTrackMapStatus", "err", err.message);
+      }
+    }
+
+    async function pickHomeTrackMapDirectory() {
+      const currentPath = $("homeTrackMapDir").value.trim();
+      try {
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.pick_opening"));
+        const res = await fetch("/ui/pick-directory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            initial_path: currentPath || null,
+            title: t("media.manage.track_map.directory.pick_title")
+          }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.track_map.directory.status.pick_failed"));
+
+        const pickedPath = String(data.directory_path || "").trim();
+        if (data.cancelled || !pickedPath) {
+          setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.pick_cancelled"));
+          return;
+        }
+        $("homeTrackMapDir").value = pickedPath;
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.pick_selected", { path: pickedPath }));
+        await bulkMapHomeTrackMappings();
+      } catch (err) {
+        setStatus("homeTrackMapStatus", "err", err.message);
+      }
+    }
+
+    async function bulkMapHomeTrackMappings() {
+      const ownedItemId = Number($("editOwnedId").value || 0);
+      const directoryPath = $("homeTrackMapDir").value.trim();
+
+      if (!ownedItemId) {
+        setStatus("homeTrackMapStatus", "err", t("media.manage.track_map.directory.status.item_required"));
+        return;
+      }
+      if (!directoryPath) {
+        setStatus("homeTrackMapStatus", "err", t("media.manage.track_map.directory.status.path_required"));
+        return;
+      }
+      if (homeTrackMapSaveInFlight) {
+        return;
+      }
+
+      const payload = {
+        directory_path: directoryPath,
+        replace_existing: $("homeTrackMapReplace").checked,
+      };
+
+      try {
+        homeTrackMapSaveInFlight = true;
+        setStatus("homeTrackMapStatus", "ok", t("media.manage.track_map.directory.status.saving"));
+        const res = await fetch(`/owned-items/${ownedItemId}/audio-directory-mappings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.track_map.directory.status.save_failed"));
+
+        const replaced = Number(data.replaced_existing_links || 0);
+        setStatus(
+          "homeTrackMapStatus",
+          "ok",
+          t("media.manage.track_map.directory.status.saved", {
+            path: String(data.directory_path || directoryPath),
+            replaced: countWithUnit(replaced),
+          })
+        );
+        await loadHomeTrackMappings();
+        if (homeSelectedMasterId) {
+          await loadHomeMasterMembers(homeSelectedMasterId, { autoOpenFirst: false });
+        } else {
+          resetHomeMasterLookupUi({ clearInputs: true });
+        }
+        await loadHomeItemForEdit(ownedItemId, { keepMasterContext: Boolean(homeSelectedMasterId) });
+        await homeSearchOwnedItems();
+        await loadHomeDashboard();
+      } catch (err) {
+        setStatus("homeTrackMapStatus", "err", err.message);
+      } finally {
+        homeTrackMapSaveInFlight = false;
+      }
+    }
+    function _syncCategoryFromMedia() {
+      var mt = String($("editMediaType")?.value || "").trim();
+      var cat = "LP", sg = "LP";
+      if (["CD","CDr","SACD","Digital","DVD","Blu-ray","CD-ROM"].includes(mt)) { cat = "CD"; sg = "STD"; }
+      else if (mt === "Cassette") { cat = "CASSETTE"; sg = "CASSETTE"; }
+      else if (mt === "8-Track Cartridge") { cat = "8TRACK"; sg = "8TRACK"; }
+      else if (mt === "Reel-To-Reel") { cat = "REEL_TO_REEL"; sg = "REEL_TO_REEL"; }
+      else if (mt === '7"') { cat = "LP"; sg = "LP7"; }
+      else if (mt === '10"') { cat = "LP"; sg = "LP10"; }
+      if ($("editCategory")) $("editCategory").value = cat;
+      if ($("editSizeGroup")) $("editSizeGroup").value = sg;
+      if ($("editPreferredStorageSizeGroup")) $("editPreferredStorageSizeGroup").value = sg;
+    }
+    async function handleMediaSearchContextAction(e) {
+      const manageBtn = e.target.closest("[data-media-search-context-open-manage]");
+      if (manageBtn) {
+        const ownedItemId = Number(manageBtn.getAttribute("data-media-search-context-open-manage") || 0);
+        if (!ownedItemId) return;
+        const targetItem = findMediaSearchContextItemByOwnedItem(ownedItemId) || mediaSearchSelectedContextItem || null;
+        const masterId = Number(targetItem?.linked_album_master_id || targetItem?.album_master_id || 0);
+        await openMediaSearchDetailManage(masterId, ownedItemId);
+        return;
+      }
+      const clearBtn = e.target.closest("[data-media-search-context-clear]");
+      if (clearBtn) {
+        mediaSearchSelectedContextItem = null;
+        renderHomeSearchResults(homeSearchResults);
+        return;
+      }
+      const contextCabinetBtn = e.target.closest("[data-operator-context-open-cabinet]");
+      if (contextCabinetBtn) {
+        if (contextCabinetBtn.classList.contains("ops-library-mini-map-cell")) {
+          contextCabinetBtn.classList.remove("is-opening");
+          contextCabinetBtn.offsetWidth;
+          contextCabinetBtn.classList.add("is-opening");
+        }
+        await openOperatorCabinetLocationFromButton(contextCabinetBtn);
+      }
+    }
+
+    async function _loadInlineHistory(details) {
+      const type = details.dataset.historyType;
+      const id = Number(details.dataset.historyId || 0);
+      if (!id || !type) { details.querySelector(".inline-entity-history-body").innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">ID 미설정</p>'; return; }
+      const cacheKey = `${type}:${id}`;
+      const body = details.querySelector(".inline-entity-history-body");
+      if (_inlineHistoryCache.has(cacheKey)) { body.innerHTML = _inlineHistoryCache.get(cacheKey); return; }
+      body.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">불러오는 중...</p>';
+
+      let html = "";
+      try {
+        if (type === "owned_item") {
+          const [auditRes, locRes] = await Promise.all([
+            fetchWithRetry(`/admin/activity-log?entity_type=owned_item&entity_id=${id}&limit=30`),
+            fetchWithRetry(`/owned-items/${id}/location-events?limit=30`),
+          ]);
+          const auditData = auditRes.ok ? await auditRes.json() : { items: [] };
+          const locData = locRes.ok ? await locRes.json() : { items: [] };
+          const auditHtml = (auditData.items || []).map(_renderAuditItem).join("") || '<p style="color:var(--text-muted);font-size:0.76rem;margin:4px 0">변경 이력 없음</p>';
+          const locHtml = (locData.items || []).length
+            ? `<div style="border:1px solid var(--border-light,#e5e7eb);border-radius:8px;overflow:hidden">${(locData.items || []).map(_renderLocationItem).join("")}</div>`
+            : '<p style="color:var(--text-muted);font-size:0.76rem;margin:4px 0">이동 이력 없음</p>';
+          html = `<div style="font-weight:700;font-size:0.77rem;color:var(--text-sub);margin:6px 0 4px">메타 변경 이력 (${auditData.items?.length||0}건)</div>${auditHtml}
+                  <div style="font-weight:700;font-size:0.77rem;color:var(--text-sub);margin:12px 0 4px">장식장 이동 이력 (${locData.items?.length||0}건)</div>${locHtml}`;
+        } else if (type === "album_master") {
+          const res = await fetchWithRetry(`/admin/activity-log/album-master/${id}?limit=30`);
+          const data = res.ok ? await res.json() : { items: [] };
+          html = (data.items || []).map(_renderAuditItem).join("") || '<p style="color:var(--text-muted);font-size:0.76rem;margin:4px 0">변경 이력 없음</p>';
+        }
+      } catch (err) {
+        html = `<p style="color:var(--err,#dc3545);font-size:0.76rem">${escapeHtml(err.message)}</p>`;
+      }
+      body.innerHTML = html;
+      _inlineHistoryCache.set(cacheKey, html);
+    }

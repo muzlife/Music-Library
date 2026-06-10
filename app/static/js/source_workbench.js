@@ -1727,3 +1727,200 @@
       }
       await applySourceWorkbenchItems(autoRows, "AUTO_READY");
     }
+
+
+    async function syncDiscogsOwned(ownedItemId) {
+      if (!ownedItemId) return;
+      try {
+        setStatus("ownedStatusBox", "ok", t("media.manage.owned.status.discogs_syncing", { owned_item_id: ownedItemId }));
+        const res = await fetch(`/discogs/owned-sync/${ownedItemId}`, { method: "POST" });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.owned.status.discogs_sync_failed"));
+        setStatus(
+          "ownedStatusBox",
+          "ok",
+          t("media.manage.owned.status.discogs_synced", {
+            username: String(data.username || "-"),
+            release_id: String(data.source_external_id || "-"),
+          })
+        );
+      } catch (err) {
+        setStatus("ownedStatusBox", "err", err.message);
+      }
+    }
+    function openSpotifyEditMode() {
+      const spId = String(homeMasterInfo?.spotify_album_id || "").trim();
+      const input = $("homeMasterSpotifyMatchId");
+      if (input) input.value = spId;
+      const displayRow = $("homeMasterMetaSpotifyRow");
+      const editRow = $("homeMasterMetaSpotifyEditRow");
+      if (displayRow) displayRow.style.display = "none";
+      if (editRow) editRow.style.display = "flex";
+      setStatus("homeMasterSpotifyMatchStatus", "ok", "");
+      input?.focus();
+    }
+    function closeSpotifyEditMode() {
+      const displayRow = $("homeMasterMetaSpotifyRow");
+      const editRow = $("homeMasterMetaSpotifyEditRow");
+      if (editRow) editRow.style.display = "none";
+      if (displayRow) displayRow.style.display = "flex";
+      setStatus("homeMasterSpotifyMatchStatus", "ok", "");
+    }
+    async function saveLocalPath() {
+      const masterIdVal = Number(homeMasterInfo?.album_master_id || 0);
+      if (!masterIdVal) return;
+      const path = ($("homeMasterLocalPath")?.value || "").trim();
+      const statusEl = $("homeMasterLocalStatus");
+      const saveBtn = $("homeMasterLocalSaveBtn");
+      if (!path) { if (statusEl) statusEl.textContent = "경로를 입력하세요"; return; }
+      if (saveBtn) saveBtn.disabled = true;
+      if (statusEl) statusEl.textContent = "저장 중...";
+      try {
+        const res = await fetchWithRetry(`/album-masters/${masterIdVal}/local-link`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dir_path: path }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || "저장 실패");
+        if (statusEl) statusEl.textContent = "저장됨";
+        _localLinkedIds.add(masterIdVal);
+        const short = path.replace(/^\/Volumes\/Music\//, "…/");
+        const localText = $("homeMasterLocalText");
+        if (localText) { localText.textContent = `♪ Local: ${short}`; localText.style.cursor = "pointer"; }
+        $("homeMasterLocalRow").style.display = "flex";
+        $("homeMasterLocalEditRow").style.display = "none";
+        _lp._slotId = "homeMasterLocalPlayer";
+        _lp.load(masterIdVal).catch(() => {});
+        setTimeout(() => { if (statusEl) statusEl.textContent = ""; }, 2000);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `오류: ${escapeHtml(String(err.message || err))}`;
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+      }
+    }
+
+    function _hideLocalDirResults() {
+      const el = $("homeMasterLocalDirResults");
+      if (el) el.style.display = "none";
+    }
+
+    function _showLocalDirResults(dirs) {
+      const el = $("homeMasterLocalDirResults");
+      if (!el) return;
+      if (!dirs.length) { el.style.display = "none"; return; }
+      el.innerHTML = dirs.map(d => `
+        <div class="local-dir-result-row" data-dir-path="${escapeHtml(d.dir_path)}" style="padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--line);">
+          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.dir_name)}</div>
+          <div style="color:var(--muted);font-size:0.65rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.dir_path.replace(/^\/Volumes\/Music\//, "…/"))}</div>
+        </div>`).join("");
+      el.style.display = "block";
+      el.querySelectorAll(".local-dir-result-row").forEach(row => {
+        row.addEventListener("mousedown", (e) => {
+          e.preventDefault(); // blur 방지
+          const path = row.dataset.dirPath;
+          const pathInput = $("homeMasterLocalPath");
+          if (pathInput) pathInput.value = path;
+          _hideLocalDirResults();
+        });
+      });
+    }
+
+    function openSpotifyMatchModal(masterId, title, artist) {
+      _spotifyMatchMasterId = Number(masterId) || 0;
+      const subtitle = $("spotifyMatchModalSubtitle");
+      if (subtitle) subtitle.textContent = `${artist || ""} — ${title || ""}`;
+      $("spotifyMatchDirectInput").value = "";
+      $("spotifyMatchSearchInput").value = `${artist || ""} ${title || ""}`.trim();
+      $("spotifyMatchStatus").className = "status";
+      $("spotifyMatchStatus").textContent = "";
+      $("spotifyMatchResults").innerHTML = "";
+      $("spotifyMatchModal").classList.add("open");
+      $("spotifyMatchModal").setAttribute("aria-hidden", "false");
+      $("spotifyMatchSearchInput").focus();
+    }
+
+    function closeSpotifyMatchModal() {
+      $("spotifyMatchModal").classList.remove("open");
+      $("spotifyMatchModal").setAttribute("aria-hidden", "true");
+      _spotifyMatchMasterId = 0;
+    }
+
+    async function doSpotifyMatchSearch() {
+      const q = String($("spotifyMatchSearchInput")?.value || "").trim();
+      if (!q) return;
+      const statusEl = $("spotifyMatchStatus");
+      const resultsEl = $("spotifyMatchResults");
+      statusEl.className = "status ok";
+      statusEl.textContent = t("ops.spotify_match.search.searching");
+      resultsEl.innerHTML = "";
+      try {
+        const res = await fetch(`/spotify/search?q=${encodeURIComponent(q)}&limit=10`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
+        // Response: {query, total_count, items: [{spotify_album_id, name, artist, release_date, image_url}]}
+        const albums = Array.isArray(data?.items) ? data.items
+          : Array.isArray(data?.albums) ? data.albums
+          : Array.isArray(data) ? data : [];
+        if (!albums.length) {
+          statusEl.className = "status";
+          statusEl.textContent = t("ops.spotify_match.search.empty");
+          return;
+        }
+        statusEl.className = "status ok";
+        statusEl.textContent = "";
+        resultsEl.innerHTML = albums.map((a) => {
+          const aId = escapeHtml(String(a.spotify_album_id || a.id || "").trim());
+          const aName = escapeHtml(String(a.name || a.album_name || "-").trim());
+          const aArtist = escapeHtml(String(
+            a.artist || (Array.isArray(a.artists) ? a.artists.map(ar => ar.name || ar).join(", ") : "")
+          ).trim() || "-");
+          const aYear = escapeHtml(String(a.release_date || a.year || "").substring(0, 4) || "");
+          const coverUrl = String(a.image_url || a.cover_image_url || a.thumbnail_url ||
+            (Array.isArray(a.images) && a.images.length ? (a.images[a.images.length - 1]?.url || "") : "")
+          ).trim();
+          const coverHtml = coverUrl
+            ? `<img class="spotify-match-result-cover" src="${escapeHtml(coverUrl)}" alt="${aName}" loading="lazy" />`
+            : `<div class="spotify-match-result-cover-placeholder">${aArtist.substring(0, 2).toUpperCase() || "♪"}</div>`;
+          return `
+            <div class="spotify-match-result-row">
+              ${coverHtml}
+              <div class="spotify-match-result-info">
+                <div class="spotify-match-result-title">${aName}</div>
+                <div class="spotify-match-result-meta">${aArtist}${aYear ? " · " + aYear : ""}</div>
+              </div>
+              <button class="btn ghost" type="button" data-spotify-match-pick="${aId}" title="${aName}">${escapeHtml(t("ops.spotify_match.result.select"))}</button>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        statusEl.className = "status err";
+        statusEl.textContent = t("ops.spotify_match.search.failed", { error: err.message });
+      }
+    }
+
+    async function saveSpotifyMatch(albumId) {
+      if (!_spotifyMatchMasterId || !albumId) return;
+      const statusEl = $("spotifyMatchStatus");
+      statusEl.className = "status ok";
+      statusEl.textContent = t("ops.spotify_match.save.saving");
+      try {
+        const res = await fetch(`/album-masters/${_spotifyMatchMasterId}/spotify/match`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ spotify_album_id: albumId }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
+        statusEl.className = "status ok";
+        statusEl.textContent = t("ops.spotify_match.save.ok");
+        setTimeout(() => {
+          closeSpotifyMatchModal();
+          loadOpsExceptionCounts({ silent: true }).catch(() => {});
+          loadOpsExceptionItems({ silent: true }).catch(() => {});
+        }, 900);
+      } catch (err) {
+        statusEl.className = "status err";
+        statusEl.textContent = t("ops.spotify_match.save.failed", { error: err.message });
+      }
+    }

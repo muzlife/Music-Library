@@ -2457,3 +2457,43 @@
         root.appendChild(box);
       }
     }
+
+    function addRegImagePreview(url) {
+      var p = document.getElementById("goodsRegisterImagePreview");
+      if (!p) return;
+      var item = document.createElement("span");
+      item.style.cssText = "position:relative;display:inline-block;";
+      var img = document.createElement("img"); img.src = url; img.style.cssText = "width:60px;height:60px;object-fit:cover;border-radius:4px;";
+      var rm = document.createElement("button"); rm.textContent = "✕"; rm.style.cssText = "position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:9px;line-height:16px;";
+      rm.onclick = function() { _regImageUrls = _regImageUrls.filter(function(u) { return u !== url; }); item.remove(); $("goodsRegisterImageUrls").value = _regImageUrls.join("\n"); };
+      item.appendChild(img); item.appendChild(rm);
+      p.appendChild(item);
+    }
+    async function onGoodsRegisterImagePaste(e) {
+      const clipboard = e.clipboardData;
+      if (!clipboard) return;
+      const imageFiles = [];
+      for (const item of Array.from(clipboard.items || [])) {
+        if (item.kind !== "file") continue;
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+      if (imageFiles.length) {
+        e.preventDefault();
+        try {
+          const uploaded = await uploadUiImageFiles(imageFiles);
+          uploaded.forEach(url => { if (url) { _regImageUrls.push(url); addRegImagePreview(url); } });
+          $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
+        } catch (err) { console.error("Image paste upload failed", err); }
+        if ($("goodsRegisterImagePaste")) $("goodsRegisterImagePaste").value = "";
+        return;
+      }
+      const pastedText = String(clipboard.getData("text/plain") || "").trim();
+      if (!pastedText) return;
+      const urls = extractUrlCandidates(pastedText);
+      if (!urls.length) return;
+      e.preventDefault();
+      urls.forEach(url => { _regImageUrls.push(url); addRegImagePreview(url); });
+      $("goodsRegisterImageUrls").value = _regImageUrls.join("\n");
+      if ($("goodsRegisterImagePaste")) $("goodsRegisterImagePaste").value = "";
+    }
