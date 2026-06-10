@@ -1265,3 +1265,195 @@
         setStatus("registeredMasterMergeStatus", "err", err.message);
       }
     }
+
+
+    async function uploadCsv() {
+      const fileInput = $("csvFile");
+      if (!fileInput.files || !fileInput.files[0]) {
+        setStatus("csvStatus", "err", t("media.register.csv.status.file_required"));
+        return;
+      }
+
+      const form = new FormData();
+      form.append("file", fileInput.files[0]);
+
+      const dc = $("csvDefaultCategory").value;
+      const by = $("csvCreatedBy").value.trim();
+      const notes = $("csvNotes").value.trim();
+      if (dc) form.append("default_category", dc);
+      if (by) form.append("created_by", by);
+      if (notes) form.append("notes", notes);
+
+      try {
+        setStatus("csvStatus", "ok", t("media.register.csv.status.uploading"));
+        const res = await fetch("/ingest/csv", { method: "POST", body: form });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.csv.status.failed")));
+
+        setDisplayIfPresent("csvKpi", "grid");
+        $("kpiTotal").textContent = data.total_count;
+        $("kpiMatched").textContent = data.matched_count;
+        $("kpiReview").textContent = data.review_count;
+        $("kpiFailed").textContent = data.failed_count;
+
+        setStatus("csvStatus", "ok", t("media.register.csv.status.done", { batch_id: data.batch_id }));
+      } catch (err) {
+        setStatus("csvStatus", "err", err.message);
+      }
+    }
+
+    function queueRowHtml(row) {
+      const candidate = row.candidate || {};
+      const title = candidate.title || "-";
+      const source = candidate.source ? ` (${candidate.source})` : "";
+      return `
+        <tr>
+          <td>${row.id}</td>
+          <td>${row.row_no ?? "-"}</td>
+          <td>${row.category ?? "-"}</td>
+          <td>${Number(row.confidence_score || 0).toFixed(3)}</td>
+          <td>${title}${source}</td>
+          <td>${row.review_note ?? ""}</td>
+        </tr>
+      `;
+    }
+
+    async function loadReviewQueue() {
+      const status = $("queueStatus").value;
+      const category = $("queueCategory").value.trim();
+      const limit = Math.max(1, Math.min(200, Number($("queueLimit").value || 20)));
+
+      const params = new URLSearchParams({ review_status: status, limit: String(limit) });
+      if (category) params.set("category", category);
+
+      try {
+        setStatus("queueStatusBox", "ok", t("media.register.queue.status.loading"));
+        const res = await fetch(`/review-queue?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.queue.status.load_failed")));
+
+        $("queueTableBody").innerHTML = (data || []).map(queueRowHtml).join("") ||
+          `<tr><td colspan='6' class='muted'>${escapeHtml(t("common.data_empty"))}</td></tr>`;
+        setStatus("queueStatusBox", "ok", t("media.register.queue.status.loaded", { count: countWithUnit(data.length) }));
+      } catch (err) {
+        setStatus("queueStatusBox", "err", err.message);
+      }
+    }
+
+    function ownedRowHtml(row) {
+      const flags = [];
+      if (row.is_second_hand) flags.push(t("common.flag.second_hand"));
+      if (row.signature_type && row.signature_type !== "NONE") flags.push(t("common.flag.signature_prefix", { value: row.signature_type }));
+      if (row.is_promotional_not_for_sale) flags.push("NFS");
+
+      const cond = row.format_name ? `${row.cover_condition ?? "-"} / ${row.disc_condition ?? "-"}` : "-";
+      const name = row.item_name_override || "-";
+      const labelCat = `${row.label_name || "-"} / ${row.catalog_no || "-"}`;
+      const trackCount = Array.isArray(row.track_list) ? row.track_list.length : 0;
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const coverCell = coverUrl
+        ? `<a href="${escapeHtml(coverUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t("common.action.link"))}</a>`
+        : "-";
+      const sourceText = row.source_code && row.source_external_id
+        ? `${row.source_code}#${row.source_external_id}`
+        : "-";
+      const discogsSyncBtn = row.source_code === "DISCOGS"
+        ? `<button class="btn ghost sync-discogs-btn btn-compact-pad-xs" data-owned-id="${row.id}">${escapeHtml(t("common.action.sync"))}</button>`
+        : "-";
+      const orderMoveButtons = `
+        <button class="btn ghost order-before-btn btn-compact-pad-xs" data-target-id="${row.id}">${escapeHtml(t("common.action.before"))}</button>
+        <button class="btn ghost order-after-btn btn-compact-pad-xs" data-target-id="${row.id}">${escapeHtml(t("common.action.after"))}</button>
+      `;
+
+      return `
+        <tr>
+          <td>${row.id}</td>
+          <td>${escapeHtml(row.label_id || "-")}</td>
+          <td>${escapeHtml(row.category)}</td>
+          <td>${escapeHtml(name)}</td>
+          <td>${row.quantity}</td>
+          <td>${escapeHtml(row.status)}</td>
+          <td>${escapeHtml(sourceText)}</td>
+          <td>${row.display_rank ?? "-"}</td>
+          <td>${escapeHtml(row.order_key ?? "-")}</td>
+          <td>${escapeHtml(row.slot_code ?? "-")}</td>
+          <td>${escapeHtml(flags.join(", ") || "-")}</td>
+          <td>${escapeHtml(labelCat)}</td>
+          <td>${coverCell}</td>
+          <td>${escapeHtml(cond)}</td>
+          <td>${trackCount}</td>
+          <td>${escapeHtml(row.purchase_source ?? "-")}</td>
+          <td>${orderMoveButtons}</td>
+          <td>${discogsSyncBtn}</td>
+        </tr>
+      `;
+    }
+
+    async function loadOwnedItems() {
+      const category = $("ownedCategory").value;
+      const status = $("ownedStatus").value;
+      const q = $("ownedQuery").value.trim();
+      const limit = Math.max(1, Math.min(200, Number($("ownedLimit").value || 30)));
+
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (category) params.set("category", category);
+      if (status) params.set("status", status);
+      if (q) params.set("q", q);
+
+      try {
+        setStatus("ownedStatusBox", "ok", t("media.manage.owned.status.loading"));
+        const res = await fetch(`/owned-items?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.manage.owned.status.load_failed")));
+
+        $("ownedTableBody").innerHTML = (data || []).map(ownedRowHtml).join("") ||
+          `<tr><td colspan='18' class='muted'>${escapeHtml(t("common.data_empty"))}</td></tr>`;
+        setStatus("ownedStatusBox", "ok", t("media.manage.owned.status.loaded", { count: countWithUnit(data.length) }));
+      } catch (err) {
+        setStatus("ownedStatusBox", "err", err.message);
+      }
+    }
+
+    async function moveOwnedItemOrder(ownedItemId, targetOwnedItemId, position) {
+      if (!ownedItemId || !targetOwnedItemId) {
+        setStatus("ownedStatusBox", "err", t("media.manage.owned.status.move_required"));
+        return;
+      }
+      if (ownedItemId === targetOwnedItemId) {
+        setStatus("ownedStatusBox", "err", t("media.manage.owned.status.move_same_item"));
+        return;
+      }
+
+      try {
+        setStatus(
+          "ownedStatusBox",
+          "ok",
+          t("media.manage.owned.status.moving", {
+            source: ownedItemId,
+            target: targetOwnedItemId,
+            position,
+          })
+        );
+        const res = await fetch(`/owned-items/${ownedItemId}/order`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target_owned_item_id: targetOwnedItemId,
+            position
+          })
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.manage.owned.status.move_failed"));
+        setStatus(
+          "ownedStatusBox",
+          "ok",
+          t("media.manage.owned.status.moved", {
+            owned_item_id: data.owned_item_id,
+            order_key: data.order_key,
+          })
+        );
+        await loadOwnedItems();
+      } catch (err) {
+        setStatus("ownedStatusBox", "err", err.message);
+      }
+    }
