@@ -46,6 +46,7 @@ def find_declaration(lines, name):
     open_paren_or_brace = r"[({]"
     patterns = [
         re.compile(rf'^\s+function {re.escape(name)}\s*' + open_paren_or_brace),
+        re.compile(rf'^\s+async function {re.escape(name)}\s*' + open_paren_or_brace),
         re.compile(rf'^\s+const {re.escape(name)}\s*='),
         re.compile(rf'^\s+let {re.escape(name)}\s*='),
     ]
