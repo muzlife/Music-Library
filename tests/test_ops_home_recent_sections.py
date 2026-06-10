@@ -578,7 +578,6 @@ def test_collection_dashboard_recent_moves_match_operator_home_moved_feed(
     assert dashboard["recent_moves"][0]["to_display_name"] == moved_feed["items"][0]["current_slot_display_name"]
 
 
-@_OPS_HOME_PRE_EXISTING_XFAIL
 def test_index_defines_ops_home_recent_sections_markup_and_loader():
     html = read_static_html("index.html")
     assert 'id="operatorRecentSections"' in html
