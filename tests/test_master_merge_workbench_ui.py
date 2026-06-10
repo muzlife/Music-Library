@@ -2,11 +2,17 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-INDEX_HTML = REPO_ROOT / "app" / "static" / "index.html"
+STATIC_DIR = REPO_ROOT / "app" / "static"
+INDEX_HTML = STATIC_DIR / "index.html"
 
 
 def read_index_html() -> str:
-    return INDEX_HTML.read_text(encoding="utf-8")
+    text = INDEX_HTML.read_text(encoding="utf-8")
+    for css_file in sorted((STATIC_DIR / "css").glob("*.css")) if (STATIC_DIR / "css").exists() else []:
+        text += "\n" + css_file.read_text(encoding="utf-8")
+    for js_file in sorted((STATIC_DIR / "js").glob("*.js")) if (STATIC_DIR / "js").exists() else []:
+        text += "\n" + js_file.read_text(encoding="utf-8")
+    return text
 
 
 def test_registered_master_merge_ui_elements_exist():

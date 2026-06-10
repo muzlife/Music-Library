@@ -19,6 +19,19 @@ def _main():
     return main_module
 
 
+def _index_file_hash() -> str:
+    """md5 of index.html + all css/* + js/* files — changes whenever any static asset changes."""
+    import hashlib
+    static_dir = _main().STATIC_DIR
+    h = hashlib.md5()
+    h.update((static_dir / "index.html").read_bytes())
+    for css_file in sorted((static_dir / "css").glob("*.css")) if (static_dir / "css").exists() else []:
+        h.update(css_file.read_bytes())
+    for js_file in sorted((static_dir / "js").glob("*.js")) if (static_dir / "js").exists() else []:
+        h.update(js_file.read_bytes())
+    return h.hexdigest()[:8]
+
+
 def _ops_domain_host() -> str:
     """Hostname (no port) that should serve ops.html at '/'.  Set via OPS_DOMAIN env."""
     return os.getenv("OPS_DOMAIN", "").strip().lower()
@@ -57,10 +70,9 @@ def root_entry(request: Request):
         serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
         return FileResponse(_main().STATIC_DIR / "ops.html", headers=serve_headers)
     # 비-ops 도메인(library.muzlife.com 등): 역할 무관 index.html 제공
-    import hashlib
     v = request.query_params.get("v")
     try:
-        file_hash = hashlib.md5((_main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+        file_hash = _index_file_hash()
     except Exception:
         file_hash = "0"
     if v != file_hash:
@@ -105,10 +117,9 @@ def admin_shell(request: Request):
 
 @router.get("/ui", include_in_schema=False)
 def ui_alias(request: Request) -> FileResponse:
-    import hashlib
     v = request.query_params.get("v")
     try:
-        file_hash = hashlib.md5((_main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+        file_hash = _index_file_hash()
     except Exception:
         file_hash = "0"
     if v != file_hash:

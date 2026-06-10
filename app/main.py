@@ -471,6 +471,16 @@ async def _global_exception_handler(request: Request, exc: Exception):
 
 _PERF_SKIP_PREFIXES = ("/ui-static/", "/health", "/cafe/now-playing/stream", "/cafe/tablet")
 
+_UI_STATIC_NO_CACHE_PREFIXES = ("/ui-static/css/", "/ui-static/js/")
+
+
+@app.middleware("http")
+async def ui_static_cache_control_middleware(request: Request, call_next):
+    response = await call_next(request)
+    if any(request.url.path.startswith(p) for p in _UI_STATIC_NO_CACHE_PREFIXES):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
 
 @app.middleware("http")
 async def perf_timing_middleware(request: Request, call_next):
