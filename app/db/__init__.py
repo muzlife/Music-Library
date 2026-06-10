@@ -22,6 +22,7 @@ LEGACY_DOMAIN_CODE_MAP = {
     "KOREAN": "KOREA",
     "JPOP": "JAPAN",
     "OTHER": "WORLD",
+    "WORLD_OTHER": "WORLD",
 }
 LABEL_PREFIX_BY_CATEGORY = {
     "LP": "LP",
@@ -198,7 +199,8 @@ def _normalize_domain_code_sql(expr: str) -> str:
       WHEN 'GREATER_CHINA' THEN 'GREATER_CHINA'
       WHEN 'WESTERN' THEN 'WESTERN'
       WHEN 'OTHER_ASIA' THEN 'OTHER_ASIA'
-      WHEN 'WORLD_OTHER' THEN 'WORLD_OTHER'
+      WHEN 'WORLD_OTHER' THEN 'WORLD'
+      WHEN 'WORLD' THEN 'WORLD'
       WHEN 'UNKNOWN' THEN 'UNKNOWN'
       ELSE NULL
     END
@@ -1003,7 +1005,7 @@ def init_db() -> None:
               slot_code TEXT NOT NULL UNIQUE,
               allowed_size_group TEXT NOT NULL CHECK (allowed_size_group IN ('{_size_group_check_sql()}')),
               cabinet_sort_policy TEXT NOT NULL DEFAULT 'ARTIST_RELEASE_TITLE' CHECK (cabinet_sort_policy IN ('ARTIST_RELEASE_TITLE', 'LABEL_ID', 'TITLE_RELEASE')),
-              cabinet_domain_code TEXT CHECK (cabinet_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              cabinet_domain_code TEXT CHECK (cabinet_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD', 'WORLD_OTHER', 'UNKNOWN')),
               max_thickness_mm INTEGER,
               cabinet_group_name TEXT,
               cabinet_group_order INTEGER,
@@ -1045,7 +1047,7 @@ def init_db() -> None:
               linked_artist_name TEXT,
               copy_group_key TEXT,
               category TEXT NOT NULL,
-              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD', 'WORLD_OTHER', 'UNKNOWN')),
               release_type TEXT CHECK (release_type IN ('ALBUM', 'EP', 'SINGLE')),
               item_name_override TEXT,
               quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
@@ -1264,11 +1266,11 @@ def init_db() -> None:
               title TEXT NOT NULL,
               artist_or_brand TEXT,
               sort_artist_name TEXT,
-              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD', 'WORLD_OTHER', 'UNKNOWN')),
               release_year INTEGER,
-              source_domain_code TEXT CHECK (source_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              source_domain_code TEXT CHECK (source_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD', 'WORLD_OTHER', 'UNKNOWN')),
               source_release_year INTEGER,
-              override_domain_code TEXT CHECK (override_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              override_domain_code TEXT CHECK (override_domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD', 'WORLD_OTHER', 'UNKNOWN')),
               override_release_year INTEGER,
               override_note TEXT,
               spotify_album_id TEXT,

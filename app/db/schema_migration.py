@@ -96,7 +96,7 @@ def _migrate_album_master_allow_manual(conn: sqlite3.Connection) -> None:
               title TEXT NOT NULL,
               artist_or_brand TEXT,
               sort_artist_name TEXT,
-              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD', 'WORLD_OTHER', 'UNKNOWN')),
               release_year INTEGER,
               raw_json TEXT NOT NULL DEFAULT '{{}}',
               created_at TEXT NOT NULL,
@@ -352,7 +352,7 @@ def _migrate_owned_item_allow_goods(conn: sqlite3.Connection) -> None:
               linked_artist_name TEXT,
               copy_group_key TEXT,
               category TEXT NOT NULL,
-              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD_OTHER', 'UNKNOWN')),
+              domain_code TEXT CHECK (domain_code IN ('KOREA', 'JAPAN', 'GREATER_CHINA', 'WESTERN', 'OTHER_ASIA', 'WORLD', 'WORLD_OTHER', 'UNKNOWN')),
               release_type TEXT CHECK (release_type IN ('ALBUM', 'EP', 'SINGLE')),
               item_name_override TEXT,
               quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -1119,6 +1119,29 @@ def _migration_v20_album_master_release_type(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migration_v21_domain_code_world_unify(conn: sqlite3.Connection) -> None:
+    """WORLD_OTHER → WORLD 통합.
+
+    LEGACY_DOMAIN_CODE_MAP이 OTHER→WORLD로 정규화하는데, 오래된 import 경로에서는
+    WORLD_OTHER가 그대로 저장된 행이 남아 있다. CHECK 제약이 WORLD_OTHER를 허용하는
+    동안 PRAGMA ignore_check_constraints로 일괄 업데이트하여 WORLD로 통일한다.
+    """
+    conn.execute("PRAGMA ignore_check_constraints = 1")
+    for table, col in [
+        ("album_master", "domain_code"),
+        ("album_master", "source_domain_code"),
+        ("album_master", "override_domain_code"),
+        ("owned_item", "domain_code"),
+        ("storage_slot", "cabinet_domain_code"),
+    ]:
+        if _column_exists(conn, table, col):
+            conn.execute(
+                f"UPDATE {table} SET {col} = 'WORLD' WHERE {col} = 'WORLD_OTHER'"
+            )
+    conn.execute("PRAGMA ignore_check_constraints = 0")
+    conn.commit()
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -1140,6 +1163,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     18: _migration_v18_add_observability_tables,
     19: _migration_v19_auth_account_profile,
     20: _migration_v20_album_master_release_type,
+    21: _migration_v21_domain_code_world_unify,
 }
 
 
