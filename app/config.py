@@ -85,9 +85,18 @@ def _env_flag(name: str, default: bool = False) -> bool:
     return value in {"1", "true", "yes", "on", "y"}
 
 
+_INSECURE_SESSION_SECRETS = {"", "change-this-library-session-secret"}
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     _load_env_file(_default_env_path())
+    _secret = (os.getenv("LIBRARY_AUTH_SESSION_SECRET") or "").strip()
+    if _secret in _INSECURE_SESSION_SECRETS:
+        raise RuntimeError(
+            "LIBRARY_AUTH_SESSION_SECRET is not set or is using the insecure default. "
+            "Set a strong random secret in .env.local before starting the server."
+        )
     return Settings(
         db_path=os.getenv("LIBRARY_DB_PATH", _default_db_path()),
         discogs_token=os.getenv("DISCOGS_TOKEN"),
@@ -137,7 +146,7 @@ def get_settings() -> Settings:
         auth_operator_username=(os.getenv("LIBRARY_OPERATOR_USERNAME") or "").strip() or None,
         auth_operator_password=(os.getenv("LIBRARY_OPERATOR_PASSWORD") or "").strip() or None,
         auth_operator_accounts_raw=(os.getenv("LIBRARY_OPERATOR_ACCOUNTS") or "").strip() or None,
-        auth_session_secret=(os.getenv("LIBRARY_AUTH_SESSION_SECRET") or "change-this-library-session-secret").strip(),
+        auth_session_secret=_secret,
         auth_cookie_secure=_env_flag("LIBRARY_AUTH_COOKIE_SECURE", default=False),
         purchase_import_webhook_token=(os.getenv("LIBRARY_PURCHASE_IMPORT_TOKEN") or "").strip() or None,
         home_assistant_base_url=(os.getenv("HOME_ASSISTANT_BASE_URL") or "https://__HA_DOMAIN__").strip(),

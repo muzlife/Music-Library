@@ -7,6 +7,9 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
 import app.main as main_module
+import app.services.home_env as _home_env_module
+import app.services.camera as _camera_module
+import app.services.backup as _backup_module
 import app.config as config_module
 from app import db
 from app.services import providers as provider_module
@@ -504,7 +507,7 @@ def test_filter_maniadb_candidates_keeps_variant_external_ids():
 
 def test_operator_office_climate_returns_home_assistant_snapshot(operator_client, monkeypatch):
     monkeypatch.setattr(
-        main_module,
+        _home_env_module,
         "_load_operator_office_climate",
         lambda: {
             "available": True,
@@ -532,7 +535,7 @@ def test_operator_office_climate_returns_home_assistant_snapshot(operator_client
 
 def test_operator_office_climate_returns_cached_snapshot_when_home_assistant_fails(operator_client, monkeypatch):
     monkeypatch.setattr(
-        main_module,
+        _home_env_module,
         "_OFFICE_CLIMATE_CACHE",
         {
             "available": True,
@@ -545,7 +548,7 @@ def test_operator_office_climate_returns_cached_snapshot_when_home_assistant_fai
             "updated_at": "2026-04-03T14:10:00+09:00",
         },
     )
-    monkeypatch.setattr(main_module, "_load_operator_office_climate", lambda: (_ for _ in ()).throw(RuntimeError("502 bad gateway")))
+    monkeypatch.setattr(_home_env_module, "_load_operator_office_climate", lambda: (_ for _ in ()).throw(RuntimeError("502 bad gateway")))
 
     res = operator_client.get("/operator/office-climate")
 
@@ -558,11 +561,11 @@ def test_operator_office_climate_returns_cached_snapshot_when_home_assistant_fai
 
 
 def test_operator_office_climate_falls_back_to_seoul_weather_when_office_unavailable(operator_client, monkeypatch):
-    monkeypatch.setattr(main_module, "_OFFICE_CLIMATE_CACHE", None)
-    monkeypatch.setattr(main_module, "_SEOUL_WEATHER_CACHE", None)
-    monkeypatch.setattr(main_module, "_load_operator_office_climate", lambda: (_ for _ in ()).throw(RuntimeError("sensor offline")))
+    monkeypatch.setattr(_home_env_module, "_OFFICE_CLIMATE_CACHE", None)
+    monkeypatch.setattr(_home_env_module, "_SEOUL_WEATHER_CACHE", None)
+    monkeypatch.setattr(_home_env_module, "_load_operator_office_climate", lambda: (_ for _ in ()).throw(RuntimeError("sensor offline")))
     monkeypatch.setattr(
-        main_module,
+        _home_env_module,
         "_load_operator_seoul_weather",
         lambda: {
             "available": True,
@@ -2981,7 +2984,7 @@ def test_onvif_connection_tolerates_optional_unauthorized_calls(monkeypatch):
             raise httpx.HTTPStatusError("400", request=request, response=response)
         raise AssertionError(f"unexpected body: {body_xml}")
 
-    monkeypatch.setattr(main_module, "_onvif_soap_request", fake_onvif_soap_request)
+    monkeypatch.setattr(_camera_module, "_onvif_soap_request", fake_onvif_soap_request)
 
     payload = main_module._test_onvif_camera_connection(
         "http://camera.local/onvif/device_service",
@@ -3025,7 +3028,7 @@ def test_camera_onvif_route_uses_stored_credentials_for_selected_camera(admin_cl
             "hardware_id": None,
         }
 
-    monkeypatch.setattr(main_module, "_test_onvif_camera_connection", fake_test_onvif)
+    monkeypatch.setattr(_camera_module, "_test_onvif_camera_connection", fake_test_onvif)
 
     res = admin_client.post(
         "/cabinet-cameras/test-onvif",
@@ -3045,13 +3048,12 @@ def test_camera_onvif_route_uses_stored_credentials_for_selected_camera(admin_cl
 
 def test_admin_can_read_and_save_auto_backup_settings(admin_client, monkeypatch, tmp_path):
     monkeypatch.setattr(
-        main_module,
+        _backup_module,
         "_read_backup_launchd_schedules",
         lambda: {
             "daily_schedule": "매일 00:00",
             "weekly_schedule": "일요일 01:00",
         },
-        raising=False,
     )
 
     res = admin_client.get("/ops/export/backup-settings")
@@ -3217,7 +3219,7 @@ def test_full_backup_route_returns_zip_bundle(admin_client, monkeypatch, tmp_pat
         captured["include_env_file"] = include_env_file
         return str(bundle_path)
 
-    monkeypatch.setattr(main_module, "_create_local_full_backup_bundle", fake_create_bundle)
+    monkeypatch.setattr(_backup_module, "_create_local_full_backup_bundle", fake_create_bundle)
 
     res = admin_client.get("/ops/export/full-backup?include_env_file=true")
 
@@ -3304,7 +3306,7 @@ def test_maybe_run_auto_backup_once_uses_saved_settings(monkeypatch, tmp_path):
         },
     )
     monkeypatch.setattr(
-        main_module,
+        _backup_module,
         "_create_local_db_backup",
         lambda backup_dir, *, reason="auto": str(Path(backup_dir) / f"{reason}-backup.db"),
     )
@@ -3342,7 +3344,7 @@ def test_maybe_run_auto_backup_once_uses_full_bundle_when_scope_is_full(monkeypa
         },
     )
     monkeypatch.setattr(
-        main_module,
+        _backup_module,
         "_create_local_full_backup_bundle",
         lambda backup_dir, *, reason="auto", include_env_file=False: str(tmp_path / f"{reason}.zip"),
     )

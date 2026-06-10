@@ -79,6 +79,7 @@ def _build_album_master_filter_sql(
     catalog_missing: bool = False,
     review_missing: bool = False,
     local_missing: bool = False,
+    release_type_missing: bool = False,
     spotify_state: str = "ANY",
 ) -> tuple[str, list[Any]]:
     where_sql = ""
@@ -437,6 +438,9 @@ def _build_album_master_filter_sql(
     if review_missing:
         where_sql += " AND (am.review_text IS NULL OR TRIM(am.review_text) = '')"
 
+    if release_type_missing:
+        where_sql += " AND (am.release_type IS NULL OR TRIM(am.release_type) = '')"
+
     if local_missing:
         where_sql += """
           AND NOT EXISTS (
@@ -623,6 +627,7 @@ def list_album_masters(
     catalog_missing: bool = False,
     review_missing: bool = False,
     local_missing: bool = False,
+    release_type_missing: bool = False,
     spotify_state: str = "ANY",
 ) -> list[dict[str, Any]]:
     filter_sql, params = _build_album_master_filter_sql(
@@ -650,6 +655,7 @@ def list_album_masters(
         catalog_missing=catalog_missing,
         review_missing=review_missing,
         local_missing=local_missing,
+        release_type_missing=release_type_missing,
         spotify_state=spotify_state,
     )
 
@@ -875,6 +881,7 @@ def count_album_masters(
     catalog_missing: bool = False,
     review_missing: bool = False,
     local_missing: bool = False,
+    release_type_missing: bool = False,
     spotify_state: str = "ANY",
 ) -> int:
     filter_sql, params = _build_album_master_filter_sql(
@@ -901,6 +908,7 @@ def count_album_masters(
         catalog_missing=catalog_missing,
         review_missing=review_missing,
         local_missing=local_missing,
+        release_type_missing=release_type_missing,
         spotify_state=spotify_state,
     )
     query = """

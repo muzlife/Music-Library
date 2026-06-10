@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from ..services import home_env as _home_env
 from .. import db
 from .. import security
 from ..security import _require_operator_request
@@ -276,18 +277,18 @@ def operator_climate_compare(request: Request) -> ClimateCompareResponse:
     outdoor = None
     # Try indoor
     try:
-        indoor = _main()._load_operator_office_climate()
+        indoor = _home_env._load_operator_office_climate()
         if indoor.get("available"):
-            _main()._OFFICE_CLIMATE_CACHE = dict(indoor)
+            _home_env._OFFICE_CLIMATE_CACHE = dict(indoor)
     except Exception:
-        indoor = _main()._OFFICE_CLIMATE_CACHE
+        indoor = _home_env._OFFICE_CLIMATE_CACHE
     # Try outdoor
     try:
-        outdoor = _main()._load_operator_seoul_weather()
+        outdoor = _home_env._load_operator_seoul_weather()
         if outdoor.get("available"):
-            _main()._SEOUL_WEATHER_CACHE = dict(outdoor)
+            _home_env._SEOUL_WEATHER_CACHE = dict(outdoor)
     except Exception:
-        outdoor = _main()._SEOUL_WEATHER_CACHE
+        outdoor = _home_env._SEOUL_WEATHER_CACHE
 
     indoor_t = indoor.get("temperature_c") if indoor else None
     indoor_h = indoor.get("humidity_percent") if indoor else None
@@ -311,21 +312,21 @@ def operator_climate_compare(request: Request) -> ClimateCompareResponse:
 def operator_office_climate(request: Request) -> OfficeClimateResponse:
     security._require_authenticated_request(request)
     try:
-        payload = _main()._load_operator_office_climate()
+        payload = _home_env._load_operator_office_climate()
         if bool(payload.get("available")):
-            _main()._OFFICE_CLIMATE_CACHE = dict(payload)
+            _home_env._OFFICE_CLIMATE_CACHE = dict(payload)
             return OfficeClimateResponse(**payload)
     except Exception:
-        if _main()._OFFICE_CLIMATE_CACHE:
-            return OfficeClimateResponse(**_main()._OFFICE_CLIMATE_CACHE)
+        if _home_env._OFFICE_CLIMATE_CACHE:
+            return OfficeClimateResponse(**_home_env._OFFICE_CLIMATE_CACHE)
     try:
-        payload = _main()._load_operator_seoul_weather()
+        payload = _home_env._load_operator_seoul_weather()
         if bool(payload.get("available")):
-            _main()._SEOUL_WEATHER_CACHE = dict(payload)
+            _home_env._SEOUL_WEATHER_CACHE = dict(payload)
             return OfficeClimateResponse(**payload)
     except Exception:
-        if _main()._SEOUL_WEATHER_CACHE:
-            return OfficeClimateResponse(**_main()._SEOUL_WEATHER_CACHE)
+        if _home_env._SEOUL_WEATHER_CACHE:
+            return OfficeClimateResponse(**_home_env._SEOUL_WEATHER_CACHE)
     return OfficeClimateResponse(
         available=False,
         source="seoul_weather",
@@ -403,27 +404,27 @@ def create_customer_track_request(
     payload: CustomerTrackRequestCreate,
     request: Request,
 ) -> CustomerTrackRequestItem:
-    session = _main()._read_auth_session_data(request) or {}
+    session = security._read_auth_session_data(request) or {}
 
     weather_temp_c = None
     weather_desc = None
     w_code = None
 
     w_data = None
-    if _main()._SEOUL_WEATHER_CACHE and _main()._SEOUL_WEATHER_CACHE.get("available"):
-        w_data = _main()._SEOUL_WEATHER_CACHE
-    elif _main()._OFFICE_CLIMATE_CACHE and _main()._OFFICE_CLIMATE_CACHE.get("available"):
-        w_data = _main()._OFFICE_CLIMATE_CACHE
+    if _home_env._SEOUL_WEATHER_CACHE and _home_env._SEOUL_WEATHER_CACHE.get("available"):
+        w_data = _home_env._SEOUL_WEATHER_CACHE
+    elif _home_env._OFFICE_CLIMATE_CACHE and _home_env._OFFICE_CLIMATE_CACHE.get("available"):
+        w_data = _home_env._OFFICE_CLIMATE_CACHE
     else:
         try:
-            w_data = _main()._load_operator_seoul_weather()
+            w_data = _home_env._load_operator_seoul_weather()
         except Exception:
             w_data = None
 
     if w_data and w_data.get("available"):
         weather_temp_c = w_data.get("temperature_c")
         w_code = w_data.get("weather_code")
-        weather_desc = _main()._wmo_weather_code_to_desc(w_code)
+        weather_desc = _home_env._wmo_weather_code_to_desc(w_code)
 
     row = db.create_customer_track_request(
         requested_track=payload.requested_track,
@@ -447,7 +448,7 @@ def patch_customer_track_request(
     payload: CustomerTrackRequestUpdate,
     request: Request,
 ) -> CustomerTrackRequestItem:
-    session = _main()._read_auth_session_data(request) or {}
+    session = security._read_auth_session_data(request) or {}
     row = db.update_customer_track_request(
         request_id=request_id,
         status=payload.status,

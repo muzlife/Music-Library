@@ -209,25 +209,9 @@ app = FastAPI(title="Hahahoho Library API", version="0.1.0", lifespan=lifespan)
 
 OWNED_ITEM_SAVE_SLOW_SEC = float(os.getenv("OWNED_ITEM_SAVE_SLOW_SEC", "0.7"))
 MUSIC_CATEGORIES = {"LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"}
-DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"}
-LEGACY_DOMAIN_CODE_MAP = {"KOREAN": "KOREA", "JPOP": "JAPAN", "OTHER": "WORLD_OTHER"}
+from .db import DOMAIN_CODES, LABEL_PREFIX_BY_CATEGORY, LEGACY_DOMAIN_CODE_MAP  # noqa: E402
 RELEASE_TYPES = {"ALBUM", "EP", "SINGLE"}
 SIZE_GROUP_CODES = {"STD", "BOOK", "LP", "LP10", "LP7", "OVERSIZE", "CASSETTE", "8TRACK", "REEL_TO_REEL", "GOODS"}
-LABEL_PREFIX_BY_CATEGORY = {
-    "LP": "LP",
-    "CD": "CD",
-    "CASSETTE": "CT",
-    "8TRACK": "8T",
-    "DIGITAL": "DG",
-    "REEL_TO_REEL": "RT",
-    "T_SHIRT": "TS",
-    "POSTER": "PO",
-    "LIGHT_STICK": "LS",
-    "HAT": "HT",
-    "BAG": "BG",
-    "CUP": "CP",
-    "OTHER": "OT",
-}
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 IMAGE_UPLOAD_DIR = STATIC_DIR / "uploads"
 LOGIN_PAGE_PATH = STATIC_DIR / "login.html"
@@ -292,9 +276,11 @@ ALADIN_DISCOGS_BACKFILL_LOCK = threading.Lock()
 ALADIN_DISCOGS_BACKFILL_THREAD: threading.Thread | None = None
 ALADIN_DISCOGS_BACKFILL_LAST_RESULT: dict[str, Any] | None = None
 ALADIN_DISCOGS_BACKFILL_LAST_ERROR: str | None = None
-AUTO_BACKUP_LOCK = threading.Lock()
-AUTO_BACKUP_STOP_EVENT = threading.Event()
-AUTO_BACKUP_THREAD: threading.Thread | None = None
+from .services.backup import AUTO_BACKUP_LOCK, AUTO_BACKUP_STOP_EVENT, AUTO_BACKUP_THREAD  # noqa: E402
+SPOTIFY_BATCH_LOCK = threading.Lock()
+SPOTIFY_BATCH_THREAD: threading.Thread | None = None
+SPOTIFY_BATCH_LAST_RESULT: dict[str, Any] | None = None
+SPOTIFY_BATCH_LAST_ERROR: str | None = None
 LAUNCHD_LOG_DIR = Path.home() / "Library" / "Logs" / "__PROJECT_SLUG__-library"
 LAUNCHD_ERR_LOG_PATH = LAUNCHD_LOG_DIR / "library.err.log"
 
@@ -351,9 +337,6 @@ PURCHASE_ITEM_FETCH_HEADERS = {
 }
 
 settings = get_settings()
-_OFFICE_CLIMATE_CACHE: dict[str, Any] | None = None
-_SEOUL_WEATHER_CACHE: dict[str, Any] | None = None
-
 _ROON_CONNECTED: bool = True
 _ROON_CORE_NAME: str = "Cafe Roon Core"
 _ROON_ACTIVE_ZONE: str = "Main Hall (McIntosh + JBL)"
@@ -486,7 +469,7 @@ async def _global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
-_PERF_SKIP_PREFIXES = ("/static/", "/health", "/cafe/now-playing/stream", "/cafe/tablet")
+_PERF_SKIP_PREFIXES = ("/ui-static/", "/health", "/cafe/now-playing/stream", "/cafe/tablet")
 
 
 @app.middleware("http")
@@ -547,7 +530,7 @@ async def auth_guard(request: Request, call_next):
         "/random-album",
         "/spotify/callback",
     }
-    if path in allowed_paths:
+    if path in allowed_paths or path.startswith("/ui-static/"):
         return await call_next(request)
 
     session = _read_auth_session_data(request)
@@ -1201,1334 +1184,69 @@ def _search_lookup_metadata_candidates(
     return []
 
 
-def _parse_price_number(value: Any) -> float | None:
-    text = str(value or "").strip()
-    if not text:
-        return None
-    normalized = re.sub(r"[^0-9.,-]", "", text)
-    normalized = normalized.replace(",", "")
-    if normalized in {"", "-", ".", "-."}:
-        return None
-    try:
-        return float(normalized)
-    except ValueError:
-        return None
-
-
-def _parse_positive_int(value: Any, default: int = 1) -> int:
-    text = str(value or "").strip()
-    if not text:
-        return default
-    digits = re.sub(r"[^0-9]", "", text)
-    if not digits:
-        return default
-    try:
-        parsed = int(digits)
-    except ValueError:
-        return default
-    return parsed if parsed > 0 else default
-
-
-def _normalize_purchase_date(value: Any) -> str | None:
-    text = str(value or "").strip()
-    if not text:
-        return None
-    compact = text.replace(".", "-").replace("/", "-")
-    if re.fullmatch(r"\d{4}-\d{1,2}-\d{1,2}", compact):
-        y, m, d = compact.split("-")
-        return f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
-    for fmt in ("%B %d, %Y", "%d %B %Y", "%b %d, %Y", "%d %b %Y"):
-        try:
-            parsed = datetime.strptime(text, fmt)
-        except ValueError:
-            continue
-        return parsed.strftime("%Y-%m-%d")
-    return text
-
-
-def _purchase_message_from_raw_content(raw_content: str):
-    raw = str(raw_content or "").strip()
-    if not raw:
-        return None
-    try:
-        return EmailParser(policy=email_policy.default).parsestr(raw)
-    except Exception:
-        return None
-
-
-def _purchase_message_from_raw_bytes(raw_content: bytes):
-    raw = bytes(raw_content or b"").strip()
-    if not raw:
-        return None
-    try:
-        return EmailBytesParser(policy=email_policy.default).parsebytes(raw)
-    except Exception:
-        return None
-
-
-def _resolve_purchase_import_vendor_code(
-    vendor_code: Any = None,
-    *,
-    raw_content: str | None = None,
-    items: list[Any] | None = None,
-) -> str:
-    explicit = str(vendor_code or "").strip().upper()
-    if explicit and explicit != "OTHER":
-        return explicit
-    for item in items or []:
-        payload = getattr(item, "raw_payload", None)
-        if not isinstance(payload, dict):
-            payload = item.get("raw_payload") if isinstance(item, dict) else None
-        candidate = str((payload or {}).get("vendor_code") or "").strip().upper()
-        if candidate and candidate != "OTHER":
-            return candidate
-    text = str(raw_content or "")
-    upper = text.upper()
-    has_ebay_marker = any(
-        marker in upper
-        for marker in (
-            "EBAY.COM/MYE/MYEBAY/PURCHASE",
-            "MY EBAY",
-            "M-ITEM-CARD",
-            "MODULE_PROVIDER",
-        )
-    )
-    has_amazon_marker = "AMAZON." in upper and any(
-        marker in upper
-        for marker in (
-            "ORDER-CARD",
-            "ORDER PLACED",
-            "YOUR ORDERS",
-        )
-    )
-    if "__VENDOR_EMAIL__" in upper or "세일뮤직" in text:
-        return "SAILMUSIC"
-    if has_ebay_marker:
-        return "EBAY"
-    if has_amazon_marker:
-        return "AMAZON"
-    if "AMAZON." in upper:
-        return "AMAZON"
-    if "EBAY.COM" in upper:
-        return "EBAY"
-    return "OTHER"
-
-
-def _extract_purchase_date_from_raw_content(raw_content: str, purchase_date: Any = None) -> str | None:
-    normalized = _normalize_purchase_date(purchase_date)
-    if normalized:
-        return normalized
-    candidates = [str(raw_content or "").strip()]
-    html_content = _purchase_html_from_raw_content(str(raw_content or ""))
-    if html_content:
-        candidates.append(html_content)
-    for candidate in candidates:
-        parsed = _extract_purchase_date_from_text(candidate)
-        if parsed:
-            return parsed
-        match = re.search(r"\b(20\d{2})[./-]\s*(\d{1,2})[./-]\s*(\d{1,2})\b", candidate)
-        if match:
-            return f"{int(match.group(1)):04d}-{int(match.group(2)):02d}-{int(match.group(3)):02d}"
-    msg = _purchase_message_from_raw_content(str(raw_content or ""))
-    if msg:
-        header_date = str(msg.get("Date") or "").strip()
-        if header_date:
-            try:
-                parsed = parsedate_to_datetime(header_date)
-            except Exception:
-                parsed = None
-            if parsed is not None:
-                return parsed.strftime("%Y-%m-%d")
-    return None
-
-
-def _resolve_purchase_import_purchase_date(purchase_date: Any = None, *, raw_content: str | None = None, items: list[Any] | None = None) -> str | None:
-    normalized = _normalize_purchase_date(purchase_date)
-    if normalized:
-        return normalized
-    for item in items or []:
-        item_purchase_date = getattr(item, "purchase_date", None)
-        if item_purchase_date is None and isinstance(item, dict):
-            item_purchase_date = item.get("purchase_date")
-        normalized_item = _normalize_purchase_date(item_purchase_date)
-        if normalized_item:
-            return normalized_item
-    return _extract_purchase_date_from_raw_content(str(raw_content or ""))
-
-
-def _split_artist_item_text(value: Any) -> tuple[str | None, str | None]:
-    text = re.sub(r"\s+", " ", str(value or "")).strip(" /")
-    if not text:
-        return None, None
-    for separator in (" / ", "／", "/"):
-        if separator in text:
-            left, right = text.split(separator, 1)
-            artist_name = _clean_text(left)
-            item_name = _clean_text(right)
-            if artist_name and item_name:
-                return artist_name, item_name
-    return None, text
-
-
-_PURCHASE_CONDITION_TOKEN_PATTERN = r"(?:M-|M|NM-|NM|EX|VG\+|VG|G\+|G|F|P)"
-
-
-def _normalize_purchase_condition_token(value: Any) -> str | None:
-    token = _purchase_compact_text(value).upper().replace(" ", "")
-    if token == "E":
-        token = "EX"
-    if token in {"M-", "M", "NM-", "NM", "EX", "VG+", "VG", "G+", "G", "F", "P"}:
-        return token
-    return None
-
-
-def _extract_purchase_condition_pair(value: Any) -> tuple[str | None, str | None, str]:
-    text = _purchase_compact_text(value)
-    if not text:
-        return None, None, ""
-    match = re.search(
-        rf"(?:^|\s)(?P<cover>{_PURCHASE_CONDITION_TOKEN_PATTERN})\s*/\s*(?P<disc>{_PURCHASE_CONDITION_TOKEN_PATTERN})\s*$",
-        text,
-        re.IGNORECASE,
-    )
-    if not match:
-        return None, None, text
-    cover = _normalize_purchase_condition_token(match.group("cover"))
-    disc = _normalize_purchase_condition_token(match.group("disc"))
-    if not cover or not disc:
-        return None, None, text
-    stripped = text[: match.start()].strip(" -/|,")
-    return cover, disc, stripped
-
-
-def _strip_ebay_listing_search_suffix(value: Any) -> str:
-    text = _purchase_compact_text(value)
-    if not text:
-        return ""
-    text = re.sub(
-        r"\s+(?:ORIG(?:INAL)?\.?|1ST|FIRST|PRESS(?:ING)?|PROMO|REISSUE|VINYL|RECORDS?|REC\.?|LP|LPS|ALBUM|EP|SINGLE|12\"|10\"|7\"|45RPM|33RPM|RPM|MONO|STEREO|GOLD\s+REC\.?|COLOR\s+VINYL|COLOUR\s+VINYL)\b.*$",
-        "",
-        text,
-        flags=re.IGNORECASE,
-    )
-    return text.strip(" -/|,")
-
-
-def _parse_ebay_purchase_title(value: Any) -> tuple[str | None, str | None, str | None, str | None]:
-    text = _purchase_compact_text(value)
-    if not text:
-        return None, None, None, None
-    cover_condition, disc_condition, stripped_text = _extract_purchase_condition_pair(text)
-    working_text = stripped_text or text
-    artist_name: str | None = None
-    item_name = working_text
-    match = re.match(r"(?P<artist>.+?)\s[-–—]\s(?P<title>.+)$", working_text)
-    if match:
-        artist_name = _clean_text(match.group("artist"))
-        item_name = _clean_text(match.group("title")) or working_text
-    else:
-        quoted_match = re.match(r'(?P<artist>.+?)\s*["“](?P<title>[^"”]+)["”](?P<suffix>.*)$', working_text)
-        if quoted_match:
-            artist_name = _clean_text(quoted_match.group("artist"))
-            suffix = _clean_text(quoted_match.group("suffix"))
-            title_core = _clean_text(quoted_match.group("title"))
-            item_name = _clean_text(" ".join(part for part in (title_core, suffix) if part)) or working_text
-    item_name = _strip_ebay_listing_search_suffix(item_name) or _clean_text(item_name)
-    return artist_name, item_name, cover_condition, disc_condition
-
-
-def _purchase_ebay_parse_source_text(row: dict[str, Any], raw_payload: dict[str, Any] | None = None) -> str:
-    payload = raw_payload if isinstance(raw_payload, dict) else dict(row.get("raw_payload") or {})
-    listing_title = _clean_text(payload.get("listing_title"))
-    item_name = _clean_text(row.get("item_name"))
-    raw_line = _clean_text(row.get("raw_line"))
-    return listing_title or item_name or raw_line
-
-
-def _purchase_queue_display_item_name(row: dict[str, Any], raw_payload: dict[str, Any] | None = None) -> str:
-    payload = raw_payload if isinstance(raw_payload, dict) else dict(row.get("raw_payload") or {})
-    vendor_code = str(row.get("vendor_code") or payload.get("vendor_code") or "").strip().upper()
-    listing_title = _clean_text(payload.get("listing_title"))
-    item_name = _clean_text(row.get("item_name"))
-    if vendor_code == "EBAY":
-        return listing_title or item_name
-    return item_name
-
-
-def _normalize_purchase_media_format(value: Any) -> str | None:
-    text = re.sub(r"\s+", " ", str(value or "")).strip().upper()
-    if not text:
-        return None
-    if (
-        "VINYL" in text
-        or re.search(r"(?<![A-Z0-9])(?:LP|LPS|LP'S)(?![A-Z0-9])", text)
-        or re.search(r"(?<![A-Z0-9])(?:12|10|7)\s*\"", text)
-    ):
-        return "LP"
-    if "COMPACT DISC" in text or re.search(r"(?<![A-Z0-9])CDS?(?![A-Z0-9])", text):
-        return "CD"
-    if "CASSETTE" in text or re.search(r"(?<![A-Z0-9])(?:MC|TAPE|TAPES)(?![A-Z0-9])", text):
-        return "CASSETTE"
-    if "8-TRACK" in text or "8 TRACK" in text or "8TRACK" in text:
-        return "8TRACK"
-    if "DIGITAL" in text or "DOWNLOAD" in text or "FILE" in text:
-        return "DIGITAL"
-    if "REEL" in text:
-        return "REEL_TO_REEL"
-    return None
-
-
-def _purchase_import_media_format_or_default(vendor_code: Any, value: Any) -> str | None:
-    normalized = _normalize_purchase_media_format(value)
-    if normalized:
-        return normalized
-    cleaned = _clean_text(value)
-    if cleaned:
-        return cleaned
-    vendor = str(vendor_code or "").strip().upper()
-    if vendor in {"ALADIN", "YES24"}:
-        return "CD"
-    return None
-
-
-class _PurchaseMailTableParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.rows: list[list[str]] = []
-        self._current_row: list[str] | None = None
-        self._current_cell: list[str] | None = None
-        self._ignore_depth = 0
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        name = str(tag or "").lower()
-        if name in {"script", "style"}:
-            self._ignore_depth += 1
-            return
-        if self._ignore_depth:
-            return
-        if name == "tr":
-            self._current_row = []
-            return
-        if name in {"td", "th"}:
-            self._current_cell = []
-            return
-        if name == "br" and self._current_cell is not None:
-            self._current_cell.append("\n")
-
-    def handle_endtag(self, tag: str) -> None:
-        name = str(tag or "").lower()
-        if name in {"script", "style"} and self._ignore_depth:
-            self._ignore_depth -= 1
-            return
-        if self._ignore_depth:
-            return
-        if name in {"td", "th"} and self._current_cell is not None and self._current_row is not None:
-            cell_text = re.sub(r"\s+", " ", "".join(self._current_cell)).strip()
-            self._current_row.append(cell_text)
-            self._current_cell = None
-            return
-        if name == "tr" and self._current_row is not None:
-            if any(_clean_text(cell) for cell in self._current_row):
-                self.rows.append(self._current_row)
-            self._current_row = None
-
-    def handle_data(self, data: str) -> None:
-        if self._ignore_depth or self._current_cell is None:
-            return
-        self._current_cell.append(str(data or ""))
-
-
-def _purchase_rows_from_html(raw_content: str) -> list[list[str]]:
-    parser = _PurchaseMailTableParser()
-    parser.feed(raw_content)
-    parser.close()
-    return parser.rows
-
-
-def _purchase_rows_from_text(raw_content: str) -> list[list[str]]:
-    rows: list[list[str]] = []
-    for line in str(raw_content or "").splitlines():
-        text = re.sub(r"\s+", " ", line).strip()
-        if not text:
-            continue
-        cells = [part.strip() for part in re.split(r"\t+| {2,}", text) if part.strip()]
-        if cells:
-            rows.append(cells)
-    return rows
-
-
-def _extract_html_from_mhtml(raw_content: str) -> str | None:
-    raw = str(raw_content or "").strip()
-    if not raw:
-        return None
-    msg = _purchase_message_from_raw_content(raw)
-    if msg is None:
-        return None
-    html_parts: list[str] = []
-    if msg.is_multipart():
-        for part in msg.walk():
-            if part.get_content_type() != "text/html":
-                continue
-            try:
-                content = part.get_content()
-            except Exception:
-                payload = part.get_payload(decode=True)
-                charset = part.get_content_charset() or "utf-8"
-                content = payload.decode(charset, errors="replace") if isinstance(payload, bytes) else ""
-            text = str(content or "").strip()
-            if text:
-                html_parts.append(text)
-    elif msg.get_content_type() == "text/html":
-        try:
-            content = msg.get_content()
-        except Exception:
-            payload = msg.get_payload(decode=True)
-            charset = msg.get_content_charset() or "utf-8"
-            content = payload.decode(charset, errors="replace") if isinstance(payload, bytes) else ""
-        text = str(content or "").strip()
-        if text:
-            html_parts.append(text)
-    return html_parts[0] if html_parts else None
-
-
-def _extract_html_from_mhtml_bytes(raw_content: bytes) -> str | None:
-    raw = bytes(raw_content or b"").strip()
-    if not raw:
-        return None
-    msg = _purchase_message_from_raw_bytes(raw)
-    if msg is None:
-        return None
-    html_parts: list[str] = []
-    if msg.is_multipart():
-        for part in msg.walk():
-            if part.get_content_type() != "text/html":
-                continue
-            try:
-                content = part.get_content()
-            except Exception:
-                payload = part.get_payload(decode=True)
-                charset = part.get_content_charset() or "utf-8"
-                content = payload.decode(charset, errors="replace") if isinstance(payload, bytes) else ""
-            text = str(content or "").strip()
-            if text:
-                html_parts.append(text)
-    elif msg.get_content_type() == "text/html":
-        try:
-            content = msg.get_content()
-        except Exception:
-            payload = msg.get_payload(decode=True)
-            charset = msg.get_content_charset() or "utf-8"
-            content = payload.decode(charset, errors="replace") if isinstance(payload, bytes) else ""
-        text = str(content or "").strip()
-        if text:
-            html_parts.append(text)
-    return html_parts[0] if html_parts else None
-
-
-def _purchase_html_from_raw_content(raw_content: str) -> str | None:
-    extracted = _extract_html_from_mhtml(raw_content)
-    if extracted:
-        return extracted
-    text = str(raw_content or "").strip()
-    if "<" in text and ">" in text:
-        return text
-    return None
-
-
-def _decode_purchase_import_upload_bytes(raw: bytes) -> str:
-    for enc in ("utf-8-sig", "cp949", "euc-kr", "latin-1"):
-        try:
-            return raw.decode(enc)
-        except UnicodeDecodeError:
-            continue
-    raise HTTPException(status_code=400, detail="구매 내역 파일 디코딩 실패: UTF-8/CP949/EUC-KR/LATIN-1 확인 필요")
-
-
-def _purchase_html_from_upload_bytes(raw_content: bytes, *, fallback_text: str | None = None) -> str | None:
-    extracted = _extract_html_from_mhtml_bytes(raw_content)
-    if extracted:
-        return extracted
-    text = str(fallback_text or "").strip() or _decode_purchase_import_upload_bytes(raw_content)
-    if "<" in text and ">" in text:
-        return text
-    return None
-
-
-def _resolve_purchase_import_raw_input(
-    payload: PurchaseImportPreviewRequest | PurchaseImportWebhookRequest,
-) -> tuple[str, str | None]:
-    raw_content = str(getattr(payload, "raw_content", "") or "").strip()
-    raw_content_base64 = str(getattr(payload, "raw_content_base64", "") or "").strip()
-    if not raw_content_base64:
-        return raw_content, _purchase_html_from_raw_content(raw_content)
-    try:
-        raw_bytes = base64.b64decode(raw_content_base64, validate=True)
-    except Exception as err:
-        raise HTTPException(status_code=400, detail=f"구매 내역 파일 디코딩 실패: {err}") from err
-    decoded_text = _decode_purchase_import_upload_bytes(raw_bytes)
-    html_content = _purchase_html_from_upload_bytes(raw_bytes, fallback_text=decoded_text)
-    return (html_content or decoded_text), html_content
-
-
-def _purchase_compact_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip()
-
-
-def _purchase_dense_text(value: Any) -> str:
-    return re.sub(r"\s+", "", str(value or ""))
-
-
-def _purchase_normalize_item_url(value: Any, *, base_url: str | None = None) -> str | None:
-    url = _clean_text(value)
-    if not url:
-        return None
-    if base_url and url.startswith("/"):
-        url = f"{base_url.rstrip('/')}{url}"
-    parsed = urlparse(url)
-    if parsed.scheme and parsed.netloc:
-        normalized = parsed._replace(params="", query="", fragment="")
-        return normalized.geturl()
-    return url.split("#", 1)[0].split("?", 1)[0].strip() or None
-
-
-def _purchase_currency_code(value: Any, default: str = "KRW") -> str:
-    text = str(value or "").strip()
-    upper = text.upper()
-    if upper in {"KRW", "USD", "GBP", "EUR", "JPY"}:
-        return upper
-    if "US $" in upper or ("$" in text and "CA$" not in upper and "A$" not in upper):
-        return "USD"
-    if "GBP" in upper or "£" in text:
-        return "GBP"
-    if "EUR" in upper or "€" in text:
-        return "EUR"
-    if "JPY" in upper or "¥" in text or "￥" in text:
-        return "JPY"
-    return default
-
-
-def _purchase_host_from_url(value: Any) -> str:
-    url = _clean_text(value)
-    if not url:
-        return ""
-    try:
-        return str(urlparse(url).hostname or "").strip().lower()
-    except Exception:
-        return ""
-
-
-def _purchase_marketplace_currency(vendor_code: str, marketplace: Any) -> str:
-    vendor = str(vendor_code or "").strip().upper()
-    market = str(marketplace or "").strip().upper()
-    if vendor == "AMAZON":
-        if market == "UK":
-            return "GBP"
-        if market == "JP":
-            return "JPY"
-        return "USD"
-    if vendor == "EBAY":
-        return "USD"
-    return "KRW"
-
-
-def _purchase_amazon_marketplace_from_raw_content(raw_content: str) -> str | None:
-    text = str(raw_content or "")
-    if "amazon.co.jp" in text:
-        return "JP"
-    if "amazon.co.uk" in text:
-        return "UK"
-    if "amazon.com" in text:
-        return "US"
-    return None
-
-
-def _extract_purchase_price_from_text(value: Any, default_currency: str) -> tuple[float | None, str]:
-    text = _purchase_compact_text(value)
-    if not text:
-        return None, default_currency
-    text_variants = [text]
-    dense_text = _purchase_dense_text(text)
-    if dense_text and dense_text != text:
-        text_variants.append(dense_text)
-    patterns = (
-        r"(US\s*\$\s*[0-9,\s]+(?:\.[0-9]{2})?)",
-        r"(\$\s*[0-9,\s]+(?:\.[0-9]{2})?)",
-        r"(£\s*[0-9,\s]+(?:\.[0-9]{2})?)",
-        r"(¥\s*[0-9,\s]+(?:\.[0-9]{2})?)",
-        r"(￥\s*[0-9,\s]+(?:\.[0-9]{2})?)",
-        r"([0-9,\s]+(?:\.[0-9]{2})?\s*(?:USD|GBP|EUR|JPY))",
-    )
-    for candidate_text in text_variants:
-        for pattern in patterns:
-            match = re.search(pattern, candidate_text, re.IGNORECASE)
-            if not match:
-                continue
-            price_text = str(match.group(1) or "").strip()
-            amount = _parse_price_number(price_text)
-            if amount is None:
-                continue
-            return amount, _purchase_currency_code(price_text, default_currency)
-    return None, default_currency
-
-
-def _extract_purchase_date_from_text(value: Any) -> str | None:
-    text = _purchase_compact_text(value)
-    patterns = (
-        r"Order placed\s+([A-Za-z]{3,9}\s+\d{1,2},\s+\d{4})",
-        r"Order placed\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})",
-        r"Placed on\s+([A-Za-z]{3,9}\s+\d{1,2},\s+\d{4})",
-        r"Placed on\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})",
-    )
-    for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if not match:
-            continue
-        normalized = _normalize_purchase_date(match.group(1))
-        if normalized:
-            return normalized
-    return None
-
-
-def _extract_purchase_total_from_text(value: Any, default_currency: str = "KRW") -> tuple[float | None, str]:
-    text = _purchase_compact_text(value)
-    text_variants = [text]
-    dense_text = _purchase_dense_text(text)
-    if dense_text and dense_text != text:
-        text_variants.append(dense_text)
-    patterns = (
-        r"Total\s+((?:US\s*\$|\$|GBP\s*|EUR\s*|JPY\s*|¥|￥)[0-9,.\s]+)",
-        r"Total\s+([0-9,.\s]+\s*(?:USD|GBP|EUR|JPY))",
-        r"Total((?:US\$|\$|GBP|EUR|JPY|¥|￥)[0-9,.\s]+)",
-        r"Total[^0-9]{0,6}([0-9][0-9,.\s]{0,20})",
-    )
-    for candidate_text in text_variants:
-        for pattern in patterns:
-            match = re.search(pattern, candidate_text, re.IGNORECASE)
-            if not match:
-                continue
-            price_text = str(match.group(1) or "").strip()
-            amount = _parse_price_number(price_text)
-            if amount is None:
-                continue
-            return amount, _purchase_currency_code(price_text, default_currency)
-    return None, default_currency
-
-
-def _build_purchase_preview_item_direct(
-    *,
-    row_no: int,
-    artist_name: str | None,
-    item_name: str,
-    media_format: str | None,
-    quantity: int = 1,
-    unit_price: float | None = None,
-    line_total: float | None = None,
-    currency_code: str = "KRW",
-    purchase_date: str | None = None,
-    raw_line: str | None = None,
-    raw_payload: dict[str, Any] | None = None,
-) -> PurchaseImportPreviewItem | None:
-    item_title = _clean_text(item_name)
-    if not item_title:
-        return None
-    normalized_media = _normalize_purchase_media_format(media_format)
-    if normalized_media is None:
-        return None
-    return PurchaseImportPreviewItem(
-        row_no=row_no,
-        artist_name=_clean_text(artist_name),
-        item_name=item_title,
-        media_format=normalized_media,
-        quantity=max(1, int(quantity or 1)),
-        unit_price=unit_price,
-        line_total=line_total,
-        currency_code=_purchase_currency_code(currency_code),
-        purchase_date=_normalize_purchase_date(purchase_date),
-        raw_line=_clean_text(raw_line),
-        raw_payload=dict(raw_payload or {}),
-    )
-
-
-def _purchase_amazon_asin_from_url(value: Any) -> str | None:
-    url = _clean_text(value)
-    if not url:
-        return None
-    patterns = (
-        r"/dp/([A-Z0-9]{10})(?:[/?]|$)",
-        r"/gp/product/([A-Z0-9]{10})(?:[/?]|$)",
-    )
-    for pattern in patterns:
-        match = re.search(pattern, url, re.IGNORECASE)
-        if match:
-            return str(match.group(1) or "").strip().upper() or None
-    return None
-
-
-def _purchase_amazon_marketplace_from_url(value: Any) -> str | None:
-    url = _clean_text(value)
-    if not url:
-        return None
-    try:
-        hostname = str(urlparse(url).hostname or "").strip().lower()
-    except Exception:
-        return None
-    if not hostname:
-        return None
-    if hostname.endswith("amazon.co.jp"):
-        return "JP"
-    if hostname.endswith("amazon.co.uk"):
-        return "UK"
-    if hostname.endswith("amazon.com"):
-        return "US"
-    if hostname.endswith("amazon.de"):
-        return "DE"
-    if hostname.endswith("amazon.fr"):
-        return "FR"
-    return hostname
-
-
-def _purchase_fetch_item_page_html(item_url: str) -> str | None:
-    url = _purchase_normalize_item_url(item_url)
-    if not url:
-        return None
-    try:
-        with httpx.Client(timeout=20.0, follow_redirects=True, headers=PURCHASE_ITEM_FETCH_HEADERS) as client:
-            response = client.get(url)
-            response.raise_for_status()
-    except httpx.HTTPError:
-        return None
-    text = str(response.text or "").strip()
-    return text or None
-
-
-def _purchase_extract_amazon_artist_name(soup: BeautifulSoup) -> str | None:
-    byline = _purchase_compact_text(soup.select_one("#bylineInfo").get_text(" ", strip=True) if soup.select_one("#bylineInfo") else "")
-    if byline:
-        text = re.sub(r"\s+", " ", byline).strip()
-        text = re.sub(r"\s*Visit the .*? Store\s*", " ", text, flags=re.IGNORECASE).strip()
-        text = re.sub(r"\s*Brand:\s*", "", text, flags=re.IGNORECASE).strip()
-        text = re.sub(r"\s*Format:.*$", "", text, flags=re.IGNORECASE).strip(" -|/")
-        if text:
-            return text
-    detail_text = _purchase_compact_text(soup.select_one("#detailBullets_feature_div").get_text(" ", strip=True) if soup.select_one("#detailBullets_feature_div") else "")
-    if detail_text:
-        match = re.search(r"Artist\s*[:\u200f\u200e]*\s*(.+?)(?:Label\s*:|ASIN\s*:|Number of discs|$)", detail_text, re.IGNORECASE)
-        if match:
-            artist_name = _clean_text(match.group(1))
-            if artist_name:
-                return artist_name
-    return None
-
-
-def _purchase_normalize_amazon_detail_key(value: str) -> str:
-    text = _purchase_compact_text(value).replace("\u200f", " ").replace("\u200e", " ")
-    text = re.sub(r"\s+", " ", text).strip().rstrip(":").strip()
-    return text.lower()
-
-
-def _purchase_extract_amazon_detail_map(soup: BeautifulSoup) -> dict[str, str]:
-    out: dict[str, str] = {}
-
-    def _put(label: str | None, value: str | None) -> None:
-        key = _purchase_normalize_amazon_detail_key(label or "")
-        text = _clean_text(value)
-        if not key or not text or key in out:
-            return
-        out[key] = text
-
-    detail_root = soup.select_one("#detailBullets_feature_div") or soup.select_one("#detailBulletsWrapper_feature_div")
-    if detail_root:
-        for li in detail_root.select("li"):
-            label_node = li.select_one(".a-text-bold")
-            label_text = _purchase_compact_text(label_node.get_text(" ", strip=True) if label_node else "")
-            full_text = _purchase_compact_text(li.get_text(" ", strip=True))
-            if label_text and full_text.startswith(label_text):
-                _put(label_text, full_text[len(label_text):])
-            elif ":" in full_text:
-                left, right = full_text.split(":", 1)
-                _put(left, right)
-
-    for selector in ("#productDetails_detailBullets_sections1", "#productDetails_techSpec_section_1"):
-        table = soup.select_one(selector)
-        if not table:
-            continue
-        for tr in table.select("tr"):
-            label_text = _purchase_compact_text(tr.select_one("th").get_text(" ", strip=True) if tr.select_one("th") else "")
-            value_text = _purchase_compact_text(tr.select_one("td").get_text(" ", strip=True) if tr.select_one("td") else "")
-            _put(label_text, value_text)
-
-    return out
-
-
-def _purchase_extract_amazon_detail_enrichment(item_url: str) -> dict[str, Any] | None:
-    html = _purchase_fetch_item_page_html(item_url)
-    if not html:
-        return None
-    soup = BeautifulSoup(html, "html.parser")
-    title = _purchase_compact_text(soup.select_one("#productTitle").get_text(" ", strip=True) if soup.select_one("#productTitle") else "")
-    artist_name = _purchase_extract_amazon_artist_name(soup)
-    image_node = soup.select_one("#landingImage")
-    image_url = _clean_text(image_node.get("data-old-hires") if image_node else None) or _clean_text(image_node.get("src") if image_node else None)
-    track_text = _purchase_compact_text(soup.select_one("#musicTracks_feature_div").get_text(" ", strip=True) if soup.select_one("#musicTracks_feature_div") else "")
-    detail_map = _purchase_extract_amazon_detail_map(soup)
-
-    def _detail_value(*keys: str) -> str | None:
-        for key in keys:
-            text = _clean_text(detail_map.get(_purchase_normalize_amazon_detail_key(key)))
-            if text:
-                return text
-        return None
-
-    label_name = _detail_value("Label", "Manufacturer")
-    released_date = _detail_value("Original Release Date", "Date First Available")
-    track_samples: list[str] = []
-    if track_text:
-        sample_matches = re.findall(r"\d+\s+([^0-9].*?)(?=\s+\d+\s+|$)", track_text)
-        for raw in sample_matches[:10]:
-            cleaned = _clean_text(raw)
-            if cleaned:
-                track_samples.append(cleaned)
-    return {
-        "item_name": title or None,
-        "artist_name": artist_name,
-        "image_url": image_url,
-        "label_name": label_name,
-        "released_date": released_date,
-        "track_samples": track_samples,
-    }
-
-
-def _purchase_extract_ebay_detail_enrichment(item_url: str) -> dict[str, Any] | None:
-    html = _purchase_fetch_item_page_html(item_url)
-    if not html:
-        return None
-    soup = BeautifulSoup(html, "html.parser")
-    title = _clean_text(soup.select_one("meta[property='og:title']").get("content") if soup.select_one("meta[property='og:title']") else None)
-    image_url = _clean_text(soup.select_one("meta[property='og:image']").get("content") if soup.select_one("meta[property='og:image']") else None)
-    seller_name = _purchase_compact_text(soup.select_one("[data-testid='ux-seller-section']").get_text(" ", strip=True) if soup.select_one("[data-testid='ux-seller-section']") else "")
-    return {
-        "item_name": title or None,
-        "image_url": image_url,
-        "seller_name": seller_name or None,
-    }
-
-
-def _purchase_enrich_row_from_item_page(row: dict[str, Any]) -> dict[str, Any]:
-    raw_payload = dict(row.get("raw_payload") or {})
-    item_url = _purchase_normalize_item_url(row.get("item_url") or raw_payload.get("item_url"))
-    if not item_url:
-        raise HTTPException(status_code=400, detail="구매 항목에 상품 상세 URL이 없습니다.")
-    host = _purchase_host_from_url(item_url)
-    enrichment: dict[str, Any] | None = None
-    if "amazon." in host:
-        enrichment = _purchase_extract_amazon_detail_enrichment(item_url)
-    elif "ebay." in host:
-        enrichment = _purchase_extract_ebay_detail_enrichment(item_url)
-    if enrichment is None:
-        raise HTTPException(status_code=400, detail="현재는 Amazon/eBay 상품 상세 페이지만 보강할 수 있습니다.")
-
-    raw_payload["item_url"] = item_url
-    if enrichment.get("image_url"):
-        raw_payload["image_url"] = enrichment["image_url"]
-    if "amazon." in host:
-        raw_payload["detail_page_title"] = enrichment.get("item_name")
-        raw_payload["detail_page_artist_name"] = enrichment.get("artist_name")
-        raw_payload["detail_page_label_name"] = enrichment.get("label_name")
-        raw_payload["detail_page_released_date"] = enrichment.get("released_date")
-        raw_payload["detail_page_track_samples"] = list(enrichment.get("track_samples") or [])
-    updated = db.update_purchase_import_row(
-        int(row["id"]),
-        artist_name=_clean_text(enrichment.get("artist_name")) or _clean_text(row.get("artist_name")),
-        seller_name=_clean_text(enrichment.get("seller_name")) or _clean_text(row.get("seller_name")),
-        item_url=item_url,
-        image_url=_clean_text(enrichment.get("image_url")) or _clean_text(row.get("image_url")),
-        raw_payload=raw_payload,
-    )
-    if updated is None:
-        raise HTTPException(status_code=500, detail="purchase import row update failed")
-    return updated
-
-
-def _purchase_preview_items_from_amazon_html(raw_content: str, *, purchase_date: str | None) -> list[PurchaseImportPreviewItem]:
-    detail_items = _purchase_preview_items_from_amazon_order_details_html(
-        raw_content,
-        purchase_date=purchase_date,
-    )
-    if detail_items:
-        return detail_items
-    soup = BeautifulSoup(raw_content, "html.parser")
-    cards = soup.select(".order-card")
-    preview_items: list[PurchaseImportPreviewItem] = []
-    next_row_no = 1
-    page_marketplace = _purchase_amazon_marketplace_from_raw_content(raw_content)
-    for card in cards:
-        card_text = _purchase_compact_text(card.get_text(" ", strip=True))
-        order_date = _extract_purchase_date_from_text(card_text) or _normalize_purchase_date(purchase_date)
-        order_default_currency = _purchase_marketplace_currency("AMAZON", page_marketplace)
-        order_total, currency_code = _extract_purchase_total_from_text(card_text, order_default_currency)
-        image_candidates = []
-        for img in card.select("img[src]"):
-            image_candidates.append(
-                {
-                    "title": _purchase_compact_text(img.get("alt")),
-                    "image_url": _clean_text(img.get("src")),
-                }
-            )
-        item_rows: list[dict[str, Any]] = []
-        seen_keys: set[tuple[str, str]] = set()
-        for link in card.select("a[href]"):
-            href = _clean_text(link.get("href"))
-            if not href or ("/dp/" not in href and "/gp/product/" not in href):
-                continue
-            title = _purchase_compact_text(link.get_text(" ", strip=True))
-            if not title:
-                continue
-            key = (title.lower(), href)
-            if key in seen_keys:
-                continue
-            seen_keys.add(key)
-            image_url = None
-            for image in image_candidates:
-                image_title = str(image.get("title") or "")
-                if image_title and (image_title in title or title in image_title):
-                    image_url = image.get("image_url")
-                    break
-            item_marketplace = _purchase_amazon_marketplace_from_url(href) or page_marketplace
-            item_default_currency = _purchase_marketplace_currency("AMAZON", item_marketplace)
-            item_price = None
-            item_currency = item_default_currency
-            probe = link
-            probe_depth = 0
-            while probe is not None and probe is not card and probe_depth < 6:
-                probe_text = _purchase_compact_text(probe.get_text(" ", strip=True))
-                if probe_text:
-                    parsed_price, parsed_currency = _extract_purchase_price_from_text(probe_text, item_default_currency)
-                    if parsed_price is not None and not (order_total is not None and len(item_rows) > 1 and abs(parsed_price - order_total) < 0.0001):
-                        item_price = parsed_price
-                        item_currency = parsed_currency
-                        break
-                probe = getattr(probe, "parent", None)
-                probe_depth += 1
-            item_rows.append(
-                {
-                    "title": title,
-                    "item_url": href,
-                    "image_url": image_url,
-                    "marketplace": item_marketplace,
-                    "unit_price": item_price,
-                    "currency_code": item_currency,
-                }
-            )
-        for item_row in item_rows:
-            item_url = item_row.get("item_url")
-            item_marketplace = item_row.get("marketplace") or page_marketplace
-            item_default_currency = _purchase_marketplace_currency("AMAZON", item_marketplace)
-            item_price = item_row.get("unit_price")
-            item_currency = str(item_row.get("currency_code") or item_default_currency).strip().upper() or item_default_currency
-            item = _build_purchase_preview_item_direct(
-                row_no=next_row_no,
-                artist_name=None,
-                item_name=item_row["title"],
-                media_format=item_row["title"],
-                quantity=1,
-                unit_price=item_price if item_price is not None else (order_total if len(item_rows) == 1 else None),
-                line_total=item_price if item_price is not None else (order_total if len(item_rows) == 1 else None),
-                currency_code=item_currency if item_price is not None else currency_code,
-                purchase_date=order_date,
-                raw_line=card_text,
-                raw_payload={
-                    "vendor_code": "AMAZON",
-                    "item_url": item_url,
-                    "image_url": item_row.get("image_url"),
-                    "asin": _purchase_amazon_asin_from_url(item_url),
-                    "marketplace": item_marketplace,
-                },
-            )
-            if item is None:
-                continue
-            preview_items.append(item)
-            next_row_no += 1
-    return preview_items
-
-
-def _purchase_preview_items_from_amazon_order_details_html(raw_content: str, *, purchase_date: str | None) -> list[PurchaseImportPreviewItem]:
-    soup = BeautifulSoup(raw_content, "html.parser")
-    root = soup.select_one("#orderDetails") or soup.select_one("[id*='orderDetails']")
-    if root is None:
-        return []
-    page_marketplace = _purchase_amazon_marketplace_from_raw_content(raw_content)
-    order_text = _purchase_compact_text(root.get_text(" ", strip=True))
-    order_date = _extract_purchase_date_from_text(order_text) or _normalize_purchase_date(purchase_date)
-    order_default_currency = _purchase_marketplace_currency("AMAZON", page_marketplace)
-    summary_node = root.select_one("#od-subtotals")
-    order_total, currency_code = _extract_purchase_total_from_text(
-        _purchase_compact_text(summary_node.get_text(" ", strip=True) if summary_node else order_text),
-        order_default_currency,
-    )
-    blocks: list[Any] = []
-    for block in root.select("div.a-fixed-left-grid"):
-        title_links = [
-            link for link in block.select("a[href]")
-            if (
-                "/dp/" in str(link.get("href") or "")
-                or "/gp/product/" in str(link.get("href") or "")
-            )
-            and "ppx_hzod_" in str(link.get("href") or "")
-        ]
-        if title_links:
-            blocks.append(block)
-    preview_items: list[PurchaseImportPreviewItem] = []
-    seen_keys: set[tuple[str, str]] = set()
-    next_row_no = 1
-    for block in blocks:
-        block_text = _purchase_compact_text(block.get_text(" ", strip=True))
-        if not block_text:
-            continue
-        title_link = None
-        for link in block.select("a[href]"):
-            href = _clean_text(link.get("href"))
-            title = _purchase_compact_text(link.get_text(" ", strip=True))
-            if not href or ("/dp/" not in href and "/gp/product/" not in href):
-                continue
-            if not title:
-                continue
-            title_link = link
-            break
-        if title_link is None:
-            continue
-        item_title = _purchase_compact_text(title_link.get_text(" ", strip=True))
-        item_url = _purchase_normalize_item_url(title_link.get("href"))
-        dedupe_key = (item_title.lower(), item_url or "")
-        if dedupe_key in seen_keys:
-            continue
-        seen_keys.add(dedupe_key)
-        item_marketplace = _purchase_amazon_marketplace_from_url(item_url) or page_marketplace
-        item_default_currency = _purchase_marketplace_currency("AMAZON", item_marketplace)
-        item_price, item_currency = _extract_purchase_price_from_text(block_text, item_default_currency)
-        media_hint = _normalize_purchase_media_format(block_text) or _normalize_purchase_media_format(item_title)
-        if media_hint is None:
-            parent_row = block.find_parent("div", class_=lambda value: isinstance(value, str) and "a-row" in value and "a-spacing-top-base" in value)
-            if parent_row is not None:
-                sibling_has_music = False
-                for sibling in parent_row.select("div.a-fixed-left-grid"):
-                    if sibling is block:
-                        continue
-                    sibling_text = _purchase_compact_text(sibling.get_text(" ", strip=True))
-                    if _normalize_purchase_media_format(sibling_text):
-                        sibling_has_music = True
-                        break
-                if sibling_has_music and item_price is not None:
-                    media_hint = "LP"
-        if media_hint is None:
-            continue
-        image_node = block.select_one("img[src]")
-        seller_text = None
-        seller_match = re.search(r"Sold by:\s*([^$]+?)(?:Buy it again|View your item|Condition:|$)", block_text, re.IGNORECASE)
-        if seller_match:
-            seller_text = _clean_text(seller_match.group(1))
-        item = _build_purchase_preview_item_direct(
-            row_no=next_row_no,
-            artist_name=None,
-            item_name=item_title,
-            media_format=media_hint,
-            quantity=1,
-            unit_price=item_price if item_price is not None else (order_total if len(blocks) == 1 else None),
-            line_total=item_price if item_price is not None else (order_total if len(blocks) == 1 else None),
-            currency_code=item_currency if item_price is not None else currency_code,
-            purchase_date=order_date,
-            raw_line=block_text,
-            raw_payload={
-                "vendor_code": "AMAZON",
-                "item_url": item_url,
-                "image_url": _clean_text(image_node.get("src") if image_node else None),
-                "asin": _purchase_amazon_asin_from_url(item_url),
-                "marketplace": item_marketplace,
-                "seller_name": seller_text,
-                "media_format_inferred": 1 if media_hint == "LP" and _normalize_purchase_media_format(block_text) is None and _normalize_purchase_media_format(item_title) is None else 0,
-            },
-        )
-        if item is None:
-            continue
-        preview_items.append(item)
-        next_row_no += 1
-    return preview_items
-
-
-def _purchase_preview_items_from_ebay_html(raw_content: str, *, purchase_date: str | None) -> list[PurchaseImportPreviewItem]:
-    soup = BeautifulSoup(raw_content, "html.parser")
-    cards = soup.select(".m-item-card")
-    preview_items: list[PurchaseImportPreviewItem] = []
-    next_row_no = 1
-    for card in cards:
-        title_node = card.select_one("h3.title-heading") or card.select_one("h3")
-        title = _purchase_compact_text(title_node.get_text(" ", strip=True) if title_node else "")
-        if not title:
-            continue
-        media_format = _normalize_purchase_media_format(title)
-        if media_format is None:
-            continue
-        artist_name, item_name, cover_condition, disc_condition = _parse_ebay_purchase_title(title)
-        price_node = card.select_one(".container-item-col__info-item-info-additionalPrice")
-        price_text = _purchase_compact_text(price_node.get_text(" ", strip=True) if price_node else "")
-        seller_link = card.select_one("a[href*='/usr/']")
-        seller_name = _purchase_compact_text(seller_link.get_text(" ", strip=True) if seller_link else "")
-        item_link = card.select_one("a[href*='/itm/']")
-        item_url = _purchase_normalize_item_url(item_link.get("href") if item_link else None, base_url="https://www.ebay.com")
-        image_node = card.select_one("img[src]")
-        item = _build_purchase_preview_item_direct(
-            row_no=next_row_no,
-            artist_name=artist_name,
-            item_name=item_name or title,
-            media_format=media_format,
-            quantity=1,
-            unit_price=_parse_price_number(price_text),
-            line_total=_parse_price_number(price_text),
-            currency_code=_purchase_marketplace_currency("EBAY", None),
-            purchase_date=_normalize_purchase_date(purchase_date),
-            raw_line=_purchase_compact_text(card.get_text(" ", strip=True)),
-            raw_payload={
-                "vendor_code": "EBAY",
-                "listing_title": title,
-                "seller_name": seller_name or "EBAY",
-                "item_url": item_url,
-                "image_url": _clean_text(image_node.get("src") if image_node else None),
-                "parsed_search_artist_name": artist_name,
-                "parsed_search_item_name": item_name or title,
-                "parsed_cover_condition": cover_condition,
-                "parsed_disc_condition": disc_condition,
-            },
-        )
-        if item is None:
-            continue
-        preview_items.append(item)
-        next_row_no += 1
-    return preview_items
-
-
-def _purchase_import_empty_reason(vendor_code: str, raw_content: str) -> str | None:
-    vendor = str(vendor_code or "").strip().upper()
-    text = str(raw_content or "")
-    if vendor == "AMAZON":
-        has_order_list = ".order-card" in text or 'class=\"order-card' in text or "order-card" in text
-        has_order_details = "#orderDetails" in text or 'id=\"orderDetails' in text or "/order-details?orderID=" in text or "Order Details" in text
-        if not has_order_list and not has_order_details:
-            return "Amazon 주문 카드(order-card) 또는 주문 상세(orderDetails)를 찾지 못했습니다. 주문목록/주문상세 페이지 MHTML인지 확인하세요."
-        return "Amazon 주문 페이지에서 음악 상품 행을 찾지 못했습니다. 다른 주문 페이지 형식이거나 비음악 상품만 포함됐을 수 있습니다."
-    if vendor == "EBAY":
-        if ".m-item-card" not in text and 'class=\"m-item-card' not in text and "m-item-card" not in text:
-            return "eBay 구매 카드(m-item-card)를 찾지 못했습니다. 구매내역 목록 페이지 MHTML인지 확인하세요."
-        return "eBay 구매 페이지에서 음악 상품 행을 찾지 못했습니다. 현재 파서는 음악 미디어로 보이는 항목만 추출합니다."
-    return None
-
-
-def _build_purchase_preview_item(
-    *,
-    row_no: int,
-    cells: list[str],
-    purchase_date: str | None,
-    vendor_code: str,
-) -> PurchaseImportPreviewItem | None:
-    if not cells:
-        return None
-    first_text = _clean_text(cells[0])
-    if not first_text or "합계" in first_text:
-        return None
-    if any(str(cell or "").strip() in {"합계", "총계"} for cell in cells):
-        return None
-
-    media_idx: int | None = None
-    media_format: str | None = None
-    for idx, cell in enumerate(cells):
-        normalized = _normalize_purchase_media_format(cell)
-        if normalized:
-            media_idx = idx
-            media_format = normalized
-            break
-    if media_idx is None:
-        normalized = _normalize_purchase_media_format(first_text)
-        if normalized:
-            media_idx = 1 if len(cells) > 1 else 0
-            media_format = normalized
-    if media_format is None:
-        return None
-
-    artist_name, item_name = _split_artist_item_text(first_text)
-    if not item_name:
-        return None
-    quantity = _parse_positive_int(cells[media_idx + 1] if len(cells) > media_idx + 1 else None, 1)
-    unit_price = _parse_price_number(cells[media_idx + 2] if len(cells) > media_idx + 2 else None)
-    line_total = _parse_price_number(cells[media_idx + 3] if len(cells) > media_idx + 3 else None)
-    if line_total is None and unit_price is not None:
-        line_total = float(unit_price) * quantity
-    raw_line = " | ".join(str(cell or "").strip() for cell in cells if str(cell or "").strip())
-    return PurchaseImportPreviewItem(
-        row_no=row_no,
-        artist_name=artist_name,
-        item_name=item_name,
-        media_format=media_format,
-        quantity=quantity,
-        unit_price=unit_price,
-        line_total=line_total,
-        currency_code="KRW",
-        purchase_date=_normalize_purchase_date(purchase_date),
-        raw_line=raw_line,
-        raw_payload={
-            "vendor_code": vendor_code,
-            "cells": cells,
-        },
-    )
-
-
-def _parse_purchase_import_preview(payload: PurchaseImportPreviewRequest | PurchaseImportWebhookRequest) -> list[PurchaseImportPreviewItem]:
-    raw_content, html_content = _resolve_purchase_import_raw_input(payload)
-    if not raw_content:
-        return []
-    vendor_code = _resolve_purchase_import_vendor_code(getattr(payload, "vendor_code", "OTHER"), raw_content=raw_content)
-    resolved_purchase_date = _resolve_purchase_import_purchase_date(
-        getattr(payload, "purchase_date", None),
-        raw_content=raw_content,
-    )
-    if html_content:
-        if vendor_code == "AMAZON":
-            preview_items = _purchase_preview_items_from_amazon_html(
-                html_content,
-                purchase_date=resolved_purchase_date,
-            )
-            if preview_items:
-                return preview_items
-        if vendor_code == "EBAY":
-            preview_items = _purchase_preview_items_from_ebay_html(
-                html_content,
-                purchase_date=resolved_purchase_date,
-            )
-            if preview_items:
-                return preview_items
-    rows = _purchase_rows_from_html(html_content or raw_content) if html_content else _purchase_rows_from_text(raw_content)
-    preview_items: list[PurchaseImportPreviewItem] = []
-    next_row_no = 1
-    for cells in rows:
-        item = _build_purchase_preview_item(
-            row_no=next_row_no,
-            cells=cells,
-            purchase_date=resolved_purchase_date,
-            vendor_code=vendor_code,
-        )
-        if item is None:
-            continue
-        preview_items.append(item)
-        next_row_no += 1
-    return preview_items
-
-
-def _purchase_queue_item_from_row(row: dict[str, Any]) -> PurchaseImportQueueItem:
-    raw_payload = dict(row.get("raw_payload") or {})
-    parsed_artist_name = _clean_text(raw_payload.get("parsed_search_artist_name"))
-    parsed_item_name = _clean_text(raw_payload.get("parsed_search_item_name"))
-    if str(row.get("vendor_code") or "").strip().upper() == "EBAY" and (not parsed_artist_name or not parsed_item_name):
-        ebay_artist_name, ebay_item_name, ebay_cover_condition, ebay_disc_condition = _parse_ebay_purchase_title(
-            _purchase_ebay_parse_source_text(row, raw_payload)
-        )
-        parsed_artist_name = parsed_artist_name or ebay_artist_name
-        parsed_item_name = parsed_item_name or ebay_item_name
-        if parsed_artist_name and not raw_payload.get("parsed_search_artist_name"):
-            raw_payload["parsed_search_artist_name"] = parsed_artist_name
-        if parsed_item_name and not raw_payload.get("parsed_search_item_name"):
-            raw_payload["parsed_search_item_name"] = parsed_item_name
-        if ebay_cover_condition and not raw_payload.get("parsed_cover_condition"):
-            raw_payload["parsed_cover_condition"] = ebay_cover_condition
-        if ebay_disc_condition and not raw_payload.get("parsed_disc_condition"):
-            raw_payload["parsed_disc_condition"] = ebay_disc_condition
-    return PurchaseImportQueueItem(
-        id=int(row["id"]),
-        vendor_code=str(row.get("vendor_code") or "OTHER"),  # type: ignore[arg-type]
-        source_type=str(row.get("source_type") or "MANUAL"),  # type: ignore[arg-type]
-        source_ref=_clean_text(row.get("source_ref")),
-        email_from=_clean_text(row.get("email_from")),
-        email_subject=_clean_text(row.get("email_subject")),
-        artist_name=parsed_artist_name or _clean_text(row.get("artist_name")),
-        item_name=_purchase_queue_display_item_name(row, raw_payload) or str(row.get("item_name") or "").strip(),
-        media_format=_clean_text(row.get("media_format")),
-        quantity=max(1, int(row.get("quantity") or 1)),
-        unit_price=float(row["unit_price"]) if row.get("unit_price") is not None else None,
-        line_total=float(row["line_total"]) if row.get("line_total") is not None else None,
-        currency_code=_clean_text(row.get("currency_code")),
-        purchase_date=_normalize_purchase_date(row.get("purchase_date")),
-        seller_name=_clean_text(row.get("seller_name")),
-        item_url=_clean_text(row.get("item_url")),
-        image_url=_clean_text(row.get("image_url")),
-        raw_line=_clean_text(row.get("raw_line")),
-        raw_payload=raw_payload,
-        queue_status=str(row.get("queue_status") or "PENDING"),  # type: ignore[arg-type]
-        linked_owned_item_id=int(row["linked_owned_item_id"]) if row.get("linked_owned_item_id") is not None else None,
-        created_at=str(row.get("created_at") or ""),
-        updated_at=str(row.get("updated_at") or ""),
-    )
-
-
-def _purchase_import_webhook_allowed(request: Request) -> bool:
-    expected = str(settings.purchase_import_webhook_token or "").strip()
-    provided = str(request.headers.get("x-purchase-import-token") or "").strip()
-    return bool(expected) and secrets.compare_digest(provided, expected)
-
-
-# 1 MB ceiling for the JSON body. Gmail forwards rarely exceed a few hundred
-# kilobytes; cap higher than that and we are paying the parse cost for what
-# is almost certainly an attack or a misrouted request.
-PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES = int(
-    os.getenv("LIBRARY_PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES", str(1 * 1024 * 1024))
+from .services import purchase_mail as _pm_service
+from .services.purchase_mail import (
+    _parse_price_number,
+    _parse_positive_int,
+    _normalize_purchase_date,
+    _purchase_message_from_raw_content,
+    _purchase_message_from_raw_bytes,
+    _resolve_purchase_import_vendor_code,
+    _extract_purchase_date_from_raw_content,
+    _resolve_purchase_import_purchase_date,
+    _split_artist_item_text,
+    _PURCHASE_CONDITION_TOKEN_PATTERN,
+    _normalize_purchase_condition_token,
+    _extract_purchase_condition_pair,
+    _strip_ebay_listing_search_suffix,
+    _parse_ebay_purchase_title,
+    _purchase_ebay_parse_source_text,
+    _purchase_queue_display_item_name,
+    _normalize_purchase_media_format,
+    _purchase_import_media_format_or_default,
+    _PurchaseMailTableParser,
+    _purchase_rows_from_html,
+    _purchase_rows_from_text,
+    _extract_html_from_mhtml,
+    _extract_html_from_mhtml_bytes,
+    _purchase_html_from_raw_content,
+    _decode_purchase_import_upload_bytes,
+    _purchase_html_from_upload_bytes,
+    _resolve_purchase_import_raw_input,
+    _purchase_compact_text,
+    _purchase_dense_text,
+    _purchase_normalize_item_url,
+    _purchase_currency_code,
+    _purchase_host_from_url,
+    _purchase_marketplace_currency,
+    _purchase_amazon_marketplace_from_raw_content,
+    _extract_purchase_price_from_text,
+    _extract_purchase_date_from_text,
+    _extract_purchase_total_from_text,
+    _build_purchase_preview_item_direct,
+    _purchase_amazon_asin_from_url,
+    _purchase_amazon_marketplace_from_url,
+    _purchase_fetch_item_page_html,
+    _purchase_extract_amazon_artist_name,
+    _purchase_normalize_amazon_detail_key,
+    _purchase_extract_amazon_detail_map,
+    _purchase_extract_amazon_detail_enrichment,
+    _purchase_extract_ebay_detail_enrichment,
+    _purchase_enrich_row_from_item_page,
+    _purchase_preview_items_from_amazon_html,
+    _purchase_preview_items_from_amazon_order_details_html,
+    _purchase_preview_items_from_ebay_html,
+    _purchase_import_empty_reason,
+    _build_purchase_preview_item,
+    _parse_purchase_import_preview,
+    _purchase_queue_item_from_row,
+    _purchase_import_webhook_allowed,
+    PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES,
+    _PURCHASE_IMPORT_WEBHOOK_ALLOWED_CONTENT_TYPES,
+    _purchase_import_webhook_validate_request,
+    _require_purchase_import_webhook_envelope,
 )
-_PURCHASE_IMPORT_WEBHOOK_ALLOWED_CONTENT_TYPES = ("application/json",)
 
-
-def _purchase_import_webhook_validate_request(request: Request) -> None:
-    """Hard checks on the incoming HTTP request before we let Pydantic parse it.
-
-    Used as a FastAPI `Depends`. Dependencies run before the route's body
-    parameter is parsed, so a wrong Content-Type or oversized body produces
-    415/413 instead of falling through to Pydantic's 422 with a confusing
-    "Input should be a valid dict" / "Field required" message.
-
-    * Content-Type must be a JSON variant. Browsers / non-JSON callers get
-      a 415.
-    * Content-Length, when present, must fit our cap. We can't enforce a
-      true streaming cap from inside FastAPI without a custom middleware,
-      but the header check covers well-behaved clients (Gmail forwarders,
-      Zapier).
-    """
-    content_type = str(request.headers.get("content-type") or "").lower().strip()
-    base_type = content_type.split(";", 1)[0].strip()
-    if base_type and base_type not in _PURCHASE_IMPORT_WEBHOOK_ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail=f"unsupported content-type: {base_type or 'unknown'}",
-        )
-
-    raw_length = str(request.headers.get("content-length") or "").strip()
-    if raw_length:
-        try:
-            declared = int(raw_length)
-        except (TypeError, ValueError):
-            declared = -1
-        if declared > PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES:
-            raise HTTPException(
-                status_code=413,
-                detail=(
-                    "request body exceeds purchase import webhook limit of "
-                    f"{PURCHASE_IMPORT_WEBHOOK_MAX_BODY_BYTES} bytes"
-                ),
-            )
-
-
-def _require_purchase_import_webhook_envelope(request: Request) -> None:
-    """Composite Depends: token + envelope checks together.
-
-    Combines the token gate with the Content-Type / Content-Length check so
-    a single `dependencies=[...]` on the route covers everything that has
-    to happen before Pydantic parses the body.
-    """
-    if not _purchase_import_webhook_allowed(request):
-        raise HTTPException(status_code=403, detail="purchase import webhook token mismatch")
-    _purchase_import_webhook_validate_request(request)
 
 
 def _clean_track_list(value: Any) -> list[str]:
@@ -3196,333 +1914,21 @@ def _start_metadata_sync_worker() -> None:
     METADATA_SYNC_THREAD.start()
 
 
-def _normalize_backup_dir_path(raw_value: Any) -> str:
-    text = str(raw_value or "").strip()
-    if not text:
-        return str(Path(settings.db_path).resolve().parent / "backups")
-    path = Path(text).expanduser()
-    if not path.is_absolute():
-        path = Path(__file__).resolve().parents[1] / path
-    return str(path)
-
-
-def _write_db_snapshot_to_path(target_path: Path) -> None:
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-    with db.get_conn() as source_conn:
-        dest_conn = sqlite3.connect(str(target_path))
-        try:
-            source_conn.backup(dest_conn)
-        finally:
-            dest_conn.close()
-
-
-def _create_local_db_backup(backup_dir: str, *, reason: str = "manual") -> str:
-    target_dir = Path(_normalize_backup_dir_path(backup_dir))
-    target_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    final_path = target_dir / f"__PROJECT_SLUG__-library-{reason}-{timestamp}.db"
-    temp_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
-    _write_db_snapshot_to_path(temp_path)
-    temp_path.replace(final_path)
-    return str(final_path)
-
-
-def _create_local_full_backup_bundle(
-    backup_dir: str,
-    *,
-    reason: str = "manual-full",
-    include_env_file: bool = False,
-) -> str:
-    target_dir = Path(_normalize_backup_dir_path(backup_dir))
-    target_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    final_path = target_dir / f"__PROJECT_SLUG__-library-{reason}-{timestamp}.zip"
-    temp_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.tmp"
-    temp_db_path = target_dir / f".__PROJECT_SLUG__-library-{reason}-{timestamp}-{uuid4().hex}.db"
-    project_root = Path(__file__).resolve().parents[1]
-    env_path = project_root / ".env.local"
-    manifest = {
-        "kind": "__PROJECT_SLUG__-library-full-backup",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "db_filename": "library.db",
-        "includes_uploads": IMAGE_UPLOAD_DIR.exists(),
-        "includes_env_file": bool(include_env_file and env_path.is_file()),
-    }
-    try:
-        _write_db_snapshot_to_path(temp_db_path)
-        with zipfile.ZipFile(temp_path, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
-            bundle.write(temp_db_path, arcname="library.db")
-            if IMAGE_UPLOAD_DIR.exists():
-                for file_path in sorted(p for p in IMAGE_UPLOAD_DIR.rglob("*") if p.is_file()):
-                    bundle.write(file_path, arcname=str(Path("uploads") / file_path.relative_to(IMAGE_UPLOAD_DIR)))
-            if include_env_file and env_path.is_file():
-                bundle.write(env_path, arcname=".env.local")
-            bundle.writestr(
-                "manifest.json",
-                json.dumps(manifest, ensure_ascii=False, separators=(",", ":")),
-            )
-        temp_path.replace(final_path)
-    finally:
-        temp_db_path.unlink(missing_ok=True)
-        Path(temp_path).unlink(missing_ok=True)
-    return str(final_path)
-
-
-def _read_launchd_calendar_interval(plist_path: Path) -> dict[str, int] | None:
-    if not plist_path.is_file():
-        return None
-    try:
-        with plist_path.open("rb") as handle:
-            payload = plistlib.load(handle)
-    except Exception:
-        return None
-    interval = payload.get("StartCalendarInterval")
-    if isinstance(interval, list):
-        interval = interval[0] if interval else None
-    if not isinstance(interval, dict):
-        return None
-    try:
-        hour = int(interval.get("Hour"))
-        minute = int(interval.get("Minute"))
-    except (TypeError, ValueError):
-        return None
-    schedule: dict[str, int] = {"hour": hour, "minute": minute}
-    weekday = interval.get("Weekday")
-    if weekday is not None:
-        try:
-            schedule["weekday"] = int(weekday)
-        except (TypeError, ValueError):
-            pass
-    return schedule
-
-
-def _format_launchd_schedule_label(schedule: dict[str, int] | None) -> str | None:
-    if not schedule:
-        return None
-    time_text = f"{int(schedule.get('hour', 0)):02d}:{int(schedule.get('minute', 0)):02d}"
-    weekday = schedule.get("weekday")
-    if weekday is None:
-        return time_text
-    weekday_names = {
-        0: "일요일",
-        1: "월요일",
-        2: "화요일",
-        3: "수요일",
-        4: "목요일",
-        5: "금요일",
-        6: "토요일",
-        7: "일요일",
-    }
-    return f"{weekday_names.get(int(weekday), '주간')} {time_text}"
-
-
-def _read_backup_launchd_schedules() -> dict[str, str | None]:
-    project_root = Path(__file__).resolve().parents[1]
-    launch_agents_dir = Path.home() / "Library" / "LaunchAgents"
-
-    def _read_first_label(*candidates: Path) -> str | None:
-        for candidate in candidates:
-            label = _format_launchd_schedule_label(_read_launchd_calendar_interval(candidate))
-            if label:
-                return label
-        return None
-
-    return {
-        "daily_schedule": _read_first_label(
-            launch_agents_dir / "com.muzlife.backup-daily-db.plist",
-            project_root / "deploy" / "templates" / "launchd" / "com.muzlife.backup-daily-db.plist",
-        ),
-        "weekly_schedule": _read_first_label(
-            launch_agents_dir / "com.muzlife.backup-weekly-full.plist",
-            project_root / "deploy" / "templates" / "launchd" / "com.muzlife.backup-weekly-full.plist",
-        ),
-    }
-
-
-def _validate_library_db_file(candidate_path: Path) -> None:
-    conn = sqlite3.connect(f"file:{candidate_path}?mode=ro", uri=True, timeout=1)
-    try:
-        quick_check = conn.execute("PRAGMA quick_check").fetchone()
-        if not quick_check or str(quick_check[0] or "").strip().lower() != "ok":
-            raise ValueError("복구 파일의 SQLite 무결성 검사에 실패했습니다.")
-        row = conn.execute(
-            """
-            SELECT name
-            FROM sqlite_master
-            WHERE type = 'table'
-              AND name = 'owned_item'
-            """
-        ).fetchone()
-        if row is None:
-            raise ValueError("복구 파일이 라이브러리 DB 형식이 아닙니다.")
-    except sqlite3.DatabaseError as err:
-        raise ValueError("복구 파일이 유효한 SQLite DB가 아닙니다.") from err
-    finally:
-        conn.close()
-
-
-def _restore_library_db_from_upload(upload_path: str, original_filename: str) -> dict[str, Any]:
-    if METADATA_SYNC_LOCK.locked():
-        raise ValueError("메타 동기화 실행 중에는 DB 복구를 시작할 수 없습니다.")
-    source_path = Path(upload_path)
-    _validate_library_db_file(source_path)
-    backup_settings = db.get_auto_backup_settings()
-    backup_dir = _normalize_backup_dir_path(backup_settings.get("backup_dir"))
-    backup_path = _create_local_db_backup(backup_dir, reason="before-restore")
-    db_path = Path(settings.db_path)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    staged_path = db_path.with_name(f".{db_path.name}.restore-{uuid4().hex}.tmp")
-    shutil.copyfile(source_path, staged_path)
-    for suffix in ("-wal", "-shm"):
-        candidate = Path(f"{settings.db_path}{suffix}")
-        if candidate.exists():
-            candidate.unlink(missing_ok=True)
-    staged_path.replace(db_path)
-    db.ensure_startup_db_ready()
-    return {
-        "restored": True,
-        "restored_filename": str(original_filename or source_path.name or "restore.db"),
-        "restored_bytes": int(source_path.stat().st_size),
-        "backup_path": backup_path,
-    }
-
-
-def _restore_library_bundle_from_upload(upload_path: str, original_filename: str) -> dict[str, Any]:
-    if METADATA_SYNC_LOCK.locked():
-        raise ValueError("메타 동기화 실행 중에는 DB 복구를 시작할 수 없습니다.")
-    source_path = Path(upload_path)
-    try:
-        bundle = zipfile.ZipFile(source_path)
-    except zipfile.BadZipFile as err:
-        raise ValueError("복구 파일이 유효한 ZIP 백업이 아닙니다.") from err
-    with bundle:
-        broken_member = bundle.testzip()
-        if broken_member:
-            raise ValueError("복구 ZIP 파일이 손상되었습니다.")
-        names = bundle.namelist()
-        for name in names:
-            parts = Path(name).parts
-            if any(part == ".." for part in parts) or Path(name).is_absolute():
-                raise ValueError("복구 ZIP 파일 경로가 올바르지 않습니다.")
-        db_member = "library.db" if "library.db" in names else next((name for name in names if name.lower().endswith(".db")), None)
-        if not db_member:
-            raise ValueError("복구 파일에 library.db가 없습니다.")
-        has_uploads = any(name.startswith("uploads/") and not name.endswith("/") for name in names)
-        has_env = ".env.local" in names
-        extract_root = Path(tempfile.mkdtemp(prefix="__PROJECT_SLUG__-restore-bundle-"))
-        try:
-            extracted_db_path = extract_root / "library.db"
-            with bundle.open(db_member, "r") as source_db, open(extracted_db_path, "wb") as target_db:
-                shutil.copyfileobj(source_db, target_db)
-            _validate_library_db_file(extracted_db_path)
-
-            backup_settings = db.get_auto_backup_settings()
-            backup_dir = _normalize_backup_dir_path(backup_settings.get("backup_dir"))
-            backup_path = _create_local_full_backup_bundle(backup_dir, reason="before-full-restore", include_env_file=True)
-
-            db_path = Path(settings.db_path)
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-            staged_path = db_path.with_name(f".{db_path.name}.restore-{uuid4().hex}.tmp")
-            shutil.copyfile(extracted_db_path, staged_path)
-            for suffix in ("-wal", "-shm"):
-                candidate = Path(f"{settings.db_path}{suffix}")
-                if candidate.exists():
-                    candidate.unlink(missing_ok=True)
-            staged_path.replace(db_path)
-
-            if has_uploads:
-                uploads_extract_root = extract_root / "uploads"
-                bundle.extractall(extract_root, members=[name for name in names if name.startswith("uploads/")])
-                if IMAGE_UPLOAD_DIR.exists():
-                    shutil.rmtree(IMAGE_UPLOAD_DIR)
-                if uploads_extract_root.exists():
-                    IMAGE_UPLOAD_DIR.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(uploads_extract_root), str(IMAGE_UPLOAD_DIR))
-
-            if has_env:
-                env_target = Path(__file__).resolve().parents[1] / ".env.local"
-                with bundle.open(".env.local", "r") as source_env, open(env_target, "wb") as target_env:
-                    shutil.copyfileobj(source_env, target_env)
-
-            db.ensure_startup_db_ready()
-            return {
-                "restored": True,
-                "restored_filename": str(original_filename or source_path.name or "restore.zip"),
-                "restored_bytes": int(source_path.stat().st_size),
-                "backup_path": backup_path,
-            }
-        finally:
-            shutil.rmtree(extract_root, ignore_errors=True)
-
-
-def _maybe_run_auto_backup_once(*, now: datetime | None = None) -> str | None:
-    backup_settings = db.get_auto_backup_settings()
-    if not bool(backup_settings.get("enabled")):
-        return None
-    interval_minutes = max(0, int(backup_settings.get("interval_minutes") or 0))
-    if interval_minutes <= 0:
-        return None
-    now_dt = now or datetime.now(timezone.utc)
-    last_backup_at_text = str(backup_settings.get("last_backup_at") or "").strip()
-    if last_backup_at_text:
-        try:
-            last_backup_at = datetime.fromisoformat(last_backup_at_text)
-        except ValueError:
-            last_backup_at = None
-        else:
-            if last_backup_at.tzinfo is None:
-                last_backup_at = last_backup_at.replace(tzinfo=timezone.utc)
-        if last_backup_at is not None and now_dt < (last_backup_at + timedelta(minutes=interval_minutes)):
-            return None
-    if not AUTO_BACKUP_LOCK.acquire(blocking=False):
-        return None
-    try:
-        backup_scope = str(backup_settings.get("backup_scope") or "DB").strip().upper()
-        include_env_file = bool(backup_settings.get("include_env_file"))
-        if backup_scope == "FULL":
-            backup_path = _create_local_full_backup_bundle(
-                str(backup_settings.get("backup_dir") or ""),
-                reason="auto",
-                include_env_file=include_env_file,
-            )
-        else:
-            backup_path = _create_local_db_backup(str(backup_settings.get("backup_dir") or ""), reason="auto")
-        db.record_auto_backup_result(
-            last_backup_at=now_dt.astimezone(timezone.utc).isoformat(),
-            last_backup_path=backup_path,
-            last_error=None,
-        )
-        return backup_path
-    except Exception as exc:
-        db.record_auto_backup_result(
-            last_backup_at=last_backup_at_text or None,
-            last_backup_path=str(backup_settings.get("last_backup_path") or "").strip() or None,
-            last_error=f"{now_dt.astimezone(timezone.utc).isoformat()} | {exc}",
-        )
-        logger.exception("auto backup worker failed")
-        return None
-    finally:
-        AUTO_BACKUP_LOCK.release()
-
-
-def _auto_backup_worker() -> None:
-    from app.services.perf_tracker import perf_track
-    while not AUTO_BACKUP_STOP_EVENT.wait(60):
-        with perf_track("auto_backup"):
-            _maybe_run_auto_backup_once()
-
-
-def _start_auto_backup_worker() -> None:
-    global AUTO_BACKUP_THREAD
-    if AUTO_BACKUP_THREAD is not None and AUTO_BACKUP_THREAD.is_alive():
-        return
-    AUTO_BACKUP_STOP_EVENT.clear()
-    AUTO_BACKUP_THREAD = threading.Thread(
-        target=_auto_backup_worker,
-        name="auto-backup-worker",
-        daemon=True,
-    )
-    AUTO_BACKUP_THREAD.start()
+from .services.backup import (  # noqa: E402 — re-export for backward compat
+    _normalize_backup_dir_path,
+    _write_db_snapshot_to_path,
+    _create_local_db_backup,
+    _create_local_full_backup_bundle,
+    _read_launchd_calendar_interval,
+    _format_launchd_schedule_label,
+    _read_backup_launchd_schedules,
+    _validate_library_db_file,
+    _restore_library_db_from_upload,
+    _restore_library_bundle_from_upload,
+    _maybe_run_auto_backup_once,
+    _auto_backup_worker,
+    _start_auto_backup_worker,
+)
 
 
 # Startup / shutdown hooks live in the `lifespan` context manager defined
@@ -3693,575 +2099,35 @@ def _goods_item_response_from_row(row: dict[str, Any]) -> GoodsItemResponse:
     )
 
 
-def _camera_http_url_or_none(value: Any) -> str | None:
-    raw = str(value or "").strip()
-    if not raw:
-        return None
-    try:
-        parsed = urlparse(raw)
-    except Exception:
-        return None
-    if parsed.scheme.lower() not in {"http", "https"}:
-        return None
-    if not parsed.netloc:
-        return None
-    return raw
+from .services.camera import (  # noqa: E402 — re-export for backward compat
+    _camera_http_url_or_none,
+    _camera_rtsp_url_or_none,
+    _camera_stream_url_with_credentials,
+    _camera_snapshot_bytes_from_stream,
+    _xml_local_name,
+    _onvif_wsse_security_header,
+    _onvif_soap_request,
+    _find_first_descendant_text,
+    _find_media_service_xaddr,
+    _test_onvif_camera_connection,
+    _discover_onvif_devices,
+)
 
 
-def _camera_rtsp_url_or_none(value: Any) -> str | None:
-    raw = str(value or "").strip()
-    if not raw:
-        return None
-    try:
-        parsed = urlparse(raw)
-    except Exception:
-        return None
-    if parsed.scheme.lower() not in {"rtsp", "rtsps"}:
-        return None
-    if not parsed.netloc:
-        return None
-    return raw
-
-
-def _camera_stream_url_with_credentials(stream_url: str, *, username: str | None, password: str | None) -> str:
-    parsed = urlparse(str(stream_url or "").strip())
-    if not parsed.scheme or not parsed.netloc:
-        return str(stream_url or "").strip()
-    if parsed.username or not username:
-        return parsed.geturl()
-    safe_username = quote(str(username), safe="")
-    safe_password = quote(str(password or ""), safe="")
-    auth_part = safe_username if safe_password == "" else f"{safe_username}:{safe_password}"
-    host = parsed.hostname or ""
-    if ":" in host and not host.startswith("["):
-        host = f"[{host}]"
-    netloc = auth_part + "@"
-    if host:
-        netloc += host
-    if parsed.port:
-        netloc += f":{parsed.port}"
-    return parsed._replace(netloc=netloc).geturl()
-
-
-def _camera_snapshot_bytes_from_stream(stream_url: str, *, username: str | None, password: str | None) -> bytes:
-    ffmpeg_bin = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
-    resolved_url = _camera_stream_url_with_credentials(stream_url, username=username, password=password)
-    proc = subprocess.run(
-        [
-            ffmpeg_bin,
-            "-v",
-            "error",
-            "-rtsp_transport",
-            "tcp",
-            "-i",
-            resolved_url,
-            "-frames:v",
-            "1",
-            "-f",
-            "image2pipe",
-            "-vcodec",
-            "mjpeg",
-            "-",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=15,
-        check=False,
-    )
-    if proc.returncode != 0 or not proc.stdout:
-        stderr_text = proc.stderr.decode("utf-8", errors="ignore").strip()
-        raise RuntimeError(stderr_text or "ffmpeg snapshot capture failed")
-    return proc.stdout
-
-
-def _xml_local_name(tag: str) -> str:
-    raw = str(tag or "")
-    return raw.split("}", 1)[-1] if "}" in raw else raw
-
-
-def _onvif_wsse_security_header(username: str, password: str) -> str:
-    nonce_bytes = secrets.token_bytes(16)
-    created = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    digest = base64.b64encode(hashlib.sha1(nonce_bytes + created.encode("utf-8") + password.encode("utf-8")).digest()).decode("ascii")
-    nonce_b64 = base64.b64encode(nonce_bytes).decode("ascii")
-    return f"""
-<wsse:Security soap:mustUnderstand="1"
- xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
- xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-  <wsse:UsernameToken>
-    <wsse:Username>{username}</wsse:Username>
-    <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">{digest}</wsse:Password>
-    <wsse:Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">{nonce_b64}</wsse:Nonce>
-    <wsu:Created>{created}</wsu:Created>
-  </wsse:UsernameToken>
-</wsse:Security>
-""".strip()
-
-
-def _onvif_soap_request(
-    service_url: str,
-    body_xml: str,
-    *,
-    username: str | None,
-    password: str | None,
-    timeout: float = 8.0,
-) -> ET.Element:
-    service = _camera_http_url_or_none(service_url)
-    if service is None:
-        raise ValueError("유효한 ONVIF 장치 URL이 아닙니다.")
-    header_parts = [f"<wsa:MessageID>uuid:{uuid4()}</wsa:MessageID>"]
-    if username:
-        header_parts.append(_onvif_wsse_security_header(username, password or ""))
-    envelope = f"""<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
- xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
-  <soap:Header>
-    {''.join(header_parts)}
-  </soap:Header>
-  <soap:Body>
-    {body_xml}
-  </soap:Body>
-</soap:Envelope>
-""".strip()
-    auth = (username, password or "") if username else None
-    with httpx.Client(timeout=timeout, follow_redirects=True, verify=False) as client:
-        response = client.post(
-            service,
-            content=envelope.encode("utf-8"),
-            headers={"Content-Type": "application/soap+xml; charset=utf-8"},
-            auth=auth,
-        )
-    response.raise_for_status()
-    return ET.fromstring(response.content)
-
-
-def _find_first_descendant_text(element: ET.Element, local_name: str) -> str | None:
-    target = str(local_name or "").strip()
-    if not target:
-        return None
-    for node in element.iter():
-        if _xml_local_name(node.tag) == target:
-            value = str(node.text or "").strip()
-            if value:
-                return value
-    return None
-
-
-def _find_media_service_xaddr(root: ET.Element) -> str | None:
-    for node in root.iter():
-        if _xml_local_name(node.tag) in {"Media", "Media2"}:
-            xaddr = _find_first_descendant_text(node, "XAddr")
-            if _camera_http_url_or_none(xaddr):
-                return xaddr
-    for service in root.iter():
-        if _xml_local_name(service.tag) != "Service":
-            continue
-        namespace_text = _find_first_descendant_text(service, "Namespace") or ""
-        if "media/wsdl" not in namespace_text.lower():
-            continue
-        xaddr = _find_first_descendant_text(service, "XAddr")
-        if _camera_http_url_or_none(xaddr):
-            return xaddr
-    return None
-
-
-def _test_onvif_camera_connection(
-    device_service_url: str,
-    *,
-    username: str | None,
-    password: str | None,
-) -> dict[str, Any]:
-    device_root = _onvif_soap_request(
-        device_service_url,
-        '<tds:GetCapabilities xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><tds:Category>All</tds:Category></tds:GetCapabilities>',
-        username=username,
-        password=password,
-    )
-    media_service_url = _find_media_service_xaddr(device_root)
-    if not media_service_url:
-        services_root = _onvif_soap_request(
-            device_service_url,
-            '<tds:GetServices xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><tds:IncludeCapability>false</tds:IncludeCapability></tds:GetServices>',
-            username=username,
-            password=password,
-        )
-        media_service_url = _find_media_service_xaddr(services_root)
-
-    manufacturer = None
-    model = None
-    firmware_version = None
-    serial_number = None
-    hardware_id = None
-    try:
-        info_root = _onvif_soap_request(
-            device_service_url,
-            '<tds:GetDeviceInformation xmlns:tds="http://www.onvif.org/ver10/device/wsdl" />',
-            username=username,
-            password=password,
-        )
-        manufacturer = _find_first_descendant_text(info_root, "Manufacturer")
-        model = _find_first_descendant_text(info_root, "Model")
-        firmware_version = _find_first_descendant_text(info_root, "FirmwareVersion")
-        serial_number = _find_first_descendant_text(info_root, "SerialNumber")
-        hardware_id = _find_first_descendant_text(info_root, "HardwareId")
-    except httpx.HTTPStatusError:
-        pass
-
-    profile_token = None
-    snapshot_url = None
-    stream_url = None
-
-    if media_service_url:
-        try:
-            profiles_root = _onvif_soap_request(
-                media_service_url,
-                '<trt:GetProfiles xmlns:trt="http://www.onvif.org/ver10/media/wsdl" />',
-                username=username,
-                password=password,
-            )
-            for node in profiles_root.iter():
-                if _xml_local_name(node.tag) == "Profiles":
-                    profile_token = str(node.attrib.get("token") or node.attrib.get("{http://www.onvif.org/ver10/media/wsdl}token") or "").strip() or None
-                    if profile_token:
-                        break
-        except httpx.HTTPStatusError:
-            profile_token = None
-        if profile_token:
-            try:
-                snapshot_root = _onvif_soap_request(
-                    media_service_url,
-                    f'<trt:GetSnapshotUri xmlns:trt="http://www.onvif.org/ver10/media/wsdl"><trt:ProfileToken>{profile_token}</trt:ProfileToken></trt:GetSnapshotUri>',
-                    username=username,
-                    password=password,
-                )
-                snapshot_url = _find_first_descendant_text(snapshot_root, "Uri")
-            except Exception:
-                snapshot_url = None
-            try:
-                stream_root = _onvif_soap_request(
-                    media_service_url,
-                    (
-                        '<trt:GetStreamUri xmlns:trt="http://www.onvif.org/ver10/media/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema">'
-                        '<trt:StreamSetup><tt:Stream>RTP-Unicast</tt:Stream><tt:Transport><tt:Protocol>RTSP</tt:Protocol></tt:Transport></trt:StreamSetup>'
-                        f'<trt:ProfileToken>{profile_token}</trt:ProfileToken>'
-                        '</trt:GetStreamUri>'
-                    ),
-                    username=username,
-                    password=password,
-                )
-                stream_url = _find_first_descendant_text(stream_root, "Uri")
-            except Exception:
-                stream_url = None
-
-    return {
-        "device_service_url": _camera_http_url_or_none(device_service_url) or str(device_service_url).strip(),
-        "media_service_url": _camera_http_url_or_none(media_service_url),
-        "profile_token": profile_token,
-        "snapshot_url": _camera_http_url_or_none(snapshot_url) or snapshot_url,
-        "stream_url": str(stream_url or "").strip() or None,
-        "manufacturer": manufacturer,
-        "model": model,
-        "firmware_version": firmware_version,
-        "serial_number": serial_number,
-        "hardware_id": hardware_id,
-    }
-
-
-def _discover_onvif_devices(timeout_seconds: float = 2.5) -> list[dict[str, Any]]:
-    timeout = max(0.5, min(10.0, float(timeout_seconds or 2.5)))
-    probe = f"""<?xml version="1.0" encoding="UTF-8"?>
-<e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope"
-            xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing"
-            xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery"
-            xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
-  <e:Header>
-    <w:MessageID>uuid:{uuid4()}</w:MessageID>
-    <w:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To>
-    <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</w:Action>
-  </e:Header>
-  <e:Body>
-    <d:Probe>
-      <d:Types>dn:NetworkVideoTransmitter</d:Types>
-    </d:Probe>
-  </e:Body>
-</e:Envelope>
-""".strip()
-    namespaces = {
-        "a": "http://schemas.xmlsoap.org/ws/2004/08/addressing",
-        "d": "http://schemas.xmlsoap.org/ws/2005/04/discovery",
-    }
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    sock.settimeout(0.35)
-    try:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    except OSError:
-        pass
-    try:
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
-    except OSError:
-        pass
-    try:
-        try:
-            sock.sendto(probe.encode("utf-8"), ("239.255.255.250", 3702))
-        except OSError:
-            return []
-        deadline = time.time() + timeout
-        found: dict[str, dict[str, Any]] = {}
-        while time.time() < deadline:
-            try:
-                packet, addr = sock.recvfrom(65535)
-            except socket.timeout:
-                continue
-            except OSError:
-                break
-            try:
-                root = ET.fromstring(packet)
-            except ET.ParseError:
-                continue
-            for match in root.findall(".//d:ProbeMatch", namespaces):
-                endpoint_reference = str(match.findtext("./a:EndpointReference/a:Address", default="", namespaces=namespaces) or "").strip() or None
-                raw_xaddrs = str(match.findtext("./d:XAddrs", default="", namespaces=namespaces) or "").strip()
-                xaddr_candidates = [value.strip() for value in raw_xaddrs.split() if _camera_http_url_or_none(value.strip())]
-                onvif_device_url = xaddr_candidates[0] if xaddr_candidates else None
-                scopes = [value.strip() for value in str(match.findtext("./d:Scopes", default="", namespaces=namespaces) or "").split() if value.strip()]
-                types = [value.strip() for value in str(match.findtext("./d:Types", default="", namespaces=namespaces) or "").split() if value.strip()]
-                host = None
-                if onvif_device_url:
-                    try:
-                        host = urlparse(onvif_device_url).hostname
-                    except Exception:
-                        host = None
-                if not host:
-                    host = str(addr[0] or "").strip() or None
-                camera_name = None
-                for scope in scopes:
-                    if "/name/" in scope:
-                        camera_name = unquote(scope.split("/name/", 1)[1]).replace("_", " ").strip() or None
-                        break
-                key = str(onvif_device_url or endpoint_reference or host or uuid4())
-                found[key] = {
-                    "endpoint_reference": endpoint_reference,
-                    "camera_name": camera_name,
-                    "host": host,
-                    "onvif_device_url": onvif_device_url,
-                    "scopes": scopes,
-                    "types": types,
-                }
-    finally:
-        sock.close()
-    return sorted(
-        found.values(),
-        key=lambda row: (
-            str(row.get("host") or ""),
-            str(row.get("camera_name") or ""),
-            str(row.get("onvif_device_url") or ""),
-        ),
-    )
-
-
-def _purchase_import_rows_for_save(
-    items: list[PurchaseImportPreviewItem],
-    *,
-    vendor_code: str,
-    email_from: str | None,
-) -> list[dict[str, Any]]:
-    seller_name = _clean_text(email_from) or vendor_code
-    rows: list[dict[str, Any]] = []
-    for item in items:
-        raw_payload = dict(item.raw_payload or {})
-        raw_payload["row_no"] = max(1, int(item.row_no or 1))
-        item_url = _purchase_normalize_item_url(raw_payload.get("item_url"))
-        rows.append(
-            {
-                "artist_name": _clean_text(item.artist_name),
-                "item_name": str(item.item_name or "").strip(),
-                "media_format": _purchase_import_media_format_or_default(vendor_code, item.media_format),
-                "quantity": max(1, int(item.quantity or 1)),
-                "unit_price": float(item.unit_price) if item.unit_price is not None else None,
-                "line_total": float(item.line_total) if item.line_total is not None else None,
-                "currency_code": str(item.currency_code or "KRW").strip().upper() or "KRW",
-                "purchase_date": _normalize_purchase_date(item.purchase_date),
-                "seller_name": _clean_text(raw_payload.get("seller_name")) or seller_name,
-                "item_url": item_url,
-                "image_url": _clean_text(raw_payload.get("image_url")),
-                "raw_line": _clean_text(item.raw_line),
-                "raw_payload": raw_payload,
-            }
-        )
-    return rows
-
-
-def _purchase_queue_base_context(row: dict[str, Any]) -> tuple[str, str, str, str]:
-    media_format = _purchase_import_media_format_or_default(row.get("vendor_code"), row.get("media_format")) or "CD"
-    category = _infer_music_category_from_format(media_format)
-    size_group = _default_size_group_for_category(category)
-    seller_name = _clean_text(row.get("seller_name")) or _clean_text(row.get("vendor_code")) or "PURCHASE_IMPORT"
-    return media_format, category, size_group, seller_name
-
-
-def _purchase_queue_memory_note(row: dict[str, Any], candidate: dict[str, Any] | None = None) -> str:
-    seller_name = _clean_text(row.get("seller_name")) or _clean_text(row.get("vendor_code")) or "PURCHASE_IMPORT"
-    memory_bits = [f"구매 수입 큐 #{int(row['id'])}"]
-    email_subject = _clean_text(row.get("email_subject"))
-    source_ref = _clean_text(row.get("source_ref"))
-    if email_subject:
-        memory_bits.append(f"메일 제목: {email_subject}")
-    if source_ref:
-        memory_bits.append(f"메일 ID: {source_ref}")
-    if isinstance(candidate, dict):
-        source = str(candidate.get("source") or "").strip().upper()
-        external_id = str(candidate.get("external_id") or "").strip()
-        if source and external_id:
-            memory_bits.append(f"메타 후보: {source}#{external_id}")
-        candidate_source_notes = _clean_text(candidate.get("source_notes"))
-        if candidate_source_notes:
-            memory_bits.append(f"소스 메모: {candidate_source_notes}")
-    memory_note = " | ".join(memory_bits)
-    return memory_note
-
-
-def _purchase_queue_candidate_query(
-    row: dict[str, Any],
-    *,
-    artist_name: str | None = None,
-    item_name: str | None = None,
-    query: str | None = None,
-) -> str:
-    override_query = _clean_text(query)
-    if override_query:
-        return override_query
-    raw_payload = dict(row.get("raw_payload") or {})
-    fallback_artist_name = _clean_text(raw_payload.get("parsed_search_artist_name")) or _clean_text(row.get("artist_name"))
-    fallback_item_name = _clean_text(raw_payload.get("parsed_search_item_name")) or _clean_text(row.get("item_name"))
-    parts = [
-        _clean_text(artist_name) if artist_name is not None else fallback_artist_name,
-        _clean_text(item_name) if item_name is not None else fallback_item_name,
-    ]
-    return " ".join(part for part in parts if part).strip()
-
-
-def _build_owned_item_from_purchase_queue_row(
-    row: dict[str, Any],
-    candidate: dict[str, Any] | None = None,
-) -> OwnedItemCreate:
-    media_format, fallback_category, fallback_size_group, seller_name = _purchase_queue_base_context(row)
-    raw_payload = dict(row.get("raw_payload") or {})
-    candidate_source = str((candidate or {}).get("source") or "").strip().upper()
-    candidate_external_id = str((candidate or {}).get("external_id") or "").strip()
-    candidate_format = str((candidate or {}).get("format_name") or "").strip().upper()
-    category = fallback_category
-    if category == "DIGITAL" and candidate_format in MUSIC_CATEGORIES:
-        category = candidate_format
-    size_group = _default_size_group_for_category(category)
-    ebay_artist_name: str | None = None
-    ebay_item_name: str | None = None
-    if str(row.get("vendor_code") or "").strip().upper() == "EBAY":
-        ebay_artist_name, ebay_item_name, _, _ = _parse_ebay_purchase_title(_purchase_ebay_parse_source_text(row, raw_payload))
-    artist_name = _clean_text((candidate or {}).get("artist_or_brand")) or _clean_text(row.get("artist_name")) or ebay_artist_name
-    item_name = _clean_text((candidate or {}).get("title")) or ebay_item_name or _clean_text(row.get("item_name")) or category
-    cover_condition = _clean_text((candidate or {}).get("cover_condition")) or _clean_text(raw_payload.get("parsed_cover_condition"))
-    disc_condition = _clean_text((candidate or {}).get("disc_condition")) or _clean_text(raw_payload.get("parsed_disc_condition"))
-    mapped_domain = _normalize_domain_code((candidate or {}).get("domain_code"))
-    release_type = str((candidate or {}).get("release_type") or "").strip().upper() or None
-    if release_type not in RELEASE_TYPES:
-        release_type = None
-    collector = _candidate_collector_base(candidate or {})
-    # Aladin 후보에 track_items가 없으면 ItemLookUp API로 수록곡 보강
-    if candidate_source == "ALADIN" and candidate_external_id and not collector.get("track_items"):
-        try:
-            fetched_tracks = fetch_aladin_track_items(candidate_external_id)
-            if fetched_tracks:
-                collector["track_items"] = fetched_tracks
-        except Exception:
-            pass
-    return OwnedItemCreate(
-        category=category,  # type: ignore[arg-type]
-        size_group=size_group,  # type: ignore[arg-type]
-        preferred_storage_size_group=size_group,  # type: ignore[arg-type]
-        auto_location_recommendation=False,
-        quantity=max(1, int(row.get("quantity") or 1)),
-        status="IN_COLLECTION",
-        source_code=candidate_source or None,
-        source_external_id=candidate_external_id or None,
-        domain_code=mapped_domain,
-        release_type=release_type,  # type: ignore[arg-type]
-        item_name_override=item_name,
-        acquisition_date=_normalize_purchase_date(row.get("purchase_date")),
-        purchase_price=float(row["unit_price"]) if row.get("unit_price") is not None else None,
-        currency_code=str(row.get("currency_code") or "KRW").strip().upper() or "KRW",
-        purchase_source=seller_name,
-        memory_note=_purchase_queue_memory_note(row, candidate),
-        music_detail=(
-            MusicDetailCreate(
-                format_name=category,  # type: ignore[arg-type]
-                artist_or_brand=artist_name,
-                released_date=_clean_text((candidate or {}).get("released_date")),
-                barcode=_clean_text((candidate or {}).get("barcode")),
-                label_name=_clean_text((candidate or {}).get("label_name")),
-                catalog_no=_discogs_catalog_no((candidate or {}).get("catalog_no")),
-                media_type=_clean_text((candidate or {}).get("media_type")),
-                cover_condition=cover_condition or None,
-                disc_condition=disc_condition or None,
-                sleeve_condition=cover_condition or None,
-                media_condition=disc_condition or None,
-                genres=_clean_string_list((candidate or {}).get("genres")),
-                styles=_clean_string_list((candidate or {}).get("styles")),
-                cover_image_url=_clean_text((candidate or {}).get("cover_image_url")),
-                track_list=_clean_track_list((candidate or {}).get("track_list")),
-                disc_count=_normalize_positive_int((candidate or {}).get("disc_count")),
-                speed_rpm=_normalize_positive_int((candidate or {}).get("speed_rpm")),
-                source_notes=collector.get("source_notes"),
-                credits=collector.get("credits"),
-                identifier_items=collector.get("identifier_items"),
-                image_items=collector.get("image_items"),
-                company_items=collector.get("company_items"),
-                series=collector.get("series"),
-                format_items=collector.get("format_items"),
-                track_items=collector.get("track_items"),
-                label_items=collector.get("label_items"),
-                runout_matrix=collector.get("runout_matrix"),
-                pressing_country=collector.get("pressing_country"),
-            )
-            if category in MUSIC_CATEGORIES
-            else None
-        ),
-    )
-
-
-def _purchase_import_duplicate_create_response(
-    *,
-    queue_id: int,
-    row: dict[str, Any],
-    existing_owned_item_id: int,
-) -> PurchaseImportCreateResponse:
-    existing_owned_item = db.get_owned_item(existing_owned_item_id)
-    if existing_owned_item is None:
-        raise HTTPException(status_code=404, detail="linked owned item not found")
-    updated = db.update_purchase_import_row(
-        queue_id,
-        queue_status="CREATED",
-        linked_owned_item_id=existing_owned_item_id,
-    )
-    if updated is None:
-        raise HTTPException(status_code=500, detail="purchase import row update failed")
-    category = str(existing_owned_item.get("category") or row.get("media_format") or "OTHER").strip().upper() or "OTHER"
-    return PurchaseImportCreateResponse(
-        queue_item=_purchase_queue_item_from_row(updated),
-        owned_item_id=existing_owned_item_id,
-        label_id=_build_label_id(category, existing_owned_item_id),
-        linked_album_master_id=(
-            int(existing_owned_item["linked_album_master_id"])
-            if existing_owned_item.get("linked_album_master_id") is not None
-            else None
-        ),
-        notices=["동일한 주문 상품이 이미 등록되어 기존 보유상품에 연결했습니다. 신규 등록은 생략했습니다."],
-    )
+from .services.purchase_mail import (
+    _purchase_import_rows_for_save,
+    _purchase_queue_base_context,
+    _purchase_queue_memory_note,
+    _purchase_queue_candidate_query,
+    _build_owned_item_from_purchase_queue_row,
+    _purchase_import_duplicate_create_response,
+)
 
 
 # Purchase-imports routes (preview/save/webhook/list/candidates/enrich/
 # create/ignore) live in app/api/purchase_imports.py, wired at the bottom
-# of this module via include_router. The parsing/normalising helpers stay
-# here because they're shared with non-route code paths.
+# of this module via include_router. The parsing/normalising helpers live in
+# app/services/purchase_mail — see reexports above.
 
 
 # Admin auth-account routes (list/create/update/delete + legacy mirrors)
@@ -4274,151 +2140,17 @@ def _purchase_import_duplicate_create_response(
 
 
 
-def _home_assistant_api_base_url() -> str:
-    raw = str(settings.home_assistant_base_url or "").strip().rstrip("/")
-    if raw.endswith("/api"):
-        return raw
-    return f"{raw}/api" if raw else ""
 
 
-def _fetch_home_assistant_state(entity_id: str) -> dict[str, Any] | None:
-    token = str(settings.home_assistant_token or "").strip()
-    api_base = _home_assistant_api_base_url()
-    entity = str(entity_id or "").strip()
-    if not (token and api_base and entity):
-        return None
-    url = f"{api_base}/states/{quote(entity, safe='._-')}"
-    response = httpx.get(
-        url,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/json",
-        },
-        timeout=5.0,
-        follow_redirects=True,
-    )
-    response.raise_for_status()
-    data = response.json()
-    return data if isinstance(data, dict) else None
-
-
-def _coerce_home_assistant_number(value: Any) -> float | None:
-    raw = str(value or "").strip().lower()
-    if raw in {"", "unknown", "unavailable", "none"}:
-        return None
-    try:
-        return float(raw)
-    except (TypeError, ValueError):
-        return None
-
-
-def _office_climate_comfort_label(temperature_c: float | None, humidity_percent: float | None) -> str | None:
-    if humidity_percent is not None:
-        if humidity_percent < 40:
-            return "건조"
-        if humidity_percent > 65:
-            return "습함"
-    if temperature_c is not None:
-        if temperature_c < 18:
-            return "서늘"
-        if temperature_c > 27:
-            return "따뜻함"
-    if temperature_c is None and humidity_percent is None:
-        return None
-    return "쾌적"
-
-
-def _load_operator_office_climate() -> dict[str, Any]:
-    temperature_state = _fetch_home_assistant_state(settings.office_climate_temperature_entity_id)
-    humidity_state = _fetch_home_assistant_state(settings.office_climate_humidity_entity_id)
-    temperature_c = _coerce_home_assistant_number(temperature_state.get("state") if temperature_state else None)
-    humidity_percent = _coerce_home_assistant_number(humidity_state.get("state") if humidity_state else None)
-    updated_candidates = [
-        str(temperature_state.get("last_updated") or temperature_state.get("last_changed") or "").strip()
-        if temperature_state else "",
-        str(humidity_state.get("last_updated") or humidity_state.get("last_changed") or "").strip()
-        if humidity_state else "",
-    ]
-    updated_at = max([item for item in updated_candidates if item], default=None)
-    comfort_label = _office_climate_comfort_label(temperature_c, humidity_percent)
-    available = temperature_c is not None or humidity_percent is not None
-    return {
-        "available": available,
-        "source": "home_assistant",
-        "location_label": "상주 사무실",
-        "description": "온/습도계",
-        "temperature_c": temperature_c,
-        "humidity_percent": humidity_percent,
-        "comfort_label": comfort_label,
-        "updated_at": updated_at,
-    }
-
-
-def _load_operator_seoul_weather() -> dict[str, Any]:
-    response = httpx.get(
-        "https://api.open-meteo.com/v1/forecast",
-        params={
-            "latitude": 37.5665,
-            "longitude": 126.9780,
-            "current": "temperature_2m,relative_humidity_2m,is_day,weather_code",
-            "daily": "temperature_2m_max,temperature_2m_min",
-            "forecast_days": 1,
-            "timezone": "Asia/Seoul",
-        },
-        timeout=10.0,
-        follow_redirects=True,
-    )
-    response.raise_for_status()
-    payload = response.json() if response.content else {}
-    current = payload.get("current") if isinstance(payload, dict) and isinstance(payload.get("current"), dict) else {}
-    daily = payload.get("daily") if isinstance(payload, dict) and isinstance(payload.get("daily"), dict) else {}
-    temperature_c = current.get("temperature_2m")
-    humidity_percent = current.get("relative_humidity_2m")
-    weather_code = current.get("weather_code")
-    is_day = current.get("is_day")
-    daily_max = daily.get("temperature_2m_max") if isinstance(daily.get("temperature_2m_max"), list) else []
-    daily_min = daily.get("temperature_2m_min") if isinstance(daily.get("temperature_2m_min"), list) else []
-    temperature_high_c = daily_max[0] if daily_max else None
-    temperature_low_c = daily_min[0] if daily_min else None
-    updated_at = str(current.get("time") or "").strip() or None
-    available = temperature_c is not None
-    return {
-        "available": available,
-        "source": "seoul_weather",
-        "location_label": "서울",
-        "description": "",
-        "temperature_c": float(temperature_c) if temperature_c is not None else None,
-        "humidity_percent": float(humidity_percent) if humidity_percent is not None else None,
-        "comfort_label": None,
-        "temperature_high_c": float(temperature_high_c) if temperature_high_c is not None else None,
-        "temperature_low_c": float(temperature_low_c) if temperature_low_c is not None else None,
-        "weather_code": int(weather_code) if weather_code is not None else None,
-        "is_day": bool(is_day) if is_day is not None else None,
-        "updated_at": updated_at,
-    }
-
-
-
-
-
-def _wmo_weather_code_to_desc(code: int | None) -> str | None:
-    if code is None:
-        return None
-    if code == 0:
-        return "맑음"
-    elif code in {1, 2, 3}:
-        return "구름 조금/흐림"
-    elif code in {45, 48}:
-        return "안개"
-    elif code in {51, 53, 55, 56, 57}:
-        return "이슬비"
-    elif code in {61, 63, 65, 66, 67, 80, 81, 82}:
-        return "비"
-    elif code in {71, 73, 75, 77, 85, 86}:
-        return "눈"
-    elif code in {95, 96, 99}:
-        return "뇌우"
-    return "기타"
+from .services.home_env import (  # noqa: E402 — re-export for backward compat
+    _home_assistant_api_base_url,
+    _fetch_home_assistant_state,
+    _coerce_home_assistant_number,
+    _office_climate_comfort_label,
+    _load_operator_office_climate,
+    _load_operator_seoul_weather,
+    _wmo_weather_code_to_desc,
+)
 
 
 def _map_to_customer_track_request_item(row: dict[str, Any]) -> CustomerTrackRequestItem:
@@ -4832,6 +2564,22 @@ def _aladin_discogs_backfill_thread_worker(dry_run: bool, sleep_sec: float) -> N
         logger.exception("aladin_discogs_backfill thread error: %s", exc)
 
 
+def _spotify_batch_thread_worker(limit: int, require_tracks: bool) -> None:
+    global SPOTIFY_BATCH_LAST_RESULT, SPOTIFY_BATCH_LAST_ERROR
+    from app.services.spotify import SpotifyService
+    from app.db.album_master_spotify import batch_match_spotify
+    from app.services.perf_tracker import perf_track
+    try:
+        with SPOTIFY_BATCH_LOCK:
+            sp = SpotifyService()
+            with perf_track("spotify_batch_match", context={"limit": limit}):
+                result = batch_match_spotify(sp, limit=limit, require_tracks=require_tracks)
+            SPOTIFY_BATCH_LAST_RESULT = result
+            SPOTIFY_BATCH_LAST_ERROR = None
+    except Exception as exc:
+        SPOTIFY_BATCH_LAST_ERROR = f"{_now_iso()} | {exc}"
+        SPOTIFY_BATCH_LAST_RESULT = None
+        logger.exception("spotify_batch thread error: %s", exc)
 
 
 
@@ -4855,6 +2603,88 @@ def _discogs_korean_backfill_worker(limit: int | None) -> None:
         logger.exception("discogs_korean_backfill error: %s", exc)
 
 
+MANIADB_RELEASE_TYPE_BACKFILL_LOCK   = threading.Lock()
+MANIADB_RELEASE_TYPE_BACKFILL_RESULT: dict[str, Any] | None = None
+
+
+def _run_maniadb_release_type_backfill(limit: int = 200, sleep_sec: float = 0.3) -> dict[str, Any]:
+    """ManiaDB album_master 중 release_type 미반영건을 재요청해 채운다."""
+    import time as _time
+    from app.services.providers import get_maniadb_master_variants
+
+    with db.get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, source_master_id
+            FROM album_master
+            WHERE source_code = 'MANIADB'
+              AND release_type IS NULL
+            ORDER BY id ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    candidates = [dict(r) for r in rows]
+
+    updated = 0
+    skipped = 0
+    failed = 0
+    now = _now_iso()
+
+    for row in candidates:
+        master_id = int(row["id"])
+        raw_sid = str(row["source_master_id"] or "").strip()
+        # source_master_id may be "145206:1" — strip variant suffix
+        album_id = raw_sid.split(":")[0].strip()
+        if not album_id:
+            skipped += 1
+            continue
+        try:
+            variants = get_maniadb_master_variants(album_id, limit=1)
+            release_type = None
+            if variants:
+                release_type = str(variants[0].get("release_type") or "").strip().upper() or None
+            if release_type not in ("ALBUM", "EP", "SINGLE"):
+                release_type = None
+            if release_type:
+                with db.get_conn() as wconn:
+                    wconn.execute(
+                        "UPDATE album_master SET release_type = ?, updated_at = ? WHERE id = ?",
+                        (release_type, now, master_id),
+                    )
+                updated += 1
+            else:
+                skipped += 1
+        except Exception as exc:
+            logger.warning("maniadb_release_type_backfill error id=%s: %s", master_id, exc)
+            failed += 1
+        if sleep_sec > 0:
+            _time.sleep(sleep_sec)
+
+    remaining = 0
+    with db.get_conn() as conn:
+        remaining = conn.execute(
+            "SELECT COUNT(*) FROM album_master WHERE source_code='MANIADB' AND release_type IS NULL"
+        ).fetchone()[0]
+
+    return {
+        "processed": len(candidates),
+        "updated": updated,
+        "skipped": skipped,
+        "failed": failed,
+        "remaining": remaining,
+    }
+
+
+def _maniadb_release_type_backfill_worker(limit: int, sleep_sec: float) -> None:
+    global MANIADB_RELEASE_TYPE_BACKFILL_RESULT
+    try:
+        with MANIADB_RELEASE_TYPE_BACKFILL_LOCK:
+            result = _run_maniadb_release_type_backfill(limit=limit, sleep_sec=sleep_sec)
+            MANIADB_RELEASE_TYPE_BACKFILL_RESULT = {"status": "done", **result}
+    except Exception as exc:
+        MANIADB_RELEASE_TYPE_BACKFILL_RESULT = {"status": "error", "detail": str(exc)}
+        logger.exception("maniadb_release_type_backfill error: %s", exc)
 
 
 

@@ -1175,7 +1175,7 @@ def _discogs_release_type_from_text(format_text: str | None) -> str | None:
     text = str(format_text or "").strip().lower()
     if not text:
         return None
-    if any(token in text for token in ["single", "maxi-single", "maxi single"]):
+    if any(token in text for token in ["single", "maxi-single", "maxi single", '7"', "7 inch", "7-inch"]):
         return "SINGLE"
     if any(token in text for token in ["ep", "mini-album", "mini album"]):
         return "EP"
@@ -2830,20 +2830,21 @@ def _fetch_aladin_tracks_from_web(item_id: str, isbn: str) -> list[dict[str, Any
     else:
         section = section[:5000]
 
-    raw_items = re.findall(r"<li[^>]*>\s*<span[^>]*>([^<]+)</span>\s*</li>", section)
+    raw_items = re.findall(r"<li[^>]*>(.*?)</li>", section, re.DOTALL)
     tracks: list[dict[str, Any]] = []
     for raw in raw_items:
-        raw = raw.strip()
-        if not raw:
+        li_text = _clean_html_text(re.sub(r"<[^>]+>", " ", raw))
+        li_text = li_text.strip()
+        if not li_text:
             continue
         # "1-1. 제목", "A-1. 제목", "1. 제목" 형태에서 위치 분리
-        pos_match = re.match(r"^(\d+-\d+|[A-Za-z]-\d+|\d+)\.\s+(.+)$", raw)
+        pos_match = re.match(r"^(\d+-\d+|[A-Za-z]-\d+|\d+)\.\s+(.+)$", li_text)
         if pos_match:
             position = pos_match.group(1)
             title = pos_match.group(2).strip()
         else:
             position = str(len(tracks) + 1)
-            title = raw
+            title = li_text
         tracks.append({"position": position, "title": title, "duration": ""})
     return tracks
 
@@ -3142,6 +3143,29 @@ _MANIADB_KW_SUFFIX_PAT = re.compile(
 
 
 def _parse_maniadb_album_header(html_text: str) -> tuple[str | None, str | None]:
+    # Prefer structured HTML divs — meta keyword appends "(year), genre" which corrupts title
+    album_title_div = re.search(
+        r'<div\s+class="album-title"[^>]*>(.*?)</div>',
+        html_text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if album_title_div:
+        div_text = re.sub(r"<[^>]+>", "", album_title_div.group(1)).strip()
+        if div_text:
+            artist_parsed, title_parsed, _, _ = _parse_maniadb_release_text(div_text)
+            artist_final = artist_parsed
+            artist_div = re.search(
+                r'<div\s+class="album-artist"[^>]*>(.*?)</div>',
+                html_text,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if artist_div:
+                artist_text = re.sub(r"<[^>]+>", "", artist_div.group(1)).strip()
+                if artist_text:
+                    artist_final = artist_text
+            if title_parsed:
+                return artist_final, title_parsed
+    # Fallback: meta keyword
     meta = re.search(r'<meta\s+name="keyword"\s+content="([^"]+)"', html_text, re.IGNORECASE)
     if not meta:
         return None, None

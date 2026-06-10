@@ -620,6 +620,7 @@ def list_album_masters(
     catalog_missing: bool = Query(default=False),
     review_missing: bool = Query(default=False),
     local_missing: bool = Query(default=False),
+    release_type_missing: bool = Query(default=False),
     spotify_state: str = Query(default="ANY", pattern="^(ANY|MISSING|MATCHED)$"),
 ) -> list[AlbumMasterListItem]:
     main_module = _main()
@@ -657,6 +658,7 @@ def list_album_masters(
         catalog_missing=catalog_missing,
         review_missing=review_missing,
         local_missing=local_missing,
+        release_type_missing=release_type_missing,
         spotify_state=spotify_state,
     )
     if include_total:
@@ -679,12 +681,13 @@ def list_album_masters(
             is_limited=is_limited,
             is_new=is_new,
             is_promo=is_promo,
-        genre_missing=genre_missing,
-        format_missing=format_missing,
-        catalog_missing=catalog_missing,
-        review_missing=review_missing,
-        local_missing=local_missing,
-        spotify_state=spotify_state,
+            genre_missing=genre_missing,
+            format_missing=format_missing,
+            catalog_missing=catalog_missing,
+            review_missing=review_missing,
+            local_missing=local_missing,
+            release_type_missing=release_type_missing,
+            spotify_state=spotify_state,
         )
         response.headers["X-Total-Count"] = str(total)
     result: list[AlbumMasterListItem] = []
@@ -1006,12 +1009,53 @@ def merge_album_master(
 
 # ── Spotify integration ────────────────────────────────────────────
 
+@router.get("/album-masters/spotify/batch/status")
+def spotify_batch_status(request: Request) -> dict[str, Any]:
+    """Check Spotify batch match status."""
+    from ..security import _require_operator_request
+    _require_operator_request(request)
+    from app.main import SPOTIFY_BATCH_LOCK, SPOTIFY_BATCH_LAST_RESULT, SPOTIFY_BATCH_LAST_ERROR
+    return {
+        "running": SPOTIFY_BATCH_LOCK.locked(),
+        "last_result": SPOTIFY_BATCH_LAST_RESULT,
+        "last_error": SPOTIFY_BATCH_LAST_ERROR,
+    }
+
+
+@router.post("/album-masters/spotify/batch/run")
+def spotify_batch_run(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=500),
+    require_tracks: bool = Query(default=False),
+) -> dict[str, Any]:
+    """Start async Spotify batch match in background thread. ADMIN only."""
+    import threading as _threading
+    from ..security import _require_admin_request
+    _require_admin_request(request)
+    from ..services.spotify import SpotifyService
+    sp = SpotifyService()
+    if not sp.configured:
+        raise HTTPException(status_code=503, detail="Spotify not configured")
+    from app.main import SPOTIFY_BATCH_LOCK, _spotify_batch_thread_worker
+    if SPOTIFY_BATCH_LOCK.locked():
+        raise HTTPException(status_code=409, detail="Spotify batch already running")
+    t = _threading.Thread(
+        target=_spotify_batch_thread_worker,
+        kwargs={"limit": limit, "require_tracks": require_tracks},
+        name="spotify-batch-match",
+        daemon=True,
+    )
+    t.start()
+    return {"status": "started", "limit": limit, "require_tracks": require_tracks}
+
+
 @router.post("/album-masters/spotify/match")
 def spotify_batch_match(
     request: Request,
     limit: int = Query(default=50, ge=1, le=200),
+    require_tracks: bool = Query(default=False),
 ) -> dict[str, Any]:
-    """Batch match album_masters to Spotify. ADMIN or webhook token."""
+    """Batch match album_masters to Spotify. ADMIN or webhook token (synchronous)."""
     import secrets as _secrets
     from ..config import get_settings as _get_settings
     _cfg = _get_settings()
@@ -1031,7 +1075,7 @@ def spotify_batch_match(
     from ..services.perf_tracker import perf_track
     try:
         with perf_track("spotify_batch_match", context={"limit": limit}):
-            result = batch_match_spotify(sp, limit=limit)
+            result = batch_match_spotify(sp, limit=limit, require_tracks=require_tracks)
     except SpotifyException as exc:
         if exc.http_status == 429:
             raise HTTPException(status_code=429, detail="Spotify API rate-limit exceeded")

@@ -54,6 +54,193 @@ from app.db import (  # noqa: E402  — package surface
 )
 
 
+def _build_owned_item_filters(
+    category: str | None,
+    domain_code: str | None,
+    release_type: str | None,
+    status: str | None,
+    q: str | None,
+    artist_or_brand: str | None,
+    item_name: str | None,
+    catalog_no: str | None,
+    barcode: str | None,
+    release_year: int | None,
+    source_state: str,
+    master_state: str,
+    cover_state: str,
+    slot_state: str,
+    preferred_storage_state: str,
+    track_state: str,
+    music_only: bool,
+    media_format_state: str = "ANY",
+    size_group_state: str = "ANY",
+    catalog_missing: bool = False,
+    genre_missing: bool = False,
+) -> tuple[str, list[Any]]:
+    where_sql = ""
+    params: list[Any] = []
+
+    where_sql += " AND (oi.source_code IS NULL OR oi.source_code != 'MUSICBRAINZ')"
+
+    if category:
+        where_sql += " AND oi.category = ?"
+        params.append(category)
+    elif music_only:
+        where_sql += " AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')"
+
+    if domain_code:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM album_master_member amm_d
+            JOIN album_master am_d ON am_d.id = amm_d.album_master_id
+            WHERE amm_d.owned_item_id = oi.id
+              AND COALESCE(am_d.override_domain_code, am_d.domain_code) = ?
+          )
+        """
+        params.append(domain_code)
+
+    if release_type:
+        where_sql += " AND oi.release_type = ?"
+        params.append(release_type)
+
+    if status:
+        where_sql += " AND oi.status = ?"
+        params.append(status)
+
+    if q and q.strip():
+        q_norm = f"%{q.strip().lower()}%"
+        where_sql += """
+         AND (
+           LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
+           OR LOWER(COALESCE(oi.purchase_source, '')) LIKE ?
+           OR LOWER(COALESCE(oi.memory_note, '')) LIKE ?
+         )
+        """
+        params.extend([q_norm, q_norm, q_norm])
+
+    if artist_or_brand and artist_or_brand.strip():
+        v = f"%{artist_or_brand.strip().lower()}%"
+        where_sql += """
+         AND (
+           LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
+           OR LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
+         )
+        """
+        params.extend([v, v])
+
+    if item_name and item_name.strip():
+        where_sql += " AND LOWER(COALESCE(oi.item_name_override, '')) LIKE ?"
+        params.append(f"%{item_name.strip().lower()}%")
+
+    if catalog_no and catalog_no.strip():
+        where_sql += " AND LOWER(COALESCE(mid.catalog_no, '')) LIKE ?"
+        params.append(f"%{catalog_no.strip().lower()}%")
+
+    if barcode and barcode.strip():
+        normalized = "".join(ch for ch in str(barcode).strip() if ch.isalnum()).lower()
+        if normalized:
+            where_sql += " AND LOWER(REPLACE(REPLACE(COALESCE(mid.barcode, ''), '-', ''), ' ', '')) LIKE ?"
+            params.append(f"%{normalized}%")
+
+    if release_year is not None:
+        where_sql += " AND mid.release_year = ?"
+        params.append(int(release_year))
+
+    source_state_u = str(source_state or "ANY").strip().upper()
+    if source_state_u == "MISSING":
+        where_sql += """
+         AND (
+           oi.source_code IS NULL OR TRIM(oi.source_code) = ''
+           OR oi.source_external_id IS NULL OR TRIM(oi.source_external_id) = ''
+         )
+        """
+    elif source_state_u == "LINKED":
+        where_sql += """
+         AND (
+           oi.source_code IS NOT NULL AND TRIM(oi.source_code) <> ''
+           AND oi.source_external_id IS NOT NULL AND TRIM(oi.source_external_id) <> ''
+         )
+        """
+
+    master_state_u = str(master_state or "ANY").strip().upper()
+    if master_state_u == "MISSING":
+        where_sql += " AND oi.linked_album_master_id IS NULL"
+    elif master_state_u == "LINKED":
+        where_sql += " AND oi.linked_album_master_id IS NOT NULL"
+
+    cover_state_u = str(cover_state or "ANY").strip().upper()
+    if cover_state_u == "MISSING":
+        where_sql += " AND (mid.cover_image_url IS NULL OR TRIM(mid.cover_image_url) = '')"
+    elif cover_state_u == "HAS":
+        where_sql += " AND (mid.cover_image_url IS NOT NULL AND TRIM(mid.cover_image_url) <> '')"
+
+    slot_state_u = str(slot_state or "ANY").strip().upper()
+    if slot_state_u == "UNSLOTTED":
+        where_sql += " AND oi.storage_slot_id IS NULL"
+    elif slot_state_u == "SLOTTED":
+        where_sql += " AND oi.storage_slot_id IS NOT NULL"
+
+    preferred_storage_state_u = str(preferred_storage_state or "ANY").strip().upper()
+    if preferred_storage_state_u == "MISMATCH":
+        where_sql += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 0"
+    elif preferred_storage_state_u == "MATCH":
+        where_sql += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 1"
+
+    track_state_u = str(track_state or "ANY").strip().upper()
+    if track_state_u == "MISSING":
+        where_sql += """
+         AND (
+           mid.track_items_json IS NULL OR TRIM(mid.track_items_json) = '' OR TRIM(mid.track_items_json) = '[]'
+         )
+         AND (
+           mid.track_list_json IS NULL OR TRIM(mid.track_list_json) = '' OR TRIM(mid.track_list_json) = '[]'
+         )
+        """
+
+    if catalog_missing:
+        where_sql += " AND (mid.catalog_no IS NULL OR TRIM(mid.catalog_no) = '')"
+
+    if genre_missing:
+        where_sql += """
+          AND EXISTS (
+            SELECT 1 FROM album_master am_g
+            WHERE am_g.id = oi.linked_album_master_id
+              AND (am_g.genres_json IS NULL OR TRIM(am_g.genres_json) IN ('', '[]'))
+          )
+        """
+
+    media_format_state_u = str(media_format_state or "ANY").strip().upper()
+    if media_format_state_u == "MISSING":
+        where_sql += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
+    elif media_format_state_u == "HAS":
+        where_sql += " AND (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> '')"
+
+    size_group_state_u = str(size_group_state or "ANY").strip().upper()
+    if size_group_state_u == "MISMATCH":
+        where_sql += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
+                      " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') != 'STD')"
+                      " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') != 'CASSETTE')"
+                      " OR (1=0)"
+                      " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
+    elif size_group_state_u == "MATCH":
+        where_sql += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
+                      " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') = 'STD')"
+                      " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') = 'CASSETTE')"
+                      " OR (1=0)"
+                      " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
+
+    if track_state_u == "HAS":
+        where_sql += """
+         AND (
+           (mid.track_items_json IS NOT NULL AND TRIM(mid.track_items_json) <> '' AND TRIM(mid.track_items_json) <> '[]')
+           OR (mid.track_list_json IS NOT NULL AND TRIM(mid.track_list_json) <> '' AND TRIM(mid.track_list_json) <> '[]')
+         )
+        """
+
+    return where_sql, params
+
+
 def list_owned_items(
     category: str | None,
     domain_code: str | None,
@@ -80,165 +267,17 @@ def list_owned_items(
     catalog_missing: bool = False,
     genre_missing: bool = False,
 ) -> list[dict[str, Any]]:
-    query = _owned_item_select_query() + " WHERE 1 = 1"
-    params: list[Any] = []
-    query += " AND (oi.source_code IS NULL OR oi.source_code != 'MUSICBRAINZ')"
-
-    if category:
-        query += " AND oi.category = ?"
-        params.append(category)
-    elif music_only:
-        query += " AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')"
-
-    if domain_code:
-        query += """
-          AND EXISTS (
-            SELECT 1
-            FROM album_master_member amm_d
-            JOIN album_master am_d ON am_d.id = amm_d.album_master_id
-            WHERE amm_d.owned_item_id = oi.id
-              AND COALESCE(am_d.override_domain_code, am_d.domain_code) = ?
-          )
-        """
-        params.append(domain_code)
-
-    if release_type:
-        query += " AND oi.release_type = ?"
-        params.append(release_type)
-
-    if status:
-        query += " AND oi.status = ?"
-        params.append(status)
-
-    if q and q.strip():
-        q_norm = f"%{q.strip().lower()}%"
-        query += """
-         AND (
-           LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-           OR LOWER(COALESCE(oi.purchase_source, '')) LIKE ?
-           OR LOWER(COALESCE(oi.memory_note, '')) LIKE ?
-         )
-        """
-        params.extend([q_norm, q_norm, q_norm])
-
-    if artist_or_brand and artist_or_brand.strip():
-        v = f"%{artist_or_brand.strip().lower()}%"
-        query += """
-         AND (
-           LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
-           OR LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-         )
-        """
-        params.extend([v, v])
-
-    if item_name and item_name.strip():
-        query += " AND LOWER(COALESCE(oi.item_name_override, '')) LIKE ?"
-        params.append(f"%{item_name.strip().lower()}%")
-
-    if catalog_no and catalog_no.strip():
-        query += " AND LOWER(COALESCE(mid.catalog_no, '')) LIKE ?"
-        params.append(f"%{catalog_no.strip().lower()}%")
-
-    if barcode and barcode.strip():
-        normalized = "".join(ch for ch in str(barcode).strip() if ch.isalnum()).lower()
-        if normalized:
-            query += " AND LOWER(REPLACE(REPLACE(COALESCE(mid.barcode, ''), '-', ''), ' ', '')) LIKE ?"
-            params.append(f"%{normalized}%")
-
-    if release_year is not None:
-        query += " AND mid.release_year = ?"
-        params.append(int(release_year))
-
-    source_state_u = str(source_state or "ANY").strip().upper()
-    if source_state_u == "MISSING":
-        query += """
-         AND (
-           oi.source_code IS NULL OR TRIM(oi.source_code) = ''
-           OR oi.source_external_id IS NULL OR TRIM(oi.source_external_id) = ''
-         )
-        """
-    elif source_state_u == "LINKED":
-        query += """
-         AND (
-           oi.source_code IS NOT NULL AND TRIM(oi.source_code) <> ''
-           AND oi.source_external_id IS NOT NULL AND TRIM(oi.source_external_id) <> ''
-         )
-        """
-
-    master_state_u = str(master_state or "ANY").strip().upper()
-    if master_state_u == "MISSING":
-        query += " AND oi.linked_album_master_id IS NULL"
-    elif master_state_u == "LINKED":
-        query += " AND oi.linked_album_master_id IS NOT NULL"
-
-    cover_state_u = str(cover_state or "ANY").strip().upper()
-    if cover_state_u == "MISSING":
-        query += " AND (mid.cover_image_url IS NULL OR TRIM(mid.cover_image_url) = '')"
-    elif cover_state_u == "HAS":
-        query += " AND (mid.cover_image_url IS NOT NULL AND TRIM(mid.cover_image_url) <> '')"
-
-    slot_state_u = str(slot_state or "ANY").strip().upper()
-    if slot_state_u == "UNSLOTTED":
-        query += " AND oi.storage_slot_id IS NULL"
-    elif slot_state_u == "SLOTTED":
-        query += " AND oi.storage_slot_id IS NOT NULL"
-
-    preferred_storage_state_u = str(preferred_storage_state or "ANY").strip().upper()
-    if preferred_storage_state_u == "MISMATCH":
-        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 0"
-    elif preferred_storage_state_u == "MATCH":
-        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 1"
-
-    track_state_u = str(track_state or "ANY").strip().upper()
-    if track_state_u == "MISSING":
-        query += """
-         AND (
-           mid.track_items_json IS NULL OR TRIM(mid.track_items_json) = '' OR TRIM(mid.track_items_json) = '[]'
-         )
-         AND (
-           mid.track_list_json IS NULL OR TRIM(mid.track_list_json) = '' OR TRIM(mid.track_list_json) = '[]'
-         )
-        """
-
-    if catalog_missing:
-        query += " AND (mid.catalog_no IS NULL OR TRIM(mid.catalog_no) = '')"
-
-    if genre_missing:
-        query += """
-          AND EXISTS (
-            SELECT 1 FROM album_master am_g
-            WHERE am_g.id = oi.linked_album_master_id
-              AND (am_g.genres_json IS NULL OR TRIM(am_g.genres_json) IN ('', '[]'))
-          )
-        """
-
-    media_format_state_u = str(media_format_state or "ANY").strip().upper()
-    if media_format_state_u == "MISSING":
-        query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
-    elif media_format_state_u == "HAS":
-        query += " AND (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> '')"
-
-    size_group_state_u = str(size_group_state or "ANY").strip().upper()
-    if size_group_state_u == "MISMATCH":
-        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
-                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') != 'STD')"
-                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') != 'CASSETTE')"
-                  " OR (1=0)"
-                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
-    elif size_group_state_u == "MATCH":
-        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
-                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') = 'STD')"
-                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') = 'CASSETTE')"
-                  " OR (1=0)"
-                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
-    elif track_state_u == "HAS":
-        query += """
-         AND (
-           (mid.track_items_json IS NOT NULL AND TRIM(mid.track_items_json) <> '' AND TRIM(mid.track_items_json) <> '[]')
-           OR (mid.track_list_json IS NOT NULL AND TRIM(mid.track_list_json) <> '' AND TRIM(mid.track_list_json) <> '[]')
-         )
-        """
-
+    where_sql, params = _build_owned_item_filters(
+        category=category, domain_code=domain_code, release_type=release_type,
+        status=status, q=q, artist_or_brand=artist_or_brand, item_name=item_name,
+        catalog_no=catalog_no, barcode=barcode, release_year=release_year,
+        source_state=source_state, master_state=master_state, cover_state=cover_state,
+        slot_state=slot_state, preferred_storage_state=preferred_storage_state,
+        track_state=track_state, music_only=music_only,
+        media_format_state=media_format_state, size_group_state=size_group_state,
+        catalog_missing=catalog_missing, genre_missing=genre_missing,
+    )
+    query = _owned_item_select_query() + " WHERE 1 = 1" + where_sql
     if str(sort or "").upper() == "RECENT":
         query += """
           ORDER BY oi.created_at DESC, oi.id DESC
@@ -256,10 +295,8 @@ def list_owned_items(
           LIMIT ? OFFSET ?
         """
     params.extend([limit, offset])
-
     with get_conn() as conn:
         rows = conn.execute(query, params).fetchall()
-
     return [_normalize_owned_item_row(dict(row)) for row in rows]
 
 
@@ -286,170 +323,23 @@ def count_owned_items(
     catalog_missing: bool = False,
     genre_missing: bool = False,
 ) -> int:
+    where_sql, params = _build_owned_item_filters(
+        category=category, domain_code=domain_code, release_type=release_type,
+        status=status, q=q, artist_or_brand=artist_or_brand, item_name=item_name,
+        catalog_no=catalog_no, barcode=barcode, release_year=release_year,
+        source_state=source_state, master_state=master_state, cover_state=cover_state,
+        slot_state=slot_state, preferred_storage_state=preferred_storage_state,
+        track_state=track_state, music_only=music_only,
+        media_format_state=media_format_state, size_group_state=size_group_state,
+        catalog_missing=catalog_missing, genre_missing=genre_missing,
+    )
     query = """
       SELECT COUNT(*) AS cnt
       FROM owned_item oi
       LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
       LEFT JOIN storage_slot ss ON ss.id = oi.storage_slot_id
       WHERE 1 = 1
-    """
-    params: list[Any] = []
-    query += " AND (oi.source_code IS NULL OR oi.source_code != 'MUSICBRAINZ')"
-
-    if category:
-        query += " AND oi.category = ?"
-        params.append(category)
-    elif music_only:
-        query += " AND oi.category IN ('LP', 'CD', 'CASSETTE', '8TRACK', 'DIGITAL', 'REEL_TO_REEL')"
-
-    if domain_code:
-        query += """
-          AND EXISTS (
-            SELECT 1
-            FROM album_master_member amm_d
-            JOIN album_master am_d ON am_d.id = amm_d.album_master_id
-            WHERE amm_d.owned_item_id = oi.id
-              AND COALESCE(am_d.override_domain_code, am_d.domain_code) = ?
-          )
-        """
-        params.append(domain_code)
-
-    if release_type:
-        query += " AND oi.release_type = ?"
-        params.append(release_type)
-
-    if status:
-        query += " AND oi.status = ?"
-        params.append(status)
-
-    if q and q.strip():
-        q_norm = f"%{q.strip().lower()}%"
-        query += """
-         AND (
-           LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-           OR LOWER(COALESCE(oi.purchase_source, '')) LIKE ?
-           OR LOWER(COALESCE(oi.memory_note, '')) LIKE ?
-         )
-        """
-        params.extend([q_norm, q_norm, q_norm])
-
-    if artist_or_brand and artist_or_brand.strip():
-        v = f"%{artist_or_brand.strip().lower()}%"
-        query += """
-         AND (
-           LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
-           OR LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-         )
-        """
-        params.extend([v, v])
-
-    if item_name and item_name.strip():
-        query += " AND LOWER(COALESCE(oi.item_name_override, '')) LIKE ?"
-        params.append(f"%{item_name.strip().lower()}%")
-
-    if catalog_no and catalog_no.strip():
-        query += " AND LOWER(COALESCE(mid.catalog_no, '')) LIKE ?"
-        params.append(f"%{catalog_no.strip().lower()}%")
-
-    if barcode and barcode.strip():
-        normalized = "".join(ch for ch in str(barcode).strip() if ch.isalnum()).lower()
-        if normalized:
-            query += " AND LOWER(REPLACE(REPLACE(COALESCE(mid.barcode, ''), '-', ''), ' ', '')) LIKE ?"
-            params.append(f"%{normalized}%")
-
-    if release_year is not None:
-        query += " AND mid.release_year = ?"
-        params.append(int(release_year))
-
-    source_state_u = str(source_state or "ANY").strip().upper()
-    if source_state_u == "MISSING":
-        query += """
-         AND (
-           oi.source_code IS NULL OR TRIM(oi.source_code) = ''
-           OR oi.source_external_id IS NULL OR TRIM(oi.source_external_id) = ''
-         )
-        """
-    elif source_state_u == "LINKED":
-        query += """
-         AND (
-           oi.source_code IS NOT NULL AND TRIM(oi.source_code) <> ''
-           AND oi.source_external_id IS NOT NULL AND TRIM(oi.source_external_id) <> ''
-         )
-        """
-
-    master_state_u = str(master_state or "ANY").strip().upper()
-    if master_state_u == "MISSING":
-        query += " AND oi.linked_album_master_id IS NULL"
-    elif master_state_u == "LINKED":
-        query += " AND oi.linked_album_master_id IS NOT NULL"
-
-    cover_state_u = str(cover_state or "ANY").strip().upper()
-    if cover_state_u == "MISSING":
-        query += " AND (mid.cover_image_url IS NULL OR TRIM(mid.cover_image_url) = '')"
-    elif cover_state_u == "HAS":
-        query += " AND (mid.cover_image_url IS NOT NULL AND TRIM(mid.cover_image_url) <> '')"
-
-    slot_state_u = str(slot_state or "ANY").strip().upper()
-    if slot_state_u == "UNSLOTTED":
-        query += " AND oi.storage_slot_id IS NULL"
-    elif slot_state_u == "SLOTTED":
-        query += " AND oi.storage_slot_id IS NOT NULL"
-
-    preferred_storage_state_u = str(preferred_storage_state or "ANY").strip().upper()
-    if preferred_storage_state_u == "MISMATCH":
-        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 0"
-    elif preferred_storage_state_u == "MATCH":
-        query += f" AND oi.storage_slot_id IS NOT NULL AND ({slot_size_ok_sql()}) = 1"
-
-    track_state_u = str(track_state or "ANY").strip().upper()
-    if track_state_u == "MISSING":
-        query += """
-         AND (
-           mid.track_items_json IS NULL OR TRIM(mid.track_items_json) = '' OR TRIM(mid.track_items_json) = '[]'
-         )
-         AND (
-           mid.track_list_json IS NULL OR TRIM(mid.track_list_json) = '' OR TRIM(mid.track_list_json) = '[]'
-         )
-        """
-
-    if catalog_missing:
-        query += " AND (mid.catalog_no IS NULL OR TRIM(mid.catalog_no) = '')"
-
-    if genre_missing:
-        query += """
-          AND EXISTS (
-            SELECT 1 FROM album_master am_g
-            WHERE am_g.id = oi.linked_album_master_id
-              AND (am_g.genres_json IS NULL OR TRIM(am_g.genres_json) IN ('', '[]'))
-          )
-        """
-    media_format_state_u = str(media_format_state or "ANY").strip().upper()
-    if media_format_state_u == "MISSING":
-        query += " AND (mid.media_type IS NULL OR TRIM(mid.media_type) = '')"
-    elif media_format_state_u == "HAS":
-        query += " AND (mid.media_type IS NOT NULL AND TRIM(mid.media_type) <> '')"
-
-    size_group_state_u = str(size_group_state or "ANY").strip().upper()
-    if size_group_state_u == "MISMATCH":
-        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') NOT IN ('LP', 'LP10', 'LP7'))"
-                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') != 'STD')"
-                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') != 'CASSETTE')"
-                  " OR (1=0)"
-                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') != 'REEL_TO_REEL'))")
-    elif size_group_state_u == "MATCH":
-        query += (" AND ((mid.media_type IN ('Vinyl', 'LP', '10\"', '7\"', 'Box Set', 'All Media') AND COALESCE(oi.size_group, '') IN ('LP', 'LP10', 'LP7'))"
-                  " OR (mid.media_type IN ('CD', 'CDr', 'SACD', 'Digital') AND COALESCE(oi.size_group, '') = 'STD')"
-                  " OR (mid.media_type IN ('Cassette', '8-Track Cartridge') AND COALESCE(oi.size_group, '') = 'CASSETTE')"
-                  " OR (1=0)"
-                  " OR (mid.media_type = 'Reel-To-Reel' AND COALESCE(oi.size_group, '') = 'REEL_TO_REEL'))")
-    elif track_state_u == "HAS":
-        query += """
-         AND (
-           (mid.track_items_json IS NOT NULL AND TRIM(mid.track_items_json) <> '' AND TRIM(mid.track_items_json) <> '[]')
-           OR (mid.track_list_json IS NOT NULL AND TRIM(mid.track_list_json) <> '' AND TRIM(mid.track_list_json) <> '[]')
-         )
-        """
-
+    """ + where_sql
     with get_conn() as conn:
         row = conn.execute(query, params).fetchone()
     return int((row["cnt"] if row else 0) or 0)

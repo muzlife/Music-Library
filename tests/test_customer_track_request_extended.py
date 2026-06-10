@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 from app import db
-from app.main import app, _SEOUL_WEATHER_CACHE
+from app.main import app
+from app.services import home_env as _home_env
 
 
 def test_db_create_customer_track_request_with_weather_and_season() -> None:
@@ -97,16 +98,12 @@ def test_db_update_customer_track_request_playback_deck_and_timestamps() -> None
 
 def test_api_endpoints_for_cafe_operations(operator_client: TestClient) -> None:
     # 1. Mock weather cache
-    import app.main
-    if app.main._SEOUL_WEATHER_CACHE is None:
-        app.main._SEOUL_WEATHER_CACHE = {}
-    app.main._SEOUL_WEATHER_CACHE.clear()
-    app.main._SEOUL_WEATHER_CACHE.update({
+    _home_env._SEOUL_WEATHER_CACHE = {
         "available": True,
         "temperature_c": 18.5,
         "weather_code": 0,
         "description": ""
-    })
+    }
 
     # 2. Create track request via POST
     response = operator_client.post(

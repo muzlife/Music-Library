@@ -11380,8 +11380,8 @@ def test_index_storage_mapping_slot_tiles_render_occupancy_ratio_or_percent():
     assert start in html
     assert end in html
     block = html.split(start, 1)[1].split(end, 1)[0]
-    ratio_first = block.index("const occupancyRatio = Number(slotRow?.occupancy_ratio);");
-    percent_first = block.index("const occupancyPercent = Number(slotRow?.occupancy_percent);");
+    ratio_first = block.index("const occupancyRatio = Number(slotRow?.occupancy_ratio);")
+    percent_first = block.index("const occupancyPercent = Number(slotRow?.occupancy_percent);")
     assert "Math.min(1, occupancyRatio)" not in block
     assert "Math.min(1, occupancyPercent / 100)" not in block
     assert ratio_first < percent_first

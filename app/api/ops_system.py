@@ -30,6 +30,7 @@ from ..schemas import (
     OpsPlacementHintResponse,
 )
 from ..services import artist_context as artist_context_service
+from ..services import backup as _backup
 
 router = APIRouter()
 
@@ -40,7 +41,7 @@ def _main():
 
 
 def _require_admin_request(request: Request) -> None:
-    security._require_operator_request(request)
+    security._require_admin_request(request)
 
 
 def _require_operator_request(request: Request) -> None:
@@ -124,15 +125,17 @@ def export_full_backup(
     background_tasks: BackgroundTasks,
     include_env_file: bool = Query(default=False),
 ) -> FileResponse:
-    _require_operator_request(request)
-    mf = _main()
+    if include_env_file:
+        _require_admin_request(request)
+    else:
+        _require_operator_request(request)
     backup_settings = db.get_auto_backup_settings()
-    bundle_path = mf._create_local_full_backup_bundle(
+    bundle_path = _backup._create_local_full_backup_bundle(
         str(backup_settings.get("backup_dir") or ""),
         reason="manual-full",
         include_env_file=include_env_file,
     )
-    background_tasks.add_task(mf._cleanup_temp_file, bundle_path)
+    background_tasks.add_task(_main()._cleanup_temp_file, bundle_path)
     return FileResponse(
         bundle_path,
         media_type="application/zip",
@@ -144,7 +147,7 @@ def export_full_backup(
 def get_auto_backup_settings(request: Request) -> AutoBackupSettingsResponse:
     _require_operator_request(request)
     payload = db.get_auto_backup_settings()
-    payload.update(_main()._read_backup_launchd_schedules())
+    payload.update(_backup._read_backup_launchd_schedules())
     return AutoBackupSettingsResponse(**payload)
 
 
@@ -154,7 +157,7 @@ def save_auto_backup_settings(
     request: Request,
 ) -> AutoBackupSettingsResponse:
     _require_operator_request(request)
-    backup_dir = _main()._normalize_backup_dir_path(payload.backup_dir)
+    backup_dir = _backup._normalize_backup_dir_path(payload.backup_dir)
     Path(backup_dir).mkdir(parents=True, exist_ok=True)
     saved = db.save_auto_backup_settings(
         enabled=bool(payload.enabled),
@@ -163,7 +166,7 @@ def save_auto_backup_settings(
         backup_scope=str(payload.backup_scope or "DB"),
         include_env_file=bool(payload.include_env_file),
     )
-    saved.update(_main()._read_backup_launchd_schedules())
+    saved.update(_backup._read_backup_launchd_schedules())
     return AutoBackupSettingsResponse(**saved)
 
 
@@ -178,7 +181,7 @@ def save_metadata_provider_settings(
     payload: MetadataProviderSettingsUpdateRequest,
     request: Request,
 ) -> MetadataProviderSettingsResponse:
-    _require_operator_request(request)
+    _require_admin_request(request)
     updates: dict[str, str] = {}
     if payload.discogs_token is not None and payload.discogs_token.strip():
         updates["DISCOGS_TOKEN"] = payload.discogs_token.strip()

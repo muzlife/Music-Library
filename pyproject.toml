@@ -1,0 +1,36 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    ".venv",
+    ".venv2",
+    ".worktrees",
+    "__pycache__",
+    "mcp-deepseek",
+    "scripts",
+    "deploy",
+]
+
+[tool.ruff.lint]
+# 활성 규칙: E(스타일), F(pyflakes), W(경고)
+select = ["E", "F", "W"]
+
+ignore = [
+    # 기존 위반이 너무 많아 베이스라인으로 동결
+    "E501",   # line-too-long (2368건) — 점진적으로 개선
+    "F401",   # unused-import (399건) — re-export 패턴 다수
+    "F821",   # undefined-name (32건) — _main() lazy accessor 패턴
+    "E402",   # module-import-not-at-top (28건) — 지연 임포트 패턴
+    "W293",   # blank-line-with-whitespace (32건)
+    "F841",   # unused-variable (9건)
+    "E401",   # multiple-imports-on-one-line (4건)
+    "E701",   # multiple-statements-on-one-line-colon (4건)
+    "W292",   # missing-newline-at-end-of-file (4건)
+    "W291",   # trailing-whitespace (3건)
+    "E702",   # multiple-statements-on-one-line-semicolon (2건)
+    "E713",   # not-in-test (2건)
+    "E731",   # lambda-assignment (1건)
+]
+
+[tool.pytest.ini_options]
+# pytest.ini 가 있으면 그쪽이 우선 — 추후 통합 예정

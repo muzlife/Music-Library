@@ -100,7 +100,8 @@ def get_album_master_basic(album_master_id: int) -> dict[str, Any] | None:
                    override_note,
                    override_title,
                    override_artist_or_brand,
-                   sort_artist_name
+                   sort_artist_name,
+                   release_type
             FROM album_master
             WHERE id = ?
             LIMIT 1

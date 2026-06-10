@@ -29,7 +29,7 @@ from ..schemas import (
     AuthAccountListResponse,
     AuthAccountUpdateRequest,
 )
-from ..security import _hash_auth_password, _require_admin_request, _read_auth_username
+from ..security import _hash_auth_password, _invalidate_session_cache, _require_admin_request, _read_auth_username
 
 
 def _audit(request: Request, entity_type: str, entity_id: int, action: str, changed_fields: list[str] | None = None, snapshot: dict | None = None) -> None:
@@ -111,6 +111,7 @@ def create_auth_account(payload: AuthAccountCreateRequest, request: Request) -> 
     )
     if row is None:
         raise HTTPException(status_code=500, detail="계정 저장에 실패했습니다.")
+    _invalidate_session_cache(username)
     _audit(request, "auth_account", 0, "CREATE", snapshot={"username": username, "role": str(payload.role or "OPERATOR")})
     return AuthAccountItem(
         username=str(row.get("username") or "").strip(),
@@ -163,6 +164,7 @@ def update_auth_account(
     )
     if row is None:
         raise HTTPException(status_code=500, detail="계정 수정에 실패했습니다.")
+    _invalidate_session_cache(username)
     _audit(request, "auth_account", 0, "UPDATE", changed_fields=list(payload.model_dump(exclude_unset=True).keys()) if hasattr(payload, "model_dump") else None)
     return AuthAccountItem(
         username=str(row.get("username") or "").strip(),
@@ -185,6 +187,7 @@ def delete_auth_account(username: str, request: Request) -> dict[str, Any]:
     ok = db.delete_auth_account(username)
     if not ok:
         raise HTTPException(status_code=500, detail="계정 삭제에 실패했습니다.")
+    _invalidate_session_cache(username)
     _audit(request, "auth_account", 0, "DELETE", snapshot={"username": username})
     return {"ok": True, "username": username}
 

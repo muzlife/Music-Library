@@ -8,9 +8,11 @@ WebSocket provides real-time now-playing and request notifications.
 from __future__ import annotations
 
 import asyncio
+import collections
 import json
 import logging
 import os
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -118,7 +120,7 @@ async def _now_playing_worker() -> None:
     while True:
         interval = 60
         try:
-            local = _local.current_track()
+            local = await loop.run_in_executor(None, _local.current_track)
             if local and local.get("is_playing"):
                 state: dict = {"available": True, **local}
                 interval = 5
@@ -179,24 +181,40 @@ def cafe_tags() -> dict[str, Any]:
     return {"total_count": len(rows), "items": rows}
 
 
-# ── public tags (for tablet browse tab) ────────────────────────────
+# ── search rate limiter ─────────────────────────────────────────
+_SEARCH_RATE: dict[str, collections.deque] = {}
+_SEARCH_RATE_LIMIT = 20  # max requests
+_SEARCH_RATE_WINDOW = 60.0  # per seconds
 
-@router.get("/cafe/tags")
-def cafe_tags() -> dict[str, Any]:
-    """Public: list all tags for tablet browse tab."""
-    rows = db.list_track_tags()
-    return {"total_count": len(rows), "items": rows}
+
+def _search_rate_check(request: Request) -> None:
+    ip = (
+        str(request.headers.get("cf-connecting-ip") or "").strip()
+        or str(request.headers.get("x-forwarded-for") or "").strip().split(",")[0].strip()
+        or str(getattr(request.client, "host", "") or "").strip()
+        or "unknown"
+    )
+    now = time.monotonic()
+    dq = _SEARCH_RATE.setdefault(ip, collections.deque())
+    cutoff = now - _SEARCH_RATE_WINDOW
+    while dq and dq[0] < cutoff:
+        dq.popleft()
+    if len(dq) >= _SEARCH_RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="요청이 너무 많습니다. 잠시 후 다시 시도해주세요.")
+    dq.append(now)
 
 
 # ── search ──────────────────────────────────────────────────────
 
 @router.get("/cafe/search")
 def cafe_search(
+    request: Request,
     q: str = Query(min_length=1, max_length=200),
     limit: int = Query(default=10, ge=1, le=30),
     src: str = Query(default="all"),
 ) -> dict[str, Any]:
     """Search Spotify + local tags. Public (no auth — tablet access)."""
+    _search_rate_check(request)
     results: list[dict[str, Any]] = []
 
     # Spotify search with retry
@@ -249,7 +267,8 @@ def cafe_search(
 
 async def broadcast_queue_update():
     from app import db
-    rows = db.list_customer_track_requests(status=None, limit=100)
+    loop = asyncio.get_running_loop()
+    rows = await loop.run_in_executor(None, lambda: db.list_customer_track_requests(status=None, limit=100))
     await _registry.broadcast("queue_update", {"queue": rows})
 
 
@@ -257,16 +276,22 @@ async def broadcast_queue_update():
 async def cafe_request_track(payload: CafeTrackRequest, request: Request) -> dict[str, Any]:
     """Submit a track request from a tablet."""
     device_id = _device_id_from_request(request)
-    table_number = _resolve_table(device_id)
+    loop = asyncio.get_running_loop()
+    table_number = await loop.run_in_executor(None, lambda: _resolve_table(device_id))
     if not table_number:
         raise HTTPException(status_code=400, detail="등록되지 않은 기기입니다")
 
-    row = db.create_customer_track_request(
-        requested_track=f"{payload.artist} - {payload.track_title}" if payload.artist else payload.track_title,
-        owned_item_id=payload.owned_item_id,
-        matched_track_title=payload.track_title,
-        matched_track_no=None,
-        customer_note=f"테이블 {table_number} / {payload.source}",
+    requested_track = f"{payload.artist} - {payload.track_title}" if payload.artist else payload.track_title
+    customer_note = f"테이블 {table_number} / {payload.source}"
+    row = await loop.run_in_executor(
+        None,
+        lambda: db.create_customer_track_request(
+            requested_track=requested_track,
+            owned_item_id=payload.owned_item_id,
+            matched_track_title=payload.track_title,
+            matched_track_no=None,
+            customer_note=customer_note,
+        ),
     )
     if not row:
         raise HTTPException(status_code=500, detail="요청 접수 실패")

@@ -14,6 +14,8 @@ declaration.
 
 from __future__ import annotations
 
+import time
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +55,43 @@ _HTML_NO_CACHE_HEADERS = {
 
 
 router = APIRouter(tags=["auth"])
+
+# ── login brute-force backoff ─────────────────────────────────────
+# {username_lower: (fail_count, locked_until_ts)}
+_LOGIN_FAILS: dict[str, tuple[int, float]] = {}
+_LOGIN_LOCK = threading.Lock()
+_MAX_FAILS = 5
+_BACKOFF_BASE = 2.0  # seconds; doubles each attempt beyond _MAX_FAILS
+
+
+def _check_login_backoff(username: str) -> None:
+    key = username.strip().lower()
+    with _LOGIN_LOCK:
+        entry = _LOGIN_FAILS.get(key)
+    if not entry:
+        return
+    fail_count, locked_until = entry
+    if fail_count >= _MAX_FAILS and time.monotonic() < locked_until:
+        remaining = int(locked_until - time.monotonic()) + 1
+        raise HTTPException(
+            status_code=429,
+            detail=f"너무 많은 로그인 시도. {remaining}초 후에 다시 시도해주세요.",
+        )
+
+
+def _record_login_fail(username: str) -> None:
+    key = username.strip().lower()
+    with _LOGIN_LOCK:
+        entry = _LOGIN_FAILS.get(key, (0, 0.0))
+        count = entry[0] + 1
+        delay = _BACKOFF_BASE ** max(0, count - _MAX_FAILS + 1) if count >= _MAX_FAILS else 0.0
+        _LOGIN_FAILS[key] = (count, time.monotonic() + delay)
+
+
+def _clear_login_fail(username: str) -> None:
+    key = username.strip().lower()
+    with _LOGIN_LOCK:
+        _LOGIN_FAILS.pop(key, None)
 
 
 @router.get("/login", include_in_schema=False)
@@ -96,10 +135,13 @@ def auth_login(
     if not _auth_enabled():
         return {"authenticated": True, "username": None, "role": AUTH_ROLE_ADMIN, "enabled": False}
 
+    _check_login_backoff(username)
     matched_account = _match_auth_account(username=username, password=password)
     if matched_account is None:
+        _record_login_fail(username)
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
 
+    _clear_login_fail(username)
     matched_username = str(matched_account["username"])
     matched_role = str(matched_account["role"])
 

@@ -61,12 +61,8 @@ def _hash_auth_password(password: str) -> str:
 
 def _verify_auth_password(password: str, encoded: str) -> bool:
     raw = str(encoded or "").strip()
-    if not raw:
+    if not raw or not raw.startswith("pbkdf2_sha256$"):
         return False
-    if not raw.startswith("pbkdf2_sha256$"):
-        # Backwards-compat with any pre-existing plaintext rows; new rows
-        # always go through `_hash_auth_password`.
-        return secrets.compare_digest(str(password or ""), raw)
     try:
         _, iterations_text, salt_text, digest_text = raw.split("$", 3)
         iterations = int(iterations_text)
@@ -227,6 +223,26 @@ def _auth_cookie_value(username: str, role: str) -> str:
 
 
 # --- Session reading ---------------------------------------------------- #
+_SESSION_DB_CACHE: dict[str, tuple[float, dict | None]] = {}
+_SESSION_DB_CACHE_TTL = 60.0
+
+
+def _get_account_cached(username: str) -> dict | None:
+    now = time.time()
+    if username in _SESSION_DB_CACHE:
+        expiry, account = _SESSION_DB_CACHE[username]
+        if now < expiry:
+            return account
+    account = db.get_auth_account_by_username(username)
+    _SESSION_DB_CACHE[username] = (now + _SESSION_DB_CACHE_TTL, account)
+    return account
+
+
+def _invalidate_session_cache(username: str) -> None:
+    """Call after account is modified so the next request re-reads from DB."""
+    _SESSION_DB_CACHE.pop(username, None)
+
+
 def _read_auth_session_data(request: Request) -> dict[str, str] | None:
     raw_value = str(request.cookies.get(AUTH_COOKIE_NAME) or "").strip()
     if not raw_value or "." not in raw_value:
@@ -242,15 +258,17 @@ def _read_auth_session_data(request: Request) -> dict[str, str] | None:
     except Exception:
         return None
     username = str(payload.get("u") or "").strip()
-    role = str(payload.get("r") or "").strip().upper()
     issued_at = int(payload.get("ts") or 0)
     if not username or issued_at <= 0:
         return None
     if int(time.time()) - issued_at > AUTH_COOKIE_MAX_AGE:
         return None
-    if role not in _ALL_ROLES:
-        matched = _auth_accounts().get(username)
-        role = str((matched or {}).get("role") or "").strip().upper()
+    account = _get_account_cached(username)
+    if account is None:
+        return None
+    if int(account.get("is_active", 1)) == 0:
+        return None
+    role = str(account.get("role") or "").strip().upper()
     if role not in _ALL_ROLES:
         return None
     return {"username": username, "role": role}

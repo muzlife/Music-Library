@@ -29,6 +29,8 @@ from ..schemas import (
     GoodsItemUpdateRequest,
 )
 
+from ..services import camera as _camera
+
 router = APIRouter()
 def _main():
     from app import main as main_module
@@ -307,7 +309,7 @@ def discover_cabinet_cameras(
     timeout_ms: int = Query(default=2500, ge=500, le=10000),
 ) -> list[CabinetCameraDiscoveryItem]:
     _require_operator_request(request)
-    rows = _main()._discover_onvif_devices(timeout_seconds=float(timeout_ms) / 1000.0)
+    rows = _camera._discover_onvif_devices(timeout_seconds=float(timeout_ms) / 1000.0)
     return [CabinetCameraDiscoveryItem(**row) for row in rows]
 
 
@@ -327,7 +329,7 @@ def test_cabinet_camera_connection(
             if password is None:
                 password = str(existing.get("password") or "") or None
     try:
-        result = _main()._test_onvif_camera_connection(
+        result = _camera._test_onvif_camera_connection(
             payload.onvif_device_url,
             username=username,
             password=password,
@@ -363,8 +365,8 @@ def get_cabinet_camera_snapshot(camera_id: int, request: Request) -> Response:
         raise HTTPException(status_code=404, detail="cabinet camera not found")
     if not bool(row.get("is_active")):
         raise HTTPException(status_code=400, detail="cabinet camera inactive")
-    snapshot_url = _main()._camera_http_url_or_none(row.get("snapshot_url"))
-    stream_url = _main()._camera_rtsp_url_or_none(row.get("stream_url"))
+    snapshot_url = _camera._camera_http_url_or_none(row.get("snapshot_url"))
+    stream_url = _camera._camera_rtsp_url_or_none(row.get("stream_url"))
     username = str(row.get("username") or "").strip()
     password = str(row.get("password") or "")
     snapshot_bytes: bytes | None = None
@@ -386,7 +388,7 @@ def get_cabinet_camera_snapshot(camera_id: int, request: Request) -> Response:
             last_error = f"camera snapshot fetch failed: {err}"
     if stream_url is not None:
         try:
-            snapshot_bytes = _main()._camera_snapshot_bytes_from_stream(stream_url, username=username or None, password=password or None)
+            snapshot_bytes = _camera._camera_snapshot_bytes_from_stream(stream_url, username=username or None, password=password or None)
         except Exception as err:
             last_error = f"camera stream snapshot failed: {err}"
         else:

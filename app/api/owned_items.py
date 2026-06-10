@@ -21,8 +21,11 @@ hard-fail at module load.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from uuid import uuid4
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from pydantic import BaseModel
@@ -919,8 +922,8 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
                         back_url = _maniadb_variant_cover_url(album_id or "", variant_seq, "b") if album_id else None
                         if back_url:
                             items.append({"type": "뒷면", "uri": back_url})
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.warning("maniadb back cover fetch failed oid=%d: %s", owned_item_id, exc)
 
             # 4. Aladin: 상품 상세 페이지에서 추가 이미지 스크레이핑
             if source == "ALADIN" and source_ext_id:
@@ -928,8 +931,8 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
                     from app.services.providers import _fetch_aladin_images_from_web
                     extra = _fetch_aladin_images_from_web(source_ext_id, source_ext_id)
                     items.extend(extra)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.warning("aladin extra images fetch failed oid=%d: %s", owned_item_id, exc)
 
             if items:
                 download_images(
@@ -939,8 +942,8 @@ def _schedule_image_download(owned_item_id: int, payload: OwnedItemCreate) -> No
                     static_dir=static_dir,
                     source_external_id=source_ext_id,
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("image download thread error oid=%d: %s", owned_item_id, exc)
     threading.Thread(target=_run, daemon=True).start()
 
 
@@ -979,7 +982,8 @@ def refresh_images(request: Request, owned_item_id: int | None = None, limit: in
                 from app.services.providers import _fetch_aladin_images_from_web
                 extra = _fetch_aladin_images_from_web(ext_id, ext_id)
                 img_items.extend(extra)
-            except Exception: pass
+            except Exception as exc:
+                logger.warning("aladin extra images fetch failed oid=%d: %s", oid, exc)
         try:
             r = download_images(owned_item_id=oid, image_items=img_items, source=src, static_dir=static_dir, source_external_id=ext_id)
             if r:
@@ -1083,7 +1087,8 @@ def _aladin_backfill_worker(dry_run: bool, sleep_sec: float) -> None:
                     continue
                 try:
                     candidates = search_aladin_by_barcode(barcode, limit=1)
-                except Exception:
+                except Exception as exc:
+                    logger.warning("aladin barcode search failed barcode=%s: %s", barcode, exc)
                     candidates = []
                 if not candidates:
                     _ALADIN_BACKFILL_STATE["skipped"] += 1

@@ -585,6 +585,7 @@ def batch_match_spotify(
     only_unmatched: bool = True,
     domain_code: str | None = None,
     sleep_per_item: float = 2.0,
+    require_tracks: bool = False,
 ) -> dict[str, int]:
     """Batch match album_masters to Spotify."""
     matched = 0
@@ -599,7 +600,7 @@ def batch_match_spotify(
                        JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
                        WHERE amm.album_master_id = album_master.id
                          AND mid.track_list_json IS NOT NULL AND mid.track_list_json <> '[]'
-                   )"""
+                   )""" if require_tracks else ""
         if only_unmatched:
             rows = conn.execute(
                 f"""SELECT id FROM album_master

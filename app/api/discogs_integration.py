@@ -49,6 +49,41 @@ def run_aladin_discogs_backfill_async(
     return {"status": "started", "dry_run": dry_run, "sleep_sec": sleep_sec}
 
 
+MANIADB_RELEASE_TYPE_BACKFILL_THREAD: threading.Thread | None = None
+
+@router.get("/backfill/maniadb-release-type/status")
+def get_maniadb_release_type_backfill_status() -> dict[str, Any]:
+    m = _main()
+    running = (
+        MANIADB_RELEASE_TYPE_BACKFILL_THREAD is not None
+        and MANIADB_RELEASE_TYPE_BACKFILL_THREAD.is_alive()
+    )
+    return {
+        "running": running,
+        "result": m.MANIADB_RELEASE_TYPE_BACKFILL_RESULT,
+    }
+
+
+@router.post("/backfill/maniadb-release-type/run")
+def run_maniadb_release_type_backfill(
+    limit: int = 200,
+    sleep_sec: float = 0.3,
+) -> dict[str, Any]:
+    global MANIADB_RELEASE_TYPE_BACKFILL_THREAD
+    m = _main()
+    if m.MANIADB_RELEASE_TYPE_BACKFILL_LOCK.locked():
+        raise HTTPException(status_code=409, detail="maniadb release_type backfill already running")
+    t = threading.Thread(
+        target=m._maniadb_release_type_backfill_worker,
+        kwargs={"limit": limit, "sleep_sec": sleep_sec},
+        name="maniadb-release-type-backfill",
+        daemon=True,
+    )
+    MANIADB_RELEASE_TYPE_BACKFILL_THREAD = t
+    t.start()
+    return {"status": "started", "limit": limit, "sleep_sec": sleep_sec}
+
+
 @router.get("/discogs-korean-backfill/status")
 def get_discogs_korean_backfill_status() -> dict[str, Any]:
     running = (

@@ -6,3 +6,5 @@ pydantic==2.10.4
 beautifulsoup4==4.12.3
 openai==2.40.0
 pytest==8.4.1
+spotipy==2.24.0
+ruff==0.15.16

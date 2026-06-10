@@ -68,22 +68,36 @@ def list_perf_log_aggregated(
         params.append(kind)
 
     where_clause = "WHERE " + " AND ".join(conditions)
-    having_clause = "HAVING SUM(is_slow) > 0" if is_slow_only else ""
+    having_clause = "AND SUM(is_slow) > 0" if is_slow_only else ""
 
     with get_conn() as conn:
         rows = conn.execute(
             f"""
+            WITH grouped AS (
+                SELECT
+                    kind,
+                    name,
+                    duration_ms,
+                    is_slow,
+                    COUNT(*) OVER (PARTITION BY kind, name) AS total_count,
+                    ROW_NUMBER() OVER (PARTITION BY kind, name ORDER BY duration_ms) AS rn
+                FROM perf_log
+                {where_clause}
+            )
             SELECT
-              kind,
-              name,
-              COUNT(*) AS count,
-              CAST(AVG(duration_ms) AS INTEGER) AS avg_ms,
-              MAX(duration_ms) AS max_ms,
-              SUM(is_slow) AS slow_count
-            FROM perf_log
-            {where_clause}
+                kind,
+                name,
+                COUNT(*) AS count,
+                CAST(AVG(duration_ms) AS INTEGER) AS avg_ms,
+                MAX(duration_ms) AS max_ms,
+                SUM(is_slow) AS slow_count,
+                MAX(CASE
+                    WHEN rn = MAX(1, CAST(total_count * 0.95 AS INTEGER))
+                    THEN duration_ms
+                END) AS p95_ms
+            FROM grouped
             GROUP BY kind, name
-            {having_clause}
+            HAVING 1=1 {having_clause}
             ORDER BY max_ms DESC
             """,
             params,
