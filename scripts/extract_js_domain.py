@@ -28,12 +28,15 @@ STATIC_JS = Path("app/static/js")
 def find_block_end(lines, start_idx):
     """Return the index of the last line of the top-level block starting at start_idx."""
     depth = 0
-    found_open = False
     for i, line in enumerate(lines[start_idx:], start=start_idx):
-        depth += line.count("{") - line.count("}")
-        if depth > 0:
-            found_open = True
-        if found_open and depth <= 0:
+        opens = line.count("{")
+        closes = line.count("}")
+        depth += opens - closes
+        # Single-line balanced block: function foo() { return 1; }
+        if i == start_idx and opens > 0 and depth == 0:
+            return i
+        # Multi-line block: return when depth comes back to 0
+        if i > start_idx and depth <= 0:
             return i
     return len(lines) - 1
 
