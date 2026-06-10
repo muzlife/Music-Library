@@ -29,7 +29,13 @@ _OPS_HOME_PRE_EXISTING_XFAIL = pytest.mark.xfail(
 
 
 def read_static_html(name: str) -> str:
-    return (STATIC_DIR / name).read_text(encoding="utf-8")
+    text = (STATIC_DIR / name).read_text(encoding="utf-8")
+    if name == "index.html":
+        for css_file in sorted((STATIC_DIR / "css").glob("*.css")) if (STATIC_DIR / "css").exists() else []:
+            text += "\n" + css_file.read_text(encoding="utf-8")
+        for js_file in sorted((STATIC_DIR / "js").glob("*.js")) if (STATIC_DIR / "js").exists() else []:
+            text += "\n" + js_file.read_text(encoding="utf-8")
+    return text
 
 
 def insert_music_owned_item(

@@ -25,7 +25,13 @@ _UI_NOT_MERGED_XFAIL = pytest.mark.xfail(
 
 
 def read_static_html(name: str) -> str:
-    return (STATIC_DIR / name).read_text(encoding="utf-8")
+    text = (STATIC_DIR / name).read_text(encoding="utf-8")
+    if name == "index.html":
+        for css_file in sorted((STATIC_DIR / "css").glob("*.css")) if (STATIC_DIR / "css").exists() else []:
+            text += "\n" + css_file.read_text(encoding="utf-8")
+        for js_file in sorted((STATIC_DIR / "js").glob("*.js")) if (STATIC_DIR / "js").exists() else []:
+            text += "\n" + js_file.read_text(encoding="utf-8")
+    return text
 
 
 def extract_login_inline_script(html: str) -> str:
