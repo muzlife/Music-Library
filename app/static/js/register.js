@@ -1457,3 +1457,1003 @@
         setStatus("ownedStatusBox", "err", err.message);
       }
     }
+
+
+    function currentPurchaseImportRawContent() {
+      if (String(purchaseImportFileContentBase64 || "").trim()) return "";
+      return String($("purchaseImportRawContent")?.value || "").trim();
+    }
+
+    function arrayBufferToBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      if (!bytes.length) return "";
+      const chunks = [];
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        chunks.push(String.fromCharCode(...bytes.subarray(i, i + chunkSize)));
+      }
+      return window.btoa(chunks.join(""));
+    }
+
+    function setPurchaseImportFileInfo(message, statusClass = "muted") {
+      const node = $("purchaseImportFileInfo");
+      if (!node) return;
+      node.className = `mini ${statusClass}`.trim();
+      node.textContent = message || t("media.register.purchase.status.file_none");
+    }
+
+    async function handlePurchaseImportFileChange(event) {
+      const input = event?.target;
+      const file = input?.files?.[0];
+      if (!file) {
+        purchaseImportFileContent = "";
+        purchaseImportFileContentBase64 = "";
+        purchaseImportFileName = "";
+        setPurchaseImportFileInfo(t("media.register.purchase.status.file_none"));
+        return;
+      }
+      setPurchaseImportFileInfo(t("media.register.purchase.status.file_reading", { name: file.name }));
+      try {
+        purchaseImportFileContent = "";
+        purchaseImportFileContentBase64 = arrayBufferToBase64(await file.arrayBuffer());
+        purchaseImportFileName = file.name;
+        if ($("purchaseImportSourceRef") && !$("purchaseImportSourceRef").value.trim()) {
+          $("purchaseImportSourceRef").value = file.name;
+        }
+        $("purchaseImportSourceType").value = "FILE_UPLOAD";
+        setPurchaseImportFileInfo(t("media.register.purchase.status.file_ready", { name: file.name }));
+        setStatus("purchaseImportStatus", "ok", t("media.register.purchase.status.file_ready", { name: file.name }));
+      } catch (err) {
+        purchaseImportFileContent = "";
+        purchaseImportFileContentBase64 = "";
+        purchaseImportFileName = "";
+        setPurchaseImportFileInfo(t("media.register.purchase.status.file_read_failed", { name: file.name }), "err");
+        setStatus("purchaseImportStatus", "err", errorMessageText(err, t("media.register.purchase.status.file_read_failed", { name: file.name })));
+      }
+    }
+
+    function buildPurchaseImportCandidateHtml(queueId, state, candidate, candidateIdx) {
+      const artistText = String(candidate?.artist_or_brand || "").trim() || t("common.unknown");
+      const itemText = String(candidate?.title || "").trim() || t("common.no_title");
+      const title = `${artistText} - ${itemText}`;
+      const galleryKey = registerImageGallery(`purchaseImport:${queueId}:${normalizeSourceCode(candidate?.source)}:${candidate?.external_id || candidateIdx}`, candidate, {
+        title,
+        subtitle: `${normalizeSourceCode(candidate?.source) || "-"}#${candidate?.external_id || "-"}`,
+      });
+      const galleryCount = galleryKey ? Number(imageGalleryRegistry.get(galleryKey)?.items?.length || 0) : 0;
+      const coverUrl = normalizeRenderableCoverUrl(candidate?.cover_image_url);
+      const cover = coverUrl
+        ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(candidate.title || "")}" />`
+        : escapeHtml(mediaDisplayLabel(candidate?.format_name || "-"));
+      const discogsLink = discogsReleaseLinkHtml(candidate?.source, candidate?.external_id, "Discogs");
+      const discogsMetaHtml = buildDiscogsStandardMetaHtml(candidate, { includeOwnedCount: true, ownedCountClassName: "source-workbench-owned-pill" });
+      return `
+        <div class="source-workbench-candidate">
+          <div class="source-workbench-cover">${cover}</div>
+          <div class="source-workbench-candidate-main">
+            <div class="source-workbench-candidate-title">${escapeHtml(artistText)} - ${escapeHtml(itemText)}</div>
+            <div class="source-workbench-candidate-meta">
+              <span class="tag">${escapeHtml(candidate?.source || "-")}</span>
+              ${discogsMetaHtml || `
+                <span>${escapeHtml(t("common.meta.release_date", { value: candidate?.released_date || candidate?.release_year || "-" }))}</span>
+                <span>${escapeHtml(t("common.meta.label", { value: candidate?.label_name || "-" }))} / ${escapeHtml(t("common.meta.catalog_no", { value: candidate?.catalog_no || "-" }))}</span>
+                <span>${escapeHtml(t("common.meta.barcode", { value: candidate?.barcode || "-" }))}</span>
+                <span>${escapeHtml(t("common.meta.format", { value: candidate?.format_name || "-" }))}</span>
+                <span>${escapeHtml(t("common.meta.track_count", { value: formatCount(Array.isArray(candidate?.track_list) ? candidate.track_list.length : 0) }))}</span>
+                ${Number(candidate?.owned_count || 0) > 0 ? `<span>${escapeHtml(t("common.meta.already_owned", { count: formatCount(Number(candidate.owned_count || 0)) }))}</span>` : ""}
+              `}
+            </div>
+            <div class="mini">
+              external_id: ${escapeHtml(candidate?.external_id || "-")}
+              ${discogsLink ? ` | ${discogsLink}` : ""}
+              ${galleryKey ? ` | ${imageGalleryButtonHtml(galleryKey, t("common.count.images", { count: galleryCount }))}` : ""}
+            </div>
+          </div>
+          <div class="source-workbench-candidate-actions">
+            <button class="btn tiny" type="button" data-purchase-import-create-direct="${queueId}:${candidateIdx}">${escapeHtml(t("media.register.purchase.queue.action.create_from_candidate"))}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function previewPurchaseImport() {
+      const rawContent = currentPurchaseImportRawContent();
+      if (!rawContent && !purchaseImportFileContentBase64) {
+        setStatus("purchaseImportStatus", "err", t("media.register.purchase.status.preview_requires_input"));
+        return;
+      }
+      setStatus("purchaseImportStatus", "", t("media.register.purchase.status.preview_loading"));
+      try {
+        const payload = {
+          ...purchaseImportPayloadBase(),
+          raw_content: rawContent || null,
+          raw_content_base64: purchaseImportFileContentBase64 || null,
+          source_filename: purchaseImportFileName || null,
+        };
+        const res = await fetch("/purchase-imports/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.status.preview_failed")));
+        renderPurchaseImportPreview(Array.isArray(data.items) ? data.items : []);
+        setStatus("purchaseImportStatus", "ok", t("media.register.purchase.status.preview_complete", {
+          count: formatCount(Number(data.total_count || 0)),
+          vendor: purchaseImportVendorLabel(data.vendor_code),
+        }));
+      } catch (err) {
+        renderPurchaseImportPreview([]);
+        setStatus("purchaseImportStatus", "err", errorMessageText(err, t("media.register.purchase.status.preview_failed")));
+      }
+    }
+
+    async function savePurchaseImportQueue() {
+      if (!purchaseImportPreviewItems.length) {
+        setStatus("purchaseImportStatus", "err", t("media.register.purchase.status.save_requires_preview"));
+        return;
+      }
+      setStatus("purchaseImportStatus", "", t("media.register.purchase.status.queue_save_loading"));
+      try {
+        const payload = {
+          ...purchaseImportPayloadBase(),
+          items: purchaseImportPreviewItems,
+        };
+        const res = await fetch("/purchase-imports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.status.queue_save_failed")));
+        setStatus("purchaseImportStatus", "ok", t("media.register.purchase.status.queue_save_complete", {
+          count: formatCount(Number(data.created_count || 0)),
+        }));
+        await loadPurchaseImportQueue({ silent: true });
+      } catch (err) {
+        setStatus("purchaseImportStatus", "err", errorMessageText(err, t("media.register.purchase.status.queue_save_failed")));
+      }
+    }
+
+    async function loadPurchaseImportQueue(opts = {}) {
+      const silent = opts.silent === true;
+      const queueStatus = String($("purchaseImportQueueStatusFilter")?.value || "PENDING").trim().toUpperCase();
+      const vendorCode = String($("purchaseImportQueueVendorFilter")?.value || "").trim().toUpperCase();
+      const limit = Math.max(1, Math.min(1000, Number($("purchaseImportQueueLimit")?.value || 200)));
+      if (!silent) setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.status.queue_loading"));
+      try {
+        const params = new URLSearchParams();
+        if (queueStatus) params.set("queue_status", queueStatus);
+        if (vendorCode) params.set("vendor_code", vendorCode);
+        params.set("limit", String(limit));
+        const res = await fetch(`/purchase-imports?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.status.queue_load_failed")));
+        const rows = Array.isArray(data.items) ? data.items : [];
+        renderPurchaseImportQueue(rows);
+        setStatus(
+          "purchaseImportQueueStatus",
+          "ok",
+          t("media.register.purchase.status.queue_loaded", {
+            shown: formatCount(rows.length),
+            total: formatCount(Number(data.total_count || 0)),
+          })
+        );
+      } catch (err) {
+        renderPurchaseImportQueue([]);
+        setStatus("purchaseImportQueueStatus", "err", errorMessageText(err, t("media.register.purchase.status.queue_load_failed")));
+      }
+    }
+
+    async function enrichPurchaseImportFromItemPage(queueId) {
+      const id = Number(queueId || 0);
+      if (!id) return;
+      setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.queue.status.enrich_loading", { id }));
+      try {
+        const res = await fetch(`/purchase-imports/${id}/enrich-item-page`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.queue.status.enrich_failed")));
+        setStatus("purchaseImportQueueStatus", "ok", t("media.register.purchase.queue.status.enrich_complete", {
+          id,
+          suffix: data.artist_name ? ` / ${data.artist_name}` : "",
+        }));
+        await loadPurchaseImportQueue({ silent: true });
+      } catch (err) {
+        setStatus("purchaseImportQueueStatus", "err", errorMessageText(err, t("media.register.purchase.queue.status.enrich_failed")));
+      }
+    }
+
+    async function createOwnedItemFromPurchaseQueue(queueId) {
+      const id = Number(queueId || 0);
+      if (!id) return;
+      setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.queue.status.create_loading", { id }));
+      try {
+        const res = await fetch(`/purchase-imports/${id}/create-owned-item`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.queue.status.create_failed")));
+        const noticeText = Array.isArray(data.notices) && data.notices.length
+          ? ` / ${data.notices.join(" / ")}`
+          : "";
+        setStatus("purchaseImportQueueStatus", "ok", t("media.register.purchase.queue.status.create_complete", {
+          id: data.owned_item_id,
+          label: data.label_id,
+          suffix: noticeText,
+        }));
+        await loadPurchaseImportQueue({ silent: true });
+        await Promise.allSettled([
+          loadOwnedItems(),
+          loadHomeDashboard(),
+          homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true }),
+        ]);
+      } catch (err) {
+        setStatus("purchaseImportQueueStatus", "err", errorMessageText(err, t("media.register.purchase.queue.status.create_failed")));
+      }
+    }
+
+    async function loadPurchaseImportCandidates(queueId, opts = {}) {
+      const id = Number(queueId || 0);
+      if (!id) return;
+      const lookupOpts = {
+        ...getPurchaseImportCandidateLookupOptions(),
+        ...(opts || {}),
+      };
+      let state = purchaseImportQueueStateFor(id);
+      if (state.loading) return;
+      state.expanded = Boolean(lookupOpts.expand ?? true);
+      state.loading = true;
+      state.error = "";
+      renderPurchaseImportQueue(purchaseImportQueueItems);
+      if (!lookupOpts.silentStatus) {
+        setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.queue.status.lookup_loading", { id }));
+      }
+      try {
+        const params = new URLSearchParams();
+        const source = String(lookupOpts.source ?? state.source ?? "AUTO").trim().toUpperCase() || "AUTO";
+        params.set("source", source);
+        params.set("limit", String(Math.max(1, Math.min(20, Number(lookupOpts.limit || 5)))));
+        const artistName = String(lookupOpts.artistName ?? state.artistName ?? "").trim();
+        const itemName = String(lookupOpts.itemName ?? state.itemName ?? "").trim();
+        const queryOverride = String(lookupOpts.query ?? state.queryOverride ?? "").trim();
+        if (artistName) params.set("artist_name", artistName);
+        if (itemName) params.set("item_name", itemName);
+        if (queryOverride) params.set("query", queryOverride);
+        const res = await fetch(`/purchase-imports/${id}/candidates?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.queue.status.lookup_failed")));
+        state = purchaseImportQueueStateFor(id);
+        if (data.queue_item && typeof data.queue_item === "object") {
+          const rowIndex = purchaseImportQueueItems.findIndex((row) => Number(row?.id || 0) === id);
+          if (rowIndex >= 0) {
+            purchaseImportQueueItems[rowIndex] = data.queue_item;
+          }
+        }
+        state.source = source;
+        state.artistName = artistName;
+        state.itemName = itemName;
+        state.queryOverride = queryOverride;
+        state.query = String(data.query || "").trim();
+        state.candidates = Array.isArray(data.candidates) ? data.candidates.map((candidate) => cloneRegisterLookupCandidate(candidate)).filter((candidate) => candidate) : [];
+        state.selectedIdx = state.candidates.length ? 0 : -1;
+        state.error = "";
+        if (!lookupOpts.silentStatus) {
+          setStatus("purchaseImportQueueStatus", "ok", t("media.register.purchase.queue.status.lookup_complete", {
+            id,
+            count: formatCount(state.candidates.length),
+          }));
+        }
+        return { ok: true, count: state.candidates.length };
+      } catch (err) {
+        state = purchaseImportQueueStateFor(id);
+        state.candidates = [];
+        state.selectedIdx = -1;
+        state.error = errorMessageText(err, t("media.register.purchase.queue.status.lookup_failed"));
+        if (!lookupOpts.silentStatus) {
+          setStatus("purchaseImportQueueStatus", "err", state.error);
+        }
+        return { ok: false, count: 0, error: state.error };
+      } finally {
+        state = purchaseImportQueueStateFor(id);
+        state.loading = false;
+        renderPurchaseImportQueue(purchaseImportQueueItems);
+      }
+    }
+
+    async function loadAllPurchaseImportCandidates() {
+      const rows = purchaseImportQueueItems.filter((row) => String(row?.queue_status || "").trim().toUpperCase() === "PENDING");
+      if (!rows.length) {
+        setStatus("purchaseImportQueueStatus", "err", t("media.register.purchase.queue.status.lookup_none_pending"));
+        return;
+      }
+      const lookupOpts = getPurchaseImportCandidateLookupOptions();
+      let successCount = 0;
+      let emptyCount = 0;
+      let failCount = 0;
+      setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.queue.status.lookup_fetch_all_loading", {
+        count: formatCount(rows.length),
+      }));
+      for (const row of rows) {
+        const result = await loadPurchaseImportCandidates(row.id, {
+          ...lookupOpts,
+          expand: false,
+          silentStatus: true,
+        });
+        if (result?.ok && Number(result.count || 0) > 0) {
+          successCount += 1;
+        } else if (result?.ok) {
+          emptyCount += 1;
+        } else {
+          failCount += 1;
+        }
+      }
+      setStatus(
+        "purchaseImportQueueStatus",
+        failCount ? "err" : "ok",
+        t("media.register.purchase.queue.status.lookup_fetch_all_complete", {
+          success: formatCount(successCount),
+          empty: formatCount(emptyCount),
+          failed: formatCount(failCount),
+        })
+      );
+      renderPurchaseImportQueue(purchaseImportQueueItems);
+    }
+
+    function selectPurchaseImportCandidate(queueId, candidateIdx) {
+      const id = Number(queueId || 0);
+      const idx = Number(candidateIdx);
+      if (!id || !Number.isInteger(idx)) return;
+      const state = purchaseImportQueueStateFor(id);
+      if (!Array.isArray(state.candidates) || !state.candidates[idx]) return;
+      state.expanded = true;
+      state.selectedIdx = idx;
+      renderPurchaseImportQueue(purchaseImportQueueItems);
+      setStatus("purchaseImportQueueStatus", "ok", t("media.register.purchase.queue.status.select_complete", {
+        id,
+        source: `${state.candidates[idx].source}#${state.candidates[idx].external_id || "-"}`,
+      }));
+    }
+
+    async function createOwnedItemFromPurchaseQueueCandidate(queueId, candidateIdx = null) {
+      const id = Number(queueId || 0);
+      if (!id) return;
+      const state = purchaseImportQueueStateFor(id);
+      const idx = (candidateIdx !== null && Number.isFinite(Number(candidateIdx))) ? Number(candidateIdx) : state.selectedIdx;
+      const candidate = Array.isArray(state.candidates) ? state.candidates[idx] : null;
+      if (!candidate) {
+        setStatus("purchaseImportQueueStatus", "err", t("media.register.purchase.queue.status.create_candidate_requires_selection"));
+        return;
+      }
+      setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.queue.status.create_candidate_loading", { id }));
+      try {
+        const requestBody = { candidate };
+        console.log("[createOwnedItemFromPurchaseQueueCandidate] Sending POST request:", {
+          queueId: id,
+          candidateData: requestBody,
+          timestamp: new Date().toISOString(),
+        });
+        const res = await fetch(`/purchase-imports/${id}/create-owned-item-from-candidate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+        const data = await safeJson(res);
+        console.log("[createOwnedItemFromPurchaseQueueCandidate] Response received:", {
+          status: res.status,
+          ok: res.ok,
+          data,
+          timestamp: new Date().toISOString(),
+        });
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.queue.status.create_candidate_failed")));
+        const noticeText = Array.isArray(data.notices) && data.notices.length
+          ? ` / ${data.notices.join(" / ")}`
+          : "";
+        console.log("[createOwnedItemFromPurchaseQueueCandidate] Success:", {
+          ownedItemId: data.owned_item_id,
+          labelId: data.label_id,
+          linkedAlbumMasterId: data.linked_album_master_id,
+          notices: data.notices,
+        });
+        setStatus("purchaseImportQueueStatus", "ok", t("media.register.purchase.queue.status.create_candidate_complete", {
+          id: data.owned_item_id,
+          label: data.label_id,
+          suffix: noticeText,
+        }));
+        await loadPurchaseImportQueue({ silent: true });
+        await Promise.allSettled([
+          loadOwnedItems(),
+          loadHomeDashboard(),
+          homeSearchOwnedItems({ resetPage: true, suppressEmptyCta: true }),
+        ]);
+      } catch (err) {
+        console.error("[createOwnedItemFromPurchaseQueueCandidate] Error occurred:", {
+          error: err?.message || String(err),
+          stack: err?.stack,
+          timestamp: new Date().toISOString(),
+        });
+        setStatus("purchaseImportQueueStatus", "err", errorMessageText(err, t("media.register.purchase.queue.status.create_candidate_failed")));
+      }
+    }
+
+    async function ignorePurchaseImportRow(queueId) {
+      const id = Number(queueId || 0);
+      if (!id) return;
+      setStatus("purchaseImportQueueStatus", "", t("media.register.purchase.queue.status.ignore_loading", { id }));
+      try {
+        const res = await fetch(`/purchase-imports/${id}/ignore`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("media.register.purchase.queue.status.ignore_failed")));
+        setStatus("purchaseImportQueueStatus", "ok", t("media.register.purchase.queue.status.ignore_complete", { id }));
+        await loadPurchaseImportQueue({ silent: true });
+      } catch (err) {
+        setStatus("purchaseImportQueueStatus", "err", errorMessageText(err, t("media.register.purchase.queue.status.ignore_failed")));
+      }
+    }
+
+    function openGoodsRegisterFromProductContext() {
+      const ownedItemId = Number(homeSelectedItemId || 0);
+      openAdminConsole("collectibles");
+      switchGoodsMode("register");
+      resetGoodsRegisterForm({ preserveStatus: true });
+      if (ownedItemId > 0 && $("goodsRegisterLinkedOwnedItemId")) {
+        $("goodsRegisterLinkedOwnedItemId").value = String(ownedItemId);
+      }
+      setStatus(
+        "goodsRegisterStatusLine",
+        "ok",
+        ownedItemId > 0
+          ? t("collectibles.register.status.start_linked", { id: ownedItemId })
+          : t("collectibles.register.status.start_independent")
+      );
+    }
+
+    function resetForm() {
+      $("category").value = "LP";
+      $("sizeGroup").value = "LP";
+      $("quantity").value = "1";
+      $("domainCode").value = "";
+      $("releaseType").value = "";
+      $("linkedAlbumMasterId").value = "";
+      $("linkedArtistName").value = "";
+      $("isSecondHand").checked = false;
+      $("status").value = "IN_COLLECTION";
+      $("displayRank").value = "";
+      $("slotId").value = "";
+      $("signatureType").value = "NONE";
+      $("purchaseSource").value = "";
+      $("purchasePrice").value = "";
+      $("currencyCode").value = "KRW";
+      $("conditionGrade").value = "";
+      $("memoryNote").value = "";
+      $("promoNfs").checked = false;
+      $("formatName").value = "LP";
+      setConditionSelectValue("coverCondition", "");
+      setConditionSelectValue("discCondition", "");
+      $("labelName").value = "";
+      $("catalogNo").value = "";
+      $("runoutMatrix").value = "";
+      $("releasedDate").value = "";
+      $("discCount").value = "";
+      $("speedRpm").value = "";
+      $("mediaType").value = "";
+      $("genres").value = "";
+      $("styles").value = "";
+      $("pressingCountry").value = "";
+      $("hasObi").checked = false;
+      $("coverImageUrl").value = "";
+      $("trackList").value = "";
+      $("goodsItemName").value = "";
+      $("goodsImageUrls").value = "";
+      $("posterStorageSpec").value = "";
+      $("tshirtSize").value = "";
+      $("cupMaterial").value = "";
+      $("hatSize").value = "";
+      $("itemNameOverride").value = "";
+      $("barcodeInput").value = "";
+      $("metaSourceFilter").value = "AUTO";
+      $("queryArtist").value = "";
+      $("queryTitle").value = "";
+      $("queryCatalog").value = "";
+      $("querySourceRef").value = "";
+      selectedCandidate = null;
+      syncMusicVisibility();
+      setStatus("createStatus", "ok", "");
+      setStatus("barcodeStatus", "ok", "");
+      renderBarcodeResults([]);
+    }
+
+    function applyCandidateToForm(c, opts = {}) {
+      const scroll = opts.scroll !== false;
+      selectedCandidate = c;
+      const category = inferMusicCategoryFromMetadata(c);
+      $("category").value = category;
+      $("formatName").value = category;
+      $("sizeGroup").value = inferSizeGroupFromMetadata(category, c);
+      // ManiaDB는 항상 가요(KOREA) — domain_code가 없더라도 강제 적용
+      const sourceUpper = String(c.source || "").trim().toUpperCase();
+      const isManiadb = sourceUpper === "MANIADB";
+      const effectiveDomainCode = isManiadb ? "KOREA" : c.domain_code;
+      const mappedDomain = pickMappedDomain(effectiveDomainCode);
+      const mappedReleaseType = pickMappedReleaseType(c.release_type);
+      if (mappedDomain) {
+        const artistText = String(c.artist_or_brand || "").trim();
+        const artistHasHangul = /[가-힣ㄱ-ㆎ]/.test(artistText);
+        const artistHasKana  = /[぀-ヿ一-鿿]/.test(artistText);
+        // 후보 도메인이 KOREA인데 아티스트명이 라틴이면 WESTERN으로 자동보정
+        // (ManiaDB 소스는 제외 — 영문 표기 한국 아티스트 다수)
+        if (!isManiadb && mappedDomain === "KOREA" && artistText && !artistHasHangul && !artistHasKana) {
+          $("domainCode").value = "WESTERN";
+          setStatus("createStatus", "ok", `도메인을 팝(WESTERN)으로 자동보정했습니다 — 아티스트명 "${artistText}" 이(가) 영문입니다. 틀리면 직접 수정하세요.`);
+        } else if (!isManiadb && mappedDomain === "JAPAN" && artistText && !artistHasKana && !artistHasHangul) {
+          $("domainCode").value = "WESTERN";
+          setStatus("createStatus", "ok", `도메인을 팝(WESTERN)으로 자동보정했습니다 — 아티스트명 "${artistText}" 이(가) 영문입니다. 틀리면 직접 수정하세요.`);
+        } else {
+          $("domainCode").value = mappedDomain;
+        }
+      }
+      if (mappedReleaseType) $("releaseType").value = mappedReleaseType;
+      if (c.title) {
+        $("itemNameOverride").value = c.title;
+      }
+      if (c.label_name) $("labelName").value = c.label_name;
+      if (c.catalog_no) $("catalogNo").value = c.catalog_no;
+      if (c.released_date) $("releasedDate").value = c.released_date;
+      if (Number.isFinite(Number(c.disc_count)) && Number(c.disc_count) > 0) $("discCount").value = String(Number(c.disc_count));
+      if (Number.isFinite(Number(c.speed_rpm)) && Number(c.speed_rpm) > 0) $("speedRpm").value = String(Number(c.speed_rpm));
+      if (c.runout_matrix) $("runoutMatrix").value = joinRunoutList(c.runout_matrix);
+      if (c.media_type) $("mediaType").value = c.media_type;
+      if (c.pressing_country) $("pressingCountry").value = c.pressing_country;
+      $("genres").value = joinCommaList(c.genres);
+      $("styles").value = joinCommaList(c.styles);
+      if (c.cover_image_url) $("coverImageUrl").value = c.cover_image_url;
+      if (Array.isArray(c.track_list) && c.track_list.length) {
+        $("trackList").value = c.track_list.join("\n");
+      }
+      const sourceMemo = `[AUTO] ${c.source}#${c.external_id} confidence=${c.confidence}`;
+      const oldLines = $("memoryNote").value
+        .split("\n")
+        .map((v) => v.trim())
+        .filter((v) => v);
+      if (!oldLines.includes(sourceMemo)) oldLines.push(sourceMemo);
+      $("memoryNote").value = oldLines.join("\n");
+      syncMusicVisibility();
+      if (scroll) {
+        window.scrollTo({ top: document.body.scrollHeight * 0.2, behavior: "smooth" });
+      }
+    }
+
+    function listRegisterLookupCabinets() {
+      return [...new Set(
+        storageSlotCache
+          .map((slot) => String(slot?.cabinet_name || "").trim())
+          .filter((v) => v && v.toUpperCase() !== "OVERFLOW")
+      )].sort((a, b) => a.localeCompare(b, "ko"));
+    }
+
+    function listRegisterLookupFloors(cabinetName) {
+      if (!cabinetName) return [];
+      return [...new Set(
+        storageSlotCache
+          .filter((slot) => String(slot?.cabinet_name || "").trim() === cabinetName)
+          .map((slot) => String(slot?.column_code || "").trim())
+          .filter((v) => v)
+      )].sort(compareCodeValue);
+    }
+
+    function listRegisterLookupCells(cabinetName, columnCode) {
+      if (!cabinetName || !columnCode) return [];
+      return [...new Set(
+        storageSlotCache
+          .filter((slot) =>
+            String(slot?.cabinet_name || "").trim() === cabinetName &&
+            String(slot?.column_code || "").trim() === columnCode
+          )
+          .map((slot) => String(slot?.cell_code || "").trim())
+          .filter((v) => v)
+      )].sort(compareCodeValue);
+    }
+
+    function fillRegisterLookupSelect(select, items, selectedValue, emptyLabel) {
+      select.innerHTML = "";
+      const emptyOpt = document.createElement("option");
+      emptyOpt.value = "";
+      emptyOpt.textContent = emptyLabel;
+      select.appendChild(emptyOpt);
+      for (const item of items) {
+        const opt = document.createElement("option");
+        opt.value = item;
+        opt.textContent = item;
+        if (String(item) === String(selectedValue || "")) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
+    function resolveRegisterLookupStorageSlotId(index) {
+      const state = registerLookupLocationStateFor(index);
+      const hasAny = Boolean(state.cabinet_name || state.column_code || state.cell_code);
+      if (!hasAny) return null;
+      if (!(state.cabinet_name && state.column_code && state.cell_code)) {
+        throw new Error(t("media.register.api_lookup.status.slot_selection_required"));
+      }
+      const slot = storageSlotCache.find((row) =>
+        String(row?.cabinet_name || "").trim() === state.cabinet_name &&
+        String(row?.column_code || "").trim() === state.column_code &&
+        String(row?.cell_code || "").trim() === state.cell_code
+      );
+      if (!slot) {
+        throw new Error(t("media.register.api_lookup.status.slot_not_found"));
+      }
+      return Number(slot.id || 0) || null;
+    }
+
+    function buildLookupOwnedPayload(candidate, storageSlotId) {
+      const sourceCodeRaw = String(candidate?.source || "").trim().toUpperCase();
+      const sourceCode = SOURCE_MANAGED_CODES.has(sourceCodeRaw) ? sourceCodeRaw : null;
+      const sourceExternalId = sourceCode ? (String(candidate?.external_id || "").trim() || null) : null;
+      const category = inferMusicCategoryFromMetadata(candidate);
+      const sizeGroup = inferSizeGroupFromMetadata(category, candidate);
+      const mappedDomain = pickMappedDomain(candidate?.domain_code);
+      const mappedReleaseType = pickMappedReleaseType(candidate?.release_type);
+      const artist = String(candidate?.artist_or_brand || "").trim();
+      const title = String(candidate?.title || "").trim();
+      const itemName = [artist, title].filter((v) => v).join(" - ") || title || category;
+      const collector = buildCollectorPayload(sourceCode, candidate || {});
+      const trackList = Array.isArray(candidate?.track_list)
+        ? candidate.track_list.map((v) => String(v || "").trim()).filter((v) => v)
+        : [];
+
+      return {
+        category,
+        size_group: sizeGroup,
+        preferred_storage_size_group: sizeGroup,
+        auto_location_recommendation: false,
+        quantity: 1,
+        is_second_hand: false,
+        status: "IN_COLLECTION",
+        signature_type: "NONE",
+        source_code: sourceCode,
+        source_external_id: sourceExternalId,
+        domain_code: mappedDomain || null,
+        release_type: mappedReleaseType || null,
+        linked_album_master_id: null,
+        linked_artist_name: null,
+        purchase_source: null,
+        condition_grade: null,
+        memory_note: sourceCode && sourceExternalId ? `[AUTO] ${sourceCode}#${sourceExternalId}` : null,
+        item_name_override: itemName,
+        display_rank: null,
+        storage_slot_id: storageSlotId,
+        music_detail: {
+          format_name: category,
+          is_promotional_not_for_sale: false,
+          artist_or_brand: artist || null,
+          released_date: String(candidate?.released_date || "").trim() || null,
+          barcode: String(candidate?.barcode || "").trim() || null,
+          label_name: String(candidate?.label_name || "").trim() || null,
+          catalog_no: String(candidate?.catalog_no || "").trim() || null,
+          media_type: String(candidate?.media_type || "").trim() || null,
+          genres: splitCommaList(candidate?.genres || []),
+          styles: splitCommaList(candidate?.styles || []),
+          cover_image_url: String(candidate?.cover_image_url || "").trim() || null,
+          track_list: trackList,
+          cover_condition: null,
+          disc_condition: null,
+          disc_count: normalizePositiveIntOrNull(candidate?.disc_count),
+          speed_rpm: Number.isFinite(Number(candidate?.speed_rpm)) ? Number(candidate.speed_rpm) : null,
+          has_obi: null,
+          runout_matrix: collector.runout_matrix,
+          pressing_country: collector.pressing_country,
+          source_notes: collector.source_notes,
+          credits: collector.credits,
+          identifier_items: collector.identifier_items,
+          image_items: collector.image_items,
+          company_items: collector.company_items,
+          series: collector.series,
+          format_items: collector.format_items,
+          track_items: collector.track_items,
+          label_items: collector.label_items
+        }
+      };
+    }
+
+    async function registerCandidateFromLookup(entryOrIndex) {
+      const entry = Number.isInteger(entryOrIndex)
+          ? (() => {
+              const candidate = registerLookupCandidates[entryOrIndex];
+              if (!candidate) return null;
+              return {
+                key: registerLookupCandidateKey(candidate, entryOrIndex),
+                candidate: cloneRegisterLookupCandidate(candidate),
+                storage_slot_id: resolveAdminBarcodeRecommendedSlotId(candidate),
+              };
+            })()
+        : entryOrIndex;
+      if (!entry?.candidate) {
+        setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.candidate_not_found"));
+        return;
+      }
+
+      const sourceLabel = `${entry.candidate.source}#${entry.candidate.external_id || "-"}`;
+      setStatus(
+        "barcodeStatus",
+        "ok",
+        t("media.register.api_lookup.status.saving", {
+          source: sourceLabel,
+          suffix: registerLookupSaveQueue.length ? ` / ${formatCount(registerLookupSaveQueue.length)}` : "",
+        })
+      );
+      const payload = buildLookupOwnedPayload(entry.candidate, entry.storage_slot_id ?? null);
+      const res = await fetchWithRetry("/owned-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }, {
+        retries: 2,
+        retryDelayMs: 250,
+        onRetry: (attempt, total) => setStatus(
+          "barcodeStatus",
+          "ok",
+          retryingStatusText(
+            t("media.register.api_lookup.status.saving", {
+              source: sourceLabel,
+              suffix: registerLookupSaveQueue.length ? ` / ${formatCount(registerLookupSaveQueue.length)}` : "",
+            }),
+            attempt,
+            total
+          )
+        ),
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(responseDetailText(data, t("media.register.api_lookup.status.save_failed")));
+      const notices = Array.isArray(data.notices) ? data.notices.slice() : [];
+      const mergeNotices = await maybeMergeDuplicateMastersForCreatedItem(
+        Number(data.linked_album_master_id || 0),
+        "barcodeStatus"
+      );
+      for (const msg of mergeNotices) notices.push(msg);
+
+      const visibleIndex = findRegisterLookupCandidateIndexByKey(entry.key);
+      if (visibleIndex >= 0 && registerLookupCandidates[visibleIndex]) {
+        registerLookupCandidates[visibleIndex].is_owned = true;
+        registerLookupCandidates[visibleIndex].owned_count = Number(registerLookupCandidates[visibleIndex].owned_count || 0) + 1;
+      }
+      renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
+
+      const savedSlot = entry.storage_slot_id ? getStorageSlotById(entry.storage_slot_id) : null;
+      const savedLocationText = savedSlot ? storageSlotDisplayLabel(savedSlot) : t("common.unslotted");
+      const labelText = data.label_id ? ` · ${t("common.meta.label_id", { value: data.label_id })}` : "";
+      const noticeText = notices.length ? t("media.register.api_lookup.status.notice_suffix", { count: formatCount(notices.length) }) : "";
+      const savedMessage = t("media.register.api_lookup.status.saved_message", {
+        location: savedLocationText,
+        label: labelText,
+        suffix: noticeText,
+      });
+      clearAdminBarcodeConfirmation();
+      const barcodeInput = $("barcodeInput");
+      if (barcodeInput) barcodeInput.focus();
+      setAdminBarcodeIntakeHint("saved");
+      showAdminBarcodeToast(savedMessage);
+      showAdminBarcodeToast(savedMessage, savedLocationText);
+      setStatus("barcodeStatus", "ok", savedMessage);
+
+      const refreshResults = await Promise.allSettled([
+        loadOwnedItems(),
+        loadHomeDashboard(),
+        homeSearchOwnedItems({ resetPage: true }),
+      ]);
+      const refreshErrors = refreshResults
+        .filter((row) => row.status === "rejected")
+        .map((row) => errorMessageText(row.reason, t("media.register.api_lookup.status.refresh_failed")))
+        .filter((row) => row);
+      if (refreshErrors.length) {
+        setStatus(
+          "barcodeStatus",
+          "ok",
+          t("media.register.api_lookup.status.refresh_partial_failed", {
+            saved: savedMessage,
+            errors: refreshErrors.join(" / "),
+          })
+        );
+      }
+      if (registerLookupSaveQueue.length) {
+        setStatus(
+          "barcodeStatus",
+          "ok",
+          t("media.register.api_lookup.status.queue_continues", {
+            saved: savedMessage,
+            count: formatCount(registerLookupSaveQueue.length),
+          })
+        );
+      }
+    }
+
+    function queueRegisterLookupCandidate(index) {
+      const candidate = registerLookupCandidates[index];
+      if (!candidate) {
+        setStatus("barcodeStatus", "err", t("media.register.api_lookup.status.candidate_not_found"));
+        return;
+      }
+      // Flush any pending edits from DOM inputs directly (belt-and-suspenders over the input event)
+      const barcodeResultsEl = $("barcodeResults");
+      if (barcodeResultsEl) {
+        const artistInputEl = barcodeResultsEl.querySelector(`[data-register-lookup-artist="${index}"]`);
+        if (artistInputEl) {
+          const editedArtist = String(artistInputEl.value || "").trim();
+          if (editedArtist) candidate.artist_or_brand = editedArtist;
+        }
+        const domainSelEl = barcodeResultsEl.querySelector(`[data-register-lookup-domain="${index}"]`);
+        if (domainSelEl) {
+          const editedDomain = String(domainSelEl.value || "").trim().toUpperCase() || null;
+          candidate.domain_code = editedDomain;
+        }
+      }
+      const key = registerLookupCandidateKey(candidate, index);
+      if (registerLookupSavingKey === key || registerLookupQueuedKeys.has(key)) {
+        setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.already_queued"));
+        return;
+      }
+      if (!confirmAdminBarcodeDuplicateSave(candidate)) {
+        setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.duplicate_cancelled"));
+        return;
+      }
+      const entry = {
+        key,
+        candidate: cloneRegisterLookupCandidate(candidate),
+        storage_slot_id: resolveAdminBarcodeRecommendedSlotId(candidate),
+      };
+      registerLookupSaveQueue.push(entry);
+      registerLookupQueuedKeys.add(key);
+      renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
+      if (registerLookupSaveInFlight) {
+        setStatus("barcodeStatus", "ok", t("media.register.api_lookup.status.queued", { count: formatCount(registerLookupSaveQueue.length) }));
+        return;
+      }
+      void processRegisterLookupQueue();
+    }
+
+    async function processRegisterLookupQueue() {
+      if (registerLookupSaveInFlight) return;
+      const next = registerLookupSaveQueue.shift();
+      if (!next) {
+        registerLookupSavingKey = "";
+        resetAdminBarcodeIntakeWorkspace({ preserveStatus: true });
+        return;
+      }
+      registerLookupSaveInFlight = true;
+      registerLookupQueuedKeys.delete(next.key);
+      registerLookupSavingKey = next.key;
+      renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
+      try {
+        await registerCandidateFromLookup(next);
+      } catch (err) {
+        setStatus("barcodeStatus", "err", errorMessageText(err, t("media.register.api_lookup.status.save_failed")));
+      } finally {
+        registerLookupSaveInFlight = false;
+        registerLookupSavingKey = "";
+        renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
+        if (registerLookupSaveQueue.length) {
+          void processRegisterLookupQueue();
+        }
+      }
+    }
+
+    function compareRegisterLookupCandidateDisplay(a, b) {
+      const sourceA = normalizeSourceCode(a?.source);
+      const sourceB = normalizeSourceCode(b?.source);
+      if (sourceA !== "MANIADB" || sourceB !== "MANIADB") return 0;
+      const yearDiff = registerLookupCandidateSortYear(a) - registerLookupCandidateSortYear(b);
+      if (yearDiff !== 0) return yearDiff;
+      const formatDiff = registerLookupCandidateFormatRank(a) - registerLookupCandidateFormatRank(b);
+      if (formatDiff !== 0) return formatDiff;
+      const aCatalog = String(a?.catalog_no || "").trim();
+      const bCatalog = String(b?.catalog_no || "").trim();
+      const catalogDiff = compareCodeValue(aCatalog || "ZZZ", bCatalog || "ZZZ");
+      if (catalogDiff !== 0) return catalogDiff;
+      return 0;
+    }
+
+    function renderBarcodeResults(items, opts = {}) {
+      const resetLocationState = opts.resetLocationState !== false;
+      registerLookupCandidates = Array.isArray(items)
+        ? items
+            .map((candidate, order) => ({
+              candidate,
+              order,
+              isOwned: Number(candidate.owned_count || 0) > 0 || Boolean(candidate.is_owned),
+            }))
+            .sort((a, b) => Number(b.isOwned) - Number(a.isOwned) || compareRegisterLookupCandidateDisplay(a.candidate, b.candidate) || a.order - b.order)
+            .map(({ candidate }) => candidate)
+        : [];
+      adminBarcodePlacementToken += 1;
+      if (resetLocationState) registerLookupLocationState = {};
+      const root = $("barcodeResults");
+      root.innerHTML = "";
+      $("barcodeCount").textContent = countWithUnit(registerLookupCandidates.length);
+      const selectedKey = selectedRegisterLookupCandidateKey();
+      if (selectedKey && findRegisterLookupCandidateIndexByKey(selectedKey) < 0) {
+        selectedCandidate = null;
+      }
+      syncAdminBarcodeIntakePanels();
+
+      if (!registerLookupCandidates.length) {
+        root.innerHTML = `<div class='muted'>${escapeHtml(t("media.register.api_lookup.results.empty"))}</div>`;
+        return;
+      }
+
+      for (const [index, c] of registerLookupCandidates.entries()) {
+        const box = document.createElement("div");
+        const candidateKey = registerLookupCandidateKey(c, index);
+        const isSelected = Boolean(selectedKey) && selectedKey === candidateKey;
+        const isOwnedCandidate = Number(c.owned_count || 0) > 0 || Boolean(c.is_owned);
+        box.className = `result-item album-result${isSelected ? " pick" : ""}`;
+        box.classList.toggle("is-owned", Number(c.owned_count || 0) > 0 || Boolean(c.is_owned));
+        box.tabIndex = 0;
+        box.style.cursor = "pointer";
+        box.setAttribute("data-register-lookup-index", String(index));
+        box.setAttribute("aria-selected", isSelected ? "true" : "false");
+        const queueKey = registerLookupCandidateKey(c, index);
+        const isSaving = registerLookupSavingKey === queueKey;
+        const isQueued = registerLookupQueuedKeys.has(queueKey);
+        const title = `${c.artist_or_brand || "Unknown"} - ${c.title || "(no title)"}`;
+        const releasedDate = String(c.released_date || c.release_year || "").trim() || "-";
+        const genreText = joinCommaList(c.genres || []) || "-";
+        const formatLabel = mediaDisplayLabel(c.format_name || "LP");
+        const discogsLink = discogsReleaseLinkHtml(c.source, c.external_id, "Discogs");
+        const galleryKey = registerImageGallery(`registerLookup:${normalizeSourceCode(c.source)}:${c.external_id || index}`, c, {
+          title,
+          subtitle: `${normalizeSourceCode(c.source) || "-"}#${c.external_id || "-"}`,
+        });
+        const galleryCount = galleryKey ? Number(imageGalleryRegistry.get(galleryKey)?.items?.length || 0) : 0;
+        const ownedBadge = Number(c.owned_count || 0) > 0 || c.is_owned
+          ? `<span class="album-result-status-badge owned admin-barcode-candidate-flag">${escapeHtml(t("common.meta.already_owned", { count: countWithUnit(Number(c.owned_count || 0)) }))}</span>`
+          : "";
+        const discogsMetaHtml = buildDiscogsStandardMetaHtml(c, { includeOwnedCount: true });
+        const coverUrl = normalizeRenderableCoverUrl(c.cover_image_url);
+        const cover = coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" />`
+          : escapeHtml(t("common.no_cover"));
+        const registerButtonHtml = `<button class="btn ghost admin-barcode-result-save-btn" type="button" data-register-lookup-save="${index}" ${isSaving || isQueued ? "disabled" : ""}>${escapeHtml(isSaving ? t("media.register.api_lookup.action.save_loading") : (isQueued ? t("media.register.api_lookup.action.save_queued") : t("media.register.api_lookup.action.save_owned")))}</button>`;
+        const currentDomainCode = String(c.domain_code || "").trim().toUpperCase();
+        const domainOptions = ["", "KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD", "UNKNOWN"]
+          .map((dc) => `<option value="${dc}"${dc === currentDomainCode ? " selected" : ""}>${dc ? escapeHtml(dashboardDomainLabel(dc)) : escapeHtml(t("common.unspecified"))}</option>`)
+          .join("");
+        const domainSelectHtml = `<select class="ingest-domain-select operator-domain-badge${currentDomainCode ? ` domain-${escapeHtml(currentDomainCode)}` : ""}" data-register-lookup-domain="${index}" title="${escapeHtml(t("media.register.api_lookup.field.domain.label"))}">${domainOptions}</select>`;
+        const artistName = String(c.artist_or_brand || "").trim();
+        const artistEditHtml = `<div class="ingest-artist-edit-row"><span class="ingest-artist-edit-label">${escapeHtml(t("media.register.api_lookup.field.artist.label"))}</span><input class="ingest-artist-name-input" type="text" data-register-lookup-artist="${index}" value="${escapeHtml(artistName)}" placeholder="${escapeHtml(t("media.register.api_lookup.field.artist.placeholder"))}" autocomplete="off"></div>`;
+        box.innerHTML = `
+          <div class="album-result-cover">${cover}</div>
+          <div class="album-result-main">
+            <strong>${escapeHtml(title)}</strong>
+            ${artistEditHtml}
+            <div class="result-meta">
+              <span class="tag home-master-source-chip">${escapeHtml(c.source || "-")}</span>
+              ${domainSelectHtml}
+              ${ownedBadge}
+              ${discogsMetaHtml || `
+                <span>${escapeHtml(t("common.meta.format", { value: formatLabel }))}</span>
+                <span>${escapeHtml(t("common.meta.release_date", { value: releasedDate }))}</span>
+                <span>${escapeHtml(t("common.meta.genre"))} ${escapeHtml(genreText)}</span>
+                ${Number(c.owned_count || 0) > 0 ? `<span>${escapeHtml(t("common.meta.already_owned", { count: countWithUnit(Number(c.owned_count || 0)) }))}</span>` : ""}
+              `}
+              ${discogsLink ? `<span>${discogsLink}</span>` : ""}
+              <span class="admin-barcode-result-actions">
+                ${galleryKey ? imageGalleryButtonHtml(galleryKey, t("media.source.candidate.action.images", { count: galleryCount })) : ""}
+                ${registerButtonHtml}
+              </span>
+            </div>
+            <div class="row u-mt-4 u-flex-between-center-wrap">
+              <div class="mini">${escapeHtml(t("common.meta.external_id", { value: c.external_id || "-" }))}${isOwnedCandidate ? ` / ${escapeHtml(t("common.meta.already_owned", { count: countWithUnit(Number(c.owned_count || 0)) }))}` : ""}</div>
+              <div class="mini">${escapeHtml(t("common.meta.candidate_confidence", { value: Number(c.confidence || 0).toFixed(3) }))}</div>
+            </div>
+          </div>
+        `;
+        root.appendChild(box);
+      }
+    }

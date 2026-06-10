@@ -1141,3 +1141,589 @@
       row.selected = Boolean(selected);
       renderSourceWorkbenchDiffReview();
     }
+
+
+    function buildSourceWorkbenchDiffFieldRows(payload = {}) {
+      const item = payload?.item || {};
+      const candidate = payload?.candidate || {};
+      return sourceWorkbenchDiffFieldDefs().map((definition) => {
+        const currentValue = sourceWorkbenchDiffResolveValue({ ...definition, itemKeys: definition.itemKeys }, item);
+        const candidateValue = sourceWorkbenchDiffResolveValue({ ...definition, itemKeys: definition.candidateKeys }, candidate);
+        const status = sourceWorkbenchDiffStatusCode(definition, currentValue, candidateValue);
+        const disabled = status === "SAME" || status === "EMPTY_BOTH";
+        return {
+          key: definition.key,
+          label: definition.label,
+          labelKey: definition.labelKey || "",
+          presentation: definition.presentation,
+          currentValue,
+          candidateValue,
+          currentDisplay: definition.key === "track_list" ? sourceWorkbenchDiffNormalizeList(currentValue) : sourceWorkbenchDiffNormalizeScalar(currentValue),
+          candidateDisplay: definition.key === "track_list" ? sourceWorkbenchDiffNormalizeList(candidateValue) : sourceWorkbenchDiffNormalizeScalar(candidateValue),
+          status,
+          statusLabel: sourceWorkbenchDiffStatusLabel(status),
+          statusLabelKey: sourceWorkbenchDiffStatusLabelKey(status),
+          selected: status === "EMPTY_FILL",
+          disabled,
+          visible: true,
+        };
+      });
+    }
+
+    function buildSourceWorkbenchDiffReviewState(payload = {}) {
+      const selectedRows = Array.isArray(payload?.selectedRows) ? payload.selectedRows : [];
+      const items = selectedRows.map((entry) => {
+        const item = entry?.item || {};
+        const candidateList = Array.isArray(entry?.candidates) ? entry.candidates : [];
+        const candidate = candidateList[Number(entry?.selectedIdx || 0)] || {};
+        const fieldRows = buildSourceWorkbenchDiffFieldRows({ item, candidate });
+        return {
+          ownedItemId: Number(item?.id || 0),
+          labelId: String(item?.label_id || "").trim() || "-",
+          currentTitle: sourceWorkbenchDiffNormalizeScalar(item?.item_title || item?.item_name_override) || "-",
+          candidateSource: sourceWorkbenchDiffNormalizeScalar(candidate?.source) || "-",
+          candidateTitle: sourceWorkbenchDiffNormalizeScalar(candidate?.title || candidate?.item_title || candidate?.item_name_override) || "-",
+          candidateExternalId: sourceWorkbenchDiffNormalizeScalar(candidate?.external_id) || "",
+          candidate,
+          fieldRows,
+        };
+      }).filter((entry) => entry.ownedItemId > 0);
+      const actionableFieldCount = items.reduce((total, item) => total + item.fieldRows.filter((row) => !row.disabled).length, 0);
+      const candidateSources = [...new Set(items.map((item) => item.candidateSource).filter((value) => value && value !== "-"))];
+      const reviewState = {
+        items,
+        summary: {
+          itemCount: items.length,
+          actionableFieldCount,
+          selectedFieldCount: 0,
+          candidateSources,
+        },
+      };
+      reviewState.summary.selectedFieldCount = sourceWorkbenchDiffReviewFieldCount(reviewState);
+      return reviewState;
+    }
+
+    function buildSourceWorkbenchLegacyApplyItems(payload = {}) {
+      const selectedRows = Array.isArray(payload?.selectedRows) ? payload.selectedRows : [];
+      return selectedRows
+        .map((entry) => {
+          const ownedItemId = Number(entry?.item?.id || 0);
+          const candidateList = Array.isArray(entry?.candidates) ? entry.candidates : [];
+          const candidate = candidateList[Number(entry?.selectedIdx ?? -1)] || null;
+          if (ownedItemId <= 0 || !candidate) return null;
+          return {
+            owned_item_id: ownedItemId,
+            candidate,
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function buildSourceWorkbenchDiffApplyItems(payload = {}) {
+      const reviewItems = Array.isArray(payload?.reviewState?.items) ? payload.reviewState.items : [];
+      return reviewItems
+        .map((item) => {
+          const ownedItemId = Number(item?.ownedItemId || 0);
+          const candidate = item?.candidate && typeof item.candidate === "object" ? item.candidate : null;
+          const selectedFields = Array.isArray(item?.fieldRows)
+            ? item.fieldRows
+              .filter((row) => row?.selected && !row?.disabled)
+              .map((row) => String(row?.key || "").trim())
+              .filter(Boolean)
+            : [];
+          if (ownedItemId <= 0 || !candidate || !selectedFields.length) return null;
+          return {
+            owned_item_id: ownedItemId,
+            candidate,
+            selected_fields: selectedFields,
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function buildSourceWorkbenchEditionComparatorRows(payload = {}) {
+      const current = payload?.current || payload?.item || {};
+      const candidate = payload?.candidate || {};
+      return sourceWorkbenchEditionComparatorFieldDefs().map((definition) => {
+        const currentValue = sourceWorkbenchEditionComparatorResolveValue({ ...definition, itemKeys: definition.itemKeys }, current);
+        const candidateValue = sourceWorkbenchEditionComparatorResolveValue({ ...definition, itemKeys: definition.candidateKeys }, candidate);
+        const currentAnalysis = sourceWorkbenchEditionComparatorAnalyzeValue(definition, currentValue);
+        const candidateAnalysis = sourceWorkbenchEditionComparatorAnalyzeValue(definition, candidateValue);
+        const state = sourceWorkbenchEditionComparatorState(currentAnalysis, candidateAnalysis);
+        return {
+          key: definition.key,
+          label: definition.label,
+          group: definition.group,
+          cardRole: definition.cardRole || definition.group,
+          strong: Boolean(definition.strong),
+          state,
+          currentPreview: currentAnalysis.preview,
+          candidatePreview: candidateAnalysis.preview,
+          deltaSummary: definition.key === "track_list"
+            ? sourceWorkbenchEditionComparatorTrackDeltaSummary(currentAnalysis, candidateAnalysis, state)
+            : "",
+        };
+      });
+    }
+
+    function buildSourceWorkbenchEditionComparatorExplanationPhrases(payload = {}) {
+      const rows = buildSourceWorkbenchEditionComparatorRows(payload);
+      const rowMap = new Map(rows.map((row) => [row.key, row]));
+      const phrases = [];
+      const artistRow = rowMap.get("artist_name");
+      const titleRow = rowMap.get("item_title");
+      if (artistRow?.state === "SAME" && titleRow?.state === "SAME") phrases.push("Name matches");
+      const catalogPhrase = sourceWorkbenchEditionComparatorPresencePhrase("Catalog no", rowMap.get("catalog_no"));
+      if (catalogPhrase) phrases.push(catalogPhrase);
+      const barcodePhrase = sourceWorkbenchEditionComparatorPresencePhrase("Barcode", rowMap.get("barcode"));
+      if (barcodePhrase) phrases.push(barcodePhrase);
+      const countryPhrase = sourceWorkbenchEditionComparatorPresencePhrase("Pressing country", rowMap.get("pressing_country"));
+      if (countryPhrase) phrases.push(countryPhrase);
+      const trackRow = rowMap.get("track_list");
+      if (trackRow?.state === "DIFFERENT") {
+        phrases.push(trackRow.deltaSummary ? `Track count differs (${trackRow.deltaSummary})` : "Track listing differs");
+      } else if (trackRow?.state === "CANDIDATE_ONLY") {
+        phrases.push("Track data only on candidate");
+      } else if (trackRow?.state === "CURRENT_ONLY") {
+        phrases.push("Track data only on current");
+      }
+      const runoutRow = rowMap.get("runout_matrix");
+      if (runoutRow?.state === "DIFFERENT") {
+        phrases.push("Runout differs");
+      } else if (runoutRow?.state === "CANDIDATE_ONLY") {
+        phrases.push("Runout only on candidate");
+      } else if (runoutRow?.state === "CURRENT_ONLY") {
+        phrases.push("Runout only on current");
+      }
+      return phrases;
+    }
+
+    function buildSourceWorkbenchEditionComparatorSummary(payload = {}) {
+      const rows = buildSourceWorkbenchEditionComparatorRows(payload);
+      const rowStateForSummary = (value) => {
+        const normalized = String(value || "").trim().toUpperCase();
+        return normalized === "DIFFERENT" || normalized === "CANDIDATE_ONLY" || normalized === "CURRENT_ONLY";
+      };
+      const strongDiffRows = rows.filter((row) => row?.strong && rowStateForSummary(row.state));
+      const strongMatchRows = rows.filter((row) => row?.strong && row.state === "SAME");
+      const advisoryDiffRows = rows.filter((row) => !row?.strong && rowStateForSummary(row.state));
+      const advisoryMatchRows = rows.filter((row) => !row?.strong && row.state === "SAME");
+      const summaryParts = [
+        ...strongDiffRows.map((row) => sourceWorkbenchEditionComparatorSummaryPhrase(row)).filter((phrase) => phrase),
+        ...advisoryDiffRows.map((row) => sourceWorkbenchEditionComparatorSummaryPhrase(row)).filter((phrase) => phrase),
+        ...strongMatchRows.map((row) => sourceWorkbenchEditionComparatorSummaryPhrase(row)).filter((phrase) => phrase),
+        ...advisoryMatchRows.map((row) => sourceWorkbenchEditionComparatorSummaryPhrase(row)).filter((phrase) => phrase),
+      ].slice(0, 3);
+      if (!summaryParts.length) return "No comparable edition evidence.";
+      const formattedParts = summaryParts.slice(0, 3).map((phrase, index) => {
+        if (index === 0) return phrase;
+        return phrase ? `${phrase.charAt(0).toLowerCase()}${phrase.slice(1)}` : "";
+      }).filter((phrase) => phrase);
+      return `${formattedParts.join("; ")}.`;
+    }
+
+    function buildSourceWorkbenchSearchRequest(entry, opts = {}) {
+      const row = entry?.item || entry || {};
+      const source = $("sourceWorkbenchSource").value;
+      const limit = Math.max(1, Math.min(10, Number($("sourceWorkbenchCandidateLimit").value || 5)));
+      const forceTextSearch = Boolean(opts.forceTextSearch);
+      const barcode = String(row?.barcode || "").trim();
+      const artist = String(entry?.searchArtistName ?? row?.artist_or_brand ?? row?.linked_artist_name ?? "").trim();
+      const title = String(entry?.searchItemName ?? sourceWorkbenchCandidateTitle(row)).trim();
+      const catalogNo = String(row?.catalog_no || "").trim();
+      if (barcode && !forceTextSearch) {
+        return {
+          endpoint: "/ingest/barcode",
+          payload: {
+            barcode,
+            category: row.category || null,
+            source,
+            limit,
+          },
+          summary: t("media.source.request.summary.barcode", { barcode }),
+        };
+      }
+      if (!artist && !title && !catalogNo) {
+        throw new Error(t("media.source.request.error.missing_query"));
+      }
+      const summaryBits = [artist, title, catalogNo].filter(Boolean);
+      return {
+        endpoint: "/ingest/search",
+        payload: {
+          category: row.category || null,
+          source,
+          artist_or_brand: artist || null,
+          title: title || null,
+          catalog_no: catalogNo || null,
+          limit,
+        },
+        summary: forceTextSearch
+          ? t("media.source.request.summary.override", { summary: summaryBits.join(" / ") })
+          : summaryBits.join(" / "),
+      };
+    }
+
+    function autoSelectSourceWorkbenchCandidate(row, candidates) {
+      const list = Array.isArray(candidates) ? candidates : [];
+      if (!list.length) return -1;
+      const barcode = normalizeLookupToken(row?.barcode);
+      if (barcode) {
+        const exactIndex = list.findIndex((candidate) => normalizeLookupToken(candidate?.barcode) === barcode);
+        if (exactIndex >= 0) return exactIndex;
+      }
+      return list.length === 1 ? 0 : -1;
+    }
+
+    function sourceQueueStatusLabel(status) {
+      const code = String(status || "").trim().toUpperCase();
+      if (code === "SUCCESS") return t("media.source.queue.status.success");
+      if (code === "FAILED") return t("media.source.queue.status.failed");
+      if (code === "PENDING") return t("media.source.queue.status.pending");
+      return code || "-";
+    }
+
+    function sourceQueueModeLabel(mode) {
+      const code = String(mode || "").trim().toUpperCase();
+      if (code === "AUTO_READY") return t("media.source.queue.mode.auto_ready");
+      if (code === "ROW_UPDATE") return t("media.source.queue.mode.row_update");
+      if (code === "MANUAL_BATCH") return t("media.source.queue.mode.manual_batch");
+      return code || "-";
+    }
+
+    function saveSourceWorkbenchQueue() {
+      try {
+        window.localStorage.setItem(
+          SOURCE_WORKBENCH_QUEUE_KEY,
+          JSON.stringify(Array.isArray(sourceWorkbenchQueue) ? sourceWorkbenchQueue.slice(0, 200) : [])
+        );
+      } catch (_err) {}
+    }
+
+    function pushSourceWorkbenchQueueEntries(entries) {
+      const list = Array.isArray(entries) ? entries.filter(Boolean) : [];
+      if (!list.length) return;
+      sourceWorkbenchQueue = [...list, ...sourceWorkbenchQueue].slice(0, 200);
+      saveSourceWorkbenchQueue();
+      renderSourceWorkbenchQueue();
+    }
+
+    function seedSourceWorkbenchFromOwnedItem(row) {
+      if (!row || typeof row !== "object") return;
+      $("homeArtist").value = String(row.artist_or_brand || row.linked_artist_name || "").trim();
+      $("homeItemName").value = String(row.item_name_override || "").trim();
+      $("homeCatalogNo").value = String(row.catalog_no || "").trim();
+      $("homeBarcode").value = String(row.barcode || "").trim();
+      $("homeReleaseYear").value = row.release_year ? String(row.release_year) : "";
+      $("sourceWorkbenchSourceState").value = "MISSING";
+    }
+
+    async function loadSourceWorkbenchTargets() {
+      const limit = Math.max(1, Math.min(100, Number($("sourceWorkbenchLimit").value || 30)));
+      try {
+        sourceWorkbenchLoading = true;
+        setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.targets_loading"));
+        const params = new URLSearchParams();
+        params.set("music_only", "true");
+        params.set("status", "IN_COLLECTION");
+        params.set("source_state", $("sourceWorkbenchSourceState").value);
+        params.set("sort", "RECENT");
+        params.set("limit", String(limit));
+        params.set("offset", "0");
+        params.set("include_total", "true");
+        if ($("homeArtist").value.trim()) params.set("artist_or_brand", $("homeArtist").value.trim());
+        if ($("homeItemName").value.trim()) params.set("item_name", $("homeItemName").value.trim());
+        if ($("homeCatalogNo").value.trim()) params.set("catalog_no", $("homeCatalogNo").value.trim());
+        if ($("homeBarcode").value.trim()) params.set("barcode", $("homeBarcode").value.trim());
+        if ($("homeReleaseYear").value.trim()) params.set("release_year", $("homeReleaseYear").value.trim());
+
+        const res = await fetch(`/owned-items?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.source.status.targets_failed"));
+        const total = Number(res.headers.get("X-Total-Count") || (Array.isArray(data) ? data.length : 0));
+        sourceWorkbenchRows = (Array.isArray(data) ? data : []).map((row) => ({
+          item: row,
+          candidates: [],
+          selectedIdx: -1,
+          selectionMode: null,
+          querySummary: "",
+          searchArtistName: String(row?.artist_or_brand || row?.linked_artist_name || "").trim(),
+          searchItemName: String(sourceWorkbenchCandidateTitle(row) || "").trim(),
+          loading: false,
+          error: "",
+        }));
+        renderSourceWorkbenchList();
+        setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.targets_loaded", {
+          shown: formatCount(sourceWorkbenchRows.length),
+          total: formatCount(total),
+        }));
+      } catch (err) {
+        sourceWorkbenchRows = [];
+        renderSourceWorkbenchList();
+        setStatus("sourceWorkbenchStatus", "err", errorMessageText(err, t("media.source.status.targets_failed")));
+      } finally {
+        sourceWorkbenchLoading = false;
+      }
+    }
+
+    async function loadSourceWorkbenchCandidatesForRow(rowIndex, opts = {}) {
+      const entry = sourceWorkbenchRows[rowIndex];
+      if (!entry) return;
+      const silent = Boolean(opts.silent);
+      const force = Boolean(opts.force);
+      if (entry.loading) return;
+      if (!force && Array.isArray(entry.candidates) && entry.candidates.length) return;
+
+      try {
+        entry.loading = true;
+        entry.error = "";
+        renderSourceWorkbenchList();
+        if (!silent) setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.candidates_loading", {
+          name: resolveOwnedAlbumName(entry.item),
+        }));
+        const request = buildSourceWorkbenchSearchRequest(entry, opts);
+        entry.querySummary = request.summary;
+        const res = await fetch(request.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request.payload),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.source.status.candidates_failed"));
+        const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+        entry.candidates = candidates;
+        entry.selectedIdx = autoSelectSourceWorkbenchCandidate(entry.item, candidates);
+        entry.selectionMode = entry.selectedIdx >= 0 ? "AUTO" : null;
+        renderSourceWorkbenchList();
+        if (!silent) {
+          setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.candidates_complete", {
+            name: resolveOwnedAlbumName(entry.item),
+            count: formatCount(candidates.length),
+            auto: entry.selectedIdx >= 0 ? t("media.source.status.candidates_auto_selected") : "",
+          }));
+        }
+      } catch (err) {
+        entry.candidates = [];
+        entry.selectedIdx = -1;
+        entry.selectionMode = null;
+        entry.error = err.message;
+        renderSourceWorkbenchList();
+        if (!silent) setStatus("sourceWorkbenchStatus", "err", errorMessageText(err, t("media.source.status.candidates_failed")));
+      } finally {
+        entry.loading = false;
+        renderSourceWorkbenchList();
+      }
+    }
+
+    async function fetchAllSourceWorkbenchCandidates() {
+      const rows = Array.isArray(sourceWorkbenchRows) ? sourceWorkbenchRows : [];
+      if (!rows.length) {
+        setStatus("sourceWorkbenchStatus", "err", t("media.source.status.no_targets"));
+        return;
+      }
+
+      for (let i = 0; i < rows.length; i += 1) {
+        setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.fetch_all_loading", {
+          progress: `${i + 1}/${rows.length}`,
+        }));
+        await loadSourceWorkbenchCandidatesForRow(i, { silent: true, force: true });
+      }
+      const selectedCount = sourceWorkbenchRows.filter((row) => row.selectedIdx >= 0).length;
+      setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.fetch_all_complete", {
+        total: formatCount(rows.length),
+        selected: formatCount(selectedCount),
+      }));
+    }
+
+    function openSourceWorkbenchDiffReview(selectedRows) {
+      const rows = Array.isArray(selectedRows) ? selectedRows.filter((entry) => entry?.selectedIdx >= 0 && entry?.candidates?.[entry.selectedIdx]) : [];
+      if (!rows.length) {
+        setStatus("sourceWorkbenchStatus", "err", t("media.source.status.apply_none_selected"));
+        return;
+      }
+      sourceWorkbenchDiffReviewState = buildSourceWorkbenchDiffReviewState({ selectedRows: rows });
+      const modal = $("sourceWorkbenchDiffReview");
+      if (modal) {
+        modal.hidden = false;
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+      }
+      renderSourceWorkbenchDiffReview();
+      setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.diff_review_open", {
+        count: countWithUnit(rows.length),
+        fields: formatCount(sourceWorkbenchDiffReviewState?.summary?.selectedFieldCount || 0),
+      }));
+    }
+
+    function closeSourceWorkbenchDiffReview() {
+      sourceWorkbenchDiffReviewState = null;
+      const modal = $("sourceWorkbenchDiffReview");
+      if (!modal) return;
+      modal.classList.remove("open");
+      modal.hidden = true;
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function openSourceWorkbenchDiffReviewForSelections() {
+      const selectedRows = sourceWorkbenchRows
+        .filter((entry) => entry.selectedIdx >= 0 && Array.isArray(entry.candidates) && entry.candidates[entry.selectedIdx]);
+      openSourceWorkbenchDiffReview(selectedRows);
+    }
+
+    async function submitSourceWorkbenchDiffReviewSelection() {
+      if (!sourceWorkbenchDiffReviewState) return;
+      const selectedFieldCount = sourceWorkbenchDiffReviewFieldCount(sourceWorkbenchDiffReviewState);
+      const selectedItems = buildSourceWorkbenchDiffApplyItems({ reviewState: sourceWorkbenchDiffReviewState });
+      if (!selectedItems.length) {
+        setStatus("sourceWorkbenchStatus", "err", t("media.source.status.diff_review_none_selected"));
+        return;
+      }
+      const applied = await applySourceWorkbenchItems(sourceWorkbenchDiffReviewState.items, "MANUAL_BATCH", {
+        items: selectedItems,
+        selectedFieldCount,
+      });
+      if (applied) closeSourceWorkbenchDiffReview();
+    }
+
+    async function applySourceWorkbenchItems(selectedRows, mode, opts = {}) {
+      const selectedItems = Array.isArray(opts?.items)
+        ? opts.items.filter((entry) => Number(entry?.owned_item_id || 0) > 0 && entry?.candidate)
+        : buildSourceWorkbenchLegacyApplyItems({ selectedRows });
+
+      if (!selectedItems.length) {
+        setStatus("sourceWorkbenchStatus", "err", mode === "AUTO_READY"
+          ? t("media.source.status.apply_none_auto")
+          : t("media.source.status.apply_none_selected"));
+        return false;
+      }
+
+      try {
+        const actionLabel = sourceWorkbenchActionLabel(mode);
+        const selectedFieldCount = Number(opts?.selectedFieldCount || 0);
+        const appliedSources = [...new Set(selectedItems
+          .map((entry) => sourceWorkbenchDiffNormalizeScalar(entry?.candidate?.source))
+          .filter(Boolean))];
+        const appliedSourceText = appliedSources.length ? appliedSources.join(", ") : "-";
+        setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.apply_loading", {
+          action: actionLabel,
+          count: formatCount(selectedItems.length),
+        }));
+        const res = await fetch("/owned-items/source-replace-bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: selectedItems }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("media.source.queue.detail.updated_failed"));
+        const failed = Array.isArray(data.results)
+          ? data.results.filter((row) => !row.updated)
+          : [];
+        const failedText = failed.length
+          ? t("media.source.status.apply_failed_suffix", { count: countWithUnit(failed.length) })
+          : "";
+        pushSourceWorkbenchQueueEntries((Array.isArray(data.results) ? data.results : []).map((row) => ({
+          created_at: new Date().toISOString(),
+          mode,
+          status: row.updated ? "SUCCESS" : "FAILED",
+          owned_item_id: row.owned_item_id,
+          label_id: row.label_id || null,
+          item_name: selectedRows.find((entry) => Number(entry?.item?.id || entry?.ownedItemId || 0) === Number(row.owned_item_id))?.item?.item_name_override
+            || selectedRows.find((entry) => Number(entry?.item?.id || entry?.ownedItemId || 0) === Number(row.owned_item_id))?.currentTitle
+            || `owned_item_id ${row.owned_item_id}`,
+          detail: row.updated
+            ? `${row.source_code || "-"}#${row.source_external_id || "-"}`
+            : (row.error || t("media.source.queue.detail.updated_failed")),
+        })));
+        const completionStatusKey = selectedFieldCount > 0
+          ? "media.source.status.apply_complete_reviewed"
+          : "media.source.status.apply_complete";
+        setStatus("sourceWorkbenchStatus", "ok", t(completionStatusKey, {
+          action: actionLabel,
+          updated: formatCount(data.updated_count || 0),
+          fields: formatCount(selectedFieldCount),
+          source: appliedSourceText,
+          failed: failedText,
+        }));
+        applySourceWorkbenchResults(Array.isArray(data.results) ? data.results : []);
+        refreshOpsExceptionInBackground();
+        const refreshOwnedItemId = (Array.isArray(data.results) ? data.results : [])
+          .find((row) => row.updated && Number(row.owned_item_id || 0) === Number(homeSelectedItemId || 0))
+          ?.owned_item_id;
+        if (refreshOwnedItemId && $("tabManage")?.classList.contains("active")) {
+          refreshHomeManageContext(Number(refreshOwnedItemId), {
+            keepMasterContext: Boolean(homeSelectedMasterId),
+            reloadMaster: Boolean(homeSelectedMasterId),
+          }).catch(() => {});
+        }
+        if (mode === "MANUAL_BATCH" && failed.length) {
+          sourceWorkbenchDiffReviewState = updateSourceWorkbenchDiffReviewStateAfterApply({
+            reviewState: sourceWorkbenchDiffReviewState,
+            results: Array.isArray(data.results) ? data.results : [],
+          });
+          renderSourceWorkbenchDiffReview();
+          return false;
+        }
+        return true;
+      } catch (err) {
+        setStatus("sourceWorkbenchStatus", "err", err.message);
+        return false;
+      }
+    }
+
+    async function applySingleSourceWorkbenchRow(rowIndex) {
+      const entry = sourceWorkbenchRows[rowIndex];
+      if (!entry) return;
+      const candidate = Array.isArray(entry.candidates) ? entry.candidates[entry.selectedIdx] : null;
+      if (!candidate) {
+        setStatus("sourceWorkbenchStatus", "err", t("media.source.status.row_needs_candidate"));
+        return;
+      }
+      await applySourceWorkbenchItems([entry], "ROW_UPDATE");
+    }
+
+    async function applySourceWorkbenchSelections() {
+      const selectedRows = sourceWorkbenchRows
+        .filter((entry) => entry.selectedIdx >= 0 && Array.isArray(entry.candidates) && entry.candidates[entry.selectedIdx]);
+      await applySourceWorkbenchItems(selectedRows, "MANUAL_BATCH");
+    }
+
+    async function runAutoReadySourceWorkbench() {
+      if (!sourceWorkbenchRows.length) {
+        setStatus("sourceWorkbenchStatus", "err", t("media.source.status.no_targets"));
+        return;
+      }
+
+      const pendingEntries = [];
+      for (let i = 0; i < sourceWorkbenchRows.length; i += 1) {
+        setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.auto_detect_loading", {
+          progress: `${i + 1}/${sourceWorkbenchRows.length}`,
+        }));
+        await loadSourceWorkbenchCandidatesForRow(i, { silent: true, force: !sourceWorkbenchRows[i]?.candidates?.length });
+      }
+
+      const autoRows = sourceWorkbenchRows.filter((entry) => entry.selectionMode === "AUTO" && entry.selectedIdx >= 0);
+      for (const entry of sourceWorkbenchRows) {
+        if (entry.selectionMode === "AUTO" && entry.selectedIdx >= 0) continue;
+        let detail = entry.error || "";
+        if (!detail) {
+          if (!entry.candidates.length) detail = t("media.source.queue.detail.none");
+          else detail = t("media.source.queue.detail.manual_required", { count: countWithUnit(entry.candidates.length) });
+        }
+        pendingEntries.push({
+          created_at: new Date().toISOString(),
+          mode: "AUTO_READY",
+          status: "PENDING",
+          owned_item_id: Number(entry.item.id || 0),
+          label_id: entry.item.label_id || null,
+          item_name: entry.item.item_name_override || `owned_item_id ${entry.item.id}`,
+          detail,
+        });
+      }
+      pushSourceWorkbenchQueueEntries(pendingEntries);
+      if (!autoRows.length) {
+        setStatus("sourceWorkbenchStatus", "ok", t("media.source.status.auto_pending_complete", {
+          count: formatCount(pendingEntries.length),
+        }));
+        return;
+      }
+      await applySourceWorkbenchItems(autoRows, "AUTO_READY");
+    }

@@ -3317,3 +3317,1975 @@
       homeDashSurfacePanel = homeDashSurfacePanel === next ? "" : next;
       renderDashboardSurfaceDock();
     }
+
+
+    function storageSlotDisplayLabel(slot) {
+      if (!slot) return "-";
+      const localizedTriplet = buildOperatorCabinetTripletLabel(slot.cabinet_name, slot.column_code, slot.cell_code);
+      if (localizedTriplet) return localizedTriplet;
+      const displayName = localizeOperatorSlotDisplayName(slot.display_name);
+      if (displayName) return displayName;
+      const slotCode = String(slot.slot_code || "").trim();
+      if (!slotCode) return "-";
+      if (slotCode === "UNASSIGNED") return t("common.unslotted");
+      return slotCode;
+    }
+
+    function cabinetSortPolicyLabel(value) {
+      const code = String(value || "").trim().toUpperCase();
+      if (code === "LABEL_ID") return t("common.sort_policy.label_id");
+      if (code === "TITLE_RELEASE") return t("common.sort_policy.title_release");
+      return t("common.sort_policy.artist_release_title");
+    }
+
+    function compareCodeValue(a, b) {
+      return String(a || "").localeCompare(String(b || ""), "ko", {
+        numeric: true,
+        sensitivity: "base",
+      });
+    }
+
+    function buildDashboardCabinetGroups(rows) {
+      const grouped = [];
+      const byKey = new Map();
+      for (const row of Array.isArray(rows) ? rows : []) {
+        const key = dashboardCabinetKey(row);
+        if (!byKey.has(key)) {
+          const slotCode = String(row?.slot_code || "").trim();
+          const cabinetGroupName = String(row?.cabinet_group_name || "").trim();
+          byKey.set(key, {
+            key,
+            title: slotCode === "UNASSIGNED"
+              ? dashboardUnassignedAssetsLabel()
+              : (row?.is_overflow_zone ? "Overflow" : (cabinetGroupName || String(row?.cabinet_name || "").trim() || dashboardUnnamedCabinetLabel())),
+            groupName: cabinetGroupName,
+            groupOrder: Number(row?.cabinet_group_order || 0) || 0,
+            isOverflow: Boolean(row?.is_overflow_zone),
+            isUnassigned: slotCode === "UNASSIGNED",
+            rows: [],
+            total: 0,
+            slotCount: 0,
+            filledSlotCount: 0,
+            recentInTotal: 0,
+            recentOutTotal: 0,
+            floors: new Set(),
+            cellsByFloor: new Map(),
+            sizeGroups: new Set(),
+            domainCodes: new Set(),
+            cabinetNames: new Set(),
+          });
+          grouped.push(byKey.get(key));
+        }
+        const group = byKey.get(key);
+        group.rows.push(row);
+        group.total += Number(row?.count || 0);
+        group.slotCount += 1;
+        group.recentInTotal += Number(row?.recent_in_count || 0);
+        group.recentOutTotal += Number(row?.recent_out_count || 0);
+        if (Number(row?.count || 0) > 0) group.filledSlotCount += 1;
+        if (row?.allowed_size_group) group.sizeGroups.add(String(row.allowed_size_group));
+        if (row?.cabinet_domain_code) group.domainCodes.add(String(row.cabinet_domain_code));
+        if (row?.cabinet_name) group.cabinetNames.add(String(row.cabinet_name));
+        const floorCode = String(row?.column_code || "").trim();
+        if (floorCode) {
+          group.floors.add(floorCode);
+          if (!group.cellsByFloor.has(floorCode)) group.cellsByFloor.set(floorCode, 0);
+          group.cellsByFloor.set(floorCode, Number(group.cellsByFloor.get(floorCode) || 0) + 1);
+        }
+      }
+
+      return grouped
+        .map((group) => {
+          const floorCodes = Array.from(group.floors).sort(compareCodeValue);
+          let maxCellCount = 0;
+          for (const count of group.cellsByFloor.values()) {
+            maxCellCount = Math.max(maxCellCount, Number(count || 0));
+          }
+          const sizeCodes = Array.from(group.sizeGroups).sort(compareCodeValue);
+          const domainCodes = Array.from(group.domainCodes).sort(compareCodeValue);
+          const cabinetNamesText = Array.from(group.cabinetNames).sort(compareCodeValue).join(" · ");
+          const floorCellSummary = floorCodes.length
+            ? floorCodes.map((code) => `${code}:${formatCount(group.cellsByFloor.get(code) || 0)}`).join(" / ")
+            : "-";
+          const cabinetCount = group.cabinetNames.size;
+          const groupedOrdering = Boolean(group.groupName && cabinetCount > 1);
+          const sortedRows = [...group.rows].sort((a, b) => {
+            const floorCompare = compareCodeValue(a?.column_code, b?.column_code);
+            if (floorCompare !== 0) return floorCompare;
+            if (groupedOrdering) {
+              const cabinetOrderCompare = compareCodeValue(a?.cabinet_group_order || 0, b?.cabinet_group_order || 0);
+              if (cabinetOrderCompare !== 0) return cabinetOrderCompare;
+              const cabinetNameCompare = compareCodeValue(a?.cabinet_name, b?.cabinet_name);
+              if (cabinetNameCompare !== 0) return cabinetNameCompare;
+            }
+            const cellCompare = compareCodeValue(a?.cell_code, b?.cell_code);
+            if (cellCompare !== 0) return cellCompare;
+            return compareCodeValue(a?.slot_code, b?.slot_code);
+          });
+          return {
+            ...group,
+            rows: sortedRows,
+            floorCodes,
+            floorCount: floorCodes.length,
+            cellCount: maxCellCount,
+            cabinetCount: group.cabinetNames.size,
+            cabinetNamesText,
+            floorCellSummary,
+            domainText: domainCodes.length
+              ? domainCodes.map((value) => dashboardDomainLabel(value)).join(", ")
+              : "-",
+            sizeGroupText: sizeCodes.length
+              ? sizeCodes.map((value) => dashboardSizeGroupLabel(value)).join(", ")
+              : "-",
+          };
+        })
+        .sort((a, b) => {
+          const rank = (group) => {
+            if (group.isUnassigned) return 2;
+            if (group.isOverflow) return 1;
+            return 0;
+          };
+          const rankDiff = rank(a) - rank(b);
+          if (rankDiff !== 0) return rankDiff;
+          const groupCompare = compareCodeValue(a.groupName || a.title, b.groupName || b.title);
+          if (groupCompare !== 0) return groupCompare;
+          const orderCompare = compareCodeValue(a.groupOrder || 0, b.groupOrder || 0);
+          if (orderCompare !== 0) return orderCompare;
+          return compareCodeValue(a.title, b.title);
+        });
+    }
+
+    function resolveDashboardStorageSlotId(slotRow) {
+      const slotCode = String(slotRow?.slot_code || "").trim();
+      if (!slotCode || slotCode === "UNASSIGNED") return 0;
+      const slot = storageSlotCache.find((item) => String(item?.slot_code || "").trim() === slotCode);
+      return Number(slot?.id || 0);
+    }
+
+    function findDashboardOwnedItemRow(ownedItemId) {
+      const id = Number(ownedItemId || 0);
+      if (id <= 0) return null;
+      const pools = [
+        Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : [],
+        Array.isArray(homeDashboardSlotSelectionSnapshot) ? homeDashboardSlotSelectionSnapshot : [],
+        Array.isArray(homeDashboardUnassignedItems) ? homeDashboardUnassignedItems : [],
+        Array.isArray(homeDashboardSearchItems) ? homeDashboardSearchItems : [],
+      ];
+      for (const pool of pools) {
+        const row = pool.find((item) => Number(item?.id || 0) === id);
+        if (row) return row;
+      }
+      return null;
+    }
+
+    function ownedPreferredStorageSizeGroup(row) {
+      return String(row?.preferred_storage_size_group || row?.size_group || "").trim();
+    }
+
+    function confirmSlotMismatchMove(targetSlot, items, actionLabel = t("common.action.move")) {
+      const mismatches = getSlotMismatchRows(items, targetSlot);
+      if (!mismatches.length) return true;
+      const preview = mismatches.slice(0, 5).map((row) => {
+        const label = String(row?.label_id || row?.id || "-").trim();
+        const title = String(resolveOwnedAlbumName(row) || "-").trim();
+        return `- ${label} | ${title} | ${dashboardSizeGroupLabel(ownedPreferredStorageSizeGroup(row) || "-")}`;
+      }).join("\n");
+      const moreText = mismatches.length > 5
+        ? `\n${t("dashboard.slot_mismatch.more", { count: countWithUnit(mismatches.length - 5) })}`
+        : "";
+      return window.confirm(t("dashboard.slot_mismatch.confirm", {
+        action: actionLabel,
+        slot: storageSlotDisplayLabel(targetSlot),
+        size_group: dashboardSizeGroupLabel(targetSlot?.allowed_size_group || "-"),
+        count: countWithUnit(mismatches.length),
+        preview: `${preview}${moreText}`,
+      }));
+    }
+
+    function confirmSlotMismatchById(storageSlotId, items, actionLabel = t("common.action.save")) {
+      const slot = getStorageSlotById(storageSlotId);
+      if (!slot) return true;
+      return confirmSlotMismatchMove(slot, items, actionLabel);
+    }
+
+    function clearDashboardDragHints() {
+      document.querySelectorAll(".dashboard-floor-cell.drag-over, .dashboard-floor-cell.drop-ready").forEach((node) => node.classList.remove("drag-over", "drop-ready"));
+      document.querySelectorAll(".dashboard-cabinet-map-cell.drag-over, .dashboard-cabinet-map-cell.drop-ready").forEach((node) => node.classList.remove("drag-over", "drop-ready"));
+      document.querySelectorAll(".dashboard-slot-item-row.drag-before, .dashboard-slot-item-row.drag-after, .home-location-slot-item.drag-before, .home-location-slot-item.drag-after")
+        .forEach((node) => node.classList.remove("drag-before", "drag-after"));
+      $("homeDashSlotItems")?.classList.remove("drop-ready");
+    }
+
+    function resetDashboardDragState() {
+      dashboardDraggedOwnedItemId = null;
+      dashboardDraggedSelectionIds = [];
+      dashboardDraggedSlotCode = null;
+      dashboardDraggedSizeGroup = null;
+      dashboardDraggedTitle = null;
+      clearDashboardDragHints();
+      document.querySelectorAll(".dashboard-slot-item-row.dragging, .home-location-slot-item.dragging")
+        .forEach((node) => node.classList.remove("dragging"));
+    }
+
+    function shouldSuppressDashboardSelectionClick() {
+      return dashboardPointerSelectionSuppressClickUntil > Date.now();
+    }
+
+    function clearDashboardPointerSelectionVisuals() {
+      dashboardPointerSelectionPreviewIds = [];
+      document.querySelectorAll(".dashboard-selection-preview").forEach((node) => node.classList.remove("dashboard-selection-preview"));
+      ["homeDashSlotSelectionBoxLabel", "homeDashWorkbenchSelectionBoxLabel"].forEach((id) => {
+        const label = $(id);
+        if (!label) return;
+        label.hidden = true;
+        label.textContent = "";
+      });
+      ["homeDashSlotSelectionBox", "homeDashWorkbenchSelectionBox"].forEach((id) => {
+        const node = $(id);
+        if (!node) return;
+        node.hidden = true;
+        node.style.left = "0px";
+        node.style.top = "0px";
+        node.style.width = "0px";
+        node.style.height = "0px";
+      });
+    }
+
+    function finishDashboardPointerSelection() {
+      const state = dashboardPointerSelectionState;
+      if (!state) {
+        clearDashboardPointerSelectionVisuals();
+        return;
+      }
+      const previewIds = Array.from(new Set(dashboardPointerSelectionPreviewIds.map((value) => Number(value || 0)).filter((value) => value > 0)));
+      const isDeselectMode = state.currentRect.left < state.startX;
+      let appliedPreviewCount = 0;
+      if (state.didMove && previewIds.length) {
+        appliedPreviewCount = previewIds.length;
+        clearDashboardDragHints();
+        if (state.scope === "SLOT") {
+          resetDashboardUnassignedSelection();
+          resetDashboardSearchSelection();
+          const nextSelected = new Set(homeDashboardSlotSelectedIds);
+          previewIds.forEach((ownedItemId) => {
+            if (isDeselectMode) nextSelected.delete(ownedItemId);
+            else nextSelected.add(ownedItemId);
+          });
+          homeDashboardSlotSelectedIds = nextSelected;
+          updateDashboardSlotSelectionSnapshot();
+          renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
+          renderDashboardWorkbench();
+        } else {
+          resetDashboardSlotSelection();
+          if (homeDashboardWorkbenchMode === "SEARCH") {
+            resetDashboardUnassignedSelection();
+            const nextSelected = new Set(homeDashboardSearchSelectedIds);
+            previewIds.forEach((ownedItemId) => {
+              if (isDeselectMode) nextSelected.delete(ownedItemId);
+              else nextSelected.add(ownedItemId);
+            });
+            homeDashboardSearchSelectedIds = nextSelected;
+          } else {
+            resetDashboardSearchSelection();
+            const nextSelected = new Set(homeDashboardUnassignedSelectedIds);
+            previewIds.forEach((ownedItemId) => {
+              if (isDeselectMode) nextSelected.delete(ownedItemId);
+              else nextSelected.add(ownedItemId);
+            });
+            homeDashboardUnassignedSelectedIds = nextSelected;
+          }
+          renderDashboardWorkbench();
+        }
+        dashboardPointerSelectionSuppressClickUntil = Date.now() + 180;
+      }
+      try {
+        state.root?.releasePointerCapture?.(state.pointerId);
+      } catch (_) {}
+      dashboardPointerSelectionState = null;
+      clearDashboardPointerSelectionVisuals();
+      renderDashboardSelectionSummary();
+      if (state.didMove && appliedPreviewCount > 0) {
+        setStatus(
+          "homeDashboardStatus",
+          "ok",
+          isDeselectMode
+            ? t("dashboard.selection.status.preview_removed", { count: countWithUnit(appliedPreviewCount) })
+            : t("dashboard.selection.status.preview_added", { count: countWithUnit(appliedPreviewCount) })
+        );
+      }
+    }
+
+    function resetDashboardSlotSelection() {
+      homeDashboardSlotSelectedIds = new Set();
+      homeDashboardSlotSelectionSnapshot = [];
+      homeDashboardSlotSelectionAnchorId = 0;
+    }
+
+    function resetDashboardUnassignedSelection() {
+      homeDashboardUnassignedSelectedIds = new Set();
+      homeDashboardUnassignedSelectionAnchorId = 0;
+    }
+
+    function resetDashboardSearchSelection() {
+      homeDashboardSearchSelectedIds = new Set();
+      homeDashboardSearchSelectionAnchorId = 0;
+    }
+
+    function toggleDashboardSlotSelectionById(ownedItemId) {
+      if (isShellReadOnly()) return;
+      const nextId = Number(ownedItemId || 0);
+      if (!nextId) return;
+      resetDashboardUnassignedSelection();
+      resetDashboardSearchSelection();
+      resetDashboardDragState();
+      if (homeDashboardSlotSelectedIds.has(nextId)) homeDashboardSlotSelectedIds.delete(nextId);
+      else homeDashboardSlotSelectedIds.add(nextId);
+      homeDashboardSlotSelectionAnchorId = nextId;
+      updateDashboardSlotSelectionSnapshot();
+      renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
+      renderDashboardWorkbench();
+    }
+
+    function selectDashboardSingleSlotItemById(ownedItemId) {
+      if (isShellReadOnly()) return;
+      const nextId = Number(ownedItemId || 0);
+      if (!nextId) return;
+      resetDashboardUnassignedSelection();
+      resetDashboardSearchSelection();
+      resetDashboardDragState();
+      homeDashboardSlotSelectedIds = new Set([nextId]);
+      homeDashboardSlotSelectionAnchorId = nextId;
+      updateDashboardSlotSelectionSnapshot();
+      renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
+      renderDashboardWorkbench();
+    }
+
+    function selectDashboardSlotRangeToId(ownedItemId) {
+      if (isShellReadOnly()) return;
+      const nextId = Number(ownedItemId || 0);
+      if (!nextId) return;
+      const rows = Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : [];
+      const targetIndex = rows.findIndex((row) => Number(row?.id || 0) === nextId);
+      const anchorId = Number(homeDashboardSlotSelectionAnchorId || 0);
+      const anchorIndex = rows.findIndex((row) => Number(row?.id || 0) === anchorId);
+      if (targetIndex < 0 || anchorIndex < 0) {
+        selectDashboardSingleSlotItemById(nextId);
+        return;
+      }
+      resetDashboardUnassignedSelection();
+      resetDashboardSearchSelection();
+      resetDashboardDragState();
+      const nextSelected = new Set(homeDashboardSlotSelectedIds);
+      const start = Math.min(anchorIndex, targetIndex);
+      const end = Math.max(anchorIndex, targetIndex);
+      rows.slice(start, end + 1).forEach((row) => {
+        const rowId = Number(row?.id || 0);
+        if (rowId > 0) nextSelected.add(rowId);
+      });
+      homeDashboardSlotSelectedIds = nextSelected;
+      updateDashboardSlotSelectionSnapshot();
+      renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
+      renderDashboardWorkbench();
+    }
+
+    function toggleDashboardWorkbenchSelectionById(ownedItemId, source) {
+      if (isShellReadOnly()) return;
+      const nextId = Number(ownedItemId || 0);
+      const nextSource = String(source || "").trim().toUpperCase();
+      if (!nextId || !nextSource) return;
+      resetDashboardDragState();
+      if (nextSource === "SEARCH") {
+        resetDashboardSlotSelection();
+        resetDashboardUnassignedSelection();
+        if (homeDashboardSearchSelectedIds.has(nextId)) homeDashboardSearchSelectedIds.delete(nextId);
+        else homeDashboardSearchSelectedIds.add(nextId);
+        homeDashboardSearchSelectionAnchorId = nextId;
+      } else {
+        resetDashboardSlotSelection();
+        resetDashboardSearchSelection();
+        if (homeDashboardUnassignedSelectedIds.has(nextId)) homeDashboardUnassignedSelectedIds.delete(nextId);
+        else homeDashboardUnassignedSelectedIds.add(nextId);
+        homeDashboardUnassignedSelectionAnchorId = nextId;
+      }
+      renderDashboardWorkbench();
+    }
+
+    function selectDashboardSingleWorkbenchItemById(ownedItemId, source) {
+      if (isShellReadOnly()) return;
+      const nextId = Number(ownedItemId || 0);
+      const nextSource = String(source || "").trim().toUpperCase();
+      if (!nextId || !nextSource) return;
+      resetDashboardDragState();
+      if (nextSource === "SEARCH") {
+        resetDashboardSlotSelection();
+        resetDashboardUnassignedSelection();
+        homeDashboardSearchSelectedIds = new Set([nextId]);
+        homeDashboardSearchSelectionAnchorId = nextId;
+      } else {
+        resetDashboardSlotSelection();
+        resetDashboardSearchSelection();
+        homeDashboardUnassignedSelectedIds = new Set([nextId]);
+        homeDashboardUnassignedSelectionAnchorId = nextId;
+      }
+      renderDashboardWorkbench();
+    }
+
+    function selectDashboardWorkbenchRangeToId(ownedItemId, source) {
+      if (isShellReadOnly()) return;
+      const nextId = Number(ownedItemId || 0);
+      const nextSource = String(source || "").trim().toUpperCase();
+      if (!nextId || !nextSource) return;
+      const rows = getDashboardWorkbenchRows();
+      const targetIndex = rows.findIndex((row) => Number(row?.id || 0) === nextId);
+      const anchorId = nextSource === "SEARCH"
+        ? Number(homeDashboardSearchSelectionAnchorId || 0)
+        : Number(homeDashboardUnassignedSelectionAnchorId || 0);
+      const anchorIndex = rows.findIndex((row) => Number(row?.id || 0) === anchorId);
+      if (targetIndex < 0 || anchorIndex < 0) {
+        selectDashboardSingleWorkbenchItemById(nextId, nextSource);
+        return;
+      }
+      resetDashboardDragState();
+      if (nextSource === "SEARCH") {
+        resetDashboardSlotSelection();
+        resetDashboardUnassignedSelection();
+        const nextSelected = new Set(homeDashboardSearchSelectedIds);
+        const start = Math.min(anchorIndex, targetIndex);
+        const end = Math.max(anchorIndex, targetIndex);
+        rows.slice(start, end + 1).forEach((row) => {
+          const rowId = Number(row?.id || 0);
+          if (rowId > 0) nextSelected.add(rowId);
+        });
+        homeDashboardSearchSelectedIds = nextSelected;
+      } else {
+        resetDashboardSlotSelection();
+        resetDashboardSearchSelection();
+        const nextSelected = new Set(homeDashboardUnassignedSelectedIds);
+        const start = Math.min(anchorIndex, targetIndex);
+        const end = Math.max(anchorIndex, targetIndex);
+        rows.slice(start, end + 1).forEach((row) => {
+          const rowId = Number(row?.id || 0);
+          if (rowId > 0) nextSelected.add(rowId);
+        });
+        homeDashboardUnassignedSelectedIds = nextSelected;
+      }
+      renderDashboardWorkbench();
+    }
+
+    function resetDashboardSlotPage() {
+      homeDashboardSlotPage = 0;
+      homeDashboardSlotShelfScrollLeft = 0;
+    }
+
+    function resetDashboardWorkbenchPage() {
+      homeDashboardWorkbenchPage = 0;
+      homeDashboardWorkbenchShelfScrollLeft = 0;
+    }
+
+    function setDashboardSlotViewMode(mode) {
+      const next = String(mode || "").trim().toUpperCase();
+      if (!["SHELF", "THUMB", "LIST"].includes(next)) return;
+      if (homeDashboardSlotViewMode === next) {
+        syncDashboardSlotViewButtons();
+        return;
+      }
+      homeDashboardSlotViewMode = next;
+      homeDashboardHoveredItemId = null;
+      resetDashboardSlotPage();
+      resetDashboardWorkbenchPage();
+      syncDashboardSlotViewButtons();
+      renderDashboardSlotItems(getDashboardSlotRow(homeDashboardSelectedSlotCode));
+      renderDashboardWorkbench();
+    }
+
+    function scrollDashboardShelfSelectionIntoView(root) {
+      const container = root || $("homeDashSlotItems");
+      if (!container || !dashboardSlotUsesShelfScroll()) return;
+      const selected = container.querySelector(".dashboard-slot-shelfcard.pick");
+      if (!selected) return;
+      const cardLeft = Number(selected.offsetLeft || 0);
+      const cardRight = cardLeft + Number(selected.offsetWidth || 0);
+      const viewportLeft = Number(container.scrollLeft || 0);
+      const viewportRight = viewportLeft + Number(container.clientWidth || 0);
+      const padding = 18;
+      if (cardLeft >= viewportLeft + padding && cardRight <= viewportRight - padding) return;
+      const nextLeft = Math.max(0, cardLeft - padding);
+      container.scrollTo({ left: nextLeft, behavior: "smooth" });
+    }
+
+    function restoreDashboardShelfScroll(root) {
+      if (!root || !dashboardSlotUsesShelfScroll()) return;
+      const maxScrollLeft = Math.max(0, root.scrollWidth - root.clientWidth);
+      root.scrollLeft = Math.min(Math.max(0, homeDashboardSlotShelfScrollLeft), maxScrollLeft);
+    }
+
+    function filterDashboardSlotItemsByMedia(items) {
+      const list = Array.isArray(items) ? items : [];
+      const category = dashboardSlotMediaFilterValue();
+      if (category === "ANY") return list;
+      return list.filter((row) => String(row?.category || "").trim().toUpperCase() === category);
+    }
+
+    function sortDashboardSlotItems(items, slotRow) {
+      const list = Array.isArray(items) ? [...items] : [];
+      const cabinetPolicy = String(slotRow?.cabinet_sort_policy || "ARTIST_RELEASE_TITLE").trim().toUpperCase();
+      list.sort((a, b) => {
+        if (cabinetPolicy === "LABEL_ID") {
+          const labelA = String(a?.label_id || "").trim().toLocaleLowerCase();
+          const labelB = String(b?.label_id || "").trim().toLocaleLowerCase();
+          const labelCompare = labelA.localeCompare(labelB);
+          if (labelCompare !== 0) return labelCompare;
+        } else if (cabinetPolicy === "TITLE_RELEASE") {
+          const titleA = normalizeTitleSortKey(a?.master_title || a?.item_title || a?.item_name_override || "");
+          const titleB = normalizeTitleSortKey(b?.master_title || b?.item_title || b?.item_name_override || "");
+          const titleCompare = titleA.localeCompare(titleB);
+          if (titleCompare !== 0) return titleCompare;
+          const releaseA = dashboardPreferredReleaseSortValue(a);
+          const releaseB = dashboardPreferredReleaseSortValue(b);
+          const releaseCompare = releaseA.localeCompare(releaseB);
+          if (releaseCompare !== 0) return releaseCompare;
+        } else {
+          // ARTIST_RELEASE_TITLE (default) — article-stripped
+          const artistA = normalizeArtistSortKey(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "");
+          const artistB = normalizeArtistSortKey(b?.master_sort_artist_name || b?.artist_or_brand || b?.linked_artist_name || b?.master_artist_or_brand || "");
+          const artistCompare = artistA.localeCompare(artistB);
+          if (artistCompare !== 0) return artistCompare;
+          const releaseA = dashboardPreferredReleaseSortValue(a);
+          const releaseB = dashboardPreferredReleaseSortValue(b);
+          const releaseCompare = releaseA.localeCompare(releaseB);
+          if (releaseCompare !== 0) return releaseCompare;
+          const titleA = normalizeTitleSortKey(a?.master_title || a?.item_title || a?.item_name_override || "");
+          const titleB = normalizeTitleSortKey(b?.master_title || b?.item_title || b?.item_name_override || "");
+          const titleCompare = titleA.localeCompare(titleB);
+          if (titleCompare !== 0) return titleCompare;
+        }
+        const createdA = String(a?.created_at || "").trim();
+        const createdB = String(b?.created_at || "").trim();
+        const createdCompare = createdB.localeCompare(createdA);
+        if (createdCompare !== 0) return createdCompare;
+        return Number(b?.id || 0) - Number(a?.id || 0);
+      });
+      return list;
+    }
+
+    function restoreDashboardWorkbenchShelfScroll(root) {
+      if (!root || !dashboardSlotUsesShelfScroll()) return;
+      const maxScrollLeft = Math.max(0, root.scrollWidth - root.clientWidth);
+      root.scrollLeft = Math.min(Math.max(0, homeDashboardWorkbenchShelfScrollLeft), maxScrollLeft);
+    }
+
+    function setDashboardWorkbenchMode(mode) {
+      const next = String(mode || "").trim().toUpperCase();
+      if (!["UNASSIGNED", "SEARCH"].includes(next)) return;
+      homeDashboardWorkbenchMode = next;
+      resetDashboardWorkbenchPage();
+      renderDashboardWorkbench();
+    }
+
+    function resetDashboardBulkEditForm() {
+      if ($("homeDashBulkStatus")) $("homeDashBulkStatus").value = "";
+      if ($("homeDashBulkDomainCode")) $("homeDashBulkDomainCode").value = "";
+      if ($("homeDashBulkReleaseType")) $("homeDashBulkReleaseType").value = "";
+      if ($("homeDashBulkSecondHand")) $("homeDashBulkSecondHand").value = "";
+      if ($("homeDashBulkPurchaseSource")) $("homeDashBulkPurchaseSource").value = "";
+      if ($("homeDashBulkPreferredSize")) $("homeDashBulkPreferredSize").value = "";
+      if ($("homeDashBulkMemoryNote")) $("homeDashBulkMemoryNote").value = "";
+    }
+
+    async function restoreDashboardSelectedPreviousLocation() {
+      const selectedRow = getDashboardSingleSelectedRow();
+      if (!selectedRow) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.selection.status.restore_requires_one"));
+        return;
+      }
+      const ownedItemId = Number(selectedRow?.id || 0);
+      if (ownedItemId <= 0) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.selection.status.restore_missing_item"));
+        return;
+      }
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.selection.status.restore_progress", { id: ownedItemId }));
+        const res = await fetch(`/owned-items/${ownedItemId}/restore-previous-slot`, { method: "POST" });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.selection.status.restore_failed"));
+
+        resetDashboardSlotSelection();
+        resetDashboardUnassignedSelection();
+        resetDashboardSearchSelection();
+        resetDashboardDragState();
+        resetDashboardSlotPage();
+
+        await loadHomeDashboard({ silent: true });
+
+        const restoredSlotId = Number(data?.storage_slot_id || 0);
+        const restoredSlot = restoredSlotId > 0
+          ? (
+            storageSlotCache.find((row) => Number(row?.id || 0) === restoredSlotId)
+            || homeDashboardBySlot.find((row) => Number(row?.id || 0) === restoredSlotId)
+            || null
+          )
+          : null;
+
+        if (restoredSlot) {
+          homeDashboardSelectedCabinetKey = dashboardCabinetKey(restoredSlot);
+          homeDashboardSelectedSlotCode = String(restoredSlot.slot_code || "").trim();
+          renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
+          await loadDashboardSlotItems(restoredSlot, { silent: true });
+          setStatus("homeDashboardStatus", "ok", t("dashboard.selection.status.restore_done_slot", {
+            slot: storageSlotDisplayLabel(restoredSlot),
+          }));
+        } else {
+          setDashboardWorkbenchMode("UNASSIGNED");
+          renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
+          renderDashboardWorkbench();
+          setStatus("homeDashboardStatus", "ok", t("dashboard.selection.status.restore_done_unslotted"));
+        }
+
+        refreshOpsExceptionInBackground();
+        if (Number(homeSelectedItemId || 0) === ownedItemId) {
+          refreshHomeManageContext(ownedItemId, {
+            keepMasterContext: Boolean(homeSelectedMasterId),
+            masterId: homeSelectedMasterId,
+            reloadMaster: Boolean(homeSelectedMasterId),
+          }).catch(() => {});
+        }
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", err.message);
+      }
+    }
+
+    async function applyDashboardBulkEdit() {
+      const selectedRows = getDashboardSelectedWorkbenchRows();
+      const ownedItemIds = selectedRows.map((row) => Number(row?.id || 0)).filter((id) => id > 0);
+      if (!ownedItemIds.length) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.bulk.status.select_first"));
+        return;
+      }
+      const payload = {
+        owned_item_ids: ownedItemIds,
+        status: $("homeDashBulkStatus").value || null,
+        domain_code: $("homeDashBulkDomainCode").value || null,
+        release_type: $("homeDashBulkReleaseType").value || null,
+        is_second_hand: $("homeDashBulkSecondHand").value === "" ? null : $("homeDashBulkSecondHand").value === "1",
+        purchase_source: $("homeDashBulkPurchaseSource").value.trim() || null,
+        preferred_storage_size_group: $("homeDashBulkPreferredSize").value || null,
+        append_memory_note: $("homeDashBulkMemoryNote").value.trim() || null,
+      };
+      if (
+        !payload.status
+        && !payload.domain_code
+        && !payload.release_type
+        && payload.is_second_hand == null
+        && !payload.purchase_source
+        && !payload.preferred_storage_size_group
+        && !payload.append_memory_note
+      ) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.bulk.status.require_field"));
+        return;
+      }
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.bulk.status.progress", { count: countWithUnit(ownedItemIds.length) }));
+        const res = await fetch("/owned-items/bulk-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.bulk.status.failed"));
+        applyDashboardBulkUpdateLocal(data.updated_item_ids || [], payload);
+        setStatus("homeDashboardStatus", "ok", t("dashboard.bulk.status.complete", {
+          count: countWithUnit(data.updated_count || 0),
+        }));
+        resetDashboardBulkEditForm();
+        refreshOpsExceptionInBackground();
+        if ($("tabManage")?.classList.contains("active") && data.updated_item_ids?.includes(Number(homeSelectedItemId || 0))) {
+          refreshHomeManageContext(Number(homeSelectedItemId), {
+            keepMasterContext: Boolean(homeSelectedMasterId),
+            masterId: homeSelectedMasterId,
+            reloadMaster: Boolean(homeSelectedMasterId),
+          }).catch(() => {});
+        }
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", err.message);
+      }
+    }
+
+    function filterDashboardWorkbenchItems(items) {
+      return filterDashboardWorkbenchItemsByMedia(items);
+    }
+
+    function filterDashboardWorkbenchItemsByMedia(items) {
+      let list = Array.isArray(items) ? items : [];
+      const category = dashboardWorkbenchMediaFilterValue();
+      if (category !== "ANY") {
+        list = list.filter((row) => String(row?.category || "").trim().toUpperCase() === category);
+      }
+      list = list.filter((row) => dashboardWorkbenchMatchesDomainFilter(row));
+      if (dashboardWorkbenchSortWarningOnlyValue()) {
+        list = list.filter((row) => dashboardWorkbenchNeedsSortWarning(row));
+      }
+      return list;
+    }
+
+    function sortDashboardWorkbenchItems(items) {
+      const list = Array.isArray(items) ? [...items] : [];
+      const sortMode = dashboardWorkbenchSortModeValue();
+      list.sort((a, b) => {
+        const warningCompare = Number(dashboardWorkbenchNeedsSortWarning(b)) - Number(dashboardWorkbenchNeedsSortWarning(a));
+        if (warningCompare !== 0) return warningCompare;
+        if (sortMode === "NAME_ASC") {
+          const artistA = normalizeArtistSortKey(a?.master_sort_artist_name || a?.artist_or_brand || a?.linked_artist_name || a?.master_artist_or_brand || "");
+          const artistB = normalizeArtistSortKey(b?.master_sort_artist_name || b?.artist_or_brand || b?.linked_artist_name || b?.master_artist_or_brand || "");
+          const artistCompare = artistA.localeCompare(artistB);
+          if (artistCompare !== 0) return artistCompare;
+          const releaseA = dashboardPreferredReleaseSortValue(a);
+          const releaseB = dashboardPreferredReleaseSortValue(b);
+          const releaseCompare = releaseA.localeCompare(releaseB);
+          if (releaseCompare !== 0) return releaseCompare;
+          const titleA = normalizeTitleSortKey(a?.master_title || a?.item_title || a?.item_name_override || "");
+          const titleB = normalizeTitleSortKey(b?.master_title || b?.item_title || b?.item_name_override || "");
+          const titleCompare = titleA.localeCompare(titleB);
+          if (titleCompare !== 0) return titleCompare;
+        }
+        const createdA = String(a?.created_at || "").trim();
+        const createdB = String(b?.created_at || "").trim();
+        const createdCompare = createdB.localeCompare(createdA);
+        if (createdCompare !== 0) return createdCompare;
+        return Number(b?.id || 0) - Number(a?.id || 0);
+      });
+      return list;
+    }
+
+    function saveDashboardWorkbenchPreferences() {
+      const role = currentSessionRoleCode();
+      const map = loadRoleScopedMap(DASHBOARD_WORKBENCH_PREFS_KEY);
+      map[role] = {
+        category: dashboardWorkbenchMediaFilterValue(),
+        signature_mode: dashboardWorkbenchSignatureModeValue(),
+        sort_mode: dashboardWorkbenchSortModeValue(),
+        sort_warning_only: dashboardWorkbenchSortWarningOnlyValue(),
+        domain_filter: dashboardWorkbenchDomainFilterValue(),
+        slot_sort_mode: dashboardSlotSortModeValue(),
+        artist: String($("homeDashSearchArtist")?.value || "").trim(),
+        title: String($("homeDashSearchTitle")?.value || "").trim(),
+        catalog_no: String($("homeDashSearchCatalogNo")?.value || "").trim(),
+        barcode: String($("homeDashSearchBarcode")?.value || "").trim(),
+      };
+      saveRoleScopedMap(DASHBOARD_WORKBENCH_PREFS_KEY, map);
+    }
+
+    async function loadDashboardUnassignedItems(opts = {}) {
+      const silent = Boolean(opts?.silent);
+      try {
+        homeDashboardUnassignedLoading = true;
+        resetDashboardWorkbenchPage();
+        renderDashboardUnassignedItems();
+        const category = String($("homeDashMediaFilter")?.value || "ANY").trim().toUpperCase() || "ANY";
+        const signatureMode = dashboardWorkbenchSignatureModeValue();
+        const params = new URLSearchParams({
+          status: "IN_COLLECTION",
+          slot_state: "UNSLOTTED",
+          sort: "DISPLAY",
+          limit: "300",
+        });
+        if (category !== "ANY") params.set("category", category);
+        if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);
+        const res = await fetch(`/owned-items?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.workbench.status.unslotted_load_failed"));
+        homeDashboardUnassignedItems = Array.isArray(data) ? data : [];
+        const nextSelected = new Set();
+        for (const row of homeDashboardUnassignedItems) {
+          const ownedItemId = Number(row?.id || 0);
+          if (ownedItemId > 0 && homeDashboardUnassignedSelectedIds.has(ownedItemId)) {
+            nextSelected.add(ownedItemId);
+          }
+        }
+        homeDashboardUnassignedSelectedIds = nextSelected;
+        renderDashboardUnassignedItems();
+      } catch (err) {
+        homeDashboardUnassignedItems = [];
+        renderDashboardUnassignedItems();
+        if (!silent) setStatus("homeDashboardStatus", "err", err.message);
+      } finally {
+        homeDashboardUnassignedLoading = false;
+        renderDashboardUnassignedItems();
+      }
+    }
+
+    async function loadDashboardSearchItems(opts = {}) {
+      const silent = Boolean(opts?.silent);
+      try {
+        homeDashboardWorkbenchMode = "SEARCH";
+        homeDashboardSearchLoading = true;
+        resetDashboardWorkbenchPage();
+        renderDashboardWorkbench();
+        if (!silent) setStatus("homeDashboardStatus", "ok", t("dashboard.workbench.status.search_loading"));
+        const params = new URLSearchParams({
+          status: "IN_COLLECTION",
+          sort: "DISPLAY",
+          limit: "100",
+        });
+        const category = String($("homeDashMediaFilter")?.value || "ANY").trim().toUpperCase() || "ANY";
+        const signatureMode = dashboardWorkbenchSignatureModeValue();
+        const artist = $("homeDashSearchArtist")?.value.trim() || "";
+        const title = $("homeDashSearchTitle")?.value.trim() || "";
+        const catalogNo = $("homeDashSearchCatalogNo")?.value.trim() || "";
+        const barcode = $("homeDashSearchBarcode")?.value.trim() || "";
+        if (category !== "ANY") params.set("category", category);
+        if (signatureMode !== "ANY") params.set("signature_mode", signatureMode);
+        if (artist) params.set("artist_or_brand", artist);
+        if (title) params.set("item_name", title);
+        if (catalogNo) params.set("catalog_no", catalogNo);
+        if (barcode) params.set("barcode", barcode);
+        const res = await fetch(`/owned-items?${params.toString()}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.workbench.status.search_load_failed"));
+        homeDashboardSearchItems = Array.isArray(data) ? data : [];
+        const nextSelected = new Set();
+        for (const row of homeDashboardSearchItems) {
+          const ownedItemId = Number(row?.id || 0);
+          if (ownedItemId > 0 && homeDashboardSearchSelectedIds.has(ownedItemId)) nextSelected.add(ownedItemId);
+        }
+        homeDashboardSearchSelectedIds = nextSelected;
+        homeDashboardWorkbenchMode = "SEARCH";
+        renderDashboardWorkbench();
+        if (!silent) {
+          setStatus("homeDashboardStatus", "ok", t("dashboard.workbench.status.search_complete", { count: formatCount(homeDashboardSearchItems.length) }));
+          $("homeDashWorkbenchList")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      } catch (err) {
+        homeDashboardSearchItems = [];
+        renderDashboardWorkbench();
+        if (!silent) setStatus("homeDashboardStatus", "err", err.message);
+      } finally {
+        homeDashboardSearchLoading = false;
+        renderDashboardWorkbench();
+      }
+    }
+
+    async function openDashboardSelectedItemForEdit() {
+      const row = getDashboardSingleSelectedRow();
+      const ownedItemId = Number(row?.id || 0);
+      if (ownedItemId <= 0) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.selection.status.select_one_item_to_edit"));
+        return;
+      }
+      const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);
+      await openMediaSearchDetailManage(masterId, ownedItemId);
+    }
+
+    function findDashboardOwnedItemRowById(ownedItemId, sourceKind = "SLOT") {
+      const targetOwnedItemId = Number(ownedItemId || 0);
+      if (targetOwnedItemId <= 0) return null;
+      const normalizedSourceKind = String(sourceKind || "").trim().toUpperCase();
+      if (normalizedSourceKind === "SLOT") {
+        const source = Array.isArray(homeDashboardSlotSelectionSnapshot) && homeDashboardSlotSelectionSnapshot.length
+          ? homeDashboardSlotSelectionSnapshot
+          : (Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : []);
+        return source.find((row) => Number(row?.id || 0) === targetOwnedItemId) || null;
+      }
+      if (normalizedSourceKind === "UNASSIGNED") {
+        return filterDashboardWorkbenchItems(homeDashboardUnassignedItems)
+          .find((row) => Number(row?.id || 0) === targetOwnedItemId) || null;
+      }
+      if (normalizedSourceKind === "SEARCH") {
+        return filterDashboardWorkbenchItems(homeDashboardSearchItems)
+          .find((row) => Number(row?.id || 0) === targetOwnedItemId) || null;
+      }
+      return null;
+    }
+
+    async function openDashboardOwnedItemDetailManage(ownedItemId, sourceKind = "SLOT") {
+      const targetOwnedItemId = Number(ownedItemId || 0);
+      if (targetOwnedItemId <= 0) return;
+      const row = findDashboardOwnedItemRowById(targetOwnedItemId, sourceKind);
+      const masterId = Number(row?.linked_album_master_id || row?.album_master_id || 0);
+      await openMediaSearchDetailManage(masterId, targetOwnedItemId);
+    }
+
+    async function refreshDashboardSelectedSlotDetail() {
+      const currentSlotCode = String(homeDashboardSelectedSlotCode || "").trim();
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.cover_flow.status.refreshing"));
+        await loadHomeDashboard({ silent: true });
+        const nextSlotRow = currentSlotCode ? getDashboardSlotRow(currentSlotCode) : null;
+        if (currentSlotCode && nextSlotRow) {
+          await loadDashboardSlotItems(nextSlotRow, { silent: true });
+        }
+        setStatus("homeDashboardStatus", "ok", t("dashboard.cover_flow.status.refreshed"));
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", errorMessageText(err, t("dashboard.status.load_failed")));
+      }
+    }
+
+    async function refreshDashboardCabinetGroup(groupKey) {
+      const cabinetKey = String(groupKey || "").trim();
+      if (!cabinetKey) return;
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.cover_flow.status.refreshing"));
+        await loadHomeDashboard({ silent: true });
+        setStatus("homeDashboardStatus", "ok", t("dashboard.cover_flow.status.refreshed"));
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", errorMessageText(err, t("dashboard.status.load_failed")));
+      }
+    }
+
+    async function moveDashboardOwnedItemsToSlot(items, targetSlotCode, opts = {}) {
+      const targetRow = getDashboardSlotRow(targetSlotCode);
+      const targetSlotId = resolveDashboardStorageSlotId(targetRow);
+      if (!targetRow || !targetSlotId) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.move.target_slot_id_missing"));
+        return;
+      }
+      const list = Array.isArray(items) ? items : [];
+      const eligible = list.filter((row) => Number(row?.id || 0) > 0);
+      if (!eligible.length) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.move.no_items"));
+        return;
+      }
+      const sourceKind = getDashboardSelectionSourceKind();
+      const mismatchRows = getSlotMismatchRows(eligible, targetRow);
+      const warningRows = eligible.filter((row) => dashboardWorkbenchNeedsSortWarning(row));
+      if (mismatchRows.length && !confirmSlotMismatchMove(targetRow, eligible, t("common.action.move"))) {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.move.cancelled"));
+        return;
+      }
+
+      previewDashboardTargetSlot(targetSlotCode);
+      setStatus(
+        "homeDashboardStatus",
+        "ok",
+        t("dashboard.move.progress", {
+          count: formatCount(eligible.length),
+          slot: storageSlotDisplayLabel(targetRow),
+          warning: [
+            mismatchRows.length ? t("dashboard.move.progress_warning", { count: formatCount(mismatchRows.length) }) : "",
+            warningRows.length ? t("dashboard.move.progress_sort_warning", { count: formatCount(warningRows.length) }) : "",
+          ].filter(Boolean).join(""),
+        })
+      );
+
+      let moved = 0;
+      const failed = [];
+      const failedIds = new Set();
+      for (const row of eligible) {
+        const ownedItemId = Number(row?.id || 0);
+        try {
+          const res = await fetch(`/owned-items/${ownedItemId}/slot`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ storage_slot_id: targetSlotId }),
+          });
+          const data = await safeJson(res);
+          if (!res.ok) throw new Error(data.detail || t("dashboard.move.failed"));
+          moved += 1;
+        } catch (err) {
+          failedIds.add(ownedItemId);
+          failed.push(`${row?.label_id || ownedItemId}: ${err.message}`);
+        }
+      }
+
+      const movedIds = new Set(eligible
+        .filter((row) => Number(row?.id || 0) > 0 && !failedIds.has(Number(row?.id || 0)))
+        .map((row) => Number(row.id)));
+      const movedWarningRows = eligible.filter((row) => {
+        const ownedItemId = Number(row?.id || 0);
+        return ownedItemId > 0 && movedIds.has(ownedItemId) && dashboardWorkbenchNeedsSortWarning(row);
+      });
+      if (movedIds.size) {
+        cancelDashboardClickMoveMode({ silent: true, render: false });
+        updateDashboardSlotCountsAfterMove(
+          eligible.filter((row) => movedIds.has(Number(row?.id || 0))),
+          targetRow
+        );
+        for (const ownedItemId of movedIds) {
+          updateDashboardOwnedItemLocation(ownedItemId, targetRow);
+        }
+        homeDashboardUnassignedItems = (Array.isArray(homeDashboardUnassignedItems) ? homeDashboardUnassignedItems : [])
+          .filter((row) => !movedIds.has(Number(row?.id || 0)));
+        if (sourceKind === "SLOT") {
+          homeDashboardSlotItems = (Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : [])
+            .filter((row) => !movedIds.has(Number(row?.id || 0)));
+          homeDashboardSlotItemsSlotCode = null;
+        }
+      }
+
+      resetDashboardSlotSelection();
+      resetDashboardUnassignedSelection();
+      resetDashboardSearchSelection();
+      homeDashboardSelectedCabinetKey = dashboardCabinetKey(targetRow);
+      homeDashboardSelectedSlotCode = String(targetRow.slot_code || "").trim();
+      renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
+      renderDashboardWorkbench();
+      await loadDashboardSlotItems(targetRow, { silent: true });
+      refreshOpsExceptionInBackground();
+
+      const statusParts = [
+        t("dashboard.move.done_bulk", { count: formatCount(moved), slot: storageSlotDisplayLabel(targetRow) }),
+        mismatchRows.length ? t("dashboard.move.done_warning", { count: formatCount(mismatchRows.length) }) : null,
+        movedWarningRows.length ? t("dashboard.move.done_sort_warning_followup", { count: formatCount(movedWarningRows.length) }) : null,
+        failed.length ? t("dashboard.move.done_failed", { count: formatCount(failed.length) }) : null,
+      ].filter(Boolean);
+      setStatus("homeDashboardStatus", failed.length ? "err" : "ok", statusParts.join(" | "));
+    }
+
+    function setDashboardMoveSource(source) {
+      dashboardDraggedOwnedItemId = Number(source?.ownedItemId || 0) || null;
+      dashboardDraggedSlotCode = String(source?.slotCode || "").trim() || null;
+      dashboardDraggedSizeGroup = String(source?.sizeGroup || "").trim() || null;
+      dashboardDraggedTitle = String(source?.title || "").trim() || null;
+      clearDashboardDragHints();
+      const slotRow = getDashboardSlotRow(dashboardDraggedSlotCode);
+      renderDashboardMoveTargets(slotRow);
+      renderDashboardCabinetDetail();
+    }
+
+    function previewDashboardTargetSlot(slotCode) {
+      const targetRow = getDashboardSlotRow(slotCode);
+      if (!targetRow) return;
+      homeDashboardSelectedCabinetKey = dashboardCabinetKey(targetRow);
+      homeDashboardSelectedSlotCode = String(targetRow.slot_code || "").trim();
+      homeDashboardSlotItems = [];
+      homeDashboardSlotItemsSlotCode = null;
+      renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
+    }
+
+    async function moveDashboardOwnedItemToSlot(ownedItemId, targetSlotCode) {
+      const sourceOwnedItemId = Number(ownedItemId || 0);
+      const slotCode = String(targetSlotCode || "").trim();
+      if (!sourceOwnedItemId || !slotCode) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.move.item_missing_target"));
+        return;
+      }
+      const sourceSlotCode = getDashboardDraggedSlotCode();
+      const sourceRow = getDashboardSlotRow(sourceSlotCode);
+      const targetRow = getDashboardSlotRow(slotCode);
+      const targetSlotId = resolveDashboardStorageSlotId(targetRow);
+      if (!targetRow || !targetSlotId) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.move.target_slot_id_missing"));
+        return;
+      }
+      const sourceItem = findDashboardOwnedItemRow(sourceOwnedItemId) || {
+        id: sourceOwnedItemId,
+        size_group: getDashboardDraggedSizeGroup() || "",
+        item_name_override: dashboardDraggedTitle || `owned_item_id=${sourceOwnedItemId}`,
+      };
+      if (!confirmSlotMismatchMove(targetRow, [sourceItem], t("common.action.move"))) {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.move.cancelled"));
+        resetDashboardDragState();
+        return;
+      }
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.move.item_progress", { id: sourceOwnedItemId, slot: storageSlotDisplayLabel(targetRow) }));
+        const res = await fetch(`/owned-items/${sourceOwnedItemId}/slot`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storage_slot_id: targetSlotId }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.move.failed"));
+        updateDashboardSlotCountsAfterMove([sourceItem], targetRow);
+        updateDashboardOwnedItemLocation(sourceOwnedItemId, targetRow);
+        homeDashboardUnassignedItems = (Array.isArray(homeDashboardUnassignedItems) ? homeDashboardUnassignedItems : [])
+          .filter((row) => Number(row?.id || 0) !== sourceOwnedItemId);
+        homeDashboardSelectedCabinetKey = dashboardCabinetKey(targetRow);
+        homeDashboardSelectedSlotCode = slotCode;
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        cancelDashboardClickMoveMode({ silent: true, render: false });
+        renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
+        await loadDashboardSlotItems(targetRow, { silent: true });
+        setStatus("homeDashboardStatus", "ok", t("dashboard.move.item_done", { id: data.owned_item_id, slot: storageSlotDisplayLabel(targetRow) }));
+        refreshOpsExceptionInBackground();
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", err.message);
+      } finally {
+        resetDashboardDragState();
+      }
+    }
+
+    async function moveDashboardOwnedItemRelative(ownedItemId, targetOwnedItemId, position) {
+      const sourceOwnedItemId = Number(ownedItemId || 0);
+      const targetId = Number(targetOwnedItemId || 0);
+      const currentSlotRow = getDashboardSlotRow(String(homeDashboardSelectedSlotCode || "").trim());
+      const currentSlotId = resolveDashboardStorageSlotId(currentSlotRow);
+      const currentOrder = (Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : [])
+        .map((row) => Number(row?.id || 0))
+        .filter((id) => id > 0);
+      if (!sourceOwnedItemId || !targetId) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.need_item_and_target"));
+        return;
+      }
+      if (sourceOwnedItemId === targetId) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.same_item"));
+        return;
+      }
+      if (!currentSlotId) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.missing_slot"));
+        return;
+      }
+      if (!dashboardSlotAllowsManualOrder(currentSlotRow)) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.locked_artist_slot"));
+        return;
+      }
+      const nextOrderedIds = currentOrder.slice();
+      const sourceIndex = nextOrderedIds.indexOf(sourceOwnedItemId);
+      if (sourceIndex >= 0) nextOrderedIds.splice(sourceIndex, 1);
+      const targetIndex = nextOrderedIds.indexOf(targetId);
+      if (targetIndex >= 0) {
+        const insertIndex = position === "BEFORE" ? targetIndex : targetIndex + 1;
+        nextOrderedIds.splice(Math.max(0, insertIndex), 0, sourceOwnedItemId);
+      }
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.order.progress", { source: sourceOwnedItemId, target: targetId, position }));
+        const res = await fetch(`/storage-slots/${currentSlotId}/owned-items/${sourceOwnedItemId}/order`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target_owned_item_id: targetId,
+            position,
+          }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.order.failed"));
+        applyDashboardSlotLocalOrder(nextOrderedIds);
+        if (currentSlotRow) {
+          await loadDashboardSlotItems(currentSlotRow, { silent: true });
+        }
+        setStatus("homeDashboardStatus", "ok", t("dashboard.order.done", { id: data.owned_item_id, rank: data.display_rank }));
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", err.message);
+      } finally {
+        resetDashboardDragState();
+      }
+    }
+
+    async function moveDashboardSlotSelectionToEdge(direction) {
+      const mode = String(direction || "").trim().toUpperCase();
+      const currentSlotCode = String(homeDashboardSelectedSlotCode || "").trim();
+      const loadedSlotCode = String(homeDashboardSlotItemsSlotCode || "").trim();
+      const items = Array.isArray(homeDashboardSlotItems) ? homeDashboardSlotItems : [];
+      if (!currentSlotCode || currentSlotCode !== loadedSlotCode || !items.length) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.need_current_slot"));
+        return;
+      }
+      if (!["FRONT", "BACK"].includes(mode)) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.invalid_direction"));
+        return;
+      }
+      const selected = items.filter((row) => homeDashboardSlotSelectedIds.has(Number(row?.id || 0)));
+      if (!selected.length) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.need_checked_items"));
+        return;
+      }
+      const unselected = items.filter((row) => !homeDashboardSlotSelectedIds.has(Number(row?.id || 0)));
+      if (!unselected.length) {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.order.already_full_selection"));
+        return;
+      }
+
+      const anchor = mode === "FRONT" ? unselected[0] : unselected[unselected.length - 1];
+      const sequence = mode === "FRONT" ? selected : [...selected].reverse();
+      const position = mode === "FRONT" ? "BEFORE" : "AFTER";
+      const slotRow = getDashboardSlotRow(currentSlotCode);
+      const currentSlotId = resolveDashboardStorageSlotId(slotRow);
+      const nextOrderedIds = mode === "FRONT"
+        ? [...selected.map((row) => Number(row?.id || 0)), ...unselected.map((row) => Number(row?.id || 0))]
+        : [...unselected.map((row) => Number(row?.id || 0)), ...selected.map((row) => Number(row?.id || 0))];
+      let moved = 0;
+
+      if (!currentSlotId) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.missing_slot"));
+        return;
+      }
+      if (!dashboardSlotAllowsManualOrder(slotRow)) {
+        setStatus("homeDashboardStatus", "err", t("dashboard.order.locked_artist_slot"));
+        return;
+      }
+
+      try {
+        setStatus("homeDashboardStatus", "ok", t("dashboard.order.edge_progress", {
+          mode: mode === "FRONT" ? t("dashboard.order.edge.front") : t("dashboard.order.edge.back"),
+          count: formatCount(sequence.length),
+        }));
+        for (const row of sequence) {
+          const ownedItemId = Number(row?.id || 0);
+          if (!ownedItemId || ownedItemId === Number(anchor?.id || 0)) continue;
+          const res = await fetch(`/storage-slots/${currentSlotId}/owned-items/${ownedItemId}/order`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              target_owned_item_id: Number(anchor.id),
+              position,
+            }),
+          });
+          const data = await safeJson(res);
+          if (!res.ok) throw new Error(data.detail || t("dashboard.order.failed"));
+          moved += 1;
+        }
+        applyDashboardSlotLocalOrder(nextOrderedIds);
+        homeDashboardSlotPage = mode === "FRONT" ? 0 : Number.MAX_SAFE_INTEGER;
+        homeDashboardSlotShelfScrollLeft = mode === "FRONT" ? 0 : Number.MAX_SAFE_INTEGER;
+        const nextSlotRow = getDashboardSlotRow(currentSlotCode) || slotRow;
+        if (nextSlotRow) {
+          homeDashboardSelectedCabinetKey = dashboardCabinetKey(nextSlotRow);
+          homeDashboardSelectedSlotCode = currentSlotCode;
+          await loadDashboardSlotItems(nextSlotRow, { silent: true });
+        }
+        setStatus("homeDashboardStatus", "ok", t("dashboard.order.edge_done", {
+          mode: mode === "FRONT" ? t("dashboard.order.edge.front") : t("dashboard.order.edge.back"),
+          count: formatCount(moved),
+        }));
+      } catch (err) {
+        setStatus("homeDashboardStatus", "err", err.message);
+      }
+    }
+
+    function _saveDashboardCabinetMemory(cabinetKey, slotCode) {
+      try { localStorage.setItem("__PROJECT_SLUG___dash_cabinet", JSON.stringify({ cabinetKey, slotCode, ts: Date.now() })); } catch(_) {}
+    }
+    function _loadDashboardCabinetMemory() {
+      try { const v = localStorage.getItem("__PROJECT_SLUG___dash_cabinet"); return v ? JSON.parse(v) : null; } catch(_) { return null; }
+    }
+    function restoreDashboardCabinetSelectionMemory() {
+      try {
+        const raw = window.sessionStorage.getItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY);
+        const parsed = JSON.parse(raw || "null");
+        const cabinetKey = String(parsed?.cabinet_key || "").trim();
+        const slotCode = String(parsed?.slot_code || "").trim();
+        if (!cabinetKey) return;
+        homeDashboardSelectedCabinetKey = cabinetKey;
+        homeDashboardSelectedSlotCode = slotCode || null;
+      } catch (_err) {
+        // ignore sessionStorage read errors
+      }
+      // localStorage fallback (세션 간 기억)
+      if (!homeDashboardSelectedCabinetKey) {
+        try {
+          const raw2 = window.localStorage.getItem(DASHBOARD_CABINET_SELECTION_STORAGE_KEY + '_persist');
+          const parsed2 = JSON.parse(raw2 || 'null');
+          const cabinetKey2 = String(parsed2?.cabinet_key || '').trim();
+          const slotCode2 = String(parsed2?.slot_code || '').trim();
+          if (cabinetKey2) {
+            homeDashboardSelectedCabinetKey = cabinetKey2;
+            homeDashboardSelectedSlotCode = slotCode2 || null;
+          }
+        } catch (_) {}
+      }
+    }
+
+    function buildDashboardSlotGroupPages(groups) {
+      const list = Array.isArray(groups) ? groups : [];
+      const pages = [];
+      for (let index = 0; index < list.length; index += 1) {
+        const current = list[index];
+        const currentSlotCount = Math.max(0, Number(current?.slotCount || 0));
+        if (currentSlotCount >= 10) {
+          pages.push({ start: index, end: index + 1, items: [current] });
+          continue;
+        }
+        const next = list[index + 1];
+        const nextSlotCount = Math.max(0, Number(next?.slotCount || 0));
+        if (next && nextSlotCount < 10) {
+          pages.push({ start: index, end: index + 2, items: [current, next] });
+          index += 1;
+          continue;
+        }
+        pages.push({ start: index, end: index + 1, items: [current] });
+      }
+      return pages;
+    }
+
+    async function loadDashboardSlotItems(slotRow, opts = {}) {
+      const slotCode = String(slotRow?.slot_code || "").trim();
+      const silent = Boolean(opts.silent);
+      if (!slotRow || !slotCode) return;
+      if (slotCode === "UNASSIGNED") {
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        homeDashboardSlotItemsLoading = false;
+        resetDashboardSlotPage();
+        resetDashboardSlotSelection();
+        renderDashboardCabinetDetail();
+        if (!silent) setStatus("homeDashboardStatus", "ok", t("dashboard.slot.status.unslotted_block"));
+        return;
+      }
+
+      const slotId = resolveDashboardStorageSlotId(slotRow);
+      if (!slotId) {
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        homeDashboardSlotItemsLoading = false;
+        resetDashboardSlotPage();
+        resetDashboardSlotSelection();
+        renderDashboardCabinetDetail();
+        if (!silent) setStatus("homeDashboardStatus", "err", t("dashboard.slot.status.missing_slot_id"));
+        return;
+      }
+
+      try {
+        homeDashboardSlotItemsLoading = true;
+        renderDashboardCabinetDetail();
+        if (!silent) {
+          setStatus("homeDashboardStatus", "ok", t("dashboard.slot.status.loading", { slot: storageSlotDisplayLabel(slotRow) }));
+        }
+        const requestedSlotCode = slotCode;
+        const res = await fetch(`/storage-slots/${slotId}/owned-items?limit=300`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(responseDetailText(data, t("dashboard.slot.status.load_failed")));
+        if (homeDashboardSelectedSlotCode !== requestedSlotCode) return;
+        homeDashboardSlotItems = Array.isArray(data) ? data : [];
+        homeDashboardSlotItemsSlotCode = requestedSlotCode;
+        const nextSelected = new Set();
+        for (const row of homeDashboardSlotItems) {
+          const ownedItemId = Number(row?.id || 0);
+          if (ownedItemId > 0 && homeDashboardSlotSelectedIds.has(ownedItemId)) nextSelected.add(ownedItemId);
+        }
+        homeDashboardSlotSelectedIds = nextSelected;
+        updateDashboardSlotSelectionSnapshot();
+        renderDashboardCabinetDetail();
+        if (!silent) {
+          setStatus("homeDashboardStatus", "ok", t("dashboard.slot.status.load_complete", {
+            slot: storageSlotDisplayLabel(slotRow),
+            count: countWithUnit(homeDashboardSlotItems.length),
+          }));
+        }
+        renderDashboardWorkbench();
+      } catch (err) {
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        resetDashboardSlotPage();
+        resetDashboardSlotSelection();
+        renderDashboardCabinetDetail();
+        renderDashboardWorkbench();
+        if (!silent) setStatus("homeDashboardStatus", "err", err.message);
+      } finally {
+        homeDashboardSlotItemsLoading = false;
+        renderDashboardCabinetDetail();
+        renderDashboardWorkbench();
+      }
+    }
+
+    function toggleDashboardCabinet(groupKey) {
+      homeDashboardSlotGridFollowSelection = true;
+      const nextKey = homeDashboardSelectedCabinetKey === groupKey ? null : groupKey;
+      const preserveSlotSelection = homeDashboardSlotSelectedIds.size > 0;
+      homeDashboardSelectedCabinetKey = nextKey;
+      homeDashboardSelectedSlotCode = null;
+      resetDashboardSlotPage();
+      if (!preserveSlotSelection) {
+        homeDashboardSlotItems = [];
+        homeDashboardSlotItemsSlotCode = null;
+        resetDashboardSlotSelection();
+      }
+      homeDashboardSlotItemsLoading = false;
+      renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems);
+    }
+
+    async function selectDashboardSlot(slotCode) {
+      const groups = buildDashboardCabinetGroups(homeDashboardBySlot);
+      const group = groups.find((item) => item.key === homeDashboardSelectedCabinetKey) || null;
+      if (!group) return;
+      const slotRow = group.rows.find((row) => String(row.slot_code || "").trim() === String(slotCode || "").trim()) || null;
+      if (!slotRow) return;
+      await openDashboardForResolvedSlot(slotRow);
+    }
+
+    function _dashThumb(url, title) {
+      if (url) return `<img class="dash-activity-thumb" src="${url}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="dash-activity-thumb-placeholder" style="display:none">🎵</div>`;
+      return `<div class="dash-activity-thumb-placeholder">🎵</div>`;
+    }
+
+    function _dashSizeChip(sg) {
+      const map = { LP:"LP", LP10:'10"', LP7:'7"', CD:"CD", CASSETTE:"Tape", GOODS:"굿즈" };
+      return map[sg] || sg || "";
+    }
+
+    async function loadDashboardRecentActivity() {
+      try {
+        const [regRes, buyRes, updRes] = await Promise.all([
+          fetch("/dashboard/recent-registered"),
+          fetch("/dashboard/recent-purchased"),
+          fetch("/dashboard/recent-updated"),
+        ]);
+        const [reg, buy, upd] = await Promise.all([
+          regRes.ok ? safeJson(regRes) : [],
+          buyRes.ok ? safeJson(buyRes) : [],
+          updRes.ok ? safeJson(updRes) : [],
+        ]);
+
+        // 최근 등록
+        const regEl = document.getElementById("dashRecentRegistered");
+        if (regEl) {
+          if (!reg.length) { regEl.innerHTML = `<div class="mini" style="opacity:.4">없음</div>`; }
+          else regEl.innerHTML = reg.map(r => `
+            <div class="dash-activity-item" style="cursor:pointer" onclick="openDashboardOwnedItemDetailManage(${r.id})">
+              ${_dashThumb(r.cover_image_url, r.title)}
+              <div class="dash-activity-meta">
+                <div class="dash-activity-title">${escapeHtml(r.title || "—")}</div>
+                <div class="dash-activity-sub">${escapeHtml(r.artist || "")}</div>
+                <div class="dash-activity-chips">
+                  ${r.size_group ? `<span class="dash-activity-chip">${_dashSizeChip(r.size_group)}</span>` : ""}
+                </div>
+              </div>
+            </div>`).join("");
+        }
+
+        // 최근 구매 (새상품)
+        const buyEl = document.getElementById("dashRecentPurchased");
+        if (buyEl) {
+          if (!buy.length) { buyEl.innerHTML = `<div class="mini" style="opacity:.4">없음</div>`; }
+          else buyEl.innerHTML = buy.map(r => `
+            <div class="dash-activity-item" style="cursor:pointer" onclick="openDashboardOwnedItemDetailManage(${r.id})">
+              ${_dashThumb(r.cover_image_url, r.title)}
+              <div class="dash-activity-meta">
+                <div class="dash-activity-title">${escapeHtml(r.title || "—")}${r.release_year ? ` (${r.release_year})` : ""}</div>
+                <div class="dash-activity-sub">${escapeHtml(r.artist || "")}</div>
+                <div class="dash-activity-chips">
+                  <span class="dash-activity-chip is-new">새상품</span>
+                  ${r.size_group ? `<span class="dash-activity-chip">${_dashSizeChip(r.size_group)}</span>` : ""}
+                </div>
+              </div>
+            </div>`).join("");
+        }
+
+        // 최근 업데이트
+        const updEl = document.getElementById("dashRecentUpdated");
+        if (updEl) {
+          if (!upd.length) { updEl.innerHTML = `<div class="mini" style="opacity:.4">없음</div>`; }
+          else updEl.innerHTML = upd.map(r => {
+            let genres = [];
+            try { genres = JSON.parse(r.genres_json || "[]"); } catch(e) {}
+            const chips = [];
+            if (genres.length) chips.push(`<span class="dash-activity-chip has-genre">장르</span>`);
+            if (r.catalog_no) chips.push(`<span class="dash-activity-chip has-catalog">카탈로그</span>`);
+            if (r.media_type) chips.push(`<span class="dash-activity-chip has-media">미디어</span>`);
+            if (r.source_code) chips.push(`<span class="dash-activity-chip has-source">${escapeHtml(r.source_code)}</span>`);
+            return `
+            <div class="dash-activity-item" style="cursor:pointer" onclick="openDashboardOwnedItemDetailManage(${r.id})">
+              ${_dashThumb(r.cover_image_url, r.title)}
+              <div class="dash-activity-meta">
+                <div class="dash-activity-title">${escapeHtml(r.title || "—")}${r.release_year ? ` (${r.release_year})` : ""}</div>
+                <div class="dash-activity-sub">${escapeHtml(r.artist || "")}</div>
+                <div class="dash-activity-chips">${chips.join("")}</div>
+              </div>
+            </div>`;
+          }).join("");
+        }
+      } catch(e) {
+        console.warn("loadDashboardRecentActivity error", e);
+      }
+    }
+
+    function _loadChartJs(cb) {
+      if (window.Chart) { cb(); return; }
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
+      s.onload = cb;
+      document.head.appendChild(s);
+    }
+
+    function _isDarkTheme() {
+      const t = document.body.getAttribute("data-theme") || "";
+      return ["night","ink","moss"].includes(t);
+    }
+
+    function initDashGauge(pct) {
+      const ctx = document.getElementById("dashGaugeChart");
+      if (!ctx) return;
+      const dark = _isDarkTheme();
+      const color = pct >= 90 ? "#4caf50" : pct >= 70 ? "#e05a1a" : "#e53935";
+      const data = { datasets: [{ data: [pct, 100 - pct], backgroundColor: [color, dark ? "#2a2a2a" : "#e0e0e0"], borderWidth: 0, circumference: 180, rotation: 270 }] };
+      const opts = { responsive: true, maintainAspectRatio: false, cutout: "72%", plugins: { legend: { display: false }, tooltip: { enabled: false } } };
+      if (_dashCharts.gauge) { _dashCharts.gauge.destroy(); }
+      _dashCharts.gauge = new Chart(ctx, { type: "doughnut", data, options: opts });
+    }
+
+    function initDashDomainChart(domainRows, domainCategoryRows) {
+      const ctx = document.getElementById("dashDomainChart");
+      if (!ctx) return;
+      const dark = _isDarkTheme();
+
+      const filteredDomains = (domainRows || [])
+        .filter(r => r.value !== "UNASSIGNED")
+        .slice(0, 8);
+
+      const domainKeys = filteredDomains.map(r => r.value);
+      const labels = filteredDomains.map(r => {
+        const map = { WESTERN:"팝/웨스턴", KOREA:"가요", JAPAN:"J-POP", GREATER_CHINA:"중화권", OTHER_ASIA:"아시아", WORLD:"기타", UNKNOWN:"미분류" };
+        return map[r.value] || r.value;
+      });
+
+      const categories = ["CD", "LP", "CASSETTE", "REEL_TO_REEL", "DIGITAL", "8TRACK"];
+      const mediaColors = {
+        CD: "#3a8fd6",
+        LP: "#e05a1a",
+        CASSETTE: "#9c6fd6",
+        REEL_TO_REEL: "#4caf50",
+        DIGITAL: "#888",
+        "8TRACK": "#d6a63a"
+      };
+      const mediaLabels = {
+        CD: "CD",
+        LP: "LP",
+        CASSETTE: "Tape",
+        REEL_TO_REEL: "Reel",
+        DIGITAL: "Digital",
+        "8TRACK": "8-Track"
+      };
+
+      const datasets = categories.map(cat => {
+        const data = domainKeys.map(dom => {
+          const match = (domainCategoryRows || []).find(r => r.domain === dom && r.category === cat);
+          return match ? match.count : 0;
+        });
+        return {
+          label: mediaLabels[cat] || cat,
+          data: data,
+          backgroundColor: mediaColors[cat] || "#ccc",
+          borderWidth: 0
+        };
+      }).filter(ds => ds.data.some(val => val > 0));
+
+      const opts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: {
+          legend: {
+            display: true,
+            position: "top",
+            labels: {
+              boxWidth: 12,
+              color: dark ? "#ccc" : "#333",
+              font: { size: 10 }
+            }
+          },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x}장`
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            beginAtZero: true,
+            grid: { color: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" },
+            ticks: { color: dark ? "#888" : "#666" }
+          },
+          y: {
+            stacked: true,
+            grid: { display: false },
+            ticks: { color: dark ? "#aaa" : "#555", font: { size: 11 } }
+          }
+        }
+      };
+
+      const stackedTotalsPlugin = {
+        id: "stackedTotals",
+        afterDatasetsDraw(chart) {
+          const { ctx, data } = chart;
+          const fmtCount = typeof formatCount === "function" ? formatCount : String;
+          const textColor = dark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.55)";
+          data.labels.forEach((_, i) => {
+            const total = data.datasets.reduce((s, ds) => s + (Number(ds.data[i]) || 0), 0);
+            if (!total) return;
+            let maxX = 0;
+            data.datasets.forEach((_, dsIdx) => {
+              const meta = chart.getDatasetMeta(dsIdx);
+              if (meta.hidden) return;
+              const bar = meta.data[i];
+              if (bar && bar.x > maxX) maxX = bar.x;
+            });
+            const bar0 = chart.getDatasetMeta(0).data[i];
+            ctx.save();
+            ctx.font = "bold 10px sans-serif";
+            ctx.fillStyle = textColor;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText(fmtCount(total), maxX + 5, bar0 ? bar0.y : 0);
+            ctx.restore();
+          });
+        }
+      };
+
+      if (_dashCharts.domain) { _dashCharts.domain.destroy(); }
+      _dashCharts.domain = new Chart(ctx, {
+        type: "bar",
+        data: { labels, datasets },
+        options: opts,
+        plugins: [stackedTotalsPlugin]
+      });
+    }
+
+    function initDashMediaChart(rows) {
+      const ctx = document.getElementById("dashMediaChart");
+      const legendEl = document.getElementById("dashMediaLegend");
+      if (!ctx) return;
+      const palette = { LP:"#e05a1a", CD:"#3a8fd6", CASSETTE:"#9c6fd6", REEL_TO_REEL:"#4caf50", DIGITAL:"#888", GOODS:"#d6a63a" };
+      const labelMap = { LP:"LP", CD:"CD", CASSETTE:"Tape", REEL_TO_REEL:"Reel", DIGITAL:"Digital", GOODS:"Goods" };
+      const filtered = (rows || []).filter(r => r.count > 0);
+      const getKey = r => r.value ?? r.category ?? r.status ?? Object.values(r)[0];
+      const labels = filtered.map(r => { const k = getKey(r); return labelMap[k] || k || '?'; });
+      const data = filtered.map(r => r.count);
+      const colors = filtered.map(r => palette[getKey(r)] || "#888");
+      const total = data.reduce((a, b) => a + b, 0);
+      const opts = {
+        responsive: true, maintainAspectRatio: false, cutout: "62%",
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => " " + ctx.label + ": " + ctx.parsed } } }
+      };
+      if (_dashCharts.media) { _dashCharts.media.destroy(); }
+      _dashCharts.media = new Chart(ctx, { type: "doughnut", data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] }, options: opts });
+      if (legendEl) {
+        legendEl.innerHTML = filtered.map((r, i) =>
+          `<div class="dash-media-legend-item"><span class="dash-media-legend-dot" style="background:${colors[i]}"></span>${labels[i]} ${total ? Math.round(data[i]/total*100) : 0}%</div>`
+        ).join("");
+      }
+    }
+
+    function updateDashMetaBars(data, musicTotal) {
+      const setBar = (barId, val, total, color) => {
+        const el = document.getElementById(barId);
+        if (!el) return;
+        const pct = total > 0 ? Math.min(Math.round(val / total * 100), 100) : 0;
+        el.style.width = pct + "%";
+      };
+      const m = Number(musicTotal || 0);
+      setBar("dashMetaGenreBar",   Number(data.genre_missing_items   || 0), m);
+      setBar("dashMetaCatalogBar", Number(data.catalog_missing_items || 0), m);
+      setBar("dashMetaMediaBar",   Number(data.media_missing_items   || 0), m);
+      setBar("dashMetaCoverBar",   Number(data.cover_missing_items   || 0), m);
+      setBar("dashMetaSourceBar",  Number(data.source_unlinked_items || 0), m);
+      setBar("dashMetaMasterBar",  Number(data.master_unlinked_items || 0), m);
+    }
+
+    function updateDashCharts(data) {
+      _loadChartJs(() => {
+        const pct = Number(data.in_collection_items || 0) > 0
+          ? Math.round(Number(data.slotted_in_collection_items || 0) / Number(data.in_collection_items || 0) * 100) : 0;
+        initDashGauge(pct);
+        initDashDomainChart(data.by_domain || [], data.by_domain_category || []);
+        initDashSourceDomainChart(data.by_source_domain || []);
+        initDashSourceMediaChart(data.by_source_category || []);
+        initDashCategoryChart(data.by_category || []);
+        initDashReleaseTypeChart(data.by_release_type || []);
+      });
+    }
+
+    function _makeMiniDoughnut(canvasId, rows, labelFn, colorFn) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const filtered = (rows || []).filter(r => Number(r.count || 0) > 0);
+      if (!filtered.length) return;
+      const dark = _isDarkTheme();
+      const labels = filtered.map(r => labelFn(r.value));
+      const data   = filtered.map(r => Number(r.count || 0));
+      const bgColors = filtered.map((r, i) => colorFn(r.value, i));
+      const fmtCount = typeof formatCount === "function" ? formatCount : String;
+      const prev = canvas._miniChart;
+      if (prev) { try { prev.destroy(); } catch (_) {} }
+      canvas._miniChart = new Chart(canvas, {
+        type: "doughnut",
+        data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 0 }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "52%",
+          plugins: {
+            legend: {
+              position: "right",
+              labels: {
+                color: dark ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.6)",
+                font: { size: 9 },
+                boxWidth: 8,
+                padding: 5,
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total > 0 ? Math.round((ctx.raw / total) * 100) : 0;
+                  return `${ctx.label}: ${fmtCount(ctx.raw)} (${pct}%)`;
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function initDashCategoryChart(rows) {
+      const CAT_COLORS = { LP:"#e05a1a", CD:"#3a8fd6", CASSETTE:"#9c6fd6", REEL_TO_REEL:"#4caf50", DIGITAL:"#888", "8TRACK":"#d6a63a" };
+      const FALLBACK = ["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444","#6366f1"];
+      const normalized = (rows || []).map(r => ({ value: r.category ?? r.value, count: r.count }));
+      _makeMiniDoughnut(
+        "dashCategoryChart",
+        normalized,
+        v => (typeof mediaDisplayLabel === "function" ? mediaDisplayLabel(v) : v),
+        (v, i) => CAT_COLORS[v] || FALLBACK[i % FALLBACK.length]
+      );
+    }
+
+    function initDashReleaseTypeChart(rows) {
+      const RT_COLORS = { ALBUM:"#3b82f6", EP:"#8b5cf6", SINGLE:"#10b981", UNASSIGNED:"#888" };
+      const RT_LABELS = { ALBUM:"정규", EP:"EP", SINGLE:"싱글", UNASSIGNED:"미분류" };
+      const FALLBACK = ["#f59e0b","#ef4444","#6366f1","#ec4899"];
+      _makeMiniDoughnut(
+        "dashReleaseTypeChart",
+        rows,
+        v => RT_LABELS[v] || (typeof dashboardReleaseTypeLabel === "function" ? dashboardReleaseTypeLabel(v) : v),
+        (v, i) => RT_COLORS[v] || FALLBACK[i % FALLBACK.length]
+      );
+    }
+
+    function initDashSourceDomainChart(rows) {
+      const canvas = $("dashSourceDomainChart");
+      if (!canvas) return;
+      const sourceMap = {};
+      (rows || []).forEach(row => {
+        const src = row.source || "MANUAL";
+        if (!sourceMap[src]) sourceMap[src] = { domains: {} };
+        sourceMap[src].domains[row.domain] = (sourceMap[src].domains[row.domain] || 0) + Number(row.count || 0);
+      });
+      const sourceTotals = Object.entries(sourceMap).map(([k, v]) => ({
+        key: k,
+        label: (typeof dashboardSourceLabel === "function") ? dashboardSourceLabel(k) : k,
+        total: Object.values(v.domains).reduce((a, b) => a + b, 0),
+        domains: v.domains,
+      })).sort((a, b) => b.total - a.total).slice(0, 8);
+      if (!sourceTotals.length) return;
+      const allDomains = [...new Set(sourceTotals.flatMap(s => Object.keys(s.domains)))];
+      const DOMAIN_COLORS = ["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444","#6366f1","#ec4899","#14b8a6","#f97316","#84cc16"];
+      const datasets = allDomains.map((domain, i) => ({
+        label: (typeof dashboardDomainLabel === "function") ? dashboardDomainLabel(domain) : domain,
+        data: sourceTotals.map(s => s.domains[domain] || 0),
+        backgroundColor: DOMAIN_COLORS[i % DOMAIN_COLORS.length],
+        borderWidth: 0,
+        borderRadius: 2,
+      }));
+      const isDark = ["night","ink","moss"].includes(document.documentElement.getAttribute("data-theme") || "");
+      const textColor = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+      const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+      if (window._dashSourceDomainChart) { try { window._dashSourceDomainChart.destroy(); } catch (_) {} window._dashSourceDomainChart = null; }
+      window._dashSourceDomainChart = new Chart(canvas, {
+        type: "bar",
+        data: { labels: sourceTotals.map(s => s.label), datasets },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${typeof formatCount === "function" ? formatCount(ctx.raw) : ctx.raw}` } },
+          },
+          scales: {
+            x: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 5 } },
+            y: { stacked: true, grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+          },
+        },
+      });
+    }
+
+    function initDashSourceMediaChart(rows) {
+      const canvas = $("dashSourceMediaChart");
+      if (!canvas) return;
+      const sourceMap = {};
+      (rows || []).forEach(row => {
+        const src = row.source || "MANUAL";
+        if (!sourceMap[src]) sourceMap[src] = { categories: {} };
+        sourceMap[src].categories[row.category] = (sourceMap[src].categories[row.category] || 0) + Number(row.count || 0);
+      });
+      const sourceTotals = Object.entries(sourceMap).map(([k, v]) => ({
+        key: k,
+        label: (typeof dashboardSourceLabel === "function") ? dashboardSourceLabel(k) : k,
+        total: Object.values(v.categories).reduce((a, b) => a + b, 0),
+        categories: v.categories,
+      })).sort((a, b) => b.total - a.total).slice(0, 8);
+      if (!sourceTotals.length) return;
+      const CATEGORY_ORDER = ["LP", "CD", "CASSETTE", "8TRACK", "DIGITAL", "REEL_TO_REEL"];
+      const CATEGORY_COLORS = { LP: "#8b5cf6", CD: "#3b82f6", CASSETTE: "#f59e0b", "8TRACK": "#ef4444", DIGITAL: "#10b981", REEL_TO_REEL: "#6366f1" };
+      const allCategories = [...new Set([...CATEGORY_ORDER, ...sourceTotals.flatMap(s => Object.keys(s.categories))])].filter(c => sourceTotals.some(s => s.categories[c]));
+      const datasets = allCategories.map((cat, i) => ({
+        label: (typeof mediaDisplayLabel === "function") ? mediaDisplayLabel(cat) : cat,
+        data: sourceTotals.map(s => s.categories[cat] || 0),
+        backgroundColor: CATEGORY_COLORS[cat] || ["#14b8a6","#f97316","#84cc16","#ec4899"][i % 4],
+        borderWidth: 0,
+        borderRadius: 2,
+      }));
+      const isDark = ["night","ink","moss"].includes(document.documentElement.getAttribute("data-theme") || "");
+      const textColor = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+      const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+      if (window._dashSourceMediaChart) { try { window._dashSourceMediaChart.destroy(); } catch (_) {} window._dashSourceMediaChart = null; }
+      window._dashSourceMediaChart = new Chart(canvas, {
+        type: "bar",
+        data: { labels: sourceTotals.map(s => s.label), datasets },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${typeof formatCount === "function" ? formatCount(ctx.raw) : ctx.raw}` } },
+          },
+          scales: {
+            x: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 5 } },
+            y: { stacked: true, grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+          },
+        },
+      });
+    }
+
+    function hexToRgb(hex) {
+      var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return m ? parseInt(m[1],16)+','+parseInt(m[2],16)+','+parseInt(m[3],16) : '128,128,128';
+    }
+
+    function initDashboardWidgets() {
+      const settingsEl = $("homeDashWidgetSettings");
+      const toggleBtn = $("homeDashWidgetSettingsBtn");
+      if (!settingsEl || !toggleBtn) return;
+      const gridEl = document.querySelector(".dashboard-widget-grid");
+      const STORAGE_KEY = "homeDashWidgetVisibility";
+      const ORDER_KEY = "homeDashWidgetOrder";
+
+      function getCards() { return Array.from((gridEl || document).querySelectorAll("[data-widget-id]")); }
+      function getMap() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (_) { return {}; } }
+      function saveMap(map) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (_) {} }
+      function getOrder() { try { return JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); } catch (_) { return []; } }
+      function saveOrder(order) { try { localStorage.setItem(ORDER_KEY, JSON.stringify(order)); } catch (_) {} }
+
+      function applyVisibility() {
+        const map = getMap();
+        getCards().forEach(card => {
+          const id = card.dataset.widgetId;
+          const defaultHidden = card.dataset.widgetDefaultHidden === "true";
+          const stored = map[id];
+          const isHidden = stored !== undefined ? stored === false : defaultHidden;
+          card.dataset.widgetHidden = isHidden ? "true" : "false";
+        });
+      }
+
+      function applyOrder() {
+        if (!gridEl) return;
+        const order = getOrder();
+        if (!order.length) return;
+        const cards = getCards();
+        const cardMap = {};
+        cards.forEach(c => { cardMap[c.dataset.widgetId] = c; });
+        // Reorder: move cards matching the stored order to the front
+        order.slice().reverse().forEach(id => {
+          const card = cardMap[id];
+          if (card && card.parentNode === gridEl) {
+            gridEl.insertBefore(card, gridEl.firstChild);
+          }
+        });
+      }
+
+
+      function buildPanel() {
+        const map = getMap();
+        const cards = getCards();
+        settingsEl.innerHTML = '<span class="dash-card-settings-label">카드 표시</span>';
+        cards.forEach((card, idx) => {
+          const id = card.dataset.widgetId;
+          const label = card.dataset.widgetLabel || id;
+          const defaultHidden = card.dataset.widgetDefaultHidden === "true";
+          const stored = map[id];
+          const isVisible = stored !== undefined ? stored !== false : !defaultHidden;
+
+          const group = document.createElement("span");
+          group.className = "dash-card-settings-group";
+
+          // Toggle button
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "dash-card-toggle-btn" + (isVisible ? " active" : "");
+          btn.textContent = label;
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const m = getMap();
+            m[id] = !isVisible;
+            saveMap(m);
+            applyVisibility();
+            buildPanel();
+          });
+
+          group.appendChild(btn);
+          settingsEl.appendChild(group);
+        });
+      }
+
+      toggleBtn.addEventListener("click", () => {
+        const visible = settingsEl.style.display !== "none";
+        if (visible) { settingsEl.style.display = "none"; } else { buildPanel(); settingsEl.style.display = ""; }
+      });
+
+      /* ── drag & drop reordering ── */
+      function initDashboardWidgetDragDrop() {
+        if (!gridEl) return;
+        let dragCard = null;
+
+        getCards().forEach(card => {
+          card.setAttribute("draggable", "true");
+
+          card.addEventListener("dragstart", function(e) {
+            dragCard = this;
+            this.style.opacity = "0.4";
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", this.dataset.widgetId);
+          });
+
+          card.addEventListener("dragend", function(e) {
+            this.style.opacity = "";
+            dragCard = null;
+            document.querySelectorAll(".dash-card").forEach(c => c.classList.remove("drag-over"));
+          });
+
+          card.addEventListener("dragover", function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (this !== dragCard) {
+              this.classList.add("drag-over");
+            }
+          });
+
+          card.addEventListener("dragleave", function(e) {
+            this.classList.remove("drag-over");
+          });
+
+          card.addEventListener("drop", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove("drag-over");
+            if (!dragCard || dragCard === this) return;
+
+            const cards = Array.from(gridEl.querySelectorAll("[data-widget-id]"));
+            const fromIdx = cards.indexOf(dragCard);
+            const toIdx = cards.indexOf(this);
+
+            // Swap DOM positions: move dragCard next to drop target
+            if (fromIdx < toIdx) {
+              this.parentNode.insertBefore(dragCard, this.nextSibling);
+            } else {
+              this.parentNode.insertBefore(dragCard, this);
+            }
+
+            // Save new order after DOM settled
+            requestAnimationFrame(() => {
+              const newOrder = Array.from(gridEl.querySelectorAll("[data-widget-id]")).map(c => c.dataset.widgetId);
+              saveOrder(newOrder);
+              buildPanel();
+            });
+          });
+        });
+      }
+
+      initDashboardWidgetDragDrop();
+      applyVisibility();
+      applyOrder();
+    }

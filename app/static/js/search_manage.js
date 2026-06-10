@@ -6374,3 +6374,385 @@
         setStatus("albumSearchStatus", "err", err.message);
       }
     }
+
+
+    async function loadHomeDashboard(opts = {}) {
+      const silent = Boolean(opts?.silent);
+      let phase = "dashboard";
+      try {
+        if (!silent) setStatus("homeDashboardStatus", "ok", t("dashboard.status.loading"));
+        phase = "collection";
+        const res = await fetch("/dashboard/collection");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("dashboard.status.load_failed"));
+
+        phase = "summary";
+        /* hero KPI bar */
+        const _musicTotal = Number(data.music_items ?? 0);
+        const _goodsTotal = Number(data.goods_items ?? 0);
+        setTextIfPresent("homeDashTotal", formatCount(_musicTotal + _goodsTotal));
+        {
+          const lp = Number(data.by_category?.find?.(c => c.category === "LP")?.count ?? 0) || 0;
+          const cd = Number(data.by_category?.find?.(c => c.category === "CD")?.count ?? 0) || 0;
+          setTextIfPresent("homeDashMusic", formatCount(_musicTotal));
+          setTextIfPresent("homeDashMusicDetail", "LP " + formatCount(lp) + "  CD " + formatCount(cd));
+        }
+        setTextIfPresent("homeDashGoods", formatCount(_goodsTotal));
+
+                /* hero bar: slot rate */
+        {
+          const _inCol2 = Number(data.in_collection_items ?? 0);
+          const _slotted2 = Number(data.slotted_in_collection_items ?? 0);
+          const slotPct = _inCol2 > 0 ? Math.round(_slotted2 / _inCol2 * 100) : 0;
+          setTextIfPresent("homeDashHeroSlotRate", slotPct + "%");
+          setTextIfPresent("homeDashHeroSlotRateLabel", formatCount(_slotted2) + " / " + formatCount(_inCol2));
+        }
+        /* hero bar: meta rate */
+        {
+          const _srcUnlinked2 = Number(data.source_unlinked_items ?? 0);
+          const metaPct = _musicTotal > 0 ? Math.round((1 - _srcUnlinked2 / _musicTotal) * 100) : 0;
+          setTextIfPresent("homeDashHeroMetaRate", metaPct + "%");
+          setTextIfPresent("homeDashHeroMetaRateLabel", formatCount(_musicTotal - _srcUnlinked2) + " / " + formatCount(_musicTotal));
+        }
+        setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
+        setTextIfPresent("homeDashDirectSigned", formatCount(data.direct_signed_items ?? 0));
+        setTextIfPresent("homeDashPurchaseSigned", formatCount(data.purchase_signed_items ?? 0));
+        setTextIfPresent("homeDashLimited", formatCount(data.limited_items ?? 0));
+        const _fmtQ = (n, tot) => { const v = Number(n ?? 0); if (!v) return "0"; if (!tot) return formatCount(v); const pct = Math.round((v / tot) * 100); return `${formatCount(v)} (${pct}%)`; };
+        setTextIfPresent("homeDashGenreMissing", _fmtQ(data.genre_missing_items, _musicTotal));
+        setTextIfPresent("homeDashFormatMissing", _fmtQ(data.media_missing_items, _musicTotal));
+        setTextIfPresent("homeDashCatalogMissing", _fmtQ(data.catalog_missing_items, _musicTotal));
+        setTextIfPresent("homeDashLoaned", formatCount(data.loaned_items ?? 0));
+        setTextIfPresent("homeDashSold", formatCount(data.sold_items ?? 0));
+        setTextIfPresent("homeDashLost", formatCount(data.lost_items ?? 0));
+        setTextIfPresent("homeDashInCollection", formatCount(data.in_collection_items ?? 0));
+        setTextIfPresent("homeDashNewItems", formatCount(data.new_items ?? 0));
+        setTextIfPresent("homeDashPromoItems", formatCount(data.promo_items ?? 0));
+        setTextIfPresent("homeDashOtherItems", formatCount(data.other_condition_items ?? 0));
+        {
+          const pcEl = document.getElementById("homeDashPressingCountry");
+          if (pcEl) {
+            const countries = (data.by_pressing_country || []).slice(0, 5);
+            if (countries.length === 0) {
+              pcEl.textContent = "—";
+            } else {
+              pcEl.innerHTML = countries.map(c =>
+                `<span><em>${c.value}</em> ${formatCount(c.count)}</span>`
+              ).join("");
+            }
+          }
+        }
+        setTextIfPresent("homeDashBoxSet", formatCount(data.box_set_items ?? 0));
+                /* hero bar: slot rate */
+        {
+          const _inCol2 = Number(data.in_collection_items ?? 0);
+          const _slotted2 = Number(data.slotted_in_collection_items ?? 0);
+          const slotPct = _inCol2 > 0 ? Math.round(_slotted2 / _inCol2 * 100) : 0;
+          setTextIfPresent("homeDashHeroSlotRate", slotPct + "%");
+          setTextIfPresent("homeDashHeroSlotRateLabel", formatCount(_slotted2) + " / " + formatCount(_inCol2));
+        }
+        /* hero bar: meta rate */
+        {
+          const _srcUnlinked2 = Number(data.source_unlinked_items ?? 0);
+          const metaPct = _musicTotal > 0 ? Math.round((1 - _srcUnlinked2 / _musicTotal) * 100) : 0;
+          setTextIfPresent("homeDashHeroMetaRate", metaPct + "%");
+          setTextIfPresent("homeDashHeroMetaRateLabel", formatCount(_musicTotal - _srcUnlinked2) + " / " + formatCount(_musicTotal));
+        }
+        setTextIfPresent("homeDashRecent30", formatCount(data.registered_last_30_days));
+        setTextIfPresent("homeDashReg7d", formatCount(data.registered_last_7_days ?? 0));
+        /* 1/4 cards */
+        const _inCol = Number(data.in_collection_items ?? 0);
+        const _music = Number(data.music_items ?? 0);
+        const _slotted = Number(data.slotted_in_collection_items ?? 0);
+        const _srcUnlinked = Number(data.source_unlinked_items ?? 0);
+
+        /* slot rate */
+        const slotPct = _inCol > 0 ? Math.round(_slotted / _inCol * 100) : 0;
+        setTextIfPresent("homeDashSlotRate", slotPct + "%");
+        setTextIfPresent("homeDashSlotRateLabel", _slotted.toLocaleString() + " / " + _inCol.toLocaleString());
+
+        /* meta rate */
+        const metaPct = _music > 0 ? Math.round((1 - _srcUnlinked / _music) * 100) : 0;
+        setTextIfPresent("homeDashMetaRate", metaPct + "%");
+        setTextIfPresent("homeDashMetaRateLabel", (_music - _srcUnlinked).toLocaleString() + " / " + _music.toLocaleString());
+
+        /* signed */
+        setTextIfPresent("homeDashSignedCount", formatCount(data.signed_items));
+        const directSigned = Number(data.direct_signed_items ?? 0);
+        setTextIfPresent("homeDashSignedLabel", "직접 " + directSigned.toLocaleString() + "장");
+
+        /* spotify (master-based) */
+        const _spotifyMasters = Number(data.spotify_master_count ?? 0);
+        const _totalMasters = Number(data.total_master_count ?? 0);
+        if (_totalMasters > 0) {
+          const spotifyPct = Math.round(_spotifyMasters / _totalMasters * 100);
+          setTextIfPresent("homeDashSpotifyRate", spotifyPct + "%");
+          setTextIfPresent("homeDashSpotifyLabel", _spotifyMasters.toLocaleString() + " / " + _totalMasters.toLocaleString());
+        } else {
+          setTextIfPresent("homeDashSpotifyRate", "—");
+          setTextIfPresent("homeDashSpotifyLabel", "데이터 없음");
+        }
+        setTextIfPresent("homeDashRegToday", formatCount(data.registered_today ?? 0));
+        const placementRate = Number(data.in_collection_items || 0) > 0
+          ? Math.round((Number(data.slotted_in_collection_items || 0) / Number(data.in_collection_items || 0)) * 100)
+          : 0;
+        setTextIfPresent("homeDashPlacementRate", `${placementRate}%`);
+        setTextIfPresent("homeDashSlottedCount", formatCount(data.slotted_in_collection_items ?? 0));
+        setTextIfPresent("homeDashUnslotted", formatCount(data.unslotted_in_collection_items));
+        setTextIfPresent("homeDashRecentMove1d", formatCount(data.recent_move_total));
+        setTextIfPresent("homeDashSourceUnlinked", _fmtQ(data.source_unlinked_items, _musicTotal));
+        setTextIfPresent("homeDashMasterUnlinked", _fmtQ(data.master_unlinked_items, _musicTotal));
+        setTextIfPresent("homeDashCoverMissing", _fmtQ(data.cover_missing_items, _musicTotal));
+        renderOpsHomeHeroStats({
+          locationCount: data.slotted_in_collection_items,
+          recentMoveCount: data.recent_move_total,
+          recentRegistrationCount: data.registered_last_30_days,
+          moveWindowDays: data.movement_window_days,
+        });
+
+        phase = "chips";
+        renderDashboardChipGroup("homeDashByCategory", data.by_category, (value) => mediaDisplayLabel(value));
+        renderDashboardChipGroup("homeDashByStatus", data.by_status, dashboardStatusLabel);
+        renderDashboardChipGroup("homeDashByDomain", data.by_domain, dashboardDomainLabel);
+        {
+          const _unassigned = (data.by_domain || []).find(r => r.value === "UNASSIGNED");
+          const _wEl = document.getElementById("homeDashDomainWarn");
+          if (_wEl) {
+            if (_unassigned && _unassigned.count > 0) {
+              _wEl.textContent = `⚠ 미분류 ${formatCount(_unassigned.count)}건`;
+              setDisplayMode(_wEl, "");
+            } else { _wEl.textContent = ""; setDisplayMode(_wEl, "none"); }
+          }
+        }
+        renderDashboardChipGroup("homeDashByReleaseType", data.by_release_type, dashboardReleaseTypeLabel);
+        renderDashboardChipGroup("homeDashBySizeGroup", data.by_size_group, dashboardSizeGroupLabel);
+        phase = "sources";
+        // ── Dashboard renderers v2 ──
+        renderDashboardSnapshot(data);
+        renderDashboardHeatmap(data);
+        renderDashboardFinance(data);
+        renderDashboardGenreDomain(data);
+        renderDashboardFormatPressing(data);
+        renderDashboardArtistTimeline(data);
+        renderDashboardMetaSource(data);
+        renderDashboardCollector(data);
+        renderDashboardAlerts(data);
+        renderDashboardRegImport(data);
+        renderDashboardMoveHeatmap(data);
+        renderDashboardRecentReg(data);
+        renderDashboardPurchaseFlow(data);
+        loadDashboardClimate();
+        phase = "slots";
+        if (!String(homeDashboardSelectedCabinetKey || "").trim()) {
+          restoreDashboardCabinetSelectionMemory();
+        }
+        renderDashboardSlotCards(data.by_slot, data.in_collection_items);
+        {
+          // 장식장 그룹별 점유율 집계
+          const _cabOccEl = document.getElementById("homeDashCabinetOccupancy");
+          if (_cabOccEl) {
+            const _grpMap = {};
+            (data.by_slot || []).forEach(s => {
+              const cn = s.cabinet_name || "";
+              if (s.is_overflow_zone || cn === "미배치" || !cn) return;
+              const gn = s.cabinet_group_name || cn;  // 그룹명 없으면 장식장명
+              const go = s.cabinet_group_order ?? 999;
+              if (!_grpMap[gn]) _grpMap[gn] = { label: gn, order: go, cap: 0, used: 0 };
+              _grpMap[gn].cap  += (s.capacity_mm       || 0);
+              _grpMap[gn].used += (s.used_thickness_mm || 0);
+            });
+            const _cabRows = Object.values(_grpMap)
+              .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label))
+              .map(v => {
+                const pct = v.cap > 0 ? Math.round(v.used / v.cap * 100) : 0;
+                const barW = Math.min(pct, 100);
+                const warn = pct > 100 ? ' style="color:#ef4444;font-weight:700"' : "";
+                return `<div class="dashboard-chip-row"><span>${escapeHtml(v.label)}</span><span${warn}>${pct}%<span style="display:inline-block;width:${barW * 0.4}px;max-width:40px;height:2px;background:var(--brand,#3b82f6);opacity:0.45;margin-left:4px;vertical-align:middle;border-radius:1px;"></span></span></div>`;
+              });
+            _cabOccEl.innerHTML = _cabRows.join("");
+          }
+        }
+        applyDashboardWorkbenchPreferences();
+        phase = "unassigned";
+        await loadDashboardUnassignedItems({ silent: true });
+        if (currentShellMode() === "cabinets" && pendingOpsCabinetSelection) {
+          phase = "cabinet-route";
+          await applyPendingOpsCabinetSelection({ silent: true });
+        } else if (homeDashboardSelectedCabinetKey && homeDashboardSelectedSlotCode) {
+          phase = "selected-slot";
+          const groups = buildDashboardCabinetGroups(homeDashboardBySlot);
+          const group = groups.find((item) => item.key === homeDashboardSelectedCabinetKey) || null;
+          const slotRow = group
+            ? group.rows.find((row) => String(row.slot_code || "").trim() === String(homeDashboardSelectedSlotCode || "").trim()) || null
+            : null;
+          if (slotRow) {
+            await loadDashboardSlotItems(slotRow, { silent: true });
+          }
+        }
+        phase = "recent-moves";
+        renderDashboardRecentMoves(data.recent_moves, data.movement_window_days, data.recent_move_total);
+        phase = "drilldown";
+        initDashboardDrilldown();
+        phase = "workbench";
+        renderDashboardWorkbench();
+        if (!silent) setStatus("homeDashboardStatus", "ok", "");
+        loadDashboardRecentActivity().catch(() => {});
+        loadDashboardClimate().catch(() => {});
+        loadAlbumOfDay();
+        if (typeof initDashboardWidgetDragDrop === "function") { initDashboardWidgetDragDrop(); }
+        updateDashCharts(data);
+        updateDashMetaBars(data, data.music_items);
+      } catch (err) {
+        console.error("loadHomeDashboard failed", { phase, error: err });
+        const message = errorMessageText(err, t("dashboard.status.load_failed"));
+        setStatus("homeDashboardStatus", "err", phase && phase !== "dashboard" ? `${phase}: ${message}` : message);
+      }
+    }
+
+    function renderProductLinkedGoodsSection() {
+      const list = $("homeProductLinkedGoodsList");
+      const section = $("homeProductLinkedGoodsSection");
+      if (!list || !section) return;
+      const ownedItemId = Number(homeSelectedItemId || 0);
+      if (ownedItemId <= 0) {
+        list.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.empty"))}</div>`;
+        return;
+      }
+      if (homeProductLinkedGoodsLoading) {
+        list.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.loading"))}</div>`;
+        return;
+      }
+      if (!homeProductLinkedGoods.length) {
+        list.innerHTML = `<div class='muted'>${escapeHtml(t("media.manage.collectibles.state.empty"))}</div>`;
+        return;
+      }
+      list.innerHTML = homeProductLinkedGoods
+        .map((row) => homeProductCollectibleItemHtml(row))
+        .join("");
+    }
+
+    function homeProductCollectibleItemHtml(row) {
+      const goodsItemId = Number(row?.id || 0);
+      const goodsName = String(row?.goods_name || "").trim() || "-";
+      const imageUrl = String(
+        row?.primary_image_url ||
+        (Array.isArray(row?.image_urls) ? row.image_urls[0] : "") ||
+        ""
+      ).trim();
+      const slotText = String(row?.slot_display_name || "").trim() || t("common.unspecified");
+      return `
+        <div class="goods-result-item home-master-collectible-item">
+          <div class="album-result-cover">
+            ${imageUrl
+              ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(goodsName)}" />`
+              : `<span>${escapeHtml(goodsCategoryLabel(row?.category))}</span>`}
+          </div>
+          <div class="album-result-main">
+            <strong>${escapeHtml(goodsName)}</strong>
+            <div class="goods-result-meta">
+              <span class="tag">${escapeHtml(goodsCategoryLabel(row?.category))}</span>
+              <span>${escapeHtml(goodsStatusLabel(row?.status))}</span>
+              <span>${escapeHtml(slotText)}</span>
+            </div>
+            <div class="row u-mt-4 u-flex-between-center-wrap">
+              <div class="mini">collectible_id: ${goodsItemId}</div>
+              <button
+                class="btn ghost tiny home-master-collectible-manage-btn"
+                type="button"
+                data-home-related-goods-id="${goodsItemId}"
+              >${escapeHtml(t("media.manage.collectibles.action.manage"))}</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadProductLinkedGoods(ownedItemId, requestSeq = 0) {
+      const targetId = Number(ownedItemId || 0);
+      if (targetId <= 0) {
+        homeProductLinkedGoods = [];
+        homeProductLinkedGoodsLoading = false;
+        renderProductLinkedGoodsSection();
+        return;
+      }
+      try {
+        homeProductLinkedGoodsLoading = true;
+        renderProductLinkedGoodsSection();
+        const res = await fetch(`/goods-items?owned_item_id=${targetId}&limit=200&offset=0`);
+        const data = await safeJson(res);
+        if (requestSeq && !isActiveHomeEditRequest(requestSeq)) return;
+        if (!res.ok) throw new Error(data.detail || t("media.manage.collectibles.status.load_failed"));
+        homeProductLinkedGoods = Array.isArray(data.items) ? data.items : [];
+      } catch (err) {
+        if (requestSeq && !isActiveHomeEditRequest(requestSeq)) return;
+        homeProductLinkedGoods = [];
+        setStatus("homeProductLinkedGoodsStatus", "err",
+          err.message || t("media.manage.collectibles.status.load_failed"));
+      } finally {
+        if (requestSeq && !isActiveHomeEditRequest(requestSeq)) return;
+        homeProductLinkedGoodsLoading = false;
+        renderProductLinkedGoodsSection();
+      }
+    }
+
+    function homeMasterAddVariantItemHtml(row) {
+      const ownedCount = Number(row.owned_count || 0);
+      const primaryOwnedItemId = Number(row.primary_owned_item_id || 0);
+      const isOwned = ownedCount > 0 && primaryOwnedItemId > 0;
+      const ownedText = isOwned
+        ? t("media.manage.master.variant.state.owned", { count: countWithUnit(ownedCount) })
+        : t("media.manage.master.variant.state.missing");
+      const sourceCode = normalizeSourceCode(row.source || homeMasterInfo?.source || "");
+      const discogsLink = discogsReleaseLinkHtml(sourceCode, row.external_id, t("media.manage.master.fetch.candidate.link.discogs"));
+      const galleryKey = registerImageGallery(`homeMasterVariant:${sourceCode}:${row.external_id || row.id || "-"}`, row, {
+        title: `${row.artist_or_brand || "Unknown"} - ${row.title || "(no title)"}`,
+        subtitle: `${sourceCode || "-"}#${row.external_id || "-"}`,
+      });
+      const galleryCount = galleryKey ? Number(imageGalleryRegistry.get(galleryKey)?.items?.length || 0) : 0;
+      const discogsMetaHtml = buildDiscogsStandardMetaHtml(row, { includeOwnedCount: true });
+      const actionBtn = isOwned
+        ? `<button class="btn ghost homeMasterVariantEditBtn btn-compact-pad-sm" data-owned-id="${primaryOwnedItemId}" type="button">${escapeHtml(t("media.manage.master.variant.action.edit"))}</button>`
+        : `<button class="btn homeMasterVariantRegisterBtn btn-compact-pad-sm" data-external-id="${escapeHtml(row.external_id || "")}" type="button">${escapeHtml(t("media.manage.master.variant.action.register"))}</button>`;
+      const coverUrl = normalizeRenderableCoverUrl(row.cover_image_url);
+      const cover = coverUrl
+        ? `<a href="${escapeHtml(coverUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("media.manage.master.variant.cover_original"))}"><div class="table-cover-thumb"><img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(row.title || "cover")}" /></div></a>`
+        : `<div class="table-cover-thumb">-</div>`;
+      return `
+        <div class="result-item album-result home-master-variant-result">
+          <div class="album-result-cover">${cover}</div>
+          <div class="album-result-main">
+            <strong>${escapeHtml(row.title || "-")}</strong>
+            <div class="home-master-subline">
+              <span class="tag">${escapeHtml(sourceCode || "-")}</span>
+              ${discogsMetaHtml || `
+                <span>${escapeHtml(mediaDisplayLabel(row.format_name || "-"))}</span>
+                <span>${escapeHtml(String(row.release_year ?? "-"))}</span>
+                <span>${escapeHtml(row.label_name || "-")}</span>
+              `}
+            </div>
+            <div class="mini">${discogsLink || "-"}${galleryKey ? ` | ${imageGalleryButtonHtml(galleryKey, t("common.count.images", { count: formatCount(galleryCount) }))}` : ""}</div>
+            <div class="home-master-variant-actions">
+              <span class="mini home-master-variant-owned">${escapeHtml(ownedText)}</span>
+              ${actionBtn}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function homeMasterAddVariantRowHtml(row) {
+      return homeMasterAddVariantItemHtml(row);
+    }
+
+    function resetHomeMasterAddPager(opts = {}) {
+      const clearInputs = Boolean(opts.clearInputs);
+      homeMasterAddPage = 1;
+      homeMasterAddHasNext = false;
+      homeMasterAddTotalCount = null;
+      homeMasterAddTruncated = false;
+      if (clearInputs) {
+        $("homeMasterAddCatalogNo").value = "";
+        $("homeMasterAddBarcode").value = "";
+      }
+      renderHomeMasterAddPager();
+    }

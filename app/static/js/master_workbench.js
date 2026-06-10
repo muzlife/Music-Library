@@ -840,3 +840,19 @@
         setStatus("masterGroupStatus", "err", err.message);
       }
     }
+
+
+    function loadMasterOwnedRowsFromItems(rows, statusText) {
+      const items = Array.isArray(rows) ? rows.filter(Boolean) : [];
+      masterOwnedPrefilledIds = new Set(items.map((row) => Number(row?.id || 0)).filter((id) => id > 0));
+      $("masterOwnedQ").value = String(items[0]?.item_name_override || items[0]?.artist_or_brand || "").trim();
+      $("masterOwnedBody").innerHTML = items.map(masterOwnedRowHtml).join("") ||
+        `<tr><td colspan='6' class='muted'>${escapeHtml(t("media.source.queue.empty"))}</td></tr>`;
+      syncMasterExceptionBanner();
+      switchMainTab("register");
+      switchSubTab("register", "master");
+      setStatus("masterOwnedStatus", "ok", statusText || t("media.source.status.master_prep_ready", {
+        count: countWithUnit(items.length),
+      }));
+      setStatus("bindMasterStatus", "ok", t("media.register.master.bind.status.instructions"));
+    }
