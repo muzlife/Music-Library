@@ -49,6 +49,12 @@ def find_declaration(lines, name):
         re.compile(rf'^\s+async function {re.escape(name)}\s*' + open_paren_or_brace),
         re.compile(rf'^\s+const {re.escape(name)}\s*='),
         re.compile(rf'^\s+let {re.escape(name)}\s*='),
+        re.compile(rf'^\s+var {re.escape(name)}\s*='),
+        re.compile(rf'^function {re.escape(name)}\s*' + open_paren_or_brace),
+        re.compile(rf'^async function {re.escape(name)}\s*' + open_paren_or_brace),
+        re.compile(rf'^const {re.escape(name)}\s*='),
+        re.compile(rf'^let {re.escape(name)}\s*='),
+        re.compile(rf'^var {re.escape(name)}\s*='),
     ]
     for i, line in enumerate(lines):
         for pat in patterns:

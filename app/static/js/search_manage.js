@@ -7095,3 +7095,281 @@
       body.innerHTML = html;
       _inlineHistoryCache.set(cacheKey, html);
     }
+
+
+    const PACKAGING_OPTIONS_BY_MEDIA = {
+      VINYL: ["Single Jacket", "Gatefold", "Triple-fold", "Gimmick Sleeve", "Die-Cut Sleeve", "Pop-up Sleeve", "Box Set"],
+      CD: ["Jewel Case", "Double Jewel", "Slim Jewel", "Digipak", "Paper Sleeve", "Slipcase", "Digibook", "Eco-pack", "DVD Size Digipak", "Keep Case", "Gimmick Case", "LP-Style Packaging", "Box Set"],
+      CASSETTE: ["Standard Case", "Slipcase", "LP-Style Packaging", "Box Set"],
+      EIGHT_TRACK: ["Standard"],
+      REEL: ["Standard Box"],
+    };
+    const PACKAGING_TOOLTIPS = {
+      ko: {
+        VINYL: {
+          "Single Jacket": "가장 일반적인 LP 커버. 앞면·뒷면 한 장 구성.",
+          "Gatefold": "두 겹으로 펼쳐지는 커버. 2LP나 특별 에디션에 주로 사용.",
+          "Triple-fold": "세 패널로 펼쳐지는 커버 (삼절 커버).",
+          "Gimmick Sleeve": "이형·반투명·홀로그램 등 특수 제작 슬리브.",
+          "Die-Cut Sleeve": "커버에 모양대로 구멍을 뚫은 다이컷 슬리브.",
+          "Pop-up Sleeve": "펼치면 입체물이 나타나는 팝업 슬리브.",
+          "Box Set": "여러 LP와 부속물을 박스에 담은 에디션.",
+        },
+        CD: {
+          "Jewel Case": "표준 투명 플라스틱 CD 케이스.",
+          "Double Jewel": "2CD용 또는 두꺼운 더블 케이스.",
+          "Slim Jewel": "더 얇은 슬림 플라스틱 케이스.",
+          "Digipak": "트레이가 내장된 종이(보드) 소재 케이스.",
+          "Paper Sleeve": "단순 종이 슬리브만 있는 포장.",
+          "Slipcase": "케이스에 끼워 넣는 외부 종이 슬립케이스.",
+          "Digibook": "하드커버 책자 형태의 케이스.",
+          "Eco-pack": "재활용 소재 또는 미니멀 패키징.",
+          "DVD Size Digipak": "DVD 크기의 대형 디지팩.",
+          "Keep Case": "DVD 케이스 형태의 플라스틱 케이스.",
+          "Gimmick Case": "특수 가공된 이형 케이스.",
+          "LP-Style Packaging": "LP 크기 슬리브에 담긴 CD. LP 장에 보관 가능.",
+          "Box Set": "박스에 담은 멀티 CD 에디션.",
+        },
+        CASSETTE: {
+          "Standard Case": "일반 플라스틱 카세트 케이스.",
+          "Slipcase": "케이스를 감싸는 외부 종이 슬립케이스.",
+          "LP-Style Packaging": "LP 크기 슬리브에 담긴 카세트. LP 장에 보관 가능.",
+          "Box Set": "여러 카세트를 담은 박스 에디션.",
+        },
+        EIGHT_TRACK: {
+          "Standard": "표준 8트랙 카트리지 케이스.",
+        },
+        REEL: {
+          "Standard Box": "릴투릴 테이프용 표준 박스 케이스.",
+        },
+      },
+      en: {
+        VINYL: {
+          "Single Jacket": "Standard single LP cover with front and back panels.",
+          "Gatefold": "Two-panel fold-open cover. Common for 2LP and special editions.",
+          "Triple-fold": "Three-panel fold-open cover.",
+          "Gimmick Sleeve": "Special-effect sleeve: die-cut, translucent, holographic, etc.",
+          "Die-Cut Sleeve": "Cover with a decorative die-cut cutout.",
+          "Pop-up Sleeve": "Sleeve with a 3D pop-up element when opened.",
+          "Box Set": "Multi-LP edition packaged in a box with extras.",
+        },
+        CD: {
+          "Jewel Case": "Standard transparent plastic CD case.",
+          "Double Jewel": "Double-width case for 2 CDs.",
+          "Slim Jewel": "Thinner version of the standard plastic jewel case.",
+          "Digipak": "Paper/board case with an integrated plastic tray.",
+          "Paper Sleeve": "Simple paper envelope sleeve only.",
+          "Slipcase": "Outer cardboard slip-in box around another case.",
+          "Digibook": "Hardcover book-style case.",
+          "Eco-pack": "Recycled material or minimal packaging.",
+          "DVD Size Digipak": "Larger digipak in DVD dimensions.",
+          "Keep Case": "Plastic case in DVD keep-case form.",
+          "Gimmick Case": "Special-effect or novelty case.",
+          "LP-Style Packaging": "CD packaged in an LP-sized sleeve. Can be stored in an LP shelf.",
+          "Box Set": "Multi-CD edition packaged in a box.",
+        },
+        CASSETTE: {
+          "Standard Case": "Standard plastic cassette case.",
+          "Slipcase": "Outer cardboard slip-in sleeve over the case.",
+          "LP-Style Packaging": "Cassette in an LP-sized sleeve. Can be stored in an LP shelf.",
+          "Box Set": "Multi-cassette edition in a box.",
+        },
+        EIGHT_TRACK: {
+          "Standard": "Standard 8-track cartridge housing.",
+        },
+        REEL: {
+          "Standard Box": "Standard reel-to-reel tape storage box.",
+        },
+      },
+      ja: {
+        VINYL: {
+          "Single Jacket": "最も一般的な LP カバー。表と裏の 1 枚構成。",
+          "Gatefold": "見開きカバー。2LP や特別版によく使われます。",
+          "Triple-fold": "3 折りパネルのカバー（三折ジャケット）。",
+          "Gimmick Sleeve": "型抜き・半透明・ホログラムなど特殊加工スリーブ。",
+          "Die-Cut Sleeve": "型抜きで穴を開けたカバー。",
+          "Pop-up Sleeve": "開くと立体物が飛び出すスリーブ。",
+          "Box Set": "複数 LP と付属品をまとめたボックスセット。",
+        },
+        CD: {
+          "Jewel Case": "標準の透明プラスチック CD ケース。",
+          "Double Jewel": "2 枚組 CD 用または厚めのダブルケース。",
+          "Slim Jewel": "薄型スリムプラスチックケース。",
+          "Digipak": "トレイ付きの紙（ボード）製ケース。",
+          "Paper Sleeve": "シンプルな紙スリーブのみ。",
+          "Slipcase": "ケースに差し込む外装紙スリップケース。",
+          "Digibook": "ハードカバー本型ケース。",
+          "Eco-pack": "リサイクル素材またはミニマルパッケージ。",
+          "DVD Size Digipak": "DVD サイズの大型デジパック。",
+          "Keep Case": "DVD ケース形状のプラスチックケース。",
+          "Gimmick Case": "特殊加工の異形ケース。",
+          "LP-Style Packaging": "LP サイズのスリーブに入った CD。LP ラックに収納可能。",
+          "Box Set": "複数 CD をまとめたボックスセット。",
+        },
+        CASSETTE: {
+          "Standard Case": "標準のプラスチックカセットケース。",
+          "Slipcase": "ケースを包む外装紙スリップケース。",
+          "LP-Style Packaging": "LP サイズのスリーブに入ったカセット。LP ラックに収納可能。",
+          "Box Set": "複数カセットをまとめたボックスセット。",
+        },
+        EIGHT_TRACK: {
+          "Standard": "標準の 8 トラックカートリッジケース。",
+        },
+        REEL: {
+          "Standard Box": "リールテープ用標準ボックスケース。",
+        },
+      },
+    };
+
+    function _getPackagingTooltip(key, opt) {
+      const locale = (typeof appLocale !== "undefined" ? appLocale : "ko") || "ko";
+      const byLocale = PACKAGING_TOOLTIPS[locale] || PACKAGING_TOOLTIPS.ko || {};
+      return (byLocale[key] || {})[opt] || (PACKAGING_TOOLTIPS.en[key] || {})[opt] || "";
+    }
+
+    function _mediaTypeToPackagingKey(mediaType) {
+      const v = String(mediaType || "").toLowerCase().trim();
+      if (/vinyl|lp|7"|10"|all\s*media/.test(v)) return "VINYL";
+      if (/\bcd\b|compact\s*disc|^cdr$|sacd|dvd|blu.ray|cd.rom/.test(v)) return "CD";
+      if (/cassette/.test(v)) return "CASSETTE";
+      if (/8track|8-track/.test(v)) return "EIGHT_TRACK";
+      if (/reel/.test(v)) return "REEL";
+      return null;
+    }
+
+    function _renderPackagingOptions(mediaType) {
+      const container = $("editFormatNameOptions");
+      if (!container) return;
+      const key = _mediaTypeToPackagingKey(mediaType);
+      const options = key ? (PACKAGING_OPTIONS_BY_MEDIA[key] || []) : [];
+      const currentValues = String($("editFormatName")?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+      if (!options.length) {
+        container.innerHTML = '<span class="muted mini">미디어 타입 선택 시 옵션 표시</span>';
+        return;
+      }
+      container.innerHTML = options.map(opt => {
+        const checked = currentValues.includes(opt) ? " checked" : "";
+        const tip = _getPackagingTooltip(key, opt);
+        const tipAttr = tip ? ` title="${escapeHtml(tip)}"` : "";
+        return `<label class="edit-format-name-option"${tipAttr}><input type="checkbox" value="${escapeHtml(opt)}"${checked}> ${escapeHtml(opt)}</label>`;
+      }).join("");
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener("change", _onPackagingChange);
+      });
+    }
+
+    function _onPackagingChange() {
+      const container = $("editFormatNameOptions");
+      if (!container) return;
+      const vals = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      $("editFormatName").value = vals.join(", ");
+    }
+
+    function _syncVinylOnlyFields() {
+      const mediaVal = String($("editMediaType")?.value || "").trim();
+      const isVinyl = /vinyl|7"|10"|all\s*media/i.test(mediaVal);
+      setHiddenIfPresent("homeEditSpeedRpmWrap", !isVinyl);
+      setHiddenIfPresent("homeEditDiscTypeWrap", !isVinyl);
+      setHiddenIfPresent("homeEditVinylMetaRow", !isVinyl);
+      _renderPackagingOptions(mediaVal);
+    }
+    const _PKG_CONTENTS_KO_TO_EN = {
+      "부클릿": "Booklet",
+      "리플릿": "Leaflet",
+      "미니포스터/타블로이드": "Mini Poster / Tabloid",
+      "엽서": "Postcard",
+      "스티커": "Sticker",
+      "북마크": "Bookmark",
+      "렌티큘러/홀로그램카드": "Lenticular / Hologram Card",
+      "포토카드": "Photo Card",
+      "필름컷": "Film Cut",
+      "보증서": "Warranty Card",
+      "응모권": "Entry Form",
+      "Insert / Inner Sleeve": "Inner Sleeve",
+    };
+
+    function _loadPackageContents(value) {
+      const rawValues = String(value || "").split(",").map(s => s.trim()).filter(Boolean);
+      // 구 한국어 값이 있으면 영문으로 자동 변환
+      const savedValues = rawValues.map(v => _PKG_CONTENTS_KO_TO_EN[v] || v);
+      const container = $("editPackageContentsOptions");
+      if (!container) return;
+      const knownValues = new Set();
+      container.querySelectorAll('input[type="checkbox"]:not(#editPackageContentsOtherCheck)').forEach(cb => {
+        knownValues.add(cb.value);
+        cb.checked = savedValues.includes(cb.value);
+      });
+      const otherVals = savedValues.filter(v => !knownValues.has(v));
+      const otherCheck = $("editPackageContentsOtherCheck");
+      const otherText = $("editPackageContentsOtherText");
+      if (otherVals.length) {
+        if (otherCheck) otherCheck.checked = true;
+        if (otherText) { otherText.value = otherVals.join(", "); otherText.style.display = ""; }
+      } else {
+        if (otherCheck) otherCheck.checked = false;
+        if (otherText) { otherText.value = ""; otherText.style.display = "none"; }
+      }
+    }
+
+    function _collectPackageContents() {
+      const container = $("editPackageContentsOptions");
+      if (!container) return "";
+      const vals = [];
+      container.querySelectorAll('input[type="checkbox"]:not(#editPackageContentsOtherCheck):checked').forEach(cb => vals.push(cb.value));
+      const otherCheck = $("editPackageContentsOtherCheck");
+      const otherText = $("editPackageContentsOtherText");
+      if (otherCheck?.checked) {
+        const otherVals = String(otherText?.value || "").split(",").map(s => s.trim()).filter(Boolean);
+        vals.push(...otherVals);
+      }
+      return vals.join(", ");
+    }
+
+    function setConditionSelectValue(selectId, rawValue) {
+      const el = $(selectId);
+      if (!el) return;
+      const raw = String(rawValue || "").trim();
+      const normalized = normalizeConditionGradeValue(raw);
+      const customOpt = el.querySelector('option[data-custom-condition="true"]');
+      if (customOpt) customOpt.remove();
+      if (!normalized) {
+        el.value = "";
+        return;
+      }
+      const matched = Array.from(el.options).some((opt) => String(opt.value || "") === normalized);
+      if (matched) {
+        el.value = normalized;
+        return;
+      }
+      const opt = document.createElement("option");
+      opt.value = normalized;
+      opt.textContent = normalized;
+      opt.dataset.customCondition = "true";
+      el.appendChild(opt);
+      el.value = normalized;
+    }
+
+    function relabelMediaSelectOptions(selectId) {
+      const el = $(selectId);
+      if (!el || !el.options) return;
+      for (const opt of Array.from(el.options)) {
+        const raw = String(opt.value || opt.textContent || "").trim();
+        const code = raw.toUpperCase();
+        if (!MUSIC_CATEGORIES.has(code)) continue;
+        opt.value = code;
+        opt.textContent = mediaDisplayLabel(code);
+      }
+    }
+
+    function initMediaLabelUi() {
+      const targets = [
+        "quickCategory",
+        "category",
+        "editCategory",
+        "csvDefaultCategory",
+        "ownedCategory",
+        "formatName",
+        "editFormatName",
+      ];
+      for (const id of targets) relabelMediaSelectOptions(id);
+    }

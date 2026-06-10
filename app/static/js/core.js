@@ -184,3 +184,93 @@ const _originalFetch = window.fetch;
     const SUPPORTED_APP_LOCALES = new Set(["ko", "en", "ja"]);
     let appLocale = "ko";
     let appTheme = "night";
+
+
+    function rerenderLocaleSensitiveViews() {
+      const rerender = (callback) => {
+        try {
+          callback();
+        } catch (_) {}
+      };
+      rerender(() => renderOpsProviderSettings(opsProviderSettingsSnapshot));
+      rerender(() => renderOpsHomeHeroStats(opsHomeHeroStats));
+      rerender(() => updateOperatorFeedControls());
+      rerender(() => renderOperatorLookupResults());
+      rerender(() => renderOperatorHomeRecentSections());
+      rerender(() => renderPurchaseImportPreview(purchaseImportPreviewItems));
+      rerender(() => renderPurchaseImportQueue(purchaseImportQueueItems));
+      rerender(() => renderBarcodeResults(registerLookupCandidates, { resetLocationState: false }));
+      rerender(() => renderAlbumSearchResults(albumSearchResults));
+      rerender(() => renderMasterMergeRows(masterMergeSearchResults));
+      rerender(() => renderMasterMergeQueueRows());
+      rerender(() => renderHomeSearchResults(homeSearchResults));
+      rerender(() => renderHomePagination());
+      rerender(() => renderHomeMetaCandidates(homeMetaCandidates));
+      rerender(() => renderHomeSourceManagedMetaSummary());
+      rerender(() => renderAdminManageSurface());
+      rerender(() => renderHomeLinkedCollectiblesSection());
+      rerender(() => renderHomeRelatedVersions());
+      rerender(() => renderHomeProductRelationSection());
+      rerender(() => renderHomeMasterAddVariants(homeMasterAddVariants, homeMasterVariantPlaceholderText()));
+      rerender(() => renderHomeMasterAddPager());
+      rerender(() => renderHomeEditShelfTrack());
+      rerender(() => renderHomeLocationInfo(homeLocationSlotItems.find((row) => Number(row?.id || 0) === Number(homeSelectedItemId || 0)) || null));
+      rerender(() => renderHomeLocationSlotList());
+      rerender(() => renderGoodsSearchResults());
+      if (homeDashboardBySlot.length) {
+        rerender(() => renderDashboardSlotCards(homeDashboardBySlot, homeDashboardInCollectionItems));
+        rerender(() => renderDashboardCabinetDetail());
+        rerender(() => renderDashboardWorkbench());
+        rerender(() => renderDashboardSelectionSummary());
+      }
+      rerender(() => renderSourceWorkbenchList());
+      rerender(() => renderSourceWorkbenchQueue());
+      rerender(() => renderOpsExceptionSummary());
+      rerender(() => renderOpsExceptionList());
+      rerender(() => syncMasterExceptionBanner());
+      rerender(() => renderMediaSearchContextDefault());
+      rerender(() => renderOpsLibraryContextDefault());
+      if (sourceWorkbenchDiffReviewState) {
+        rerender(() => renderSourceWorkbenchDiffReview());
+      }
+    }
+
+    function applyLocale(locale = appLocale) {
+      appLocale = saveLocale(locale);
+      document.documentElement.lang = appLocale;
+      syncShellLocaleSelect();
+      syncShellThemeToggle();
+      syncLocalizedToolDocLinks();
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = String(el.getAttribute("data-i18n") || "").trim();
+        if (!key) return;
+        el.textContent = t(key);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+        const key = String(el.getAttribute("data-i18n-placeholder") || "").trim();
+        if (!key) return;
+        el.setAttribute("placeholder", t(key));
+      });
+      document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+        const key = String(el.getAttribute("data-i18n-title") || "").trim();
+        if (!key) return;
+        el.setAttribute("title", t(key));
+      });
+      document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+        const key = String(el.getAttribute("data-i18n-aria-label") || "").trim();
+        if (!key) return;
+        el.setAttribute("aria-label", t(key));
+      });
+      document.querySelectorAll("[data-help-key]").forEach((el) => {
+        const key = String(el.getAttribute("data-help-key") || "").trim();
+        if (!key) return;
+        el.setAttribute("data-help", t(key));
+        el.setAttribute("title", t(key));
+      });
+      applyFieldHelpTooltips();
+      if (pageHelpDrawerState.open) {
+        renderPageHelpDrawer(pageHelpDrawerState.helpId);
+        syncPageHelpTriggerState();
+      }
+      rerenderLocaleSensitiveViews();
+    }

@@ -4630,3 +4630,176 @@
         setStatus("trackMapStatus", "err", err.message);
       }
     }
+
+
+    function renderAuthSession() {
+      const sessionInfo = $("appSessionInfo");
+      const sessionUser = $("appSessionUser");
+      const roleTag = $("appSessionRoleTag");
+      const logoutBtn = $("appLogoutBtn");
+      const prefsResetBtn = $("appPrefsResetBtn");
+      const enabled = Boolean(appAuthSession?.enabled);
+      const authenticated = Boolean(appAuthSession?.authenticated);
+      const username = String(appAuthSession?.username || "").trim();
+      const role = String(appAuthSession?.role || "ADMIN").trim().toUpperCase();
+      const roleLabel = role === "OPERATOR" ? t("auth.role.operator") : t("auth.role.admin");
+      document.body.dataset.authenticated = authenticated ? "true" : "false";
+      document.body.dataset.authRole = authenticated ? (role || "ADMIN") : "";
+      if (sessionInfo) {
+        if (enabled && authenticated && username) {
+          if (sessionUser) sessionUser.textContent = username;
+          setDisplayMode(sessionInfo, "inline-flex");
+        } else {
+          setDisplayMode(sessionInfo, "none");
+          if (sessionUser) sessionUser.textContent = "";
+        }
+      }
+      if (roleTag) {
+        if (enabled && authenticated && username && role === "ADMIN") {
+          roleTag.textContent = "";
+          roleTag.setAttribute("title", roleLabel);
+          roleTag.setAttribute("aria-label", roleLabel);
+          setDisplayMode(roleTag, "inline-flex");
+        } else {
+          setDisplayMode(roleTag, "none");
+          roleTag.textContent = "";
+          roleTag.removeAttribute("title");
+          roleTag.removeAttribute("aria-label");
+        }
+      }
+      if (logoutBtn) {
+        logoutBtn.textContent = "";
+        logoutBtn.setAttribute("title", t("utility.logout"));
+        logoutBtn.setAttribute("aria-label", t("utility.logout"));
+        setDisplayMode(logoutBtn, enabled ? "inline-flex" : "none");
+      }
+      if (prefsResetBtn) {
+        setDisplayMode(prefsResetBtn, enabled && authenticated ? "inline-flex" : "none");
+      }
+    }
+
+    function clearDashboardSearchAutofill() {
+      const barcodeInput = $("homeDashSearchBarcode");
+      if (!barcodeInput) return;
+      const username = String(appAuthSession?.username || "").trim();
+      const currentValue = String(barcodeInput.value || "").trim();
+      if (!currentValue) return;
+      if (username && currentValue === username) {
+        barcodeInput.value = "";
+      }
+    }
+
+    function applyAuthSessionUi() {
+      appShellMode = normalizeShellMode(appShellMode || shellModeFromPath(), appAuthSession);
+      applyShellNavigation(appAuthSession);
+    }
+
+    function loadAdminBootstrapData() {
+      if (!isAdminSession()) return;
+      loadOpsCameras({ silent: true });
+      loadReviewQueue();
+      loadAlbumMasterGroups();
+      loadMetadataSyncStatus();
+      loadOpsSystemStatus();
+      loadErrorBadge();
+    }
+
+    async function loadAuthSession(initialShellMode) {
+      try {
+        const res = await fetch("/auth/session");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || t("auth.session.error"));
+        appAuthSession = data;
+        appAuthSessionResolved = true;
+        renderAuthSession();
+        applyAuthSessionUi();
+        clearDashboardSearchAutofill();
+        renderOpsExceptionPresetOptions();
+        applyDefaultOpsExceptionPreset();
+        applyRouteSelectedShellMode(initialShellMode);
+        renderOpsLibraryContextDefault();
+        loadOperatorHomeRecentSections();
+        loadOperatorHomeFeed({ kind: operatorFeedKind, page: operatorFeedPage });
+        loadAdminBootstrapData();
+      } catch (_) {
+        appAuthSession = null;
+        appAuthSessionResolved = true;
+        renderAuthSession();
+        applyAuthSessionUi();
+        clearDashboardSearchAutofill();
+        renderOpsExceptionPresetOptions();
+        applyRouteSelectedShellMode(initialShellMode);
+        renderOpsLibraryContextDefault();
+        loadOperatorHomeRecentSections();
+        loadOperatorHomeFeed({ kind: operatorFeedKind, page: operatorFeedPage });
+      }
+    }
+
+    async function logoutAppSession() {
+      try {
+        const res = await fetch("/auth/logout", { method: "POST" });
+        await safeJson(res);
+      } finally {
+        window.location.replace("/login");
+      }
+    }
+
+    const _inlineHistoryCache = new Map();
+    const _AUDIT_FIELD_LABELS = {
+      status: "상태", category: "카테고리", release_type: "발매 형태",
+      linked_album_master_id: "연결 마스터 ID", linked_artist_name: "연결 아티스트명",
+      source_code: "소스", source_external_id: "소스 ID",
+      storage_slot_id: "보관 위치 ID", condition_grade: "컨디션",
+      signature_type: "사인 유형", is_second_hand: "중고 여부",
+      memory_note: "메모", notes: "내부 메모",
+      purchase_price: "구매가", purchase_source: "구매처",
+      acquisition_date: "취득일", size_group: "사이즈 그룹", signed_by: "사인한 사람",
+      sort_artist_name: "정렬 아티스트명",
+      release_year: "발매연도", domain_code: "도메인",
+      override_note: "교정 메모", override_title: "교정 앨범명",
+      override_artist_or_brand: "교정 아티스트명",
+      genres: "장르", styles: "스타일",
+      spotify_album_id: "Spotify 앨범 ID", spotify_album_uri: "Spotify URI",
+      album_master_id: "마스터 ID",
+      // album_master 필드
+      artist_or_brand: "아티스트명", title: "앨범명", catalog_no: "카탈로그 번호",
+      barcode: "바코드", release_month: "발매월", label: "레이블",
+      country: "국가", format_text: "포맷", description: "설명",
+      // 이미지/구매수입 스냅샷 필드
+      filename: "파일명", content_type: "파일 형식",
+      purchase_import_id: "구매수입 ID", source_email: "구매 이메일",
+      // 외부참조
+      source: "소스", source_master_id: "소스 마스터 ID",
+      before_album_master_id: "이전 마스터 ID", after_album_master_id: "신규 마스터 ID",
+    };
+
+    const _AUDIT_VALUE_LABELS = {
+      status: { IN_COLLECTION: "소장 중", SOLD: "판매됨", LENT: "대여 중", MISSING: "분실", DISPOSED: "처분" },
+      category: { MUSIC: "음반", GOODS: "굿즈" },
+      release_type: { LP: "LP", CD: "CD", TAPE: "카세트", DVD: "DVD", BLURAY: "블루레이", DIGITAL: "디지털", OTHER: "기타" },
+      domain_code: { KOREA: "가요", JAPAN: "제이팝", GREATER_CHINA: "씨팝", WESTERN: "팝/웨스턴", OTHER_ASIA: "아시아 기타", WORLD: "월드 기타", UNKNOWN: "미분류" },
+      signature_type: { NONE: "없음", SIGNED: "사인", DEDICATED: "헌정 사인", PRINTED: "인쇄 사인" },
+      is_second_hand: { true: "중고", false: "새 상품", "1": "중고", "0": "새 상품" },
+    };
+
+    const _AUDIT_ACTION_LABELS = {
+      CREATE: "등록", UPDATE: "수정", DELETE: "삭제",
+      MERGE: "마스터 병합", MEMBER_LINK: "마스터 연결", MEMBER_UNLINK: "마스터 연결 해제",
+      SPOTIFY_MATCH: "Spotify 매칭", SPOTIFY_CLEAR: "Spotify 매칭 해제",
+      BULK_UPDATE: "일괄 수정", IMAGE_UPLOAD: "이미지 업로드", IMAGE_DELETE: "이미지 삭제",
+      EXTERNAL_REF_UPDATE: "외부ID 변경", PURCHASE_IMPORT: "구매수입 등록",
+    };
+
+    const _AUDIT_ACTION_COLORS = {
+      CREATE: { bg: "#d1fae5", color: "#065f46" },
+      UPDATE: { bg: "#dbeafe", color: "#1d4ed8" },
+      BULK_UPDATE: { bg: "#e0e7ff", color: "#3730a3" },
+      DELETE: { bg: "#fee2e2", color: "#b91c1c" },
+      MERGE: { bg: "#fef3c7", color: "#92400e" },
+      MEMBER_LINK: { bg: "#d1fae5", color: "#065f46" },
+      MEMBER_UNLINK: { bg: "#fee2e2", color: "#b91c1c" },
+      SPOTIFY_MATCH: { bg: "#dcfce7", color: "#14532d" },
+      SPOTIFY_CLEAR: { bg: "#fce7f3", color: "#831843" },
+      EXTERNAL_REF_UPDATE: { bg: "#ede9fe", color: "#7c3aed" },
+      PURCHASE_IMPORT: { bg: "#cffafe", color: "#0891b2" },
+    };

@@ -5450,3 +5450,103 @@
         if (h >= 60 || h < 43) return "hum-warn";
         return "hum-ideal";
       }
+
+    function initDashCardInteractions() {
+      /* sparkline draw animation */
+      document.querySelectorAll(".dash-card__spark polyline").forEach(poly => {
+        const len = poly.getTotalLength();
+        if (!len) return;
+        poly.style.strokeDasharray = len;
+        poly.style.strokeDashoffset = len;
+        poly.style.transition = "stroke-dashoffset 1s ease-out";
+        requestAnimationFrame(() => { poly.style.strokeDashoffset = "0"; });
+      });
+
+      /* bar-list click → filter navigation */
+      document.querySelectorAll('.dash-card[data-role="bar-list"] .dash-bar-row').forEach(row => {
+        row.addEventListener("click", function() {
+          const filter = this.dataset.filter;
+          if (filter && typeof applySearchFilter === "function") {
+            applySearchFilter(filter);
+          }
+        });
+      });
+
+      /* alert click → exception queue */
+      document.querySelectorAll('.dash-card[data-role="alerts"] .dash-card__alert-item').forEach(item => {
+        item.addEventListener("click", function() {
+          const alertType = this.dataset.alertType;
+          if (alertType && typeof navigateToExceptionTab === "function") {
+            navigateToExceptionTab(alertType);
+          }
+        });
+      });
+    }
+    function _dLabel(code) { return _DOMAIN_LABEL[String(code||'').toUpperCase()] || code || ''; }
+
+        async function loadAlbumOfDay() {
+      try {
+        const res = await fetch("/random-album");
+        const data = await safeJson(res);
+        if (!data.title) return;
+        const artist = data.artist || "";
+        const year = data.year ? "(" + data.year + ")" : "";
+        const titleText = artist ? artist + " — " + data.title : data.title;
+        const metaText = year;
+        setTextIfPresent("homeDashAlbumOfDay", titleText);
+        setTextIfPresent("homeDashAlbumOfDayMeta", metaText);
+        const cover = document.getElementById("homeDashAlbumCover");
+        const placeholder = document.getElementById("homeDashAlbumPlaceholder");
+        if (cover && data.cover_url) {
+          cover.src = data.cover_url;
+        }
+        // 장식장 이동 클릭 핸들러
+        const card = document.getElementById("homeDashAlbumCard");
+        if (card && (data.slot_code || data.owned_item_id)) {
+          card.addEventListener("click", function() {
+            if (typeof openCabinetLocationAction === "function") {
+              openCabinetLocationAction(0, data.slot_code || "", "", "", "");
+            }
+          });
+          card.title = data.slot_code ? data.slot_code + "에 배치됨" : "장식장으로 이동";
+        }
+        if (placeholder && data.cover_url) placeholder.style.display = "none";
+      } catch (_) {}
+    }
+
+    var _DOMAIN_LABEL = {
+      KOREA:'가요', JAPAN:'J-POP', WESTERN:'팝/웨스턴',
+      GREATER_CHINA:'C-Pop', OTHER_ASIA:'아시아', WORLD:'월드',
+      UNASSIGNED:'미분류', UNKNOWN:'미분류',
+    };
+
+async function loadDashboardClimate() {
+      const outdoorTemp  = document.getElementById("homeDashOutdoorTemp");
+      const outdoorHumid = document.getElementById("homeDashOutdoorHumid");
+      const indoorTemp   = document.getElementById("homeDashIndoorTemp");
+      const indoorHumid  = document.getElementById("homeDashIndoorHumid");
+      const indoorBadge  = document.getElementById("homeDashIndoorBadge");
+      const humGauge     = document.getElementById("homeDashHumGauge");
+      if (!outdoorTemp && !indoorTemp) return;
+      try {
+        const res = await fetch("/operator/climate-compare");
+        if (!res.ok) return;
+        const d = await safeJson(res);
+        const oh = d.outdoor_humidity_percent != null ? Math.round(d.outdoor_humidity_percent) : null;
+        const ih = d.indoor_humidity_percent  != null ? Math.round(d.indoor_humidity_percent)  : null;
+        if (outdoorTemp)  outdoorTemp.textContent = d.outdoor_temperature_c != null ? Number(d.outdoor_temperature_c).toFixed(1) : "--";
+        if (outdoorHumid) { outdoorHumid.textContent = oh != null ? oh + "%" : "--%"; outdoorHumid.className = "climate-hum-sm " + humClass(oh); }
+        if (indoorTemp)   indoorTemp.textContent  = d.indoor_temperature_c  != null ? Number(d.indoor_temperature_c).toFixed(1)  : "--";
+        if (indoorHumid)  { indoorHumid.textContent = ih != null ? ih + "%" : "--%"; indoorHumid.className = "climate-hum-main " + humClass(ih); }
+        if (humGauge && ih != null) {
+          humGauge.style.width = Math.min(ih, 100) + "%";
+          humGauge.className = "climate-gauge-fill " + humClass(ih);
+        }
+        if (indoorBadge && d.indoor_comfort_label) {
+          indoorBadge.textContent = d.indoor_comfort_label;
+          const cl = d.indoor_comfort_label;
+          indoorBadge.className = "dashboard-climate-badge " + (cl === "쾌적" ? "ideal" : (cl === "건조" || cl === "습함") ? "warn" : "alert");
+          indoorBadge.hidden = false;
+        }
+      } catch (_) {}
+    }

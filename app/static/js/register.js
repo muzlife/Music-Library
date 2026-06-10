@@ -2811,3 +2811,316 @@
       }
       await barcodeSearch();
     }
+
+
+    function selectedRegisterLookupCandidateKey() {
+      return selectedCandidate ? registerLookupCandidateKey(selectedCandidate) : "";
+    }
+
+    function focusRegisterLookupCandidate(index, opts = {}) {
+      const root = $("barcodeResults");
+      if (!root) return;
+      const candidateIndex = Number(index);
+      if (!Number.isInteger(candidateIndex) || candidateIndex < 0) return;
+      const row = root.querySelector(`[data-register-lookup-index="${candidateIndex}"]`);
+      if (!row || typeof row.focus !== "function") return;
+      row.focus({ preventScroll: opts.preventScroll !== false });
+    }
+
+    function selectRegisterLookupCandidate(index, opts = {}) {
+      const candidateIndex = Number(index);
+      if (!Number.isInteger(candidateIndex) || candidateIndex < 0) return;
+      const candidate = registerLookupCandidates[candidateIndex];
+      if (!candidate) return;
+      applyCandidateToForm(candidate, { scroll: opts.scroll === true });
+      if (adminBarcodeConfirmToken) {
+        adminBarcodeConfirmCandidateKey = registerLookupCandidateKey(candidate, candidateIndex);
+      }
+      renderBarcodeResults(registerLookupCandidates, { resetLocationState: false });
+      if (opts.focus !== false) {
+        requestAnimationFrame(() => focusRegisterLookupCandidate(candidateIndex, { preventScroll: opts.preventScroll !== false }));
+      }
+    }
+
+    function syncAdminBarcodeInputReadyState(mode = "idle") {
+      const input = $("barcodeInput");
+      const state = $("adminBarcodeInputState");
+      if (!input) return;
+      input.classList.toggle("is-confirm-armed", mode === "confirm");
+      input.classList.toggle("is-ready", mode === "ready");
+      if (!state) return;
+      state.textContent = mode === "ready"
+        ? t("media.register.api_lookup.field.barcode.ready")
+        : (mode === "confirm"
+          ? t("media.register.api_lookup.field.barcode.confirm")
+          : "");
+      state.classList.toggle("confirm", mode === "confirm");
+      state.classList.toggle("ready", mode === "ready");
+    }
+
+    function pulseAdminBarcodeInput() {
+      const input = $("barcodeInput");
+      if (!input) return;
+      window.clearTimeout(adminBarcodeInputPulseTimer);
+      input.classList.remove("scan-pulse");
+      // Force restart when the scanner fires Enter repeatedly.
+      void input.offsetWidth;
+      input.classList.add("scan-pulse");
+      adminBarcodeInputPulseTimer = window.setTimeout(() => {
+        input.classList.remove("scan-pulse");
+      }, 240);
+    }
+
+    function showAdminBarcodeToast(message) {
+      const el = $("adminBarcodeToast");
+      if (!el || !message) return;
+      const safeMessage = escapeHtml(String(message || "").trim());
+      const safeSlotLabel = escapeHtml(String(arguments[1] || "").trim());
+      el.innerHTML = safeSlotLabel
+        ? `${safeMessage}<strong class="admin-barcode-toast-slot"><span class="admin-barcode-toast-slot-label">${escapeHtml(t("media.register.api_lookup.toast.slot_label"))}</span>${safeSlotLabel}</strong>`
+        : safeMessage;
+      el.classList.add("show");
+      window.clearTimeout(adminBarcodeToastTimer);
+      adminBarcodeToastTimer = window.setTimeout(() => {
+        el.classList.remove("show");
+      }, 2200);
+    }
+
+    function showShellBarcodeToast(message) {
+      const el = $("shellBarcodeToast");
+      if (!el || !message) return;
+      el.textContent = String(message || "").trim();
+      el.classList.add("show");
+      window.clearTimeout(shellBarcodeToastTimer);
+      shellBarcodeToastTimer = window.setTimeout(() => {
+        el.classList.remove("show");
+      }, 1800);
+    }
+
+    function findRegisterLookupCandidateIndexByKey(key) {
+      if (!key) return -1;
+      return registerLookupCandidates.findIndex((row, idx) => registerLookupCandidateKey(row, idx) === key);
+    }
+
+    function isMusicCategory() {
+      return MUSIC_CATEGORIES.has($("category").value);
+    }
+
+    function syncMusicVisibility() {
+      const isMusic = isMusicCategory();
+      setDisplayIfPresent("musicBox", isMusic ? "block" : "none");
+      setDisplayIfPresent("goodsBox", isMusic ? "none" : "block");
+      if (!isMusic && !$("goodsItemName").value.trim() && $("itemNameOverride").value.trim()) {
+        $("goodsItemName").value = $("itemNameOverride").value.trim();
+      }
+      if (isMusic && !$("itemNameOverride").value.trim() && $("goodsItemName").value.trim()) {
+        $("itemNameOverride").value = $("goodsItemName").value.trim();
+      }
+      syncGoodsSpecVisibility($("category").value, {
+        poster: "posterSpecWrap",
+        tshirt: "tshirtSizeWrap",
+        cup: "cupMaterialWrap",
+        hat: "hatSizeWrap",
+      });
+    }
+
+    function syncHomeLinkedGoodsSpecVisibility() {
+      syncGoodsSpecVisibility($("homeLinkedGoodsCategory").value, {
+        poster: "homeLinkedPosterSpecWrap",
+        tshirt: "homeLinkedTshirtSizeWrap",
+        cup: "homeLinkedCupMaterialWrap",
+        hat: "homeLinkedHatSizeWrap",
+      });
+    }
+
+    function resetGlobalBarcodeScannerBuffer() {
+      globalBarcodeScannerBuffer = "";
+      globalBarcodeScannerLastKeyAt = 0;
+      globalBarcodeScannerEditableTarget = null;
+      globalBarcodeScannerEditableInitialValue = "";
+    }
+
+    function shouldHandleGlobalBarcodeScan() {
+      const mode = currentShellMode();
+      return mode === "ops" || (mode === "admin" && isAdminSession());
+    }
+
+    function isGlobalBarcodeScannerNativeInput(target) {
+      const id = String(target?.id || "").trim();
+      return GLOBAL_BARCODE_SCANNER_INPUT_IDS.has(id);
+    }
+
+    function isGlobalBarcodeScannerEditableTarget(target) {
+      if (!target) return false;
+      if (target.isContentEditable) return true;
+      const tag = String(target.tagName || "").trim().toUpperCase();
+      if (tag === "TEXTAREA") return true;
+      if (tag !== "INPUT") return false;
+      const type = String(target.getAttribute("type") || "text").trim().toLowerCase();
+      return !["checkbox", "radio", "button", "submit", "reset", "file", "image", "range", "color"].includes(type);
+    }
+
+    function restoreGlobalBarcodeScannerEditableValue() {
+      const target = globalBarcodeScannerEditableTarget;
+      if (!target || typeof target.value !== "string") return;
+      target.value = globalBarcodeScannerEditableInitialValue;
+      if (typeof target.setSelectionRange === "function") {
+        const pos = globalBarcodeScannerEditableInitialValue.length;
+        try {
+          target.setSelectionRange(pos, pos);
+        } catch (_err) {}
+      }
+    }
+
+    async function routeGlobalBarcodeScanForOps(barcode) {
+      const normalizedBarcode = String(barcode || "").trim();
+      if (!normalizedBarcode) return false;
+      $("operatorLookupQuery").value = normalizedBarcode;
+      setStatus("operatorLookupStatus", "ok", t("operator.lookup.status.barcode_loading"));
+      await loadOperatorLookupResults();
+      showShellBarcodeToast(t("operator.lookup.toast.routed"));
+      return true;
+    }
+
+    async function lookupAdminOwnedBarcodeMatches(barcode) {
+      const normalizedBarcode = String(barcode || "").trim();
+      if (!normalizedBarcode) return { items: [], total: 0 };
+      const params = new URLSearchParams({
+        limit: "30",
+        offset: "0",
+        include_total: "true",
+        media_only: "true",
+      });
+      params.set("barcode", normalizedBarcode);
+      const res = await fetchWithRetry(`/album-masters?${params.toString()}`, {}, {
+        retries: 2,
+        retryDelayMs: 250,
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data.detail || t("media.register.api_lookup.status.owned_lookup_failed"));
+      const totalFromHeader = Number(res.headers.get("X-Total-Count"));
+      const items = Array.isArray(data) ? data : [];
+      const total = Number.isFinite(totalFromHeader) && totalFromHeader >= 0 ? totalFromHeader : items.length;
+      return { items, total };
+    }
+
+    function prepareAdminOwnedBarcodeSearch(barcode) {
+      const normalizedBarcode = String(barcode || "").trim();
+      $("homeArtist").value = "";
+      $("homeItemName").value = "";
+      $("homeCatalogNo").value = "";
+      $("homeReleaseYear").value = "";
+      $("homeSigDirect").checked = false;
+      $("homeSigPurchase").checked = false;
+      $("homeSortMode").value = "CREATED_DESC";
+      $("homeBarcode").value = normalizedBarcode;
+      $("homeMasterId").value = "";
+      $("homeItemId").value = "";
+      $("homePackagingList").querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+      $("homePackageContentsList").querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+      $("homeLimitEd").checked = false;
+      $("homeNewProduct").checked = false;
+      $("homePromo").checked = false;
+      $("homeSearchAdvancedDetails").open = false;
+    }
+
+    async function routeGlobalBarcodeScanForAdmin(barcode) {
+      const normalizedBarcode = String(barcode || "").trim();
+      if (!normalizedBarcode) return false;
+      try {
+        const lookup = await lookupAdminOwnedBarcodeMatches(normalizedBarcode);
+        if (lookup.total > 0) {
+          openAdminConsole("manage");
+          prepareAdminOwnedBarcodeSearch(normalizedBarcode);
+          await homeSearchOwnedItems({ resetPage: true });
+          setStatus("homeSearchStatus", "ok", t("media.register.api_lookup.candidate.flag.owned", { count: formatCount(lookup.total) }));
+          showShellBarcodeToast(t("media.register.api_lookup.toast.owned_routed", { count: formatCount(lookup.total) }));
+          return true;
+        }
+      } catch (err) {
+        setStatus("barcodeStatus", "err", errorMessageText(err, t("media.register.api_lookup.status.owned_lookup_failed")));
+        return false;
+      }
+      openAdminConsole("register");
+      $("barcodeInput").value = normalizedBarcode;
+      pulseAdminBarcodeInput();
+      await submitAdminBarcodeIntake();
+      showShellBarcodeToast(t("media.register.api_lookup.toast.register_routed"));
+      return true;
+    }
+
+    async function routeGlobalBarcodeScan(barcode) {
+      if (currentShellMode() === "ops") {
+        return routeGlobalBarcodeScanForOps(barcode);
+      }
+      if (currentShellMode() === "admin" && isAdminSession()) {
+        return routeGlobalBarcodeScanForAdmin(barcode);
+      }
+      return false;
+    }
+
+    function handleGlobalBarcodeScannerKeydown(e) {
+      if (e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!shouldHandleGlobalBarcodeScan()) {
+        resetGlobalBarcodeScannerBuffer();
+        return;
+      }
+      if (isGlobalBarcodeScannerNativeInput(e.target)) {
+        if (e.key === "Enter") resetGlobalBarcodeScannerBuffer();
+        return;
+      }
+      const targetIsEditable = isGlobalBarcodeScannerEditableTarget(e.target);
+      const key = String(e.key || "");
+      const isDigit = /^[0-9]$/.test(key);
+      if (!isDigit && key !== "Enter") {
+        if (key.length === 1) resetGlobalBarcodeScannerBuffer();
+        return;
+      }
+      if (isDigit) {
+        const now = Date.now();
+        if (!globalBarcodeScannerLastKeyAt || now - globalBarcodeScannerLastKeyAt > GLOBAL_BARCODE_SCANNER_MAX_GAP_MS) {
+          globalBarcodeScannerBuffer = "";
+          if (targetIsEditable) {
+            globalBarcodeScannerEditableTarget = e.target;
+            globalBarcodeScannerEditableInitialValue = typeof e.target.value === "string" ? e.target.value : "";
+          }
+        }
+        if (targetIsEditable && globalBarcodeScannerEditableTarget !== e.target) {
+          globalBarcodeScannerEditableTarget = e.target;
+          globalBarcodeScannerEditableInitialValue = typeof e.target.value === "string" ? e.target.value : "";
+        }
+        globalBarcodeScannerLastKeyAt = now;
+        globalBarcodeScannerBuffer += key;
+        if (globalBarcodeScannerBuffer.length > GLOBAL_BARCODE_SCANNER_LENGTH) {
+          globalBarcodeScannerBuffer = globalBarcodeScannerBuffer.slice(-GLOBAL_BARCODE_SCANNER_LENGTH);
+        }
+        if (!targetIsEditable) {
+          e.preventDefault();
+        }
+        return;
+      }
+      const barcode = String(globalBarcodeScannerBuffer || "").trim();
+      if (!new RegExp(`^\\d{${GLOBAL_BARCODE_SCANNER_LENGTH}}$`).test(barcode)) {
+        resetGlobalBarcodeScannerBuffer();
+        return;
+      }
+      if (targetIsEditable) {
+        restoreGlobalBarcodeScannerEditableValue();
+      }
+      resetGlobalBarcodeScannerBuffer();
+      e.preventDefault();
+      e.stopPropagation();
+      routeGlobalBarcodeScan(barcode).catch((err) => {
+        const statusId = currentShellMode() === "ops" ? "operatorLookupStatus" : "barcodeStatus";
+        setStatus(statusId, "err", errorMessageText(err, t("media.register.api_lookup.status.scan_process_failed")));
+      });
+    }
+
+
+    const GLOBAL_BARCODE_SCANNER_INPUT_IDS = new Set(["barcodeInput", "operatorLookupQuery", "homeBarcode"]);
+    const GLOBAL_BARCODE_SCANNER_LENGTH = 13;
+    const GLOBAL_BARCODE_SCANNER_MAX_GAP_MS = 80;
+    let globalBarcodeScannerBuffer = "";
+    let globalBarcodeScannerLastKeyAt = 0;
+    let globalBarcodeScannerEditableTarget = null;
+    let globalBarcodeScannerEditableInitialValue = "";
