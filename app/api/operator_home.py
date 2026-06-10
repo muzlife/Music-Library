@@ -553,9 +553,9 @@ def suggest_metadata_correction(
         batch_id=batch_id,
         row_no=1,
         category=row.get("category"),
-        payload_json=json.dumps(payload_data, ensure_ascii=False),
-        candidate_json=None,
-        confidence_score=0.5,
+        payload=payload_data,
+        candidate=None,
+        confidence=0.5,
         review_status="NEEDS_REVIEW",
         review_note=payload.reason or "Operator requested metadata correction",
     )

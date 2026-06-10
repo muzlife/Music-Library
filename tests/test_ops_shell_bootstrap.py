@@ -9,8 +9,6 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STATIC_DIR = REPO_ROOT / "app" / "static"
 
-pytestmark = pytest.mark.xfail(reason="Strict style/bootstrap assertions outdated due to UI refactoring", strict=False)
-
 # Tests below this marker assert the presence of specific JS/CSS strings in
 # `app/static/index.html`. Several of those strings landed in test PRs but
 # the corresponding UI changes were never merged (or were rolled back),
@@ -443,6 +441,7 @@ process.stdout.write(homeResultItemHtml(row) || "");
     return result.stdout
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_login_page_redirect_target_is_ops():
     html = read_static_html("login.html")
     assert 'window.location.replace(data.role === "ADMIN" ? "/admin" : "/ops");' in html
@@ -505,6 +504,7 @@ def test_login_page_maps_only_exact_auth_failure_literal():
     assert passthrough["status_text"] == "임의 오류"
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_login_page_preserves_submit_flow_contract():
     success = run_login_page_harness(
         submit_response={"ok": True, "status": 200, "body": {"authenticated": True}},
@@ -533,6 +533,7 @@ def test_admin_route_serves_index_for_admin(admin_client):
     assert "라이브러리 관리/운영 콘솔" in res.text
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_defines_route_aware_shell_mode_helpers():
     html = read_static_html("index.html")
     assert "function currentAppPath()" in html
@@ -605,6 +606,7 @@ def test_index_shell_navigation_uses_history_and_popstate():
     assert "applyRouteSelectedShellMode(routeShellMode);" in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_auth_failure_fallback_hides_full_ui_until_session_loads():
     html = read_static_html("index.html")
     assert "const authenticated = Boolean(appAuthSession?.authenticated);" in html
@@ -653,6 +655,7 @@ def test_index_render_auth_session_uses_display_state_helper_for_session_control
     assert ".style.display" not in render_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_uses_shell_utility_mounts_for_ops_and_admin_headers():
     html = read_static_html("index.html")
     assert '<header id="appHero" class="hero admin-shell-hero">' in html
@@ -1015,6 +1018,7 @@ def test_media_search_right_panel_selected_item_inspector_copy():
     assert '<h3>${escapeHtml(t("media.search.context.title"))}</h3>' in default_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_emphasizes_current_slot_with_contrast_badge():
     html = read_static_html("index.html")
     active_block = extract_css_block(html, ".ops-library-mini-map-cell.active {", "last")
@@ -1071,6 +1075,7 @@ def test_ops_home_context_panel_supports_mini_slot_preview_for_selected_item():
     assert 'const rootId = String(options.rootId || "opsLibraryContextSlotPreview");' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_compacts_mini_slot_preview_density():
     html = read_static_html("index.html")
     preview_block = html.split(".ops-library-slot-preview {", 1)[1].split("}", 1)[0]
@@ -1102,6 +1107,7 @@ def test_ops_home_context_panel_compacts_default_empty_state():
     assert 't("operator.context.subtitle")' in default_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_distinguishes_map_and_slot_preview_hierarchy():
     html = read_static_html("index.html")
     mini_map_block = html.split(".ops-library-mini-map {", 1)[1].split("}", 1)[0]
@@ -1113,6 +1119,7 @@ def test_ops_home_context_panel_distinguishes_map_and_slot_preview_hierarchy():
     assert "box-shadow: none;" in preview_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_search_context_selected_preview_uses_subtle_console_selection_tone():
     html = read_static_html("index.html")
     block = html.split(".admin-console-shell .home-master-member-preview-item.is-context-selected {", 1)[1].split("}", 1)[0]
@@ -1548,6 +1555,7 @@ def test_admin_register_collect_copy_renames_quick_register_to_direct_register()
     assert '<button id="quickCreateBtn" class="btn" data-i18n="media.register.direct.action.save">직접 등록 저장</button>' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_register_collect_copy_renames_barcode_intake_to_api_lookup_register():
     html = read_static_html("index.html")
     assert '<h2 data-i18n="media.register.api_lookup.title">API 조회 / 등록' in html
@@ -1601,6 +1609,7 @@ def test_admin_barcode_results_shrink_cover_to_widen_text_lane():
     assert "height: 64px;" in cover_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_register_barcode_results_use_console_surfaces_for_candidate_rows():
     html = read_static_html("index.html")
 
@@ -1780,6 +1789,7 @@ def test_admin_barcode_intake_formats_candidate_meta_as_compact_key_value_line()
     assert '<span class="admin-barcode-candidate-meta-key">cat#</span>' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_barcode_intake_strengthens_visual_contrast_between_auto_and_active_badges():
     html = read_static_html("index.html")
     auto_block = html.split(".admin-barcode-placement-item.rank-1 .admin-barcode-placement-auto-badge {", 1)[1].split("}", 1)[0]
@@ -1983,6 +1993,7 @@ def test_ops_home_context_panel_adds_hover_title_to_mini_map_cells():
     assert 'title="${escapeHtml(hoverTitle)}"' in mini_map_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_cabinet_map_cells_use_first_item_hover_hint():
     html = read_static_html("index.html")
     helper_block = html.split("    function dashboardSlotHoverHintText(slotRow, group = null) {", 1)[1].split("    function renderDashboardSlotCards(rows, totalInCollection) {", 1)[0]
@@ -2035,6 +2046,7 @@ def test_ops_home_context_panel_styles_location_open_actions_as_chips():
     assert 'class="operator-mini-linkchip"' in selection_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_highlights_selected_item_in_slot_preview():
     html = read_static_html("index.html")
     preview_block = html.split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[1].split("function renderOpsLibraryContextSlotPreview(item, options = {}) {", 1)[0]
@@ -2046,6 +2058,7 @@ def test_ops_home_context_panel_highlights_selected_item_in_slot_preview():
     assert "border-color: var(--selected-accent);" in thumb_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_selected_slot_highlight_uses_shared_high_contrast_palette():
     html = read_static_html("index.html")
     root_block = html.split(":root {", 1)[1].split("}", 1)[0]
@@ -2078,6 +2091,7 @@ def test_selected_slot_highlight_uses_shared_high_contrast_palette():
     assert "color: inherit;" in floor_map_title_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_and_manage_selected_items_use_stronger_contrast_highlight():
     html = read_static_html("index.html")
     result_pick_block = extract_css_block(html, ".result-item.pick {", 2)
@@ -2136,6 +2150,7 @@ def test_apply_locale_rerenders_dashboard_and_operator_context_runtime_panels():
     assert "rerender(() => renderOpsLibraryContextDefault());" in helper_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_uses_card_style_for_location_rows():
     html = read_static_html("index.html")
     list_block = html.split(".operator-mini-list {", 1)[1].split("}", 1)[0]
@@ -2212,6 +2227,7 @@ def test_ops_home_context_panel_uses_chip_style_for_slot_preview_footer_action()
     assert 'class="ops-library-slot-preview-link"' in preview_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_compacts_weather_card_density():
     html = read_static_html("index.html")
     search_shell_block = extract_css_block(html, ".operator-search-shell {", 2)
@@ -2282,6 +2298,7 @@ def test_media_search_results_do_not_force_internal_scroll_region():
     assert "height: auto !important;" in result_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_search_surface_adds_right_side_context_panel():
     html = read_static_html("index.html")
     layout_block = html.split(".media-search-layout {", 1)[1].split("}", 1)[0]
@@ -2365,6 +2382,7 @@ def test_media_search_includes_sort_mode_filter_field():
     assert '"media.search.field.sort_mode.label": "정렬"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_search_uses_two_row_filter_layout_with_secondary_controls_on_bottom_row():
     html = read_static_html("index.html")
     top_block = html.split('<div class="home-search-grid-top">', 1)[1].split('<div class="home-search-grid-bottom">', 1)[0]
@@ -2814,6 +2832,7 @@ def test_media_search_member_preview_uses_subtle_runout_tone():
     assert "font-size: 0.62rem;" in phone_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_search_single_master_item_uses_member_row_actions():
     single_item_row_html = render_media_search_result_card_html({
         "id": 101,
@@ -2934,6 +2953,7 @@ def test_media_search_master_cards_gate_discogs_repair_button_on_eligibility():
     assert ".home-master-member-preview-repair-btn {" in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_search_inline_editor_uses_quick_edit_copy_and_compact_header():
     html = read_static_html("index.html")
     editor_block = html.split("    function renderMediaSearchInlineEditor(masterId, item) {", 1)[1].split("    async function loadMediaSearchInlineEditorDetail(ownedItemId) {", 1)[0]
@@ -3084,6 +3104,7 @@ def test_ops_home_context_panel_keeps_mini_map_head_on_one_line():
     assert "letter-spacing: -0.01em;" in span_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_unifies_secondary_card_tone():
     html = read_static_html("index.html")
     weather_block = html.split(".operator-weather-card {", 1)[1].split("}", 1)[0]
@@ -3097,6 +3118,7 @@ def test_ops_home_context_panel_unifies_secondary_card_tone():
     assert "border: 1px solid rgba(184, 196, 210, 0.14);" in preview_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_home_context_panel_fixes_slot_preview_label_height():
     html = read_static_html("index.html")
     label_block = extract_css_block(html, ".ops-library-slot-preview-label {", 2)
@@ -3217,6 +3239,7 @@ def test_index_operator_home_and_camera_use_console_region_markup():
     assert ".shared-camera-shell.admin-console-shell .shared-camera-preview-panel {\n      padding: 12px;" in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_operator_home_search_shell_uses_console_surface_tones():
     html = read_static_html("index.html")
     body_tag = html.split("<body ", 1)[1].split(">", 1)[0]
@@ -3557,6 +3580,7 @@ def test_index_admin_hero_embeds_admin_menu_inside_header_shell():
     assert 'id="adminUtilityMainMount"' in row_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_admin_hero_compacts_copy_to_tab_spacing():
     html = read_static_html("index.html")
     hero_block = extract_css_block(html, ".admin-shell-hero {", 2)
@@ -3674,6 +3698,7 @@ def test_index_admin_docs_box_becomes_compact_trigger_panel():
     assert 'class="shell-doc-links admin-shell-docs"' not in utility_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_uses_shared_page_help_drawer_for_first_wave_screens():
     html = read_static_html("index.html")
     assert 'id="pageHelpOverlay"' in html
@@ -3785,6 +3810,7 @@ def test_index_admin_dashboard_and_subtabs_use_closer_header_title_scales():
     assert "font-size: 1.2rem;" in compact_admin_h1_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_header_utility_stacks_docs_and_locale_above_session_actions():
     html = read_static_html("index.html")
     utility_mount_block = html.split(".utility-mount {", 1)[1].split("}", 1)[0]
@@ -3891,6 +3917,7 @@ def test_index_header_utility_hierarchy_uses_meta_and_action_modifier_groups():
     assert utility_block.index('id="shellLocaleSelect"') < utility_block.index('id="shellThemeToggle"')
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_shell_utility_exposes_theme_toggle_next_to_locale_picker():
     html = read_static_html("index.html")
     utility_block = html.split('<div id="shellUtilityBar" class="shell-utility u-hidden-initial">', 1)[1].split('</div>\n\n    <div id="tabHome"', 1)[0]
@@ -3969,6 +3996,7 @@ def test_index_theme_toggle_persists_choice_and_applies_body_theme_data_attribut
     assert "syncShellThemeToggle();" in apply_locale_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_theme_tokens_define_day_and_night_surface_modes():
     html = read_static_html("index.html")
     body_block = html.split("    body {", 1)[1].split("}", 1)[0]
@@ -4021,6 +4049,7 @@ def test_header_login_chip_uses_high_contrast_readable_treatment():
     assert "--icon-mask: url(" in logout_icon_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_console_shells_use_hard_edge_high_contrast_surface_tokens():
     html = read_static_html("index.html")
     token_block = html.split(".dashboard-console-shell,\n    #registeredMasterMergeCard.registered-master-merge-console {", 1)[1].split("}", 1)[0]
@@ -4044,6 +4073,7 @@ def test_index_console_shells_use_hard_edge_high_contrast_surface_tokens():
     assert "border-radius: 6px;" in action_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_console_separates_text_hierarchy_and_cabinet_slot_surfaces():
     html = read_static_html("index.html")
     kicker_block = html.split(".dashboard-kicker {", 1)[1].split("}", 1)[0]
@@ -4091,6 +4121,7 @@ def test_dashboard_workbench_toolbar_uses_distinct_subpanel_surface():
     assert "box-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);" in toolbar_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_lightens_dashboard_workbench_ghost_search_buttons():
     html = read_static_html("index.html")
     ghost_block = html.split('    body[data-theme="day"] .dashboard-console-shell :is(.btn.ghost) {', 1)[1].split("}", 1)[0]
@@ -4104,6 +4135,7 @@ def test_day_mode_lightens_dashboard_workbench_ghost_search_buttons():
     assert "color: color-mix(in srgb, var(--theme-admin-text-meta) 86%, white 14%);" in disabled_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_console_rebalances_storage_mapping_copy_and_chips():
     html = read_static_html("index.html")
     title_block = html.split(".dashboard-console-shell :is(.dashboard-slot-map-copy strong, .dashboard-cabinet-head strong, .dashboard-cabinet-refreshbtn) {", 1)[1].split("}", 1)[0]
@@ -4122,6 +4154,7 @@ def test_index_dashboard_console_rebalances_storage_mapping_copy_and_chips():
     assert "box-shadow: inset 0 0 0 1px rgba(232, 98, 10, 0.08);" in board_active_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_console_minimizes_internal_rounding_and_color_blocks():
     html = read_static_html("index.html")
     override_block = html.split(".dashboard-console-shell :is(.dashboard-cabinet-overview-card, .dashboard-slot-covercard, .dashboard-slot-listitem, .dashboard-slot-item-row, .dashboard-surface-dock-panel, .dashboard-slot-mutation-row, .dashboard-slot-item-cover, .dashboard-slot-listitem-cover, .dashboard-slot-covercard-cover, .dashboard-slot-shelfcover) {", 1)[1].split("}", 1)[0]
@@ -4159,6 +4192,7 @@ def test_index_dashboard_console_gives_coverflow_selection_toggle_high_contrast_
     assert 'content: "✓";' in cover_selected_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_console_removes_orange_outer_ring_from_selected_shelf_cards():
     html = read_static_html("index.html")
     selected_surface_block = html.split(".dashboard-console-shell :is(.dashboard-slot-viewbtn.active, .dashboard-workbench-source.active, .dashboard-slot-covercard.pick, .dashboard-slot-listitem.pick) {", 1)[1].split("}", 1)[0]
@@ -4197,6 +4231,7 @@ def test_index_dashboard_console_switches_to_single_column_when_cabinet_detail_i
     assert 'syncDashboardConsoleFocusState(true);' in render_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_console_persists_selected_cabinet_and_slot_across_refresh():
     html = read_static_html("index.html")
     assert 'const DASHBOARD_CABINET_SELECTION_STORAGE_KEY = "__PROJECT_SLUG__.dashboardCabinetSelection.v1";' in html
@@ -4231,6 +4266,7 @@ def test_index_shell_tab_mounts_do_not_use_hardcoded_id_display_none_rules():
     assert "#shellTabs,\n    #adminTabs {\n      display: none;\n    }" not in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_sync_shell_utility_row_sizing_normalizes_right_side_controls():
     html = read_static_html("index.html")
     assert "function syncShellUtilityRowSizing() {" in html
@@ -4323,6 +4359,7 @@ def test_index_selected_manuals_and_page_help_triggers_use_i18n_keys():
     assert 'data-help-key="help.media.manage.location"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_help_and_close_action_groups_render_as_symbol_buttons():
     html = read_static_html("index.html")
     title_row_block = html.split(".page-help-title-row {", 1)[1].split("}", 1)[0]
@@ -4354,6 +4391,7 @@ def test_index_help_and_close_action_groups_render_as_symbol_buttons():
     assert 'id="imageGalleryCloseBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--close"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_page_help_drawer_uses_console_surface_and_localizes_close_button_text():
     html = read_static_html("index.html")
 
@@ -4401,6 +4439,7 @@ def test_ops_primary_create_and_save_rows_place_primary_action_last():
     assert 'id="opsAuthSaveBtn" class="btn" type="button" data-i18n="ops.account.action.save"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_navigation_open_and_edit_action_groups_render_as_symbol_buttons():
     html = read_static_html("index.html")
     icon_edit_block = html.split(".icon-symbol-btn--edit {", 1)[1].split("}", 1)[0]
@@ -4423,6 +4462,7 @@ def test_index_navigation_open_and_edit_action_groups_render_as_symbol_buttons()
     assert 'id="shellOpsHomeBtn" class="tab-btn icon-symbol-btn icon-symbol-btn--ops-home shell-utility-navbtn shell-ops-home-btn u-hidden-initial"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_search_action_group_uses_shared_symbol_buttons():
     html = read_static_html("index.html")
     assert 'id="homeDashSearchRunBtn" class="btn ghost icon-btn" type="button" data-i18n-title="operator.lookup.action.run" data-i18n-aria-label="operator.lookup.action.run"' in html
@@ -4470,6 +4510,7 @@ def test_index_reset_action_group_uses_shared_symbol_buttons():
     assert 'id="opsProviderResetBtn" class="btn ghost icon-symbol-btn icon-symbol-btn--reset" type="button" title="설정 다시 불러오기" aria-label="설정 다시 불러오기" data-i18n-title="ops.providers.action.reset" data-i18n-aria-label="ops.providers.action.reset"></button>' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_icon_buttons_share_uniform_height_and_symbol_box():
     html = read_static_html("index.html")
     root_block = html.split(":root {", 1)[1].split("}", 1)[0]
@@ -4512,6 +4553,7 @@ def test_index_apply_locale_updates_data_help_key_tooltips():
     assert 'el.setAttribute("title", t(key));' in block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_admin_utility_bar_shows___PROJECT_SLUG___only_for_admin_and_places_it_last():
     html = read_static_html("index.html")
     utility_start = '    <div id="shellUtilityBar" class="shell-utility u-hidden-initial">'
@@ -4542,6 +4584,7 @@ def test_index_admin_utility_bar_shows___PROJECT_SLUG___only_for_admin_and_place
     assert "__PROJECT_SLUG__" not in ops_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_shell_utility_reorders_home_icons_by_shell_mode():
     html = read_static_html("index.html")
 
@@ -4629,6 +4672,7 @@ def test_index_dashboard_slot_detail_embeds_controls_inside_cover_flow_surface()
     assert "width: min(320px, calc(100vw - 156px));" in bulk_popover_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_exposes_shared_camera_main_tab():
     html = read_static_html("index.html")
     assert 'id="tabCameraBtn"' in html
@@ -4873,6 +4917,7 @@ def test_goods_manage_surface_is_split_into_basic_product_collectible_and_notes_
     assert 'id="goodsManageNotesSection"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_goods_manage_surface_uses_compact_core_and_extra_notes_layout():
     html = read_static_html("index.html")
     assert 'id="goodsManageCoreFields"' in html
@@ -4907,6 +4952,7 @@ def test_goods_search_surface_contains_collectible_relation_filters():
     assert 'id="goodsSearchCollectibleRelationType"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_goods_manage_surface_contains_collectible_relation_lookup_and_save_controls():
     html = read_static_html("index.html")
     assert 'id="goodsManageCollectibleQuery"' in html
@@ -4959,6 +5005,7 @@ def test_goods_search_results_render_collectible_relation_summary_metadata():
     assert '"collectibles.search.meta.collectible_relations":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_parent_tabs_are_registered_in_shell_switching():
     html = read_static_html("index.html")
     assert '{ id: "media", btn: "tabMediaBtn", panel: "tabMedia" }' in html
@@ -5007,6 +5054,7 @@ def test_admin_manage_surface_contains_empty_state_prompt():
     assert "검색으로 이동" in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_view_separates_linked_goods_zone_from_album_editor_area():
     html = read_static_html("index.html")
     assert 'id="homeMasterGoodsSection" class="home-goods-zone' in html
@@ -5041,6 +5089,7 @@ def test_manage_view_orders_sections_as_product_collectibles_master_then_cabinet
     assert 'const linkedGoodsPanel = $("homeLinkedGoodsPanel");' in mount_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_view_shows_master_summary_after_master_lookup():
     html = read_static_html("index.html")
     related_block = html.split("function renderHomeRelatedVersions() {", 1)[1].split("async function saveHomeMasterSortArtistName()", 1)[0]
@@ -5060,6 +5109,7 @@ def test_manage_view_keeps_inline_editor_out_of_hidden_master_summary():
     assert 'return $("homeEditorStandaloneMount");' in block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_view_loads_linked_collectibles_alongside_master_members():
     html = read_static_html("index.html")
     block = html.split("async function loadHomeMasterMembers(albumMasterId, opts = {}) {", 1)[1].split("function homeMasterAddVariantRowHtml", 1)[0]
@@ -5070,6 +5120,7 @@ def test_manage_view_loads_linked_collectibles_alongside_master_members():
     assert 't("media.manage.master.members.status.loaded"' in block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_view_renders_linked_collectibles_in_goods_section():
     html = read_static_html("index.html")
     render_block = html.split("function renderHomeRelatedVersions() {", 1)[1].split("async function saveHomeMasterSortArtistName()", 1)[0]
@@ -5079,6 +5130,7 @@ def test_manage_view_renders_linked_collectibles_in_goods_section():
     assert "renderHomeLinkedCollectiblesSection();" in render_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_view_can_render_linked_collectibles_without_master_lookup():
     html = read_static_html("index.html")
     helper_block = html.split("function renderHomeLinkedCollectiblesSection() {", 1)[1].split("function resetHomeMasterLookupUi", 1)[0]
@@ -5092,6 +5144,7 @@ def test_manage_view_can_render_linked_collectibles_without_master_lookup():
     assert 'if (detailsEl) detailsEl.hidden = false;' in helper_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_view_contains_owned_item_product_relationship_section():
     html = read_static_html("index.html")
     assert 'id="homeProductRelationSection"' in html
@@ -5164,6 +5217,7 @@ def test_manage_view_product_relationship_runtime_uses_relation_routes_and_previ
     assert 'homeOwnedItemRelationTypeLabel' in preview_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_view_linked_collectibles_copy_uses_i18n_keys():
     html = read_static_html("index.html")
     helper_block = html.split("function renderHomeLinkedCollectiblesSection() {", 1)[1].split("function resetHomeMasterLookupUi", 1)[0]
@@ -5330,6 +5384,7 @@ def test_media_source_and_register_core_labels_use_i18n_keys():
     assert '"media.register.batch.title":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_source_and_register_form_labels_and_placeholders_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<label for="sourceWorkbenchSourceState" data-i18n="media.source.field.scope.label">대상</label>' in html
@@ -5375,6 +5430,7 @@ def test_ops_slot_controls_share_single_inline_row_on_desktop():
     assert slot_block.index('id="opsSlotSizeGroup"') < slot_block.index('id="opsSlotResetBtn"')
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_exception_filter_controls_share_single_inline_row_on_desktop():
     html = read_static_html("index.html")
     exception_block = html.split('<h2><span data-i18n="ops.exception.title">예외 큐</span></h2>', 1)[1].split('<div id="opsExceptionPresetChips" class="dashboard-chip-grid" style="margin-top:6px;"></div>', 1)[0]
@@ -5694,6 +5750,7 @@ def test_source_workbench_review_apply_keeps_failed_review_items_open_for_retry(
     assert 'return false;' in apply_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_source_and_purchase_status_copy_and_table_headers_use_i18n():
     html = read_static_html("index.html")
     assert '<th data-i18n="media.register.purchase.preview.header.cover">커버</th>' in html
@@ -5749,6 +5806,7 @@ def test_register_purchase_candidate_expansion_uses_console_surface_tones():
     assert "background: color-mix(in srgb, var(--admin-console-panel-bg) 84%, var(--admin-console-accent) 16%);" in selected_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_strengthens_purchase_candidate_expansion_hierarchy():
     html = read_static_html("index.html")
     row_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell .purchase-import-candidate-row td {', 1)[1].split("}", 1)[0]
@@ -5763,6 +5821,7 @@ def test_day_mode_strengthens_purchase_candidate_expansion_hierarchy():
     assert "rgba(233, 239, 246, 0.992)" in box_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_legacy_light_surfaces_use_theme_tokens_in_day_and_night_modes():
     html = read_static_html("index.html")
     night_block = html.split('    body[data-theme="night"] {', 1)[1].split("}", 1)[0]
@@ -6218,6 +6277,7 @@ def test_dashboard_slot_and_shelf_surfaces_use_theme_tokens():
     assert "border-radius: 6px;" in dashboard_slot_toolbar_select_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_coverflow_controls_use_unified_compact_button_system():
     html = read_static_html("index.html")
     pagebar_block = html.split("    .dashboard-slot-pagebar {", 1)[1].split("}", 1)[0]
@@ -6261,6 +6321,7 @@ def test_dashboard_coverflow_controls_use_unified_compact_button_system():
     assert "background: rgba(17, 24, 32, 0.92);" in cover_index_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_shell_utility_and_tabs_use_theme_tokens():
     html = read_static_html("index.html")
     shell_utility_block = html.split("    .shell-utility {", 1)[1].split("}", 1)[0]
@@ -6303,6 +6364,7 @@ def test_shell_utility_and_tabs_use_theme_tokens():
     assert "border-color: var(--theme-shell-border);" in admin_shell_docs_chip_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_shell_and_dashboard_hierarchy():
     html = read_static_html("index.html")
     day_shell_utility_block = html.split('    body[data-theme="day"] .shell-utility {', 1)[1].split("}", 1)[0]
@@ -6485,6 +6547,7 @@ def test_day_mode_adds_stronger_shell_and_dashboard_hierarchy():
     assert "color: #3d5266 !important;" in day_dashboard_coverflow_chip_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_shell_utility_preserves_row_alignment_across_themes():
     html = read_static_html("index.html")
     day_shell_utility_block = html.split('    body[data-theme="day"] .shell-utility {', 1)[1].split("}", 1)[0]
@@ -6503,6 +6566,7 @@ def test_day_mode_shell_utility_preserves_row_alignment_across_themes():
     assert "padding-bottom: 3px;" in day_shell_compact_tools_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_late_dashboard_overrides_reduce_bright_board_cells():
     html = read_static_html("index.html")
     late_board_group_block = html.rsplit('    body[data-theme="day"] .dashboard-console-shell :is(.dashboard-cabinet-board, .dashboard-cabinet-map-cell, .dashboard-cell-card, .dashboard-slot-card) {', 1)[1].split("}", 1)[0]
@@ -6516,6 +6580,7 @@ def test_day_mode_late_dashboard_overrides_reduce_bright_board_cells():
     assert "background: rgba(221, 231, 241, 0.998) !important;" in late_map_cell_active_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_rebalances_global_tabs_and_subtabs():
     html = read_static_html("index.html")
     day_tab_block = html.split('    body[data-theme="day"] .tab-btn {', 1)[1].split("}", 1)[0]
@@ -6534,6 +6599,7 @@ def test_day_mode_rebalances_global_tabs_and_subtabs():
     assert "rgba(186, 209, 222, 0.99)" in day_subtab_active_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_late_overrides_unify_category_subtabs():
     html = read_static_html("index.html")
     late_subtab_block = html.split('    body[data-theme="day"] :is(#tabMedia.admin-console-shell .goods-mode-tabs .subtab-btn, #tabCollectibles .goods-mode-tabs .subtab-btn, #tabRegister.admin-console-shell > .subtabs .subtab-btn, #tabOps.admin-console-shell > .subtabs .subtab-btn) {', 1)[1].split("}", 1)[0]
@@ -6546,6 +6612,7 @@ def test_day_mode_late_overrides_unify_category_subtabs():
     assert "border-color: rgba(79, 120, 140, 0.64) !important;" in late_subtab_active_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_home_hierarchy():
     html = read_static_html("index.html")
     day_ops_card_block = html.split('    body[data-theme="day"] #opsHomeLayout.admin-console-shell :is(.operator-home-card, .operator-weather-card, .operator-mini-card) {', 1)[1].split("}", 1)[0]
@@ -6620,6 +6687,7 @@ def test_day_mode_adds_stronger_ops_home_hierarchy():
     assert "color: color-mix(in srgb, var(--theme-admin-link, var(--brand)) 72%, var(--ink) 28%);" in day_ops_context_link_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_admin_tab_shell_hierarchy():
     html = read_static_html("index.html")
     day_admin_tab_shell_block = html.split('    body[data-theme="day"] :is(#tabMedia.admin-console-shell, #tabManage .admin-console-main, #tabRegister.admin-console-shell, #tabCollectibles) {', 1)[1].split("}", 1)[0]
@@ -6635,6 +6703,7 @@ def test_day_mode_adds_stronger_admin_tab_shell_hierarchy():
     assert "rgba(203, 214, 224, 0.988)" in day_media_subtabs_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_rebalances_media_manage_surface_depth_and_button_priority():
     html = read_static_html("index.html")
     manage_shell_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main {', 1)[1].split("}", 1)[0]
@@ -6670,6 +6739,7 @@ def test_day_mode_rebalances_media_manage_surface_depth_and_button_priority():
     assert "background: linear-gradient(180deg, rgba(223, 237, 245, 0.985), rgba(208, 225, 236, 0.982));" in kicker_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_media_manage_disabled_buttons_stay_light_and_legible():
     html = read_static_html("index.html")
     disabled_ghost_block = html.split('    body[data-theme="day"] #tabManage .admin-console-main .btn.ghost:disabled {', 1)[1].split("}", 1)[0]
@@ -6678,6 +6748,7 @@ def test_day_mode_media_manage_disabled_buttons_stay_light_and_legible():
     assert "color: color-mix(in srgb, var(--theme-admin-text-meta) 86%, white 14%);" in disabled_ghost_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_lightens_media_manage_selected_result_surfaces():
     html = read_static_html("index.html")
     pick_block = html.split('    body[data-theme="day"] #tabManage .result-item.pick {', 1)[1].split("}", 1)[0]
@@ -6693,6 +6764,7 @@ def test_day_mode_lightens_media_manage_selected_result_surfaces():
     assert "border-top-color: color-mix(in srgb, var(--theme-admin-accent) 18%, var(--line) 82%);" in preview_first_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_lightens_media_manage_expanded_related_group_surface():
     html = read_static_html("index.html")
     same_group_block = html.split('    body[data-theme="day"] #tabManage .home-copy-group.same {', 1)[1].split("}", 1)[0]
@@ -6704,6 +6776,7 @@ def test_day_mode_lightens_media_manage_expanded_related_group_surface():
     assert "border-top-color: color-mix(in srgb, var(--line) 62%, white 38%);" in inline_host_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_manual_block_hierarchy():
     html = read_static_html("index.html")
     day_manual_block = html.split('    body[data-theme="day"] .manual-block {', 1)[1].split("}", 1)[0]
@@ -6714,6 +6787,7 @@ def test_day_mode_adds_stronger_manual_block_hierarchy():
     assert "rgba(223, 231, 239, 0.992) 100%" in day_manual_summary
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_collectibles_hierarchy():
     html = read_static_html("index.html")
     day_collectibles_tab_block = html.split('    body[data-theme="day"] #tabCollectibles {', 1)[1].split("}", 1)[0]
@@ -6757,6 +6831,7 @@ def test_collectibles_mode_tabs_share_console_subtab_treatment():
     assert "border-color: var(--admin-console-accent);" in subtab_active_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_exception_hierarchy():
     html = read_static_html("index.html")
     day_ops_tab_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell {', 1)[1].split("}", 1)[0]
@@ -6793,6 +6868,7 @@ def test_day_mode_adds_stronger_ops_exception_hierarchy():
     assert "color: #42586b;" in day_ops_exception_cover_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_strengthens_ops_system_status_text_hierarchy():
     html = read_static_html("index.html")
     summary_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell #opsSystemStatusSummary {', 1)[1].split("}", 1)[0]
@@ -6803,6 +6879,7 @@ def test_day_mode_strengthens_ops_system_status_text_hierarchy():
     assert "color: color-mix(in srgb, var(--theme-admin-text-muted) 84%, var(--ink) 16%);" in detail_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_camera_hierarchy():
     html = read_static_html("index.html")
     day_camera_tab_block = html.split('    body[data-theme="day"] #tabCamera.page-column {', 1)[1].split("}", 1)[0]
@@ -6835,6 +6912,7 @@ def test_day_mode_adds_stronger_camera_hierarchy():
     assert "color: #203649 !important;" in day_camera_row_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_export_hierarchy():
     html = read_static_html("index.html")
     day_export_card_block = html.split('    body[data-theme="day"] #opsExportPanel > .layout > .card {', 1)[1].split("}", 1)[0]
@@ -6852,6 +6930,7 @@ def test_day_mode_adds_stronger_ops_export_hierarchy():
     assert "background: rgba(232, 239, 246, 0.992) !important;" in day_export_file_button_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_account_and_provider_hierarchy():
     html = read_static_html("index.html")
     day_ops_account_provider_card_block = html.split('    body[data-theme="day"] :is(#opsAccountPanel, #opsProviderPanel) > .layout > .card {', 1)[1].split("}", 1)[0]
@@ -6879,6 +6958,7 @@ def test_day_mode_adds_stronger_ops_account_and_provider_hierarchy():
     assert "color: #14384d !important;" in day_ops_account_provider_primary_btn_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_form_microcontrast():
     html = read_static_html("index.html")
     ops_label_block = html.split('    body[data-theme="day"] #tabOps.admin-console-shell .subtab-panel label {', 1)[1].split("}", 1)[0]
@@ -6892,6 +6972,7 @@ def test_day_mode_adds_stronger_ops_form_microcontrast():
     assert "color: #41586d;" in ops_meta_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_lightens_ops_provider_group_surfaces():
     html = read_static_html("index.html")
     provider_group_block = html.split('    body[data-theme="day"] #opsProviderPanel .ops-provider-group {', 1)[1].split("}", 1)[0]
@@ -6904,6 +6985,7 @@ def test_day_mode_lightens_ops_provider_group_surfaces():
     assert "color: color-mix(in srgb, var(--theme-admin-text-muted) 92%, var(--ink) 8%) !important;" in provider_label_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_meta_sync_hierarchy():
     html = read_static_html("index.html")
     day_ops_meta_sync_card_block = html.split('    body[data-theme="day"] #opsMetaSyncPanel > .layout > .card {', 1)[1].split("}", 1)[0]
@@ -6916,6 +6998,7 @@ def test_day_mode_adds_stronger_ops_meta_sync_hierarchy():
     assert "border-color: rgba(98, 115, 133, 0.58) !important;" in day_ops_meta_sync_surface_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_barcode_feedback_hierarchy():
     html = read_static_html("index.html")
     day_barcode_toast_block = html.split('    body[data-theme="day"] .admin-barcode-toast {', 1)[1].split("}", 1)[0]
@@ -6926,6 +7009,7 @@ def test_day_mode_adds_stronger_barcode_feedback_hierarchy():
     assert 'background: color-mix(in srgb, var(--theme-admin-panel-bg-2) 48%, var(--ink) 52%);' in day_barcode_slot_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_cabinet_and_slot_hierarchy():
     html = read_static_html("index.html")
     day_ops_cabinet_slot_card_block = html.split('    body[data-theme="day"] :is(#opsCabinetPanel, #opsCameraPanel, #opsSlotPanel) > .layout > .card {', 1)[1].split("}", 1)[0]
@@ -6946,6 +7030,7 @@ def test_day_mode_adds_stronger_ops_cabinet_and_slot_hierarchy():
     assert "color: #203649 !important;" in day_ops_cabinet_slot_row_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_ops_camera_table_hierarchy():
     html = read_static_html("index.html")
     day_ops_camera_table_wrap_block = html.split('    body[data-theme="day"] #opsCameraPanel .table-wrap {', 1)[1].split("}", 1)[0]
@@ -6961,6 +7046,7 @@ def test_day_mode_adds_stronger_ops_camera_table_hierarchy():
     assert "color: #203649 !important;" in day_ops_camera_row_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_image_gallery_hierarchy():
     html = read_static_html("index.html")
     day_gallery_panel_block = html.split('    body[data-theme="day"] .image-gallery-panel {', 1)[1].split("}", 1)[0]
@@ -6972,6 +7058,7 @@ def test_day_mode_adds_stronger_image_gallery_hierarchy():
     assert "background: rgba(229, 236, 243, 0.994);" in day_gallery_thumb_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_manage_detail_hierarchy():
     html = read_static_html("index.html")
     day_manage_primary_block = html.split('    body[data-theme="day"] #tabManage :is(#homeLinkedGoodsPanel, #homeMasterAddBlock) {', 1)[1].split("}", 1)[0]
@@ -7019,6 +7106,7 @@ def test_day_mode_adds_stronger_manage_detail_hierarchy():
     assert "color: #14384d !important;" in day_manage_load_btn_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_source_workbench_diff_hierarchy():
     html = read_static_html("index.html")
     day_diff_ghost_btn_block = html.split('    body[data-theme="day"] #sourceWorkbenchDiffReview .btn.ghost {', 1)[1].split("}", 1)[0]
@@ -7042,6 +7130,7 @@ def test_day_mode_adds_stronger_source_workbench_diff_hierarchy():
     assert "rgba(221, 237, 246, 0.998)" in day_diff_row_selected_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_register_hierarchy():
     html = read_static_html("index.html")
     day_register_shell_block = html.split('    body[data-theme="day"] #tabRegister.admin-console-shell,', 1)[1].split("}", 1)[0]
@@ -7113,6 +7202,7 @@ def test_day_mode_adds_stronger_register_hierarchy():
     assert "color: #203649 !important;" in day_register_row_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_media_search_hierarchy():
     html = read_static_html("index.html")
     day_search_shell_block = html.split('    body[data-theme="day"] #tabSearch .admin-console-grid {', 1)[1].split("}", 1)[0]
@@ -7187,6 +7277,7 @@ def test_day_mode_adds_stronger_media_search_hierarchy():
     assert "color: #2a5875;" in day_search_preview_link_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_adds_stronger_page_help_hierarchy():
     html = read_static_html("index.html")
     day_help_drawer_block = html.split('    body[data-theme="day"] .page-help-drawer {', 1)[1].split("}", 1)[0]
@@ -7196,6 +7287,7 @@ def test_day_mode_adds_stronger_page_help_hierarchy():
     assert 'background: rgba(229, 236, 243, 0.994);' in day_help_note_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_unifies_help_dots_and_help_triggers_across_admin_shell():
     html = read_static_html("index.html")
     shell_selector = 'body[data-theme="day"] :is(.admin-console-shell, .dashboard-console-shell, #registeredMasterMergeCard.registered-master-merge-console)'
@@ -7249,6 +7341,7 @@ def test_global_controls_and_admin_metrics_use_theme_tokens():
     assert "color: var(--ink);" in btn_ghost_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_purchase_queue_remaining_runtime_status_copy_uses_i18n():
     html = read_static_html("index.html")
     runtime_block = html.split("async function enrichPurchaseImportFromItemPage(queueId) {", 1)[1].split("function dashboardMoveKindLabel", 1)[0]
@@ -7273,6 +7366,7 @@ def test_purchase_queue_remaining_runtime_status_copy_uses_i18n():
     assert '"media.register.purchase.queue.status.create_candidate_complete":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_and_ops_runtime_status_copy_uses_i18n():
     html = read_static_html("index.html")
     operator_block = html.split("async function routeGlobalBarcodeScanForOps(barcode) {", 1)[1].split("function purchaseImportVendorLabel", 1)[0]
@@ -7313,6 +7407,7 @@ def test_operator_and_ops_runtime_status_copy_uses_i18n():
     assert '"ops.account.status.default_readonly":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_focus_and_weather_runtime_copy_use_i18n():
     html = read_static_html("index.html")
     operator_block = html.split("function hasOperatorCurrentLocation(row) {", 1)[1].split("function renderOpsLibraryContextSlotPreviewContent(item, rows, options = {}) {", 1)[0]
@@ -7338,6 +7433,7 @@ def test_operator_focus_and_weather_runtime_copy_use_i18n():
     assert '"operator.weather.office.updated_now":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_collectibles_and_ops_manuals_use_i18n_keys():
     html = read_static_html("index.html")
     assert 'data-i18n="manual.collectibles.summary"' in html
@@ -7352,6 +7448,7 @@ def test_collectibles_and_ops_manuals_use_i18n_keys():
     assert 'data-i18n="manual.ops.meta_sync.summary"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_collectibles_and_ops_help_dots_use_help_keys():
     html = read_static_html("index.html")
     assert 'data-page-help-open="collectibles"' in html
@@ -7590,6 +7687,7 @@ def test_ops_backup_and_restore_runtime_status_copy_uses_i18n():
     assert '"ops.export.status.master_csv_failed":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_dashboard_and_ops_system_static_copy_use_i18n_keys():
     html = read_static_html("index.html")
     assert 'data-page-help-open="dashboard"' in html
@@ -7611,6 +7709,7 @@ def test_operator_dashboard_and_ops_system_static_copy_use_i18n_keys():
     assert '"ops.system.summary.idle":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_dashboard_and_home_primary_controls_use_i18n_keys():
     html = read_static_html("index.html")
     assert 'data-i18n="dashboard.overview.subtitle"' in html
@@ -7679,6 +7778,7 @@ def test_dashboard_stats_and_slot_mapping_defaults_use_i18n_keys():
     assert '"dashboard.selection.summary.zero":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<div class="goods-mode-tabs" role="tablist" aria-label="수집품 화면 모드" data-i18n-aria-label="collectibles.mode.aria">' in html
@@ -7722,6 +7822,7 @@ def test_collectibles_static_form_labels_and_options_use_i18n_keys():
     assert '"collectibles.register.field.label_names.label":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_register_static_form_labels_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<label for="quickQuantity" data-i18n="media.register.direct.field.quantity.label">수량</label>' in html
@@ -7753,6 +7854,7 @@ def test_media_register_static_form_labels_use_i18n_keys():
     assert '"media.register.review.title":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_master_cleanup_static_copy_uses_i18n_keys():
     html = read_static_html("index.html")
     assert '<summary data-i18n="manual.register_master.summary">마스터 정리 페이지 활용 매뉴얼</summary>' in html
@@ -7839,6 +7941,7 @@ def test_purchase_import_candidate_row_uses_single_line_search_layout():
     assert artist_pos < item_pos < query_pos < source_pos
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_overview_actions_use_media_icon_button_pattern():
     html = read_static_html("index.html")
     assert 'id="homeOpenManageBtn" class="btn ghost icon-btn" type="button" data-i18n-title="dashboard.action.search" data-i18n-aria-label="dashboard.action.search"' in html
@@ -7956,6 +8059,7 @@ def test_dashboard_slot_and_workbench_open_detail_manage_from_cards_and_buttons(
     assert "void openDashboardOwnedItemDetailManage(ownedItemId, source);" in workbench_click_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_shelfview_uses_muted_console_aligned_background():
     html = read_static_html("index.html")
     shelf_block = html.rsplit("#homeDashSlotItems.dashboard-slot-shelfview,\n    #homeDashWorkbenchList.dashboard-slot-shelfview {", 1)[1].split("}", 1)[0]
@@ -7992,6 +8096,7 @@ def test_dashboard_selected_item_meta_panel_is_not_rendered_above_cover_flow_too
     assert 'setDisplayMode(el, "flex");' not in function_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_selected_sort_artist_row_uses_aligned_grid_layout():
     html = read_static_html("index.html")
     assert 'id="homeDashSelectedSortArtistRow" class="dashboard-selected-sort-artist-row"' in html
@@ -8141,6 +8246,7 @@ def test_dashboard_workbench_warning_helper_clears_when_saved_sort_artist_matche
     assert 'if (dashboardWorkbenchSortArtistMatchesDomain(row)) return false;' in helper_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_move_status_includes_sort_warning_notice_for_warned_rows():
     html = read_static_html("index.html")
     assert '"dashboard.move.progress_sort_warning":' in html
@@ -8149,6 +8255,7 @@ def test_dashboard_move_status_includes_sort_warning_notice_for_warned_rows():
     assert re.search(r"\?\s*t\(\s*['\"]dashboard\.move\.progress_sort_warning['\"]", move_block)
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_move_done_includes_sort_warning_followup():
     html = read_static_html("index.html")
     assert '"dashboard.move.done_sort_warning_followup":' in html
@@ -8256,6 +8363,7 @@ def test_dashboard_workbench_places_sort_warning_toggle_in_selection_row():
     assert 'class="dashboard-workbench-checkbox" for="homeDashSortWarningOnly"' in workbench_summary
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_workbench_sort_helper_supports_created_and_name_modes():
     html = read_static_html("index.html")
     assert 'function dashboardWorkbenchSortModeValue() {' in html
@@ -8295,6 +8403,7 @@ def test_dashboard_slot_includes_media_filter_field():
     assert '"dashboard.cover_flow.field.category.label": "미디어"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_slot_media_filter_helper_supports_selected_category():
     html = read_static_html("index.html")
     assert 'function dashboardSlotMediaFilterValue() {' in html
@@ -8305,6 +8414,7 @@ def test_dashboard_slot_media_filter_helper_supports_selected_category():
     assert 'return list.filter((row) => String(row?.category || "").trim().toUpperCase() === category);' in helper_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_slot_sort_helper_supports_created_and_name_modes():
     html = read_static_html("index.html")
     assert 'function dashboardSlotSortModeValue() {' in html
@@ -8352,6 +8462,7 @@ def test_dashboard_workbench_rows_apply_media_filter_then_sort():
     assert 'return sortDashboardWorkbenchItems(filterDashboardWorkbenchItemsByMedia(homeDashboardUnassignedItems));' in block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_dashboard_workbench_persists_filter_preferences_by_role():
     html = read_static_html("index.html")
     assert 'const DASHBOARD_WORKBENCH_PREFS_KEY = "__PROJECT_SLUG__.dashboardWorkbenchPrefsByRole.v1";' in html
@@ -8430,6 +8541,7 @@ def test_index_dashboard_selection_toolbar_uses_tiered_visual_weights_for_select
     assert "background: color-mix(in srgb, var(--paper) 74%, var(--theme-admin-accent, var(--brand)) 26%);" in primary_hover_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_exception_account_and_export_labels_use_i18n_keys():
     html = read_static_html("index.html")
     assert 'data-page-help-open="ops-exception"' in html
@@ -8487,6 +8599,7 @@ def test_ops_camera_slot_exception_and_account_static_controls_use_i18n_keys():
     assert 'data-i18n="ops.exception.field.limit.label"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_secondary_static_controls_and_options_use_i18n_keys():
     html = read_static_html("index.html")
     assert 'data-i18n="ops.cabinet.intro"' in html
@@ -8603,6 +8716,7 @@ def test_ops_remaining_select_options_and_headers_use_i18n_keys():
     assert '"ops.account.table.header.updated_at":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_and_collectibles_common_domain_size_and_unspecified_options_use_i18n_keys():
     html = read_static_html("index.html")
 
@@ -8713,6 +8827,7 @@ def test_signature_cover_badges_use_script_s_short_label_in_all_locales():
     assert '"common.signature_short.purchase_included": "𝓢"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_search_result_card_falls_back_to_member_signature_badge():
     row_html = render_media_search_result_card_html({
         "id": 103,
@@ -9044,6 +9159,7 @@ def test_operator_recent_and_search_result_cards_use_i18n_runtime_copy():
     assert 't("operator.feed.state.unslotted")' in summary_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_search_result_cards_render_collector_style_meta_line():
     html = read_static_html("index.html")
     search_block = html.split("function renderOperatorLookupResults() {", 1)[1].split("async function openOperatorCabinetLocationFromButton(button) {", 1)[0]
@@ -9105,6 +9221,7 @@ def test_manage_source_meta_summary_uses_compact_label_value_rows():
     assert 'setHiddenState(box, false);' in summary_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_cards_place_registered_or_moved_time_on_second_line():
     html = read_static_html("index.html")
     recent_block = html.split("function renderOperatorHomeRecentItems(items, options = {}) {", 1)[1].split("function renderOperatorFeedItems(items, options = {}) {", 1)[0]
@@ -9182,6 +9299,7 @@ def test_operator_cards_use_current_location_button_under_title_side_time():
     assert 'operator-title-side-location-btn' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_cards_render_label_id_as_outlined_chip():
     html = read_static_html("index.html")
     recent_block = html.split("function renderOperatorHomeRecentItems(items, options = {}) {", 1)[1].split("function renderOperatorFeedItems(items, options = {}) {", 1)[0]
@@ -9199,6 +9317,7 @@ def test_operator_cards_render_label_id_as_outlined_chip():
     assert 'operator-meta-line' in search_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_cards_place_label_chip_before_time_on_second_line():
     html = read_static_html("index.html")
     recent_block = html.split("function renderOperatorHomeRecentItems(items, options = {}) {", 1)[1].split("function renderOperatorFeedItems(items, options = {}) {", 1)[0]
@@ -9220,6 +9339,7 @@ def test_operator_title_side_meta_uses_small_runout_sized_text():
     assert "font-size: 0.72rem;" in css_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_media_search_and_manage_core_labels_use_i18n_keys():
     html = read_static_html("index.html")
     assert '<strong data-i18n="media.title">미디어</strong>' in html
@@ -9345,6 +9465,7 @@ def test_index_dashboard_bulk_popover_supports_close_button_and_outside_click():
     assert 'id="homeDashWorkbenchClearBtn" class="btn ghost tiny dashboard-workbench-actionbtn icon-symbol-btn icon-symbol-btn--clear-selection"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_workbench_embeds_controls_inside_cover_flow_surface():
     html = read_static_html("index.html")
     workbench_start = '          <section class="dashboard-panel dashboard-workbench-panel dashboard-console-panel dashboard-console-panel--rail">'
@@ -9514,6 +9635,7 @@ def test_index_dashboard_removes_secondary_grid_and_moves_source_summary_into_he
     assert 'id="homeDashKpiBar"' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_source_summary_uses_hero_count_style_for_discogs_and_maniadb_totals():
     html = read_static_html("index.html")
     assert 'id="homeDashSourceSummary"' in html
@@ -9555,6 +9677,7 @@ def test_index_dashboard_hero_grid_keeps_source_summary_in_single_width_card():
     assert "const topRows = externalRows.slice(0, 3);" in source_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_adds_connection_quality_hero_card():
     html = read_static_html("index.html")
     assert 'accent-quality' in html
@@ -9567,6 +9690,7 @@ def test_index_dashboard_adds_connection_quality_hero_card():
     assert '"dashboard.stat.cover_missing":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_dashboard_placement_card_uses_completion_ratio_and_recent_move_summary():
     html = read_static_html("index.html")
     assert '배치 현황' in html
@@ -9823,6 +9947,7 @@ def test_index_register_lookup_and_cover_preview_use_display_helper_for_simple_t
     assert ".style.display" not in cover_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_shared_display_helpers_cover_operator_dashboard_and_master_edit_toggles():
     html = read_static_html("index.html")
     track_block = html.split("    function renderHomeTrackInfoPanel() {", 1)[1].split("    function applyCandidateCollectorToHomeDetail(candidate) {", 1)[0]
@@ -9883,6 +10008,7 @@ def test_index_dashboard_surface_dock_and_csv_kpi_use_display_helpers():
     assert 'setDisplayIfPresent("csvKpi", "grid");' in csv_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_master_lookup_waits_for_explicit_query_button():
     html = read_static_html("index.html")
     assert "function resetHomeMasterLookupUi(opts = {}) {" in html
@@ -9909,6 +10035,7 @@ def test_index_manage_item_loader_can_reset_master_lookup_without_dropping_selec
     assert "if (!keepMasterContext || resetMasterLookupUi) {" in block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_product_edit_and_master_lookup_use_distinct_visual_sections():
     html = read_static_html("index.html")
     assert "#homeEditorProductBlock {" in html
@@ -9924,6 +10051,7 @@ def test_index_manage_product_edit_and_master_lookup_use_distinct_visual_section
     assert '"media.manage.master.lookup.note":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_console_shell_darkens_legacy_editor_surfaces():
     html = read_static_html("index.html")
     shelf_block = html.split("#tabManage .shelf-track-wrap {", 1)[1].split("}", 1)[0]
@@ -9948,6 +10076,7 @@ def test_index_manage_console_shell_darkens_legacy_editor_surfaces():
     assert "border-top: 1px dashed rgba(137, 151, 171, 0.08);" in divider_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_console_shell_restyles_secondary_manage_tokens():
     html = read_static_html("index.html")
     summary_block = html.split("#tabManage :is(.home-master-results-summary, .home-manage-secondary-summary, .ops-compact-extra-fields > summary, .source-meta-summary-head strong, .source-meta-details summary) {", 1)[1].split("}", 1)[0]
@@ -9966,6 +10095,7 @@ def test_index_manage_console_shell_restyles_secondary_manage_tokens():
     assert "background: linear-gradient(180deg, rgba(30, 19, 21, 0.98), rgba(22, 15, 18, 0.98));" in danger_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_console_shell_darkens_meta_search_boxes_and_aligns_lookup_controls():
     html = read_static_html("index.html")
     box_block = html.split("#tabManage .meta-search-box {", 1)[1].split("}", 1)[0]
@@ -9995,6 +10125,7 @@ def test_index_manage_console_shell_darkens_meta_search_boxes_and_aligns_lookup_
     assert "background: var(--admin-console-panel-bg-2);" in result_list_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_console_shell_tones_down_table_headers_and_row_rules():
     html = read_static_html("index.html")
     row_rule_block = html.split("#tabManage :is(th, td) {", 1)[1].split("}", 1)[0]
@@ -10004,6 +10135,7 @@ def test_index_manage_console_shell_tones_down_table_headers_and_row_rules():
     assert "color: var(--admin-console-text-muted);" in header_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_cabinet_and_slot_tables_tone_down_headers_and_row_rules():
     html = read_static_html("index.html")
     table_block = html.split("#opsCabinetPanel .table-wrap,", 1)[1].split("}", 1)[0]
@@ -10017,6 +10149,7 @@ def test_ops_cabinet_and_slot_tables_tone_down_headers_and_row_rules():
     assert "color: var(--admin-console-text-muted);" in header_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_tab_ops_console_shell_darkens_subtab_forms_and_tables():
     html = read_static_html("index.html")
     surface_block = html.split("#tabOps.admin-console-shell .subtab-panel :is(.table-wrap, .status, .compact-line) {", 1)[1].split("}", 1)[0]
@@ -10036,6 +10169,7 @@ def test_tab_ops_console_shell_darkens_subtab_forms_and_tables():
     assert "color: var(--admin-console-text-muted);" in label_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_tab_register_console_shell_tones_down_table_headers_and_row_rules():
     html = read_static_html("index.html")
     table_block = html.split("#tabRegister.admin-console-shell .table-wrap {", 1)[1].split("}", 1)[0]
@@ -10049,6 +10183,7 @@ def test_tab_register_console_shell_tones_down_table_headers_and_row_rules():
     assert "color: var(--admin-console-text-muted);" in header_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_structural_landing_uses_master_operations_copy():
     html = read_static_html("index.html")
     assert 'data-i18n="media.manage.section2_2.title"' in html
@@ -10062,6 +10197,7 @@ def test_index_manage_structural_landing_uses_master_operations_copy():
     assert '"media.manage.master.fetch.title":' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_right_aligns_mutating_action_rows():
     html = read_static_html("index.html")
     assert ".home-manage-actions-right {" in html
@@ -10082,6 +10218,7 @@ def test_index_manage_master_lookup_uses_search_style_paginated_results_and_coll
     assert 'rows.map(homeMasterAddVariantItemHtml).join("")' in render_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_places_master_delete_controls_below_product_editor():
     html = read_static_html("index.html")
     assert 'id="homeMasterDeleteBtn"' in html
@@ -10100,6 +10237,7 @@ def test_index_manage_inline_editor_can_mount_into_related_location_or_standalon
     assert 'return $("homeEditorStandaloneMount");' in block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_manage_view_uses_display_helper_for_editor_mount_and_search_surface():
     html = read_static_html("index.html")
     render_block = html.split("    function renderAdminManageSurface() {", 1)[1].split("    function showHomeSearchView() {", 1)[0]
@@ -10393,6 +10531,7 @@ def test_register_console_direct_and_api_lookup_surfaces_use_console_panel_color
     assert "background: var(--admin-console-panel-bg);" in accent_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_console_shell_links_use_high_contrast_console_palette():
     html = read_static_html("index.html")
 
@@ -10439,6 +10578,7 @@ def test_admin_console_shell_artist_context_uses_console_contrast_tokens():
     assert "color: var(--admin-console-link);" in link_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_console_shell_darkens_operator_helper_result_and_recent_surfaces():
     html = read_static_html("index.html")
 
@@ -10457,6 +10597,7 @@ def test_admin_console_shell_darkens_operator_helper_result_and_recent_surfaces(
     assert "color: var(--admin-console-text-muted);" in subpanel_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_console_shell_operator_buttons_keep_contrast_on_hover_and_active():
     html = read_static_html("index.html")
 
@@ -10473,6 +10614,7 @@ def test_admin_console_shell_operator_buttons_keep_contrast_on_hover_and_active(
     assert "color: var(--admin-console-text);" in hover_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_console_shell_buttons_keep_text_visible_on_hover():
     html = read_static_html("index.html")
 
@@ -10489,6 +10631,7 @@ def test_admin_console_shell_buttons_keep_text_visible_on_hover():
     assert "background: rgba(232, 98, 10, 0.78);" in secondary_block
     assert "color: #fff7ed;" in secondary_block
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_console_shell_rebalances_selection_context_meta_palette():
     html = read_static_html("index.html")
 
@@ -10519,6 +10662,7 @@ def test_admin_console_shell_rebalances_selection_context_meta_palette():
     assert "color: var(--console-text-dim);" in dashboard_meta_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_manage_related_version_groups_use_console_surface_tones():
     html = read_static_html("index.html")
 
@@ -10552,6 +10696,7 @@ def test_home_master_location_preview_cover_uses_contain_fit():
     assert "box-sizing: border-box;" in cover_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_console_shell_selected_result_surfaces_use_dark_warm_console_palette():
     html = read_static_html("index.html")
 
@@ -10571,6 +10716,7 @@ def test_admin_console_shell_selected_result_surfaces_use_dark_warm_console_pale
     assert "color: var(--admin-console-text-muted);" in pick_meta_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_home_master_member_preview_uses_matched_height_actions_and_low_contrast_dividers():
     html = read_static_html("index.html")
 
@@ -10586,6 +10732,7 @@ def test_home_master_member_preview_uses_matched_height_actions_and_low_contrast
     assert "border-radius: 4px;" in location_btn_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_home_search_master_cards_use_tinted_surface_to_separate_master_groups():
     html = read_static_html("index.html")
 
@@ -10596,6 +10743,7 @@ def test_home_search_master_cards_use_tinted_surface_to_separate_master_groups()
     assert "box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);" in result_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_lightens_media_search_result_list_surfaces():
     html = read_static_html("index.html")
 
@@ -10644,6 +10792,7 @@ def test_day_mode_lightens_media_search_result_list_surfaces():
     assert "0 2px 6px rgba(108, 126, 144, 0.12)" in pick_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_day_mode_lightens_media_search_context_selected_preview():
     html = read_static_html("index.html")
     preview_pick_block = html.split('    body[data-theme="day"] #tabSearch .home-master-member-preview-item.is-context-selected {', 1)[1].split("}", 1)[0]
@@ -10668,6 +10817,7 @@ def test_admin_console_shell_promotes_search_section_titles_and_form_labels_to_c
     assert "color: var(--admin-console-text-muted);" in label_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_source_workbench_console_surfaces_and_text_use_admin_contrast_tokens():
     html = read_static_html("index.html")
 
@@ -10718,6 +10868,7 @@ def test_source_workbench_target_rows_render_left_cover_art_shell():
     assert '<div class="source-workbench-head-main">' in render_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_collectibles_and_ops_use_console_panel_grammar():
     html = read_static_html("index.html")
 
@@ -10808,6 +10959,7 @@ def test_collectibles_and_ops_use_console_panel_grammar():
     assert "background: var(--admin-console-panel-bg);" in ops_panel_card_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_console_status_and_exception_anchors_remain_present():
     html = read_static_html("index.html")
 
@@ -10846,6 +10998,7 @@ def test_ops_console_status_and_exception_anchors_remain_present():
     assert "padding: 8px;" in ops_exception_list_padding_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_exception_queue_rows_and_summary_cards_use_console_surface_tones():
     html = read_static_html("index.html")
     summary_box_block = extract_css_block(html, "#opsExceptionPanel .ops-exception-box {", "last")
@@ -10868,6 +11021,7 @@ def test_ops_exception_queue_rows_and_summary_cards_use_console_surface_tones():
     assert "color: var(--admin-console-text-muted);" in meta_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_ops_provider_and_export_panels_use_console_surface_overrides():
     html = read_static_html("index.html")
 
@@ -10943,6 +11097,7 @@ def test_admin_console_shell_has_shared_tokens_and_breakpoints():
     assert "@media (max-width: 1120px)" in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_console_extension_removes_rounded_tab_surfaces():
     html = read_static_html("index.html")
 
@@ -11165,6 +11320,7 @@ def test_master_search_and_home_meta_runtime_copy_use_i18n_keys():
     assert 't("media.manage.master.fetch.status.results_complete"' in home_meta_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_home_manage_runtime_copy_uses_i18n_keys():
     html = read_static_html("index.html")
     assert '"media.manage.search.matched_tracks":' in html
@@ -11441,6 +11597,7 @@ def test_index_storage_mapping_slot_tiles_allow_over_100_occupancy_labels():
     assert "const percentText = `${Math.max(0, Math.floor(ratio * 100)).toFixed(0)}%`;" in label_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_storage_mapping_keeps_neutral_surfaces_and_orange_state_channels():
     html = read_static_html("index.html")
     cell_block = html.split(".dashboard-cabinet-map-cell {", 1)[1].split("}", 1)[0]
@@ -11530,6 +11687,7 @@ def test_index_dashboard_cabinet_detail_hides_floor_grid_below_cover_flow():
     assert 'setHiddenState(floorsRoot, true);' in block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_storage_mapping_grid_clamps_min_width_to_avoid_panel_overflow():
     html = read_static_html("index.html")
     for selector in (
@@ -11901,6 +12059,7 @@ def test_index_defines_ops_cabinet_route_helper_and_query_contract():
     assert 'switchShellMode("cabinets",' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_operator_results_expose_cabinet_open_action_in_readonly_shell():
     html = read_static_html("index.html")
     assert 'data-operator-open-cabinet="${ownedItemId}"' in html
@@ -12289,6 +12448,7 @@ def test_remaining_runtime_copy_uses_i18n_for_dashboard_manage_and_download_flow
     assert 'if (!res.ok) throw new Error(data.detail || t("ops.restore.status.save_failed"));' in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_index_inline_script_parses_without_syntax_error():
     html = read_static_html("index.html")
     scripts = extract_inline_scripts(html)
@@ -12320,6 +12480,7 @@ def test_primary_navigation_stays_in_hidden_header_tabs_until_sidebar_scope_is_a
     assert "nav.camera" not in nav_block
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_admin_header_places_camera_menu_immediately_before_main_utility_mount():
     html = read_static_html("index.html")
     hero_start = '<header id="appHero" class="hero admin-shell-hero">'
@@ -12366,6 +12527,7 @@ def test_shell_mode_css_hides_opposite_hero_even_if_display_state_drifts():
     assert 'body[data-shell-mode="cabinets"] #appHero' in ops_guard
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_operator_session_hides_admin_role_badge_in_utility_row():
     html = read_static_html("index.html")
 
@@ -12388,6 +12550,7 @@ def test_page_help_drawer_carries_the_current_accessibility_contract():
     assert "data-nav-drawer-toggle" not in html
 
 
+@pytest.mark.xfail(reason="UI assertion not yet implemented", strict=False)
 def test_shell_mode_hides_redundant_header_jump_buttons():
     html = read_static_html("index.html")
     assert 'body[data-shell-mode="admin"] #shellAdminBtn,' in html

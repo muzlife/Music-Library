@@ -1552,9 +1552,11 @@
 
     <!-- AI Artist Bio Context -->
     <div class="artist-bio-section" id="detailsBioSection" style="display:none;">
-      <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.artist_ctx">아티스트 컨텍스트 (AI)</h3>
-      <div class="artist-bio-text" id="detailsBioText">불러오는 중...</div>
-      <div id="detailsReviewSection" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--surface-border);">
+      <div id="detailsBioSubSection">
+        <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.artist_ctx">아티스트 컨텍스트 (AI)</h3>
+        <div class="artist-bio-text" id="detailsBioText" style="margin-bottom:12px;">불러오는 중...</div>
+      </div>
+      <div id="detailsReviewSection" style="display:none; padding-top:12px; border-top:1px dashed var(--surface-border);">
         <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">앨범 리뷰 (Wikipedia)</h3>
         <div class="artist-bio-text" id="detailsReviewText" style="font-size:0.82rem; line-height:1.5;"></div>
       </div>
@@ -2014,18 +2016,47 @@
       }
     }
 
+    // Update AI Artist Bio & Review Parent Section Visibility
+    function updateBioSectionVisibility() {
+      const bioSection = document.getElementById('detailsBioSection');
+      const bioSubSection = document.getElementById('detailsBioSubSection');
+      const reviewSection = document.getElementById('detailsReviewSection');
+      
+      const hasBio = (bioSubSection.style.display !== 'none');
+      const hasReview = (reviewSection.style.display !== 'none');
+      
+      if (hasBio || hasReview) {
+        bioSection.style.display = 'block';
+      } else {
+        bioSection.style.display = 'none';
+      }
+      
+      // Adjust border and spacing between sub-sections
+      if (hasBio && hasReview) {
+        reviewSection.style.borderTop = '1px dashed var(--surface-border)';
+        reviewSection.style.marginTop = '12px';
+        reviewSection.style.paddingTop = '12px';
+      } else if (hasReview) {
+        reviewSection.style.borderTop = 'none';
+        reviewSection.style.marginTop = '0';
+        reviewSection.style.paddingTop = '0';
+      }
+    }
+
     // Load AI Artist Bio Context
     async function loadArtistContext(artistName, category) {
-      const bioSection = document.getElementById('detailsBioSection');
+      const bioSubSection = document.getElementById('detailsBioSubSection');
       const bioText = document.getElementById('detailsBioText');
 
       if (!artistName) {
-        bioSection.style.display = 'none';
+        bioSubSection.style.display = 'none';
+        updateBioSectionVisibility();
         return;
       }
 
-      bioSection.style.display = 'block';
+      bioSubSection.style.display = 'block';
       bioText.textContent = '아티스트 메타데이터를 검색하는 중...';
+      updateBioSectionVisibility();
 
       try {
         const res = await apiFetch('/ops/artist-context', {
@@ -2035,18 +2066,24 @@
             category: category
           })
         });
-        if (!res) return;
+        if (!res) {
+          bioSubSection.style.display = 'none';
+          updateBioSectionVisibility();
+          return;
+        }
         const data = await res.json();
 
         if (data && data.available && data.summary) {
           bioText.innerHTML = escapeHtml(data.summary).replace(/\n/g, '<br>');
+          bioSubSection.style.display = 'block';
         } else {
-          bioText.textContent = '등록된 아티스트 컨텍스트 정보가 없습니다.';
+          bioSubSection.style.display = 'none';
         }
       } catch (err) {
         console.error('Bio fetch failed', err);
-        bioText.textContent = '컨텍스트를 가져오는데 실패했습니다.';
+        bioSubSection.style.display = 'none';
       }
+      updateBioSectionVisibility();
     }
 
     // Detail Panel Selection
@@ -2187,6 +2224,9 @@
         reviewSection.style.display = 'none';
         reviewText.innerHTML = '';
       }
+
+      // Initial check on visibility wrapper
+      updateBioSectionVisibility();
 
       // Trigger AI Artist context asynchronously
       loadArtistContext(item.artist_or_brand, item.category);
@@ -2432,6 +2472,7 @@
             selectItem({
               owned_item_id: item.owned_item_id,
               item_title: item.item_title,
+              product_title: item.product_title,
               artist_or_brand: item.artist_or_brand,
               current_slot_display_name: item.current_slot_display_name,
               barcode: item.barcode,
@@ -2440,7 +2481,11 @@
               released_date: item.released_date,
               cover_image_url: item.cover_image_url,
               category: item.category,
-              track_list: []
+              track_list: [],
+              spotify_album_id: item.spotify_album_id,
+              has_local_link: item.has_local_link,
+              review_text: item.review_text,
+              review_source: item.review_source
             });
           };
 
