@@ -2066,67 +2066,6 @@ def _cabinet_camera_item_from_row(row: dict[str, Any]) -> CabinetCameraItem:
     )
 
 
-def _goods_item_response_from_row(row: dict[str, Any]) -> GoodsItemResponse:
-    return GoodsItemResponse(
-        id=int(row["id"]),
-        category=str(row.get("category") or "").strip().upper(),  # type: ignore[arg-type]
-        goods_name=str(row.get("goods_name") or "").strip(),
-        description=str(row.get("description") or "").strip() or None,
-        quantity=int(row.get("quantity") or 0),
-        size_group=str(row.get("size_group") or "GOODS").strip().upper(),  # type: ignore[arg-type]
-        storage_slot_id=int(row["storage_slot_id"]) if row.get("storage_slot_id") not in (None, "") else None,
-        status=str(row.get("status") or "ACTIVE").strip().upper(),  # type: ignore[arg-type]
-        domain_code=str(row.get("domain_code") or "").strip().upper() or None,  # type: ignore[arg-type]
-        memory_note=str(row.get("memory_note") or "").strip() or None,
-        image_urls=[str(url or "").strip() for url in row.get("image_urls") or [] if str(url or "").strip()],
-        primary_image_url=str(row.get("primary_image_url") or "").strip() or None,
-        poster_storage_spec=str(row.get("poster_storage_spec") or "").strip() or None,
-        tshirt_size=str(row.get("tshirt_size") or "").strip() or None,
-        cup_material=str(row.get("cup_material") or "").strip() or None,
-        hat_size=str(row.get("hat_size") or "").strip() or None,
-        slot_code=str(row.get("slot_code") or "").strip() or None,
-        slot_display_name=str(row.get("slot_display_name") or "").strip() or None,
-        album_master_mappings=[
-            GoodsItemAlbumMasterMapping(
-                album_master_id=int(mapping["album_master_id"]),
-                title=str(mapping.get("title") or "").strip(),
-                artist_or_brand=str(mapping.get("artist_or_brand") or "").strip() or None,
-            )
-            for mapping in row.get("album_master_mappings") or []
-        ],
-        artist_mappings=[str(name or "").strip() for name in row.get("artist_mappings") or [] if str(name or "").strip()],
-        label_mappings=[str(name or "").strip() for name in row.get("label_mappings") or [] if str(name or "").strip()],
-        collectible_relations=[
-            GoodsItemCollectibleRelation(
-                relation_type=str(relation.get("relation_type") or "").strip().upper(),  # type: ignore[arg-type]
-                direction="OUTGOING",
-                linked_goods_item_id=int(relation["linked_goods_item_id"]),
-                linked_goods_name=str(relation.get("linked_goods_name") or "").strip(),
-                linked_category=str(relation.get("linked_category") or "").strip().upper() or None,  # type: ignore[arg-type]
-                note=str(relation.get("note") or "").strip() or None,
-                display_order=int(relation.get("display_order") or 0),
-            )
-            for relation in row.get("collectible_relations") or []
-        ],
-        collectible_relation_count=int(row.get("collectible_relation_count") or 0),
-        relation_badges=[str(relation_type or "").strip().upper() for relation_type in row.get("relation_badges") or [] if str(relation_type or "").strip()],
-        collectible_relation_preview=[
-            GoodsItemCollectibleRelation(
-                relation_type=str(relation.get("relation_type") or "").strip().upper(),  # type: ignore[arg-type]
-                direction="OUTGOING",
-                linked_goods_item_id=int(relation["linked_goods_item_id"]),
-                linked_goods_name=str(relation.get("linked_goods_name") or "").strip(),
-                linked_category=str(relation.get("linked_category") or "").strip().upper() or None,  # type: ignore[arg-type]
-                note=str(relation.get("note") or "").strip() or None,
-                display_order=int(relation.get("display_order") or 0),
-            )
-            for relation in row.get("collectible_relation_preview") or []
-        ],
-        created_at=str(row.get("created_at") or "").strip(),
-        updated_at=str(row.get("updated_at") or "").strip(),
-    )
-
-
 from .services.camera import (  # noqa: E402 — re-export for backward compat
     _camera_http_url_or_none,
     _camera_rtsp_url_or_none,
@@ -2162,14 +2101,6 @@ from .services.purchase_mail import (
 # live in app/api/admin_auth_accounts.py, wired below via include_router.
 
 
-
-
-
-
-
-
-
-
 from .services.home_env import (  # noqa: E402 — re-export for backward compat
     _home_assistant_api_base_url,
     _fetch_home_assistant_state,
@@ -2181,41 +2112,8 @@ from .services.home_env import (  # noqa: E402 — re-export for backward compat
 )
 
 
-def _map_to_customer_track_request_item(row: dict[str, Any]) -> CustomerTrackRequestItem:
-    category_raw = str(row.get("category") or "").strip()
-    return CustomerTrackRequestItem(
-        id=int(row["id"]),
-        requested_track=str(row.get("requested_track") or ""),
-        matched_track_title=row.get("matched_track_title"),
-        matched_track_no=row.get("matched_track_no"),
-        owned_item_id=row.get("owned_item_id"),
-        label_id=row.get("label_id"),
-        category=category_raw if category_raw else None,
-        item_title=row.get("item_title"),
-        artist_or_brand=row.get("artist_or_brand"),
-        cover_image_url=row.get("cover_image_url"),
-        status=str(row.get("status") or "REQUESTED"),
-        customer_note=row.get("customer_note"),
-        response_note=row.get("response_note"),
-        requested_by=row.get("requested_by"),
-        handled_by=row.get("handled_by"),
-        created_at=str(row.get("created_at") or ""),
-        updated_at=str(row.get("updated_at") or ""),
-        handled_at=row.get("handled_at"),
-        current_slot_code_snapshot=row.get("current_slot_code_snapshot"),
-        current_slot_display_snapshot=row.get("current_slot_display_snapshot"),
-        previous_slot_code_snapshot=row.get("previous_slot_code_snapshot"),
-        previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
-        current_live_slot_code=row.get("current_live_slot_code"),
-        current_live_slot_display_name=row.get("current_live_slot_display_name"),
-        weather_temp_c=row.get("weather_temp_c"),
-        weather_description=row.get("weather_description"),
-        weather_code=row.get("weather_code"),
-        season=row.get("season"),
-        playback_deck=row.get("playback_deck"),
-        played_at=row.get("played_at"),
-        returned_at=row.get("returned_at"),
-    )
+
+
 
 
 

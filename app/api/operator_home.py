@@ -48,6 +48,43 @@ def _require_auth(request: Request) -> None:
     security._require_operator_request(request)
 
 
+def _map_to_customer_track_request_item(row: dict[str, Any]) -> CustomerTrackRequestItem:
+    category_raw = str(row.get("category") or "").strip()
+    return CustomerTrackRequestItem(
+        id=int(row["id"]),
+        requested_track=str(row.get("requested_track") or ""),
+        matched_track_title=row.get("matched_track_title"),
+        matched_track_no=row.get("matched_track_no"),
+        owned_item_id=row.get("owned_item_id"),
+        label_id=row.get("label_id"),
+        category=category_raw if category_raw else None,
+        item_title=row.get("item_title"),
+        artist_or_brand=row.get("artist_or_brand"),
+        cover_image_url=row.get("cover_image_url"),
+        status=str(row.get("status") or "REQUESTED"),
+        customer_note=row.get("customer_note"),
+        response_note=row.get("response_note"),
+        requested_by=row.get("requested_by"),
+        handled_by=row.get("handled_by"),
+        created_at=str(row.get("created_at") or ""),
+        updated_at=str(row.get("updated_at") or ""),
+        handled_at=row.get("handled_at"),
+        current_slot_code_snapshot=row.get("current_slot_code_snapshot"),
+        current_slot_display_snapshot=row.get("current_slot_display_snapshot"),
+        previous_slot_code_snapshot=row.get("previous_slot_code_snapshot"),
+        previous_slot_display_snapshot=row.get("previous_slot_display_snapshot"),
+        current_live_slot_code=row.get("current_live_slot_code"),
+        current_live_slot_display_name=row.get("current_live_slot_display_name"),
+        weather_temp_c=row.get("weather_temp_c"),
+        weather_description=row.get("weather_description"),
+        weather_code=row.get("weather_code"),
+        season=row.get("season"),
+        playback_deck=row.get("playback_deck"),
+        played_at=row.get("played_at"),
+        returned_at=row.get("returned_at"),
+    )
+
+
 def apply_music_detail_fallbacks(
     detail: dict[str, Any],
     owned_item_id: int,
@@ -343,7 +380,7 @@ def get_customer_track_requests(
 ) -> CustomerTrackRequestListResponse:
     security._require_authenticated_request(request)
     rows = db.list_customer_track_requests(status=status, limit=limit)
-    items = [_main()._map_to_customer_track_request_item(row) for row in rows]
+    items = [_map_to_customer_track_request_item(row) for row in rows]
     return CustomerTrackRequestListResponse(total_count=db.count_customer_track_requests(status=status), items=items)
 
 
@@ -389,14 +426,14 @@ def play_track_via_roon(request_id: int, request: Request) -> CustomerTrackReque
         raise HTTPException(status_code=500, detail="Failed to update track request")
     
     _main()._ROON_NOW_PLAYING_REQUEST_ID = request_id
-    return _main()._map_to_customer_track_request_item(updated)
+    return _map_to_customer_track_request_item(updated)
 
 
 @router.get("/operator/customer-requests/now-playing", response_model=list[CustomerTrackRequestItem])
 def get_now_playing_requests(request: Request) -> list[CustomerTrackRequestItem]:
     security._require_authenticated_request(request)
     rows = db.list_customer_track_requests(status="PLAYING", limit=10)
-    return [_main()._map_to_customer_track_request_item(row) for row in rows]
+    return [_map_to_customer_track_request_item(row) for row in rows]
 
 
 @router.post("/operator/customer-requests", response_model=CustomerTrackRequestItem)
@@ -439,7 +476,7 @@ def create_customer_track_request(
     )
     if not row:
         raise HTTPException(status_code=500, detail="customer request create failed")
-    return _main()._map_to_customer_track_request_item(row)
+    return _map_to_customer_track_request_item(row)
 
 
 @router.patch("/operator/customer-requests/{request_id}", response_model=CustomerTrackRequestItem)
@@ -458,7 +495,7 @@ def patch_customer_track_request(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="customer request not found")
-    return _main()._map_to_customer_track_request_item(row)
+    return _map_to_customer_track_request_item(row)
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase N-1: operator_artist_context + ops_cafe_shell

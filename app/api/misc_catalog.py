@@ -21,6 +21,8 @@ from ..schemas import (
     CabinetCameraDiscoveryItem,
     CabinetCameraItem,
     CabinetCameraUpsertRequest,
+    GoodsItemAlbumMasterMapping,
+    GoodsItemCollectibleRelation,
     GoodsItemCreateRequest,
     GoodsItemMappingUpdateRequest,
     GoodsItemRelationUpdateRequest,
@@ -39,6 +41,69 @@ def _require_admin_request(request: Request) -> None:
     security._require_admin_request(request)
 def _require_operator_request(request: Request) -> None:
     security._require_operator_request(request)
+
+
+def _goods_item_response_from_row(row: dict[str, Any]) -> GoodsItemResponse:
+    return GoodsItemResponse(
+        id=int(row["id"]),
+        category=str(row.get("category") or "").strip().upper(),  # type: ignore[arg-type]
+        goods_name=str(row.get("goods_name") or "").strip(),
+        description=str(row.get("description") or "").strip() or None,
+        quantity=int(row.get("quantity") or 0),
+        size_group=str(row.get("size_group") or "GOODS").strip().upper(),  # type: ignore[arg-type]
+        storage_slot_id=int(row["storage_slot_id"]) if row.get("storage_slot_id") not in (None, "") else None,
+        status=str(row.get("status") or "ACTIVE").strip().upper(),  # type: ignore[arg-type]
+        domain_code=str(row.get("domain_code") or "").strip().upper() or None,  # type: ignore[arg-type]
+        memory_note=str(row.get("memory_note") or "").strip() or None,
+        image_urls=[str(url or "").strip() for url in row.get("image_urls") or [] if str(url or "").strip()],
+        primary_image_url=str(row.get("primary_image_url") or "").strip() or None,
+        poster_storage_spec=str(row.get("poster_storage_spec") or "").strip() or None,
+        tshirt_size=str(row.get("tshirt_size") or "").strip() or None,
+        cup_material=str(row.get("cup_material") or "").strip() or None,
+        hat_size=str(row.get("hat_size") or "").strip() or None,
+        slot_code=str(row.get("slot_code") or "").strip() or None,
+        slot_display_name=str(row.get("slot_display_name") or "").strip() or None,
+        album_master_mappings=[
+            GoodsItemAlbumMasterMapping(
+                album_master_id=int(mapping["album_master_id"]),
+                title=str(mapping.get("title") or "").strip(),
+                artist_or_brand=str(mapping.get("artist_or_brand") or "").strip() or None,
+            )
+            for mapping in row.get("album_master_mappings") or []
+        ],
+        artist_mappings=[str(name or "").strip() for name in row.get("artist_mappings") or [] if str(name or "").strip()],
+        label_mappings=[str(name or "").strip() for name in row.get("label_mappings") or [] if str(name or "").strip()],
+        collectible_relations=[
+            GoodsItemCollectibleRelation(
+                relation_type=str(relation.get("relation_type") or "").strip().upper(),  # type: ignore[arg-type]
+                direction="OUTGOING",
+                linked_goods_item_id=int(relation["linked_goods_item_id"]),
+                linked_goods_name=str(relation.get("linked_goods_name") or "").strip(),
+                linked_category=str(relation.get("linked_category") or "").strip().upper() or None,  # type: ignore[arg-type]
+                note=str(relation.get("note") or "").strip() or None,
+                display_order=int(relation.get("display_order") or 0),
+            )
+            for relation in row.get("collectible_relations") or []
+        ],
+        collectible_relation_count=int(row.get("collectible_relation_count") or 0),
+        relation_badges=[str(relation_type or "").strip().upper() for relation_type in row.get("relation_badges") or [] if str(relation_type or "").strip()],
+        collectible_relation_preview=[
+            GoodsItemCollectibleRelation(
+                relation_type=str(relation.get("relation_type") or "").strip().upper(),  # type: ignore[arg-type]
+                direction="OUTGOING",
+                linked_goods_item_id=int(relation["linked_goods_item_id"]),
+                linked_goods_name=str(relation.get("linked_goods_name") or "").strip(),
+                linked_category=str(relation.get("linked_category") or "").strip().upper() or None,  # type: ignore[arg-type]
+                note=str(relation.get("note") or "").strip() or None,
+                display_order=int(relation.get("display_order") or 0),
+            )
+            for relation in row.get("collectible_relation_preview") or []
+        ],
+        created_at=str(row.get("created_at") or "").strip(),
+        updated_at=str(row.get("updated_at") or "").strip(),
+    )
+
+
 def _require_authenticated_request(request: Request) -> None:
     security._require_authenticated_request(request)
 
@@ -116,7 +181,7 @@ def get_goods_items(
     )
     return GoodsItemSearchResponse(
         total_count=total_count,
-        items=[_main()._goods_item_response_from_row(row) for row in items],
+        items=[_goods_item_response_from_row(row) for row in items],
     )
 
 
@@ -127,7 +192,7 @@ def create_goods_item(payload: GoodsItemCreateRequest, request: Request) -> Good
         row = db.create_goods_item(payload.model_dump())
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err)) from err
-    return _main()._goods_item_response_from_row(row)
+    return _goods_item_response_from_row(row)
 
 
 @router.get("/goods-items/{goods_item_id}", response_model=GoodsItemResponse)
@@ -136,7 +201,7 @@ def get_goods_item_detail(goods_item_id: int, request: Request) -> GoodsItemResp
     row = db.get_goods_item(goods_item_id)
     if row is None:
         raise HTTPException(status_code=404, detail="goods item not found")
-    return _main()._goods_item_response_from_row(row)
+    return _goods_item_response_from_row(row)
 
 
 @router.patch("/goods-items/{goods_item_id}", response_model=GoodsItemResponse)
@@ -152,7 +217,7 @@ def update_goods_item_detail(
         raise HTTPException(status_code=400, detail=str(err)) from err
     if row is None:
         raise HTTPException(status_code=404, detail="goods item not found")
-    return _main()._goods_item_response_from_row(row)
+    return _goods_item_response_from_row(row)
 
 
 @router.delete("/goods-items/{goods_item_id}")
@@ -177,7 +242,7 @@ def replace_goods_item_mappings(
         raise HTTPException(status_code=400, detail=str(err)) from err
     if row is None:
         raise HTTPException(status_code=404, detail="goods item not found")
-    return _main()._goods_item_response_from_row(row)
+    return _goods_item_response_from_row(row)
 
 
 @router.put("/goods-items/{goods_item_id}/relations", response_model=GoodsItemResponse)
@@ -193,7 +258,7 @@ def replace_goods_item_collectible_relations(
         raise HTTPException(status_code=400, detail=str(err)) from err
     if row is None:
         raise HTTPException(status_code=404, detail="goods item not found")
-    return _main()._goods_item_response_from_row(row)
+    return _goods_item_response_from_row(row)
 
 
 @router.get("/goods-targets")
