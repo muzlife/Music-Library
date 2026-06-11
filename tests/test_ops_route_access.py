@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 
 import app.main as main_module
 import app.api.discogs_integration as discogs_integration_module
+import app.api.owned_items as owned_items_module
 import app.services.home_env as _home_env_module
 import app.services.camera as _camera_module
 import app.services.backup as _backup_module
@@ -3924,7 +3925,7 @@ def test_create_owned_item_localizes_discogs_domestic_artist_name(admin_client, 
         else None,
     )
     monkeypatch.setattr(
-        main_module,
+        owned_items_module,
         "_apply_post_create_links",
         lambda payload, owned_item_id, preferred_master_id=0: (preferred_master_id, []),
     )
