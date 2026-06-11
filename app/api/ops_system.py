@@ -48,6 +48,28 @@ def _require_operator_request(request: Request) -> None:
     security._require_operator_request(request)
 
 
+def _cleanup_temp_file(path: str) -> None:
+    try:
+        Path(path).unlink(missing_ok=True)
+    except Exception:
+        return
+
+
+def _metadata_provider_settings_payload() -> dict[str, Any]:
+    s = get_settings()
+    return {
+        "discogs_token_configured": bool(s.discogs_token),
+        "aladin_ttb_key_configured": bool(s.aladin_ttb_key),
+        "deepl_auth_key_configured": bool(s.deepl_auth_key),
+        "discogs_user_agent": str(s.discogs_user_agent or ""),
+        "musicbrainz_user_agent": str(s.musicbrainz_user_agent or ""),
+        "aladin_base_url": str(s.aladin_base_url or ""),
+        "maniadb_base_url": str(s.maniadb_base_url or ""),
+        "deepl_base_url": str(s.deepl_base_url or ""),
+    }
+
+
+
 def _require_authenticated_request(request: Request) -> None:
     security._require_authenticated_request(request)
 
@@ -135,7 +157,7 @@ def export_full_backup(
         reason="manual-full",
         include_env_file=include_env_file,
     )
-    background_tasks.add_task(_main()._cleanup_temp_file, bundle_path)
+    background_tasks.add_task(_cleanup_temp_file, bundle_path)
     return FileResponse(
         bundle_path,
         media_type="application/zip",
@@ -173,7 +195,7 @@ def save_auto_backup_settings(
 @router.get("/ops/provider-settings", response_model=MetadataProviderSettingsResponse)
 def get_metadata_provider_settings(request: Request) -> MetadataProviderSettingsResponse:
     _require_operator_request(request)
-    return MetadataProviderSettingsResponse(**_main()._metadata_provider_settings_payload())
+    return MetadataProviderSettingsResponse(**_metadata_provider_settings_payload())
 
 
 @router.post("/ops/provider-settings", response_model=MetadataProviderSettingsResponse)
@@ -207,7 +229,7 @@ def save_metadata_provider_settings(
             if env_key in updates:
                 os.environ[env_key] = updates[env_key]
         get_settings.cache_clear()
-    return MetadataProviderSettingsResponse(**_main()._metadata_provider_settings_payload())
+    return MetadataProviderSettingsResponse(**_metadata_provider_settings_payload())
 
 
 @router.post("/ops/provider-settings/deepl-test", response_model=MetadataProviderConnectionTestResponse)

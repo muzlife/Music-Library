@@ -17,7 +17,8 @@ moving them out is a separate refactor) and reach into them via the lazy
 
 from __future__ import annotations
 import json
-
+import re
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
@@ -45,14 +46,219 @@ from ..schemas import (
     AlbumMasterSearchResponse,
     AlbumMasterSortArtistUpdateRequest,
     AlbumMasterSortArtistUpdateResponse,
+    AlbumMasterVariantItem,
     AlbumMasterVariantsResponse,
     OwnedItemCreate,
     OwnedItemListItem,
 )
 from ..security import _read_auth_username
+from ..services.providers import get_discogs_release_year_from_cache, get_source_release_snapshot
 
 
 router = APIRouter(tags=["album-masters"])
+
+
+def _search_compact_text(value: Any) -> str:
+    compact = re.sub(r"[^0-9a-zA-Z가-힣]+", "", str(value or "").strip().lower())
+    return re.sub(r"제(?=\d+집$)", "", compact)
+
+
+def _track_match_quality(track_values: list[str], query_text: str) -> tuple[int, str]:
+    query_key = _search_compact_text(query_text)
+    if not query_key:
+        return (2, "")
+    best_rank = 2
+    best_value = ""
+    for value in track_values:
+        text = str(value or "").strip()
+        if not text:
+            continue
+        compact = _search_compact_text(text)
+        if not compact:
+            continue
+        rank = 2
+        if compact == query_key or compact.endswith(query_key):
+            rank = 0
+        elif query_key in compact:
+            rank = 1
+        if rank < best_rank:
+            best_rank = rank
+            best_value = text
+            if rank == 0:
+                break
+    return (best_rank, best_value)
+
+
+def _album_master_search_sort_key(row: AlbumMasterListItem, query_text: str) -> tuple[Any, ...]:
+    query_key = _search_compact_text(query_text)
+    title_key = _search_compact_text(row.title)
+    artist_key = _search_compact_text(row.artist_or_brand or "")
+    combined_key = f"{artist_key}{title_key}"
+    track_rank, best_track = _track_match_quality(list(row.matched_track_preview or []), query_text)
+
+    title_rank = 2
+    if query_key:
+        if title_key == query_key or combined_key == query_key:
+            title_rank = 0
+        elif query_key in title_key or query_key in combined_key:
+            title_rank = 1
+
+    updated_epoch = 0.0
+    updated_text = str(row.updated_at or "").strip()
+    if updated_text:
+        try:
+            updated_epoch = datetime.fromisoformat(updated_text).timestamp()
+        except ValueError:
+            updated_epoch = 0.0
+    return (
+        track_rank,
+        title_rank,
+        0 if best_track else 1,
+        -int(row.member_count or 0),
+        -updated_epoch,
+        -int(row.id or 0),
+    )
+
+
+def _album_master_variant_item_from_owned_row(row: dict[str, Any], source_code: str) -> AlbumMasterVariantItem:
+    return AlbumMasterVariantItem(
+        source=str(source_code or "").strip().upper() or "DISCOGS",
+        external_id=str(row.get("source_external_id") or "").strip(),
+        title=str(row.get("item_name_override") or "").strip() or str(row.get("master_title") or "").strip() or f"{source_code} item",
+        artist_or_brand=str(row.get("artist_or_brand") or row.get("linked_artist_name") or row.get("master_artist_or_brand") or "").strip() or None,
+        release_year=int(row["release_year"]) if row.get("release_year") is not None else None,
+        released_date=str(row.get("released_date") or "").strip() or None,
+        country=str(row.get("pressing_country") or "").strip() or None,
+        format_name=str(row.get("format_name") or "").strip() or None,
+        media_type=str(row.get("media_type") or "").strip() or None,
+        release_type=str(row.get("release_type") or "").strip().upper() or None,
+        domain_code=str(row.get("domain_code") or "").strip().upper() or None,
+        genres=list(row.get("genres") or []),
+        styles=list(row.get("styles") or []),
+        label_name=str(row.get("label_name") or "").strip() or None,
+        catalog_no=str(row.get("catalog_no") or "").strip() or None,
+        barcode=str(row.get("barcode") or "").strip() or None,
+        cover_image_url=str(row.get("cover_image_url") or "").strip() or None,
+        track_list=list(row.get("track_list") or []),
+        disc_count=int(row["disc_count"]) if row.get("disc_count") is not None else None,
+        speed_rpm=int(row["speed_rpm"]) if row.get("speed_rpm") is not None else None,
+        has_obi=bool(row.get("has_obi")) if row.get("has_obi") is not None else None,
+        runout_matrix=list(row.get("runout_matrix") or []),
+        pressing_country=str(row.get("pressing_country") or "").strip() or None,
+        source_notes=str(row.get("source_notes") or "").strip() or None,
+        credits=list(row.get("credits") or []),
+        identifier_items=list(row.get("identifier_items") or []),
+        image_items=list(row.get("image_items") or []),
+        company_items=list(row.get("company_items") or []),
+        series=list(row.get("series") or []),
+        format_items=list(row.get("format_items") or []),
+        track_items=list(row.get("track_items") or []),
+        label_items=list(row.get("label_items") or []),
+        is_owned=True,
+        owned_count=1,
+        raw={},
+    )
+
+
+def _album_master_member_context(album_master_id: int, preview_limit: int = 8) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    actions: list[dict[str, Any]] = []
+    previews: list[dict[str, Any]] = []
+    source_snapshot_cache: dict[tuple[str, str], dict[str, Any] | None] = {}
+    for item in db.list_owned_items_by_album_master(album_master_id):
+        owned_item_id = int(item.get("id") or item.get("owned_item_id") or 0)
+        category = str(item.get("category") or "").strip()
+        storage_slot_id = int(item.get("storage_slot_id") or 0) or None
+        slot_code = str(item.get("slot_code") or item.get("current_slot_code") or "").strip() or None
+        cabinet_name = str(item.get("cabinet_name") or item.get("current_cabinet_name") or "").strip() or None
+        column_code = str(item.get("column_code") or item.get("current_column_code") or "").strip() or None
+        cell_code = str(item.get("cell_code") or item.get("current_cell_code") or "").strip() or None
+        location_display_name = str(item.get("current_slot_display_name") or "").strip()
+        if not location_display_name:
+            location_display_name = " / ".join(
+                part
+                for part in [
+                    cabinet_name,
+                    f"{column_code}열" if column_code else "",
+                    f"{cell_code}칸" if cell_code else "",
+                ]
+                if part
+            ) or slot_code or "미배치"
+        item_label = str(item.get("item_name_override") or item.get("item_title") or item.get("title") or "").strip() or None
+        if storage_slot_id or slot_code or cabinet_name:
+            actions.append(
+                {
+                    "owned_item_id": owned_item_id,
+                    "storage_slot_id": storage_slot_id,
+                    "slot_code": slot_code,
+                    "cabinet_name": cabinet_name,
+                    "column_code": column_code,
+                    "cell_code": cell_code,
+                    "location_display_name": location_display_name,
+                    "item_label": item_label,
+                }
+            )
+        if owned_item_id <= 0 or len(previews) >= preview_limit:
+            continue
+        source_code = str(item.get("source_code") or "").strip().upper() or None
+        source_external_id = str(item.get("source_external_id") or "").strip() or None
+        released_date = str(item.get("released_date") or "").strip() or None
+        if not released_date and source_code == "MANIADB" and source_external_id:
+            snapshot_key = (source_code, source_external_id)
+            if snapshot_key not in source_snapshot_cache:
+                source_snapshot_cache[snapshot_key] = get_source_release_snapshot(source_code, source_external_id)
+            snapshot = source_snapshot_cache.get(snapshot_key) or {}
+            released_date = str(snapshot.get("released_date") or "").strip() or None
+        if not released_date and source_code == "DISCOGS" and source_external_id:
+            snapshot_key = (source_code, source_external_id)
+            if snapshot_key not in source_snapshot_cache:
+                year = get_discogs_release_year_from_cache(source_external_id)
+                source_snapshot_cache[snapshot_key] = {"released_date": str(year)} if year else None
+            snapshot = source_snapshot_cache.get(snapshot_key) or {}
+            released_date = str(snapshot.get("released_date") or "").strip() or None
+        previews.append(
+            {
+                "owned_item_id": owned_item_id,
+                "storage_slot_id": storage_slot_id,
+                "label_id": str(item.get("label_id") or db._build_label_id(category, owned_item_id)),
+                "source_code": source_code,
+                "source_external_id": source_external_id,
+                "item_title": str(item.get("item_title") or item.get("item_name_override") or item.get("title") or "").strip() or None,
+                "artist_or_brand": str(item.get("artist_or_brand") or "").strip() or None,
+                "cover_image_url": str(item.get("cover_image_url") or "").strip() or None,
+                "created_at": str(item.get("created_at") or "").strip() or None,
+                "released_date": released_date,
+                "master_release_year": int(item["master_release_year"]) if item.get("master_release_year") else None,
+                "pressing_country": str(item.get("pressing_country") or "").strip() or None,
+                "label_name": str(item.get("label_name") or "").strip() or None,
+                "catalog_no": str(item.get("catalog_no") or "").strip() or None,
+                "barcode": str(item.get("barcode") or "").strip() or None,
+                "format_name": str(item.get("format_name") or "").strip() or None,
+                "format_items": [dict(row) for row in item.get("format_items") or [] if isinstance(row, dict)],
+                "runout_sample": str(item.get("runout_sample") or "").strip() or None,
+                "current_slot_display_name": location_display_name,
+                "current_slot_code": slot_code,
+                "current_cabinet_name": cabinet_name,
+                "current_column_code": column_code,
+                "current_cell_code": cell_code,
+            }
+        )
+    return actions, previews
+
+
+def _pick_duplicate_merge_target_id(duplicates: list[dict[str, Any]]) -> int | None:
+    if not duplicates:
+        return None
+    ranked = sorted(
+        duplicates,
+        key=lambda row: (
+            db._album_master_source_priority(str(row.get("source_code") or "")),
+            -int(row.get("member_count") or 0),
+            -int(row.get("album_master_id") or 0),
+        ),
+    )
+    target_id = int(ranked[0].get("album_master_id") or 0)
+    return target_id if target_id > 0 else None
+
 
 _ALBUM_MASTER_AUDIT_FIELDS = (
     "artist_or_brand", "title", "catalog_no", "barcode",
@@ -151,7 +357,7 @@ def get_album_master_variants_api(
         start = max(0, (page_n - 1) * page_size_n)
         page_rows = fallback_member_rows[start : start + page_size_n]
         annotated = [
-            main_module._album_master_variant_item_from_owned_row(row, source_u) for row in page_rows
+            _album_master_variant_item_from_owned_row(row, source_u) for row in page_rows
         ]
         return AlbumMasterVariantsResponse(
             source=source_u,
@@ -724,7 +930,7 @@ def list_album_masters(
         row2["genres"] = json.loads(genres_raw) if isinstance(genres_raw, str) and genres_raw.strip() else []
         styles_raw = row2.pop("styles_json", None)
         row2["styles"] = json.loads(styles_raw) if isinstance(styles_raw, str) and styles_raw.strip() else []
-        member_location_actions, member_items_preview = main_module._album_master_member_context(
+        member_location_actions, member_items_preview = _album_master_member_context(
             int(row2.get("id") or 0)
         )
         row2["member_location_actions"] = member_location_actions
@@ -736,7 +942,7 @@ def list_album_masters(
         )
         result.append(AlbumMasterListItem(**row2))
     if match_query:
-        result.sort(key=lambda row: main_module._album_master_search_sort_key(row, match_query))
+        result.sort(key=lambda row: _album_master_search_sort_key(row, match_query))
         result = result[offset : offset + limit]
     return result
 
@@ -939,7 +1145,7 @@ def get_album_master_duplicates(
                 updated_at=str(row.get("updated_at") or "").strip() or None,
             )
         )
-    suggested_target_album_master_id = main_module._pick_duplicate_merge_target_id(rows)
+    suggested_target_album_master_id = _pick_duplicate_merge_target_id(rows)
     return AlbumMasterDuplicateCheckResponse(
         album_master_id=album_master_id,
         duplicate_count=len(duplicates),

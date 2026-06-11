@@ -31,6 +31,12 @@ from ..schemas import (
 
 router = APIRouter()
 
+_ROON_CONNECTED: bool = True
+_ROON_CORE_NAME: str = "Cafe Roon Core"
+_ROON_ACTIVE_ZONE: str = "Main Hall (McIntosh + JBL)"
+_ROON_VOLUME: int = 65
+_ROON_NOW_PLAYING_REQUEST_ID: int | None = None
+
 
 class RoonStatusUpdateRequest(BaseModel):
     connected: bool | None = None
@@ -388,25 +394,26 @@ def get_customer_track_requests(
 def get_roon_status(request: Request) -> RoonStatusResponse:
     security._require_authenticated_request(request)
     return RoonStatusResponse(
-        connected=_main()._ROON_CONNECTED,
-        core_name=_main()._ROON_CORE_NAME,
-        active_zone=_main()._ROON_ACTIVE_ZONE,
-        volume=_main()._ROON_VOLUME,
-        now_playing_request_id=_main()._ROON_NOW_PLAYING_REQUEST_ID,
+        connected=_ROON_CONNECTED,
+        core_name=_ROON_CORE_NAME,
+        active_zone=_ROON_ACTIVE_ZONE,
+        volume=_ROON_VOLUME,
+        now_playing_request_id=_ROON_NOW_PLAYING_REQUEST_ID,
     )
 
 
 @router.post("/operator/roon/status/update", response_model=RoonStatusResponse)
 def update_roon_status(payload: RoonStatusUpdateRequest, request: Request) -> RoonStatusResponse:
+    global _ROON_CONNECTED, _ROON_ACTIVE_ZONE, _ROON_VOLUME, _ROON_NOW_PLAYING_REQUEST_ID
     _require_operator_request(request)
     if payload.connected is not None:
-        _main()._ROON_CONNECTED = payload.connected
+        _ROON_CONNECTED = payload.connected
     if payload.active_zone is not None:
-        _main()._ROON_ACTIVE_ZONE = payload.active_zone
+        _ROON_ACTIVE_ZONE = payload.active_zone
     if payload.volume is not None:
-        _main()._ROON_VOLUME = payload.volume
+        _ROON_VOLUME = payload.volume
     if payload.now_playing_request_id is not None:
-        _main()._ROON_NOW_PLAYING_REQUEST_ID = payload.now_playing_request_id
+        _ROON_NOW_PLAYING_REQUEST_ID = payload.now_playing_request_id
     return get_roon_status(request)
 
 
@@ -425,7 +432,8 @@ def play_track_via_roon(request_id: int, request: Request) -> CustomerTrackReque
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to update track request")
     
-    _main()._ROON_NOW_PLAYING_REQUEST_ID = request_id
+    global _ROON_NOW_PLAYING_REQUEST_ID
+    _ROON_NOW_PLAYING_REQUEST_ID = request_id
     return _map_to_customer_track_request_item(updated)
 
 
