@@ -3,8 +3,11 @@ uvicorn==0.34.0
 httpx==0.28.1
 python-multipart==0.0.20
 pydantic==2.10.4
+starlette==0.41.3
 beautifulsoup4==4.12.3
 openai==2.40.0
+mutagen==1.47.0
+tinytag==2.2.1
 pytest==8.4.1
 spotipy==2.24.0
 ruff==0.15.16
