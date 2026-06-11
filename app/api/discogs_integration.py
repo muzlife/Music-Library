@@ -29,11 +29,13 @@ from ..services.discogs_mapper import (
     _discogs_track_items,
     _ensure_discogs_cover_preview,
 )
-from ..services.providers import get_source_release_snapshot
+from ..services.providers import (
+    discogs_add_release_to_collection,
+    discogs_identity,
+    get_source_release_snapshot,
+)
 
 router = APIRouter()
-ALADIN_DISCOGS_BACKFILL_LOCK = threading.Lock()
-ALADIN_DISCOGS_BACKFILL_THREAD = None
 
 def _main():
     from app import main as main_module
@@ -43,13 +45,13 @@ def _require_admin(request: Request) -> None:
     security._require_operator_request(request)
 
 
-
 @router.get("/aladin-discogs-backfill/status")
 def get_aladin_discogs_backfill_status() -> dict[str, Any]:
+    m = _main()
     return {
-        "running": ALADIN_DISCOGS_BACKFILL_LOCK.locked(),
-        "last_result": ALADIN_DISCOGS_BACKFILL_LAST_RESULT,
-        "last_error": ALADIN_DISCOGS_BACKFILL_LAST_ERROR,
+        "running": m.ALADIN_DISCOGS_BACKFILL_LOCK.locked(),
+        "last_result": m.ALADIN_DISCOGS_BACKFILL_LAST_RESULT,
+        "last_error": m.ALADIN_DISCOGS_BACKFILL_LAST_ERROR,
     }
 
 
@@ -58,31 +60,25 @@ def run_aladin_discogs_backfill_async(
     dry_run: bool = False,
     sleep_sec: float = 2.0,
 ) -> dict[str, Any]:
-    global ALADIN_DISCOGS_BACKFILL_THREAD
-    if ALADIN_DISCOGS_BACKFILL_LOCK.locked():
+    m = _main()
+    if m.ALADIN_DISCOGS_BACKFILL_LOCK.locked():
         raise HTTPException(status_code=409, detail="aladin discogs backfill already running")
     t = threading.Thread(
-        target=_main()._aladin_discogs_backfill_thread_worker,
+        target=m._aladin_discogs_backfill_thread_worker,
         kwargs={"dry_run": dry_run, "sleep_sec": sleep_sec},
         name="aladin-discogs-backfill",
         daemon=True,
     )
-    ALADIN_DISCOGS_BACKFILL_THREAD = t
+    m.ALADIN_DISCOGS_BACKFILL_THREAD = t
     t.start()
     return {"status": "started", "dry_run": dry_run, "sleep_sec": sleep_sec}
 
 
-MANIADB_RELEASE_TYPE_BACKFILL_THREAD: threading.Thread | None = None
-
 @router.get("/backfill/maniadb-release-type/status")
 def get_maniadb_release_type_backfill_status() -> dict[str, Any]:
     m = _main()
-    running = (
-        MANIADB_RELEASE_TYPE_BACKFILL_THREAD is not None
-        and MANIADB_RELEASE_TYPE_BACKFILL_THREAD.is_alive()
-    )
     return {
-        "running": running,
+        "running": m.MANIADB_RELEASE_TYPE_BACKFILL_LOCK.locked(),
         "result": m.MANIADB_RELEASE_TYPE_BACKFILL_RESULT,
     }
 
@@ -92,7 +88,6 @@ def run_maniadb_release_type_backfill(
     limit: int = 200,
     sleep_sec: float = 0.3,
 ) -> dict[str, Any]:
-    global MANIADB_RELEASE_TYPE_BACKFILL_THREAD
     m = _main()
     if m.MANIADB_RELEASE_TYPE_BACKFILL_LOCK.locked():
         raise HTTPException(status_code=409, detail="maniadb release_type backfill already running")
@@ -102,35 +97,31 @@ def run_maniadb_release_type_backfill(
         name="maniadb-release-type-backfill",
         daemon=True,
     )
-    MANIADB_RELEASE_TYPE_BACKFILL_THREAD = t
     t.start()
     return {"status": "started", "limit": limit, "sleep_sec": sleep_sec}
 
 
 @router.get("/discogs-korean-backfill/status")
 def get_discogs_korean_backfill_status() -> dict[str, Any]:
-    running = (
-        DISCOGS_KOREAN_BACKFILL_THREAD is not None
-        and DISCOGS_KOREAN_BACKFILL_THREAD.is_alive()
-    )
+    m = _main()
     return {
-        "running": running,
-        "result":  DISCOGS_KOREAN_BACKFILL_RESULT,
+        "running": m.DISCOGS_KOREAN_BACKFILL_LOCK.locked(),
+        "result": m.DISCOGS_KOREAN_BACKFILL_RESULT,
     }
 
 
 @router.post("/discogs-korean-backfill/run")
 def run_discogs_korean_backfill(limit: int | None = None) -> dict[str, Any]:
-    global DISCOGS_KOREAN_BACKFILL_THREAD
-    if DISCOGS_KOREAN_BACKFILL_LOCK.locked():
+    m = _main()
+    if m.DISCOGS_KOREAN_BACKFILL_LOCK.locked():
         raise HTTPException(status_code=409, detail="discogs korean backfill already running")
     t = threading.Thread(
-        target=_discogs_korean_backfill_worker,
+        target=m._discogs_korean_backfill_worker,
         kwargs={"limit": limit},
         name="discogs-korean-backfill",
         daemon=True,
     )
-    DISCOGS_KOREAN_BACKFILL_THREAD = t
+    m.DISCOGS_KOREAN_BACKFILL_THREAD = t
     t.start()
     return {"status": "started", "limit": limit}
 
