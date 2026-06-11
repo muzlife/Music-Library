@@ -2048,22 +2048,7 @@ async def restore_full_backup(request: Request, file: UploadFile = File(...)) ->
 
 
 
-def _cabinet_camera_item_from_row(row: dict[str, Any]) -> CabinetCameraItem:
-    description = str(row.get("notes") or "").strip() or None
-    return CabinetCameraItem(
-        id=int(row["id"]),
-        cabinet_name=str(row.get("cabinet_name") or "").strip() or None,
-        camera_name=str(row.get("camera_name") or "").strip(),
-        description=description,
-        onvif_device_url=str(row.get("onvif_device_url") or "").strip() or None,
-        snapshot_url=str(row.get("snapshot_url") or "").strip() or None,
-        stream_url=str(row.get("stream_url") or "").strip() or None,
-        notes=description,
-        is_active=bool(row.get("is_active")),
-        has_credentials=bool(str(row.get("username") or "").strip() or str(row.get("password") or "").strip()),
-        created_at=str(row.get("created_at") or "").strip() or None,
-        updated_at=str(row.get("updated_at") or "").strip() or None,
-    )
+
 
 
 from .services.camera import (  # noqa: E402 — re-export for backward compat
@@ -2662,26 +2647,10 @@ def _decode_upload_bytes(raw: bytes) -> str:
     raise HTTPException(status_code=400, detail="CSV decode failed. Use UTF-8/CP949/EUC-KR.")
 
 
-def _csv_first_text(row: dict[str, Any], *keys: str) -> str | None:
-    for key in keys:
-        value = row.get(key)
-        text = str(value or "").strip()
-        if text:
-            return text
-    return None
 
 
-def _normalize_discogs_release_id(value: Any) -> str | None:
-    text = str(value or "").strip()
-    if not text:
-        return None
-    direct = re.fullmatch(r"\d+", text)
-    if direct:
-        return text
-    url_match = re.search(r"/release/(\d+)", text, flags=re.IGNORECASE)
-    if url_match:
-        return str(url_match.group(1))
-    return None
+
+
 
 
 def _csv_slot_lookup_maps() -> tuple[dict[str, dict[str, Any]], dict[tuple[str, str, str], dict[str, Any]]]:
@@ -2748,93 +2717,10 @@ def _build_csv_discogs_candidate(release_id: str) -> dict[str, Any] | None:
     }
 
 
-def _normalize_csv_ingest_row(
-    row: dict[str, Any],
-    default_category: str | None,
-    slot_by_code: dict[str, dict[str, Any]],
-    slot_by_triplet: dict[tuple[str, str, str], dict[str, Any]],
-) -> tuple[dict[str, Any], str | None, str | None]:
-    normalized: dict[str, Any] = {}
-    for raw_key, raw_value in row.items():
-        key = str(raw_key or "").strip()
-        if not key:
-            continue
-        normalized[key] = str(raw_value or "").strip()
-
-    if not normalized.get("category") and default_category:
-        normalized["category"] = str(default_category).strip().upper()
-    elif normalized.get("category"):
-        normalized["category"] = str(normalized["category"]).strip().upper()
-
-    discogs_release_id_input = _csv_first_text(
-        normalized,
-        "discogs_release_id",
-        "discogs_id",
-        "discogs_release",
-        "디스코그스ID",
-        "디스코그스 아이디",
-        "디스코그스아이디",
-    )
-    discogs_release_id = _normalize_discogs_release_id(discogs_release_id_input)
-    if discogs_release_id_input and not discogs_release_id:
-        return normalized, "invalid discogs_release_id", None
-    if discogs_release_id:
-        normalized["discogs_release_id"] = discogs_release_id
-        normalized["source_code"] = "DISCOGS"
-        normalized["source_external_id"] = discogs_release_id
-
-    cabinet_name = _csv_first_text(normalized, "cabinet_name", "storage_cabinet", "cabinet", "장식장명")
-    column_code = _csv_first_text(normalized, "column_code", "floor", "층", "열")
-    cell_code = _csv_first_text(normalized, "cell_code", "cell", "칸")
-    slot_code = _csv_first_text(normalized, "slot_code", "보관슬롯", "보관 슬롯")
-    if cabinet_name:
-        normalized["cabinet_name"] = cabinet_name
-    if column_code:
-        normalized["column_code"] = column_code
-    if cell_code:
-        normalized["cell_code"] = cell_code
-    if slot_code:
-        normalized["slot_code"] = slot_code
-
-    location_error: str | None = None
-    location_review_note: str | None = None
-    resolved_slot: dict[str, Any] | None = None
-
-    has_triplet_input = any(v is not None for v in (cabinet_name, column_code, cell_code))
-    if has_triplet_input:
-        if not (cabinet_name and column_code and cell_code):
-            location_error = "storage location requires cabinet_name/column_code/cell_code together"
-        else:
-            resolved_triplet = slot_by_triplet.get((cabinet_name.casefold(), column_code.casefold(), cell_code.casefold()))
-            resolved_code = slot_by_code.get(slot_code.casefold()) if slot_code else None
-            if slot_code and resolved_triplet and resolved_code and int(resolved_triplet["id"]) != int(resolved_code["id"]):
-                location_error = "slot_code does not match cabinet_name/column_code/cell_code"
-            elif slot_code and ((resolved_triplet is None) != (resolved_code is None)):
-                location_error = "slot_code does not match cabinet_name/column_code/cell_code"
-            resolved_slot = resolved_triplet or resolved_code
-            if not location_error and resolved_slot is None:
-                location_review_note = "storage slot not found for cabinet_name/column_code/cell_code"
-    elif slot_code:
-        resolved_slot = slot_by_code.get(slot_code.casefold())
-        if resolved_slot is None:
-            location_review_note = "storage slot not found for slot_code"
-
-    if resolved_slot is not None:
-        normalized["storage_slot_id"] = int(resolved_slot["id"])
-        normalized["slot_code"] = str(resolved_slot.get("slot_code") or "")
-        if resolved_slot.get("cabinet_name") is not None:
-            normalized["cabinet_name"] = str(resolved_slot.get("cabinet_name") or "")
-        if resolved_slot.get("column_code") is not None:
-            normalized["column_code"] = str(resolved_slot.get("column_code") or "")
-        if resolved_slot.get("cell_code") is not None:
-            normalized["cell_code"] = str(resolved_slot.get("cell_code") or "")
-
-    return normalized, location_error, location_review_note
 
 
-def _merge_review_note(*parts: str | None) -> str | None:
-    merged = [str(part).strip() for part in parts if str(part or "").strip()]
-    return " / ".join(merged) if merged else None
+
+
 
 
 

@@ -108,6 +108,24 @@ def _require_authenticated_request(request: Request) -> None:
     security._require_authenticated_request(request)
 
 
+def _cabinet_camera_item_from_row(row: dict[str, Any]) -> CabinetCameraItem:
+    description = str(row.get("notes") or "").strip() or None
+    return CabinetCameraItem(
+        id=int(row["id"]),
+        cabinet_name=str(row.get("cabinet_name") or "").strip() or None,
+        camera_name=str(row.get("camera_name") or "").strip(),
+        description=description,
+        onvif_device_url=str(row.get("onvif_device_url") or "").strip() or None,
+        snapshot_url=str(row.get("snapshot_url") or "").strip() or None,
+        stream_url=str(row.get("stream_url") or "").strip() or None,
+        notes=description,
+        is_active=bool(row.get("is_active")),
+        has_credentials=bool(str(row.get("username") or "").strip() or str(row.get("password") or "").strip()),
+        created_at=str(row.get("created_at") or "").strip() or None,
+        updated_at=str(row.get("updated_at") or "").strip() or None,
+    )
+
+
 
 @router.get("/ops/cabinets", include_in_schema=False)
 def ops_cabinets_shell(request: Request):
@@ -338,7 +356,7 @@ def get_cabinet_cameras(
 ) -> list[CabinetCameraItem]:
     _require_authenticated_request(request)
     rows = db.list_cabinet_cameras(cabinet_name=cabinet_name)
-    return [_main()._cabinet_camera_item_from_row(row) for row in rows]
+    return [_cabinet_camera_item_from_row(row) for row in rows]
 
 
 @router.post("/cabinet-cameras", response_model=CabinetCameraItem)
@@ -365,7 +383,7 @@ def create_or_update_cabinet_camera(
         raise HTTPException(status_code=400, detail=str(err)) from err
     if row is None:
         raise HTTPException(status_code=500, detail="cabinet camera save failed")
-    return _main()._cabinet_camera_item_from_row(row)
+    return _cabinet_camera_item_from_row(row)
 
 
 @router.get("/cabinet-cameras/discover", response_model=list[CabinetCameraDiscoveryItem])
