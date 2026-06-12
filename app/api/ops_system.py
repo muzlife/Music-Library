@@ -35,9 +35,6 @@ from ..services import backup as _backup
 router = APIRouter()
 
 
-def _main():
-    from app import main as main_module
-    return main_module
 
 
 def _require_admin_request(request: Request) -> None:
@@ -102,7 +99,7 @@ def _external_base_url_for_request(request: Request) -> str:
 @router.get("/system/status")
 def system_status(request: Request) -> dict[str, Any]:
     _require_operator_request(request)
-    m = _main()
+    from app import main as m
     sync_running = bool(m.METADATA_SYNC_LOCK.locked())
     sync_last_error = str(m.METADATA_SYNC_LAST_ERROR or "").strip()
     recent_launchd_lines = m._tail_text_lines(m.LAUNCHD_ERR_LOG_PATH, limit=2)
@@ -222,7 +219,7 @@ def save_metadata_provider_settings(
     if payload.deepl_base_url is not None and payload.deepl_base_url.strip():
         updates["DEEPL_BASE_URL"] = payload.deepl_base_url.strip()
     if updates:
-        m = _main()
+        from app import main as m
         env_path = config_module._default_env_path()
         m._write_env_updates(env_path, updates)
         for env_key in m._METADATA_PROVIDER_ENV_KEYS:
@@ -372,7 +369,7 @@ def export_album_masters_csv(request: Request) -> Response:
 
 @router.get("/tool-docs/{doc_key}", include_in_schema=False)
 def tool_docs(doc_key: str) -> FileResponse:
-    m = _main()
+    from app import main as m
     key = str(doc_key or "").strip().lower()
     path_map = {
         "erd-summary": m.PROJECT_ERD_SUMMARY_PATH,
@@ -459,7 +456,7 @@ def _build_ops_placement_hint_payload(owned_item_id: int) -> dict[str, Any]:
             "fallback_message": "추천 가능한 위치를 찾지 못했습니다.",
         }
 
-    m = _main()
+    from app import main as m
     preferred_size_group = m._preferred_storage_size_group(
         str(detail_row.get("preferred_storage_size_group") or ""),
         str(detail_row.get("size_group") or ""),
@@ -578,3 +575,55 @@ def _build_ops_placement_hint_payload(owned_item_id: int) -> dict[str, Any]:
 def post_ops_placement_hints(payload: OpsPlacementHintRequest, request: Request) -> OpsPlacementHintResponse:
     _require_authenticated_request(request)
     return OpsPlacementHintResponse(**_build_ops_placement_hint_payload(payload.owned_item_id))
+
+
+@router.post("/ops/export/db-restore", response_model=DatabaseRestoreResponse)
+async def restore_db_backup(request: Request, file: UploadFile = File(...)) -> DatabaseRestoreResponse:
+    _require_admin_request(request)
+    import app.main as _m
+    filename = str(file.filename or "").strip() or "restore.db"
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-restore-", suffix=".db", delete=False)
+    tmp_path = tmp.name
+    tmp.close()
+    try:
+        with open(tmp_path, "wb") as out:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                out.write(chunk)
+        result = _m._restore_library_db_from_upload(tmp_path, filename)
+        return DatabaseRestoreResponse(**result)
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"DB 복구 실패: {err}") from err
+    finally:
+        await file.close()
+        Path(tmp_path).unlink(missing_ok=True)
+
+
+@router.post("/ops/export/full-restore", response_model=DatabaseRestoreResponse)
+async def restore_full_backup(request: Request, file: UploadFile = File(...)) -> DatabaseRestoreResponse:
+    _require_admin_request(request)
+    import app.main as _m
+    filename = str(file.filename or "").strip() or "restore.zip"
+    tmp = tempfile.NamedTemporaryFile(prefix="__PROJECT_SLUG__-full-restore-", suffix=".zip", delete=False)
+    tmp_path = tmp.name
+    tmp.close()
+    try:
+        with open(tmp_path, "wb") as out:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                out.write(chunk)
+        result = _m._restore_library_bundle_from_upload(tmp_path, filename)
+        return DatabaseRestoreResponse(**result)
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"전체 백업 복구 실패: {err}") from err
+    finally:
+        await file.close()
+        Path(tmp_path).unlink(missing_ok=True)

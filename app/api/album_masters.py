@@ -269,16 +269,9 @@ _ALBUM_MASTER_AUDIT_FIELDS = (
 )
 
 
-def _main():
-    """Lazy accessor for main-module helpers (same pattern as Phase C)."""
-    from app import main as main_module
-
-    return main_module
-
-
 @router.post("/album-masters/search", response_model=AlbumMasterSearchResponse)
 def search_album_masters(payload: AlbumMasterSearchRequest) -> AlbumMasterSearchResponse:
-    main_module = _main()
+    from app import main as main_module
     direct_candidates = main_module._build_direct_album_master_candidates(
         payload.query, source=payload.source
     )
@@ -306,7 +299,7 @@ def get_album_master_variants_api(
     catalog_no: str | None = Query(default=None, max_length=120),
     barcode: str | None = Query(default=None, max_length=120),
 ) -> AlbumMasterVariantsResponse:
-    main_module = _main()
+    from app import main as main_module
     source_u = str(source or "").strip().upper()
     effective_master_external_id = str(master_external_id or "").strip()
     page_size_n = int(page_size or min(int(limit or 30), 100))
@@ -423,7 +416,7 @@ def get_album_master_variants_api(
 
 @router.post("/album-masters/bind", response_model=AlbumMasterBindResponse)
 def bind_album_master(payload: AlbumMasterBindRequest, request: Request) -> AlbumMasterBindResponse:
-    main_module = _main()
+    from app import main as main_module
     master_domain_code = main_module._infer_album_master_domain_code(
         source_code=payload.source,
         title=payload.title,
@@ -465,7 +458,7 @@ def bind_album_master(payload: AlbumMasterBindRequest, request: Request) -> Albu
 def import_album_master_variants(
     payload: AlbumMasterImportVariantsRequest,
 ) -> AlbumMasterImportVariantsResponse:
-    main_module = _main()
+    from app import main as main_module
     source = str(payload.source or "").strip().upper()
     target_master_id = int(payload.linked_album_master_id or 0)
     effective_master_external_id = str(payload.master_external_id or "").strip()
@@ -829,7 +822,7 @@ def list_album_masters(
     release_type_missing: bool = Query(default=False),
     spotify_state: str = Query(default="ANY", pattern="^(ANY|MISSING|MATCHED)$"),
 ) -> list[AlbumMasterListItem]:
-    main_module = _main()
+    from app import main as main_module
     match_query = str(item_name or q or "").strip()
     fetch_limit = limit
     fetch_offset = offset
@@ -1081,7 +1074,7 @@ def get_album_master(album_master_id: int) -> dict:
     "/album-masters/{album_master_id}/members", response_model=list[OwnedItemListItem]
 )
 def list_album_master_members(album_master_id: int) -> list[OwnedItemListItem]:
-    main_module = _main()
+    from app import main as main_module
     rows = db.list_owned_items_by_album_master(album_master_id=album_master_id)
     return [main_module._to_owned_item_list_item(row) for row in rows]
 
@@ -1113,7 +1106,7 @@ def get_album_master_duplicates(
     album_master_id: int,
     limit: int = Query(default=20, ge=1, le=100),
 ) -> AlbumMasterDuplicateCheckResponse:
-    main_module = _main()
+    from app import main as main_module
     if not db.album_master_exists(album_master_id):
         raise HTTPException(status_code=404, detail="album_master not found")
     rows = db.list_duplicate_album_masters(album_master_id=album_master_id, limit=limit)
@@ -1220,7 +1213,7 @@ def spotify_batch_status(request: Request) -> dict[str, Any]:
     """Check Spotify batch match status."""
     from ..security import _require_operator_request
     _require_operator_request(request)
-    from app.main import SPOTIFY_BATCH_LOCK, SPOTIFY_BATCH_LAST_RESULT, SPOTIFY_BATCH_LAST_ERROR
+    from app.services.backfill import SPOTIFY_BATCH_LOCK, SPOTIFY_BATCH_LAST_RESULT, SPOTIFY_BATCH_LAST_ERROR
     return {
         "running": SPOTIFY_BATCH_LOCK.locked(),
         "last_result": SPOTIFY_BATCH_LAST_RESULT,
@@ -1242,7 +1235,7 @@ def spotify_batch_run(
     sp = SpotifyService()
     if not sp.configured:
         raise HTTPException(status_code=503, detail="Spotify not configured")
-    from app.main import SPOTIFY_BATCH_LOCK, _spotify_batch_thread_worker
+    from app.services.backfill import SPOTIFY_BATCH_LOCK, _spotify_batch_thread_worker
     if SPOTIFY_BATCH_LOCK.locked():
         raise HTTPException(status_code=409, detail="Spotify batch already running")
     t = _threading.Thread(

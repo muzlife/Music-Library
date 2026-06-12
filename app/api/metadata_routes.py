@@ -26,13 +26,9 @@ from ..schemas import (
 
 router = APIRouter()
 
-def _main():
-    from app import main as main_module
-    return main_module
 
 def _require_admin(request: Request) -> None:
     security._require_operator_request(request)
-
 
 
 import threading
@@ -40,17 +36,18 @@ import threading
 
 @router.get("/metadata-sync/status", response_model=MetadataSyncStatusResponse)
 def get_metadata_sync_status() -> MetadataSyncStatusResponse:
-    main_mod = _main()
-    running = main_mod.METADATA_SYNC_LOCK.locked()
-    settings = main_mod.get_settings()
+    from app.services import metadata_sync as _ms
+    from app.config import get_settings
+    running = _ms.METADATA_SYNC_LOCK.locked()
+    settings = get_settings()
     return MetadataSyncStatusResponse(
         auto_enabled=int(settings.metadata_sync_interval_minutes) > 0,
         interval_minutes=int(settings.metadata_sync_interval_minutes),
         batch_limit=int(settings.metadata_sync_batch_limit),
         running=running,
-        in_progress_items=list(main_mod.METADATA_SYNC_IN_PROGRESS_ITEMS) if running else [],
-        last_result=main_mod.METADATA_SYNC_LAST_RESULT,
-        last_error=main_mod.METADATA_SYNC_LAST_ERROR,
+        in_progress_items=list(_ms.METADATA_SYNC_IN_PROGRESS_ITEMS) if running else [],
+        last_result=_ms.METADATA_SYNC_LAST_RESULT,
+        last_error=_ms.METADATA_SYNC_LAST_ERROR,
     )
 
 
@@ -63,11 +60,11 @@ def run_metadata_sync(payload: MetadataSyncRunRequest) -> dict[str, Any]:
     should poll ``GET /metadata-sync/status`` until ``running`` becomes
     ``false``, then read ``last_result`` for the outcome.
     """
-    main_mod = _main()
-    if main_mod.METADATA_SYNC_LOCK.locked():
+    from app.services import metadata_sync as _ms
+    if _ms.METADATA_SYNC_LOCK.locked():
         raise HTTPException(status_code=409, detail="metadata sync already running")
     t = threading.Thread(
-        target=main_mod._run_metadata_sync,
+        target=_ms._run_metadata_sync,
         kwargs={"payload": payload, "fail_when_running": True},
         daemon=True,
         name="metadata-sync-manual",
@@ -79,7 +76,8 @@ def run_metadata_sync(payload: MetadataSyncRunRequest) -> dict[str, Any]:
 @router.post("/owned-items/{owned_item_id}/sync-metadata")
 def sync_single_item_metadata(owned_item_id: int = FastAPIPath(ge=1)) -> MetadataSyncItemResult:
     """단건 상품 메타 동기화 – 즉시(동기) 실행 후 결과 반환."""
-    return _main()._sync_one_item(owned_item_id)
+    import app.main as _m
+    return _m._sync_one_item(owned_item_id)
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase N-4: Audio directory + track mappings
