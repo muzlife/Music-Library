@@ -2099,6 +2099,7 @@
       const sourceExternalId = sourceCode ? (String(candidate?.external_id || "").trim() || null) : null;
       const category = inferMusicCategoryFromMetadata(candidate);
       const sizeGroup = inferSizeGroupFromMetadata(category, candidate);
+      const isVinyl = ["LP", "LP7", "LP10"].includes(sizeGroup);
       const mappedDomain = pickMappedDomain(candidate?.domain_code);
       const mappedReleaseType = pickMappedReleaseType(candidate?.release_type);
       const artist = String(candidate?.artist_or_brand || "").trim();
@@ -2115,7 +2116,7 @@
         preferred_storage_size_group: sizeGroup,
         auto_location_recommendation: false,
         quantity: 1,
-        is_second_hand: false,
+        is_second_hand: true,
         status: "IN_COLLECTION",
         signature_type: "NONE",
         source_code: sourceCode,
@@ -2146,7 +2147,8 @@
           cover_condition: null,
           disc_condition: null,
           disc_count: normalizePositiveIntOrNull(candidate?.disc_count),
-          speed_rpm: Number.isFinite(Number(candidate?.speed_rpm)) ? Number(candidate.speed_rpm) : null,
+          disc_type: String(candidate?.disc_type || "").trim() || (isVinyl ? "Standard" : null),
+          speed_rpm: Number.isFinite(Number(candidate?.speed_rpm)) ? Number(candidate.speed_rpm) : (isVinyl ? 33 : null),
           has_obi: null,
           runout_matrix: collector.runout_matrix,
           pressing_country: collector.pressing_country,

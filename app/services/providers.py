@@ -468,9 +468,9 @@ def _normalize_catalog_no(v: Any) -> str | None:
 LEGACY_DOMAIN_CODE_MAP = {
     "KOREAN": "KOREA",
     "JPOP": "JAPAN",
-    "OTHER": "WORLD_OTHER",
+    "OTHER": "WORLD",
 }
-DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD_OTHER", "UNKNOWN"}
+DOMAIN_CODES = {"KOREA", "JAPAN", "GREATER_CHINA", "WESTERN", "OTHER_ASIA", "WORLD", "UNKNOWN"}
 GREATER_CHINA_COUNTRIES = {
     # 중국 본토
     "CN", "CHN", "CHINA", "MAINLAND CHINA", "PEOPLES REPUBLIC OF CHINA",
@@ -619,7 +619,7 @@ def _country_domain_code(value: Any) -> str | None:
         return "OTHER_ASIA"
     if country in WESTERN_COUNTRIES:
         return "WESTERN"
-    return "WORLD_OTHER"
+    return "WORLD"
 
 
 def infer_domain_code(
