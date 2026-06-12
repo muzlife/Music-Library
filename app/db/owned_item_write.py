@@ -112,9 +112,9 @@ def insert_owned_item(payload: dict[str, Any]) -> int:
               master_item_id, linked_album_master_id, linked_artist_name, copy_group_key, category, release_type, item_name_override, quantity, is_second_hand, size_group, preferred_storage_size_group, status,
               condition_grade, signature_type, source_code, source_external_id, signed_by, signed_at, acquisition_date,
               purchase_price, currency_code, purchase_source, memory_note, display_rank, order_key,
-              storage_slot_id, thickness_mm, notes, created_at, updated_at
+              storage_slot_id, thickness_mm, notes, domain_code, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 payload.get("master_item_id"),
@@ -145,6 +145,7 @@ def insert_owned_item(payload: dict[str, Any]) -> int:
                 payload.get("storage_slot_id"),
                 payload.get("thickness_mm"),
                 payload.get("notes"),
+                payload.get("domain_code"),
                 now,
                 now,
             ),
@@ -275,6 +276,7 @@ def update_owned_item(owned_item_id: int, payload: dict[str, Any]) -> bool:
               storage_slot_id = ?,
               thickness_mm = ?,
               notes = ?,
+              domain_code = ?,
               updated_at = ?
             WHERE id = ?
             """,
@@ -306,6 +308,7 @@ def update_owned_item(owned_item_id: int, payload: dict[str, Any]) -> bool:
                 payload.get("storage_slot_id"),
                 payload.get("thickness_mm"),
                 payload.get("notes"),
+                payload.get("domain_code"),
                 now,
                 owned_item_id,
             ),
