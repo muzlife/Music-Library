@@ -336,6 +336,19 @@ def _run_metadata_sync(
             offset=0,
         )
 
+        _items_with_local_images: set[int] = set()
+        if candidates:
+            _candidate_ids = [int(c.get("id") or 0) for c in candidates if c.get("id")]
+            if _candidate_ids:
+                with _get_db_conn() as _conn:
+                    _rows = _conn.execute(
+                        "SELECT owned_item_id FROM music_item_detail WHERE owned_item_id IN ({}) AND local_image_items_json NOT IN ('[]','null','')".format(
+                            ",".join("?" * len(_candidate_ids))
+                        ),
+                        _candidate_ids,
+                    ).fetchall()
+                    _items_with_local_images = {r[0] for r in _rows}
+
         item_results: list[MetadataSyncItemResult] = []
         updated_count = 0
         skipped_count = 0
@@ -466,7 +479,7 @@ def _run_metadata_sync(
                         updated_fields.append("track_list")
             if not updated_fields:
                 skipped_count += 1
-                if not _has_local_images(owned_item_id):
+                if owned_item_id not in _items_with_local_images:
                     _SYNC_IMAGE_QUEUE.append((
                         owned_item_id, source_code, source_external_id, snapshot
                     ))
@@ -501,7 +514,7 @@ def _run_metadata_sync(
                     styles=music_detail.get("styles") or [],
                 )
             updated_count += 1
-            if not _has_local_images(owned_item_id):
+            if owned_item_id not in _items_with_local_images:
                 _SYNC_IMAGE_QUEUE.append((
                     owned_item_id, source_code, source_external_id, snapshot
                 ))

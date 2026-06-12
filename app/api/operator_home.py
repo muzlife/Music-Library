@@ -9,9 +9,13 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from ..services import home_env as _home_env
+from ..services import artist_context as artist_context_service
+from ..services.discogs_mapper import _discogs_catalog_no
+from ..services.site import STATIC_DIR, HTML_NO_CACHE_HEADERS, HTML_PROD_CACHE_HEADERS, _is_qa_env
 from .. import db
 from .. import security
 from ..security import _require_operator_request
+from ..db import LABEL_PREFIX_BY_CATEGORY
 from ..schemas import (
     ClimateCompareResponse,
     ArtistContextRequest,
@@ -45,9 +49,9 @@ class RoonStatusUpdateRequest(BaseModel):
     now_playing_request_id: int | None = None
 
 
-def _main():
-    from app import main as main_module
-    return main_module
+def _build_label_id(category: str, owned_item_id: int) -> str:
+    prefix = LABEL_PREFIX_BY_CATEGORY.get(category, "IT")
+    return f"{prefix}-{owned_item_id:06d}"
 
 
 def _require_auth(request: Request) -> None:
@@ -110,7 +114,6 @@ def apply_music_detail_fallbacks(
         if not detail.get("barcode"):
             detail["barcode"] = snapshot.get("barcode")
         if not detail.get("catalog_no"):
-            from app.main import _discogs_catalog_no
             detail["catalog_no"] = _discogs_catalog_no(snapshot.get("catalog_no"))
         if not detail.get("label_name"):
             detail["label_name"] = snapshot.get("label_name")
@@ -240,7 +243,7 @@ def operator_catalog_search(
         items.append(
             OperatorCatalogSearchItem(
                 owned_item_id=owned_item_id,
-                label_id=_main()._build_label_id(category_code, owned_item_id),
+                label_id=_build_label_id(category_code, owned_item_id),
                 category=category_code,
                 format_name=row_dict.get("format_name"),
                 item_title=row_dict.get("item_title") or row_dict.get("item_name_override"),
@@ -249,7 +252,7 @@ def operator_catalog_search(
                 released_date=row_dict.get("released_date"),
                 pressing_country=row_dict.get("pressing_country"),
                 label_name=row_dict.get("label_name"),
-                catalog_no=_main()._discogs_catalog_no(row_dict.get("catalog_no")),
+                catalog_no=_discogs_catalog_no(row_dict.get("catalog_no")),
                 barcode=row_dict.get("barcode"),
                 format_items=row_dict.get("format_items") or [],
                 runout_sample=" | ".join(runout_values[:2]) if runout_values else None,
@@ -316,22 +319,14 @@ def operator_home_feed(
 @router.get("/operator/climate-compare", response_model=ClimateCompareResponse)
 def operator_climate_compare(request: Request) -> ClimateCompareResponse:
     security._require_authenticated_request(request)
-    indoor = None
-    outdoor = None
-    # Try indoor
     try:
         indoor = _home_env._load_operator_office_climate()
-        if indoor.get("available"):
-            _home_env._OFFICE_CLIMATE_CACHE = dict(indoor)
     except Exception:
-        indoor = _home_env._OFFICE_CLIMATE_CACHE
-    # Try outdoor
+        indoor = None
     try:
         outdoor = _home_env._load_operator_seoul_weather()
-        if outdoor.get("available"):
-            _home_env._SEOUL_WEATHER_CACHE = dict(outdoor)
     except Exception:
-        outdoor = _home_env._SEOUL_WEATHER_CACHE
+        outdoor = None
 
     indoor_t = indoor.get("temperature_c") if indoor else None
     indoor_h = indoor.get("humidity_percent") if indoor else None
@@ -355,21 +350,13 @@ def operator_climate_compare(request: Request) -> ClimateCompareResponse:
 def operator_office_climate(request: Request) -> OfficeClimateResponse:
     security._require_authenticated_request(request)
     try:
-        payload = _home_env._load_operator_office_climate()
-        if bool(payload.get("available")):
-            _home_env._OFFICE_CLIMATE_CACHE = dict(payload)
-            return OfficeClimateResponse(**payload)
+        return OfficeClimateResponse(**_home_env._load_operator_office_climate())
     except Exception:
-        if _home_env._OFFICE_CLIMATE_CACHE:
-            return OfficeClimateResponse(**_home_env._OFFICE_CLIMATE_CACHE)
+        pass
     try:
-        payload = _home_env._load_operator_seoul_weather()
-        if bool(payload.get("available")):
-            _home_env._SEOUL_WEATHER_CACHE = dict(payload)
-            return OfficeClimateResponse(**payload)
+        return OfficeClimateResponse(**_home_env._load_operator_seoul_weather())
     except Exception:
-        if _home_env._SEOUL_WEATHER_CACHE:
-            return OfficeClimateResponse(**_home_env._SEOUL_WEATHER_CACHE)
+        pass
     return OfficeClimateResponse(
         available=False,
         source="seoul_weather",
@@ -515,7 +502,7 @@ def operator_artist_context(
     request: Request,
 ) -> ArtistContextResponse:
     _require_operator_request(request)
-    result = _main().artist_context_service.build_artist_context(
+    result = artist_context_service.build_artist_context(
         payload.artist_name,
         category=payload.category,
         locale=payload.locale,
@@ -529,7 +516,6 @@ def ops_cafe_shell(request: Request):
     security._require_authenticated_request(request)
     import hashlib
     v = request.query_params.get("v")
-    STATIC_DIR = _main().STATIC_DIR
     try:
         file_hash = hashlib.md5((STATIC_DIR / "ops_cafe.html").read_bytes()).hexdigest()[:8]
     except Exception:
@@ -540,10 +526,10 @@ def ops_cafe_shell(request: Request):
             "Location": f"/ops/cafe?v={file_hash}",
             "Cache-Control": "no-store, no-cache, must-revalidate",
         }
-        if _main()._is_qa_env():
+        if _is_qa_env():
             redirect_headers["Clear-Site-Data"] = '"cache"'
         return _Resp(status_code=302, headers=redirect_headers)
-    serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
     return FileResponse(STATIC_DIR / "ops_cafe.html", headers=serve_headers)
 
 

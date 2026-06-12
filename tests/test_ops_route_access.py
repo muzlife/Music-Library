@@ -15,6 +15,8 @@ import app.services.backup as _backup_module
 import app.config as config_module
 from app import db
 from app.services import providers as provider_module
+import app.api.ingest as _ingest_mod
+from app.services.matcher import MatchResult as _MatchResult
 
 
 def _assert_index_shell_response(response):
@@ -536,21 +538,19 @@ def test_operator_office_climate_returns_home_assistant_snapshot(operator_client
 
 
 def test_operator_office_climate_returns_cached_snapshot_when_home_assistant_fails(operator_client, monkeypatch):
-    monkeypatch.setattr(
-        _home_env_module,
-        "_OFFICE_CLIMATE_CACHE",
-        {
-            "available": True,
-            "source": "home_assistant",
-            "location_label": "상주 사무실",
-            "description": "온/습도계",
-            "temperature_c": 21.8,
-            "humidity_percent": 51.0,
-            "comfort_label": "쾌적",
-            "updated_at": "2026-04-03T14:10:00+09:00",
-        },
-    )
-    monkeypatch.setattr(_home_env_module, "_load_operator_office_climate", lambda: (_ for _ in ()).throw(RuntimeError("502 bad gateway")))
+    cached = {
+        "available": True,
+        "source": "home_assistant",
+        "location_label": "상주 사무실",
+        "description": "온/습도계",
+        "temperature_c": 21.8,
+        "humidity_percent": 51.0,
+        "comfort_label": "쾌적",
+        "updated_at": "2026-04-03T14:10:00+09:00",
+    }
+    monkeypatch.setattr(_home_env_module, "_OFFICE_CLIMATE_CACHE_DATA", cached)
+    monkeypatch.setattr(_home_env_module, "_OFFICE_CLIMATE_CACHE_TS", 0.0)  # expired
+    monkeypatch.setattr(_home_env_module, "_fetch_home_assistant_state", lambda entity_id: (_ for _ in ()).throw(RuntimeError("502 bad gateway")))
 
     res = operator_client.get("/operator/office-climate")
 
@@ -1127,7 +1127,7 @@ def test_ingest_search_discogs_retries_with_artist_variation_when_initial_query_
         lambda artist_name, limit=6, suppress_errors=True: ["윤석철 트리오", "Yun Seok Cheol Trio"],
         raising=False,
     )
-    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+    monkeypatch.setattr(__import__("app.api.ingest", fromlist=["_annotate_owned_flags"]), "_annotate_owned_flags", lambda candidates: candidates)
 
     res = admin_client.post(
         "/ingest/search",
@@ -1172,7 +1172,7 @@ def test_ingest_search_discogs_supports_direct_release_reference(admin_client, m
         else None,
     )
     monkeypatch.setattr(main_module, "search_music_metadata", lambda **kwargs: (_ for _ in ()).throw(AssertionError("unexpected metadata search")))
-    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+    monkeypatch.setattr(__import__("app.api.ingest", fromlist=["_annotate_owned_flags"]), "_annotate_owned_flags", lambda candidates: candidates)
 
     res = admin_client.post(
         "/ingest/search",
@@ -1720,7 +1720,7 @@ def test_purchase_import_candidates_accept_yes24_queue_item_vendor(admin_client,
             }
         ],
     )
-    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+    monkeypatch.setattr(__import__("app.api.ingest", fromlist=["_annotate_owned_flags"]), "_annotate_owned_flags", lambda candidates: candidates)
 
     res = admin_client.get(
         "/purchase-imports/816/candidates",
@@ -1773,7 +1773,7 @@ def test_purchase_import_candidates_default_blank_aladin_media_to_cd(admin_clien
         return []
 
     monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
-    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+    monkeypatch.setattr(__import__("app.api.ingest", fromlist=["_annotate_owned_flags"]), "_annotate_owned_flags", lambda candidates: candidates)
 
     res = admin_client.get(
         "/purchase-imports/809/candidates",
@@ -1833,7 +1833,7 @@ def test_purchase_import_candidates_maniadb_exclude_artist_candidates(admin_clie
             },
         ],
     )
-    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+    monkeypatch.setattr(__import__("app.api.ingest", fromlist=["_annotate_owned_flags"]), "_annotate_owned_flags", lambda candidates: candidates)
 
     res = admin_client.get(
         "/purchase-imports/816/candidates",
@@ -2185,7 +2185,7 @@ def test_purchase_import_candidates_support_direct_discogs_release_reference(adm
         else None,
     )
     monkeypatch.setattr(main_module, "search_music_metadata", lambda **kwargs: (_ for _ in ()).throw(AssertionError("unexpected metadata search")))
-    monkeypatch.setattr(main_module, "_annotate_owned_flags", lambda candidates: candidates)
+    monkeypatch.setattr(__import__("app.api.ingest", fromlist=["_annotate_owned_flags"]), "_annotate_owned_flags", lambda candidates: candidates)
 
     res = admin_client.get(
         "/purchase-imports/816/candidates",
@@ -2307,7 +2307,7 @@ def test_album_master_search_forwards_artist_and_title_hints(admin_client, monke
 def test_ingest_csv_forwards_artist_and_title_hints_to_discogs_lookup(admin_client, monkeypatch):
     captured: dict[str, object] = {}
 
-    monkeypatch.setattr(main_module, "validate_row_for_ingest", lambda row, default_category=None: (True, "LP", None))
+    monkeypatch.setattr(_ingest_mod, "validate_row_for_ingest", lambda row, default_category=None: (True, "LP", None))
 
     def fake_search_music_metadata(
         *,
@@ -2328,11 +2328,11 @@ def test_ingest_csv_forwards_artist_and_title_hints_to_discogs_lookup(admin_clie
         captured["title"] = title
         return []
 
-    monkeypatch.setattr(main_module, "search_music_metadata", fake_search_music_metadata)
+    monkeypatch.setattr(_ingest_mod, "search_music_metadata", fake_search_music_metadata)
     monkeypatch.setattr(
-        main_module,
+        _ingest_mod,
         "classify_candidate",
-        lambda candidates: main_module.MatchResult(
+        lambda candidates: _MatchResult(
             confidence=0.0,
             review_status="NEEDS_REVIEW",
             review_note=None,

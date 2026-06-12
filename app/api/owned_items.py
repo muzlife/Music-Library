@@ -138,14 +138,6 @@ from app.main import (  # noqa: E402
 )
 
 
-def _main():
-    """Lazy escape hatch for any helper not enumerated in the import block.
-    Same pattern as the purchase-imports / album-masters slices."""
-    from app import main as main_module
-
-    return main_module
-
-
 def _build_duplicate_payload_from_existing_item(
     base_row: dict[str, Any],
     detail_row: dict[str, Any] | None,
@@ -898,29 +890,32 @@ def get_owned_items(
         genre_missing=genre_missing,
     )
     if include_total:
-        total = db.count_owned_items(
-            category=category,
-            domain_code=domain_code,
-            release_type=release_type,
-            status=status,
-            q=q,
-            artist_or_brand=artist_or_brand,
-            item_name=item_name,
-            catalog_no=catalog_no,
-            barcode=barcode,
-            release_year=release_year,
-            source_state=source_state,
-            master_state=master_state,
-            cover_state=cover_state,
-            slot_state=slot_state,
-            preferred_storage_state=preferred_storage_state,
-            track_state=track_state,
-            music_only=music_only,
-            media_format_state=media_format_state,
-            size_group_state=size_group_state,
-            catalog_missing=catalog_missing,
-            genre_missing=genre_missing,
-        )
+        if len(rows) < limit:
+            total = offset + len(rows)
+        else:
+            total = db.count_owned_items(
+                category=category,
+                domain_code=domain_code,
+                release_type=release_type,
+                status=status,
+                q=q,
+                artist_or_brand=artist_or_brand,
+                item_name=item_name,
+                catalog_no=catalog_no,
+                barcode=barcode,
+                release_year=release_year,
+                source_state=source_state,
+                master_state=master_state,
+                cover_state=cover_state,
+                slot_state=slot_state,
+                preferred_storage_state=preferred_storage_state,
+                track_state=track_state,
+                music_only=music_only,
+                media_format_state=media_format_state,
+                size_group_state=size_group_state,
+                catalog_missing=catalog_missing,
+                genre_missing=genre_missing,
+            )
         response.headers["X-Total-Count"] = str(total)
     return [_to_owned_item_list_item(row) for row in rows]
 
@@ -2164,8 +2159,8 @@ def create_owned_item_auto_master(owned_item_id: int) -> OwnedItemAutoMasterResp
 
     # ALADIN 등록 시: 바코드로 Discogs 마스터 조회 → 있으면 DISCOGS 마스터로 연결
     if source_code == "ALADIN" and source_external_id:
-        main_module = _main()
-        snap = main_module.get_source_release_snapshot(source="ALADIN", external_id=source_external_id)
+        from app.services.providers import get_source_release_snapshot
+        snap = get_source_release_snapshot(source="ALADIN", external_id=source_external_id)
         discogs_crossref: dict[str, Any] | None = (snap or {}).get("discogs_crossref")
         if discogs_crossref:
             d_ext = str(discogs_crossref.get("external_id") or "").strip()
