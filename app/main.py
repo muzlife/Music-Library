@@ -275,6 +275,7 @@ async def lifespan(app: FastAPI):
         )
     _start_metadata_sync_worker()
     _start_auto_backup_worker()
+    _start_climate_refresh_worker()
     asyncio.create_task(_cafe_now_playing_worker())  # SSE now-playing worker
     try:
         yield
@@ -938,6 +939,7 @@ from .services.home_env import (  # noqa: E402 — re-export for backward compat
     _load_operator_office_climate,
     _load_operator_seoul_weather,
     _wmo_weather_code_to_desc,
+    _start_climate_refresh_worker,
 )
 
 
