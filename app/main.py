@@ -507,6 +507,31 @@ async def perf_timing_middleware(request: Request, call_next):
         except Exception:
             pass
 
+    if elapsed_ms >= 10_000:
+        import sys as _sys
+        import traceback as _tb
+        from app.db.error_log import insert_error_log as _insert_err
+        try:
+            frames = _sys._current_frames()
+            stack_parts = []
+            for tid, frame in frames.items():
+                lines = [f"Thread {tid}:"]
+                for fs in _tb.extract_stack(frame):
+                    lines.append(f'  File "{fs.filename}", line {fs.lineno}, in {fs.name}')
+                    if fs.line:
+                        lines.append(f"    {fs.line}")
+                stack_parts.append("\n".join(lines))
+            _insert_err(
+                level="WARN",
+                source="slow-request-watchdog",
+                message=f"slow request {elapsed_ms}ms: {request.method} {path}",
+                traceback="\n\n".join(stack_parts),
+                request_path=path,
+                request_body=None,
+            )
+        except Exception:
+            pass
+
     return response
 
 
