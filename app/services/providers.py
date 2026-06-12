@@ -5123,11 +5123,13 @@ def resolve_release_master_reference(source: str, external_id: str) -> dict[str,
                 artist_name = _pick_first_text(first.get("anv")) or _pick_first_text(first.get("name"))
 
         release_year = None
-        year_raw = raw_detail.get("year")
-        try:
-            release_year = int(year_raw) if year_raw is not None else None
-        except (TypeError, ValueError):
-            release_year = None
+        for year_raw in (detail.get("master_release_year"), raw_detail.get("year")):
+            try:
+                release_year = int(year_raw) if year_raw is not None else None
+            except (TypeError, ValueError):
+                release_year = None
+            if release_year:
+                break
 
         return {
             "source": "DISCOGS",
