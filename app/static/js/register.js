@@ -2104,7 +2104,7 @@
       const mappedReleaseType = pickMappedReleaseType(candidate?.release_type);
       const artist = String(candidate?.artist_or_brand || "").trim();
       const title = String(candidate?.title || "").trim();
-      const itemName = [artist, title].filter((v) => v).join(" - ") || title || category;
+      const itemName = title || category;
       const collector = buildCollectorPayload(sourceCode, candidate || {});
       const trackList = Array.isArray(candidate?.track_list)
         ? candidate.track_list.map((v) => String(v || "").trim()).filter((v) => v)
