@@ -1516,7 +1516,9 @@ def get_owned_item_copies(owned_item_id: int) -> list[OwnedItemListItem]:
 def duplicate_owned_item(
     owned_item_id: int,
     payload: OwnedItemDuplicateRequest,
+    request: Request,
 ) -> OwnedItemDuplicateResponse:
+    _require_operator_request(request)
     base_row = db.get_owned_item(owned_item_id)
     if base_row is None:
         raise HTTPException(status_code=404, detail="owned_item not found")
