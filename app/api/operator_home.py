@@ -591,3 +591,234 @@ def suggest_metadata_correction(
         review_note=payload.reason or "Operator requested metadata correction",
     )
     return {"ok": True, "batch_id": batch_id}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Phase N-2: Cafe Staff & Permission Management for Operators
+# ═══════════════════════════════════════════════════════════════════
+
+class CafeStaffItem(BaseModel):
+    username: str
+    display_name: str | None = None
+    description: str | None = None
+    is_active: bool
+    created_at: str | None = None
+    updated_at: str | None = None
+
+class CafeStaffListResponse(BaseModel):
+    total_count: int
+    items: list[CafeStaffItem]
+
+class CafeStaffCreatePayload(BaseModel):
+    username: str
+    password: str
+    display_name: str | None = None
+    description: str | None = None
+
+class CafeStaffUpdatePayload(BaseModel):
+    password: str | None = None
+    display_name: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
+
+class CafeStaffPermissionOverrideItem(BaseModel):
+    permission_key: str
+    granted: bool
+
+class CafeStaffPermissionsResponse(BaseModel):
+    username: str
+    role: str
+    overrides: list[CafeStaffPermissionOverrideItem]
+    effective: dict[str, bool]
+
+class CafeStaffPermissionUpdatePayload(BaseModel):
+    granted: bool
+
+
+def _require_staff_manager(request: Request, target_username: str | None = None) -> None:
+    security._require_authenticated_request(request)
+    role = security._read_auth_role(request)
+    username = security._read_auth_username(request)
+    if not username:
+        raise HTTPException(status_code=403, detail="authentication required")
+    
+    is_authorized = False
+    if security._is_admin_role(role):
+        is_authorized = True
+    elif security._is_operator_role(role):
+        if db.check_permission(username, role, "hr.manage_staff"):
+            is_authorized = True
+            
+    if not is_authorized:
+        raise HTTPException(status_code=403, detail="Permission 'hr.manage_staff' is required to manage staff.")
+        
+    if target_username:
+        account = db.get_auth_account_by_username(target_username)
+        if not account:
+            raise HTTPException(status_code=404, detail="Staff account not found")
+        target_role = str(account.get("role") or "").strip().upper()
+        if target_role != "CAFE_STAFF":
+            raise HTTPException(status_code=403, detail="Operators can only manage accounts with CAFE_STAFF role.")
+
+
+@router.get("/operator/staff", response_model=CafeStaffListResponse)
+def list_cafe_staff(request: Request) -> CafeStaffListResponse:
+    _require_staff_manager(request)
+    accounts = db.list_auth_accounts()
+    items = []
+    for account in accounts:
+        role = str(account.get("role") or "").strip().upper()
+        if role == "CAFE_STAFF":
+            items.append(
+                CafeStaffItem(
+                    username=str(account.get("username") or ""),
+                    display_name=account.get("display_name"),
+                    description=account.get("description"),
+                    is_active=bool(account.get("is_active")),
+                    created_at=account.get("created_at"),
+                    updated_at=account.get("updated_at"),
+                )
+            )
+    return CafeStaffListResponse(total_count=len(items), items=items)
+
+
+@router.post("/operator/staff", response_model=CafeStaffItem)
+def create_cafe_staff(payload: CafeStaffCreatePayload, request: Request) -> CafeStaffItem:
+    _require_staff_manager(request)
+    username = str(payload.username or "").strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="username is required")
+    
+    # Validation check: alphanumeric/underscore/hyphen
+    import re
+    if not re.match(r"^[a-zA-Z0-9_\-]+$", username):
+        raise HTTPException(status_code=400, detail="ID는 영문자, 숫자, 언더스코어(_), 하이픈(-)만 사용할 수 있습니다.")
+    
+    if db.get_auth_account_by_username(username) is not None:
+        raise HTTPException(status_code=409, detail="이미 존재하는 계정입니다.")
+        
+    hashed = security._hash_auth_password(payload.password)
+    row = db.upsert_auth_account(
+        username=username,
+        password_hash=hashed,
+        role="CAFE_STAFF",
+        is_active=True,
+        display_name=str(payload.display_name or "").strip() or None,
+        description=str(payload.description or "").strip() or None,
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="계정 등록에 실패했습니다.")
+        
+    security._invalidate_session_cache(username)
+    return CafeStaffItem(
+        username=str(row.get("username") or ""),
+        display_name=row.get("display_name"),
+        description=row.get("description"),
+        is_active=bool(row.get("is_active")),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+    )
+
+
+@router.patch("/operator/staff/{username}", response_model=CafeStaffItem)
+def update_cafe_staff(username: str, payload: CafeStaffUpdatePayload, request: Request) -> CafeStaffItem:
+    _require_staff_manager(request, username)
+    existing = db.get_auth_account_by_username(username)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Staff account not found")
+        
+    next_hash = str(existing.get("password_hash") or "").strip()
+    if payload.password is not None and payload.password.strip():
+        next_hash = security._hash_auth_password(payload.password)
+        
+    next_display_name = payload.display_name if payload.display_name is not None else existing.get("display_name")
+    next_description = payload.description if payload.description is not None else existing.get("description")
+    next_active = payload.is_active if payload.is_active is not None else bool(existing.get("is_active"))
+    
+    row = db.upsert_auth_account(
+        username=username,
+        password_hash=next_hash,
+        role="CAFE_STAFF",
+        is_active=next_active,
+        display_name=next_display_name,
+        description=next_description,
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="계정 수정에 실패했습니다.")
+        
+    security._invalidate_session_cache(username)
+    return CafeStaffItem(
+        username=str(row.get("username") or ""),
+        display_name=row.get("display_name"),
+        description=row.get("description"),
+        is_active=bool(row.get("is_active")),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+    )
+
+
+@router.delete("/operator/staff/{username}")
+def delete_cafe_staff(username: str, request: Request) -> dict[str, Any]:
+    _require_staff_manager(request, username)
+    # Check that this is actually a cafe staff (done in require_staff_manager)
+    ok = db.delete_auth_account(username)
+    if not ok:
+        raise HTTPException(status_code=500, detail="계정 삭제에 실패했습니다.")
+    security._invalidate_session_cache(username)
+    db.clear_account_permissions(username)
+    return {"ok": True, "username": username}
+
+
+@router.get("/operator/staff/{username}/permissions", response_model=CafeStaffPermissionsResponse)
+def get_cafe_staff_permissions(username: str, request: Request) -> CafeStaffPermissionsResponse:
+    _require_staff_manager(request, username)
+    overrides = db.list_account_permissions(username)
+    override_items = [
+        CafeStaffPermissionOverrideItem(
+            permission_key=str(o.get("permission_key") or ""),
+            granted=bool(o.get("granted")),
+        )
+        for o in overrides
+    ]
+    effective = db.get_effective_permissions(username, "CAFE_STAFF")
+    return CafeStaffPermissionsResponse(
+        username=username,
+        role="CAFE_STAFF",
+        overrides=override_items,
+        effective=effective,
+    )
+
+
+@router.put("/operator/staff/{username}/permissions/{permission_key}", response_model=dict[str, Any])
+def set_cafe_staff_permission(
+    username: str,
+    permission_key: str,
+    payload: CafeStaffPermissionUpdatePayload,
+    request: Request,
+) -> dict[str, Any]:
+    _require_staff_manager(request, username)
+    if permission_key not in db.ALL_PERMISSION_KEYS:
+        raise HTTPException(status_code=400, detail=f"Invalid permission key. Must be one of {list(db.ALL_PERMISSION_KEYS)}")
+    db.set_account_permission(username, permission_key, payload.granted)
+    return {
+        "username": username,
+        "permission_key": permission_key,
+        "granted": payload.granted,
+    }
+
+
+@router.delete("/operator/staff/{username}/permissions/{permission_key}", response_model=dict[str, Any])
+def delete_cafe_staff_permission(
+    username: str,
+    permission_key: str,
+    request: Request,
+) -> dict[str, Any]:
+    _require_staff_manager(request, username)
+    if permission_key not in db.ALL_PERMISSION_KEYS:
+        raise HTTPException(status_code=400, detail=f"Invalid permission key. Must be one of {list(db.ALL_PERMISSION_KEYS)}")
+    deleted = db.delete_account_permission(username, permission_key)
+    return {
+        "username": username,
+        "permission_key": permission_key,
+        "deleted": deleted,
+    }

@@ -101,6 +101,7 @@ def _resolve_image_upload_extension(file_name: str | None, content_type: str | N
 
 _INDEX_HASH_CACHE: dict[tuple, str] = {}
 _OPS_HASH_CACHE: dict[float, str] = {}
+_OPS_REVAMP_HASH_CACHE: dict[float, str] = {}
 
 
 def _collect_index_mtimes() -> tuple:
@@ -146,6 +147,20 @@ def _ops_file_hash() -> str:
     except Exception:
         result = "0"
     _OPS_HASH_CACHE[mtime] = result
+    return result
+
+
+def _ops_revamp_file_hash() -> str:
+    import hashlib
+    revamp_path = STATIC_DIR / "ops_revamp.html"
+    mtime = revamp_path.stat().st_mtime if revamp_path.exists() else 0.0
+    if mtime in _OPS_REVAMP_HASH_CACHE:
+        return _OPS_REVAMP_HASH_CACHE[mtime]
+    try:
+        result = hashlib.md5(revamp_path.read_bytes()).hexdigest()[:8]
+    except Exception:
+        result = "0"
+    _OPS_REVAMP_HASH_CACHE[mtime] = result
     return result
 
 
@@ -222,6 +237,28 @@ def ops_shell(request: Request):
         return _Resp(status_code=302, headers=redirect_headers)
     serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
     return FileResponse(STATIC_DIR / "ops.html", headers=serve_headers)
+
+
+@router.get("/ops_revamp", include_in_schema=False)
+def ops_revamp_shell(request: Request):
+    if _auth_enabled() and not _is_authenticated(request):
+        return RedirectResponse("/login", status_code=303)
+    v = request.query_params.get("v")
+    try:
+        file_hash = _ops_revamp_file_hash()
+    except Exception:
+        file_hash = "0"
+    if v != file_hash:
+        from starlette.responses import Response as _Resp
+        redirect_headers: dict[str, str] = {
+            "Location": f"/ops_revamp?v={file_hash}",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        if _is_qa_env():
+            redirect_headers["Clear-Site-Data"] = '"cache"'
+        return _Resp(status_code=302, headers=redirect_headers)
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "ops_revamp.html", headers=serve_headers)
 
 
 @router.get("/admin", include_in_schema=False)
