@@ -81,7 +81,7 @@ _UNSET = object()
 # re-exported from this package's __init__ at the bottom of the file.
 
 # ── Connection management (extracted to app.db.connection) ──
-from .connection import get_conn, get_write_conn, utc_now_iso  # noqa: F401
+from .connection import get_conn, get_write_conn, utc_now_iso, invalidate_read_conn_cache  # noqa: F401
 from .connection import _ensure_parent_dir, _ensure_app_setting_table  # noqa: F401
 
 
@@ -2103,6 +2103,7 @@ from .music_shelf_window import (  # noqa: E402
 # from the package surface.
 from .collection_dashboard import (  # noqa: E402
     get_collection_dashboard,
+    invalidate_dashboard_cache,
 )
 # owned_item_write MUST be the LAST re-export — it depends on
 # helpers from album_master_core, owned_item_slot,

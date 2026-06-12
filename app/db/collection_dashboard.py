@@ -43,8 +43,15 @@ from __future__ import annotations
 
 import json
 import re
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
+_dashboard_cache: dict[str, Any] | None = None
+_dashboard_cache_ts: float = 0.0
+_dashboard_cache_lock = threading.Lock()
+_DASHBOARD_CACHE_TTL = 30.0  # seconds
 
 from app.db import (  # noqa: E402  — package surface
     DASHBOARD_MOVE_WINDOW_DAYS,
@@ -153,7 +160,7 @@ def _build_collection_dashboard_first_item_hints(
     return hints
 
 
-def get_collection_dashboard() -> dict[str, Any]:
+def _get_collection_dashboard_uncached() -> dict[str, Any]:
     move_threshold = (datetime.now(timezone.utc) - timedelta(days=DASHBOARD_MOVE_WINDOW_DAYS)).isoformat()
     with get_conn() as conn:
         _slot_ok = slot_size_ok_sql()
@@ -1106,6 +1113,29 @@ def get_collection_dashboard() -> dict[str, Any]:
     }
 
 
+def get_collection_dashboard() -> dict[str, Any]:
+    global _dashboard_cache, _dashboard_cache_ts
+    now = time.monotonic()
+    cached = _dashboard_cache
+    if cached is not None and (now - _dashboard_cache_ts) < _DASHBOARD_CACHE_TTL:
+        return cached
+    with _dashboard_cache_lock:
+        now = time.monotonic()
+        cached = _dashboard_cache
+        if cached is not None and (now - _dashboard_cache_ts) < _DASHBOARD_CACHE_TTL:
+            return cached
+        result = _get_collection_dashboard_uncached()
+        _dashboard_cache = result
+        _dashboard_cache_ts = now
+        return result
+
+
+def invalidate_dashboard_cache() -> None:
+    global _dashboard_cache
+    _dashboard_cache = None
+
+
 __all__ = [
     "get_collection_dashboard",
+    "invalidate_dashboard_cache",
 ]

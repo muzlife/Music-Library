@@ -20,6 +20,10 @@ from ..config import get_settings
 SQLITE_BUSY_TIMEOUT_MS = 30_000
 
 _slow_query_recording = threading.local()
+_read_local = threading.local()          # per-thread: conn, depth, generation
+_all_read_conns: list[_TimedConnection] = []
+_all_read_conns_lock = threading.Lock()
+_conn_generation: int = 0                # bumped on every invalidation
 
 
 class _TimedConnection(sqlite3.Connection):
@@ -73,11 +77,7 @@ def _ensure_app_setting_table(conn: sqlite3.Connection) -> None:
     )
 
 
-@contextmanager
-def get_conn() -> Generator[sqlite3.Connection, None, None]:
-    settings = get_settings()
-    _ensure_parent_dir(settings.db_path)
-    _TimedConnection._slow_ms = settings.perf_slow_query_ms
+def _make_read_conn(settings) -> _TimedConnection:
     conn = sqlite3.connect(
         settings.db_path,
         timeout=SQLITE_BUSY_TIMEOUT_MS / 1000,
@@ -88,11 +88,66 @@ def get_conn() -> Generator[sqlite3.Connection, None, None]:
     conn.execute("PRAGMA journal_mode = WAL").fetchone()
     conn.execute("PRAGMA synchronous = NORMAL")
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA cache_size = -65536")
+    with _all_read_conns_lock:
+        _all_read_conns.append(conn)
+    return conn
+
+
+@contextmanager
+def get_conn() -> Generator[sqlite3.Connection, None, None]:
+    global _conn_generation
+    settings = get_settings()
+    _ensure_parent_dir(settings.db_path)
+    _TimedConnection._slow_ms = settings.perf_slow_query_ms
+
+    cached_conn = getattr(_read_local, "conn", None)
+    cached_gen = getattr(_read_local, "generation", -1)
+    cached_path = getattr(_read_local, "db_path", None)
+    if (cached_conn is None
+            or cached_gen != _conn_generation
+            or cached_path != settings.db_path):
+        if cached_conn is not None:
+            try:
+                cached_conn.close()
+            except Exception:
+                pass
+        _read_local.conn = _make_read_conn(settings)
+        _read_local.generation = _conn_generation
+        _read_local.db_path = settings.db_path
+        _read_local.depth = 0
+
+    _read_local.depth += 1
+    conn = _read_local.conn
     try:
         yield conn
-        conn.commit()
+        if _read_local.depth == 1:
+            conn.commit()
+    except Exception:
+        if _read_local.depth == 1:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        raise
     finally:
-        conn.close()
+        _read_local.depth -= 1
+
+
+def invalidate_read_conn_cache() -> None:
+    """DB 파일 교체(복구) 후 모든 스레드의 캐시된 읽기 커넥션을 무효화."""
+    global _conn_generation, _all_read_conns
+    with _all_read_conns_lock:
+        _conn_generation += 1
+        for c in _all_read_conns:
+            try:
+                c.close()
+            except Exception:
+                pass
+        _all_read_conns = []
+    _read_local.conn = None
+    _read_local.depth = 0
+    _read_local.generation = -1
 
 
 @contextmanager

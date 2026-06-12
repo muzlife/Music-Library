@@ -65,6 +65,7 @@ from app.db.catalog_search import (
     delete_catalog_search_in_conn,
     upsert_catalog_search_in_conn,
 )
+from app.db.collection_dashboard import invalidate_dashboard_cache
 
 
 def _sync_music_detail_genres_to_master_in_conn(
@@ -178,6 +179,7 @@ def insert_owned_item(payload: dict[str, Any]) -> int:
 
         upsert_catalog_search_in_conn(conn, owned_item_id)
 
+    invalidate_dashboard_cache()
     return owned_item_id
 
 
@@ -341,6 +343,7 @@ def update_owned_item(owned_item_id: int, payload: dict[str, Any]) -> bool:
 
         upsert_catalog_search_in_conn(conn, owned_item_id)
 
+    invalidate_dashboard_cache()
     return True
 
 
@@ -491,7 +494,10 @@ def delete_owned_item(owned_item_id: int) -> bool:
     with get_conn() as conn:
         delete_catalog_search_in_conn(conn, owned_item_id)
         cur = conn.execute("DELETE FROM owned_item WHERE id = ?", (owned_item_id,))
-        return int(cur.rowcount or 0) > 0
+        deleted = int(cur.rowcount or 0) > 0
+    if deleted:
+        invalidate_dashboard_cache()
+    return deleted
 
 
 # `get_owned_item` and `get_owned_item_detail` live in

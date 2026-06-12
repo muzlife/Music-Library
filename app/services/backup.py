@@ -227,6 +227,7 @@ def _restore_library_db_from_upload(upload_path: str, original_filename: str) ->
         if candidate.exists():
             candidate.unlink(missing_ok=True)
     staged_path.replace(db_path)
+    db.invalidate_read_conn_cache()
     db.ensure_startup_db_ready()
     return {
         "restored": True,
@@ -295,6 +296,7 @@ def _restore_library_bundle_from_upload(upload_path: str, original_filename: str
                 with bundle.open(".env.local", "r") as source_env, open(env_target, "wb") as target_env:
                     shutil.copyfileobj(source_env, target_env)
 
+            db.invalidate_read_conn_cache()
             db.ensure_startup_db_ready()
             return {
                 "restored": True,
