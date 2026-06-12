@@ -91,6 +91,34 @@ def _sync_music_detail_genres_to_master_in_conn(
         )
 
 
+def _sync_owned_item_fields_to_master_in_conn(
+    conn: sqlite3.Connection,
+    payload: dict,
+    now: str,
+) -> None:
+    linked_master_id = int(payload.get("linked_album_master_id") or 0)
+    if linked_master_id <= 0:
+        return
+
+    domain_code = str(payload.get("domain_code") or "").strip()
+    release_type = str(payload.get("release_type") or "").strip()
+
+    if not domain_code and not release_type:
+        return
+
+    if domain_code:
+        conn.execute(
+            "UPDATE album_master SET domain_code = ?, updated_at = ? WHERE id = ?",
+            (domain_code, now, linked_master_id),
+        )
+
+    if release_type:
+        conn.execute(
+            "UPDATE album_master SET release_type = ?, updated_at = ? WHERE id = ?",
+            (release_type, now, linked_master_id),
+        )
+
+
 def insert_owned_item(payload: dict[str, Any]) -> int:
     now = utc_now_iso()
     status = str(payload.get("status") or "IN_COLLECTION")
@@ -164,6 +192,7 @@ def insert_owned_item(payload: dict[str, Any]) -> int:
         if music_detail:
             _upsert_music_item_detail_in_conn(conn, owned_item_id=owned_item_id, music_detail=music_detail, now=now)
             _sync_music_detail_genres_to_master_in_conn(conn, payload, music_detail, now)
+        _sync_owned_item_fields_to_master_in_conn(conn, payload, now)
         goods_detail = payload.get("goods_detail")
         if goods_detail:
             _upsert_goods_item_detail_in_conn(conn, owned_item_id=owned_item_id, goods_detail=goods_detail, now=now)
@@ -328,6 +357,7 @@ def update_owned_item(owned_item_id: int, payload: dict[str, Any]) -> bool:
             _sync_music_detail_genres_to_master_in_conn(conn, payload, music_detail, now)
         else:
             conn.execute("DELETE FROM music_item_detail WHERE owned_item_id = ?", (owned_item_id,))
+        _sync_owned_item_fields_to_master_in_conn(conn, payload, now)
         goods_detail = payload.get("goods_detail")
         if goods_detail:
             _upsert_goods_item_detail_in_conn(conn, owned_item_id=owned_item_id, goods_detail=goods_detail, now=now)
