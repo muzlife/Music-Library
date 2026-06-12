@@ -32,11 +32,10 @@ from ..schemas import (
 )
 
 from ..services import camera as _camera
+from ..services.site import STATIC_DIR, HTML_NO_CACHE_HEADERS, HTML_PROD_CACHE_HEADERS, _is_qa_env
 
 router = APIRouter()
-def _main():
-    from app import main as main_module
-    return main_module
+
 def _require_admin_request(request: Request) -> None:
     security._require_admin_request(request)
 def _require_operator_request(request: Request) -> None:
@@ -132,7 +131,7 @@ def ops_cabinets_shell(request: Request):
     import hashlib
     v = request.query_params.get("v")
     try:
-        file_hash = hashlib.md5((_main().STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
+        file_hash = hashlib.md5((STATIC_DIR / "index.html").read_bytes()).hexdigest()[:8]
     except Exception:
         file_hash = "0"
     if v != file_hash:
@@ -141,11 +140,11 @@ def ops_cabinets_shell(request: Request):
             "Location": f"/ops/cabinets?v={file_hash}",
             "Cache-Control": "no-store, no-cache, must-revalidate",
         }
-        if _main()._is_qa_env():
+        if _is_qa_env():
             redirect_headers["Clear-Site-Data"] = '"cache"'
         return Response(status_code=302, headers=redirect_headers)
-    serve_headers = {**_main().HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _main()._is_qa_env() else _main().HTML_PROD_CACHE_HEADERS
-    return FileResponse(_main().STATIC_DIR / "index.html", headers=serve_headers)
+    serve_headers = {**HTML_NO_CACHE_HEADERS, "Clear-Site-Data": '"cache"'} if _is_qa_env() else HTML_PROD_CACHE_HEADERS
+    return FileResponse(STATIC_DIR / "index.html", headers=serve_headers)
 
 
 @router.get("/goods-items", response_model=GoodsItemSearchResponse)
@@ -583,9 +582,10 @@ def _build_ops_owned_item_collector_info_payload(owned_item_id: int) -> dict[str
             "external_links": [f"https://www.discogs.com/release/{source_external_id}"],
         }
 
-    m = _main()
+    from app.main import _clean_text, _clean_string_list
+    from ..services.discogs_mapper import _discogs_catalog_no as _disc_cat_no
     raw_formats = collector_data.get("formats") or []
-    formats = m._clean_string_list(raw_formats)
+    formats = _clean_string_list(raw_formats)
     format_items = collector_data.get("format_items")
     if not isinstance(format_items, list):
         format_items = []
@@ -593,14 +593,14 @@ def _build_ops_owned_item_collector_info_payload(owned_item_id: int) -> dict[str
     if not isinstance(label_items, list):
         label_items = []
     label_name = None
-    catalog_no = m._discogs_catalog_no(collector_data.get("catalog_no"))
+    catalog_no = _disc_cat_no(collector_data.get("catalog_no"))
     for label_row in label_items:
         if not isinstance(label_row, dict):
             continue
         if label_name is None:
-            label_name = m._clean_text(label_row.get("name"))
+            label_name = _clean_text(label_row.get("name"))
         if catalog_no is None:
-            catalog_no = m._discogs_catalog_no(label_row.get("catno"))
+            catalog_no = _disc_cat_no(label_row.get("catno"))
         if label_name and catalog_no:
             break
     runout_matrix = [str(v or "").strip() for v in collector_data.get("runout_matrix") or []]
@@ -612,13 +612,13 @@ def _build_ops_owned_item_collector_info_payload(owned_item_id: int) -> dict[str
         "owned_item_id": item_id,
         "source_code": source_code,
         "source_external_id": source_external_id,
-        "release_title": m._clean_text(collector_data.get("title")),
-        "artist_or_brand": m._clean_text(collector_data.get("artist_or_brand")),
-        "country": m._clean_text(collector_data.get("country")),
-        "pressing_country": m._clean_text(collector_data.get("pressing_country")),
+        "release_title": _clean_text(collector_data.get("title")),
+        "artist_or_brand": _clean_text(collector_data.get("artist_or_brand")),
+        "country": _clean_text(collector_data.get("country")),
+        "pressing_country": _clean_text(collector_data.get("pressing_country")),
         "label_name": label_name,
         "catalog_no": catalog_no,
-        "barcode": m._clean_text(collector_data.get("barcode")),
+        "barcode": _clean_text(collector_data.get("barcode")),
         "formats": formats,
         "format_items": format_items,
         "disc_count": collector_data.get("disc_count"),

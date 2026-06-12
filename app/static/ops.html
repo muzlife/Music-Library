@@ -910,7 +910,7 @@
         top: 0;
         right: 0;
         bottom: 0;
-        width: 460px;
+        width: min(520px, 100vw);
         z-index: 1000;
         backdrop-filter: blur(25px);
         -webkit-backdrop-filter: blur(25px);
@@ -919,12 +919,46 @@
         flex-direction: column;
         gap: 20px;
         transform: translateX(100%);
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: var(--transition-std);
         overflow-y: auto;
       }
       
       .details-panel.open {
         transform: translateX(0);
+      }
+
+      /* Details Panel Expanded Mode */
+      .details-panel.expanded {
+        width: min(1080px, 95vw);
+      }
+
+      /* Grid for content in expanded mode */
+      .details-content-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      @media (min-width: 900px) {
+        .details-panel.expanded .details-content-grid {
+          display: grid;
+          grid-template-columns: 1.1fr 1fr;
+          gap: 28px;
+          align-items: start;
+        }
+      }
+      
+      /* Left/Right Column styling in expanded */
+      .details-left-col, .details-right-col {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 0;
+      }
+      
+      .btn-toggle-expand:hover {
+        color: var(--text-primary) !important;
+        transform: scale(1.1);
       }
 
       .details-header {
@@ -1013,20 +1047,66 @@
         gap: 8px;
       }
 
-      .track-item-mini {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85rem;
-        padding: 6px 10px;
-        border-radius: 6px;
+      .home-edit-track-list {
+        max-height: 480px;
+        overflow: auto;
+        padding: 8px;
+        border: 1px dashed var(--surface-border);
+        border-radius: 8px;
         background: rgba(0, 0, 0, 0.15);
+        display: grid;
+        gap: 6px;
       }
-      
-      .track-num {
+
+      .home-edit-track-row {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) 56px;
+        gap: 4px;
+        align-items: center;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        padding-bottom: 4px;
+      }
+      .home-edit-track-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .home-edit-track-pos {
         color: var(--accent-amber);
-        font-family: var(--font-mono);
-        font-weight: 500;
-        margin-right: 8px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .home-edit-track-title {
+        white-space: pre-wrap;
+        line-height: 1.35;
+        min-width: 0;
+        color: var(--text-primary);
+      }
+
+      .home-edit-track-duration {
+        color: var(--text-muted);
+        white-space: nowrap;
+        text-align: right;
+      }
+
+      .home-edit-track-disc-header {
+        grid-column: 1 / -1;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 8px 4px 2px;
+        border-top: 1px dashed var(--surface-border);
+        margin-top: 4px;
+      }
+      .home-edit-track-disc-header:first-child {
+        border-top: none;
+        margin-top: 0;
+        padding-top: 2px;
       }
 
       /* Shelf Window — horizontal strip */
@@ -1489,99 +1569,117 @@
   <aside class="details-panel" id="detailsPanel">
     <div class="details-header">
       <h2 style="font-family: var(--font-display); font-weight:700; font-size:1.2rem;" data-i18n="ui.details.title">상세 정보</h2>
-      <div class="btn-close-details" id="closeDetailsBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </div>
-    </div>
-
-    <!-- Thumbnail Cover -->
-    <div class="details-cover-large" id="detailsCover">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10"></circle>
-        <circle cx="12" cy="12" r="3"></circle>
-      </svg>
-    </div>
-
-    <!-- Metadata Details -->
-    <div class="details-meta-block">
-      <div class="meta-field">
-        <span class="meta-field-label" data-i18n="ui.details.album">앨범명</span>
-        <span class="meta-field-val" id="detailsTitle" style="font-weight:700;">-</span>
-      </div>
-      <div class="meta-field">
-        <span class="meta-field-label" data-i18n="ui.details.artist">아티스트</span>
-        <span class="meta-field-val" id="detailsArtist">-</span>
-      </div>
-      <div class="meta-field">
-        <span class="meta-field-label" data-i18n="ui.details.location">현재 보관 위치</span>
-        <span class="meta-field-val" id="detailsLocation" style="font-weight:600; color:var(--accent-cyan);">-</span>
-      </div>
-      <div class="meta-field">
-        <span class="meta-field-label" data-i18n="ui.details.identifiers">바코드 / 카탈로그</span>
-        <span class="meta-field-val" id="detailsIdentifiers" style="font-family:var(--font-mono); font-size:0.85rem;">-</span>
-      </div>
-      <div class="meta-field">
-        <span class="meta-field-label" data-i18n="ui.details.label_date">레이블 / 출시일</span>
-        <span class="meta-field-val" id="detailsLabelAndDate">-</span>
-      </div>
-    </div>
-
-    <!-- Location Management & Corrections -->
-    <div style="display:flex; flex-direction:column; gap:10px; border-bottom: 1px solid var(--surface-border); padding-bottom: 16px;">
-      <div style="display:flex; gap:8px;">
-        <button class="btn-action btn-play-roon" id="btnChangeSlot" style="flex:1; padding:8px 12px; font-size:0.8rem;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="btn-toggle-expand" id="toggleExpandDetailsBtn" style="cursor: pointer; display: flex; align-items: center; color: var(--text-muted); transition: var(--transition-std);" title="넓게 보기 / 좁게 보기">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="expandIcon">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
           </svg>
-          <span data-i18n="ui.details.move">위치 이동</span>
-        </button>
-        <button class="btn-action btn-return" id="btnRestoreSlot" style="flex:1; padding:8px 12px; font-size:0.8rem; display:none;" data-i18n="ui.details.restore">이전 위치 복구</button>
-      </div>
-      <button class="btn-action btn-cancel" id="btnSuggestCorrection" style="width:100%; padding:8px 12px; font-size:0.8rem; border-color:rgba(234, 179, 8, 0.25); color:var(--warning);">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px; vertical-align: middle;">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path>
-        </svg>
-        <span data-i18n="ui.details.suggest">메타데이터 오류 제안</span>
-      </button>
-    </div>
-
-    <!-- AI Artist Bio Context -->
-    <div class="artist-bio-section" id="detailsBioSection" style="display:none;">
-      <div id="detailsBioSubSection">
-        <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.artist_ctx">아티스트 컨텍스트 (AI)</h3>
-        <div class="artist-bio-text" id="detailsBioText" style="margin-bottom:12px;">불러오는 중...</div>
-      </div>
-      <div id="detailsReviewSection" style="display:none; padding-top:12px; border-top:1px dashed var(--surface-border);">
-        <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">앨범 리뷰 (Wikipedia)</h3>
-        <div class="artist-bio-text" id="detailsReviewText" style="font-size:0.82rem; line-height:1.5;"></div>
+        </div>
+        <div class="btn-close-details" id="closeDetailsBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
       </div>
     </div>
 
-    <!-- Track List -->
-    <div class="track-list-section">
-      <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.tracks">수록곡 목록</h3>
-      <div id="detailsTrackList" style="display:flex; flex-direction:column; gap:6px;">
-        <span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>
-      </div>
-    </div>
+    <div class="details-content-grid">
+      <!-- Left Column (Album Details, Info, AI Context) -->
+      <div class="details-left-col">
+        <!-- Thumbnail Cover -->
+        <div class="details-cover-large" id="detailsCover">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
 
-    <!-- Shelf Window View -->
-    <div class="shelf-window-section" id="shelfWindowSection" style="display:none;">
-      <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="3" y1="9" x2="21" y2="9"></line>
-          <line x1="9" y1="21" x2="9" y2="9"></line>
-        </svg>
-        같은 선반 컨텍스트
-        <span class="shelf-position-badge" id="shelfPositionBadge" style="margin-left:auto;"></span>
-      </h3>
-      <div class="shelf-strip" id="shelfStripContainer"></div>
+        <!-- Metadata Details -->
+        <div class="details-meta-block">
+          <div class="meta-field">
+            <span class="meta-field-label" data-i18n="ui.details.album">앨범명</span>
+            <span class="meta-field-val" id="detailsTitle" style="font-weight:700;">-</span>
+          </div>
+          <div class="meta-field">
+            <span class="meta-field-label" data-i18n="ui.details.artist">아티스트</span>
+            <span class="meta-field-val" id="detailsArtist">-</span>
+          </div>
+          <div class="meta-field">
+            <span class="meta-field-label" data-i18n="ui.details.location">현재 보관 위치</span>
+            <span class="meta-field-val" id="detailsLocation" style="font-weight:600; color:var(--accent-cyan);">-</span>
+          </div>
+          <div class="meta-field">
+            <span class="meta-field-label" data-i18n="ui.details.identifiers">바코드 / 카탈로그</span>
+            <span class="meta-field-val" id="detailsIdentifiers" style="font-family:var(--font-mono); font-size:0.85rem;">-</span>
+          </div>
+          <div class="meta-field">
+            <span class="meta-field-label" data-i18n="ui.details.label_date">레이블 / 출시일</span>
+            <span class="meta-field-val" id="detailsLabelAndDate">-</span>
+          </div>
+        </div>
+
+        <!-- Location Management & Corrections -->
+        <div style="display:flex; flex-direction:column; gap:10px; border-bottom: 1px solid var(--surface-border); padding-bottom: 16px;">
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action btn-play-roon" id="btnChangeSlot" style="flex:1; padding:8px 12px; font-size:0.8rem;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span data-i18n="ui.details.move">위치 이동</span>
+            </button>
+            <button class="btn-action btn-return" id="btnRestoreSlot" style="flex:1; padding:8px 12px; font-size:0.8rem; display:none;" data-i18n="ui.details.restore">이전 위치 복구</button>
+          </div>
+          <button class="btn-action btn-cancel" id="btnSuggestCorrection" style="width:100%; padding:8px 12px; font-size:0.8rem; border-color:rgba(234, 179, 8, 0.25); color:var(--warning);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px; vertical-align: middle;">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path>
+            </svg>
+            <span data-i18n="ui.details.suggest">메타데이터 오류 제안</span>
+          </button>
+        </div>
+
+        <!-- AI Artist Bio Context -->
+        <div class="artist-bio-section" id="detailsBioSection" style="display:none;">
+          <div id="detailsBioSubSection">
+            <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.artist_ctx">아티스트 컨텍스트 (AI)</h3>
+            <div class="artist-bio-text" id="detailsBioText" style="margin-bottom:12px;">불러오는 중...</div>
+          </div>
+          <div id="detailsReviewSection" style="display:none; padding-top:12px; border-top:1px dashed var(--surface-border);">
+            <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">앨범 리뷰 (Wikipedia)</h3>
+            <div class="artist-bio-text" id="detailsReviewText" style="font-size:0.82rem; line-height:1.5;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column (Tracklist, Shelf Window) -->
+      <div class="details-right-col">
+        <!-- Track List -->
+        <div class="track-list-section">
+          <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" data-i18n="ui.details.tracks">수록곡 목록</h3>
+          <div id="detailsTrackList" class="home-edit-track-list">
+            <span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>
+          </div>
+        </div>
+
+        <!-- Shelf Window View -->
+        <div class="shelf-window-section" id="shelfWindowSection" style="display:none;">
+          <h3 style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            같은 선반 컨텍스트
+            <span class="shelf-position-badge" id="shelfPositionBadge" style="margin-left:auto;"></span>
+          </h3>
+          <div class="shelf-strip" id="shelfStripContainer"></div>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -1629,6 +1727,8 @@
         'ui.details.artist_ctx':  '아티스트 컨텍스트 (AI)',
         'ui.details.tracks':      '수록곡 목록',
         'ui.details.tracks_empty':'수록곡 정보가 없습니다.',
+        'ui.details.tracks.side_label': 'Side {side}',
+        'ui.details.tracks.disc_label': 'Disc {disc}',
         'ui.details.shelf':       '같은 선반 컨텍스트',
         'ui.catalog.title':       '카탈로그 검색',
         'ui.stat.locations':      '장식장 슬롯',
@@ -1678,6 +1778,8 @@
         'ui.details.artist_ctx':  'Artist Context (AI)',
         'ui.details.tracks':      'Track List',
         'ui.details.tracks_empty':'No track information.',
+        'ui.details.tracks.side_label': 'Side {side}',
+        'ui.details.tracks.disc_label': 'Disc {disc}',
         'ui.details.shelf':       'Same Shelf Context',
         'ui.catalog.title':       'Catalog Search',
         'ui.stat.locations':      'Storage Slots',
@@ -1699,6 +1801,11 @@
         'ui.loading':             '読み込み中...',
         'ui.search.placeholder':  'バーコードスキャン またはアルバム名・アーティスト名を入力...',
         'ui.search.hint':         'キーワードを入力して検索を開始してください。',
+        'ui.details.tracks':      'トラックリスト',
+        'ui.details.tracks_empty':'トラック情報がありません。',
+        'ui.details.tracks.side_label': 'Side {side}',
+        'ui.details.tracks.disc_label': 'Disc {disc}',
+        'ui.details.shelf':       '同じ棚のコンテキスト',
         'ui.sort.label':          '並び順',
         'ui.sort.created_desc':   '新着順',
         'ui.sort.moved_desc':     '最近移動順',
@@ -1939,6 +2046,128 @@
         .replace(/'/g, '&#039;');
     }
 
+    function parseTracksFromText(text) {
+      const lines = String(text || "").split("\n");
+      const items = [];
+      let autoIdx = 0;
+      let currentSide = null;  // 'A', 'B', ... when [Side X] tag seen
+      let sideTrackIdx = 0;
+      let currentDisc = null;  // 1, 2, ... when [Disc N] tag seen
+      let discTrackIdx = 0;
+      for (const rawLine of lines) {
+        // Strip leading bullet markers: *, •, -, ·
+        let line = rawLine.trim().replace(/^[*•\-·]\s+/, "");
+        if (!line) continue;
+        autoIdx++;
+        let rest = line;
+        let duration = "";
+        // Extract duration at end: 3:45 / 1:03:45
+        const durMatch = rest.match(/\s+(\d{1,2}:\d{2}(?::\d{2})?)$/);
+        if (durMatch) {
+          duration = durMatch[1];
+          rest = rest.slice(0, -durMatch[0].length).trim();
+        }
+        // Detect and strip [Side X] / (Side X) tags → switch to side notation
+        const sideTagMatch = rest.match(/[\[(](?:Side\s*([A-Za-z])|([A-Za-z])\s*Side)[\])]/i);
+        if (sideTagMatch) {
+          currentSide = (sideTagMatch[1] || sideTagMatch[2]).toUpperCase();
+          sideTrackIdx = 0;
+          currentDisc = null;
+          rest = rest.replace(sideTagMatch[0], "").trim();
+        }
+        // Detect and strip [Disc N] / (Disc N) tags → switch to disc notation
+        const discTagMatch = rest.match(/[\[(]Disc\s*(\d+)[\])]/i);
+        if (discTagMatch) {
+          currentDisc = Number(discTagMatch[1]);
+          discTrackIdx = 0;
+          currentSide = null;
+          rest = rest.replace(discTagMatch[0], "").trim();
+        }
+        // If line was only a marker tag, skip (no track item)
+        if (!rest) { autoIdx--; continue; }
+        // Extract position at start (priority order):
+        //   disc-track:  1-1.  1-1  2-3.
+        //   vinyl/alpha: A1  B2  A1.
+        //   numbered:    1.  12  3
+        let position = String(autoIdx);
+        const posMatch = rest.match(/^(\d+-\d+\.?|[A-Za-z]-\d+\.?|[A-Ga-g]?\d+[a-z]?\.?)\s+/i);
+        if (posMatch) {
+          // Consume the position token from the title text
+          rest = rest.slice(posMatch[0].length).trim();
+        }
+        if (currentSide !== null) {
+          // Side mode: override position with A-1, B-2, ...
+          sideTrackIdx++;
+          position = `${currentSide}-${sideTrackIdx}`;
+        } else if (currentDisc !== null) {
+          // Disc mode: override position with 1-1, 2-3, ...
+          discTrackIdx++;
+          position = `${currentDisc}-${discTrackIdx}`;
+        } else if (posMatch) {
+          position = posMatch[1].replace(/\.$/, "");
+        }
+        if (!rest) continue;
+        items.push({ position, title: rest, duration });
+      }
+      return items;
+    }
+
+    function renderOpsTrackList(container, trackListArray) {
+      container.innerHTML = '';
+      if (!trackListArray || trackListArray.length === 0) {
+        container.innerHTML = `<span class="status-text" style="padding:0;">${escapeHtml(opsT('ui.details.tracks_empty'))}</span>`;
+        return;
+      }
+
+      // Convert array of string lines to structured row objects
+      const textVal = trackListArray.join('\n');
+      const rows = parseTracksFromText(textVal);
+
+      if (!rows.length) {
+        container.innerHTML = `<span class="status-text" style="padding:0;">${escapeHtml(opsT('ui.details.tracks_empty'))}</span>`;
+        return;
+      }
+
+      const hasDiscTrack = rows.some((row) => /^\d+-\d+$/.test(String(row.position || "")));
+      const hasSideTrack = rows.some((row) => /^[A-Z]-\d+$/.test(String(row.position || "")));
+
+      const trackRow = (row) => `<div class="home-edit-track-row">
+        <div class="home-edit-track-pos">${escapeHtml(row.position)}</div>
+        <div class="home-edit-track-title">${escapeHtml(row.title)}</div>
+        <div class="home-edit-track-duration">${escapeHtml(row.duration)}</div>
+      </div>`;
+
+      if (hasSideTrack) {
+        let currentGroup = null;
+        container.innerHTML = rows.map((row) => {
+          const sideMatch = String(row.position || "").match(/^([A-Z])-(\d+)$/);
+          const group = sideMatch ? sideMatch[1] : null;
+          let header = "";
+          if (group && group !== currentGroup) {
+            currentGroup = group;
+            const label = opsT('ui.details.tracks.side_label').replace('{side}', group);
+            header = `<div class="home-edit-track-disc-header">${escapeHtml(label)}</div>`;
+          }
+          return header + trackRow(row);
+        }).join("");
+      } else if (hasDiscTrack) {
+        let currentDisc = null;
+        container.innerHTML = rows.map((row) => {
+          const discMatch = String(row.position || "").match(/^(\d+)-(\d+)$/);
+          const disc = discMatch ? discMatch[1] : null;
+          let header = "";
+          if (disc && disc !== currentDisc) {
+            currentDisc = disc;
+            const label = opsT('ui.details.tracks.disc_label').replace('{disc}', disc);
+            header = `<div class="home-edit-track-disc-header">${escapeHtml(label)}</div>`;
+          }
+          return header + trackRow(row);
+        }).join("");
+      } else {
+        container.innerHTML = rows.map(trackRow).join("");
+      }
+    }
+
     // Render Search Results Card
     function renderCatalogItem(item) {
       const coverUrl = item.cover_image_url;
@@ -2111,6 +2340,29 @@
 
       panel.classList.add('open');
 
+      // Restore expanded state preference
+      try {
+        const isExpanded = localStorage.getItem('ops_details_expanded') === 'true';
+        panel.classList.toggle('expanded', isExpanded);
+        
+        const expandIcon = document.getElementById('expandIcon');
+        if (isExpanded) {
+          expandIcon.innerHTML = `
+            <polyline points="4 14 10 14 10 20"></polyline>
+            <polyline points="20 10 14 10 14 4"></polyline>
+            <line x1="14" y1="10" x2="21" y2="3"></line>
+            <line x1="10" y1="14" x2="3" y2="21"></line>
+          `;
+        } else {
+          expandIcon.innerHTML = `
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          `;
+        }
+      } catch(_) {}
+
       title.textContent = item.product_title || item.item_title || 'Unknown Title';
       artist.textContent = item.artist_or_brand || 'Unknown Artist';
       
@@ -2181,31 +2433,14 @@
           // Render tracks
           trackList.innerHTML = '';
           const tList = detail.track_list || [];
-          if (tList.length > 0) {
-            tList.forEach((track, index) => {
-              const div = document.createElement('div');
-              div.className = 'track-item-mini';
-              div.innerHTML = `<span class="track-name"><span class="track-num">${index + 1}</span>${escapeHtml(track)}</span>`;
-              trackList.appendChild(div);
-            });
-          } else {
-            trackList.innerHTML = '<span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>';
-          }
+          renderOpsTrackList(trackList, tList);
         }
       } catch (err) {
         console.error('Failed to load full item details', err);
         // If fetch fails, show whatever tracklist we originally passed
         trackList.innerHTML = '';
-        if (item.track_list && item.track_list.length > 0) {
-          item.track_list.forEach((track, index) => {
-            const div = document.createElement('div');
-            div.className = 'track-item-mini';
-            div.innerHTML = `<span class="track-name"><span class="track-num">${index + 1}</span>${escapeHtml(track)}</span>`;
-            trackList.appendChild(div);
-          });
-        } else {
-          trackList.innerHTML = '<span class="status-text" style="padding:0;">수록곡 정보가 없습니다.</span>';
-        }
+        const tList = item.track_list || [];
+        renderOpsTrackList(trackList, tList);
       }
 
       // Render Album Review
@@ -2815,6 +3050,34 @@
       // Drawer close binding
       document.getElementById('closeDetailsBtn').onclick = () => {
         document.getElementById('detailsPanel').classList.remove('open');
+      };
+
+      // Details Panel Expand/Collapse Toggle
+      const toggleExpandDetailsBtn = document.getElementById('toggleExpandDetailsBtn');
+      const expandIcon = document.getElementById('expandIcon');
+      
+      toggleExpandDetailsBtn.onclick = () => {
+        const panel = document.getElementById('detailsPanel');
+        panel.classList.toggle('expanded');
+        
+        // Update icon based on state
+        if (panel.classList.contains('expanded')) {
+          expandIcon.innerHTML = `
+            <polyline points="4 14 10 14 10 20"></polyline>
+            <polyline points="20 10 14 10 14 4"></polyline>
+            <line x1="14" y1="10" x2="21" y2="3"></line>
+            <line x1="10" y1="14" x2="3" y2="21"></line>
+          `;
+          try { localStorage.setItem('ops_details_expanded', 'true'); } catch(_) {}
+        } else {
+          expandIcon.innerHTML = `
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          `;
+          try { localStorage.setItem('ops_details_expanded', 'false'); } catch(_) {}
+        }
       };
 
       // Location & suggestion bindings

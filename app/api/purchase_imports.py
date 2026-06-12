@@ -49,17 +49,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["purchase-imports"])
 
 
-def _main():
-    """Lazy accessor for main-module helpers.
 
-    Avoids a hard import-time cycle: `app.main` is what registers this
-    router, and registering would re-trigger module load if we did
-    `from app.main import _foo` at the top. Resolving on first call lets
-    main.py finish loading before any helper is touched.
-    """
-    from app import main as main_module
-
-    return main_module
 
 
 def _owned_items_module():
@@ -220,7 +210,8 @@ def list_purchase_import_candidates(
     query: str | None = Query(default=None),
 ) -> PurchaseImportCandidateSearchResponse:
     _require_admin_request(request)
-    main_module = _main()
+    from app.main import _search_lookup_metadata_candidates
+    from app.api.ingest import _annotate_owned_flags
     row = db.get_purchase_import_row(queue_id)
     if row is None:
         raise HTTPException(status_code=404, detail="purchase import row not found")
@@ -249,7 +240,7 @@ def list_purchase_import_candidates(
     _media_format, category, _size_group, _seller_name = _pm._purchase_queue_base_context(
         working_row
     )
-    candidates = main_module._search_lookup_metadata_candidates(
+    candidates = _search_lookup_metadata_candidates(
         query=search_query,
         category=category,
         source=str(source or "AUTO").strip().upper() or "AUTO",
@@ -261,7 +252,7 @@ def list_purchase_import_candidates(
         if item_name is not None
         else _pm._clean_text(working_row.get("item_name")),
     )
-    candidates = main_module._annotate_owned_flags(candidates)
+    candidates = _annotate_owned_flags(candidates)
     return PurchaseImportCandidateSearchResponse(
         queue_item=_pm._purchase_queue_item_from_row(working_row),
         query=search_query,

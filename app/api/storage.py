@@ -30,9 +30,6 @@ def _audit(request: Request, entity_type: str, entity_id: int, action: str, chan
 
 router = APIRouter()
 
-def _main():
-    from app import main as main_module
-    return main_module
 
 def _require_admin(request: Request) -> None:
     security._require_operator_request(request)
@@ -74,7 +71,8 @@ def get_storage_slot_owned_items(
     if slot is None:
         raise HTTPException(status_code=404, detail="storage_slot not found")
     rows = db.list_owned_items_for_storage_slot(storage_slot_id=storage_slot_id, limit=limit, offset=offset)
-    return [_main()._to_owned_item_list_item(row) for row in rows]
+    from app.main import _to_owned_item_list_item
+    return [_to_owned_item_list_item(row) for row in rows]
 
 
 @router.post("/storage-slots", response_model=StorageSlotItem)

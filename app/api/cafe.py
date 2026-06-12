@@ -732,13 +732,9 @@ async def staff_playlist_play_next(playlist_id: int, request: Request) -> dict[s
 
 @router.get("/cafe/tablet", include_in_schema=False)
 def cafe_tablet_shell(request: Request):
-    from pathlib import Path
+    from app.services.site import STATIC_DIR as _STATIC_DIR
     from fastapi.responses import FileResponse
-    def _main():
-        from app import main as main_module
-        return main_module
-    STATIC_DIR = _main().STATIC_DIR
-    page_path = STATIC_DIR / "cafe_tablet.html"
+    page_path = _STATIC_DIR / "cafe_tablet.html"
     return FileResponse(
         page_path,
         headers={

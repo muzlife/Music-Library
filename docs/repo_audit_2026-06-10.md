@@ -245,7 +245,7 @@
 
 ### 7.2 DB 실측 수치
 
-- 규모: `owned_item` **4,846행**, `album_master` 4,350행 — CLAUDE.md의 "약 3만"과 큰 차이. 성능 목표·인덱스 전략의 기준 수치 재확인 필요.
+- 규모: `owned_item` **4,846행**, `album_master` 4,350행 — *운영자 확인: 등록 진행 중이며 완료 시 3만+ 예정.* 즉 현 DB에서의 성능 실측은 최종 규모의 ~16% 부하에 불과 — §7.3의 느린 응답은 데이터 증가 시 더 악화된다고 봐야 한다.
 - **M1(도메인 드리프트) 데이터로 확인**: `owned_item.domain_code`에 `WORLD` 10행, `album_master.domain_code`에 `WORLD_OTHER` 71행 — 두 레거시 매핑이 실제로 서로 다른 값을 만들어 놓음.
 - M5(평문 비번): 현 DB에는 평문 행 **0건** (전부 pbkdf2_sha256). 상용 DB 확인 후 하위호환 코드 제거 가능.
 - DB 용량 구성: `local_music_index` 128MB+인덱스 121MB, `lost_and_found` 108MB가 377MB의 대부분. 카탈로그 자체는 ~10MB.

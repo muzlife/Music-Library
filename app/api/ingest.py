@@ -19,15 +19,129 @@ from ..schemas import (
     QueryIngestResponse,
     ReviewQueueItem,
 )
+from ..services.providers import search_music_metadata, get_source_release_snapshot
+from ..services.matcher import compose_query, validate_row_for_ingest, classify_candidate, MatchResult
 
 router = APIRouter()
 
-def _main():
-    from app import main as main_module
-    return main_module
 
 def _require_admin(request: Request) -> None:
     security._require_operator_request(request)
+
+
+def _compose_non_barcode_query(payload: QueryIngestRequest) -> str:
+    if payload.query and payload.query.strip():
+        return payload.query.strip()
+    parts: list[str] = []
+    for value in [
+        payload.artist_or_brand,
+        payload.title,
+        payload.catalog_no,
+        payload.runout,
+        payload.label_name,
+    ]:
+        if value and value.strip():
+            parts.append(value.strip())
+    if payload.release_year:
+        parts.append(str(payload.release_year))
+    if payload.country and payload.country.strip():
+        parts.append(payload.country.strip().upper())
+    return " ".join(parts).strip()
+
+
+def _decode_upload_bytes(raw: bytes) -> str:
+    for enc in ("utf-8-sig", "cp949", "euc-kr"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    raise HTTPException(status_code=400, detail="CSV decode failed. Use UTF-8/CP949/EUC-KR.")
+
+
+def _csv_slot_lookup_maps() -> tuple[dict[str, dict[str, Any]], dict[tuple[str, str, str], dict[str, Any]]]:
+    slot_by_code: dict[str, dict[str, Any]] = {}
+    slot_by_triplet: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for slot in db.list_storage_slots():
+        slot_code = str(slot.get("slot_code") or "").strip()
+        if slot_code:
+            slot_by_code[slot_code.casefold()] = slot
+        cabinet_name = str(slot.get("cabinet_name") or "").strip()
+        column_code = str(slot.get("column_code") or "").strip()
+        cell_code = str(slot.get("cell_code") or "").strip()
+        if cabinet_name and column_code and cell_code:
+            slot_by_triplet[(cabinet_name.casefold(), column_code.casefold(), cell_code.casefold())] = slot
+    return slot_by_code, slot_by_triplet
+
+
+def _build_csv_discogs_candidate(release_id: str) -> dict[str, Any] | None:
+    release_id_s = str(release_id or "").strip()
+    if not release_id_s:
+        return None
+    snapshot = get_source_release_snapshot(source="DISCOGS", external_id=release_id_s)
+    if not snapshot:
+        return None
+    raw = snapshot.get("raw") if isinstance(snapshot.get("raw"), dict) else {}
+    title = str(raw.get("title") or "").strip() or f"Discogs Release #{release_id_s}"
+    country = str(raw.get("country") or "").strip() or None
+    return {
+        "source": "DISCOGS",
+        "external_id": release_id_s,
+        "title": title,
+        "artist_or_brand": snapshot.get("artist_or_brand"),
+        "release_year": snapshot.get("release_year"),
+        "released_date": snapshot.get("released_date"),
+        "country": country,
+        "format_name": snapshot.get("format_name"),
+        "barcode": snapshot.get("barcode"),
+        "catalog_no": snapshot.get("catalog_no"),
+        "label_name": snapshot.get("label_name"),
+        "cover_image_url": snapshot.get("cover_image_url"),
+        "track_list": snapshot.get("track_list") or [],
+        "media_type": snapshot.get("media_type"),
+        "release_type": snapshot.get("release_type"),
+        "domain_code": snapshot.get("domain_code"),
+        "genres": snapshot.get("genres") or [],
+        "styles": snapshot.get("styles") or [],
+        "disc_count": snapshot.get("disc_count"),
+        "speed_rpm": snapshot.get("speed_rpm"),
+        "has_obi": snapshot.get("has_obi"),
+        "runout_matrix": snapshot.get("runout_matrix") or [],
+        "pressing_country": snapshot.get("pressing_country"),
+        "source_notes": snapshot.get("source_notes"),
+        "credits": snapshot.get("credits") or [],
+        "identifier_items": snapshot.get("identifier_items") or [],
+        "image_items": snapshot.get("image_items") or [],
+        "company_items": snapshot.get("company_items") or [],
+        "series": snapshot.get("series") or [],
+        "format_items": snapshot.get("format_items") or [],
+        "track_items": snapshot.get("track_items") or [],
+        "label_items": snapshot.get("label_items") or [],
+        "confidence": 1.0,
+        "raw": raw,
+    }
+
+
+def _annotate_owned_flags(candidates: list[dict[str, object]]) -> list[dict[str, object]]:
+    by_source: dict[str, set[str]] = {}
+    for c in candidates:
+        source = str(c.get("source") or "").strip().upper()
+        external_id = str(c.get("external_id") or "").strip()
+        if not source or not external_id:
+            continue
+        by_source.setdefault(source, set()).add(external_id)
+    counts_by_source: dict[str, dict[str, int]] = {}
+    for source, external_ids in by_source.items():
+        counts_by_source[source] = db.get_owned_counts_by_source(source, sorted(external_ids))
+    out: list[dict[str, object]] = []
+    for c in candidates:
+        source = str(c.get("source") or "").strip().upper()
+        external_id = str(c.get("external_id") or "").strip()
+        cnt = counts_by_source.get(source, {}).get(external_id, 0)
+        c2 = dict(c)
+        c2["owned_count"] = cnt
+        c2["is_owned"] = cnt > 0
+        out.append(c2)
+    return out
 
 
 def _csv_first_text(row: dict[str, Any], *keys: str) -> str | None:
@@ -143,13 +257,13 @@ def _normalize_csv_ingest_row(
 
 @router.post("/ingest/barcode", response_model=BarcodeIngestResponse)
 def ingest_barcode(payload: BarcodeIngestRequest) -> BarcodeIngestResponse:
-    candidates = _main().search_music_metadata(
+    candidates = search_music_metadata(
         barcode=payload.barcode,
         category=payload.category,
         source=payload.source,
         limit=payload.limit,
     )
-    candidates = _main()._annotate_owned_flags(candidates)
+    candidates = _annotate_owned_flags(candidates)
     return BarcodeIngestResponse(query=payload.barcode, candidates=candidates)
 
 
@@ -179,14 +293,15 @@ def recommend_barcode_location(
 
 @router.post("/ingest/search", response_model=QueryIngestResponse)
 def ingest_search(payload: QueryIngestRequest) -> QueryIngestResponse:
-    query = _main()._compose_non_barcode_query(payload)
+    from app.main import _search_lookup_metadata_candidates
+    query = _compose_non_barcode_query(payload)
     if not query:
         raise HTTPException(
             status_code=400,
             detail="Provide query or at least one of artist_or_brand/title/catalog_no/runout/label_name/release_year/country",
         )
 
-    candidates = _main()._search_lookup_metadata_candidates(
+    candidates = _search_lookup_metadata_candidates(
         query=query,
         category=payload.category,
         source=payload.source,
@@ -194,7 +309,7 @@ def ingest_search(payload: QueryIngestRequest) -> QueryIngestResponse:
         artist_or_brand=payload.artist_or_brand,
         title=payload.title,
     )
-    candidates = _main()._annotate_owned_flags(candidates)
+    candidates = _annotate_owned_flags(candidates)
     return QueryIngestResponse(query=query, candidates=candidates)
 
 
@@ -211,9 +326,9 @@ async def ingest_csv(
     batch_id = db.insert_batch("CSV_IMPORT", created_by, notes)
 
     raw = await file.read()
-    text = _main()._decode_upload_bytes(raw)
+    text = _decode_upload_bytes(raw)
     reader = csv.DictReader(io.StringIO(text))
-    slot_by_code, slot_by_triplet = _main()._csv_slot_lookup_maps()
+    slot_by_code, slot_by_triplet = _csv_slot_lookup_maps()
     discogs_candidate_cache: dict[str, dict[str, Any] | None] = {}
 
     total = 0
@@ -239,7 +354,7 @@ async def ingest_csv(
         discogs_candidate: dict[str, Any] | None = None
         if discogs_release_id:
             if discogs_release_id not in discogs_candidate_cache:
-                discogs_candidate_cache[discogs_release_id] = _main()._build_csv_discogs_candidate(discogs_release_id)
+                discogs_candidate_cache[discogs_release_id] = _build_csv_discogs_candidate(discogs_release_id)
             discogs_candidate = discogs_candidate_cache.get(discogs_release_id)
             if discogs_candidate:
                 candidate_category = str(discogs_candidate.get("format_name") or "").strip().upper()
@@ -250,7 +365,7 @@ async def ingest_csv(
                     if incoming:
                         normalized_row[field] = incoming
 
-        valid, category, validation_error = _main().validate_row_for_ingest(normalized_row, default_category=default_category)
+        valid, category, validation_error = validate_row_for_ingest(normalized_row, default_category=default_category)
 
         if not valid or location_error:
             failed += 1
@@ -285,12 +400,12 @@ async def ingest_csv(
                 )
         else:
             barcode = (normalized_row.get("barcode") or "").strip()
-            query = _main().compose_query(normalized_row)
+            query = compose_query(normalized_row)
 
             if barcode:
-                candidates = _main().search_music_metadata(barcode=barcode, category=category, limit=5)
+                candidates = search_music_metadata(barcode=barcode, category=category, limit=5)
             elif query:
-                candidates = _main().search_music_metadata(
+                candidates = search_music_metadata(
                     query=query,
                     category=category,
                     limit=5,
@@ -300,7 +415,7 @@ async def ingest_csv(
             else:
                 candidates = []
 
-            result = _main().classify_candidate(candidates)
+            result = classify_candidate(candidates)
         if location_review_note:
             result.review_status = "NEEDS_REVIEW"
             result.review_note = _merge_review_note(result.review_note, location_review_note)
