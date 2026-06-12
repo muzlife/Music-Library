@@ -36,6 +36,12 @@ def _ensure_index_table(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_lmi_artist ON local_music_index (artist)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_lmi_genre ON local_music_index (genre)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_lmi_album ON local_music_index (album)")
+    conn.execute("""
+        CREATE VIRTUAL TABLE IF NOT EXISTS local_music_fts USING fts5(
+            title, artist, album,
+            tokenize="trigram"
+        )
+    """)
 
 
 def _read_tags(file_path: str) -> dict[str, Any]:
@@ -64,6 +70,7 @@ def rebuild_index() -> dict[str, Any]:
     with get_conn() as conn:
         _ensure_index_table(conn)
         conn.execute("DELETE FROM local_music_index")
+        conn.execute("DELETE FROM local_music_fts")
 
         try:
             proc = subprocess.Popen(
@@ -121,6 +128,11 @@ def rebuild_index() -> dict[str, Any]:
                         "INSERT OR REPLACE INTO local_music_index (file_path, title, artist, album, genre, year, track_number, duration_seconds, file_size, has_cover, indexed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                         batch,
                     )
+                    fts_batch = [(title, artist, album) for (fp, title, artist, album, *_) in batch]
+                    conn.executemany(
+                        "INSERT INTO local_music_fts(title, artist, album) VALUES (?,?,?)",
+                        fts_batch,
+                    )
                     if indexed % 1000 == 0:
                         print(f"  indexed {indexed} files...")
                     batch = []
@@ -129,6 +141,11 @@ def rebuild_index() -> dict[str, Any]:
                 conn.executemany(
                     "INSERT OR REPLACE INTO local_music_index (file_path, title, artist, album, genre, year, track_number, duration_seconds, file_size, has_cover, indexed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                     batch,
+                )
+                fts_batch = [(title, artist, album) for (fp, title, artist, album, *_) in batch]
+                conn.executemany(
+                    "INSERT INTO local_music_fts(title, artist, album) VALUES (?,?,?)",
+                    fts_batch,
                 )
             proc.wait(timeout=600)
         except Exception:
@@ -139,14 +156,27 @@ def rebuild_index() -> dict[str, Any]:
 
 
 def search_local_index(query: str, limit: int = 20) -> list[dict[str, Any]]:
-    """Search the local index by title, artist, album, or genre."""
-    q = f"%{query.strip()}%"
+    """Search the local index by title, artist, or album using FTS5 trigram."""
+    from app.db.catalog_search import fts_escape
+    import os
+    use_fts = os.environ.get("SEARCH_USE_FTS", "1") != "0"
     with get_conn() as conn:
         _ensure_index_table(conn)
-        rows = conn.execute(
-            "SELECT * FROM local_music_index WHERE title LIKE ? OR artist LIKE ? OR album LIKE ? OR genre LIKE ? ORDER BY title LIMIT ?",
-            (q, q, q, q, limit),
-        ).fetchall()
+        if use_fts:
+            rows = conn.execute(
+                """
+                SELECT lmi.* FROM local_music_index lmi
+                WHERE lmi.id IN (SELECT rowid FROM local_music_fts WHERE local_music_fts MATCH ?)
+                ORDER BY lmi.title LIMIT ?
+                """,
+                (fts_escape(query.strip()), limit),
+            ).fetchall()
+        else:
+            q = f"%{query.strip()}%"
+            rows = conn.execute(
+                "SELECT * FROM local_music_index WHERE title LIKE ? OR artist LIKE ? OR album LIKE ? OR genre LIKE ? ORDER BY title LIMIT ?",
+                (q, q, q, q, limit),
+            ).fetchall()
     return [dict(r) for r in rows]
 
 

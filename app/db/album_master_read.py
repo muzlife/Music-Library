@@ -40,6 +40,7 @@ routes) keep working unchanged.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from app.db._schema_helpers import _column_exists
@@ -52,6 +53,9 @@ from app.db import (  # noqa: E402  — package surface
     get_conn,
     utc_now_iso,
 )
+from app.db.catalog_search import fts_escape
+
+_USE_FTS = os.environ.get("SEARCH_USE_FTS", "1") != "0"
 
 
 def _build_album_master_filter_sql(
@@ -104,144 +108,192 @@ def _build_album_master_filter_sql(
         params.append(source_code)
 
     if q and q.strip():
-        q_norm = f"%{q.strip().lower()}%"
-        q_token_groups = _search_token_groups(q)
-        master_token_sql, master_token_params = _build_compact_token_match_sql(master_search_expr, q_token_groups)
-        member_token_sql, member_token_params = _build_compact_token_match_sql(member_search_expr, q_token_groups)
-        where_sql += """
-          AND (
-            LOWER(am.title) LIKE ?
-            OR LOWER(COALESCE(am.artist_or_brand, '')) LIKE ?
-            OR EXISTS (
-              SELECT 1
-              FROM album_master_member amm
-              JOIN owned_item oi ON oi.id = amm.owned_item_id
-              LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-              WHERE amm.album_master_id = am.id
-                AND (
-                  LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.label_name, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.catalog_no, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.barcode, '')) LIKE ?
-                  OR EXISTS (
-                    SELECT 1
-                    FROM json_each(COALESCE(mid.track_list_json, '[]')) jt
-                    WHERE LOWER(COALESCE(jt.value, '')) LIKE ?
-                  )
-                  OR EXISTS (
-                    SELECT 1
-                    FROM json_each(COALESCE(mid.track_items_json, '[]')) ji
-                    WHERE LOWER(COALESCE(json_extract(ji.value, '$.display'), '')) LIKE ?
-                       OR LOWER(COALESCE(json_extract(ji.value, '$.title'), '')) LIKE ?
-                  )
+        if _USE_FTS:
+            q_escaped = fts_escape(q.strip())
+            where_sql += """
+              AND (
+                am.id IN (SELECT rowid FROM album_master_fts WHERE album_master_fts MATCH ?)
+                OR am.id IN (
+                  SELECT amm.album_master_id FROM album_master_member amm
+                  WHERE amm.owned_item_id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
                 )
-            )
-        """
-        params.extend([q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm])
-        if master_token_sql:
-            where_sql += f"""
-            OR {master_token_sql}
+              )
             """
-            params.extend(master_token_params)
-        if member_token_sql:
-            where_sql += f"""
-            OR EXISTS (
-              SELECT 1
-              FROM album_master_member amm
-              JOIN owned_item oi ON oi.id = amm.owned_item_id
-              LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-              WHERE amm.album_master_id = am.id
-                AND {member_token_sql}
-            )
+            params.extend([q_escaped, q_escaped])
+        else:
+            q_norm = f"%{q.strip().lower()}%"
+            q_token_groups = _search_token_groups(q)
+            master_token_sql, master_token_params = _build_compact_token_match_sql(master_search_expr, q_token_groups)
+            member_token_sql, member_token_params = _build_compact_token_match_sql(member_search_expr, q_token_groups)
+            where_sql += """
+              AND (
+                LOWER(am.title) LIKE ?
+                OR LOWER(COALESCE(am.artist_or_brand, '')) LIKE ?
+                OR EXISTS (
+                  SELECT 1
+                  FROM album_master_member amm
+                  JOIN owned_item oi ON oi.id = amm.owned_item_id
+                  LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+                  WHERE amm.album_master_id = am.id
+                    AND (
+                      LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.label_name, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.catalog_no, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.barcode, '')) LIKE ?
+                      OR EXISTS (
+                        SELECT 1
+                        FROM json_each(COALESCE(mid.track_list_json, '[]')) jt
+                        WHERE LOWER(COALESCE(jt.value, '')) LIKE ?
+                      )
+                      OR EXISTS (
+                        SELECT 1
+                        FROM json_each(COALESCE(mid.track_items_json, '[]')) ji
+                        WHERE LOWER(COALESCE(json_extract(ji.value, '$.display'), '')) LIKE ?
+                           OR LOWER(COALESCE(json_extract(ji.value, '$.title'), '')) LIKE ?
+                      )
+                  )
+              )
             """
-            params.extend(member_token_params)
-        where_sql += """
-          )
-        """
+            params.extend([q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm, q_norm])
+            if master_token_sql:
+                where_sql += f"""
+                OR {master_token_sql}
+                """
+                params.extend(master_token_params)
+            if member_token_sql:
+                where_sql += f"""
+                OR EXISTS (
+                  SELECT 1
+                  FROM album_master_member amm
+                  JOIN owned_item oi ON oi.id = amm.owned_item_id
+                  LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+                  WHERE amm.album_master_id = am.id
+                    AND {member_token_sql}
+                )
+                """
+                params.extend(member_token_params)
+            where_sql += """
+              )
+            """
 
     if artist_or_brand and artist_or_brand.strip():
-        artist_norm = f"%{artist_or_brand.strip().lower()}%"
-        where_sql += """
-          AND (
-            LOWER(COALESCE(am.artist_or_brand, '')) LIKE ?
-            OR EXISTS (
-              SELECT 1
-              FROM album_master_member amm
-              JOIN owned_item oi ON oi.id = amm.owned_item_id
-              LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-              WHERE amm.album_master_id = am.id
-                AND LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
-            )
-          )
-        """
-        params.extend([artist_norm, artist_norm])
+        if _USE_FTS:
+            artist_escaped = fts_escape(artist_or_brand.strip())
+            where_sql += """
+              AND (
+                am.id IN (SELECT rowid FROM album_master_fts WHERE album_master_fts MATCH ?)
+                OR am.id IN (
+                  SELECT amm.album_master_id FROM album_master_member amm
+                  WHERE amm.owned_item_id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
+                )
+              )
+            """
+            params.extend([f"artist : {artist_escaped}", f"artist : {artist_escaped}"])
+        else:
+            artist_norm = f"%{artist_or_brand.strip().lower()}%"
+            where_sql += """
+              AND (
+                LOWER(COALESCE(am.artist_or_brand, '')) LIKE ?
+                OR EXISTS (
+                  SELECT 1
+                  FROM album_master_member amm
+                  JOIN owned_item oi ON oi.id = amm.owned_item_id
+                  LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+                  WHERE amm.album_master_id = am.id
+                    AND LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
+                )
+              )
+            """
+            params.extend([artist_norm, artist_norm])
 
     if item_name and item_name.strip():
-        item_norm = f"%{item_name.strip().lower()}%"
-        item_token_groups = _search_token_groups(item_name)
-        master_token_sql, master_token_params = _build_compact_token_match_sql(master_search_expr, item_token_groups)
-        member_token_sql, member_token_params = _build_compact_token_match_sql(member_search_expr, item_token_groups)
-        where_sql += """
-          AND (
-            LOWER(am.title) LIKE ?
-            OR LOWER(COALESCE(am.artist_or_brand, '') || ' ' || COALESCE(am.title, '')) LIKE ?
-            OR EXISTS (
-              SELECT 1
-              FROM album_master_member amm
-              JOIN owned_item oi ON oi.id = amm.owned_item_id
-              LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
-              WHERE amm.album_master_id = am.id
-                AND (
-                  LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.label_name, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.catalog_no, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.barcode, '')) LIKE ?
-                  OR LOWER(COALESCE(mid.artist_or_brand, '') || ' ' || COALESCE(oi.item_name_override, '')) LIKE ?
-                  OR EXISTS (
-                    SELECT 1
-                    FROM json_each(COALESCE(mid.track_list_json, '[]')) jt
-                    WHERE LOWER(COALESCE(jt.value, '')) LIKE ?
-                  )
-                  OR EXISTS (
-                    SELECT 1
-                    FROM json_each(COALESCE(mid.track_items_json, '[]')) ji
-                    WHERE LOWER(COALESCE(json_extract(ji.value, '$.display'), '')) LIKE ?
-                       OR LOWER(COALESCE(json_extract(ji.value, '$.title'), '')) LIKE ?
-                  )
-        """
-        params.extend([item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm])
-        if member_token_sql:
-            where_sql += f"""
-                  OR {member_token_sql}
-            """
-            params.extend(member_token_params)
-        where_sql += """
+        if _USE_FTS:
+            item_escaped = fts_escape(item_name.strip())
+            where_sql += """
+              AND (
+                am.id IN (SELECT rowid FROM album_master_fts WHERE album_master_fts MATCH ?)
+                OR am.id IN (
+                  SELECT amm.album_master_id FROM album_master_member amm
+                  WHERE amm.owned_item_id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
                 )
-            )
-        """
-        if master_token_sql:
-            where_sql += f"""
-            OR {master_token_sql}
+              )
             """
-            params.extend(master_token_params)
-        where_sql += """
-          )
-        """
+            params.extend([item_escaped, f"item_name : {item_escaped}"])
+        else:
+            item_norm = f"%{item_name.strip().lower()}%"
+            item_token_groups = _search_token_groups(item_name)
+            master_token_sql, master_token_params = _build_compact_token_match_sql(master_search_expr, item_token_groups)
+            member_token_sql, member_token_params = _build_compact_token_match_sql(member_search_expr, item_token_groups)
+            where_sql += """
+              AND (
+                LOWER(am.title) LIKE ?
+                OR LOWER(COALESCE(am.artist_or_brand, '') || ' ' || COALESCE(am.title, '')) LIKE ?
+                OR EXISTS (
+                  SELECT 1
+                  FROM album_master_member amm
+                  JOIN owned_item oi ON oi.id = amm.owned_item_id
+                  LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+                  WHERE amm.album_master_id = am.id
+                    AND (
+                      LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.label_name, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.catalog_no, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.barcode, '')) LIKE ?
+                      OR LOWER(COALESCE(mid.artist_or_brand, '') || ' ' || COALESCE(oi.item_name_override, '')) LIKE ?
+                      OR EXISTS (
+                        SELECT 1
+                        FROM json_each(COALESCE(mid.track_list_json, '[]')) jt
+                        WHERE LOWER(COALESCE(jt.value, '')) LIKE ?
+                      )
+                      OR EXISTS (
+                        SELECT 1
+                        FROM json_each(COALESCE(mid.track_items_json, '[]')) ji
+                        WHERE LOWER(COALESCE(json_extract(ji.value, '$.display'), '')) LIKE ?
+                           OR LOWER(COALESCE(json_extract(ji.value, '$.title'), '')) LIKE ?
+                      )
+            """
+            params.extend([item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm, item_norm])
+            if member_token_sql:
+                where_sql += f"""
+                      OR {member_token_sql}
+                """
+                params.extend(member_token_params)
+            where_sql += """
+                    )
+                )
+            """
+            if master_token_sql:
+                where_sql += f"""
+                OR {master_token_sql}
+                """
+                params.extend(master_token_params)
+            where_sql += """
+              )
+            """
 
     if catalog_no and catalog_no.strip():
-        catalog_norm = f"%{catalog_no.strip().lower()}%"
-        where_sql += """
-          AND EXISTS (
-            SELECT 1
-            FROM album_master_member amm
-            JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
-            WHERE amm.album_master_id = am.id
-              AND LOWER(COALESCE(mid.catalog_no, '')) LIKE ?
-          )
-        """
-        params.append(catalog_norm)
+        if _USE_FTS:
+            where_sql += """
+              AND am.id IN (
+                SELECT amm.album_master_id FROM album_master_member amm
+                WHERE amm.owned_item_id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
+              )
+            """
+            params.append(f"catalog_no : {fts_escape(catalog_no.strip())}")
+        else:
+            catalog_norm = f"%{catalog_no.strip().lower()}%"
+            where_sql += """
+              AND EXISTS (
+                SELECT 1
+                FROM album_master_member amm
+                JOIN music_item_detail mid ON mid.owned_item_id = amm.owned_item_id
+                WHERE amm.album_master_id = am.id
+                  AND LOWER(COALESCE(mid.catalog_no, '')) LIKE ?
+              )
+            """
+            params.append(catalog_norm)
 
     if barcode and barcode.strip():
         barcode_norm = f"%{barcode.strip().replace('-', '')}%"

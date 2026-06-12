@@ -212,6 +212,7 @@ def list_metadata_sync_candidates(
 
 
 def upsert_music_detail(owned_item_id: int, music_detail: dict[str, Any], note_append: str | None = None) -> None:
+    from app.db.catalog_search import upsert_catalog_search_in_conn
     now = utc_now_iso()
     with get_conn() as conn:
         _upsert_music_item_detail_in_conn(
@@ -225,7 +226,7 @@ def upsert_music_detail(owned_item_id: int, music_detail: dict[str, Any], note_a
                 """
                 UPDATE owned_item
                 SET updated_at = ?,
-                    memory_note = CASE 
+                    memory_note = CASE
                         WHEN IFNULL(TRIM(memory_note), '') = '' THEN ?
                         ELSE memory_note || char(10) || ?
                     END
@@ -242,6 +243,7 @@ def upsert_music_detail(owned_item_id: int, music_detail: dict[str, Any], note_a
                 """,
                 (now, owned_item_id),
             )
+        upsert_catalog_search_in_conn(conn, owned_item_id)
 
 
 __all__ = [

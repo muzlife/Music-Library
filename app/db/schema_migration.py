@@ -495,7 +495,7 @@ def _migrate_owned_item_allow_extended_domains(conn: sqlite3.Connection) -> None
         conn.execute("PRAGMA foreign_keys = ON")
 
 
-SCHEMA_VERSION = 21
+SCHEMA_VERSION = 22
 """Bump every time a NEW migration entry is added to `_MIGRATIONS_BY_VERSION`.
 
 The legacy idempotent pass (`_apply_migrations`) is collapsed into version 1.
@@ -1142,6 +1142,67 @@ def _migration_v21_domain_code_world_unify(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migration_v22_fts5_catalog_search(conn: sqlite3.Connection) -> None:
+    from app.db.catalog_search import extract_tracks_text
+
+    conn.execute("DROP TABLE IF EXISTS catalog_search")
+    conn.execute("""
+        CREATE VIRTUAL TABLE catalog_search USING fts5(
+            item_name, artist, label_name, catalog_no, barcode, tracks_text, memory_note,
+            tokenize="trigram"
+        )
+    """)
+
+    conn.execute("DROP TABLE IF EXISTS album_master_fts")
+    conn.execute("""
+        CREATE VIRTUAL TABLE album_master_fts USING fts5(
+            title, artist,
+            tokenize="trigram"
+        )
+    """)
+
+    rows = conn.execute("""
+        SELECT oi.id,
+               COALESCE(oi.item_name_override,''),
+               COALESCE(mid.artist_or_brand,''),
+               COALESCE(mid.label_name,''),
+               COALESCE(mid.catalog_no,''),
+               COALESCE(mid.barcode,''),
+               COALESCE(mid.track_items_json,''),
+               COALESCE(mid.track_list_json,''),
+               COALESCE(oi.memory_note,'')
+        FROM owned_item oi
+        LEFT JOIN music_item_detail mid ON mid.owned_item_id = oi.id
+    """).fetchall()
+
+    batch: list = []
+    for row in rows:
+        item_id, item_name, artist, label_name, catalog_no, barcode, tij, tlj, memory_note = row
+        tracks_text = extract_tracks_text(tij, tlj)
+        batch.append((item_id, item_name, artist, label_name, catalog_no, barcode, tracks_text, memory_note))
+        if len(batch) >= 2000:
+            conn.executemany(
+                "INSERT INTO catalog_search(rowid, item_name, artist, label_name, catalog_no, barcode, tracks_text, memory_note) VALUES (?,?,?,?,?,?,?,?)",
+                batch,
+            )
+            batch.clear()
+    if batch:
+        conn.executemany(
+            "INSERT INTO catalog_search(rowid, item_name, artist, label_name, catalog_no, barcode, tracks_text, memory_note) VALUES (?,?,?,?,?,?,?,?)",
+            batch,
+        )
+
+    album_rows = conn.execute(
+        "SELECT id, COALESCE(title,''), COALESCE(artist_or_brand,'') FROM album_master"
+    ).fetchall()
+    conn.executemany(
+        "INSERT INTO album_master_fts(rowid, title, artist) VALUES (?,?,?)",
+        album_rows,
+    )
+
+    conn.commit()
+
+
 _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     1: _migration_v1_legacy_idempotent_pass,
     2: _migration_v2_add_external_response_cache,
@@ -1164,6 +1225,7 @@ _MIGRATIONS_BY_VERSION: dict[int, "Callable[[sqlite3.Connection], None]"] = {
     19: _migration_v19_auth_account_profile,
     20: _migration_v20_album_master_release_type,
     21: _migration_v21_domain_code_world_unify,
+    22: _migration_v22_fts5_catalog_search,
 }
 
 

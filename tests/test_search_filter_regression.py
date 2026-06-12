@@ -103,6 +103,7 @@ def _count(**kw):
 @pytest.fixture(scope="module")
 def fixture_ids():
     """픽스처 4건 생성, 테스트 완료 후 정리."""
+    from app.db.catalog_search import delete_catalog_search_in_conn, upsert_catalog_search_in_conn
     db.ensure_startup_db_ready()
     now = db.utc_now_iso()
     ids: dict[str, int] = {}
@@ -132,12 +133,14 @@ def fixture_ids():
                    VALUES (?, 'CD', ?, ?, ?)""",
                 (oid, track_json, now, now),
             )
+            upsert_catalog_search_in_conn(conn, oid)
         ids[label] = oid
 
     yield ids
 
     for oid in ids.values():
         with db.get_write_conn() as conn:
+            delete_catalog_search_in_conn(conn, oid)
             conn.execute("DELETE FROM music_item_detail WHERE owned_item_id = ?", (oid,))
             conn.execute("DELETE FROM owned_item WHERE id = ?", (oid,))
 

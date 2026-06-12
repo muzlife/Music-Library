@@ -39,6 +39,7 @@ collection grid, the test suite) keep working unchanged.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from app.db import (  # noqa: E402  — package surface
@@ -52,6 +53,9 @@ from app.db import (  # noqa: E402  — package surface
     list_owned_items_by_copy_group,
     list_owned_items_by_source_external_ids,
 )
+from app.db.catalog_search import fts_escape
+
+_USE_FTS = os.environ.get("SEARCH_USE_FTS", "1") != "0"
 
 
 def _build_owned_item_filters(
@@ -109,33 +113,60 @@ def _build_owned_item_filters(
         params.append(status)
 
     if q and q.strip():
-        q_norm = f"%{q.strip().lower()}%"
-        where_sql += """
-         AND (
-           LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-           OR LOWER(COALESCE(oi.purchase_source, '')) LIKE ?
-           OR LOWER(COALESCE(oi.memory_note, '')) LIKE ?
-         )
-        """
-        params.extend([q_norm, q_norm, q_norm])
+        if _USE_FTS:
+            where_sql += """
+             AND (
+               oi.id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
+               OR LOWER(COALESCE(oi.purchase_source,'')) LIKE ?
+             )
+            """
+            params.extend([fts_escape(q.strip()), f"%{q.strip().lower()}%"])
+        else:
+            q_norm = f"%{q.strip().lower()}%"
+            where_sql += """
+             AND (
+               LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
+               OR LOWER(COALESCE(oi.purchase_source, '')) LIKE ?
+               OR LOWER(COALESCE(oi.memory_note, '')) LIKE ?
+             )
+            """
+            params.extend([q_norm, q_norm, q_norm])
 
     if artist_or_brand and artist_or_brand.strip():
-        v = f"%{artist_or_brand.strip().lower()}%"
-        where_sql += """
-         AND (
-           LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
-           OR LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
-         )
-        """
-        params.extend([v, v])
+        if _USE_FTS:
+            where_sql += """
+             AND oi.id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
+            """
+            params.append(f"artist : {fts_escape(artist_or_brand.strip())}")
+        else:
+            v = f"%{artist_or_brand.strip().lower()}%"
+            where_sql += """
+             AND (
+               LOWER(COALESCE(mid.artist_or_brand, '')) LIKE ?
+               OR LOWER(COALESCE(oi.item_name_override, '')) LIKE ?
+             )
+            """
+            params.extend([v, v])
 
     if item_name and item_name.strip():
-        where_sql += " AND LOWER(COALESCE(oi.item_name_override, '')) LIKE ?"
-        params.append(f"%{item_name.strip().lower()}%")
+        if _USE_FTS:
+            where_sql += """
+             AND oi.id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
+            """
+            params.append(f"item_name : {fts_escape(item_name.strip())}")
+        else:
+            where_sql += " AND LOWER(COALESCE(oi.item_name_override, '')) LIKE ?"
+            params.append(f"%{item_name.strip().lower()}%")
 
     if catalog_no and catalog_no.strip():
-        where_sql += " AND LOWER(COALESCE(mid.catalog_no, '')) LIKE ?"
-        params.append(f"%{catalog_no.strip().lower()}%")
+        if _USE_FTS:
+            where_sql += """
+             AND oi.id IN (SELECT rowid FROM catalog_search WHERE catalog_search MATCH ?)
+            """
+            params.append(f"catalog_no : {fts_escape(catalog_no.strip())}")
+        else:
+            where_sql += " AND LOWER(COALESCE(mid.catalog_no, '')) LIKE ?"
+            params.append(f"%{catalog_no.strip().lower()}%")
 
     if barcode and barcode.strip():
         normalized = "".join(ch for ch in str(barcode).strip() if ch.isalnum()).lower()
