@@ -1762,6 +1762,7 @@ def _promote_album_master_to_discogs(
     album_master_id: int,
     source_external_id: str,
     explicit_domain_code: str | None = None,
+    explicit_release_type: str | None = None,
 ) -> tuple[int, list[str]]:
     master_id = int(album_master_id or 0)
     release_external_id = str(source_external_id or "").strip()
@@ -1803,6 +1804,7 @@ def _promote_album_master_to_discogs(
         ),
         release_year=release_year,
         raw=master_ref,
+        release_type=explicit_release_type,
     )
     if promoted_master_id <= 0:
         return master_id, []
@@ -1833,11 +1835,13 @@ def _promote_owned_item_linked_master_from_discogs_source(owned_item_id: int) ->
         return 0, []
 
     explicit_domain = str(row.get("domain_code") or "").strip() or None
+    explicit_release_type = str(row.get("release_type") or "").strip() or None
 
     promoted_master_id, notices = _promote_album_master_to_discogs(
         album_master_id=linked_master_id,
         source_external_id=source_external_id,
         explicit_domain_code=explicit_domain,
+        explicit_release_type=explicit_release_type,
     )
     if promoted_master_id > 0:
         db.bind_album_master_members(

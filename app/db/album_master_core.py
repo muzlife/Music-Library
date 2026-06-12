@@ -403,6 +403,7 @@ def promote_album_master_source(
     domain_code: str | None,
     release_year: int | None,
     raw: dict[str, Any],
+    release_type: str | None = None,
 ) -> int:
     master_id = int(album_master_id or 0)
     source_u = str(source_code or "").strip().upper()
@@ -415,6 +416,7 @@ def promote_album_master_source(
     title_text = str(title or "").strip() or f"{source_u} Master {source_master}"
     artist_text = str(artist_or_brand or "").strip() or None
     domain_text = _normalize_domain_code_value(domain_code)
+    release_type_text = str(release_type or "").strip() or None
     year_value = int(release_year) if isinstance(release_year, int) else None
 
     with get_conn() as conn:
@@ -471,12 +473,13 @@ def promote_album_master_source(
                                              ELSE sort_artist_name
                                            END,
                         domain_code = COALESCE(?, domain_code),
+                        release_type = COALESCE(?, release_type),
                         release_year = ?,
                         raw_json = ?,
                         updated_at = ?
                     WHERE id = ?
                     """,
-                    (title_text, artist_text, current_sort_artist_name, domain_text, year_value, raw_json, now, target_master_id),
+                    (title_text, artist_text, current_sort_artist_name, domain_text, release_type_text, year_value, raw_json, now, target_master_id),
                 )
                 conn.execute(
                     """
@@ -499,12 +502,13 @@ def promote_album_master_source(
                 title = ?,
                 artist_or_brand = ?,
                 domain_code = COALESCE(?, domain_code),
+                release_type = COALESCE(?, release_type),
                 release_year = ?,
                 raw_json = ?,
                 updated_at = ?
             WHERE id = ?
             """,
-            (source_u, source_master, title_text, artist_text, domain_text, year_value, raw_json, now, master_id),
+            (source_u, source_master, title_text, artist_text, domain_text, release_type_text, year_value, raw_json, now, master_id),
         )
     ensure_album_master_external_ref(
         album_master_id=master_id,
